@@ -171,6 +171,17 @@ class NetworkOPsImp final
          * @return JSON object.
          */
         StateCountersJson json() const;
+
+        struct CounterData {
+            decltype(counters_) counters;
+            decltype(mode_) mode;
+            decltype(start_) start;
+        };
+
+        CounterData getCounterData() const{ 
+            std::lock_guard lock(mutex_);
+            return { counters_, mode_, start_ };
+        }
     };
 
     //! Server fees published on `server` subscription
@@ -202,7 +213,7 @@ public:
         bool standalone, std::size_t minPeerCount, bool start_valid,
         JobQueue& job_queue, LedgerMaster& ledgerMaster, Stoppable& parent,
         ValidatorKeys const & validatorKeys, boost::asio::io_service& io_svc,
-        beast::Journal journal)
+        beast::Journal journal, beast::insight::Collector::ptr const& collector)
         : NetworkOPs (parent)
         , app_ (app)
         , m_clock (clock)
@@ -225,6 +236,7 @@ public:
         , m_job_queue (job_queue)
         , m_standalone (standalone)
         , minPeerCount_ (start_valid ? 0 : minPeerCount)
+        , m_stats(std::bind (&NetworkOPsImp::collect_metrics, this),collector)
     {
     }
 
@@ -621,6 +633,62 @@ private:
     std::vector <TransactionStatus> mTransactions;
 
     StateAccounting accounting_ {};
+
+private:
+    struct Stats
+    {
+        template <class Handler>
+        Stats (Handler const& handler, beast::insight::Collector::ptr const& collector)
+            : hook (collector->make_hook (handler))
+            , disconnected_duration (collector->make_gauge("State_Accounting","Disconnected_duration"))
+            , connected_duration (collector->make_gauge("State_Accounting","Connected_duration"))
+            , syncing_duration(collector->make_gauge("State_Accounting", "Syncing_duration"))
+            , tracking_duration (collector->make_gauge("State_Accounting", "Tracking_duration"))
+            , full_duration (collector-> make_gauge("State_Accounting", "Full_duration"))
+            , disconnected_transitions (collector->make_gauge("State_Accounting","Disconnected_transitions"))
+            , connected_transitions (collector->make_gauge("State_Accounting","Connected_transitions"))
+            , syncing_transitions(collector->make_gauge("State_Accounting", "Syncing_transitions"))
+            , tracking_transitions (collector->make_gauge("State_Accounting", "Tracking_transitions"))
+            , full_transitions (collector-> make_gauge("State_Accounting", "Full_transitions"))
+            { }
+
+        beast::insight::Hook hook;
+        beast::insight::Gauge disconnected_duration;
+        beast::insight::Gauge connected_duration;
+        beast::insight::Gauge syncing_duration;
+        beast::insight::Gauge tracking_duration;
+        beast::insight::Gauge full_duration;
+
+        beast::insight::Gauge disconnected_transitions;
+        beast::insight::Gauge connected_transitions;
+        beast::insight::Gauge syncing_transitions;
+        beast::insight::Gauge tracking_transitions;
+        beast::insight::Gauge full_transitions;
+    };
+    
+    std::mutex m_statsMutex;//Mutex to lock m_stats
+    Stats m_stats;
+
+private:
+    void collect_metrics()
+    {   
+        auto [counters, mode, start] = accounting_.getCounterData();
+        auto const current = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start);
+        counters[static_cast<std::size_t>(mode)].dur += current;
+
+        std::lock_guard lock (m_statsMutex);  
+        m_stats.disconnected_duration.set(counters[static_cast<std::size_t>(OperatingMode::DISCONNECTED)].dur.count());
+        m_stats.connected_duration.set(counters[static_cast<std::size_t>(OperatingMode::CONNECTED)].dur.count());
+        m_stats.syncing_duration.set(counters[static_cast<std::size_t>(OperatingMode::SYNCING)].dur.count());
+        m_stats.tracking_duration.set(counters[static_cast<std::size_t>(OperatingMode::TRACKING)].dur.count());
+        m_stats.full_duration.set(counters[static_cast<std::size_t>(OperatingMode::FULL)].dur.count());
+
+        m_stats.disconnected_transitions.set(counters[static_cast<std::size_t>(OperatingMode::DISCONNECTED)].transitions);
+        m_stats.connected_transitions.set(counters[static_cast<std::size_t>(OperatingMode::CONNECTED)].transitions);
+        m_stats.syncing_transitions.set(counters[static_cast<std::size_t>(OperatingMode::SYNCING)].transitions);
+        m_stats.tracking_transitions.set(counters[static_cast<std::size_t>(OperatingMode::TRACKING)].transitions);
+        m_stats.full_transitions.set(counters[static_cast<std::size_t>(OperatingMode::FULL)].transitions);
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -3477,14 +3545,7 @@ void NetworkOPsImp::StateAccounting::mode (OperatingMode om)
 NetworkOPsImp::StateAccounting::StateCountersJson
 NetworkOPsImp::StateAccounting::json() const
 {
-    std::unique_lock<std::mutex> lock (mutex_);
-
-    auto counters = counters_;
-    auto const start = start_;
-    auto const mode = mode_;
-
-    lock.unlock();
-
+    auto [counters, mode, start] = getCounterData();
     auto const current = std::chrono::duration_cast<
         std::chrono::microseconds>(std::chrono::system_clock::now() - start);
     counters[static_cast<std::size_t>(mode)].dur += current;
@@ -3511,11 +3572,11 @@ make_NetworkOPs (Application& app, NetworkOPs::clock_type& clock,
     bool standalone, std::size_t minPeerCount, bool startvalid,
     JobQueue& job_queue, LedgerMaster& ledgerMaster, Stoppable& parent,
     ValidatorKeys const & validatorKeys, boost::asio::io_service& io_svc,
-    beast::Journal journal)
+    beast::Journal journal, beast::insight::Collector::ptr const& collector)
 {
     return std::make_unique<NetworkOPsImp> (app, clock, standalone,
         minPeerCount, startvalid, job_queue, ledgerMaster, parent,
-        validatorKeys, io_svc, journal);
+        validatorKeys, io_svc, journal, collector);
 }
 
 } // ripple
