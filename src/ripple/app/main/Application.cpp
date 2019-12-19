@@ -506,7 +506,7 @@ public:
         , m_networkOPs (make_NetworkOPs (*this, stopwatch(),
             config_->standalone(), config_->NETWORK_QUORUM, config_->START_VALID,
             *m_jobQueue, *m_ledgerMaster, *m_jobQueue, validatorKeys_,
-            get_io_service(), logs_->journal("NetworkOPs")))
+            get_io_service(), logs_->journal("NetworkOPs"), m_collectorManager->collector()))
 
         , cluster_ (std::make_unique<Cluster> (
             logs_->journal("Overlay")))

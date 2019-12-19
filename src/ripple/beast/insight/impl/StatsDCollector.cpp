@@ -589,7 +589,7 @@ void StatsDGaugeImpl::flush ()
         ss <<
             m_impl->prefix() << "." <<
             m_name << ":" <<
-            m_value << "|c" <<
+            m_value << "|g" <<
             "\n";
         m_impl->post_buffer (ss.str ());
     }
