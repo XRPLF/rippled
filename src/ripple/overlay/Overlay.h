@@ -253,6 +253,18 @@ public:
     virtual
     Json::Value
     crawlShards(bool pubKey, std::uint32_t hops) = 0;
+
+    /** Returns the ID of the network this server is configured for, if any.
+
+        The ID is just a numerical identifier, with the IDs 0, 1 and 2 used to
+        identify the mainnet, the testnet and the devnet respectively.
+
+        @return The numerical identifier configured by the administrator of the
+                server. An unseated optional, otherwise.
+    */
+    virtual
+    boost::optional<std::uint32_t>
+    networkID() const = 0;
 };
 
 struct ScoreHasLedger

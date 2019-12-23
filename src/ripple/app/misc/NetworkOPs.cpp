@@ -2167,6 +2167,9 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin, bool counters)
     if (human)
         info [jss::hostid] = getHostId (admin);
 
+    if (auto const netid = app_.overlay().networkID())
+        info [jss::network_id] = static_cast<Json::UInt>(*netid);
+
     info [jss::build_version] = BuildInfo::getVersionString ();
 
     info [jss::server_state] = strOperatingMode (admin);

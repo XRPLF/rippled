@@ -1328,14 +1328,17 @@ setup_Overlay (BasicConfig const& config)
             if (id == "testnet")
                 id = "1";
 
+            if (id == "devnet")
+                id = "2";
+
             setup.networkID = beast::lexicalCastThrow<std::uint32_t>(id);
         }
     }
     catch (...)
     {
         Throw<std::runtime_error>(
-            "Configured [network_id] section is invalid: "
-            "must be a number or one of the strings 'main' or 'testnet'");
+            "Configured [network_id] section is invalid: must be a number "
+            "or one of the strings 'main', 'testnet' or 'devnet'.");
     }
 
     return setup;
