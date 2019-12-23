@@ -351,6 +351,7 @@ JSS ( missingCommand );             // error
 JSS ( name );                       // out: AmendmentTableImpl, PeerImp
 JSS ( needed_state_hashes );        // out: InboundLedger
 JSS ( needed_transaction_hashes );  // out: InboundLedger
+JSS ( network_id );                 // out: NetworkOPs
 JSS ( network_ledger );             // out: NetworkOPs
 JSS ( next_refresh_time );          // out: ValidatorSite
 JSS ( no_ripple );                  // out: AccountLines

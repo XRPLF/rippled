@@ -359,9 +359,14 @@ public:
         return peerDisconnectsCharges_;
     }
 
+    boost::optional<std::uint32_t>
+    networkID() const override
+    {
+        return networkID_;
+    }
+
     Json::Value
     crawlShards(bool pubKey, std::uint32_t hops) override;
-
 
     /** Called when the last link from a peer chain is received.
 
