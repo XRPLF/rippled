@@ -1141,8 +1141,8 @@ public:
             // Request-response methods
             // - Returns an error, or the request.
             // - To modify the method, provide a new method in the request.
-            {   "account_currencies",   &RPCParser::parseAccountCurrencies,     1,  2   },
-            {   "account_info",         &RPCParser::parseAccountItems,          1,  2   },
+            {   "account_currencies",   &RPCParser::parseAccountCurrencies,     1,  3   },
+            {   "account_info",         &RPCParser::parseAccountItems,          1,  3   },
             {   "account_lines",        &RPCParser::parseAccountLines,          1,  5   },
             {   "account_channels",     &RPCParser::parseAccountChannels,       1,  3   },
             {   "account_objects",      &RPCParser::parseAccountItems,          1,  5   },
@@ -1171,7 +1171,7 @@ public:
             {   "ledger_request",       &RPCParser::parseLedgerId,              1,  1   },
             {   "log_level",            &RPCParser::parseLogLevel,              0,  2   },
             {   "logrotate",            &RPCParser::parseAsIs,                  0,  0   },
-            {   "owner_info",           &RPCParser::parseAccountItems,          1,  2   },
+            {   "owner_info",           &RPCParser::parseAccountItems,          1,  3   },
             {   "peers",                &RPCParser::parseAsIs,                  0,  0   },
             {   "ping",                 &RPCParser::parseAsIs,                  0,  0   },
             {   "print",                &RPCParser::parseAsIs,                  0,  1   },
