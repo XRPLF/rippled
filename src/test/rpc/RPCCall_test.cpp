@@ -317,6 +317,26 @@ static RPCCallTestData const rpcCallTestArray [] =
     })"
 },
 {
+    "account_currencies: current ledger.", __LINE__,
+    {
+        "account_currencies",
+        "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "current",
+        "strict"
+    },
+    RPCCallTestData::no_exception,
+    R"({
+    "method" : "account_currencies",
+    "params" : [
+      {
+         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+         "ledger_index" : "current",
+         "strict" : 1
+      }
+    ]
+    })"
+},
+{
     "account_currencies: too few arguments.", __LINE__,
     {
         "account_currencies",
@@ -339,7 +359,8 @@ static RPCCallTestData const rpcCallTestArray [] =
         "account_currencies",
         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "current",
-        "strict"
+        "strict",
+        "spare"
     },
     RPCCallTestData::no_exception,
     R"({
@@ -486,7 +507,6 @@ static RPCCallTestData const rpcCallTestArray [] =
     })"
 },
 {
-    // Note: this works, but it doesn't match the documentation.
     "account_info: strict.", __LINE__,
     {
         "account_info",
@@ -506,7 +526,6 @@ static RPCCallTestData const rpcCallTestArray [] =
     })"
 },
 {
-    // Note: Somewhat according to the docs, this is should be valid syntax.
     "account_info: with ledger index and strict.", __LINE__,
     {
         "account_info",
@@ -519,9 +538,9 @@ static RPCCallTestData const rpcCallTestArray [] =
     "method" : "account_info",
     "params" : [
       {
-         "error" : "badSyntax",
-         "error_code" : 1,
-         "error_message" : "Syntax error."
+         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+         "ledger_index" : "validated",
+         "strict" : 1
       }
     ]
     })"
@@ -904,7 +923,6 @@ static RPCCallTestData const rpcCallTestArray [] =
     })"
 },
 {
-    // Note: this works, but it doesn't match the documentation.
     "account_objects: strict.", __LINE__,
     {
         "account_objects",
@@ -1168,7 +1186,6 @@ static RPCCallTestData const rpcCallTestArray [] =
     })"
 },
 {
-    // Note: this works, but it doesn't match the documentation.
     "account_offers: strict.", __LINE__,
     {
         "account_offers",
@@ -1188,7 +1205,6 @@ static RPCCallTestData const rpcCallTestArray [] =
     })"
 },
 {
-    // Note: this works, but doesn't match the documentation.
     "account_offers: with ledger index and strict.", __LINE__,
     {
         "account_offers",
@@ -4994,7 +5010,6 @@ static RPCCallTestData const rpcCallTestArray [] =
     })"
 },
 {
-    // Note: this works, but it doesn't match the documentation.
     "owner_info: strict.", __LINE__,
     {
         "owner_info",
@@ -5026,9 +5041,9 @@ static RPCCallTestData const rpcCallTestArray [] =
     "method" : "owner_info",
     "params" : [
       {
-         "error" : "badSyntax",
-         "error_code" : 1,
-         "error_message" : "Syntax error."
+         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+         "ledger_index" : "validated",
+         "strict" : 1
       }
     ]
     })"
@@ -5092,7 +5107,7 @@ static RPCCallTestData const rpcCallTestArray [] =
 {
     // Note: there is code in place to return rpcLGR_IDX_MALFORMED.  That
     // cannot currently occur because jvParseLedger() always returns true.
-    "owner_info: invalid ledger selection 1.", __LINE__,
+    "owner_info: invalid ledger selection.", __LINE__,
     {
         "owner_info",
         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -5113,7 +5128,7 @@ static RPCCallTestData const rpcCallTestArray [] =
 {
     // Note: there is code in place to return rpcLGR_IDX_MALFORMED.  That
     // cannot currently occur because jvParseLedger() always returns true.
-    "owner_info: invalid ledger selection 2.", __LINE__,
+    "owner_info: invalid ledger selection and strict.", __LINE__,
     {
         "owner_info",
         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -5125,9 +5140,9 @@ static RPCCallTestData const rpcCallTestArray [] =
     "method" : "owner_info",
     "params" : [
        {
-         "error" : "badSyntax",
-         "error_code" : 1,
-         "error_message" : "Syntax error."
+         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+         "ledger_index" : 0,
+         "strict" : 1
        }
     ]
     })",

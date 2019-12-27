@@ -724,11 +724,11 @@ private:
         return jvRequest;
     }
 
-    // owner_info <account>|<account_public_key>
-    // owner_info <seed>|<pass_phrase>|<key> [<ledfer>]
-    // account_info <account>|<account_public_key>
-    // account_info <seed>|<pass_phrase>|<key> [<ledger>]
-    // account_offers <account>|<account_public_key> [<ledger>]
+    // owner_info <account>|<account_public_key> [strict]
+    // owner_info <seed>|<pass_phrase>|<key> [<ledger>] [strict]
+    // account_info <account>|<account_public_key> [strict]
+    // account_info <seed>|<pass_phrase>|<key> [<ledger>] [strict]
+    // account_offers <account>|<account_public_key> [<ledger>] [strict]
     Json::Value parseAccountItems (Json::Value const& jvParams)
     {
         return parseAccountRaw1 (jvParams);
@@ -1160,8 +1160,8 @@ public:
             // Request-response methods
             // - Returns an error, or the request.
             // - To modify the method, provide a new method in the request.
-            {   "account_currencies",   &RPCParser::parseAccountCurrencies,     1,  2   },
-            {   "account_info",         &RPCParser::parseAccountItems,          1,  2   },
+            {   "account_currencies",   &RPCParser::parseAccountCurrencies,     1,  3   },
+            {   "account_info",         &RPCParser::parseAccountItems,          1,  3   },
             {   "account_lines",        &RPCParser::parseAccountLines,          1,  5   },
             {   "account_channels",     &RPCParser::parseAccountChannels,       1,  3   },
             {   "account_objects",      &RPCParser::parseAccountItems,          1,  5   },
@@ -1191,7 +1191,7 @@ public:
             {   "log_level",            &RPCParser::parseLogLevel,              0,  2   },
             {   "logrotate",            &RPCParser::parseAsIs,                  0,  0   },
             {   "manifest",             &RPCParser::parseManifest,              1,  1   },
-            {   "owner_info",           &RPCParser::parseAccountItems,          1,  2   },
+            {   "owner_info",           &RPCParser::parseAccountItems,          1,  3   },
             {   "peers",                &RPCParser::parseAsIs,                  0,  0   },
             {   "ping",                 &RPCParser::parseAsIs,                  0,  0   },
             {   "print",                &RPCParser::parseAsIs,                  0,  1   },
@@ -1580,8 +1580,7 @@ int fromCommandLine (
 {
     auto const result = rpcClient(vCmd, config, logs);
 
-    if (result.first != rpcBAD_SYNTAX)
-        std::cout << result.second.toStyledString ();
+    std::cout << result.second.toStyledString ();
 
     return result.first;
 }

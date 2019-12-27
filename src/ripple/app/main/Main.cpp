@@ -133,7 +133,7 @@ void printHelp (const po::options_description& desc)
            "     account_lines <account> <account>|\"\" [<ledger>]\n"
            "     account_channels <account> <account>|\"\" [<ledger>]\n"
            "     account_objects <account> [<ledger>] [strict]\n"
-           "     account_offers <account>|<account_public_key> [<ledger>]\n"
+           "     account_offers <account>|<account_public_key> [<ledger>] [strict]\n"
            "     account_tx accountID [ledger_min [ledger_max [limit [offset]]]] [binary] [count] [descending]\n"
            "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> [<limit> [<proof> [<marker>]]]]]\n"
            "     can_delete [<ledgerid>|<ledgerhash>|now|always|never]\n"
