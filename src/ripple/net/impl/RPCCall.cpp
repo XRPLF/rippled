@@ -1559,8 +1559,7 @@ int fromCommandLine (
 {
     auto const result = rpcClient(vCmd, config, logs);
 
-    if (result.first != rpcBAD_SYNTAX)
-        std::cout << result.second.toStyledString ();
+    std::cout << result.second.toStyledString ();
 
     return result.first;
 }
