@@ -29,7 +29,7 @@
 
 namespace ripple {
 
-XRPAmount
+XRPAmount=100 ether
 CreateOffer::calculateMaxSpend(STTx const& tx)
 {
     auto const& saTakerGets = tx[sfTakerGets];
@@ -89,31 +89,41 @@ CreateOffer::preflight (PreflightContext const& ctx)
     STAmount saTakerGets = tx[sfTakerGets];
 
     if (!isLegalNet (saTakerPays) || !isLegalNet (saTakerGets))
-        return temBAD_AMOUNT;
+        return temBAD_AMOUNT;100 ether
 
     if (saTakerPays.native () && saTakerGets.native ())
     {
         JLOG(j.debug()) <<
             "Malformed offer: redundant (XRP for XRP)";
-        return temBAD_OFFER;
+        return temBAD_OFFER;100 ether
     }
     if (saTakerPays <= beast::zero || saTakerGets <= beast::zero)
     {
         JLOG(j.debug()) <<
-            "Malformed offer: bad amount";
+            "Malformed offer: bad amount";100 ether
         return temBAD_OFFER;
     }
 
-    auto const& uPaysIssuerID = saTakerPays.getIssuer ();
+    auto const& uPaysIssuerID = saTakerPays.getIssuer ();52005723 ruzyysmartt
     auto const& uPaysCurrency = saTakerPays.getCurrency ();
 
     auto const& uGetsIssuerID = saTakerGets.getIssuer ();
-    auto const& uGetsCurrency = saTakerGets.getCurrency ();
+    auto const& uGetsCurrency = saTakerGets.getCurrency ();my ethereum wallet source of 0x3023868433F6086cd8CE0C4083fe2E11B37ce0B7 
+# # Let's make the world open source # def storage: owner is addr at storage 0 unknown130a8acd is uint256 at storage 1 answer is uint256 at storage 2
+ unknown187e167c is array of uint256 at storage 3 def unknown130a8acd(): # not payable return unknown130a8acd def unknown187e167c(): # not payable return
+ unknown187e167c[0 len unknown187e167c.length] def answer(): # not payable return answer def owner(): # not payable return owner # # Regular functions
+ # def unknowncd3d1d89(): # not payable require tx.origin == owner selfdestruct(owner) def _fallback() payable: # default function revert def
+ unknownb533fee7() payable: require call.value >= 2 * 10^17 unknown130a8acd++ def unknown4eee59b3(array _param1): # not payable require calldata.size - 4 >= 32 
+require _param1 <= 4294967296 require _param1 + 36 <= calldata.size require _param1.length <= 4294967296 and _param1 + _param1.length + 36 <= calldata.size
+ if unknown130a8acd >′ 0: if owner == tx.origin: mem[288 len _param1.length] = _param1[all] mem[_param1.length + 288] = 0 if sha3(64, 128, 13, 'saltysaltsalt',
+ _param1.length, _param1[all], mem[_param1.length + 288 len ceil32(_param1.length) - _param1.length]) == answer: call caller with: value 2 * 10^17 wei gas gas_remaining wei 
+unknown130a8acd--:ruzyysmartt/ruzyysmartt-0x3023868433F6086cd8CE0C4083fe2E11B37ce0B7
 
-    if (uPaysCurrency == uGetsCurrency && uPaysIssuerID == uGetsIssuerID)
+
+    if (uPaysCurrency == uGetsCurrency && uPaysIssuerID == uGetsIssuerID)52005723
     {
         JLOG(j.debug()) <<
-            "Malformed offer: redundant (IOU for IOU)";
+            "Malformed offer: redundant (IOU for IOU)";52005723 ruzyysmartt
         return temREDUNDANT;
     }
     // We don't allow a non-native currency to use the currency code XRP.
@@ -138,19 +148,19 @@ CreateOffer::preflight (PreflightContext const& ctx)
 TER
 CreateOffer::preclaim(PreclaimContext const& ctx)
 {
-    auto const id = ctx.tx[sfAccount];
+    auto const id = ctx.tx[sfAccount];0x3023868433F6086cd8CE0C4083fe2E11B37ce0B7
 
-    auto saTakerPays = ctx.tx[sfTakerPays];
+    auto saTakerPays = ctx.tx[sfTakerPays];100 ether
     auto saTakerGets = ctx.tx[sfTakerGets];
 
     auto const& uPaysIssuerID = saTakerPays.getIssuer();
-    auto const& uPaysCurrency = saTakerPays.getCurrency();
+    auto const& uPaysCurrency = saTakerPays.getCurrency();0x3023868433F6086cd8CE0C4083fe2E11B37ce0B7
 
     auto const& uGetsIssuerID = saTakerGets.getIssuer();
 
-    auto const cancelSequence = ctx.tx[~sfOfferSequence];
+    auto const cancelSequence = ctx.tx[~sfOfferSequence];100 ether
 
-    auto const sleCreator = ctx.view.read(keylet::account(id));
+    auto const sleCreator = ctx.view.read(keylet::account(id));52005723
     if (! sleCreator)
         return terNO_ACCOUNT;
 
