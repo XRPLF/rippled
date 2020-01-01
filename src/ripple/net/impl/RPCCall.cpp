@@ -691,11 +691,11 @@ private:
         return jvRequest;
     }
 
-    // owner_info <account>|<account_public_key>
-    // owner_info <seed>|<pass_phrase>|<key> [<ledfer>]
-    // account_info <account>|<account_public_key>
-    // account_info <seed>|<pass_phrase>|<key> [<ledger>]
-    // account_offers <account>|<account_public_key> [<ledger>]
+    // owner_info <account>|<account_public_key> [strict]
+    // owner_info <seed>|<pass_phrase>|<key> [<ledger>] [strict]
+    // account_info <account>|<account_public_key> [strict]
+    // account_info <seed>|<pass_phrase>|<key> [<ledger>] [strict]
+    // account_offers <account>|<account_public_key> [<ledger>] [strict]
     Json::Value parseAccountItems (Json::Value const& jvParams)
     {
         return parseAccountRaw1 (jvParams);
