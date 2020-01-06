@@ -703,7 +703,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     alice,
                     /*deliver*/ xrpIssue(),
                     /*limitQuality*/ boost::none,
-                    /*sendMaxIssue*/ xrpIssue(),
+                    /*sendMaxIssue*/ EUR.issue(),
                     path,
                     true,
                     false,

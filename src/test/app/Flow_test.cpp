@@ -1180,6 +1180,100 @@ struct Flow_test : public beast::unit_test::suite
             ter(temBAD_PATH));
     }
 
+    void
+    testXRPPathLoop()
+    {
+        testcase("Circular XRP");
+
+        using namespace jtx;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const USD = gw["USD"];
+        auto const EUR = gw["EUR"];
+
+        for (auto const withFix : {true, false})
+        {
+            auto const feats = [&withFix]() -> FeatureBitset {
+                if (withFix)
+                    return supported_amendments();
+                return supported_amendments() - FeatureBitset{fix1781};
+            }();
+            {
+                // Payment path starting with XRP
+                Env env(*this, feats);
+                env.fund(XRP(10000), alice, bob, gw);
+                env.trust(USD(1000), alice, bob);
+                env.trust(EUR(1000), alice, bob);
+                env(pay(gw, alice, USD(100)));
+                env(pay(gw, alice, EUR(100)));
+                env.close();
+
+                env(offer(alice, XRP(100), USD(100)), txflags(tfPassive));
+                env(offer(alice, USD(100), XRP(100)), txflags(tfPassive));
+                env(offer(alice, XRP(100), EUR(100)), txflags(tfPassive));
+                env.close();
+
+                TER const expectedTer =
+                    withFix ? TER{temBAD_PATH_LOOP} : TER{tesSUCCESS};
+                env(pay(alice, bob, EUR(1)),
+                    path(~USD, ~XRP, ~EUR),
+                    sendmax(XRP(1)),
+                    txflags(tfNoRippleDirect),
+                    ter(expectedTer));
+            }
+            pass();
+        }
+        {
+            // Payment path ending with XRP
+            Env env(*this);
+            env.fund(XRP(10000), alice, bob, gw);
+            env.trust(USD(1000), alice, bob);
+            env.trust(EUR(1000), alice, bob);
+            env(pay(gw, alice, USD(100)));
+            env(pay(gw, alice, EUR(100)));
+            env.close();
+
+            env(offer(alice, XRP(100), USD(100)), txflags(tfPassive));
+            env(offer(alice, EUR(100), XRP(100)), txflags(tfPassive));
+            env.close();
+            // EUR -> //XRP -> //USD ->XRP
+            env(pay(alice, bob, XRP(1)),
+                path(~XRP, ~USD, ~XRP),
+                sendmax(EUR(1)),
+                txflags(tfNoRippleDirect),
+                ter(temBAD_PATH_LOOP));
+        }
+        {
+            // Payment where loop is formed in the middle of the path, not on an
+            // endpoint
+            auto const JPY = gw["JPY"];
+            Env env(*this);
+            env.fund(XRP(10000), alice, bob, gw);
+            env.close();
+            env.trust(USD(1000), alice, bob);
+            env.trust(EUR(1000), alice, bob);
+            env.trust(JPY(1000), alice, bob);
+            env.close();
+            env(pay(gw, alice, USD(100)));
+            env(pay(gw, alice, EUR(100)));
+            env(pay(gw, alice, JPY(100)));
+            env.close();
+
+            env(offer(alice, USD(100), XRP(100)), txflags(tfPassive));
+            env(offer(alice, XRP(100), EUR(100)), txflags(tfPassive));
+            env(offer(alice, EUR(100), XRP(100)), txflags(tfPassive));
+            env(offer(alice, XRP(100), JPY(100)), txflags(tfPassive));
+            env.close();
+
+            env(pay(alice, bob, JPY(1)),
+                path(~XRP, ~EUR, ~XRP, ~JPY),
+                sendmax(USD(1)),
+                txflags(tfNoRippleDirect),
+                ter(temBAD_PATH_LOOP));
+        }
+    }
+
     void testWithFeats(FeatureBitset features)
     {
         using namespace jtx;
@@ -1204,6 +1298,7 @@ struct Flow_test : public beast::unit_test::suite
     void run() override
     {
         testLimitQuality();
+        testXRPPathLoop();
         testRIPD1443();
         testRIPD1449();
 
@@ -1231,7 +1326,7 @@ struct Flow_manual_test : public Flow_test
         testWithFeats(all         - flowCross - f1513);
         testWithFeats(all         - flowCross        );
         testWithFeats(all                     - f1513);
-        testWithFeats(all                                      );
+        testWithFeats(all                            );
 
         testEmptyStrand(all - f1513);
         testEmptyStrand(all        );
