@@ -25,6 +25,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/XRPAmount.h>
 #include <ripple/ledger/PaymentSandbox.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Quality.h>
 
 #include <boost/container/flat_set.hpp>
@@ -358,6 +359,18 @@ XRPEndpointStep<TDerived>::check (StrandContext const& ctx) const
     auto ter = checkFreeze (ctx.view, src, dst, xrpCurrency ());
     if (ter != tesSUCCESS)
         return ter;
+
+    if (ctx.view.rules().enabled(fix1781))
+    {
+        auto const issuesIndex = isLast_ ? 0 : 1;
+        if (!ctx.seenDirectIssues[issuesIndex].insert(xrpIssue()).second)
+        {
+            JLOG(j_.debug())
+                << "XRPEndpointStep: loop detected: Index: " << ctx.strandSize
+                << ' ' << *this;
+            return temBAD_PATH_LOOP;
+        }
+    }
 
     return tesSUCCESS;
 }
