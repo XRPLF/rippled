@@ -457,25 +457,12 @@ else ()
     src/ripple/app/paths/AccountCurrencies.cpp
     src/ripple/app/paths/Credit.cpp
     src/ripple/app/paths/Flow.cpp
-    src/ripple/app/paths/Node.cpp
     src/ripple/app/paths/PathRequest.cpp
     src/ripple/app/paths/PathRequests.cpp
-    src/ripple/app/paths/PathState.cpp
     src/ripple/app/paths/Pathfinder.cpp
     src/ripple/app/paths/RippleCalc.cpp
     src/ripple/app/paths/RippleLineCache.cpp
     src/ripple/app/paths/RippleState.cpp
-    src/ripple/app/paths/cursor/AdvanceNode.cpp
-    src/ripple/app/paths/cursor/DeliverNodeForward.cpp
-    src/ripple/app/paths/cursor/DeliverNodeReverse.cpp
-    src/ripple/app/paths/cursor/EffectiveRate.cpp
-    src/ripple/app/paths/cursor/ForwardLiquidity.cpp
-    src/ripple/app/paths/cursor/ForwardLiquidityForAccount.cpp
-    src/ripple/app/paths/cursor/Liquidity.cpp
-    src/ripple/app/paths/cursor/NextIncrement.cpp
-    src/ripple/app/paths/cursor/ReverseLiquidity.cpp
-    src/ripple/app/paths/cursor/ReverseLiquidityForAccount.cpp
-    src/ripple/app/paths/cursor/RippleLiquidity.cpp
     src/ripple/app/paths/impl/BookStep.cpp
     src/ripple/app/paths/impl/DirectStep.cpp
     src/ripple/app/paths/impl/PaySteps.cpp

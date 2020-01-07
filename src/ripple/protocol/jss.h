@@ -177,7 +177,7 @@ JSS ( converge_time_s );            // out: NetworkOPs
 JSS ( count );                      // in: AccountTx*, ValidatorList
 JSS ( counters );                   // in/out: retrieve counters
 JSS ( currency );                   // in: paths/PathRequest, STAmount
-                                    // out: paths/Node, STPathSet, STAmount,
+                                    // out: STPathSet, STAmount,
                                     //      AccountLines
 JSS ( current );                    // out: OwnerInfo
 JSS ( current_activities );
@@ -236,7 +236,7 @@ JSS ( fetch_pack );                 // out: NetworkOPs
 JSS ( first );                      // out: rpc/Version
 JSS ( finished );
 JSS ( fix_txns );                   // in: LedgerCleaner
-JSS ( flags );                      // out: paths/Node, AccountOffers,
+JSS ( flags );                      // out: AccountOffers,
                                     //      NetworkOPs
 JSS ( forward );                    // in: AccountTx
 JSS ( freeze );                     // out: AccountLines
@@ -262,7 +262,7 @@ JSS ( ident );                      // in: AccountCurrencies, AccountInfo,
 JSS ( inLedger );                   // out: tx/Transaction
 JSS ( inbound );                    // out: PeerImp
 JSS ( index );                      // in: LedgerEntry, DownloadShard
-                                    // out: PathState, STLedgerEntry,
+                                    // out: STLedgerEntry,
                                     //      LedgerEntry, TxHistory, LedgerData
                                     // field
 JSS ( info );                       // out: ServerInfo, ConsensusInfo, FetchInfo
@@ -273,7 +273,7 @@ JSS ( io_latency_ms );              // out: NetworkOPs
 JSS ( ip );                         // in: Connect, out: OverlayImpl
 JSS ( issuer );                     // in: RipplePathFind, Subscribe,
                                     //     Unsubscribe, BookOffers
-                                    // out: paths/Node, STPathSet, STAmount
+                                    // out: STPathSet, STAmount
 JSS ( job );
 JSS ( job_queue );
 JSS ( jobs );
@@ -373,7 +373,6 @@ JSS ( node_reads_hit );             // out: GetCounts
 JSS ( node_reads_total );           // out: GetCounts
 JSS ( node_writes );                // out: GetCounts
 JSS ( node_written_bytes );         // out: GetCounts
-JSS ( nodes );                      // out: PathState
 JSS ( obligations );                // out: GatewayBalances
 JSS ( offer );                      // in: LedgerEntry
 JSS ( offers );                     // out: NetworkOPs, AccountOffers, Subscribe
@@ -532,7 +531,7 @@ JSS ( txn_count );                  // out: NetworkOPs
 JSS ( txs );                        // out: TxHistory
 JSS ( type );                       // in: AccountObjects
                                     // out: NetworkOPs
-                                    //      paths/Node.cpp, OverlayImpl, Logic
+                                    //      OverlayImpl, Logic
 JSS ( type_hex );                   // out: STPathSet
 JSS ( unl );                        // out: UnlList
 JSS ( unlimited);                   // out: Connection.h

@@ -545,9 +545,8 @@ public:
         };
         using namespace test::jtx;
         auto const sa = supported_amendments();
-        testAll(sa - featureFlow - fix1373 - featureFlowCross);
-        testAll(sa               - fix1373 - featureFlowCross);
-        testAll(sa                         - featureFlowCross);
+        testAll(sa - fix1373 - featureFlowCross);
+        testAll(sa           - featureFlowCross);
         testAll(sa);
     }
 };

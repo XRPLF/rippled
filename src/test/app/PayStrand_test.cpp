@@ -622,237 +622,6 @@ struct ExistingElementPool
     }
 };
 
-struct PayStrandAllPairs_test : public beast::unit_test::suite
-{
-    // Test every combination of element type pairs on a path
-    void
-    testAllPairs(FeatureBitset features)
-    {
-        testcase("All pairs");
-        using namespace jtx;
-        using RippleCalc = ::ripple::path::RippleCalc;
-
-        ExistingElementPool eep;
-        Env env(*this, features);
-
-        eep.setupEnv(env, /*numAcc*/ 9, /*numCur*/ 6, boost::none);
-        env.close();
-
-        auto const src = eep.getAvailAccount();
-        auto const dst = eep.getAvailAccount();
-
-        RippleCalc::Input inputs;
-        inputs.defaultPathsAllowed = false;
-
-        auto callback = [&](
-            STAmount const& sendMax,
-            STAmount const& deliver,
-            std::vector<STPathElement> const& p) {
-            std::array<PaymentSandbox, 2> sbs{
-                {PaymentSandbox{env.current().get(), tapNONE},
-                 PaymentSandbox{env.current().get(), tapNONE}}};
-            std::array<RippleCalc::Output, 2> rcOutputs;
-            // pay with both env1 and env2
-            // check all result and account balances match
-            // save results so can see if run out of funds or somesuch
-            STPathSet paths;
-            paths.emplace_back(p);
-            for (auto i = 0; i < 2; ++i)
-            {
-                if (i == 0)
-                    env.app().config().features.insert(featureFlow);
-                else
-                    env.app().config().features.erase(featureFlow);
-
-                try
-                {
-                    rcOutputs[i] = RippleCalc::rippleCalculate(
-                        sbs[i],
-                        sendMax,
-                        deliver,
-                        dst,
-                        src,
-                        paths,
-                        env.app().logs(),
-                        &inputs);
-                }
-                catch (...)
-                {
-                    this->fail();
-                }
-            }
-
-            // check combinations of src and dst currencies (inc xrp)
-            // Check the results
-            auto const terMatch = [&] {
-                if (rcOutputs[0].result() == rcOutputs[1].result())
-                    return true;
-
-                // handle some know error code mismatches
-                if (p.empty() ||
-                    !(rcOutputs[0].result() == temBAD_PATH ||
-                      rcOutputs[0].result() == temBAD_PATH_LOOP))
-                    return false;
-
-                if (rcOutputs[1].result() == temBAD_PATH)
-                    return true;
-
-                if (rcOutputs[1].result() == terNO_LINE)
-                    return true;
-
-                for (auto const& pe : p)
-                {
-                    auto const t = pe.getNodeType();
-                    if ((t & STPathElement::typeAccount) &&
-                        t != STPathElement::typeAccount)
-                    {
-                        return true;
-                    }
-                }
-
-                // xrp followed by offer that doesn't specify both currency and
-                // issuer (and currency is not xrp, if specifyed)
-                if (isXRP(sendMax) &&
-                    !(p[0].hasCurrency() && isXRP(p[0].getCurrency())) &&
-                    !(p[0].hasCurrency() && p[0].hasIssuer()))
-                {
-                    return true;
-                }
-
-                for (size_t i = 0; i < p.size() - 1; ++i)
-                {
-                    auto const tCur = p[i].getNodeType();
-                    auto const tNext = p[i + 1].getNodeType();
-                    if ((tCur & STPathElement::typeCurrency) &&
-                        isXRP(p[i].getCurrency()) &&
-                        (tNext & STPathElement::typeAccount) &&
-                        !isXRP(p[i + 1].getAccountID()))
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }();
-
-            this->BEAST_EXPECT(
-                terMatch && (rcOutputs[0].result() == tesSUCCESS ||
-                             rcOutputs[0].result() == temBAD_PATH ||
-                             rcOutputs[0].result() == temBAD_PATH_LOOP));
-            if (terMatch && rcOutputs[0].result() == tesSUCCESS)
-                this->BEAST_EXPECT(eep.checkBalances(sbs[0], sbs[1]));
-        };
-
-        std::vector<STPathElement> prefix;
-        std::vector<STPathElement> suffix;
-
-        for (auto const srcAmtIsXRP : {false, true})
-        {
-            for (auto const dstAmtIsXRP : {false, true})
-            {
-                for (auto const hasPrefix : {false, true})
-                {
-                    ExistingElementPool::StateGuard esg{eep};
-                    prefix.clear();
-                    suffix.clear();
-
-                    STAmount const sendMax{
-                        srcAmtIsXRP ? xrpIssue() : Issue{eep.getAvailCurrency(),
-                                                         eep.getAvailAccount()},
-                        -1,  // (-1 == no limit)
-                        0};
-
-                    STAmount const deliver{
-                        dstAmtIsXRP ? xrpIssue() : Issue{eep.getAvailCurrency(),
-                                                         eep.getAvailAccount()},
-                        1,
-                        0};
-
-                    if (hasPrefix)
-                    {
-                        for(auto const e0IsAccount : {false, true})
-                        {
-                            for (auto const e1IsAccount : {false, true})
-                            {
-                                ExistingElementPool::StateGuard presg{eep};
-                                prefix.clear();
-                                auto pushElement =
-                                    [&prefix, &eep](bool isAccount) mutable {
-                                        if (isAccount)
-                                            prefix.emplace_back(
-                                                eep.getAvailAccount().id(),
-                                                boost::none,
-                                                boost::none);
-                                        else
-                                            prefix.emplace_back(
-                                                boost::none,
-                                                eep.getAvailCurrency(),
-                                                eep.getAvailAccount().id());
-                                    };
-                                pushElement(e0IsAccount);
-                                pushElement(e1IsAccount);
-                                boost::optional<AccountID> existingAcc;
-                                boost::optional<Currency> existingCur;
-                                boost::optional<AccountID> existingIss;
-                                if (e0IsAccount)
-                                {
-                                    existingAcc = prefix[0].getAccountID();
-                                }
-                                else
-                                {
-                                    existingIss = prefix[0].getIssuerID();
-                                    existingCur = prefix[0].getCurrency();
-                                }
-                                if (e1IsAccount)
-                                {
-                                    if (!existingAcc)
-                                        existingAcc = prefix[1].getAccountID();
-                                }
-                                else
-                                {
-                                    if (!existingIss)
-                                        existingIss = prefix[1].getIssuerID();
-                                    if (!existingCur)
-                                        existingCur = prefix[1].getCurrency();
-                                }
-                                eep.for_each_element_pair(
-                                    sendMax,
-                                    deliver,
-                                    prefix,
-                                    suffix,
-                                    existingAcc,
-                                    existingCur,
-                                    existingIss,
-                                    callback);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        eep.for_each_element_pair(
-                            sendMax,
-                            deliver,
-                            prefix,
-                            suffix,
-                            /*existingAcc*/ boost::none,
-                            /*existingCur*/ boost::none,
-                            /*existingIss*/ boost::none,
-                            callback);
-                    }
-                }
-            }
-        }
-    }
-    void
-    run() override
-    {
-        auto const sa = jtx::supported_amendments();
-        testAllPairs(sa - featureFlowCross);
-        testAllPairs(sa);
-    }
-};
-
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(PayStrandAllPairs, app, ripple, 12);
-
 struct PayStrand_test : public beast::unit_test::suite
 {
     void
@@ -1379,7 +1148,7 @@ struct PayStrand_test : public beast::unit_test::suite
             env(offer(bob, USD(100), XRP(100)), txflags(tfPassive));
 
             auto const expectedResult = [&] () -> TER {
-                if (features[featureFlow] && !features[fix1373])
+                if (!features[fix1373])
                     return tesSUCCESS;
                 return temBAD_PATH_LOOP;
             }();
@@ -1480,13 +1249,12 @@ struct PayStrand_test : public beast::unit_test::suite
         testToStrand(sa           - featureFlowCross);
         testToStrand(sa);
 
-        testRIPD1373(sa - featureFlow - fix1373 - featureFlowCross);
-        testRIPD1373(sa                         - featureFlowCross);
+        testRIPD1373(sa - fix1373 - featureFlowCross);
+        testRIPD1373(sa           - featureFlowCross);
         testRIPD1373(sa);
 
-        testLoop(sa - featureFlow - fix1373 - featureFlowCross);
-        testLoop(sa               - fix1373 - featureFlowCross);
-        testLoop(sa                         - featureFlowCross);
+        testLoop(sa - fix1373 - featureFlowCross);
+        testLoop(sa           - featureFlowCross);
         testLoop(sa);
 
         testNoAccount(sa);

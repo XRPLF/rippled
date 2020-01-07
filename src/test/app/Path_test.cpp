@@ -1031,84 +1031,6 @@ public:
         BEAST_EXPECT(same(st, stpath(G3, IPE(xrpIssue()))));
     }
 
-    void path_find_03()
-    {
-        testcase("Path Find: CNY");
-        using namespace jtx;
-        Env env{*this,
-                supported_amendments().reset(featureFlow)};
-
-        Account A1 {"A1"};
-        Account A2 {"A2"};
-        Account A3 {"A3"};
-        Account SRC {"SRC"};
-        Account GATEWAY_DST {"GATEWAY_DST"};
-        Account MONEY_MAKER_1 {"MONEY_MAKER_1"};
-        Account MONEY_MAKER_2 {"MONEY_MAKER_2"};
-
-        env.fund(XRP(4999.999898), SRC);
-        env.fund(XRP(10846.168060), GATEWAY_DST);
-        env.fund(XRP(4291.430036), MONEY_MAKER_1);
-        env.fund(XRP(106839.375770), MONEY_MAKER_2);
-        env.fund(XRP(1240.997150), A1);
-        env.fund(XRP(14115.046893), A2);
-        env.fund(XRP(512087.883181), A3);
-        env.close();
-
-        env.trust(MONEY_MAKER_1["CNY"](1001), MONEY_MAKER_2);
-        env.trust(GATEWAY_DST["CNY"](1001), MONEY_MAKER_2);
-        env.trust(MONEY_MAKER_1["CNY"](1000000), A1);
-        env.trust(MONEY_MAKER_1["BTC"](10000), A1);
-        env.trust(GATEWAY_DST["USD"](1000), A1);
-        env.trust(GATEWAY_DST["CNY"](1000), A1);
-        env.trust(MONEY_MAKER_1["CNY"](3000), A2);
-        env.trust(GATEWAY_DST["CNY"](3000), A2);
-        env.trust(MONEY_MAKER_1["CNY"](10000), A3);
-        env.trust(GATEWAY_DST["CNY"](10000), A3);
-        env.close();
-
-        env(pay(MONEY_MAKER_1, MONEY_MAKER_2,
-            STAmount{ MONEY_MAKER_1["CNY"].issue(), UINT64_C(3599), -13}));
-        env(pay(GATEWAY_DST, MONEY_MAKER_2,
-            GATEWAY_DST["CNY"](137.6852546843001)));
-        env(pay(MONEY_MAKER_1, A1,
-            STAmount{ MONEY_MAKER_1["CNY"].issue(), UINT64_C(119761), -13}));
-        env(pay(GATEWAY_DST, A1, GATEWAY_DST["CNY"](33.047994)));
-        env(pay(MONEY_MAKER_1, A2, MONEY_MAKER_1["CNY"](209.3081873019994)));
-        env(pay(GATEWAY_DST, A2, GATEWAY_DST["CNY"](694.6251706504019)));
-        env(pay(MONEY_MAKER_1, A3, MONEY_MAKER_1["CNY"](23.617050013581)));
-        env(pay(GATEWAY_DST, A3, GATEWAY_DST["CNY"](70.999614649799)));
-        env.close();
-
-        env(offer(MONEY_MAKER_2, XRP(1), GATEWAY_DST["CNY"](1)));
-        env(offer(MONEY_MAKER_2, GATEWAY_DST["CNY"](1), XRP(1)));
-        env(offer(MONEY_MAKER_2, GATEWAY_DST["CNY"](318000), XRP(53000)));
-        env(offer(MONEY_MAKER_2, XRP(209), MONEY_MAKER_2["CNY"](4.18)));
-        env(offer(MONEY_MAKER_2, MONEY_MAKER_1["CNY"](990000), XRP(10000)));
-        env(offer(MONEY_MAKER_2, MONEY_MAKER_1["CNY"](9990000), XRP(10000)));
-        env(offer(MONEY_MAKER_2, GATEWAY_DST["CNY"](8870000), XRP(10000)));
-        env(offer(MONEY_MAKER_2, XRP(232), MONEY_MAKER_2["CNY"](5.568)));
-        env(offer(A2, XRP(2000), MONEY_MAKER_1["CNY"](66.8)));
-        env(offer(A2, XRP(1200), GATEWAY_DST["CNY"](42)));
-        env(offer(A2, MONEY_MAKER_1["CNY"](43.2), XRP(900)));
-        env(offer(A3, MONEY_MAKER_1["CNY"](2240), XRP(50000)));
-
-        STPathSet st;
-        STAmount sa, da;
-
-        auto const& send_amt = GATEWAY_DST["CNY"](10.1);
-        std::tie(st, sa, da) = find_paths(env, SRC, GATEWAY_DST, send_amt,
-            boost::none, xrpCurrency());
-        BEAST_EXPECT(equal(da, send_amt));
-        BEAST_EXPECT(equal(sa, XRP(288.571429)));
-        BEAST_EXPECT(same(st,
-            stpath(IPE(MONEY_MAKER_1["CNY"]), MONEY_MAKER_1, A3),
-            stpath(IPE(MONEY_MAKER_1["CNY"]), MONEY_MAKER_1, MONEY_MAKER_2),
-            stpath(IPE(MONEY_MAKER_1["CNY"]), MONEY_MAKER_1, A2),
-            stpath(IPE(MONEY_MAKER_1["CNY"]), MONEY_MAKER_1, A1)
-        ));
-    }
-
     void path_find_04()
     {
         testcase("Path Find: Bitstamp and SnapSwap, liquidity with no offers");
@@ -1393,7 +1315,6 @@ public:
 
         path_find_01();
         path_find_02();
-        path_find_03();
         path_find_04();
         path_find_05();
         path_find_06();

@@ -212,9 +212,6 @@ struct Flow_test : public beast::unit_test::suite
         for (auto bobDanQIn : {80, 100, 120})
             for (auto bobAliceQOut : {80, 100, 120})
             {
-                if (!features[featureFlow] && bobDanQIn < 100 &&
-                    bobAliceQOut < 100)
-                    continue;  // Bug in flow v1
                 Env env(*this, features);
                 env.fund(XRP(10000), alice, bob, carol, dan);
                 env(trust(bob, USDD(100)), qualityInPercent(bobDanQIn));
@@ -728,20 +725,21 @@ struct Flow_test : public beast::unit_test::suite
         Account const bob ("bob");
         Account const carol ("carol");
 
-        Env env (*this, FeatureBitset{});
+        {
+            Env env (*this, supported_amendments());
 
-        env.fund (XRP(10000), alice, bob, carol, gw);
+            env.fund (XRP(10000), alice, bob, carol, gw);
 
-        env.trust (USD(100), alice, bob, carol);
-        env (pay (gw, bob, USD (100)));
-        env (offer (bob, XRP (50), USD (50)));
-        env (offer (bob, XRP (100), USD (50)));
+            env.trust (USD(100), alice, bob, carol);
+            env (pay (gw, bob, USD (100)));
+            env (offer (bob, XRP (50), USD (50)));
+            env (offer (bob, XRP (100), USD (50)));
 
-        env (pay (alice, carol, USD (100)), path (~USD), sendmax (XRP (100)),
-            txflags (tfNoRippleDirect | tfPartialPayment | tfLimitQuality),
-            ter (tesSUCCESS));
+            env (pay (alice, carol, USD (100)), path (~USD), sendmax (XRP (100)),
+                 txflags (tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
 
-        env.require (balance (carol, USD (50)));
+            env.require (balance (carol, USD (50)));
+        }
     }
 
     // Helper function that returns the reserve on an account based on
@@ -1189,9 +1187,6 @@ struct Flow_test : public beast::unit_test::suite
 
         testLineQuality(features);
         testFalseDry(features);
-        // Only do the rest of the tests if featureFlow is enabled.
-        if (!features[featureFlow])
-            return;
         testDirectStep(features);
         testBookStep(features);
         testDirectStep(features | ownerPaysFee);
@@ -1214,9 +1209,8 @@ struct Flow_test : public beast::unit_test::suite
 
         using namespace jtx;
         auto const sa = supported_amendments();
-        testWithFeats(sa - featureFlow - fix1373 - featureFlowCross);
-        testWithFeats(sa               - fix1373 - featureFlowCross);
-        testWithFeats(sa                         - featureFlowCross);
+        testWithFeats(sa - fix1373 - featureFlowCross);
+        testWithFeats(sa           - featureFlowCross);
         testWithFeats(sa);
         testEmptyStrand(sa);
     }
@@ -1228,22 +1222,19 @@ struct Flow_manual_test : public Flow_test
     {
         using namespace jtx;
         auto const all = supported_amendments();
-        FeatureBitset const flow{featureFlow};
         FeatureBitset const f1373{fix1373};
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const f1513{fix1513};
 
-        testWithFeats(all                 - flow - f1373 - flowCross - f1513);
-        testWithFeats(all                 - flow - f1373 - flowCross        );
-        testWithFeats(all                        - f1373 - flowCross - f1513);
-        testWithFeats(all                        - f1373 - flowCross        );
-        testWithFeats(all                                - flowCross - f1513);
-        testWithFeats(all                                - flowCross        );
-        testWithFeats(all                                            - f1513);
-        testWithFeats(all                                                      );
+        testWithFeats(all - f1373 - flowCross - f1513);
+        testWithFeats(all - f1373 - flowCross        );
+        testWithFeats(all         - flowCross - f1513);
+        testWithFeats(all         - flowCross        );
+        testWithFeats(all                     - f1513);
+        testWithFeats(all                                      );
 
-        testEmptyStrand(all                 - f1513);
-        testEmptyStrand(all                        );
+        testEmptyStrand(all - f1513);
+        testEmptyStrand(all        );
     }
 };
 

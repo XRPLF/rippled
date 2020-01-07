@@ -95,8 +95,8 @@ struct BookDirs_test : public beast::unit_test::suite
     {
         using namespace jtx;
         auto const sa = supported_amendments();
-        test_bookdir(sa - featureFlow - fix1373 - featureFlowCross);
-        test_bookdir(sa                         - featureFlowCross);
+        test_bookdir(sa - fix1373 - featureFlowCross);
+        test_bookdir(sa           - featureFlowCross);
         test_bookdir(sa);
     }
 };
