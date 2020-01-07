@@ -3568,9 +3568,7 @@ public:
             env (trust (ann, D_BUX(100)));
             env.close();
 
-            // Determine which TEC code we expect.
-            TER const tecExpect =
-                features[featureFlow] ? TER {temBAD_PATH} : TER {tecPATH_DRY};
+            TER const tecExpect{temBAD_PATH};
 
             // This payment caused the assert.
             env (pay (ann, ann, D_BUX(30)),
@@ -4882,28 +4880,21 @@ class Offer_manual_test : public Offer_test
     {
         using namespace jtx;
         FeatureBitset const all{supported_amendments()};
-        FeatureBitset const flow{featureFlow};
         FeatureBitset const f1373{fix1373};
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const f1513{fix1513};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
 
-        testAll(all                - flow - f1373 - flowCross - f1513);
-        testAll(all                - flow - f1373 - flowCross        );
-        testAll(all                - flow - f1373             - f1513);
-        testAll(all                - flow - f1373                    );
-        testAll(all                       - f1373 - flowCross - f1513);
-        testAll(all                       - f1373 - flowCross        );
-        testAll(all                       - f1373             - f1513);
-        testAll(all                       - f1373                    );
-        testAll(all                               - flowCross - f1513);
-        testAll(all                               - flowCross        );
-        testAll(all                                           - f1513);
-        testAll(all                                                  );
+        testAll(all - f1373 - flowCross - f1513);
+        testAll(all - f1373 - flowCross        );
+        testAll(all - f1373             - f1513);
+        testAll(all - f1373                    );
+        testAll(all         - flowCross - f1513);
+        testAll(all         - flowCross        );
+        testAll(all                     - f1513);
+        testAll(all                            );
 
-        testAll(all                - flow - f1373 - flowCross - takerDryOffer);
-        testAll(all                - flow - f1373             - takerDryOffer);
-        testAll(all                       - f1373 - flowCross - takerDryOffer);
+        testAll(all - f1373 - flowCross - takerDryOffer);
     }
 };
 

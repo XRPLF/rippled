@@ -154,8 +154,8 @@ public:
     {
         using namespace jtx;
         auto const sa = supported_amendments();
-        testGWB(sa - featureFlow - fix1373 - featureFlowCross);
-        testGWB(sa                         - featureFlowCross);
+        testGWB(sa - fix1373 - featureFlowCross);
+        testGWB(sa           - featureFlowCross);
         testGWB(sa);
     }
 };

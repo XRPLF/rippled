@@ -80,7 +80,6 @@ struct SetAuth_test : public beast::unit_test::suite
     {
         using namespace jtx;
         auto const sa = supported_amendments();
-        testAuth(sa - featureTrustSetAuth - featureFlow - fix1373 - featureFlowCross);
         testAuth(sa - featureTrustSetAuth - fix1373 - featureFlowCross);
         testAuth(sa - featureTrustSetAuth - featureFlowCross);
         testAuth(sa - featureTrustSetAuth);
