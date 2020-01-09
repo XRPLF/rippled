@@ -20,8 +20,8 @@
 #ifndef RIPPLE_APP_PATHS_RIPPLECALC_H_INCLUDED
 #define RIPPLE_APP_PATHS_RIPPLECALC_H_INCLUDED
 
-#include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/basics/Log.h>
+#include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/TER.h>
 
@@ -68,23 +68,24 @@ public:
         // could have been removed but were not because the payment fails. It is
         // useful for offer crossing, which does remove the offers.
         boost::container::flat_set<uint256> removableOffers;
+
     private:
         TER calculationResult_ = temUNKNOWN;
 
     public:
-        TER result () const
+        TER
+        result() const
         {
             return calculationResult_;
         }
-        void setResult (TER const value)
+        void
+        setResult(TER const value)
         {
             calculationResult_ = value;
         }
-
     };
 
-    static
-    Output
+    static Output
     rippleCalculate(
         PaymentSandbox& view,
 
@@ -95,7 +96,7 @@ public:
         //      XRP: xrpAccount()
         //  non-XRP: uSrcAccountID (for any issuer) or another account with
         //           trust node.
-        STAmount const& saMaxAmountReq,             // --> -1 = no limit.
+        STAmount const& saMaxAmountReq,  // --> -1 = no limit.
 
         // Issuer:
         //      XRP: xrpAccount()
@@ -122,7 +123,7 @@ public:
     boost::container::flat_set<uint256> permanentlyUnfundedOffers_;
 };
 
-} // path
-} // ripple
+}  // namespace path
+}  // namespace ripple
 
 #endif

@@ -28,7 +28,8 @@
 namespace ripple {
 namespace path {
 
-RippleCalc::Output RippleCalc::rippleCalculate (
+RippleCalc::Output
+RippleCalc::rippleCalculate(
     PaymentSandbox& view,
 
     // Compute paths using this ledger entry set.  Up to caller to actually
@@ -38,7 +39,7 @@ RippleCalc::Output RippleCalc::rippleCalculate (
     //      XRP: xrpAccount()
     //  non-XRP: uSrcAccountID (for any issuer) or another account with
     //           trust node.
-    STAmount const& saMaxAmountReq,             // --> -1 = no limit.
+    STAmount const& saMaxAmountReq,  // --> -1 = no limit.
 
     // Issuer:
     //      XRP: xrpAccount()
@@ -56,42 +57,55 @@ RippleCalc::Output RippleCalc::rippleCalculate (
     Input const* const pInputs)
 {
     Output flowOut;
-    PaymentSandbox flowSB (&view);
-    auto j = l.journal ("Flow");
+    PaymentSandbox flowSB(&view);
+    auto j = l.journal("Flow");
     {
-        bool defaultPaths = true;
-        bool partialPayment = false;
-        boost::optional<Quality> limitQuality;
-        boost::optional<STAmount> sendMax;
+        bool const defaultPaths =
+            !pInputs ? true : pInputs->defaultPathsAllowed;
 
-        if (pInputs)
-        {
-            defaultPaths = pInputs->defaultPathsAllowed;
-            partialPayment = pInputs->partialPaymentAllowed;
-            if (pInputs->limitQuality && saMaxAmountReq > beast::zero)
-                limitQuality.emplace (
-                    Amounts (saMaxAmountReq, saDstAmountReq));
-        }
+        bool const partialPayment =
+            !pInputs ? false : pInputs->partialPaymentAllowed;
 
-        if (saMaxAmountReq >= beast::zero ||
-            saMaxAmountReq.getCurrency () != saDstAmountReq.getCurrency () ||
-            saMaxAmountReq.getIssuer () != uSrcAccountID)
-        {
-            sendMax.emplace (saMaxAmountReq);
-        }
+        auto const limitQuality = [&]() -> boost::optional<Quality> {
+            if (pInputs && pInputs->limitQuality &&
+                saMaxAmountReq > beast::zero)
+                return Quality{Amounts(saMaxAmountReq, saDstAmountReq)};
+            return boost::none;
+        }();
+
+        auto const sendMax = [&]() -> boost::optional<STAmount> {
+            if (saMaxAmountReq >= beast::zero ||
+                saMaxAmountReq.getCurrency() != saDstAmountReq.getCurrency() ||
+                saMaxAmountReq.getIssuer() != uSrcAccountID)
+            {
+                return saMaxAmountReq;
+            }
+            return boost::none;
+        }();
+
+        bool const ownerPaysTransferFee =
+            view.rules().enabled(featureOwnerPaysFee);
 
         try
         {
-            bool const ownerPaysTransferFee =
-                    view.rules ().enabled (featureOwnerPaysFee);
-            flowOut = flow (flowSB, saDstAmountReq, uSrcAccountID,
-                uDstAccountID, spsPaths, defaultPaths, partialPayment,
-                ownerPaysTransferFee, /* offerCrossing */ false, limitQuality, sendMax, j,
+            flowOut = flow(
+                flowSB,
+                saDstAmountReq,
+                uSrcAccountID,
+                uDstAccountID,
+                spsPaths,
+                defaultPaths,
+                partialPayment,
+                ownerPaysTransferFee,
+                /* offerCrossing */ false,
+                limitQuality,
+                sendMax,
+                j,
                 nullptr);
         }
         catch (std::exception& e)
         {
-            JLOG (j.error()) << "Exception from flow: " << e.what ();
+            JLOG(j.error()) << "Exception from flow: " << e.what();
 
             // return a tec so the tx is stored
             path::RippleCalc::Output exceptResult;
@@ -100,17 +114,17 @@ RippleCalc::Output RippleCalc::rippleCalculate (
         }
     }
 
-    j.debug () << "RippleCalc Result> " <<
-            " actualIn: " << flowOut.actualAmountIn <<
-            ", actualOut: " << flowOut.actualAmountOut <<
-            ", result: " << flowOut.result () <<
-            ", dstAmtReq: " << saDstAmountReq <<
-            ", sendMax: " << saMaxAmountReq <<
-            ", algo: " << "V2";
+    j.debug() << "RippleCalc Result> "
+              << " actualIn: " << flowOut.actualAmountIn
+              << ", actualOut: " << flowOut.actualAmountOut
+              << ", result: " << flowOut.result()
+              << ", dstAmtReq: " << saDstAmountReq
+              << ", sendMax: " << saMaxAmountReq << ", algo: "
+              << "V2";
 
     flowSB.apply(view);
     return flowOut;
 }
 
-} // path
-} // ripple
+}  // namespace path
+}  // namespace ripple
