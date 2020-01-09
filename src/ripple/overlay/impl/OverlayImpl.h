@@ -460,35 +460,50 @@ private:
 private:
     struct Stats
     {
+
         template <class Handler>
         Stats (Handler const& handler, beast::insight::Collector::ptr const& collector)
-            : hook (collector->make_hook (handler))
-            , bytesIn(collector->make_counter("Overlay","Bytes_In"))
-            , bytesOut(collector->make_counter("Overlay","Bytes_Out"))
-            , messagesIn(collector->make_counter("Overlay","Messages_In"))
-            , messagesOut(collector->make_counter("Overlay","Messages_Out"))
-            { }
+            : hook (collector->make_hook (handler)) 
+            { 
+                mcollector=collector;
+            }
 
         beast::insight::Hook hook;
-        beast::insight::Counter bytesIn;
-        beast::insight::Counter bytesOut;
-        beast::insight::Counter messagesIn;
-        beast::insight::Counter messagesOut;
+        std::vector<beast::insight::Gauge> trafficGauges;
+        beast::insight::Collector::ptr mcollector;
+        
     };
-
+    
     Stats m_stats;
 
 private:
     void collect_metrics()
     {   
         std::lock_guard lock (mutex_);
+
         auto const stats = m_traffic.getCounts();
-        for (auto const& i : stats)
-        {
-            m_stats.bytesIn += i.bytesIn;
-            m_stats.bytesOut += i.bytesOut;
-            m_stats.messagesIn += i.messagesIn;
-            m_stats.messagesOut += i.messagesOut;
+        auto const stats_names = m_traffic.getMonNames();
+
+        if(m_stats.trafficGauges.empty()){
+            for (auto const& i : stats_names)
+            {   
+                beast::insight::Gauge bytesIn(m_stats.mcollector->make_gauge(i,"Bytes_In"));
+                beast::insight::Gauge bytesOut(m_stats.mcollector->make_gauge(i,"Bytes_Out"));
+                beast::insight::Gauge messagesIn(m_stats.mcollector->make_gauge(i,"Messages_In"));
+                beast::insight::Gauge messagesOut(m_stats.mcollector->make_gauge(i,"Messages_Out"));
+
+                m_stats.trafficGauges.push_back(bytesIn);
+                m_stats.trafficGauges.push_back(bytesOut);
+                m_stats.trafficGauges.push_back(messagesIn);
+                m_stats.trafficGauges.push_back(messagesOut);
+            }
+        }
+
+        for (int i =0; i<4*(ripple::TrafficCount::category::unknown + 1); i+=4){
+            m_stats.trafficGauges[i] = stats[i/4].bytesIn;
+            m_stats.trafficGauges[i+1] = stats[i/4].bytesOut;
+            m_stats.trafficGauges[i+2] = stats[i/4].messagesIn;
+            m_stats.trafficGauges[i+3] = stats[i/4].messagesOut;
         }
     }
 };
