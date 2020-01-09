@@ -55,12 +55,8 @@ RippleCalc::Output RippleCalc::rippleCalculate (
     Logs& l,
     Input const* const pInputs)
 {
-    auto const inNative = saMaxAmountReq.native();
-    auto const outNative = saDstAmountReq.native();
-
-    Output flowV2Out;
-    PaymentSandbox flowV2SB (&view);
-    detail::FlowDebugInfo flowV2FlowDebugInfo (inNative, outNative);
+    Output flowOut;
+    PaymentSandbox flowSB (&view);
     auto j = l.journal ("Flow");
     {
         bool defaultPaths = true;
@@ -88,8 +84,7 @@ RippleCalc::Output RippleCalc::rippleCalculate (
         {
             bool const ownerPaysTransferFee =
                     view.rules ().enabled (featureOwnerPaysFee);
-            auto const timeIt = flowV2FlowDebugInfo.timeBlock ("main");
-            flowV2Out = flow (flowV2SB, saDstAmountReq, uSrcAccountID,
+            flowOut = flow (flowSB, saDstAmountReq, uSrcAccountID,
                 uDstAccountID, spsPaths, defaultPaths, partialPayment,
                 ownerPaysTransferFee, /* offerCrossing */ false, limitQuality, sendMax, j,
                 nullptr);
@@ -97,44 +92,24 @@ RippleCalc::Output RippleCalc::rippleCalculate (
         catch (std::exception& e)
         {
             JLOG (j.error()) << "Exception from flow: " << e.what ();
-            {
-                // return a tec so the tx is stored
-                path::RippleCalc::Output exceptResult;
-                exceptResult.setResult(tecINTERNAL);
-                return exceptResult;
-            }
+
+            // return a tec so the tx is stored
+            path::RippleCalc::Output exceptResult;
+            exceptResult.setResult(tecINTERNAL);
+            return exceptResult;
         }
     }
 
-    if (j.debug())
-    {
-        using BalanceDiffs = detail::BalanceDiffs;
-        auto logResult = [&](std::string const& algoName,
-            Output const& result,
-            detail::FlowDebugInfo const& flowDebugInfo,
-            boost::optional<BalanceDiffs> const& balanceDiffs,
-            bool outputPassInfo,
-            bool outputBalanceDiffs) {
-                j.debug () << "RippleCalc Result> " <<
-                " actualIn: " << result.actualAmountIn <<
-                ", actualOut: " << result.actualAmountOut <<
-                ", result: " << result.result () <<
-                ", dstAmtReq: " << saDstAmountReq <<
-                ", sendMax: " << saMaxAmountReq <<
-                (outputBalanceDiffs && balanceDiffs
-                 ? ", " + detail::balanceDiffsToString(balanceDiffs)  : "") <<
-                ", algo: " << algoName;
-        };
-        bool outputPassInfo = false;
-        bool outputBalanceDiffs = false;
-        boost::optional<BalanceDiffs> bdV2;
+    j.debug () << "RippleCalc Result> " <<
+            " actualIn: " << flowOut.actualAmountIn <<
+            ", actualOut: " << flowOut.actualAmountOut <<
+            ", result: " << flowOut.result () <<
+            ", dstAmtReq: " << saDstAmountReq <<
+            ", sendMax: " << saMaxAmountReq <<
+            ", algo: " << "V2";
 
-        logResult ("V2", flowV2Out, flowV2FlowDebugInfo, bdV2,
-            outputPassInfo, outputBalanceDiffs);
-    }
-
-    flowV2SB.apply(view);
-    return flowV2Out;
+    flowSB.apply(view);
+    return flowOut;
 }
 
 } // path
