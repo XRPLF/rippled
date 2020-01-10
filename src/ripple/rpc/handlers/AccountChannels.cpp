@@ -77,8 +77,8 @@ Json::Value doAccountChannels (RPC::JsonContext& context)
     std::string strIdent (params[jss::account].asString ());
     AccountID accountID;
 
-    if (auto const actResult = RPC::accountFromString (accountID, strIdent))
-        return actResult;
+    if (auto const err = RPC::accountFromString (accountID, strIdent))
+        return err;
 
     if (! ledger->exists(keylet::account (accountID)))
         return rpcError (rpcACT_NOT_FOUND);
@@ -91,8 +91,8 @@ Json::Value doAccountChannels (RPC::JsonContext& context)
     AccountID raDstAccount;
     if (hasDst)
     {
-        if (auto const actResult = RPC::accountFromString (raDstAccount, strDst))
-            return actResult;
+        if (auto const err = RPC::accountFromString (raDstAccount, strDst))
+            return err;
     }
 
     unsigned int limit;
@@ -108,44 +108,46 @@ Json::Value doAccountChannels (RPC::JsonContext& context)
         AccountID const& raDstAccount;
     };
     VisitData visitData = {{}, accountID, hasDst, raDstAccount};
-    unsigned int reserve (limit);
+    visitData.items.reserve(limit+1);
     uint256 startAfter;
     std::uint64_t startHint;
 
     if (params.isMember (jss::marker))
     {
-        // We have a start point. Use limit - 1 from the result and use the
-        // very last one for the resume.
-        Json::Value const& marker (params[jss::marker]);
+        Json::Value const& marker(params[jss::marker]);
 
-        if (! marker.isString ())
-            return RPC::expected_field_error (jss::marker, "string");
+        if (!marker.isString())
+            return RPC::expected_field_error(jss::marker, "string");
 
-        startAfter.SetHex (marker.asString ());
+        if (!startAfter.SetHex(marker.asString()))
+        {
+            return rpcError(rpcINVALID_PARAMS);
+        }
+
         auto const sleChannel = ledger->read({ltPAYCHAN, startAfter});
 
-        if (! sleChannel)
-            return rpcError (rpcINVALID_PARAMS);
+        if (!sleChannel)
+            return rpcError(rpcINVALID_PARAMS);
 
-        if (sleChannel->getFieldAmount (sfLowLimit).getIssuer () == accountID)
-            startHint = sleChannel->getFieldU64 (sfLowNode);
-        else if (sleChannel->getFieldAmount (sfHighLimit).getIssuer () == accountID)
-            startHint = sleChannel->getFieldU64 (sfHighNode);
+
+        if (!visitData.hasDst ||
+            visitData.raDstAccount == (*sleChannel)[sfDestination])
+        {
+            visitData.items.emplace_back(sleChannel);
+            startHint = sleChannel->getFieldU64(sfOwnerNode);
+        }
         else
-            return rpcError (rpcINVALID_PARAMS);
-
-        addChannel (jsonChannels, *sleChannel);
-        visitData.items.reserve (reserve);
+        {
+            return rpcError(rpcINVALID_PARAMS);
+        }
     }
     else
     {
         startHint = 0;
-        // We have no start point, limit should be one higher than requested.
-        visitData.items.reserve (++reserve);
     }
 
-    if (! forEachItemAfter(*ledger, accountID,
-            startAfter, startHint, reserve,
+    if (!forEachItemAfter(*ledger, accountID, startAfter, startHint,
+                          limit-visitData.items.size()+1,
         [&visitData](std::shared_ptr<SLE const> const& sleCur)
         {
 
@@ -163,7 +165,7 @@ Json::Value doAccountChannels (RPC::JsonContext& context)
         return rpcError (rpcINVALID_PARAMS);
     }
 
-    if (visitData.items.size () == reserve)
+    if (visitData.items.size () == limit+1)
     {
         result[jss::limit] = limit;
 
