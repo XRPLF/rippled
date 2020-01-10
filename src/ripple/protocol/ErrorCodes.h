@@ -138,6 +138,16 @@ enum error_code_i
     rpcLAST = rpcINVALID_LGR_RANGE // rpcLAST should always equal the last code.=
 };
 
+/** Codes returned in the `warnings` array of certain RPC commands.
+
+    These values need to remain stable.
+*/
+enum warning_code_i
+{
+    warnRPC_UNSUPPORTED_MAJORITY    = 1001,
+    warnRPC_AMENDMENT_BLOCKED       = 1002,
+};
+
 //------------------------------------------------------------------------------
 
 // VFALCO NOTE these should probably not be in the RPC namespace.

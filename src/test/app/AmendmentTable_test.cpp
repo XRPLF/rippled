@@ -87,6 +87,7 @@ private:
     std::vector<std::string> const m_set2;
     std::vector<std::string> const m_set3;
     std::vector<std::string> const m_set4;
+    std::vector<std::string> const m_set5;
 
     Section const emptySection;
 
@@ -98,6 +99,7 @@ public:
         , m_set2 (createSet (2, 12))
         , m_set3 (createSet (3, 12))
         , m_set4 (createSet (4, 12))
+        , m_set5 (createSet (5, 12))
         , journal ("AmendmentTable_test", *this)
     {
     }
@@ -167,6 +169,8 @@ public:
         for (auto const& a : m_set3)
             BEAST_EXPECT(!table->find (a));
         for (auto const& a : m_set4)
+            BEAST_EXPECT(!table->find (a));
+        for (auto const& a : m_set5)
             BEAST_EXPECT(!table->find (a));
     }
 
@@ -283,6 +287,7 @@ public:
         track (m_set2);
         track (m_set3);
         track (m_set4);
+        track (m_set5);
 
         for (auto const& a : exclude)
             state.erase(a);
@@ -304,6 +309,7 @@ public:
         enabled.insert (amendmentId(m_set2[0]));
         enabled.insert (amendmentId(m_set3[0]));
         enabled.insert (amendmentId(m_set4[0]));
+        enabled.insert (amendmentId(m_set5[0]));
 
         // Get the state before, excluding the items we'll change:
         auto const pre_state = getState (table.get(), enabled);
@@ -741,14 +747,31 @@ public:
     {
         testcase ("hasUnsupportedEnabled");
 
-        auto table = makeTable(1);
+        using namespace std::chrono_literals;
+
+        int constexpr w = 1;
+        auto table = makeTable(w);
         BEAST_EXPECT(! table->hasUnsupportedEnabled());
+        BEAST_EXPECT(! table->firstUnsupportedExpected());
 
         std::set <uint256> enabled;
+        majorityAmendments_t majority;
         std::for_each(m_set4.begin(), m_set4.end(),
             [&enabled](auto const &s){ enabled.insert(amendmentId(s)); });
-        table->doValidatedLedger(1, enabled);
+        table->doValidatedLedger(1, enabled, majority);
         BEAST_EXPECT(table->hasUnsupportedEnabled());
+        BEAST_EXPECT(!table->firstUnsupportedExpected());
+        NetClock::duration t{1000s};
+        std::for_each(
+            m_set5.begin(), m_set5.end(), [&majority, &t](auto const& s) {
+                majority[amendmentId(s)] = NetClock::time_point{--t};
+            });
+        table->doValidatedLedger(1, enabled, majority);
+        BEAST_EXPECT(table->hasUnsupportedEnabled());
+        BEAST_EXPECT(
+            table->firstUnsupportedExpected() &&
+            *table->firstUnsupportedExpected() ==
+                NetClock::time_point{t} + weeks{w});
     }
 
     void run () override

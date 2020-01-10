@@ -158,6 +158,10 @@ protected:
 
     // True if an unsupported amendment is enabled
     bool unsupportedEnabled_;
+    // Unset if no unsupported amendments reach majority,
+    // else set to the earliest time an unsupported amendment
+    // will be enabled.
+    boost::optional<NetClock::time_point> firstUnsupportedExpected_;
 
     beast::Journal const j_;
 
@@ -190,15 +194,19 @@ public:
     bool isSupported (uint256 const& amendment) override;
 
     bool hasUnsupportedEnabled () override;
+    boost::optional<NetClock::time_point>
+    firstUnsupportedExpected() override;
 
     Json::Value getJson (int) override;
     Json::Value getJson (uint256 const&) override;
 
     bool needValidatedLedger (LedgerIndex seq) override;
 
-    void doValidatedLedger (
+    void
+    doValidatedLedger(
         LedgerIndex seq,
-        std::set<uint256> const& enabled) override;
+        std::set<uint256> const& enabled,
+        majorityAmendments_t const& majority) override;
 
     std::vector <uint256>
     doValidation (std::set<uint256> const& enabledAmendments) override;
@@ -392,6 +400,13 @@ AmendmentTableImpl::hasUnsupportedEnabled ()
     return unsupportedEnabled_;
 }
 
+boost::optional<NetClock::time_point>
+AmendmentTableImpl::firstUnsupportedExpected()
+{
+    std::lock_guard sl(mutex_);
+    return firstUnsupportedExpected_;
+}
+
 std::vector <uint256>
 AmendmentTableImpl::doValidation (
     std::set<uint256> const& enabled)
@@ -539,12 +554,36 @@ AmendmentTableImpl::needValidatedLedger (LedgerIndex ledgerSeq)
 }
 
 void
-AmendmentTableImpl::doValidatedLedger (
+AmendmentTableImpl::doValidatedLedger(
     LedgerIndex ledgerSeq,
-    std::set<uint256> const& enabled)
+    std::set<uint256> const& enabled,
+    majorityAmendments_t const& majority)
 {
     for (auto& e : enabled)
         enable(e);
+
+    std::lock_guard sl(mutex_);
+    // Since we have the whole list in `majority`, reset the time flag, even if
+    // it's currently set. If it's not set when the loop is done, then any
+    // prior unknown amendments have lost majority.
+    firstUnsupportedExpected_.reset();
+    for (auto const& [ hash, time ] : majority)
+    {
+        auto s = add(hash);
+
+        if (s->enabled)
+            continue;
+
+        if (!s->supported)
+        {
+            JLOG(j_.info()) << "Unsupported amendment " << hash
+                             << " reached majority at " << to_string(time);
+            if (!firstUnsupportedExpected_ || firstUnsupportedExpected_ > time)
+                firstUnsupportedExpected_ = time;
+        }
+    }
+    if (firstUnsupportedExpected_)
+        firstUnsupportedExpected_ = *firstUnsupportedExpected_ + majorityTime_;
 }
 
 void
