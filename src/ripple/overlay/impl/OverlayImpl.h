@@ -463,12 +463,14 @@ private:
 
         template <class Handler>
         Stats (Handler const& handler, beast::insight::Collector::ptr const& collector)
-            : hook (collector->make_hook (handler)) 
+            : hook (collector->make_hook (handler))
+            , peerDisconnects (collector->make_gauge("Overlay","Peer_Disconnects")) 
             { 
                 mcollector=collector;
             }
 
         beast::insight::Hook hook;
+        beast::insight::Gauge peerDisconnects;
         std::vector<beast::insight::Gauge> trafficGauges;
         beast::insight::Collector::ptr mcollector;
         
@@ -505,6 +507,8 @@ private:
             m_stats.trafficGauges[i+2] = stats[i/4].messagesIn;
             m_stats.trafficGauges[i+3] = stats[i/4].messagesOut;
         }
+
+        m_stats.peerDisconnects= getPeerDisconnect();
     }
 };
 
