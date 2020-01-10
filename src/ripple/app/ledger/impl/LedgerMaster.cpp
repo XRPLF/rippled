@@ -308,12 +308,38 @@ LedgerMaster::setValidLedger(
     app_.getSHAMapStore().onLedgerClosed (getValidatedLedger());
     mLedgerHistory.validatedLedger (l, consensusHash);
     app_.getAmendmentTable().doValidatedLedger (l);
-    if (!app_.getOPs().isAmendmentBlocked() &&
-        app_.getAmendmentTable().hasUnsupportedEnabled ())
+    if (!app_.getOPs().isAmendmentBlocked())
     {
-        JLOG (m_journal.error()) <<
-            "One or more unsupported amendments activated: server blocked.";
-        app_.getOPs().setAmendmentBlocked();
+        if (app_.getAmendmentTable().hasUnsupportedEnabled())
+        {
+            JLOG(m_journal.error()) << "One or more unsupported amendments "
+                "activated: server blocked.";
+            app_.getOPs().setAmendmentBlocked();
+        }
+        else if (!app_.getOPs().isAmendmentWarned() || ((l->seq() % 256) == 0))
+        {
+            // Amendments can lose majority, so re-check periodically (every
+            // flag ledger), and clear the flag if appropriate. If an unknown
+            // amendment gains majority log a warning as soon as it's
+            // discovered, then again every flag ledger until the operator
+            // upgrades, the amendment loses majority, or the amendment goes
+            // live and the node gets blocked. Unlike being amendment blocked,
+            // this message may be logged more than once per session, because
+            // the node will otherwise function normally, and this gives
+            // operators an opportunity to see and resolve the warning.
+            if (auto const first =
+                    app_.getAmendmentTable().firstUnsupportedExpected())
+            {
+                JLOG(m_journal.error()) << "One or more unsupported amendments "
+                                           "reached majority. Upgrade before "
+                                        << to_string(*first)
+                                        << " to prevent your server from "
+                                           "becoming amendment blocked.";
+                app_.getOPs().setAmendmentWarned();
+            }
+            else
+                app_.getOPs().clearAmendmentWarned();
+        }
     }
 }
 

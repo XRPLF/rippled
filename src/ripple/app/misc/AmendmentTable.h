@@ -54,6 +54,8 @@ public:
      * @return true if an unsupported feature is enabled on the network
      */
     virtual bool hasUnsupportedEnabled () = 0;
+    virtual boost::optional<NetClock::time_point>
+    firstUnsupportedExpected() = 0;
 
     virtual Json::Value getJson (int) = 0;
 
@@ -61,11 +63,15 @@ public:
     virtual Json::Value getJson (uint256 const& ) = 0;
 
     /** Called when a new fully-validated ledger is accepted. */
-    void doValidatedLedger (std::shared_ptr<ReadView const> const& lastValidatedLedger)
+    void
+    doValidatedLedger(
+        std::shared_ptr<ReadView const> const& lastValidatedLedger)
     {
-        if (needValidatedLedger (lastValidatedLedger->seq ()))
-            doValidatedLedger (lastValidatedLedger->seq (),
-                getEnabledAmendments (*lastValidatedLedger));
+        if (needValidatedLedger(lastValidatedLedger->seq()))
+            doValidatedLedger(
+                lastValidatedLedger->seq(),
+                getEnabledAmendments(*lastValidatedLedger),
+                getMajorityAmendments(*lastValidatedLedger));
     }
 
     /** Called to determine whether the amendment logic needs to process
@@ -77,7 +83,8 @@ public:
     virtual void
     doValidatedLedger (
         LedgerIndex ledgerSeq,
-        std::set <uint256> const& enabled) = 0;
+        std::set <uint256> const& enabled,
+        majorityAmendments_t const& majority) = 0;
 
     // Called by the consensus code when we need to
     // inject pseudo-transactions

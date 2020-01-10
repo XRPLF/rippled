@@ -185,6 +185,9 @@ public:
     virtual void setMode(OperatingMode om) = 0;
     virtual bool isAmendmentBlocked () = 0;
     virtual void setAmendmentBlocked () = 0;
+    virtual bool isAmendmentWarned() = 0;
+    virtual void setAmendmentWarned() = 0;
+    virtual void clearAmendmentWarned() = 0;
     virtual void consensusViewChange () = 0;
 
     virtual Json::Value getConsensusInfo () = 0;

@@ -31,6 +31,7 @@
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/LoadManager.h>
+#include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/Transaction.h>
@@ -377,6 +378,21 @@ public:
         return amendmentBlocked_;
     }
     void setAmendmentBlocked () override;
+    bool
+    isAmendmentWarned() override
+    {
+        return !amendmentBlocked_ && amendmentWarned_;
+    }
+    void
+    setAmendmentWarned() override
+    {
+        amendmentWarned_ = true;
+    }
+    void
+    clearAmendmentWarned() override
+    {
+        amendmentWarned_ = false;
+    }
     void consensusViewChange () override;
 
     Json::Value getConsensusInfo () override;
@@ -570,6 +586,7 @@ private:
 
     std::atomic <bool> needNetworkLedger_ {false};
     std::atomic <bool> amendmentBlocked_ {false};
+    std::atomic <bool> amendmentWarned_ {false};
 
     ClosureCounter<void, boost::system::error_code const&> waitHandlerCounter_;
     boost::asio::steady_timer heartbeatTimer_;
@@ -2189,6 +2206,38 @@ Json::Value NetworkOPsImp::getConsensusInfo ()
 Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin, bool counters)
 {
     Json::Value info = Json::objectValue;
+
+    // System-level warnings
+    {
+        Json::Value warnings{Json::arrayValue};
+        if (isAmendmentBlocked())
+        {
+            Json::Value& w = warnings.append(Json::objectValue);
+            w[jss::id] = warnRPC_AMENDMENT_BLOCKED;
+            w[jss::message] =
+                "This server is amendment blocked, and must be updated to be "
+                "able to stay in sync with the network.";
+        }
+        if (admin && isAmendmentWarned())
+        {
+            Json::Value& w = warnings.append(Json::objectValue);
+            w[jss::id] = warnRPC_UNSUPPORTED_MAJORITY;
+            w[jss::message] =
+                "One or more unsupported amendments have reached majority. "
+                "Upgrade to the latest version before they are activated "
+                "to avoid being amendment blocked.";
+            if (auto const expected =
+                    app_.getAmendmentTable().firstUnsupportedExpected())
+            {
+                auto& d = w[jss::details] = Json::objectValue;
+                d[jss::expected_date] = expected->time_since_epoch().count();
+                d[jss::expected_date_UTC] = to_string(*expected);
+            }
+        }
+
+        if (warnings.size())
+            info[jss::warnings] = std::move(warnings);
+    }
 
     // hostid: unique string describing the machine
     if (human)
