@@ -202,7 +202,7 @@ JSS ( destination_amount );         // in: PathRequest, RipplePathFind
 JSS ( destination_currencies );     // in: PathRequest, RipplePathFind
 JSS ( destination_tag );            // in: PathRequest
                                     // out: AccountChannels
-JSS ( details );                    // out: Manifest
+JSS ( details );                    // out: Manifest, server_info
 JSS ( dir_entry );                  // out: DirectoryEntryIterator
 JSS ( dir_index );                  // out: DirectoryEntryIterator
 JSS ( dir_root );                   // out: DirectoryEntryIterator
@@ -223,6 +223,8 @@ JSS ( error_exception );            // out: Submit
 JSS ( error_message );              // out: error
 JSS ( escrow );                     // in: LedgerEntry
 JSS ( expand );                     // in: handler/Ledger
+JSS ( expected_date );              // out: any (warnings)
+JSS ( expected_date_UTC );          // out: any (warnings)
 JSS ( expected_ledger_size );       // out: TxQ
 JSS ( expiration );                 // out: AccountOffers, AccountChannels,
                                     //      ValidatorList
@@ -573,6 +575,7 @@ JSS ( version );                    // out: RPCVersion
 JSS ( vetoed );                     // out: AmendmentTableImpl
 JSS ( vote );                       // in: Feature
 JSS ( warning );                    // rpc:
+JSS ( warnings );                   // out: server_info, server_state
 JSS ( workers );
 JSS ( write_load );                 // out: GetCounts
 

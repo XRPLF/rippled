@@ -167,6 +167,7 @@ class ServerStatus_test :
         if(ec)
             return;
 
+        resp.body().clear();
         if(secure)
         {
             ssl::context ctx{ssl::context::sslv23};
@@ -786,6 +787,132 @@ class ServerStatus_test :
     }
 
     void
+    testAmendmentWarning(boost::asio::yield_context& yield)
+    {
+        testcase("Status request over WS and RPC with/without Amendment Warning");
+        using namespace jtx;
+        using namespace boost::asio;
+        using namespace boost::beast::http;
+        Env env {*this, validator( envconfig([](std::unique_ptr<Config> cfg)
+            {
+                cfg->section("port_rpc").set("protocol", "http");
+                return cfg;
+            }), "")};
+
+        env.close();
+
+        // advance the ledger so that server status
+        // sees a published ledger -- without this, we get a status
+        // failure message about no published ledgers
+        env.app().getLedgerMaster().tryAdvance();
+
+        // make an RPC server info request and look for
+        // amendment warning status
+        auto si = env.rpc("server_info") [jss::result];
+        BEAST_EXPECT(si.isMember(jss::info));
+        BEAST_EXPECT(! si[jss::info].isMember(jss::amendment_blocked));
+        BEAST_EXPECT(
+            env.app().getOPs().getConsensusInfo()["validating"] == true);
+        BEAST_EXPECT(! si.isMember(jss::warnings));
+
+        // make an RPC server state request and look for
+        // amendment warning status
+        si = env.rpc("server_state") [jss::result];
+        BEAST_EXPECT(si.isMember(jss::state));
+        BEAST_EXPECT(! si[jss::state].isMember(jss::amendment_blocked));
+        BEAST_EXPECT(
+            env.app().getOPs().getConsensusInfo()["validating"] == true);
+        BEAST_EXPECT(! si[jss::state].isMember(jss::warnings));
+
+        auto const port_ws = env.app().config()["port_ws"].
+            get<std::uint16_t>("port");
+        auto const ip_ws = env.app().config()["port_ws"].
+            get<std::string>("ip");
+
+        boost::system::error_code ec;
+        response<string_body> resp;
+
+        doRequest(
+            yield,
+            makeHTTPRequest(*ip_ws, *port_ws, "", {}),
+            *ip_ws,
+            *port_ws,
+            false,
+            resp,
+            ec);
+
+        if(! BEAST_EXPECTS(! ec, ec.message()))
+            return;
+        BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
+        BEAST_EXPECT(
+            resp.body().find("connectivity is working.") != std::string::npos);
+
+        // mark the Network as having an Amendment Warning, but won't fail
+        env.app().getOPs().setAmendmentWarned ();
+        env.app().getOPs().beginConsensus(env.closed()->info().hash);
+
+        // consensus doesn't change
+        BEAST_EXPECT(
+            env.app().getOPs().getConsensusInfo()["validating"] == true);
+
+        // RPC request server_info again, now unsupported majority should be returned
+        si = env.rpc("server_info") [jss::result];
+        BEAST_EXPECT(si.isMember(jss::info));
+        BEAST_EXPECT(! si[jss::info].isMember(jss::amendment_blocked));
+        BEAST_EXPECT(
+            si[jss::info].isMember(jss::warnings) &&
+            si[jss::info][jss::warnings].isArray() &&
+            si[jss::info][jss::warnings].size() == 1 &&
+            si[jss::info][jss::warnings][0u][jss::id].asInt() ==
+                warnRPC_UNSUPPORTED_MAJORITY);
+
+        // RPC request server_state again, now unsupported majority should be returned
+        si = env.rpc("server_state") [jss::result];
+        BEAST_EXPECT(si.isMember(jss::state));
+        BEAST_EXPECT(! si[jss::state].isMember(jss::amendment_blocked));
+        BEAST_EXPECT(
+            si[jss::state].isMember(jss::warnings) &&
+            si[jss::state][jss::warnings].isArray() &&
+            si[jss::state][jss::warnings].size() == 1 &&
+            si[jss::state][jss::warnings][0u][jss::id].asInt() ==
+                warnRPC_UNSUPPORTED_MAJORITY);
+
+        // but status does not indicate a problem
+        doRequest(
+            yield,
+            makeHTTPRequest(*ip_ws, *port_ws, "", {}),
+            *ip_ws,
+            *port_ws,
+            false,
+            resp,
+            ec);
+
+        if(! BEAST_EXPECTS(! ec, ec.message()))
+            return;
+        BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
+        BEAST_EXPECT(
+            resp.body().find("connectivity is working.") != std::string::npos);
+
+        // with ELB_SUPPORT, status still does not indicate a problem
+        env.app().config().ELB_SUPPORT = true;
+
+        doRequest(
+            yield,
+            makeHTTPRequest(*ip_ws, *port_ws, "", {}),
+            *ip_ws,
+            *port_ws,
+            false,
+            resp,
+            ec);
+
+        if(! BEAST_EXPECTS(! ec, ec.message()))
+            return;
+        BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
+        BEAST_EXPECT(
+            resp.body().find("connectivity is working.") != std::string::npos);
+    }
+
+    void
     testAmendmentBlock(boost::asio::yield_context& yield)
     {
         testcase("Status request over WS and RPC with/without Amendment Block");
@@ -808,9 +935,20 @@ class ServerStatus_test :
         // make an RPC server info request and look for
         // amendment_blocked status
         auto si = env.rpc("server_info") [jss::result];
+        BEAST_EXPECT(si.isMember(jss::info));
         BEAST_EXPECT(! si[jss::info].isMember(jss::amendment_blocked));
         BEAST_EXPECT(
             env.app().getOPs().getConsensusInfo()["validating"] == true);
+        BEAST_EXPECT(! si.isMember(jss::warnings));
+
+        // make an RPC server state request and look for
+        // amendment_blocked status
+        si = env.rpc("server_state") [jss::result];
+        BEAST_EXPECT(si.isMember(jss::state));
+        BEAST_EXPECT(! si[jss::state].isMember(jss::amendment_blocked));
+        BEAST_EXPECT(
+            env.app().getOPs().getConsensusInfo()["validating"] == true);
+        BEAST_EXPECT(! si[jss::state].isMember(jss::warnings));
 
         auto const port_ws = env.app().config()["port_ws"].
             get<std::uint16_t>("port");
@@ -847,9 +985,28 @@ class ServerStatus_test :
 
         // RPC request server_info again, now AB should be returned
         si = env.rpc("server_info") [jss::result];
+        BEAST_EXPECT(si.isMember(jss::info));
         BEAST_EXPECT(
             si[jss::info].isMember(jss::amendment_blocked) &&
             si[jss::info][jss::amendment_blocked] == true);
+        BEAST_EXPECT(
+            si[jss::info].isMember(jss::warnings) &&
+            si[jss::info][jss::warnings].isArray() &&
+            si[jss::info][jss::warnings].size() == 1 &&
+            si[jss::info][jss::warnings][0u][jss::id].asInt() ==
+                warnRPC_AMENDMENT_BLOCKED);
+
+        // RPC request server_state again, now AB should be returned
+        si = env.rpc("server_state") [jss::result];
+        BEAST_EXPECT(
+            si[jss::state].isMember(jss::amendment_blocked) &&
+            si[jss::state][jss::amendment_blocked] == true);
+        BEAST_EXPECT(
+            si[jss::state].isMember(jss::warnings) &&
+            si[jss::state][jss::warnings].isArray() &&
+            si[jss::state][jss::warnings].size() == 1 &&
+            si[jss::state][jss::warnings][0u][jss::id].asInt() ==
+                warnRPC_AMENDMENT_BLOCKED);
 
         // but status does not indicate because it still relies on ELB
         // being enabled
@@ -1046,6 +1203,7 @@ public:
             testCantConnect ("wss2", "ws2", yield);
             testCantConnect ("https", "http", yield);
 
+            testAmendmentWarning(yield);
             testAmendmentBlock(yield);
             testAuth (false, yield);
             testAuth (true, yield);

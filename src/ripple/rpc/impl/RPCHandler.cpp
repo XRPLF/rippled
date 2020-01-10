@@ -189,38 +189,6 @@ Status callMethod (
     }
 }
 
-template <class Method, class Object>
-void getResult (
-    JsonContext& context, Method method, Object& object, std::string const& name)
-{
-    auto&& result = Json::addObject (object, jss::result);
-    if (auto status = callMethod (context, method, name, result))
-    {
-        JLOG (context.j.debug()) << "rpcError: " << status.toString();
-        result[jss::status] = jss::error;
-
-        auto rq = context.params;
-
-        if (rq.isObject())
-        {
-            if (rq.isMember(jss::passphrase.c_str()))
-                rq[jss::passphrase.c_str()] = "<masked>";
-            if (rq.isMember(jss::secret.c_str()))
-                rq[jss::secret.c_str()] = "<masked>";
-            if (rq.isMember(jss::seed.c_str()))
-                rq[jss::seed.c_str()] = "<masked>";
-            if (rq.isMember(jss::seed_hex.c_str()))
-                rq[jss::seed_hex.c_str()] = "<masked>";
-        }
-
-        result[jss::request] = rq;
-    }
-    else
-    {
-        result[jss::status] = jss::success;
-    }
-}
-
 } // namespace
 
 Status doCommand (
