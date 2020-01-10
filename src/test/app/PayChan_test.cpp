@@ -870,9 +870,186 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
-    testRPC ()
+    testAccountChannelsRPC()
     {
-        testcase ("RPC");
+        testcase("AccountChannels RPC");
+
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+        Env env(*this);
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const charlie = Account("charlie", KeyType::ed25519);
+        env.fund(XRP(10000), alice, bob, charlie);
+        auto const pk = alice.pk();
+        auto const settleDelay = 3600s;
+        auto const channelFunds = XRP(1000);
+        env(create(alice, bob, channelFunds, settleDelay, pk));
+        env.close();
+        auto const chan1Str = to_string(channel(*env.current(), alice, bob));
+        std::string chan1PkStr;
+        {
+            auto const r =
+                env.rpc("account_channels", alice.human(), bob.human());
+            BEAST_EXPECT(r[jss::result][jss::channels].size() == 1);
+            BEAST_EXPECT(
+                r[jss::result][jss::channels][0u][jss::channel_id] == chan1Str);
+            BEAST_EXPECT(r[jss::result][jss::validated]);
+            chan1PkStr =
+                r[jss::result][jss::channels][0u][jss::public_key].asString();
+        }
+        {
+            auto const r = env.rpc("account_channels", alice.human());
+            BEAST_EXPECT(r[jss::result][jss::channels].size() == 1);
+            BEAST_EXPECT(
+                r[jss::result][jss::channels][0u][jss::channel_id] == chan1Str);
+            BEAST_EXPECT(r[jss::result][jss::validated]);
+            chan1PkStr =
+                r[jss::result][jss::channels][0u][jss::public_key].asString();
+        }
+        {
+            auto const r =
+                env.rpc("account_channels", bob.human(), alice.human());
+            BEAST_EXPECT(r[jss::result][jss::channels].size() == 0);
+            BEAST_EXPECT(r[jss::result][jss::validated]);
+        }
+        env(create(alice, bob, channelFunds, settleDelay, pk));
+        env.close();
+        auto const chan2Str = to_string(channel(*env.current(), alice, bob));
+        {
+            auto const r =
+                env.rpc("account_channels", alice.human(), bob.human());
+            BEAST_EXPECT(r[jss::result][jss::channels].size() == 2);
+            BEAST_EXPECT(r[jss::result][jss::validated]);
+            BEAST_EXPECT(chan1Str != chan2Str);
+            for (auto const& c : {chan1Str, chan2Str})
+                BEAST_EXPECT(
+                    r[jss::result][jss::channels][0u][jss::channel_id] == c ||
+                    r[jss::result][jss::channels][1u][jss::channel_id] == c);
+        }
+    }
+
+    void
+    testAccountChannelsRPCMarkers()
+    {
+        testcase("Account channels RPC markers");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        auto const alice = Account("alice");
+        auto const bobs = []() -> std::vector<Account> {
+            int const n = 10;
+            std::vector<Account> r;
+            r.reserve(n);
+            for (int i = 0; i < n; ++i)
+            {
+                r.emplace_back("bob"s + std::to_string(i));
+            }
+            return r;
+        }();
+
+        Env env(*this);
+        env.fund(XRP(10000), alice);
+        for (auto const a : bobs)
+        {
+            env.fund(XRP(10000), a);
+            env.close();
+        }
+
+        {
+            // create a channel from alice to every bob account
+            auto const settleDelay = 3600s;
+            auto const channelFunds = XRP(1);
+            for (auto const b : bobs)
+            {
+                env(create(alice, b, channelFunds, settleDelay, alice.pk()));
+            }
+        }
+
+        auto testLimit = [](test::jtx::Env& env,
+                            test::jtx::Account const& src,
+                            boost::optional<int> limit = boost::none,
+                            Json::Value const& marker = Json::nullValue,
+                            boost::optional<test::jtx::Account> const& dst =
+                                boost::none) {
+            Json::Value jvc;
+            jvc[jss::account] = src.human();
+            if (dst)
+                jvc[jss::destination_account] = dst->human();
+            if (limit)
+                jvc[jss::limit] = *limit;
+            if (marker)
+                jvc[jss::marker] = marker;
+
+            return env.rpc(
+                "json", "account_channels", to_string(jvc))[jss::result];
+        };
+
+        {
+            // No marker
+            auto const r = testLimit(env, alice);
+            BEAST_EXPECT(r.isMember(jss::channels));
+            BEAST_EXPECT(r[jss::channels].size() == bobs.size());
+        }
+
+        auto const bobsB58 = [&bobs]() -> std::set<std::string> {
+            std::set<std::string> r;
+            for (auto const a : bobs)
+                r.insert(a.human());
+            return r;
+        }();
+
+        for (int limit = 1; limit < bobs.size() + 1; ++limit)
+        {
+            auto leftToFind = bobsB58;
+            auto const numFull = bobs.size() / limit;
+            auto const numNonFull = bobs.size() % limit ? 1 : 0;
+
+            Json::Value marker = Json::nullValue;
+
+            auto const testIt = [&](bool expectMarker, int expectedBatchSize) {
+                auto const r = testLimit(env, alice, limit, marker);
+                BEAST_EXPECT(!expectMarker || r.isMember(jss::marker));
+                if (r.isMember(jss::marker))
+                    marker = r[jss::marker];
+                BEAST_EXPECT(r[jss::channels].size() == expectedBatchSize);
+                auto const c = r[jss::channels];
+                auto const s = r[jss::channels].size();
+                for (int j = 0; j < s; ++j)
+                {
+                    auto const dstAcc =
+                        c[j][jss::destination_account].asString();
+                    BEAST_EXPECT(leftToFind.count(dstAcc));
+                    leftToFind.erase(dstAcc);
+                }
+            };
+
+            for (int i = 0; i < numFull; ++i)
+            {
+                bool const expectMarker = (numNonFull != 0 || i < numFull - 1);
+                testIt(expectMarker, limit);
+            }
+
+            if (numNonFull)
+            {
+                testIt(false, bobs.size() % limit);
+            }
+            BEAST_EXPECT(leftToFind.empty());
+        }
+
+        {
+            // degenerate case
+            auto const r = testLimit(env, alice, 0);
+            BEAST_EXPECT(r.isMember(jss::marker));
+            BEAST_EXPECT(r[jss::channels].size() == 0);
+        }
+    }
+
+    void
+    testAuthVerifyRPC ()
+    {
+        testcase ("PayChan Auth/Verify RPC");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
         Env env (*this);
@@ -1635,7 +1812,9 @@ struct PayChan_test : public beast::unit_test::suite
         testDstTag();
         testDepositAuth();
         testMultiple();
-        testRPC();
+        testAccountChannelsRPC();
+        testAccountChannelsRPCMarkers();
+        testAuthVerifyRPC();
         testOptionalFields();
         testMalformedPK();
         testMetaAndOwnership();
