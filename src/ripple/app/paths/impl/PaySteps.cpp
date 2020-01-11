@@ -117,7 +117,7 @@ toStep (
 
     if (isXRP (curIssue.currency) && isXRP (outCurrency))
     {
-        JLOG (j.warn()) << "Found xrp/xrp offer payment step";
+        JLOG (j.info()) << "Found xrp/xrp offer payment step";
         return {temBAD_PATH, std::unique_ptr<Step>{}};
     }
 
