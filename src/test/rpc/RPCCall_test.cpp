@@ -5168,6 +5168,137 @@ static RPCCallTestData const rpcCallTestArray [] =
     })"
 },
 
+// peer_reservations_add -------------------------------------------------------
+{
+    "peer_reservations_add: minimal.", __LINE__,
+    {
+        "peer_reservations_add",
+        "public_key_string"
+    },
+    RPCCallTestData::no_exception,
+    R"({
+    "method" : "peer_reservations_add",
+    "params" : [
+       {
+         "api_version" : %MAX_API_VER%,
+         "public_key" : "public_key_string"
+       }
+    ]
+    })"
+},
+{
+    "peer_reservations_add: with description.", __LINE__,
+    {
+        "peer_reservations_add",
+        "public_key_string",
+        "public_key_description"
+    },
+    RPCCallTestData::no_exception,
+    R"({
+    "method" : "peer_reservations_add",
+    "params" : [
+       {
+         "api_version" : %MAX_API_VER%,
+         "description" : "public_key_description",
+         "public_key" : "public_key_string"
+       }
+    ]
+    })"
+},
+{
+    "peer_reservations_add: too few arguments.", __LINE__,
+    {
+        "peer_reservations_add"
+    },
+    RPCCallTestData::no_exception,
+    R"({
+    "method" : "peer_reservations_add",
+    "params" : [
+       {
+         "error" : "badSyntax",
+         "error_code" : 1,
+         "error_message" : "Syntax error."
+       }
+    ]
+    })"
+},
+{
+    "peer_reservations_add: too many arguments.", __LINE__,
+    {
+        "peer_reservations_add",
+        "public_key_string",
+        "public_key_description",
+        "spare"
+    },
+    RPCCallTestData::no_exception,
+    R"({
+    "method" : "peer_reservations_add",
+    "params" : [
+       {
+         "error" : "badSyntax",
+         "error_code" : 1,
+         "error_message" : "Syntax error."
+       }
+    ]
+    })"
+},
+
+// peer_reservations_del -------------------------------------------------------
+{
+    "peer_reservations_del: minimal.", __LINE__,
+    {
+        "peer_reservations_del",
+        "public_key_string"
+    },
+    RPCCallTestData::no_exception,
+    R"({
+    "method" : "peer_reservations_del",
+    "params" : [
+       {
+         "api_version" : %MAX_API_VER%,
+         "public_key" : "public_key_string"
+       }
+    ]
+    })"
+},
+{
+    "peer_reservations_del: too few arguments.", __LINE__,
+    {
+        "peer_reservations_del"
+    },
+    RPCCallTestData::no_exception,
+    R"({
+    "method" : "peer_reservations_del",
+    "params" : [
+       {
+         "error" : "badSyntax",
+         "error_code" : 1,
+         "error_message" : "Syntax error."
+       }
+    ]
+    })"
+},
+{
+    "peer_reservations_del: too many arguments.", __LINE__,
+    {
+        "peer_reservations_del",
+        "public_key_string",
+        "public_key_description",
+        "spare"
+    },
+    RPCCallTestData::no_exception,
+    R"({
+    "method" : "peer_reservations_del",
+    "params" : [
+       {
+         "error" : "badSyntax",
+         "error_code" : 1,
+         "error_message" : "Syntax error."
+       }
+    ]
+    })"
+},
+
 // ping ------------------------------------------------------------------------
 {
     "ping: minimal.", __LINE__,
