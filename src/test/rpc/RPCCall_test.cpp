@@ -317,6 +317,26 @@ static RPCCallTestData const rpcCallTestArray [] =
     })"
 },
 {
+    "account_currencies: current ledger.", __LINE__,
+    {
+        "account_currencies",
+        "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "current",
+        "strict"
+    },
+    RPCCallTestData::no_exception,
+    R"({
+    "method" : "account_currencies",
+    "params" : [
+      {
+         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+         "ledger_index" : "current",
+         "strict" : 1
+      }
+    ]
+    })"
+},
+{
     "account_currencies: too few arguments.", __LINE__,
     {
         "account_currencies",
@@ -334,21 +354,22 @@ static RPCCallTestData const rpcCallTestArray [] =
     })"
 },
 {
-    "account_currencies: current ledger.", __LINE__,
+    "account_currencies: too many arguments.", __LINE__,
     {
         "account_currencies",
         "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "current",
-        "strict"
+        "strict",
+        "spare"
     },
     RPCCallTestData::no_exception,
     R"({
     "method" : "account_currencies",
     "params" : [
       {
-         "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-         "ledger_index" : "current",
-         "strict" : 1
+         "error" : "badSyntax",
+         "error_code" : 1,
+         "error_message" : "Syntax error."
       }
     ]
     })"
