@@ -1047,6 +1047,41 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
+    testAccountChannelsRPCSenderOnly()
+    {
+        // Check that the account_channels command only returns channels owned by the account
+        testcase("Account channels RPC owner only");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        Env env(*this);
+        env.fund(XRP(10000), alice, bob);
+
+        // Create a channel from alice to bob and from bob to alice
+        // When retrieving alice's channels, it should only retrieve the
+        // channels where alice is the source, not the destination
+        auto const settleDelay = 3600s;
+        auto const channelFunds = XRP (1000);
+        env(create(alice, bob, channelFunds, settleDelay, alice.pk()));
+        env(create(bob, alice, channelFunds, settleDelay, bob.pk()));
+
+        auto const r = [&]{
+            Json::Value jvc;
+            jvc[jss::account] = alice.human();
+
+            return env.rpc(
+                "json", "account_channels", to_string(jvc))[jss::result];
+        }();
+        BEAST_EXPECT(r.isMember(jss::channels));
+        BEAST_EXPECT(r[jss::channels].size() == 1);
+        BEAST_EXPECT(r[jss::channels][0u][jss::destination_account].asString() == bob.human());
+    }
+
+    void
     testAuthVerifyRPC ()
     {
         testcase ("PayChan Auth/Verify RPC");
@@ -1814,6 +1849,7 @@ struct PayChan_test : public beast::unit_test::suite
         testMultiple();
         testAccountChannelsRPC();
         testAccountChannelsRPCMarkers();
+        testAccountChannelsRPCSenderOnly();
         testAuthVerifyRPC();
         testOptionalFields();
         testMalformedPK();
