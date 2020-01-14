@@ -11,10 +11,12 @@ for label in ${rippled_version} latest ; do
     docker tag \
         "${ARTIFACTORY_HUB}/${RPM_CONTAINER_FULLNAME}" \
         "${ARTIFACTORY_HUB}/${RPM_CONTAINER_NAME}:${label}_${CI_COMMIT_REF_SLUG}"
+    docker push \
+        "${ARTIFACTORY_HUB}/${RPM_CONTAINER_NAME}:${label}_${CI_COMMIT_REF_SLUG}"
     docker tag \
         "${ARTIFACTORY_HUB}/${DPKG_CONTAINER_FULLNAME}" \
         "${ARTIFACTORY_HUB}/${DPKG_CONTAINER_NAME}:${label}_${CI_COMMIT_REF_SLUG}"
-    docker push "${ARTIFACTORY_HUB}/${RPM_CONTAINER_FULLNAME}"
-    docker push "${ARTIFACTORY_HUB}/${DPKG_CONTAINER_FULLNAME}"
+    docker push \
+        "${ARTIFACTORY_HUB}/${DPKG_CONTAINER_NAME}:${label}_${CI_COMMIT_REF_SLUG}"
 done
 
