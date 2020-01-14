@@ -563,9 +563,6 @@ TxQ::tryClearAccountQueue(Application& app, OpenView& view,
 
 /*
     How the decision to apply, queue, or reject is made:
-    0. Is `featureFeeEscalation` enabled?
-        Yes: Continue to next step.
-        No: Fallback to `ripple::apply`. Stop.
     1. Does `preflight` indicate that the tx is valid?
         No: Return the `TER` from `preflight`. Stop.
         Yes: Continue to next step.
@@ -1170,9 +1167,6 @@ TxQ::apply(Application& app, OpenView& view,
 }
 
 /*
-    0. Is `featureFeeEscalation` enabled?
-        Yes: Continue to next step.
-        No: Stop.
     1. Update the fee metrics based on the fee levels of the
         txs in the validated ledger and whether consensus is
         slow.
@@ -1229,9 +1223,6 @@ TxQ::processClosedLedger(Application& app,
 /*
     How the txs are moved from the queue to the new open ledger.
 
-    0. Is `featureFeeEscalation` enabled?
-        Yes: Continue to next step.
-        No: Don't do anything to the open ledger. Stop.
     1. Iterate over the txs from highest fee level to lowest.
         For each tx:
         a) Is this the first tx in the queue for this account?

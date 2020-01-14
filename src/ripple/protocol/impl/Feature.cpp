@@ -82,12 +82,20 @@ detail::supportedAmendments ()
 {
     // Commented out amendments will be supported in a future release (and
     // uncommented at that time).
+    //
+    // There are also unconditionally supported amendments in the list.
+    // Those are amendments that were enabled some time ago and the
+    // amendment conditional code has been removed.
+    //
+    // ** WARNING **
+    // Unconditionally supported amendments need to remain in the list.
+    // Removing them will cause servers to become amendment blocked.
     static std::vector<std::string> const supported
     {
         "MultiSign",
 //        "Tickets",
         "TrustSetAuth",
-        "FeeEscalation", // Looks unused, but do not remove; Servers will be amendment blocked.
+        "FeeEscalation",               // Unconditionally supported.
 //        "OwnerPaysFee",
         "PayChan",
         "Flow",
