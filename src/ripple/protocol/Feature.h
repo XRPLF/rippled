@@ -53,7 +53,7 @@ class FeatureCollections
         "MultiSign",
         "Tickets",
         "TrustSetAuth",
-        "FeeEscalation",
+        "FeeEscalation",               // Unconditionally supported.
         "OwnerPaysFee",
         "CompareFlowV1V2",
         "PayChan",
