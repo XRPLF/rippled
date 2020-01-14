@@ -21,7 +21,11 @@
 #define RIPPLE_OVERLAY_HANDSHAKE_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
-#include <ripple/beast/asio/ssl_bundle.h>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/asio/ssl/stream.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/BuildInfo.h>
 
@@ -31,6 +35,9 @@
 #include <utility>
 
 namespace ripple {
+
+using socket_type   = boost::beast::tcp_stream;
+using stream_type   = boost::beast::ssl_stream <socket_type>;
 
 /** Computes a shared value based on the SSL connection state.
 
@@ -42,7 +49,7 @@ namespace ripple {
     @return A 256-bit value on success; an unseated optional otherwise.
 */
 boost::optional<uint256>
-makeSharedValue (beast::asio::ssl_bundle& ssl, beast::Journal journal);
+makeSharedValue (stream_type& ssl, beast::Journal journal);
 
 /** Insert fields headers necessary for upgrading the link to the peer protocol. */
 void

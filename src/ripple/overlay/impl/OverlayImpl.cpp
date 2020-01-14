@@ -177,7 +177,7 @@ OverlayImpl::~OverlayImpl ()
 //------------------------------------------------------------------------------
 
 Handoff
-OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
+OverlayImpl::onHandoff (std::unique_ptr <stream_type>&& stream_ptr,
     http_request_type&& request,
         endpoint_type remote_endpoint)
 {
@@ -196,7 +196,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
     JLOG(journal.debug()) << "Peer connection upgrade from " << remote_endpoint;
 
     error_code ec;
-    auto const local_endpoint (ssl_bundle->socket.local_endpoint(ec));
+    auto const local_endpoint (stream_ptr->next_layer().socket().local_endpoint(ec));
     if (ec)
     {
         JLOG(journal.debug()) << remote_endpoint << " failed: " << ec.message();
@@ -249,7 +249,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         return handoff;
     }
 
-    auto const sharedValue = makeSharedValue(*ssl_bundle, journal);
+    auto const sharedValue = makeSharedValue(*stream_ptr, journal);
     if(! sharedValue)
     {
         m_peerFinder->on_closed(slot);
@@ -286,7 +286,7 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
 
         auto const peer = std::make_shared<PeerImp>(app_, id, slot,
             std::move(request), publicKey, *negotiatedVersion, consumer,
-            std::move(ssl_bundle), *this);
+            std::move(stream_ptr), *this);
         {
             // As we are not on the strand, run() must be called
             // while holding the lock, otherwise new I/O can be

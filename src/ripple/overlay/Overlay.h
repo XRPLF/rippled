@@ -24,8 +24,12 @@
 #include <ripple/overlay/Peer.h>
 #include <ripple/overlay/PeerSet.h>
 #include <ripple/server/Handoff.h>
-#include <ripple/beast/asio/ssl_bundle.h>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/asio/ssl/stream.hpp>
 #include <boost/beast/http/message.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
 #include <ripple/core/Stoppable.h>
 #include <ripple/beast/utility/PropertyStream.h>
 #include <memory>
@@ -45,6 +49,9 @@ class Overlay
     , public beast::PropertyStream::Source
 {
 protected:
+    using socket_type = boost::beast::tcp_stream;
+    using stream_type = boost::beast::ssl_stream <socket_type>;
+
     // VFALCO NOTE The requirement of this constructor is an
     //             unfortunate problem with the API for
     //             Stoppable and PropertyStream
@@ -82,7 +89,7 @@ public:
     /** Conditionally accept an incoming HTTP request. */
     virtual
     Handoff
-    onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
+    onHandoff (std::unique_ptr <stream_type>&& bundle,
         http_request_type&& request,
             boost::asio::ip::tcp::endpoint remote_address) = 0;
 

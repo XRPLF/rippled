@@ -25,8 +25,9 @@
 #include <ripple/basics/Log.h>
 #include <ripple/server/impl/PlainHTTPPeer.h>
 #include <ripple/server/impl/SSLHTTPPeer.h>
-#include <ripple/beast/asio/ssl_bundle.h>
+#include <boost/beast/core/detect_ssl.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_context.hpp>
@@ -55,7 +56,8 @@ private:
     using protocol_type = boost::asio::ip::tcp;
     using acceptor_type = protocol_type::acceptor;
     using endpoint_type = protocol_type::endpoint;
-    using socket_type = protocol_type::socket;
+    using socket_type = boost::asio::ip::tcp::socket;
+    using stream_type = boost::beast::tcp_stream;
 
     // Detects SSL on a socket
     class Detector
@@ -66,8 +68,8 @@ private:
         Port const& port_;
         Handler& handler_;
         boost::asio::io_context& ioc_;
-        socket_type socket_;
-        timer_type timer_;
+        stream_type stream_;
+        socket_type &socket_;
         endpoint_type remote_address_;
         boost::asio::io_context::strand strand_;
         beast::Journal const j_;
@@ -77,14 +79,13 @@ private:
             Port const& port,
             Handler& handler,
             boost::asio::io_context& ioc,
-            socket_type&& socket,
+            stream_type&& stream,
             endpoint_type remote_address,
             beast::Journal j);
         void run();
         void close() override;
 
     private:
-        void do_timer (yield_context yield);
         void do_detect (yield_context yield);
     };
 
@@ -120,74 +121,24 @@ public:
 private:
     template <class ConstBufferSequence>
     void create (bool ssl, ConstBufferSequence const& buffers,
-        socket_type&& socket, endpoint_type remote_address);
+        stream_type&& stream, endpoint_type remote_address);
 
     void do_accept (yield_context yield);
 };
-
-/** Detect SSL client handshakes.
-    Analyzes the bytes in the provided buffer to detect the SSL client
-    handshake. If the buffer contains insufficient data, more data will be
-    read from the stream until there is enough to determine a result.
-    No bytes are discarded from buf. Any additional bytes read are retained.
-    buf must provide an interface compatible with boost::asio::streambuf
-    http://boost.org/doc/libs/1_56_0/doc/html/boost_asio/reference/streambuf.html
-    See
-        http://www.ietf.org/rfc/rfc2246.txt
-        Section 7.4. Handshake protocol
-    @param socket The stream to read from
-    @param buf A buffer to hold the received data
-    @param do_yield A do_yield context
-    @return The error code if an error occurs, otherwise `true` if
-            the data read indicates the SSL client handshake.
-*/
-template <class Socket, class StreamBuf, class Yield>
-std::pair <boost::system::error_code, bool>
-detect_ssl (Socket& socket, StreamBuf& buf, Yield do_yield)
-{
-    std::pair <boost::system::error_code, bool> result;
-    result.second = false;
-    for(;;)
-    {
-        std::size_t const max = 4; // the most bytes we could need
-        unsigned char data[max];
-        auto const bytes = boost::asio::buffer_copy (
-            boost::asio::buffer(data), buf.data());
-
-        if (bytes > 0)
-        {
-            if (data[0] != 0x16) // message type 0x16 = "SSL Handshake"
-                break;
-        }
-
-        if (bytes >= max)
-        {
-            result.second = true;
-            break;
-        }
-
-        buf.commit(boost::asio::async_read (socket,
-            buf.prepare(max - bytes), boost::asio::transfer_at_least(1),
-                do_yield[result.first]));
-        if (result.first)
-            break;
-    }
-    return result;
-}
 
 template <class Handler>
 Door<Handler>::Detector::Detector(
     Port const& port,
     Handler& handler,
     boost::asio::io_context& ioc,
-    socket_type&& socket,
+    stream_type&& stream,
     endpoint_type remote_address,
     beast::Journal j)
     : port_(port)
     , handler_(handler)
     , ioc_(ioc)
-    , socket_(std::move(socket))
-    , timer_(ioc_)
+    , stream_(std::move(stream))
+    , socket_(stream_.socket())
     , remote_address_(remote_address)
     , strand_(ioc_)
     , j_(j)
@@ -199,12 +150,7 @@ void
 Door<Handler>::Detector::
 run()
 {
-    // do_detect must be called before do_timer or else
-    // the timer can be canceled before it gets set.
     boost::asio::spawn(strand_, std::bind (&Detector::do_detect,
-        this->shared_from_this(), std::placeholders::_1));
-
-    boost::asio::spawn(strand_, std::bind (&Detector::do_timer,
         this->shared_from_this(), std::placeholders::_1));
 }
 
@@ -213,23 +159,7 @@ void
 Door<Handler>::Detector::
 close()
 {
-    error_code ec;
-    socket_.close(ec);
-    timer_.cancel(ec);
-}
-
-template<class Handler>
-void
-Door<Handler>::Detector::
-do_timer(yield_context do_yield)
-{
-    error_code ec; // ignored
-    while (socket_.is_open())
-    {
-        timer_.async_wait (do_yield[ec]);
-        if (timer_.expires_from_now() <= std::chrono::seconds(0))
-            socket_.close(ec);
-    }
+    stream_.close();
 }
 
 template<class Handler>
@@ -238,23 +168,23 @@ Door<Handler>::Detector::
 do_detect(boost::asio::yield_context do_yield)
 {
     boost::beast::multi_buffer buf(16);
-    timer_.expires_from_now(std::chrono::seconds(15));
-    auto const [ec, ssl] = detect_ssl(socket_, buf, do_yield);
-    error_code unused;
-    timer_.cancel(unused);
+    stream_.expires_after(std::chrono::seconds(15));
+    boost::system::error_code ec;
+    bool const ssl = async_detect_ssl(stream_, buf, do_yield[ec]);
+    stream_.expires_never();
     if (! ec)
     {
         if (ssl)
         {
             if (auto sp = ios().template emplace<SSLHTTPPeer<Handler>>(
                  port_, handler_, ioc_, j_, remote_address_,
-                     buf.data(), std::move(socket_)))
+                     buf.data(), std::move(stream_)))
                 sp->run();
             return;
         }
         if (auto sp = ios().template emplace<PlainHTTPPeer<Handler>>(
              port_, handler_, ioc_, j_, remote_address_,
-                 buf.data(), std::move(socket_)))
+                 buf.data(), std::move(stream_)))
             sp->run();
         return;
     }
@@ -357,19 +287,19 @@ template<class ConstBufferSequence>
 void
 Door<Handler>::
 create(bool ssl, ConstBufferSequence const& buffers,
-    socket_type&& socket, endpoint_type remote_address)
+    stream_type&& stream, endpoint_type remote_address)
 {
     if (ssl)
     {
         if (auto sp = ios().template emplace<SSLHTTPPeer<Handler>>(
              port_, handler_, ioc_, j_, remote_address,
-                 buffers, std::move(socket)))
+                 buffers, std::move(stream)))
             sp->run();
         return;
     }
     if (auto sp = ios().template emplace<PlainHTTPPeer<Handler>>(
          port_, handler_, ioc_, j_, remote_address,
-             buffers, std::move(socket)))
+             buffers, std::move(stream)))
         sp->run();
 }
 
@@ -382,7 +312,8 @@ do_accept(boost::asio::yield_context do_yield)
     {
         error_code ec;
         endpoint_type remote_address;
-        socket_type socket (ioc_);
+        stream_type stream (ioc_);
+        socket_type &socket = stream.socket();
         acceptor_.async_accept (socket, remote_address, do_yield[ec]);
         if (ec && ec != boost::asio::error::operation_aborted)
         {
@@ -397,14 +328,14 @@ do_accept(boost::asio::yield_context do_yield)
         if (ssl_ && plain_)
         {
             if (auto sp = ios().template emplace<Detector>(
-                 port_, handler_, ioc_, std::move(socket),
+                 port_, handler_, ioc_, std::move(stream),
                      remote_address, j_))
                 sp->run();
         }
         else if (ssl_ || plain_)
         {
             create(ssl_, boost::asio::null_buffers{},
-                std::move(socket), remote_address);
+                std::move(stream), remote_address);
         }
     }
 }

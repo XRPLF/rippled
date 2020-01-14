@@ -28,6 +28,8 @@
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/app/main/CollectorManager.h>
 #include <ripple/json/Output.h>
+#include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
 #include <boost/utility/string_view.hpp>
 #include <map>
 #include <mutex>
@@ -84,6 +86,8 @@ public:
     };
 
 private:
+    using socket_type = boost::beast::tcp_stream;
+    using stream_type = boost::beast::ssl_stream <socket_type>;
 
     Application& app_;
     Resource::Manager& m_resourceManager;
@@ -135,7 +139,7 @@ public:
     Handoff
     onHandoff(
         Session& session,
-        std::unique_ptr<beast::asio::ssl_bundle>&& bundle,
+        std::unique_ptr<stream_type>&& bundle,
         http_request_type&& request,
         boost::asio::ip::tcp::endpoint const& remote_address);
 

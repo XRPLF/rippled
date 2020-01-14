@@ -27,7 +27,7 @@ namespace ripple {
 
 ConnectAttempt::ConnectAttempt (Application& app, boost::asio::io_service& io_service,
     endpoint_type const& remote_endpoint, Resource::Consumer usage,
-        beast::asio::ssl_bundle::shared_context const& context,
+        shared_context const& context,
             std::uint32_t id, std::shared_ptr<PeerFinder::Slot> const& slot,
                 beast::Journal journal, OverlayImpl& overlay)
     : Child (overlay)
@@ -39,10 +39,10 @@ ConnectAttempt::ConnectAttempt (Application& app, boost::asio::io_service& io_se
     , usage_ (usage)
     , strand_ (io_service)
     , timer_ (io_service)
-    , ssl_bundle_ (std::make_unique<beast::asio::ssl_bundle>(
-        context, io_service))
-    , socket_ (ssl_bundle_->socket)
-    , stream_ (ssl_bundle_->stream)
+    , stream_ptr_ (std::make_unique<stream_type>(
+        socket_type(std::forward<boost::asio::io_service&>(io_service)), *context))
+    , socket_ (stream_ptr_->next_layer().socket())
+    , stream_ (*stream_ptr_)
     , slot_ (slot)
 {
     JLOG(journal_.debug()) <<
@@ -63,7 +63,7 @@ ConnectAttempt::stop()
     if (! strand_.running_in_this_thread())
         return strand_.post(std::bind(
             &ConnectAttempt::stop, shared_from_this()));
-    if (stream_.next_layer().is_open())
+    if (socket_.is_open())
     {
         JLOG(journal_.debug()) <<
             "Stop";
@@ -85,7 +85,7 @@ void
 ConnectAttempt::close()
 {
     assert(strand_.running_in_this_thread());
-    if (stream_.next_layer().is_open())
+    if (socket_.is_open())
     {
         error_code ec;
         timer_.cancel(ec);
@@ -135,7 +135,7 @@ ConnectAttempt::cancelTimer()
 void
 ConnectAttempt::onTimer (error_code ec)
 {
-    if (! stream_.next_layer().is_open())
+    if (! socket_.is_open())
         return;
     if (ec == boost::asio::error::operation_aborted)
         return;
@@ -158,10 +158,10 @@ ConnectAttempt::onConnect (error_code ec)
         return;
     endpoint_type local_endpoint;
     if(! ec)
-        local_endpoint = stream_.next_layer().local_endpoint(ec);
+        local_endpoint = socket_.local_endpoint(ec);
     if(ec)
         return fail("onConnect", ec);
-    if(! stream_.next_layer().is_open())
+    if(! socket_.is_open())
         return;
     JLOG(journal_.trace()) <<
         "onConnect";
@@ -177,13 +177,13 @@ void
 ConnectAttempt::onHandshake (error_code ec)
 {
     cancelTimer();
-    if(! stream_.next_layer().is_open())
+    if(! socket_.is_open())
         return;
     if(ec == boost::asio::error::operation_aborted)
         return;
     endpoint_type local_endpoint;
     if (! ec)
-        local_endpoint = stream_.next_layer().local_endpoint(ec);
+        local_endpoint = socket_.local_endpoint(ec);
     if(ec)
         return fail("onHandshake", ec);
     JLOG(journal_.trace()) <<
@@ -193,7 +193,7 @@ ConnectAttempt::onHandshake (error_code ec)
             beast::IPAddressConversion::from_asio (local_endpoint)))
         return fail("Duplicate connection");
 
-    auto const sharedValue = makeSharedValue(*ssl_bundle_, journal_);
+    auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
     if (! sharedValue)
         return close(); // makeSharedValue logs
 
@@ -212,7 +212,7 @@ void
 ConnectAttempt::onWrite (error_code ec)
 {
     cancelTimer();
-    if(! stream_.next_layer().is_open())
+    if(! socket_.is_open())
         return;
     if(ec == boost::asio::error::operation_aborted)
         return;
@@ -228,7 +228,7 @@ ConnectAttempt::onRead (error_code ec)
 {
     cancelTimer();
 
-    if(! stream_.next_layer().is_open())
+    if(! socket_.is_open())
         return;
     if(ec == boost::asio::error::operation_aborted)
         return;
@@ -338,7 +338,7 @@ ConnectAttempt::processResponse()
             return fail("processResponse: Unable to negotiate protocol version");
     }
 
-    auto const sharedValue = makeSharedValue(*ssl_bundle_, journal_);
+    auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
     if(! sharedValue)
         return close(); // makeSharedValue logs
 
@@ -365,7 +365,7 @@ ConnectAttempt::processResponse()
         if (result != PeerFinder::Result::success)
             return fail("Outbound slots full");
 
-        auto const peer = std::make_shared<PeerImp>(app_, std::move(ssl_bundle_),
+        auto const peer = std::make_shared<PeerImp>(app_, std::move(stream_ptr_),
             read_buf_.data(), std::move(slot_), std::move(response_), usage_,
             publicKey, *negotiatedProtocol, id_, overlay_);
 

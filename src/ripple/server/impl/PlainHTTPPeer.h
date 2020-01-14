@@ -23,6 +23,7 @@
 #include <ripple/beast/rfc2616.h>
 #include <ripple/server/impl/BaseHTTPPeer.h>
 #include <ripple/server/impl/PlainWSPeer.h>
+#include <boost/beast/core/tcp_stream.hpp>
 #include <memory>
 
 namespace ripple {
@@ -34,11 +35,12 @@ class PlainHTTPPeer
 {
 private:
     friend class BaseHTTPPeer<Handler, PlainHTTPPeer>;
-    using waitable_timer = typename BaseHTTPPeer<Handler, PlainHTTPPeer>::waitable_timer;
     using socket_type = boost::asio::ip::tcp::socket;
+    using stream_type = boost::beast::tcp_stream;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
 
-    socket_type stream_;
+    stream_type stream_;
+    socket_type& socket_;
 
 public:
     template <class ConstBufferSequence>
@@ -49,7 +51,7 @@ public:
         beast::Journal journal,
         endpoint_type remote_address,
         ConstBufferSequence const& buffers,
-        socket_type&& socket);
+        stream_type&& stream);
 
     void run();
 
@@ -75,23 +77,23 @@ PlainHTTPPeer<Handler>::PlainHTTPPeer(
     beast::Journal journal,
     endpoint_type remote_endpoint,
     ConstBufferSequence const& buffers,
-    socket_type&& socket)
+    stream_type&& stream)
     : BaseHTTPPeer<Handler, PlainHTTPPeer>(
           port,
           handler,
           ioc.get_executor(),
-          waitable_timer{ioc},
           journal,
           remote_endpoint,
           buffers)
-    , stream_(std::move(socket))
+    , stream_(std::move(stream))
+    , socket_(stream_.socket())
 {
     // Set TCP_NODELAY on loopback interfaces,
     // otherwise Nagle's algorithm makes Env
     // tests run slower on Linux systems.
     //
     if(remote_endpoint.address().is_loopback())
-        stream_.set_option(boost::asio::ip::tcp::no_delay{true});
+        socket_.set_option(boost::asio::ip::tcp::no_delay{true});
 }
 
 template<class Handler>
@@ -107,7 +109,7 @@ run()
         return;
     }
 
-    if (! stream_.is_open())
+    if (! socket_.is_open())
         return;
 
     boost::asio::spawn(this->strand_, std::bind(&PlainHTTPPeer::do_read,
@@ -141,7 +143,7 @@ do_request()
     {
         // half-close on Connection: close
         if (! what.keep_alive)
-            stream_.shutdown(socket_type::shutdown_receive, ec);
+            socket_.shutdown(socket_type::shutdown_receive, ec);
         if (ec)
             return this->fail(ec, "request");
         return this->write(what.response, what.keep_alive);
@@ -149,7 +151,7 @@ do_request()
 
     // Perform half-close when Connection: close and not SSL
     if (! beast::rfc2616::is_keep_alive(this->message_))
-        stream_.shutdown(socket_type::shutdown_receive, ec);
+        socket_.shutdown(socket_type::shutdown_receive, ec);
     if (ec)
         return this->fail(ec, "request");
     // legacy
@@ -162,7 +164,7 @@ PlainHTTPPeer<Handler>::
 do_close()
 {
     boost::system::error_code ec;
-    stream_.shutdown(socket_type::shutdown_send, ec);
+    socket_.shutdown(socket_type::shutdown_send, ec);
 }
 
 } // ripple

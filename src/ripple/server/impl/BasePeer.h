@@ -103,7 +103,7 @@ close()
         return post(
             strand_, std::bind(&BasePeer::close, impl().shared_from_this()));
     error_code ec;
-    ripple::get_lowest_layer(impl().ws_).close(ec);
+    ripple::get_lowest_layer(impl().ws_).socket().close(ec);
 }
 
 } // ripple

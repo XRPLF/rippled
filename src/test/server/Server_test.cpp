@@ -29,12 +29,17 @@
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
 #include <chrono>
 #include <stdexcept>
 #include <thread>
 
 namespace ripple {
 namespace test {
+
+using socket_type   = boost::beast::tcp_stream;
+using stream_type   = boost::beast::ssl_stream <socket_type>;
 
 class Server_test : public beast::unit_test::suite
 {
@@ -104,7 +109,7 @@ public:
 
         Handoff
         onHandoff (Session& session,
-            std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
+            std::unique_ptr <stream_type>&& bundle,
                 http_request_type&& request,
                     boost::asio::ip::tcp::endpoint remote_address)
         {
@@ -309,7 +314,7 @@ public:
 
             Handoff
             onHandoff (Session& session,
-                std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
+                std::unique_ptr <stream_type>&& bundle,
                     http_request_type&& request,
                         boost::asio::ip::tcp::endpoint remote_address)
             {

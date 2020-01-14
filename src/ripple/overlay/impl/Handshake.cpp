@@ -70,10 +70,10 @@ hashLastMessage (SSL const* ssl,
 }
 
 boost::optional<uint256>
-makeSharedValue (beast::asio::ssl_bundle& ssl, beast::Journal journal)
+makeSharedValue (stream_type& ssl, beast::Journal journal)
 {
     auto const cookie1 = hashLastMessage(
-        ssl.stream.native_handle(), SSL_get_finished);
+        ssl.native_handle(), SSL_get_finished);
     if (!cookie1)
     {
         JLOG (journal.error()) << "Cookie generation: local setup not complete";
@@ -81,7 +81,7 @@ makeSharedValue (beast::asio::ssl_bundle& ssl, beast::Journal journal)
     }
 
     auto const cookie2 = hashLastMessage(
-        ssl.stream.native_handle(), SSL_get_peer_finished);
+        ssl.native_handle(), SSL_get_peer_finished);
     if (!cookie2)
     {
         JLOG (journal.error()) << "Cookie generation: peer setup not complete";

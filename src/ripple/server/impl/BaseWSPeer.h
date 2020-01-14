@@ -529,7 +529,7 @@ fail(error_code ec, String const& what)
         ec_ = ec;
         JLOG(this->j_.trace()) <<
             what << ": " << ec.message();
-        ripple::get_lowest_layer(impl().ws_).close(ec);
+        ripple::get_lowest_layer(impl().ws_).socket().close(ec);
     }
 }
 

@@ -58,7 +58,7 @@ PeerImp::PeerImp (Application& app, id_t id,
     std::shared_ptr<PeerFinder::Slot> const& slot, http_request_type&& request,
         PublicKey const& publicKey,
             ProtocolVersion protocol, Resource::Consumer consumer,
-                std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+                std::unique_ptr<stream_type>&& stream_ptr,
                     OverlayImpl& overlay)
     : Child (overlay)
     , app_ (app)
@@ -67,9 +67,9 @@ PeerImp::PeerImp (Application& app, id_t id,
     , p_sink_(app_.journal("Protocol"), makePrefix(id))
     , journal_ (sink_)
     , p_journal_(p_sink_)
-    , ssl_bundle_(std::move(ssl_bundle))
-    , socket_ (ssl_bundle_->socket)
-    , stream_ (ssl_bundle_->stream)
+    , stream_ptr_(std::move(stream_ptr))
+    , socket_ (stream_ptr_->next_layer().socket())
+    , stream_ (*stream_ptr_)
     , strand_ (socket_.get_executor())
     , timer_ (waitable_timer{socket_.get_executor()})
     , remote_address_ (slot->remote_endpoint())
@@ -697,7 +697,7 @@ void PeerImp::doAccept()
 
     JLOG(journal_.debug()) << "doAccept: " << remote_address_;
 
-    auto const sharedValue = makeSharedValue(*ssl_bundle_, journal_);
+    auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
 
     // This shouldn't fail since we already computed
     // the shared value successfully in OverlayImpl
@@ -857,7 +857,7 @@ PeerImp::onReadMessage (error_code ec, std::size_t bytes_transferred)
             read_buffer_.data(), *this);
         if (ec)
             return fail("onReadMessage", ec);
-        if (! stream_.next_layer().is_open())
+        if (! socket_.is_open())
             return;
         if(gracefulClose_)
             return;
