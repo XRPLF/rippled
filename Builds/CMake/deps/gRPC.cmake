@@ -9,7 +9,7 @@ else ()
 endif ()
 
 find_package (gRPC 1.23 CONFIG QUIET)
-if (TARGET gRPC::gpr)
+if (TARGET gRPC::gpr AND NOT local_grpc)
   get_target_property (_grpc_l gRPC::gpr IMPORTED_LOCATION_DEBUG)
   if (NOT _grpc_l)
     get_target_property (_grpc_l gRPC::gpr IMPORTED_LOCATION_RELEASE)

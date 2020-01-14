@@ -26,7 +26,7 @@ if (NOT local_libarchive)
         # find module doesn't find static libs currently, so we re-search
         get_filename_component(_loc ${LibArchive_LIBRARY} DIRECTORY)
         find_library(_la_static
-          NAMES libarchive.a archive_static.lib
+          NAMES libarchive.a archive_static.lib archive.lib
           PATHS ${_loc})
         if (_la_static)
           set (_la_lib ${_la_static})
