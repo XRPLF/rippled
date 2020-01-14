@@ -25,7 +25,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/server/impl/PlainHTTPPeer.h>
 #include <ripple/server/impl/SSLHTTPPeer.h>
-#include <ripple/beast/asio/ssl_bundle.h>
+#include <boost/beast/core/detect_ssl.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/buffer.hpp>
@@ -125,56 +125,6 @@ private:
     void do_accept (yield_context yield);
 };
 
-/** Detect SSL client handshakes.
-    Analyzes the bytes in the provided buffer to detect the SSL client
-    handshake. If the buffer contains insufficient data, more data will be
-    read from the stream until there is enough to determine a result.
-    No bytes are discarded from buf. Any additional bytes read are retained.
-    buf must provide an interface compatible with boost::asio::streambuf
-    http://boost.org/doc/libs/1_56_0/doc/html/boost_asio/reference/streambuf.html
-    See
-        http://www.ietf.org/rfc/rfc2246.txt
-        Section 7.4. Handshake protocol
-    @param socket The stream to read from
-    @param buf A buffer to hold the received data
-    @param do_yield A do_yield context
-    @return The error code if an error occurs, otherwise `true` if
-            the data read indicates the SSL client handshake.
-*/
-template <class Socket, class StreamBuf, class Yield>
-std::pair <boost::system::error_code, bool>
-detect_ssl (Socket& socket, StreamBuf& buf, Yield do_yield)
-{
-    std::pair <boost::system::error_code, bool> result;
-    result.second = false;
-    for(;;)
-    {
-        std::size_t const max = 4; // the most bytes we could need
-        unsigned char data[max];
-        auto const bytes = boost::asio::buffer_copy (
-            boost::asio::buffer(data), buf.data());
-
-        if (bytes > 0)
-        {
-            if (data[0] != 0x16) // message type 0x16 = "SSL Handshake"
-                break;
-        }
-
-        if (bytes >= max)
-        {
-            result.second = true;
-            break;
-        }
-
-        buf.commit(boost::asio::async_read (socket,
-            buf.prepare(max - bytes), boost::asio::transfer_at_least(1),
-                do_yield[result.first]));
-        if (result.first)
-            break;
-    }
-    return result;
-}
-
 template <class Handler>
 Door<Handler>::Detector::Detector(
     Port const& port,
@@ -239,7 +189,8 @@ do_detect(boost::asio::yield_context do_yield)
 {
     boost::beast::multi_buffer buf(16);
     timer_.expires_from_now(std::chrono::seconds(15));
-    auto const [ec, ssl] = detect_ssl(socket_, buf, do_yield);
+    boost::system::error_code ec;
+    bool const ssl = async_detect_ssl(socket_, buf, do_yield[ec]);
     error_code unused;
     timer_.cancel(unused);
     if (! ec)
