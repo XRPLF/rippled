@@ -148,14 +148,13 @@ Json::Value doAccountChannels (RPC::JsonContext& context)
 
     if (!forEachItemAfter(*ledger, accountID, startAfter, startHint,
                           limit-visitData.items.size()+1,
-        [&visitData](std::shared_ptr<SLE const> const& sleCur)
-        {
-
-            if (sleCur && sleCur->getType () == ltPAYCHAN &&
-                (! visitData.hasDst ||
+        [&visitData, &accountID](std::shared_ptr<SLE const> const& sleCur) {
+            if (sleCur && sleCur->getType() == ltPAYCHAN &&
+                (*sleCur)[sfAccount] == accountID &&
+                (!visitData.hasDst ||
                  visitData.raDstAccount == (*sleCur)[sfDestination]))
             {
-                visitData.items.emplace_back (sleCur);
+                visitData.items.emplace_back(sleCur);
                 return true;
             }
 
