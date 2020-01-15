@@ -204,56 +204,6 @@ public:
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
     }
 
-    void
-    test_enablement (FeatureBitset features)
-    {
-        testcase ("Enablement");
-
-        using namespace jtx;
-        Env env(*this, envconfig([](std::unique_ptr<Config> cfg)
-            {
-                cfg->loadFromString ("[" SECTION_SIGNING_SUPPORT "]\ntrue");
-                return cfg;
-            }), features - featureMultiSign);
-
-        Account const alice {"alice", KeyType::ed25519};
-        env.fund(XRP(1000), alice);
-        env.close();
-
-        // NOTE: These six tests will fail if multisign is enabled.
-        env(signers(alice, 1, {{bogie, 1}}), ter(temDISABLED));
-        env.close();
-        env.require (owners (alice, 0));
-
-        std::uint32_t aliceSeq = env.seq (alice);
-        auto const baseFee = env.current()->fees().base;
-        env(noop(alice), msig(bogie), fee(2 * baseFee), ter(temINVALID));
-        env.close();
-        BEAST_EXPECT(env.seq(alice) == aliceSeq);
-
-        env(signers(alice, 1, {{bogie, 1}, {demon,1}}), ter(temDISABLED));
-        env.close();
-        BEAST_EXPECT(env.seq(alice) == aliceSeq);
-
-        {
-            Json::Value jvParams;
-            jvParams[jss::account] = alice.human();
-            auto const jsmr = env.rpc("json", "submit_multisigned", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jsmr[jss::error]         == "notEnabled");
-            BEAST_EXPECT(jsmr[jss::status]        == "error");
-            BEAST_EXPECT(jsmr[jss::error_message] == "Not enabled in configuration.");
-        }
-
-        {
-            Json::Value jvParams;
-            jvParams[jss::account] = alice.human();
-            auto const jsmr = env.rpc("json", "sign_for", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jsmr[jss::error]         == "notEnabled");
-            BEAST_EXPECT(jsmr[jss::status]        == "error");
-            BEAST_EXPECT(jsmr[jss::error_message] == "Not enabled in configuration.");
-        }
-    }
-
     void test_fee (FeatureBitset features)
     {
         testcase ("Fee");
@@ -1340,7 +1290,6 @@ public:
         test_noReserve (features);
         test_signerListSet (features);
         test_phantomSigners (features);
-        test_enablement (features);
         test_fee (features);
         test_misorderedSigners (features);
         test_masterSigners (features);

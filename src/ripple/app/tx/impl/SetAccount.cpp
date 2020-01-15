@@ -295,12 +295,7 @@ SetAccount::doApply ()
             (!view().peek (keylet::signers (account_))))
         {
             // Account has no regular key or multi-signer signer list.
-
-            // Prevent transaction changes until we're ready.
-            if (view().rules().enabled(featureMultiSign))
-                return tecNO_ALTERNATIVE_KEY;
-
-            return tecNO_REGULAR_KEY;
+            return tecNO_ALTERNATIVE_KEY;
         }
 
         JLOG(j_.trace()) << "Set lsfDisableMaster.";

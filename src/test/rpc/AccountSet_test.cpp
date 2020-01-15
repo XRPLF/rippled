@@ -376,12 +376,10 @@ public:
         }
     }
 
-    void testBadInputs(bool withFeatures)
+    void testBadInputs()
     {
         using namespace test::jtx;
-        std::unique_ptr<Env> penv {
-            withFeatures ?  new Env(*this) : new Env(*this, FeatureBitset{})};
-        Env& env = *penv;
+        Env env (*this);
         Account const alice ("alice");
         env.fund(XRP(10000), alice);
 
@@ -415,7 +413,7 @@ public:
 
         env(fset (alice, asfDisableMaster),
             sig(alice),
-            ter(withFeatures ? tecNO_ALTERNATIVE_KEY : tecNO_REGULAR_KEY));
+            ter(tecNO_ALTERNATIVE_KEY));
     }
 
     void testRequireAuthWithDir()
@@ -450,13 +448,10 @@ public:
         testMessageKey();
         testWalletID();
         testEmailHash();
-        testBadInputs(true);
-        testBadInputs(false);
+        testBadInputs();
         testRequireAuthWithDir();
         testTransferRate();
     }
-
-
 };
 
 BEAST_DEFINE_TESTSUITE(AccountSet,app,ripple);

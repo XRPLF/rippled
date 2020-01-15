@@ -177,24 +177,16 @@ void STTx::sign (
     tid_ = getHash(HashPrefix::transactionID);
 }
 
-std::pair<bool, std::string> STTx::checkSign(bool allowMultiSign) const
+std::pair<bool, std::string> STTx::checkSign() const
 {
     std::pair<bool, std::string> ret {false, ""};
     try
     {
-        if (allowMultiSign)
-        {
-            // Determine whether we're single- or multi-signing by looking
-            // at the SigningPubKey.  It it's empty we must be
-            // multi-signing.  Otherwise we're single-signing.
-            Blob const& signingPubKey = getFieldVL (sfSigningPubKey);
-            ret = signingPubKey.empty () ?
-                checkMultiSign () : checkSingleSign ();
-        }
-        else
-        {
-            ret = checkSingleSign ();
-        }
+        // Determine whether we're single- or multi-signing by looking
+        // at the SigningPubKey.  It it's empty we must be
+        // multi-signing.  Otherwise we're single-signing.
+        Blob const& signingPubKey = getFieldVL (sfSigningPubKey);
+        ret = signingPubKey.empty () ? checkMultiSign () : checkSingleSign ();
     }
     catch (std::exception const&)
     {

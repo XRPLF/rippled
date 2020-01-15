@@ -74,9 +74,6 @@ SetSignerList::determineOperation(STTx const& tx,
 NotTEC
 SetSignerList::preflight (PreflightContext const& ctx)
 {
-    if (! ctx.rules.enabled(featureMultiSign))
-        return temDISABLED;
-
     auto const ret = preflight1 (ctx);
     if (!isTesSuccess (ret))
         return ret;

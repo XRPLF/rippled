@@ -39,13 +39,6 @@ Json::Value doSignFor (RPC::JsonContext& context)
             "Signing is not supported by this server.");
     }
 
-    // Bail if multisign is not enabled.
-    if (! context.app.getLedgerMaster().getValidatedRules().
-        enabled (featureMultiSign))
-    {
-        RPC::inject_error (rpcNOT_ENABLED, context.params);
-        return context.params;
-    }
     context.loadType = Resource::feeHighBurdenRPC;
     auto const failHard = context.params[jss::fail_hard].asBool();
     auto const failType = NetworkOPs::doFailHard (failHard);

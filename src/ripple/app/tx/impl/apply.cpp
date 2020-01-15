@@ -38,9 +38,6 @@ checkValidity(HashRouter& router,
     STTx const& tx, Rules const& rules,
         Config const& config)
 {
-    auto const allowMultiSign =
-        rules.enabled(featureMultiSign);
-
     auto const id = tx.getTransactionID();
     auto const flags = router.getFlags(id);
     if (flags & SF_SIGBAD)
@@ -50,7 +47,7 @@ checkValidity(HashRouter& router,
     if (!(flags & SF_SIGGOOD))
     {
         // Don't know signature state. Check it.
-        auto const sigVerify = tx.checkSign(allowMultiSign);
+        auto const sigVerify = tx.checkSign();
         if (! sigVerify.first)
         {
             router.setFlags(id, SF_SIGBAD);
