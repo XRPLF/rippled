@@ -3571,11 +3571,9 @@ public:
             env (trust (ann, D_BUX(100)));
             env.close();
 
-            TER const tecExpect{temBAD_PATH};
-
             // This payment caused the assert.
             env (pay (ann, ann, D_BUX(30)),
-                path (A_BUX, D_BUX), sendmax (A_BUX(30)), ter (tecExpect));
+                path (A_BUX, D_BUX), sendmax (A_BUX(30)), ter (temBAD_PATH));
             env.close();
 
             env.require (balance (ann, A_BUX(none)));
