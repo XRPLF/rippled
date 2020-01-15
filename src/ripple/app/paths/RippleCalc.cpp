@@ -129,8 +129,7 @@ RippleCalc::rippleCalculate(
               << ", actualOut: " << flowOut.actualAmountOut
               << ", result: " << flowOut.result()
               << ", dstAmtReq: " << saDstAmountReq
-              << ", sendMax: " << saMaxAmountReq << ", algo: "
-              << "V2";
+              << ", sendMax: " << saMaxAmountReq;
 
     flowSB.apply(view);
     return flowOut;
