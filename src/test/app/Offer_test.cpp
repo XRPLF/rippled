@@ -271,7 +271,10 @@ public:
         env (pay (gw, carol, EUR (100)));
 
         // Create more offers than the loop max count in DeliverNodeReverse
-        for (int i=0;i<101;++i)
+        // Note: the DeliverNodeReverse code has been removed; however since
+        // this is a regression test the original test is being left as-is for
+        // now.
+        for (int i = 0; i < 101; ++i)
             env (offer (carol, USD (1), EUR (2)));
 
         auto hasFeature = [](Env& e, uint256 const& f)
