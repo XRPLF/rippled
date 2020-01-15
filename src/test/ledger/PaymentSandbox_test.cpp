@@ -127,13 +127,17 @@ class PaymentSandbox_test : public beast::unit_test::suite
             auto const iss = USD_gw1.issue ();
             auto const startingAmount = accountHolds (
                 av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
-
-            accountSend (av, gw1, alice, toCredit, j);
+            {
+                auto r = accountSend (av, gw1, alice, toCredit, j);
+                BEAST_EXPECT(r == tesSUCCESS);
+            }
             BEAST_EXPECT(accountHolds (av, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount + toCredit);
-
-            accountSend (av, alice, gw1, toDebit, j);
+            {
+                auto r = accountSend(av, alice, gw1, toDebit, j);
+                BEAST_EXPECT(r == tesSUCCESS);
+            }
             BEAST_EXPECT(accountHolds (av, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount + toCredit - toDebit);
@@ -167,12 +171,18 @@ class PaymentSandbox_test : public beast::unit_test::suite
             auto const startingAmount = accountHolds (
                 pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
-            accountSend (pv, gw1, alice, toCredit, j);
+            {
+                auto r = accountSend (pv, gw1, alice, toCredit, j);
+                BEAST_EXPECT(r == tesSUCCESS);
+            }
             BEAST_EXPECT(accountHolds (pv, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount);
 
-            accountSend (pv, alice, gw1, toDebit, j);
+            {
+                auto r = accountSend (pv, alice, gw1, toDebit, j);
+                BEAST_EXPECT(r == tesSUCCESS);
+            }
             BEAST_EXPECT(accountHolds (pv, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount - toDebit);
@@ -232,7 +242,10 @@ class PaymentSandbox_test : public beast::unit_test::suite
             auto const startingAmount = accountHolds (
                 pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
-            accountSend (pv, gw1, alice, toCredit, j);
+            {
+                auto r = accountSend (pv, gw1, alice, toCredit, j);
+                BEAST_EXPECT(r == tesSUCCESS);
+            }
             BEAST_EXPECT(accountHolds (pv, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount);
@@ -242,13 +255,19 @@ class PaymentSandbox_test : public beast::unit_test::suite
                 BEAST_EXPECT(accountHolds (pv2, alice, iss.currency, iss.account,
                             fhIGNORE_FREEZE, j) ==
                         startingAmount);
-                accountSend (pv2, gw1, alice, toCredit, j);
+                {
+                    auto r = accountSend (pv2, gw1, alice, toCredit, j);
+                    BEAST_EXPECT(r == tesSUCCESS);
+                }
                 BEAST_EXPECT(accountHolds (pv2, alice, iss.currency, iss.account,
                             fhIGNORE_FREEZE, j) ==
                         startingAmount);
             }
 
-            accountSend (pv, alice, gw1, toDebit, j);
+            {
+                auto r = accountSend (pv, alice, gw1, toDebit, j);
+                BEAST_EXPECT(r == tesSUCCESS);
+            }
             BEAST_EXPECT(accountHolds (pv, alice, iss.currency, iss.account,
                         fhIGNORE_FREEZE, j) ==
                     startingAmount - toDebit);
@@ -324,8 +343,14 @@ class PaymentSandbox_test : public beast::unit_test::suite
             // to drop below the reserve. Make sure her funds are zero (there was a bug that
             // caused her funds to become negative).
 
-            accountSend (sb, xrpAccount (), alice, XRP(100), env.journal);
-            accountSend (sb, alice, xrpAccount (), XRP(100), env.journal);
+            {
+                auto r = accountSend (sb, xrpAccount (), alice, XRP(100), env.journal);
+                BEAST_EXPECT(r == tesSUCCESS);
+            }
+            {
+                auto r = accountSend (sb, alice, xrpAccount (), XRP(100), env.journal);
+                BEAST_EXPECT(r == tesSUCCESS);
+            }
             BEAST_EXPECT(
                 accountFundsXRP (sb, alice, env.journal) == beast::zero);
         }

@@ -299,7 +299,7 @@ rippleCredit (ApplyView& view,
     const STAmount & saAmount, bool bCheckIssuer,
     beast::Journal j);
 
-// [[nodiscard]] // nodiscard commented out so DeliverNodeForward.cpp compiles.
+[[nodiscard]]
 TER
 accountSend (ApplyView& view,
     AccountID const& from,
