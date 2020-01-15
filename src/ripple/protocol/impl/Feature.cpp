@@ -92,7 +92,7 @@ detail::supportedAmendments ()
     // Removing them will cause servers to become amendment blocked.
     static std::vector<std::string> const supported
     {
-        "MultiSign",
+        "MultiSign",                   // Unconditionally supported.
 //        "Tickets",
         "TrustSetAuth",
         "FeeEscalation",               // Unconditionally supported.
@@ -151,7 +151,6 @@ uint256 bitsetIndexToFeature(size_t i)
 }
 
 
-uint256 const featureMultiSign = *getRegisteredFeature("MultiSign");
 uint256 const featureTickets = *getRegisteredFeature("Tickets");
 uint256 const featureTrustSetAuth = *getRegisteredFeature("TrustSetAuth");
 uint256 const featureOwnerPaysFee = *getRegisteredFeature("OwnerPaysFee");

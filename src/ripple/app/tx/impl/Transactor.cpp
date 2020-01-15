@@ -331,13 +331,9 @@ TER Transactor::apply ()
 NotTEC
 Transactor::checkSign (PreclaimContext const& ctx)
 {
-    // Make sure multisigning is enabled before we check for multisignatures.
-    if (ctx.view.rules().enabled(featureMultiSign))
-    {
-        // If the pk is empty, then we must be multi-signing.
-        if (ctx.tx.getSigningPubKey().empty ())
-            return checkMultiSign (ctx);
-    }
+    // If the pk is empty, then we must be multi-signing.
+    if (ctx.tx.getSigningPubKey().empty ())
+        return checkMultiSign (ctx);
 
     return checkSingleSign (ctx);
 }

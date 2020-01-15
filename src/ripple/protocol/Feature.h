@@ -50,7 +50,7 @@ class FeatureCollections
 {
     static constexpr char const* const featureNames[] =
     {
-        "MultiSign",
+        "MultiSign",                   // Unconditionally supported.
         "Tickets",
         "TrustSetAuth",
         "FeeEscalation",               // Unconditionally supported.
@@ -339,7 +339,6 @@ foreachFeature(FeatureBitset bs, F&& f)
             f(bitsetIndexToFeature(i));
 }
 
-extern uint256 const featureMultiSign;
 extern uint256 const featureTickets;
 extern uint256 const featureTrustSetAuth;
 extern uint256 const featureOwnerPaysFee;

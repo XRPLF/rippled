@@ -133,7 +133,7 @@ public:
         @return `true` if valid signature. If invalid, the error message string.
     */
     std::pair<bool, std::string>
-    checkSign(bool allowMultiSign) const;
+    checkSign() const;
 
     // SQL Functions with metadata.
     static

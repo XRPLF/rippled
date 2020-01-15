@@ -892,7 +892,7 @@ class Check_test : public beast::unit_test::suite
         }
 
         // Use a regular key and also multisign to cash a check.
-        // featureMultiSign changes the reserve on a SignerList, so
+        // featureMultiSignReserve changes the reserve on a SignerList, so
         // check both before and after.
         FeatureBitset const allSupported {supported_amendments()};
         for (auto const features :
@@ -1541,7 +1541,7 @@ class Check_test : public beast::unit_test::suite
         Account const zoe {"zoe"};
         IOU const USD {gw["USD"]};
 
-        // featureMultiSign changes the reserve on a SignerList, so
+        // featureMultiSignReserve changes the reserve on a SignerList, so
         // check both before and after.
         FeatureBitset const allSupported {supported_amendments()};
         for (auto const features :
