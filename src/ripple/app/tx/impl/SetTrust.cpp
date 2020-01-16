@@ -444,7 +444,7 @@ SetTrust::doApply ()
     else if (! saLimitAmount &&                          // Setting default limit.
         (! bQualityIn || ! uQualityIn) &&           // Not setting quality in or setting default quality in.
         (! bQualityOut || ! uQualityOut) &&         // Not setting quality out or setting default quality out.
-        (! (view().rules().enabled(featureTrustSetAuth)) || ! bSetAuth))
+        (! bSetAuth))
     {
         JLOG(j_.trace()) <<
             "Redundant: Setting non-existent ripple line to defaults.";
