@@ -887,7 +887,6 @@ struct PayChan_test : public beast::unit_test::suite
         env(create(alice, bob, channelFunds, settleDelay, pk));
         env.close();
         auto const chan1Str = to_string(channel(*env.current(), alice, bob));
-        std::string chan1PkStr;
         {
             auto const r =
                 env.rpc("account_channels", alice.human(), bob.human());
@@ -895,8 +894,6 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 r[jss::result][jss::channels][0u][jss::channel_id] == chan1Str);
             BEAST_EXPECT(r[jss::result][jss::validated]);
-            chan1PkStr =
-                r[jss::result][jss::channels][0u][jss::public_key].asString();
         }
         {
             auto const r = env.rpc("account_channels", alice.human());
@@ -904,8 +901,6 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 r[jss::result][jss::channels][0u][jss::channel_id] == chan1Str);
             BEAST_EXPECT(r[jss::result][jss::validated]);
-            chan1PkStr =
-                r[jss::result][jss::channels][0u][jss::public_key].asString();
         }
         {
             auto const r =
