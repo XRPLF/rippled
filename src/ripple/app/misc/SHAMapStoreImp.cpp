@@ -367,7 +367,7 @@ SHAMapStoreImp::run()
         if (validatedSeq >= lastRotated + deleteInterval_
                 && canDelete_ >= lastRotated - 1)
         {
-            JLOG(journal_.debug()) << "rotating  validatedSeq " << validatedSeq
+            JLOG(journal_.warn()) << "rotating  validatedSeq " << validatedSeq
                     << " lastRotated " << lastRotated << " deleteInterval "
                     << deleteInterval_ << " canDelete_ " << canDelete_;
 
@@ -459,7 +459,7 @@ SHAMapStoreImp::run()
                 oldBackend = dbRotating_->rotateBackends(
                     std::move(newBackend));
             }
-            JLOG(journal_.debug()) << "finished rotation " << validatedSeq;
+            JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
 
             oldBackend->setDeletePath();
         }
