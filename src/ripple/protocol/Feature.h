@@ -57,7 +57,7 @@ class FeatureCollections
         "OwnerPaysFee",
         "CompareFlowV1V2",
         "PayChan",
-        "Flow",
+        "Flow",                        // Unconditionally supported.
         "CompareTakerFlowCross",
         "FlowCross",
         "CryptoConditions",
