@@ -484,31 +484,31 @@ private:
         std::lock_guard lock (mutex_);
 
         auto const stats = m_traffic.getCounts();
-        auto const stats_names = m_traffic.getMonNames();
 
         if(m_stats.trafficGauges.empty()){
-            for (auto const& i : stats_names)
+            for (auto const& i : stats)
             {   
-                beast::insight::Gauge bytesIn(m_stats.mcollector->make_gauge(i,"Bytes_In"));
-                beast::insight::Gauge bytesOut(m_stats.mcollector->make_gauge(i,"Bytes_Out"));
-                beast::insight::Gauge messagesIn(m_stats.mcollector->make_gauge(i,"Messages_In"));
-                beast::insight::Gauge messagesOut(m_stats.mcollector->make_gauge(i,"Messages_Out"));
-
-                m_stats.trafficGauges.push_back(bytesIn);
-                m_stats.trafficGauges.push_back(bytesOut);
-                m_stats.trafficGauges.push_back(messagesIn);
-                m_stats.trafficGauges.push_back(messagesOut);
+                m_stats.trafficGauges.push_back(
+                    beast::insight::Gauge (m_stats.mcollector->make_gauge(i.name,"Bytes_In")));
+                m_stats.trafficGauges.push_back(
+                    beast::insight::Gauge (m_stats.mcollector->make_gauge(i.name,"Bytes_Out")));
+                m_stats.trafficGauges.push_back(
+                    beast::insight::Gauge (m_stats.mcollector->make_gauge(i.name,"Messages_In")));
+                m_stats.trafficGauges.push_back(
+                    beast::insight::Gauge (m_stats.mcollector->make_gauge(i.name,"Messages_Out")));
             }
         }
 
-        for (int i =0; i<4*(ripple::TrafficCount::category::unknown + 1); i+=4){
-            m_stats.trafficGauges[i] = stats[i/4].bytesIn;
-            m_stats.trafficGauges[i+1] = stats[i/4].bytesOut;
-            m_stats.trafficGauges[i+2] = stats[i/4].messagesIn;
-            m_stats.trafficGauges[i+3] = stats[i/4].messagesOut;
-        }
+        int i = 0;
 
-        m_stats.peerDisconnects= getPeerDisconnect();
+        for (auto const& s : stats)
+        {
+            m_stats.trafficGauges[i++] = s.bytesIn;
+            m_stats.trafficGauges[i++] = s.bytesOut;
+            m_stats.trafficGauges[i++] = s.messagesIn;
+            m_stats.trafficGauges[i  ] = s.messagesOut;
+        }
+        m_stats.peerDisconnects = getPeerDisconnect();
     }
 };
 

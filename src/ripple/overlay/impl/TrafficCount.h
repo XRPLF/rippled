@@ -64,7 +64,7 @@ public:
 
     // If you add entries to this enum, you need to update the initialization
     // of the arrays at the bottom of this file which map array numbers to
-    // human-readable names and monitoring-tool friendly names.
+    // human-readable, monitoring-tool friendly names.
     enum category : std::size_t
     {
         base,           // basic peer overhead, must be first
@@ -177,102 +177,52 @@ public:
     {
         return counts_;
     }
-    /** Returns an array of monitoring friendly (StatsD) names for the counters*/
-    auto
-    getMonNames() const
-    {
-        return monNames_;
-    }
+
 
 protected:
     std::array<TrafficStats, category::unknown + 1> counts_
     {{
-        { "overhead" },                                           // category::base
-        { "overhead: cluster" },                                  // category::cluster
-        { "overhead: overlay" },                                  // category::overlay
-        { "overhead: manifest" },                                 // category::manifests
-        { "transactions" },                                       // category::transaction
-        { "proposals" },                                          // category::proposal
-        { "validations" },                                        // category::validation
-        { "shards" },                                             // category::shards
-        { "set (get)" },                                          // category::get_set
-        { "set (share)" },                                        // category::share_set
-        { "ledger data: Transaction Set candidate (get)" },       // category::ld_tsc_get
-        { "ledger data: Transaction Set candidate (share)" },     // category::ld_tsc_share
-        { "ledger data: Transaction Node (get)" },                // category::ld_txn_get
-        { "ledger data: Transaction Node (share)" },              // category::ld_txn_share
-        { "ledger data: Account State Node (get)" },              // category::ld_asn_get
-        { "ledger data: Account State Node (share)" },            // category::ld_asn_share
-        { "ledger data (get)" },                                  // category::ld_get
-        { "ledger data (share)" },                                // category::ld_share
-        { "ledger: Transaction Set candidate (share)" },          // category::gl_tsc_share
-        { "ledger: Transaction Set candidate (get)" },            // category::gl_tsc_get
-        { "ledger: Transaction node (share)" },                   // category::gl_txn_share
-        { "ledger: Transaction node (get)" },                     // category::gl_txn_get
-        { "ledger: Account State node (share)" },                 // category::gl_asn_share
-        { "ledger: Account State node (get)" },                   // category::gl_asn_get
-        { "ledger (share)" },                                     // category::gl_share
-        { "ledger (get)" },                                       // category::gl_get
-        { "getobject: Ledger (share)" },                          // category::share_hash_ledger
-        { "getobject: Ledger (get)" },                            // category::get_hash_ledger
-        { "getobject: Transaction (share)" },                     // category::share_hash_tx
-        { "getobject: Transaction (get)" },                       // category::get_hash_tx
-        { "getobject: Transaction node (share)" },                // category::share_hash_txnode
-        { "getobject: Transaction node (get)" },                  // category::get_hash_txnode
-        { "getobject: Account State node (share)" },              // category::share_hash_asnode
-        { "getobject: Account State node (get)" },                // category::get_hash_asnode
-        { "getobject: CAS (share)" },                             // category::share_cas_object
-        { "getobject: CAS (get)" },                               // category::get_cas_object
-        { "getobject: Fetch Pack (share)" },                      // category::share_fetch_pack
-        { "getobject: Fetch Pack (get)" },                        // category::get_fetch_pack
-        { "getobject (share)" },                                  // category::share_hash
-        { "getobject (get)" },                                    // category::get_hash
-        { "unknown" }                                             // category::unknown
-    }};
-
-    std::array<std::string, category::unknown+1> monNames_
-    {{
-        "overhead",                                        // category::base
-        "overhead_cluster",                                // category::cluster
-        "overhead_overlay",                                // category::overlay
-        "overhead_manifest",                               // category::manifests
-        "transactions",                                    // category::transaction
-        "proposals",                                       // category::proposal
-        "validations",                                     // category::validation
-        "shards",                                          // category::shards
-        "set_get",                                         // category::get_set
-        "set_share",                                       // category::share_set
-        "ledger_data_Transaction_Set_candidate_get",       // category::ld_tsc_get
-        "ledger_data_Transaction_Set_candidate_share",     // category::ld_tsc_share
-        "ledger_data_Transaction_Node_get",                // category::ld_txn_get
-        "ledger_data_Transaction_Node_share",              // category::ld_txn_share
-        "ledger_data_Account_State_Node_get",              // category::ld_asn_get
-        "ledger_data_Account_State_Node_share",            // category::ld_asn_share
-        "ledger_data_get",                                 // category::ld_get
-        "ledger_data_share",                               // category::ld_share
-        "ledger_Transaction_Set_candidate_share",          // category::gl_tsc_share
-        "ledger_Transaction_Set_candidate_get",            // category::gl_tsc_get
-        "ledger_Transaction_node_share",                   // category::gl_txn_share
-        "ledger_Transaction_node_get",                     // category::gl_txn_get
-        "ledger_Account_State_node_share",                 // category::gl_asn_share
-        "ledger_Account_State_node_get",                   // category::gl_asn_get
-        "ledger_share",                                    // category::gl_share
-        "ledger_get",                                      // category::gl_get
-        "getobject_Ledger_share",                          // category::share_hash_ledger
-        "getobject_Ledger_get",                            // category::get_hash_ledger
-        "getobject_Transaction_share",                     // category::share_hash_tx
-        "getobject_Transaction_get",                       // category::get_hash_tx
-        "getobject_Transaction_node_share",                // category::share_hash_txnode
-        "getobject_Transaction_node_get",                  // category::get_hash_txnode
-        "getobject_Account_State_node_share",              // category::share_hash_asnode
-        "getobject_Account_State_node_get",                // category::get_hash_asnode
-        "getobject_CAS_share",                             // category::share_cas_object
-        "getobject_CAS_get",                               // category::get_cas_object
-        "getobject_Fetch_Pack_share",                      // category::share_fetch_pack
-        "getobject_Fetch Pack_get",                        // category::get_fetch_pack
-        "getobject_share",                                 // category::share_hash
-        "getobject_get",                                   // category::get_hash
-        "unknown"                                          // category::unknown
+        {"overhead"},                                        // category::base
+        {"overhead_cluster"},                                // category::cluster
+        {"overhead_overlay"},                                // category::overlay
+        {"overhead_manifest"},                               // category::manifests
+        {"transactions"},                                    // category::transaction
+        {"proposals"},                                       // category::proposal
+        {"validations"},                                     // category::validation
+        {"shards"},                                          // category::shards
+        {"set_get"},                                         // category::get_set
+        {"set_share"},                                       // category::share_set
+        {"ledger_data_Transaction_Set_candidate_get"},       // category::ld_tsc_get
+        {"ledger_data_Transaction_Set_candidate_share"},     // category::ld_tsc_share
+        {"ledger_data_Transaction_Node_get"},                // category::ld_txn_get
+        {"ledger_data_Transaction_Node_share"},              // category::ld_txn_share
+        {"ledger_data_Account_State_Node_get"},              // category::ld_asn_get
+        {"ledger_data_Account_State_Node_share"},            // category::ld_asn_share
+        {"}ledger_data_get"},                                 // category::ld_get
+        {"ledger_data_share"},                               // category::ld_share
+        {"ledger_Transaction_Set_candidate_share"},          // category::gl_tsc_share
+        {"ledger_Transaction_Set_candidate_get"},            // category::gl_tsc_get
+        {"ledger_Transaction_node_share"},                   // category::gl_txn_share
+        {"ledger_Transaction_node_get"},                     // category::gl_txn_get
+        {"ledger_Account_State_node_share"},                 // category::gl_asn_share
+        {"ledger_Account_State_node_get"},                   // category::gl_asn_get
+        {"ledger_share"},                                    // category::gl_share
+        {"ledger_get"},                                      // category::gl_get
+        {"getobject_Ledger_share"},                          // category::share_hash_ledger
+        {"getobject_Ledger_get"},                            // category::get_hash_ledger
+        {"getobject_Transaction_share"},                     // category::share_hash_tx
+        {"getobject_Transaction_get"},                       // category::get_hash_tx
+        {"getobject_Transaction_node_share"},                // category::share_hash_txnode
+        {"getobject_Transaction_node_get"},                  // category::get_hash_txnode
+        {"getobject_Account_State_node_share"},              // category::share_hash_asnode
+        {"getobject_Account_State_node_get"},                // category::get_hash_asnode
+        {"getobject_CAS_share"},                             // category::share_cas_object
+        {"getobject_CAS_get"},                               // category::get_cas_object
+        {"getobject_Fetch_Pack_share"},                      // category::share_fetch_pack
+        {"getobject_Fetch Pack_get"},                        // category::get_fetch_pack
+        {"getobject_share"},                                 // category::share_hash
+        {"getobject_get"},                                   // category::get_hash
+        {"unknown"}                                          // category::unknown
     }};
 };
 
