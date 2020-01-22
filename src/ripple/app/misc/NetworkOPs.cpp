@@ -170,22 +170,9 @@ class NetworkOPsImp final
          */
         StateCountersJson json() const;
 
-        std::array<Counters, 5> getCounters(){
+        auto getCounterData() const {
             std::lock_guard lock(mutex_);
-            auto counters = counters_;
-            return counters;
-        }
-
-        OperatingMode getMode(){
-            std::lock_guard lock(mutex_);
-            auto mode = mode_;
-            return mode;
-        }
-
-        std::chrono::system_clock::time_point getStart(){
-            std::lock_guard lock(mutex_);
-            auto start = start_;
-            return start;
+            return std::make_tuple(counters_, mode_, start_);
         }
 
     };
@@ -676,10 +663,8 @@ private:
 
 private:
     void collect_metrics()
-    {   
-        auto counters = accounting_.getCounters();
-        auto start = accounting_.getStart();
-        auto mode = accounting_.getMode();
+    {     
+        auto [counters, mode, start] = accounting_.getCounterData();
 
         auto const current = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start);
         counters[static_cast<std::size_t>(mode)].dur += current;
