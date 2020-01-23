@@ -658,17 +658,22 @@ private:
         beast::insight::Gauge tracking_transitions;
         beast::insight::Gauge full_transitions;
     };
-
+    
+    std::mutex m_statsMutex;//Mutex to lock m_stats
     Stats m_stats;
+    
+
 
 private:
     void collect_metrics()
-    {     
+    {   
+        
         auto [counters, mode, start] = accounting_.getCounterData();
 
         auto const current = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start);
         counters[static_cast<std::size_t>(mode)].dur += current;
 
+        std::lock_guard lock (m_statsMutex);  
         m_stats.disconnected_duration.set(counters[static_cast<std::size_t>(OperatingMode::DISCONNECTED)].dur.count());
         m_stats.connected_duration.set(counters[static_cast<std::size_t>(OperatingMode::CONNECTED)].dur.count());
         m_stats.syncing_duration.set(counters[static_cast<std::size_t>(OperatingMode::SYNCING)].dur.count());
