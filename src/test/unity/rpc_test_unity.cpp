@@ -39,6 +39,7 @@
 #include <test/rpc/LedgerData_test.cpp>
 #include <test/rpc/LedgerRPC_test.cpp>
 #include <test/rpc/LedgerRequestRPC_test.cpp>
+#include <test/rpc/ManifestRPC_test.cpp>
 #include <test/rpc/NoRipple_test.cpp>
 #include <test/rpc/NoRippleCheck_test.cpp>
 #include <test/rpc/OwnerInfo_test.cpp>
@@ -54,6 +55,7 @@
 #include <test/rpc/Transaction_test.cpp>
 #include <test/rpc/TransactionEntry_test.cpp>
 #include <test/rpc/TransactionHistory_test.cpp>
+#include <test/rpc/ValidatorInfo_test.cpp>
 #include <test/rpc/Tx_test.cpp>
 #include <test/rpc/ValidatorRPC_test.cpp>
 #include <test/rpc/Version_test.cpp>

@@ -309,6 +309,42 @@ ManifestCache::getMasterKey (PublicKey const& pk) const
     return pk;
 }
 
+boost::optional<std::uint32_t>
+ManifestCache::getSequence (PublicKey const& pk) const
+{
+    std::lock_guard lock{read_mutex_};
+    auto const iter = map_.find (pk);
+
+    if (iter != map_.end () && !iter->second.revoked ())
+        return iter->second.sequence;
+
+    return boost::none;
+}
+
+boost::optional<std::string>
+ManifestCache::getDomain (PublicKey const& pk) const
+{
+    std::lock_guard lock{read_mutex_};
+    auto const iter = map_.find (pk);
+
+    if (iter != map_.end () && !iter->second.revoked ())
+        return iter->second.domain;
+
+    return boost::none;
+}
+
+boost::optional<std::string>
+ManifestCache::getManifest (PublicKey const& pk) const
+{
+    std::lock_guard lock{read_mutex_};
+    auto const iter = map_.find (pk);
+
+    if (iter != map_.end () && !iter->second.revoked ())
+        return iter->second.serialized;
+
+    return boost::none;
+}
+
 bool
 ManifestCache::revoked (PublicKey const& pk) const
 {

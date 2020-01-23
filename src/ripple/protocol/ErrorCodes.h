@@ -285,6 +285,11 @@ inline Json::Value expected_field_error (
     return expected_field_error (std::string (name), type);
 }
 
+inline Json::Value not_validator_error ()
+{
+    return make_param_error ("not a validator");
+}
+
 /** @} */
 
 /** Returns `true` if the json contains an rpc error specification. */
