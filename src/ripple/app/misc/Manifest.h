@@ -257,6 +257,30 @@ public:
     PublicKey
     getMasterKey (PublicKey const& pk) const;
 
+    /** Returns master key's current manifest sequence.
+
+        @return sequence corresponding to Master public key
+          if configured or boost::none otherwise
+    */
+    boost::optional<std::uint32_t>
+    getSequence (PublicKey const& pk) const;
+
+    /** Returns domain claimed by a given public key
+
+        @return domain corresponding to Master public key
+          if present, otherwise boost::none
+    */
+    boost::optional<std::string>
+    getDomain (PublicKey const& pk) const;
+
+    /** Returns mainfest corresponding to a given public key
+
+        @return manifest corresponding to Master public key
+          if present, otherwise boost::none
+    */
+    boost::optional<std::string>
+    getManifest (PublicKey const& pk) const;
+
     /** Returns `true` if master key has been revoked in a manifest.
 
         @param pk Master public key

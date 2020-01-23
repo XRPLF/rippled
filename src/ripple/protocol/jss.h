@@ -202,16 +202,20 @@ JSS ( destination_amount );         // in: PathRequest, RipplePathFind
 JSS ( destination_currencies );     // in: PathRequest, RipplePathFind
 JSS ( destination_tag );            // in: PathRequest
                                     // out: AccountChannels
+JSS ( details );                    // out: Manifest
 JSS ( dir_entry );                  // out: DirectoryEntryIterator
 JSS ( dir_index );                  // out: DirectoryEntryIterator
 JSS ( dir_root );                   // out: DirectoryEntryIterator
 JSS ( directory );                  // in: LedgerEntry
+JSS ( domain );                     // out: ValidatorInfo, Manifest
 JSS ( drops );                      // out: TxQ
 JSS ( duration_us );                // out: NetworkOPs
 JSS ( enabled );                    // out: AmendmentTable
 JSS ( engine_result );              // out: NetworkOPs, TransactionSign, Submit
 JSS ( engine_result_code );         // out: NetworkOPs, TransactionSign, Submit
 JSS ( engine_result_message );      // out: NetworkOPs, TransactionSign, Submit
+JSS ( ephemeral_key );              // out: ValidatorInfo
+                                    // in/out: Manifest
 JSS ( error );                      // out: error
 JSS ( errored );
 JSS ( error_code );                 // out: error
@@ -331,11 +335,14 @@ JSS ( local_txs );                  // out: GetCounts
 JSS ( local_static_keys );          // out: ValidatorList
 JSS ( lowest_sequence );            // out: AccountInfo
 JSS ( majority );                   // out: RPC feature
+JSS ( manifest );                   // out: ValidatorInfo, Manifest
 JSS ( marker );                     // in/out: AccountTx, AccountOffers,
                                     //         AccountLines, AccountObjects,
                                     //         LedgerData
                                     // in: BookOffers
-JSS ( master_key );                 // out: WalletPropose, NetworkOPs
+JSS ( master_key );                 // out: WalletPropose, NetworkOPs,
+                                    //      ValidatorInfo
+                                    // in/out: Manifest
 JSS ( master_seed );                // out: WalletPropose
 JSS ( master_seed_hex );            // out: WalletPropose
 JSS ( master_signature );           // out: pubManifest
@@ -412,7 +419,9 @@ JSS ( proxied );                    // out: RPC ping
 JSS ( pubkey_node );                // out: NetworkOPs
 JSS ( pubkey_publisher );           // out: ValidatorList
 JSS ( pubkey_validator );           // out: NetworkOPs, ValidatorList
-JSS ( public_key );                 // out: OverlayImpl, PeerImp, WalletPropose
+JSS ( public_key );                 // out: OverlayImpl, PeerImp, WalletPropose,
+                                    //      ValidatorInfo
+                                    // in/out: Manifest
 JSS ( public_key_hex );             // out: WalletPropose
 JSS ( published_ledger );           // out: NetworkOPs
 JSS ( publisher_lists );            // out: ValidatorList
@@ -431,6 +440,7 @@ JSS ( refresh_interval_min );       // out: ValidatorSites
 JSS ( regular_seed );               // in/out: LedgerEntry
 JSS ( remote );                     // out: Logic.h
 JSS ( request );                    // RPC
+JSS ( requested );                  // out: Manifest
 JSS ( reservations );               // out: Reservations
 JSS ( reserve_base );               // out: NetworkOPs
 JSS ( reserve_base_xrp );           // out: NetworkOPs
@@ -457,7 +467,7 @@ JSS ( send_currencies );            // out: AccountCurrencies
 JSS ( send_max );                   // in: PathRequest, RipplePathFind
 JSS ( seq );                        // in: LedgerEntry;
                                     // out: NetworkOPs, RPCSub, AccountOffers,
-                                    //      ValidatorList
+                                    //      ValidatorList, ValidatorInfo, Manifest
 JSS ( seqNum );                     // out: LedgerToJson
 JSS ( server_state );               // out: NetworkOPs
 JSS ( server_state_duration_us );   // out: NetworkOPs

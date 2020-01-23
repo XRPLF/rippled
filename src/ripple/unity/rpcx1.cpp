@@ -58,5 +58,7 @@
 #include <ripple/rpc/handlers/LedgerRequest.cpp>
 #include <ripple/rpc/handlers/LogLevel.cpp>
 #include <ripple/rpc/handlers/LogRotate.cpp>
+#include <ripple/rpc/handlers/Manifest.cpp>
 #include <ripple/rpc/handlers/NoRippleCheck.cpp>
 #include <ripple/rpc/handlers/OwnerInfo.cpp>
+#include <ripple/rpc/handlers/ValidatorInfo.cpp>

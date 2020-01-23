@@ -145,6 +145,21 @@ private:
         }
     }
 
+    static bool validPublicKey (std::string const& strPk)
+    {
+        if (parseBase58<PublicKey> (TokenType::AccountPublic, strPk))
+            return true;
+
+        auto pkHex = strUnHex (strPk);
+        if (!pkHex)
+            return false;
+
+        if (!publicKeyType(makeSlice(*pkHex)))
+            return false;
+
+        return true;
+    }
+
 private:
     using parseFuncPtr = Json::Value (RPCParser::*) (Json::Value const& jvParams);
 
@@ -201,6 +216,24 @@ private:
         v[jss::params] = params;
 
         return v;
+    }
+
+    Json::Value parseManifest (Json::Value const& jvParams)
+    {
+        if (jvParams.size () == 1)
+        {
+            Json::Value jvRequest (Json::objectValue);
+
+            std::string const strPk = jvParams[0u].asString ();
+            if (!validPublicKey (strPk))
+              return rpcError (rpcPUBLIC_MALFORMED);
+
+            jvRequest[jss::public_key] = strPk;
+
+            return jvRequest;
+        }
+
+        return rpcError (rpcINVALID_PARAMS);
     }
 
     // fetch_info [clear]
@@ -764,21 +797,7 @@ private:
     {
         std::string const strPk = jvParams[0u].asString ();
 
-        bool const validPublicKey = [&strPk]{
-            if (parseBase58<PublicKey> (TokenType::AccountPublic, strPk))
-                return true;
-
-            auto pkHex = strUnHex (strPk);
-            if (!pkHex)
-                return false;
-
-            if (!publicKeyType(makeSlice(*pkHex)))
-                return false;
-
-            return true;
-        }();
-
-        if (!validPublicKey)
+        if (!validPublicKey(strPk))
             return rpcError (rpcPUBLIC_MALFORMED);
 
         Json::Value jvRequest (Json::objectValue);
@@ -1171,6 +1190,7 @@ public:
             {   "ledger_request",       &RPCParser::parseLedgerId,              1,  1   },
             {   "log_level",            &RPCParser::parseLogLevel,              0,  2   },
             {   "logrotate",            &RPCParser::parseAsIs,                  0,  0   },
+            {   "manifest",             &RPCParser::parseManifest,              1,  1   },
             {   "owner_info",           &RPCParser::parseAccountItems,          1,  2   },
             {   "peers",                &RPCParser::parseAsIs,                  0,  0   },
             {   "ping",                 &RPCParser::parseAsIs,                  0,  0   },
@@ -1195,6 +1215,7 @@ public:
             {   "tx_history",           &RPCParser::parseTxHistory,             1,  1   },
             {   "unl_list",             &RPCParser::parseAsIs,                  0,  0   },
             {   "validation_create",    &RPCParser::parseValidationCreate,      0,  1   },
+            {   "validator_info",       &RPCParser::parseAsIs,                  0,  0   },
             {   "version",              &RPCParser::parseAsIs,                  0,  0   },
             {   "wallet_propose",       &RPCParser::parseWalletPropose,         0,  1   },
             {   "internal",             &RPCParser::parseInternal,              1, -1   },

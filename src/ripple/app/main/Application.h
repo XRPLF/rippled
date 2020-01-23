@@ -53,6 +53,7 @@ class AcceptedLedger;
 class LedgerMaster;
 class LoadManager;
 class ManifestCache;
+class ValidatorKeys;
 class NetworkOPs;
 class OpenLedger;
 class OrderBookDB;

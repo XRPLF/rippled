@@ -90,6 +90,7 @@ Handler const handlerArray[] {
     {   "ledger_request",       byRef (&doLedgerRequest),       Role::ADMIN,   NO_CONDITION     },
     {   "log_level",            byRef (&doLogLevel),            Role::ADMIN,   NO_CONDITION     },
     {   "logrotate",            byRef (&doLogRotate),           Role::ADMIN,   NO_CONDITION     },
+    {   "manifest",             byRef (&doManifest),            Role::ADMIN,   NO_CONDITION     },
     {   "noripple_check",       byRef (&doNoRippleCheck),       Role::USER,  NO_CONDITION  },
     {   "owner_info",           byRef (&doOwnerInfo),           Role::USER,  NEEDS_CURRENT_LEDGER  },
     {   "peers",                byRef (&doPeers),               Role::ADMIN,   NO_CONDITION     },
@@ -117,6 +118,7 @@ Handler const handlerArray[] {
     {   "validation_create",    byRef (&doValidationCreate),    Role::ADMIN,   NO_CONDITION     },
     {   "validators",           byRef (&doValidators),          Role::ADMIN,   NO_CONDITION     },
     {   "validator_list_sites", byRef (&doValidatorListSites),  Role::ADMIN,   NO_CONDITION     },
+    {   "validator_info",       byRef (&doValidatorInfo),       Role::ADMIN,   NO_CONDITION     },
     {   "wallet_propose",       byRef (&doWalletPropose),       Role::ADMIN,   NO_CONDITION     },
 
     // Evented methods
