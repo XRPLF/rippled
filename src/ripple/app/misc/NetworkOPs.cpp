@@ -638,11 +638,11 @@ private:
             , syncing_duration(collector->make_gauge("State_Accounting", "Syncing_duration"))
             , tracking_duration (collector->make_gauge("State_Accounting", "Tracking_duration"))
             , full_duration (collector-> make_gauge("State_Accounting", "Full_duration"))
-            , disconnected_trasitions (collector->make_gauge("State_Accounting","Disconnected_trasitions"))
-            , connected_trasitions (collector->make_gauge("State_Accounting","Connected_trasitions"))
-            , syncing_trasitions(collector->make_gauge("State_Accounting", "Syncing_trasitions"))
-            , tracking_trasitions (collector->make_gauge("State_Accounting", "Tracking_trasitions"))
-            , full_trasitions (collector-> make_gauge("State_Accounting", "Full_trasitions"))
+            , disconnected_transitions (collector->make_gauge("State_Accounting","Disconnected_transitions"))
+            , connected_transitions (collector->make_gauge("State_Accounting","Connected_transitions"))
+            , syncing_transitions(collector->make_gauge("State_Accounting", "Syncing_transitions"))
+            , tracking_transitions (collector->make_gauge("State_Accounting", "Tracking_transitions"))
+            , full_transitions (collector-> make_gauge("State_Accounting", "Full_transitions"))
             { }
 
         beast::insight::Hook hook;
@@ -652,11 +652,11 @@ private:
         beast::insight::Gauge tracking_duration;
         beast::insight::Gauge full_duration;
 
-        beast::insight::Gauge disconnected_trasitions;
-        beast::insight::Gauge connected_trasitions;
-        beast::insight::Gauge syncing_trasitions;
-        beast::insight::Gauge tracking_trasitions;
-        beast::insight::Gauge full_trasitions;
+        beast::insight::Gauge disconnected_transitions;
+        beast::insight::Gauge connected_transitions;
+        beast::insight::Gauge syncing_transitions;
+        beast::insight::Gauge tracking_transitions;
+        beast::insight::Gauge full_transitions;
     };
 
     Stats m_stats;
@@ -675,11 +675,11 @@ private:
         m_stats.tracking_duration.set(counters[static_cast<std::size_t>(OperatingMode::TRACKING)].dur.count());
         m_stats.full_duration.set(counters[static_cast<std::size_t>(OperatingMode::FULL)].dur.count());
 
-        m_stats.disconnected_trasitions.set(counters[static_cast<std::size_t>(OperatingMode::DISCONNECTED)].transitions);
-        m_stats.connected_trasitions.set(counters[static_cast<std::size_t>(OperatingMode::CONNECTED)].transitions);
-        m_stats.syncing_trasitions.set(counters[static_cast<std::size_t>(OperatingMode::SYNCING)].transitions);
-        m_stats.tracking_trasitions.set(counters[static_cast<std::size_t>(OperatingMode::TRACKING)].transitions);
-        m_stats.full_trasitions.set(counters[static_cast<std::size_t>(OperatingMode::FULL)].transitions);
+        m_stats.disconnected_transitions.set(counters[static_cast<std::size_t>(OperatingMode::DISCONNECTED)].transitions);
+        m_stats.connected_transitions.set(counters[static_cast<std::size_t>(OperatingMode::CONNECTED)].transitions);
+        m_stats.syncing_transitions.set(counters[static_cast<std::size_t>(OperatingMode::SYNCING)].transitions);
+        m_stats.tracking_transitions.set(counters[static_cast<std::size_t>(OperatingMode::TRACKING)].transitions);
+        m_stats.full_transitions.set(counters[static_cast<std::size_t>(OperatingMode::FULL)].transitions);
     }
 };
 
