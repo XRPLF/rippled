@@ -170,7 +170,6 @@ class NetworkOPsImp final
          */
         StateCountersJson json() const;
 
-
         struct CounterData {
             decltype(counters_) counters;
             decltype(mode_) mode;
@@ -181,7 +180,6 @@ class NetworkOPsImp final
             std::lock_guard lock(mutex_);
             return { counters_, mode_, start_ };
         }
-
     };
 
     //! Server fees published on `server` subscription
@@ -668,18 +666,11 @@ private:
     
     std::mutex m_statsMutex;//Mutex to lock m_stats
     Stats m_stats;
-    
-
 
 private:
     void collect_metrics()
     {   
-        NetworkOPsImp::StateAccounting::CounterData cd = accounting_.getCounterData();
-
-        auto counters= cd.counters;
-        auto mode = cd.mode;
-        auto start = cd.start;
-
+        auto [counters, mode, start] = accounting_.getCounterData();
         auto const current = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start);
         counters[static_cast<std::size_t>(mode)].dur += current;
 
@@ -3534,15 +3525,7 @@ void NetworkOPsImp::StateAccounting::mode (OperatingMode om)
 NetworkOPsImp::StateAccounting::StateCountersJson
 NetworkOPsImp::StateAccounting::json() const
 {
-   
-    NetworkOPsImp::StateAccounting::CounterData cd = getCounterData();
-
-    auto counters= cd.counters;
-    auto mode = cd.mode;
-    auto start = cd.start;
-
-
-
+    auto [counters, mode, start] = getCounterData();
     auto const current = std::chrono::duration_cast<
         std::chrono::microseconds>(std::chrono::system_clock::now() - start);
     counters[static_cast<std::size_t>(mode)].dur += current;
