@@ -464,15 +464,15 @@ private:
         template <class Handler>
         Stats (Handler const& handler, beast::insight::Collector::ptr const& collector)
             : hook (collector->make_hook (handler))
-            , peerDisconnects (collector->make_gauge("Overlay","Peer_Disconnects")) 
+            , peerDisconnects (collector->make_gauge("Overlay","Peer_Disconnects"))
+            , m_collector(collector) 
             { 
-                mcollector=collector;
             }
 
         beast::insight::Hook hook;
         beast::insight::Gauge peerDisconnects;
         std::vector<beast::insight::Gauge> trafficGauges;
-        beast::insight::Collector::ptr mcollector;
+        beast::insight::Collector::ptr m_collector;
         
     };
     
@@ -482,20 +482,19 @@ private:
     void collect_metrics()
     {   
         std::lock_guard lock (mutex_);
-
         auto const stats = m_traffic.getCounts();
 
         if(m_stats.trafficGauges.empty()){
-            for (auto const& i : stats)
+            for (auto const& s : stats)
             {   
                 m_stats.trafficGauges.push_back(
-                    beast::insight::Gauge (m_stats.mcollector->make_gauge(i.name,"Bytes_In")));
+                    beast::insight::Gauge (m_stats.m_collector->make_gauge(s.name,"Bytes_In")));
                 m_stats.trafficGauges.push_back(
-                    beast::insight::Gauge (m_stats.mcollector->make_gauge(i.name,"Bytes_Out")));
+                    beast::insight::Gauge (m_stats.m_collector->make_gauge(s.name,"Bytes_Out")));
                 m_stats.trafficGauges.push_back(
-                    beast::insight::Gauge (m_stats.mcollector->make_gauge(i.name,"Messages_In")));
+                    beast::insight::Gauge (m_stats.m_collector->make_gauge(s.name,"Messages_In")));
                 m_stats.trafficGauges.push_back(
-                    beast::insight::Gauge (m_stats.mcollector->make_gauge(i.name,"Messages_Out")));
+                    beast::insight::Gauge (m_stats.m_collector->make_gauge(s.name,"Messages_Out")));
             }
         }
 

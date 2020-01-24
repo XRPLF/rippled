@@ -35,7 +35,7 @@ public:
     class TrafficStats
     {
     public:
-        std::string const name;
+        char const* name;
 
         std::atomic<std::uint64_t> bytesIn {0};
         std::atomic<std::uint64_t> bytesOut {0};
@@ -198,7 +198,7 @@ protected:
         {"ledger_data_Transaction_Node_share"},              // category::ld_txn_share
         {"ledger_data_Account_State_Node_get"},              // category::ld_asn_get
         {"ledger_data_Account_State_Node_share"},            // category::ld_asn_share
-        {"}ledger_data_get"},                                 // category::ld_get
+        {"ledger_data_get"},                                 // category::ld_get
         {"ledger_data_share"},                               // category::ld_share
         {"ledger_Transaction_Set_candidate_share"},          // category::gl_tsc_share
         {"ledger_Transaction_Set_candidate_get"},            // category::gl_tsc_get
