@@ -465,14 +465,14 @@ private:
         Stats (Handler const& handler, beast::insight::Collector::ptr const& collector)
             : hook (collector->make_hook (handler))
             , peerDisconnects (collector->make_gauge("Overlay","Peer_Disconnects"))
-            , m_collector(collector) 
+            , collector(collector) 
             { 
             }
 
         beast::insight::Hook hook;
         beast::insight::Gauge peerDisconnects;
         std::vector<beast::insight::Gauge> trafficGauges;
-        beast::insight::Collector::ptr m_collector;
+        beast::insight::Collector::ptr collector;
         
     };
     
@@ -488,13 +488,13 @@ private:
             for (auto const& s : stats)
             {   
                 m_stats.trafficGauges.push_back(
-                    beast::insight::Gauge (m_stats.m_collector->make_gauge(s.name,"Bytes_In")));
+                    beast::insight::Gauge (m_stats.collector->make_gauge(s.name,"Bytes_In")));
                 m_stats.trafficGauges.push_back(
-                    beast::insight::Gauge (m_stats.m_collector->make_gauge(s.name,"Bytes_Out")));
+                    beast::insight::Gauge (m_stats.collector->make_gauge(s.name,"Bytes_Out")));
                 m_stats.trafficGauges.push_back(
-                    beast::insight::Gauge (m_stats.m_collector->make_gauge(s.name,"Messages_In")));
+                    beast::insight::Gauge (m_stats.collector->make_gauge(s.name,"Messages_In")));
                 m_stats.trafficGauges.push_back(
-                    beast::insight::Gauge (m_stats.m_collector->make_gauge(s.name,"Messages_Out")));
+                    beast::insight::Gauge (m_stats.collector->make_gauge(s.name,"Messages_Out")));
             }
         }
 
