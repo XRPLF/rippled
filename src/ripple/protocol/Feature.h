@@ -108,6 +108,8 @@ class FeatureCollections
         "fixCheckThreading",
         "fixPayChanRecipientOwnerDir",
         "DeletableAccounts",
+        // fixQualityUpperBound should be activated before FlowCross
+        "fixQualityUpperBound",
     };
 
     std::vector<uint256> features;
@@ -394,6 +396,7 @@ extern uint256 const fixMasterKeyAsRegularKey;
 extern uint256 const fixCheckThreading;
 extern uint256 const fixPayChanRecipientOwnerDir;
 extern uint256 const featureDeletableAccounts;
+extern uint256 const fixQualityUpperBound;
 
 } // ripple
 

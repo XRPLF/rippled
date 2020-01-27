@@ -23,6 +23,7 @@
 #include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/PaymentSandbox.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Quality.h>
 
 #include <boost/container/flat_set.hpp>
@@ -153,8 +154,8 @@ public:
     std::uint32_t
     lineQualityIn (ReadView const& v) const override;
 
-    boost::optional<Quality>
-    qualityUpperBound(ReadView const& v, DebtDirection& dir) const override;
+    std::pair<boost::optional<Quality>, DebtDirection>
+    qualityUpperBound(ReadView const& v, DebtDirection dir) const override;
 
     std::pair<IOUAmount, IOUAmount>
     revImp (
@@ -820,24 +821,42 @@ DirectStepI<TDerived>::lineQualityIn (ReadView const& v) const
 }
 
 template <class TDerived>
-boost::optional<Quality>
-DirectStepI<TDerived>::qualityUpperBound(ReadView const& v, DebtDirection& dir)
+std::pair<boost::optional<Quality>, DebtDirection>
+DirectStepI<TDerived>::qualityUpperBound(ReadView const& v, DebtDirection prevStepDir)
     const
 {
-    auto const prevStepDebtDir = dir;
-    dir = this->debtDirection(v, StrandDirection::forward);
-    std::uint32_t const srcQOut = [&]() -> std::uint32_t {
-        if (redeems(prevStepDebtDir) && issues(dir))
-            return transferRate(v, src_).value;
-        return QUALITY_ONE;
-    }();
-    auto dstQIn =
-        static_cast<TDerived const*>(this)->quality(v, QualityDirection::in);
+    auto const dir = this->debtDirection(v, StrandDirection::forward);
 
-    if (isLast_ && dstQIn > QUALITY_ONE)
-        dstQIn = QUALITY_ONE;
+    if (!v.rules().enabled(fixQualityUpperBound))
+    {
+        std::uint32_t const srcQOut = [&]() -> std::uint32_t {
+            if (redeems(prevStepDir) && issues(dir))
+                return transferRate(v, src_).value;
+            return QUALITY_ONE;
+        }();
+        auto dstQIn = static_cast<TDerived const*>(this)->quality(
+            v, QualityDirection::in);
+
+        if (isLast_ && dstQIn > QUALITY_ONE)
+            dstQIn = QUALITY_ONE;
+        Issue const iss{currency_, src_};
+        return {Quality(getRate(STAmount(iss, srcQOut), STAmount(iss, dstQIn))),
+                dir};
+    }
+
+    auto const [srcQOut, dstQIn] = redeems(dir)
+        ? qualitiesSrcRedeems(v)
+        : qualitiesSrcIssues(v, prevStepDir);
+
     Issue const iss{currency_, src_};
-    return Quality(getRate(STAmount(iss, srcQOut), STAmount(iss, dstQIn)));
+    // Be careful not to switch the parameters to `getRate`. The
+    // `getRate(offerOut, offerIn)` function is usually used for offers. It
+    // returns offerIn/offerOut. For a direct step, the rate is srcQOut/dstQIn
+    // (Input*dstQIn/srcQOut = Output; So rate = srcQOut/dstQIn). Although the
+    // first parameter is called `offerOut`, it should take the `dstQIn`
+    // variable.
+    return {Quality(getRate(STAmount(iss, dstQIn), STAmount(iss, srcQOut))),
+            dir};
 }
 
 template <class TDerived>

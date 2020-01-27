@@ -95,8 +95,8 @@ public:
         return DebtDirection::issues;
     }
 
-    boost::optional<Quality>
-    qualityUpperBound(ReadView const& v, DebtDirection& dir) const override;
+    std::pair<boost::optional<Quality>, DebtDirection>
+    qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const override;
 
     std::pair<XRPAmount, XRPAmount>
     revImp (
@@ -241,14 +241,13 @@ inline bool operator==(XRPEndpointStep<TDerived> const& lhs,
 }
 
 template <class TDerived>
-boost::optional<Quality>
+std::pair<boost::optional<Quality>, DebtDirection>
 XRPEndpointStep<TDerived>::qualityUpperBound(
-    ReadView const& v, DebtDirection& dir) const
+    ReadView const& v, DebtDirection prevStepDir) const
 {
-    dir = this->debtDirection(v, StrandDirection::forward);
-    return Quality{STAmount::uRateOne};
+    return {Quality{STAmount::uRateOne},
+            this->debtDirection(v, StrandDirection::forward)};
 }
-
 
 template <class TDerived>
 std::pair<XRPAmount, XRPAmount>

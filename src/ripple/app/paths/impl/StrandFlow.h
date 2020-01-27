@@ -321,6 +321,24 @@ struct FlowResult
 /// @endcond
 
 /// @cond INTERNAL
+inline boost::optional<Quality>
+qualityUpperBound(ReadView const& v, Strand const& strand)
+{
+    Quality q{STAmount::uRateOne};
+    boost::optional<Quality> stepQ;
+    DebtDirection dir = DebtDirection::issues;
+    for (auto const& step : strand)
+    {
+        if (std::tie(stepQ, dir) = step->qualityUpperBound(v, dir); stepQ)
+            q = composed_quality(q, *stepQ);
+        else
+            return boost::none;
+    }
+    return q;
+};
+/// @endcond
+
+/// @cond INTERNAL
 /* Track the non-dry strands
 
    flow will search the non-dry strands (stored in `cur_`) for the best
@@ -393,23 +411,6 @@ public:
             return;
         next_.erase(next_.begin() + i);
     }
-};
-/// @endcond
-
-/// @cond INTERNAL
-boost::optional<Quality>
-qualityUpperBound(ReadView const& v, Strand const& strand)
-{
-    Quality q{STAmount::uRateOne};
-    DebtDirection dir = DebtDirection::issues;
-    for (auto const& step : strand)
-    {
-        if (auto const stepQ = step->qualityUpperBound(v, dir))
-            q = composed_quality(q, *stepQ);
-        else
-            return boost::none;
-    }
-    return q;
 };
 /// @endcond
 
