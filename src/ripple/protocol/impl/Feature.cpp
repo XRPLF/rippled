@@ -120,6 +120,7 @@ detail::supportedAmendments ()
         "fixCheckThreading",
         "fixPayChanRecipientOwnerDir",
         "DeletableAccounts",
+        "fixQualityUpperBound",
     };
     return supported;
 }
@@ -179,5 +180,6 @@ uint256 const fixMasterKeyAsRegularKey = *getRegisteredFeature("fixMasterKeyAsRe
 uint256 const fixCheckThreading = *getRegisteredFeature("fixCheckThreading");
 uint256 const fixPayChanRecipientOwnerDir = *getRegisteredFeature("fixPayChanRecipientOwnerDir");
 uint256 const featureDeletableAccounts = *getRegisteredFeature("DeletableAccounts");
+uint256 const fixQualityUpperBound = *getRegisteredFeature("fixQualityUpperBound");
 
 } // ripple

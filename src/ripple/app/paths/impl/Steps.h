@@ -176,18 +176,24 @@ public:
         return QUALITY_ONE;
     }
 
+    // clang-format off
     /**
        Find an upper bound of quality for the step
 
        @param v view to query the ledger state from
-       @param dir in/out param. Set to DebtDirection::redeems if the previous step redeems.
-       Will be set to DebtDirection::redeems if this step redeems; Will be set to DebtDirection::issues if this
-       step does not redeem
-       @return The upper bound of quality for the step, or boost::none if the
-       step is dry.
+       @param prevStepDir Set to DebtDirection::redeems if the previous step redeems.
+       @return A pair. The first element is the upper bound of quality for the step, or boost::none if the
+       step is dry. The second element will be set to DebtDirection::redeems if this steps redeems,
+       DebtDirection:issues if this step issues.
+       @note it is an upper bound because offers on the books may be unfunded.
+       If there is always a funded offer at the tip of the book, then we could
+       rename this `theoreticalQuality` rather than `qualityUpperBound`. It
+       could still differ from the actual quality, but except for "dust" amounts,
+       it should be a good estimate for the actual quality.
      */
-    virtual boost::optional<Quality>
-    qualityUpperBound(ReadView const& v, DebtDirection& dir) const = 0;
+    // clang-format on
+    virtual std::pair<boost::optional<Quality>, DebtDirection>
+    qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const = 0;
 
     /**
        If this step is a BookStep, return the book.

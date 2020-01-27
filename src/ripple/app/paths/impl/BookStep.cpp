@@ -123,8 +123,8 @@ public:
         return book_;
     }
 
-    boost::optional<Quality>
-    qualityUpperBound(ReadView const& v, DebtDirection& dir) const override;
+    std::pair<boost::optional<Quality>, DebtDirection>
+    qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const override;
 
     std::pair<TIn, TOut>
     revImp (
@@ -247,7 +247,7 @@ public:
     }
 
     Quality
-    qualityUpperBound(ReadView const& v,
+    adjustQualityWithFees(ReadView const& v,
         Quality const& ofrQ,
         DebtDirection prevStepDir) const
     {
@@ -392,7 +392,7 @@ public:
     }
 
     Quality
-    qualityUpperBound(ReadView const& v,
+    adjustQualityWithFees(ReadView const& v,
         Quality const& ofrQ,
         DebtDirection prevStepDir) const
     {
@@ -426,21 +426,22 @@ bool BookStep<TIn, TOut, TDerived>::equal (Step const& rhs) const
 }
 
 template <class TIn, class TOut, class TDerived>
-boost::optional<Quality>
+std::pair<boost::optional<Quality>, DebtDirection>
 BookStep<TIn, TOut, TDerived>::qualityUpperBound(
-    ReadView const& v, DebtDirection& dir) const
+    ReadView const& v,
+    DebtDirection prevStepDir) const
 {
-    auto const prevStepDir = dir;
-    dir = this->debtDirection(v, StrandDirection::forward);
+    auto const dir = this->debtDirection(v, StrandDirection::forward);
 
     // This can be simplified (and sped up) if directories are never empty.
     Sandbox sb(&v, tapNONE);
     BookTip bt(sb, book_);
     if (!bt.step(j_))
-        return boost::none;
+        return {boost::none, dir};
 
-    return static_cast<TDerived const*>(this)->qualityUpperBound(
+    Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
         v, bt.quality(), prevStepDir);
+    return {q, dir};
 }
 
 // Adjust the offer amount and step amount subject to the given input limit
