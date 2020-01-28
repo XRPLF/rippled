@@ -169,7 +169,7 @@ public:
     }
 
     Handoff
-    onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
+    onHandoff (std::unique_ptr <stream_type>&& bundle,
         http_request_type&& request,
             endpoint_type remote_endpoint) override;
 

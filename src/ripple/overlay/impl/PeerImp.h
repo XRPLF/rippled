@@ -94,7 +94,7 @@ private:
     using clock_type    = std::chrono::steady_clock;
     using error_code    = boost::system::error_code;
     using socket_type   = boost::asio::ip::tcp::socket;
-    using stream_type   = boost::asio::ssl::stream <socket_type&>;
+    using stream_type   = boost::asio::ssl::stream <socket_type>;
     using address_type  = boost::asio::ip::address;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using waitable_timer = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
@@ -105,7 +105,7 @@ private:
     beast::WrappedSink p_sink_;
     beast::Journal const journal_;
     beast::Journal const p_journal_;
-    std::unique_ptr<beast::asio::ssl_bundle> ssl_bundle_;
+    std::unique_ptr<stream_type> stream_ptr_;
     socket_type& socket_;
     stream_type& stream_;
     boost::asio::strand<boost::asio::executor> strand_;
@@ -234,13 +234,13 @@ public:
         std::shared_ptr<PeerFinder::Slot> const& slot, http_request_type&& request,
             PublicKey const& publicKey,
                 ProtocolVersion protocol, Resource::Consumer consumer,
-                    std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+                    std::unique_ptr<stream_type>&& stream_ptr,
                         OverlayImpl& overlay);
 
     /** Create outgoing, handshaked peer. */
     // VFALCO legacyPublicKey should be implied by the Slot
     template <class Buffers>
-    PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+    PeerImp (Application& app, std::unique_ptr<stream_type>&& stream_ptr,
         Buffers const& buffers, std::shared_ptr<PeerFinder::Slot>&& slot,
             http_response_type&& response, Resource::Consumer usage,
                 PublicKey const& publicKey,
@@ -541,7 +541,7 @@ private:
 //------------------------------------------------------------------------------
 
 template <class Buffers>
-PeerImp::PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+PeerImp::PeerImp (Application& app, std::unique_ptr<stream_type>&& stream_ptr,
     Buffers const& buffers, std::shared_ptr<PeerFinder::Slot>&& slot,
         http_response_type&& response, Resource::Consumer usage,
             PublicKey const& publicKey,
@@ -553,9 +553,9 @@ PeerImp::PeerImp (Application& app, std::unique_ptr<beast::asio::ssl_bundle>&& s
     , p_sink_ (app_.journal("Protocol"), makePrefix(id))
     , journal_ (sink_)
     , p_journal_ (p_sink_)
-    , ssl_bundle_(std::move(ssl_bundle))
-    , socket_ (ssl_bundle_->socket)
-    , stream_ (ssl_bundle_->stream)
+    , stream_ptr_(std::move(stream_ptr))
+    , socket_ (stream_ptr_->next_layer())
+    , stream_ (*stream_ptr_)
     , strand_ (socket_.get_executor())
     , timer_ (waitable_timer{socket_.get_executor()})
     , remote_address_ (slot->remote_endpoint())

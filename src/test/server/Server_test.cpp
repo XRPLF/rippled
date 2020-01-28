@@ -36,6 +36,9 @@
 namespace ripple {
 namespace test {
 
+using socket_type   = boost::asio::ip::tcp::socket;
+using stream_type   = boost::asio::ssl::stream <socket_type>;
+
 class Server_test : public beast::unit_test::suite
 {
 public:
@@ -104,7 +107,7 @@ public:
 
         Handoff
         onHandoff (Session& session,
-            std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
+            std::unique_ptr <stream_type>&& bundle,
                 http_request_type&& request,
                     boost::asio::ip::tcp::endpoint remote_address)
         {
@@ -309,7 +312,7 @@ public:
 
             Handoff
             onHandoff (Session& session,
-                std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
+                std::unique_ptr <stream_type>&& bundle,
                     http_request_type&& request,
                         boost::asio::ip::tcp::endpoint remote_address)
             {

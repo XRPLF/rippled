@@ -41,6 +41,10 @@ private:
     using response_type =
         boost::beast::http::response<boost::beast::http::dynamic_body>;
 
+    using socket_type = boost::asio::ip::tcp::socket;
+    using stream_type = boost::asio::ssl::stream <socket_type>;
+    using shared_context = std::shared_ptr<boost::asio::ssl::context>;
+
     Application& app_;
     std::uint32_t const id_;
     beast::WrappedSink sink_;
@@ -49,9 +53,9 @@ private:
     Resource::Consumer usage_;
     boost::asio::io_service::strand strand_;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
-    std::unique_ptr<beast::asio::ssl_bundle> ssl_bundle_;
-    beast::asio::ssl_bundle::socket_type& socket_;
-    beast::asio::ssl_bundle::stream_type& stream_;
+    std::unique_ptr<stream_type> stream_ptr_;
+    socket_type& socket_;
+    stream_type& stream_;
     boost::beast::multi_buffer read_buf_;
     response_type response_;
     std::shared_ptr<PeerFinder::Slot> slot_;
@@ -60,7 +64,7 @@ private:
 public:
     ConnectAttempt (Application& app, boost::asio::io_service& io_service,
         endpoint_type const& remote_endpoint, Resource::Consumer usage,
-            beast::asio::ssl_bundle::shared_context const& context,
+            shared_context const& context,
                 std::uint32_t id, std::shared_ptr<PeerFinder::Slot> const& slot,
                     beast::Journal journal, OverlayImpl& overlay);
 

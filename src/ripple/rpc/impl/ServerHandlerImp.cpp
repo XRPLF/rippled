@@ -172,7 +172,7 @@ ServerHandlerImp::onAccept (Session& session,
 Handoff
 ServerHandlerImp::onHandoff(
     Session& session,
-    std::unique_ptr<beast::asio::ssl_bundle>&& bundle,
+    std::unique_ptr<stream_type>&& bundle,
     http_request_type&& request,
     boost::asio::ip::tcp::endpoint const& remote_address)
 {

@@ -84,6 +84,8 @@ public:
     };
 
 private:
+    using socket_type = boost::asio::ip::tcp::socket;
+    using stream_type = boost::asio::ssl::stream <socket_type>;
 
     Application& app_;
     Resource::Manager& m_resourceManager;
@@ -135,7 +137,7 @@ public:
     Handoff
     onHandoff(
         Session& session,
-        std::unique_ptr<beast::asio::ssl_bundle>&& bundle,
+        std::unique_ptr<stream_type>&& bundle,
         http_request_type&& request,
         boost::asio::ip::tcp::endpoint const& remote_address);
 
