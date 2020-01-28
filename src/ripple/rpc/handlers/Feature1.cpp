@@ -45,7 +45,7 @@ doFeature(RPC::JsonContext& context)
 
     if (!context.params.isMember(jss::feature))
     {
-        auto features = table.getJson(0);
+        auto features = table.getJson();
 
         for (auto const& [h, t] : majorities)
         {
@@ -67,9 +67,9 @@ doFeature(RPC::JsonContext& context)
     if (context.params.isMember(jss::vetoed))
     {
         if (context.params[jss::vetoed].asBool())
-            context.app.getAmendmentTable().veto(feature);
+            table.veto(feature);
         else
-            context.app.getAmendmentTable().unVeto(feature);
+            table.unVeto(feature);
     }
 
     Json::Value jvReply = table.getJson(feature);

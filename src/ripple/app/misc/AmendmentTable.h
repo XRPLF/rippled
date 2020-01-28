@@ -37,7 +37,7 @@ public:
     virtual ~AmendmentTable() = default;
 
     virtual uint256
-    find(std::string const& name) = 0;
+    find(std::string const& name) const = 0;
 
     virtual bool
     veto(uint256 const& amendment) = 0;
@@ -46,13 +46,11 @@ public:
 
     virtual bool
     enable(uint256 const& amendment) = 0;
-    virtual bool
-    disable(uint256 const& amendment) = 0;
 
     virtual bool
-    isEnabled(uint256 const& amendment) = 0;
+    isEnabled(uint256 const& amendment) const = 0;
     virtual bool
-    isSupported(uint256 const& amendment) = 0;
+    isSupported(uint256 const& amendment) const = 0;
 
     /**
      * @brief returns true if one or more amendments on the network
@@ -61,16 +59,17 @@ public:
      * @return true if an unsupported feature is enabled on the network
      */
     virtual bool
-    hasUnsupportedEnabled() = 0;
+    hasUnsupportedEnabled() const = 0;
+
     virtual boost::optional<NetClock::time_point>
-    firstUnsupportedExpected() = 0;
+    firstUnsupportedExpected() const = 0;
 
     virtual Json::Value
-    getJson(int) = 0;
+    getJson() const = 0;
 
     /** Returns a Json::objectValue. */
     virtual Json::Value
-    getJson(uint256 const&) = 0;
+    getJson(uint256 const& amendment) const = 0;
 
     /** Called when a new fully-validated ledger is accepted. */
     void
@@ -88,7 +87,7 @@ public:
         a new validated ledger. (If it could have changed things.)
     */
     virtual bool
-    needValidatedLedger(LedgerIndex seq) = 0;
+    needValidatedLedger(LedgerIndex seq) const = 0;
 
     virtual void
     doValidatedLedger(
@@ -108,14 +107,14 @@ public:
     // Called by the consensus code when we need to
     // add feature entries to a validation
     virtual std::vector<uint256>
-    doValidation(std::set<uint256> const& enabled) = 0;
+    doValidation(std::set<uint256> const& enabled) const = 0;
 
     // The set of amendments to enable in the genesis ledger
     // This will return all known, non-vetoed amendments.
     // If we ever have two amendments that should not both be
     // enabled at the same time, we should ensure one is vetoed.
     virtual std::vector<uint256>
-    getDesired() = 0;
+    getDesired() const = 0;
 
     // The function below adapts the API callers expect to the
     // internal amendment table API. This allows the amendment
