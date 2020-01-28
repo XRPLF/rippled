@@ -61,4 +61,7 @@ static std::uint32_t constexpr XRP_LEDGER_EARLIEST_SEQ{32570};
 
 }  // namespace ripple
 
+/** Default peer port (IANA registered) */
+inline std::uint16_t constexpr DEFAULT_PEER_PORT{2459};
+
 #endif

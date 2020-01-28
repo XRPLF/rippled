@@ -22,6 +22,7 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/Handler.h>
@@ -53,7 +54,7 @@ doConnect(RPC::JsonContext& context)
     if (context.params.isMember(jss::port))
         iPort = context.params[jss::port].asInt();
     else
-        iPort = 6561;
+        iPort = DEFAULT_PEER_PORT;
 
     auto ip =
         beast::IP::Endpoint::from_string(context.params[jss::ip].asString());
