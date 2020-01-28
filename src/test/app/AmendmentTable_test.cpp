@@ -28,6 +28,8 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/digest.h>
+#include <ripple/protocol/jss.h>
+#include <test/jtx/Env.h>
 #include <test/unit_test/SuiteJournal.h>
 
 namespace ripple {
@@ -50,16 +52,6 @@ private:
         return result;
     }
 
-    static std::vector<std::string>
-    createSet(int group, int count)
-    {
-        std::vector<std::string> amendments;
-        for (int i = 0; i < count; i++)
-            amendments.push_back(
-                "Amendment" + std::to_string((1000000 * group) + i));
-        return amendments;
-    }
-
     static Section
     makeSection(std::vector<std::string> const& amendments)
     {
@@ -77,43 +69,52 @@ private:
         return section;
     }
 
-    std::vector<std::string> const m_set1;
-    std::vector<std::string> const m_set2;
-    std::vector<std::string> const m_set3;
-    std::vector<std::string> const m_set4;
-    std::vector<std::string> const m_set5;
+    // All useful amendments are supported amendments.
+    // Enabled amendments are typically a subset of supported amendments.
+    // Vetoed amendments should be supported but not enabled.
+    // Unsupported amendments may be added to the AmendmentTable.
+    std::vector<std::string> const supported_{
+        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k",
+        "l", "m", "n", "o", "p", "q", "r", "s", "t", "u"};
+    std::vector<std::string> const
+        enabled_{"b", "d", "f", "h", "j", "l", "n", "p"};
+    std::vector<std::string> const vetoed_{"a", "c", "e"};
+    std::vector<std::string> const unsupported_{"v", "w", "x"};
+    std::vector<std::string> const unsupportedMajority_{"y", "z"};
 
     Section const emptySection;
 
     test::SuiteJournal journal;
 
 public:
-    AmendmentTable_test()
-        : m_set1(createSet(1, 12))
-        , m_set2(createSet(2, 12))
-        , m_set3(createSet(3, 12))
-        , m_set4(createSet(4, 12))
-        , m_set5(createSet(5, 12))
-        , journal("AmendmentTable_test", *this)
+    AmendmentTable_test() : journal("AmendmentTable_test", *this)
     {
     }
 
     std::unique_ptr<AmendmentTable>
     makeTable(
-        int w,
+        std::chrono::seconds majorityTime,
         Section const supported,
         Section const enabled,
         Section const vetoed)
     {
         return make_AmendmentTable(
-            weeks(w), majorityFraction, supported, enabled, vetoed, journal);
+            majorityTime,
+            majorityFraction,
+            supported,
+            enabled,
+            vetoed,
+            journal);
     }
 
     std::unique_ptr<AmendmentTable>
-    makeTable(int w)
+    makeTable(std::chrono::seconds majorityTime)
     {
         return makeTable(
-            w, makeSection(m_set1), makeSection(m_set2), makeSection(m_set3));
+            majorityTime,
+            makeSection(supported_),
+            makeSection(enabled_),
+            makeSection(vetoed_));
     }
 
     void
@@ -121,23 +122,22 @@ public:
     {
         testcase("Construction");
 
-        auto table = makeTable(1);
+        auto table = makeTable(weeks(1));
 
-        for (auto const& a : m_set1)
+        for (auto const& a : supported_)
         {
             BEAST_EXPECT(table->isSupported(amendmentId(a)));
-            BEAST_EXPECT(!table->isEnabled(amendmentId(a)));
         }
 
-        for (auto const& a : m_set2)
+        for (auto const& a : enabled_)
         {
             BEAST_EXPECT(table->isSupported(amendmentId(a)));
             BEAST_EXPECT(table->isEnabled(amendmentId(a)));
         }
 
-        for (auto const& a : m_set3)
+        for (auto const& a : vetoed_)
         {
-            BEAST_EXPECT(!table->isSupported(amendmentId(a)));
+            BEAST_EXPECT(table->isSupported(amendmentId(a)));
             BEAST_EXPECT(!table->isEnabled(amendmentId(a)));
         }
     }
@@ -147,26 +147,43 @@ public:
     {
         testcase("Name to ID mapping");
 
-        auto table = makeTable(1);
+        auto table = makeTable(weeks(1));
 
-        for (auto const& a : m_set1)
+        for (auto const& a : supported_)
             BEAST_EXPECT(table->find(a) == amendmentId(a));
-        for (auto const& a : m_set2)
+        for (auto const& a : enabled_)
             BEAST_EXPECT(table->find(a) == amendmentId(a));
 
-        for (auto const& a : m_set3)
+        for (auto const& a : vetoed_)
+            BEAST_EXPECT(table->find(a) == amendmentId(a));
+        for (auto const& a : unsupported_)
             BEAST_EXPECT(!table->find(a));
-        for (auto const& a : m_set4)
+        for (auto const& a : unsupportedMajority_)
             BEAST_EXPECT(!table->find(a));
-        for (auto const& a : m_set5)
-            BEAST_EXPECT(!table->find(a));
+
+        // Vetoing an unsupported amendment should add the amendment to table.
+        // Verify that unsupportedID is not in table.
+        uint256 const unsupportedID = amendmentId(unsupported_[0]);
+        {
+            Json::Value const unsupp =
+                table->getJson(unsupportedID)[to_string(unsupportedID)];
+            BEAST_EXPECT(unsupp.size() == 0);
+        }
+
+        // After vetoing unsupportedID verify that it is in table.
+        table->veto(unsupportedID);
+        {
+            Json::Value const unsupp =
+                table->getJson(unsupportedID)[to_string(unsupportedID)];
+            BEAST_EXPECT(unsupp[jss::vetoed].asBool());
+        }
     }
 
     void
     testBadConfig()
     {
-        auto const section = makeSection(m_set1);
-        auto const id = to_string(amendmentId(m_set2[0]));
+        auto const section = makeSection(supported_);
+        auto const id = to_string(amendmentId(enabled_[0]));
 
         testcase("Bad Config");
 
@@ -176,7 +193,7 @@ public:
 
             try
             {
-                if (makeTable(2, test, emptySection, emptySection))
+                if (makeTable(weeks(2), test, emptySection, emptySection))
                     fail("Accepted only amendment ID");
             }
             catch (...)
@@ -191,7 +208,7 @@ public:
 
             try
             {
-                if (makeTable(2, test, emptySection, emptySection))
+                if (makeTable(weeks(2), test, emptySection, emptySection))
                     fail("Accepted extra arguments");
             }
             catch (...)
@@ -209,7 +226,7 @@ public:
 
             try
             {
-                if (makeTable(2, test, emptySection, emptySection))
+                if (makeTable(weeks(2), test, emptySection, emptySection))
                     fail("Accepted short amendment ID");
             }
             catch (...)
@@ -227,7 +244,7 @@ public:
 
             try
             {
-                if (makeTable(2, test, emptySection, emptySection))
+                if (makeTable(weeks(2), test, emptySection, emptySection))
                     fail("Accepted long amendment ID");
             }
             catch (...)
@@ -246,7 +263,7 @@ public:
 
             try
             {
-                if (makeTable(2, test, emptySection, emptySection))
+                if (makeTable(weeks(2), test, emptySection, emptySection))
                     fail("Accepted non-hex amendment ID");
             }
             catch (...)
@@ -256,77 +273,116 @@ public:
         }
     }
 
-    std::map<uint256, bool>
-    getState(AmendmentTable* table, std::set<uint256> const& exclude)
-    {
-        std::map<uint256, bool> state;
-
-        auto track = [&state, table](std::vector<std::string> const& v) {
-            for (auto const& a : v)
-            {
-                auto const id = amendmentId(a);
-                state[id] = table->isEnabled(id);
-            }
-        };
-
-        track(m_set1);
-        track(m_set2);
-        track(m_set3);
-        track(m_set4);
-        track(m_set5);
-
-        for (auto const& a : exclude)
-            state.erase(a);
-
-        return state;
-    }
-
     void
-    testEnableDisable()
+    testEnableVetoRetire()
     {
-        testcase("enable & disable");
+        testcase("enable, veto, and retire");
 
-        auto const testAmendment = amendmentId("TestAmendment");
-        auto table = makeTable(2);
+        std::unique_ptr<AmendmentTable> table = makeTable(weeks(2));
 
-        // Subset of amendments to enable
-        std::set<uint256> enabled;
-        enabled.insert(testAmendment);
-        enabled.insert(amendmentId(m_set1[0]));
-        enabled.insert(amendmentId(m_set2[0]));
-        enabled.insert(amendmentId(m_set3[0]));
-        enabled.insert(amendmentId(m_set4[0]));
-        enabled.insert(amendmentId(m_set5[0]));
+        // Note which entries are pre-enabled.
+        std::set<uint256> allEnabled;
+        for (std::string const& a : enabled_)
+            allEnabled.insert(amendmentId(a));
 
-        // Get the state before, excluding the items we'll change:
-        auto const pre_state = getState(table.get(), enabled);
+        // Subset of amendments to late-enable
+        std::set<uint256> lateEnabled;
+        lateEnabled.insert(amendmentId(supported_[0]));
+        lateEnabled.insert(amendmentId(enabled_[0]));
+        lateEnabled.insert(amendmentId(vetoed_[0]));
 
-        // Enable the subset and verify
-        for (auto const& a : enabled)
+        // Do the late enabling.
+        for (uint256 const& a : lateEnabled)
             table->enable(a);
 
-        for (auto const& a : enabled)
-            BEAST_EXPECT(table->isEnabled(a));
+        // So far all enabled amendments are supported.
+        BEAST_EXPECT(!table->hasUnsupportedEnabled());
 
-        // Disable the subset and verify
-        for (auto const& a : enabled)
-            table->disable(a);
+        // Verify all pre- and late-enables are enabled and nothing else.
+        allEnabled.insert(lateEnabled.begin(), lateEnabled.end());
+        for (std::string const& a : supported_)
+        {
+            uint256 const supportedID = amendmentId(a);
+            BEAST_EXPECT(
+                table->isEnabled(supportedID) ==
+                (allEnabled.find(supportedID) != allEnabled.end()));
+        }
 
-        for (auto const& a : enabled)
-            BEAST_EXPECT(!table->isEnabled(a));
+        // All supported and unVetoed amendments should be returned as desired.
+        {
+            std::set<uint256> vetoed;
+            for (std::string const& a : vetoed_)
+                vetoed.insert(amendmentId(a));
 
-        // Get the state after, excluding the items we changed:
-        auto const post_state = getState(table.get(), enabled);
+            std::vector<uint256> const desired = table->getDesired();
+            for (uint256 const& a : desired)
+                BEAST_EXPECT(vetoed.count(a) == 0);
 
-        // Ensure the states are identical
-        auto ret = std::mismatch(
-            pre_state.begin(),
-            pre_state.end(),
-            post_state.begin(),
-            post_state.end());
+            // Unveto an amendment that is already not vetoed.  Shouldn't
+            // hurt anything, but the values returned by getDesired()
+            // shouldn't change.
+            table->unVeto(amendmentId(supported_[1]));
+            BEAST_EXPECT(desired == table->getDesired());
+        }
 
-        BEAST_EXPECT(ret.first == pre_state.end());
-        BEAST_EXPECT(ret.second == post_state.end());
+        // UnVeto one of the vetoed amendments.  It should now be desired.
+        {
+            uint256 const unvetoedID = amendmentId(vetoed_[0]);
+            table->unVeto(unvetoedID);
+
+            std::vector<uint256> const desired = table->getDesired();
+            BEAST_EXPECT(
+                std::find(desired.begin(), desired.end(), unvetoedID) !=
+                desired.end());
+        }
+
+        // Veto all supported amendments.  Now desired should be empty.
+        for (std::string const& a : supported_)
+        {
+            table->veto(amendmentId(a));
+        }
+        BEAST_EXPECT(table->getDesired().empty());
+
+        // Enable an unsupported amendment.
+        {
+            BEAST_EXPECT(!table->hasUnsupportedEnabled());
+            table->enable(amendmentId(unsupported_[0]));
+            BEAST_EXPECT(table->hasUnsupportedEnabled());
+        }
+
+        // Retire an enabled amendment and expect to see it gone.
+        {
+            std::string const goodRetireName = enabled_[0];
+            uint256 const goodRetire = table->find(goodRetireName);
+            BEAST_EXPECT(table->isEnabled(goodRetire));
+            Json::Value allKnown = table->getJson();
+            BEAST_EXPECT(allKnown.isMember(to_string(goodRetire)));
+
+            table->retire(goodRetire);
+            BEAST_EXPECT(!table->find(goodRetireName));
+            BEAST_EXPECT(!table->isEnabled(goodRetire));
+            BEAST_EXPECT(!table->isSupported(goodRetire));
+            allKnown = table->getJson();
+            BEAST_EXPECT(!allKnown.isMember(to_string(goodRetire)));
+        }
+
+        // Retire an un-enabled amendment.  Retiring should fail.
+        // It should _not_ be gone.
+        {
+            std::string const badRetireName = supported_[2];
+            uint256 const badRetire = table->find(badRetireName);
+            BEAST_EXPECT(table->isSupported(badRetire));
+            BEAST_EXPECT(!table->isEnabled(badRetire));
+            Json::Value allKnown = table->getJson();
+            BEAST_EXPECT(allKnown.isMember(to_string(badRetire)));
+
+            table->retire(badRetire);
+            BEAST_EXPECT(table->find(badRetireName) == badRetire);
+            BEAST_EXPECT(table->isSupported(badRetire));
+            BEAST_EXPECT(!table->isEnabled(badRetire));
+            allKnown = table->getJson();
+            BEAST_EXPECT(allKnown.isMember(to_string(badRetire)));
+        }
     }
 
     std::vector<std::pair<PublicKey, SecretKey>>
@@ -455,7 +511,8 @@ public:
         auto const testAmendment = amendmentId("TestAmendment");
         auto const validators = makeValidators(10);
 
-        auto table = makeTable(2, emptySection, emptySection, emptySection);
+        auto table =
+            makeTable(weeks(2), emptySection, emptySection, emptySection);
 
         std::vector<std::pair<uint256, int>> votes;
         std::vector<uint256> ourVotes;
@@ -494,7 +551,7 @@ public:
         auto const testAmendment = amendmentId("vetoedAmendment");
 
         auto table = makeTable(
-            2, emptySection, emptySection, makeSection(testAmendment));
+            weeks(2), emptySection, emptySection, makeSection(testAmendment));
 
         auto const validators = makeValidators(10);
 
@@ -530,8 +587,8 @@ public:
     {
         testcase("voteEnable");
 
-        auto table =
-            makeTable(2, makeSection(m_set1), emptySection, emptySection);
+        auto table = makeTable(
+            weeks(2), makeSection(supported_), emptySection, emptySection);
 
         auto const validators = makeValidators(10);
         std::vector<std::pair<uint256, int>> votes;
@@ -542,35 +599,35 @@ public:
         // Week 1: We should vote for all known amendments not enabled
         doRound(
             *table, weeks{1}, validators, votes, ourVotes, enabled, majority);
-        BEAST_EXPECT(ourVotes.size() == m_set1.size());
+        BEAST_EXPECT(ourVotes.size() == supported_.size());
         BEAST_EXPECT(enabled.empty());
-        for (auto const& i : m_set1)
+        for (auto const& i : supported_)
             BEAST_EXPECT(majority.find(amendmentId(i)) == majority.end());
 
         // Now, everyone votes for this feature
-        for (auto const& i : m_set1)
+        for (auto const& i : supported_)
             votes.emplace_back(amendmentId(i), 256);
 
         // Week 2: We should recognize a majority
         doRound(
             *table, weeks{2}, validators, votes, ourVotes, enabled, majority);
-        BEAST_EXPECT(ourVotes.size() == m_set1.size());
+        BEAST_EXPECT(ourVotes.size() == supported_.size());
         BEAST_EXPECT(enabled.empty());
 
-        for (auto const& i : m_set1)
+        for (auto const& i : supported_)
             BEAST_EXPECT(majority[amendmentId(i)] == weekTime(weeks{2}));
 
         // Week 5: We should enable the amendment
         doRound(
             *table, weeks{5}, validators, votes, ourVotes, enabled, majority);
-        BEAST_EXPECT(enabled.size() == m_set1.size());
+        BEAST_EXPECT(enabled.size() == supported_.size());
 
         // Week 6: We should remove it from our votes and from having a majority
         doRound(
             *table, weeks{6}, validators, votes, ourVotes, enabled, majority);
-        BEAST_EXPECT(enabled.size() == m_set1.size());
+        BEAST_EXPECT(enabled.size() == supported_.size());
         BEAST_EXPECT(ourVotes.empty());
-        for (auto const& i : m_set1)
+        for (auto const& i : supported_)
             BEAST_EXPECT(majority.find(amendmentId(i)) == majority.end());
     }
 
@@ -582,7 +639,7 @@ public:
 
         auto const testAmendment = amendmentId("detectMajority");
         auto table = makeTable(
-            2, makeSection(testAmendment), emptySection, emptySection);
+            weeks(2), makeSection(testAmendment), emptySection, emptySection);
 
         auto const validators = makeValidators(16);
 
@@ -647,7 +704,7 @@ public:
         auto const validators = makeValidators(16);
 
         auto table = makeTable(
-            8, makeSection(testAmendment), emptySection, emptySection);
+            weeks(8), makeSection(testAmendment), emptySection, emptySection);
 
         std::set<uint256> enabled;
         majorityAmendments_t majority;
@@ -711,32 +768,276 @@ public:
     {
         testcase("hasUnsupportedEnabled");
 
-        using namespace std::chrono_literals;
+        test::jtx::Env env(*this);  // Used only for its Rules
+        env.close();
 
-        int constexpr w = 1;
+        using namespace std::chrono_literals;
+        weeks constexpr w(1);
         auto table = makeTable(w);
         BEAST_EXPECT(!table->hasUnsupportedEnabled());
         BEAST_EXPECT(!table->firstUnsupportedExpected());
+        BEAST_EXPECT(table->needValidatedLedger(1));
 
         std::set<uint256> enabled;
+        std::for_each(
+            unsupported_.begin(),
+            unsupported_.end(),
+            [&enabled](auto const& s) { enabled.insert(amendmentId(s)); });
+
         majorityAmendments_t majority;
-        std::for_each(m_set4.begin(), m_set4.end(), [&enabled](auto const& s) {
-            enabled.insert(amendmentId(s));
-        });
-        table->doValidatedLedger(1, enabled, majority);
+        table->doValidatedLedger(1, enabled, majority, env.current()->rules());
         BEAST_EXPECT(table->hasUnsupportedEnabled());
         BEAST_EXPECT(!table->firstUnsupportedExpected());
+
         NetClock::duration t{1000s};
         std::for_each(
-            m_set5.begin(), m_set5.end(), [&majority, &t](auto const& s) {
+            unsupportedMajority_.begin(),
+            unsupportedMajority_.end(),
+            [&majority, &t](auto const& s) {
                 majority[amendmentId(s)] = NetClock::time_point{--t};
             });
-        table->doValidatedLedger(1, enabled, majority);
+
+        table->doValidatedLedger(1, enabled, majority, env.current()->rules());
         BEAST_EXPECT(table->hasUnsupportedEnabled());
         BEAST_EXPECT(
             table->firstUnsupportedExpected() &&
-            *table->firstUnsupportedExpected() ==
-                NetClock::time_point{t} + weeks{w});
+            *table->firstUnsupportedExpected() == NetClock::time_point{t} + w);
+
+        // Make sure the table knows when it needs an update.
+        BEAST_EXPECT(!table->needValidatedLedger(256));
+        BEAST_EXPECT(table->needValidatedLedger(257));
+    }
+
+    void
+    testRetire2017Amendments()
+    {
+        // Only run this test is there are actual amendments being retired.
+        if (ripple::detail::retiringAmendments().size() == 0)
+            return;
+
+        testcase("retire 2017 amendments");
+
+        // We must configure ourselves as a validator in order to get
+        // amendment voting to happen.
+        using namespace test::jtx;
+        Env env(*this, envconfig(validator, ""));
+        env.close();
+
+        // There shouldn't be any amendments in the ledger yet..
+        std::shared_ptr<SLE const> amendments =
+            env.closed()->read(keylet::amendments());
+        BEAST_EXPECT(!amendments);
+
+        // Flush the amendment majorities through to the ledger.  We need
+        // a flag ledger for that.
+        auto closeForFlagLedger = [&env]() {
+            for (auto i = env.current()->seq() % 256; i <= 257; ++i)
+                env.close();
+        };
+        closeForFlagLedger();
+
+        // All of the supported amendments are now up voted but not enabled.
+        // Show that.
+        auto amendmentCount = [&env]() -> std::size_t {
+            std::shared_ptr<SLE const> const amendments =
+                env.closed()->read(keylet::amendments());
+
+            if (amendments && amendments->isFieldPresent(sfAmendments))
+                return (*amendments)[sfAmendments].size();
+
+            return 0u;
+        };
+        BEAST_EXPECT(amendmentCount() == 0);
+
+        auto majorityCount = [&env]() -> std::size_t {
+            std::shared_ptr<SLE const> const amendments =
+                env.closed()->read(keylet::amendments());
+            if (amendments && amendments->isFieldPresent(sfMajorities))
+            {
+                return amendments->getFieldArray(sfMajorities).size();
+            }
+            return 0u;
+        };
+
+        // Get the count of all majority amendments.  We'll want this value
+        // later so we can compare it to the number of enabled amendments.
+        std::uint32_t const initialMajorityCount = majorityCount();
+        BEAST_EXPECT(initialMajorityCount > 1);
+
+        // Vote down Retire2017Amendments so the other amendments are
+        // enabled first.
+        {
+            auto const jrr =
+                env.rpc("feature", "Retire2017Amendments", "reject");
+            BEAST_EXPECT(jrr[jss::result][jss::status].asString() == "success");
+        }
+
+        // Make rejecting Retire2017Amendments stick.  We need another
+        // flag ledger.
+        closeForFlagLedger();
+
+        // Prove that featureRetire2017Amendments no longer has a majority.
+        auto hasMajority = [&env](uint256 const& amendment) {
+            std::shared_ptr<SLE const> const amendments =
+                env.closed()->read(keylet::amendments());
+            if (amendments && amendments->isFieldPresent(sfMajorities))
+            {
+                STArray const& majorities =
+                    amendments->getFieldArray(sfMajorities);
+                for (auto const& majority : majorities)
+                {
+                    if (majority[sfAmendment] == amendment)
+                        return true;
+                }
+            }
+            return false;
+        };
+        BEAST_EXPECT(!hasMajority(featureRetire2017Amendments));
+        BEAST_EXPECT(majorityCount() == initialMajorityCount - 1);
+
+        // A lambda that extracts the most recent amendment majority time.
+        auto mostRecentMajorityTime = [&env]() {
+            std::uint32_t t{0};
+            std::shared_ptr<SLE const> const amendments =
+                env.closed()->read(keylet::amendments());
+
+            if (amendments)
+            {
+                STArray const& majorities =
+                    amendments->getFieldArray(sfMajorities);
+                for (STObject const& majority : majorities)
+                {
+                    std::uint32_t const newT = majority[sfCloseTime];
+                    if (newT > t)
+                        t = newT;
+                }
+            }
+            return t;
+        };
+        std::uint32_t const tClose1 = mostRecentMajorityTime();
+
+        // Now vote in favor of Retire2017Amendments.
+        // Then cause another flag ledger so it sticks.
+        {
+            auto const jrr =
+                env.rpc("feature", "Retire2017Amendments", "accept");
+            BEAST_EXPECT(jrr[jss::result][jss::status].asString() == "success");
+        }
+        closeForFlagLedger();
+
+        // Prove that Retire2017Amendments now has a majority.
+        BEAST_EXPECT(hasMajority(featureRetire2017Amendments));
+
+        // It takes two weeks for the accepted amendments to be enabled.
+        // Cause that two weeks to elapse and check the amendments.
+        // There should still be one entry in Majorities.
+        NetClock::time_point const firstT =
+            NetClock::time_point{} + std::chrono::seconds(tClose1) + weeks(2);
+        env.close(firstT);
+
+        // Wait for a flag ledger to force the changes through.
+        closeForFlagLedger();
+
+        // Retire 2017 should still have majority, which means it is not an
+        // enabled amendment yet.
+        BEAST_EXPECT(hasMajority(featureRetire2017Amendments));
+
+        // The number of enabled amendments should equal the number of
+        // formerly majority amendments minus one.  The minus one is
+        // Retire2017Amendments.
+        BEAST_EXPECT(amendmentCount() == initialMajorityCount - 1);
+
+        // A lambda to confirm that an amendment is enabled.
+        auto isEnabled = [&env](uint256 const& findThis) {
+            std::shared_ptr<SLE const> const amendments =
+                env.closed()->read(keylet::amendments());
+
+            if (amendments)
+            {
+                std::vector<uint256> const amendmentArray =
+                    (*amendments)[sfAmendments];
+                return std::find(
+                           amendmentArray.begin(),
+                           amendmentArray.end(),
+                           findThis) != amendmentArray.end();
+            }
+            return false;
+        };
+        BEAST_EXPECT(!isEnabled(featureRetire2017Amendments));
+
+        // Verify that all of the retiringAmendments are enabled amendments.
+        for (uint256 const& retiring : ripple::detail::retiringAmendments())
+        {
+            BEAST_EXPECT(isEnabled(retiring));
+            BEAST_EXPECT(retiring != featureRetire2017Amendments);
+        }
+
+        // Now advance time to where featureRetire2017Amendments should enable.
+        NetClock::time_point const retireT = NetClock::time_point{} +
+            std::chrono::seconds(mostRecentMajorityTime()) + weeks(2);
+        env.close(retireT);
+
+        // Wait for a flag ledger to force the changes through.
+        closeForFlagLedger();
+
+        // Everything that was a majority should have flushed through.  So
+        // there should be no majority amendments.
+        BEAST_EXPECT(!hasMajority(featureRetire2017Amendments));
+        BEAST_EXPECT(majorityCount() == 0);
+
+        // featureRetire2017Amendments should now be an active amendment.
+        // When the Retire amendment went active all of the retiringAmendments
+        // should have been removed from Amendments.
+        BEAST_EXPECT(isEnabled(featureRetire2017Amendments));
+        for (uint256 const& retiring : ripple::detail::retiringAmendments())
+        {
+            BEAST_EXPECT(!isEnabled(retiring));
+        }
+
+        // The total number of amendments should equal the initial
+        // majority count minus the number of amendments retired.
+        BEAST_EXPECT(
+            amendmentCount() ==
+            initialMajorityCount - ripple::detail::retiringAmendments().size());
+
+        // Now see that the AmendmentTable has been updated.  All enabled
+        // amendments found in the AmendmentTable should exactly match
+        // the amendments in the ledger.  Do the comparison using multi_sets
+        // to allow for the (unexpected) possibility of duplicates.
+        {
+            // Load the enabled amendments in the ledger into a multiset.
+            std::shared_ptr<SLE const> const amendments =
+                env.closed()->read(keylet::amendments());
+
+            BEAST_EXPECT(amendments);
+            std::vector<uint256> const amendmentArray =
+                (*amendments)[sfAmendments];
+            std::multiset<uint256> const amendmentSet(
+                amendmentArray.begin(), amendmentArray.end());
+
+            // Load enabled amendments that are in the table into a multi_set.
+            std::multiset<uint256> tableSet;
+
+            Json::Value const tableJson =
+                env.app().getAmendmentTable().getJson();
+
+            std::vector<std::string> const members = tableJson.getMemberNames();
+
+            for (std::string const& memberName : members)
+            {
+                Json::Value const& member = tableJson[memberName];
+                if (member[jss::enabled].asBool() == true)
+                    tableSet.insert(from_hex_text<uint256>(memberName));
+            }
+
+            // Verify that, at this point, all amendments in the
+            // AmendmentTable are enabled.
+            BEAST_EXPECT(tableSet.size() == members.size());
+
+            // Verify that the enabled amendments in the ledger match the
+            // enabled amendments in the AmendmentTable.
+            BEAST_EXPECT(tableSet == amendmentSet);
+        }
     }
 
     void
@@ -745,13 +1046,14 @@ public:
         testConstruct();
         testGet();
         testBadConfig();
-        testEnableDisable();
+        testEnableVetoRetire();
         testNoOnUnknown();
         testNoOnVetoed();
         testVoteEnable();
         testDetectMajority();
         testLostMajority();
         testHasUnsupported();
+        testRetire2017Amendments();
     }
 };
 

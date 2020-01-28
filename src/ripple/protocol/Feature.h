@@ -69,29 +69,30 @@ namespace detail {
 
 class FeatureCollections
 {
+    // clang-format off
     static constexpr char const* const featureNames[] = {
-        "MultiSign",  // Unconditionally supported.
+        "MultiSign",            // Retired
         "Tickets",
-        "TrustSetAuth",   // Unconditionally supported.
-        "FeeEscalation",  // Unconditionally supported.
+        "TrustSetAuth",         // Retired
+        "FeeEscalation",        // Retired
         "OwnerPaysFee",
-        "PayChan",
-        "Flow",  // Unconditionally supported.
+        "PayChan",              // Retired
+        "Flow",                 // Retired
         "CompareTakerFlowCross",
         "FlowCross",
-        "CryptoConditions",
-        "TickSize",
-        "fix1368",
-        "Escrow",
+        "CryptoConditions",     // Retired
+        "TickSize",             // Retired
+        "fix1368",              // Retired
+        "Escrow",               // Retired
         "CryptoConditionsSuite",
-        "fix1373",
-        "EnforceInvariants",
-        "SortedDirectories",
-        "fix1201",
-        "fix1512",
+        "fix1373",              // Retired
+        "EnforceInvariants",    // Retired
+        "SortedDirectories",    // Retired
+        "fix1201",              // Retired
+        "fix1512",              // Retired
         "fix1513",
-        "fix1523",
-        "fix1528",
+        "fix1523",              // Retired
+        "fix1528",              // Retired
         "DepositAuth",
         "Checks",
         "fix1571",
@@ -106,12 +107,12 @@ class FeatureCollections
         "fixCheckThreading",
         "fixPayChanRecipientOwnerDir",
         "DeletableAccounts",
-        // fixQualityUpperBound should be activated before FlowCross
-        "fixQualityUpperBound",
+        "fixQualityUpperBound",   // Should be activated before FlowCross
         "RequireFullyCanonicalSig",
-        "fix1781",  // XRPEndpointSteps should be included in the circular
-                    // payment check
+        "fix1781",  // Include XRPEndpointSteps in the circular payment check
+        "Retire2017Amendments",
     };
+    // clang-format on
 
     std::vector<uint256> features;
     boost::container::flat_map<uint256, std::size_t> featureToIndex;
@@ -139,6 +140,11 @@ public:
 /** Amendments that this server supports, but doesn't enable by default */
 std::vector<std::string> const&
 supportedAmendments();
+
+// Enabled Amendments that this server unconditionally supports, and
+// are in the process of being retired.
+std::initializer_list<uint256> const&
+retiringAmendments();
 
 }  // namespace detail
 
@@ -366,21 +372,7 @@ extern uint256 const featureDeletableAccounts;
 extern uint256 const fixQualityUpperBound;
 extern uint256 const featureRequireFullyCanonicalSig;
 extern uint256 const fix1781;
-
-// The following amendments have been active for at least two years.
-// Their pre-amendment code has been removed.
-extern uint256 const retiredPayChan;
-extern uint256 const retiredCryptoConditions;
-extern uint256 const retiredTickSize;
-extern uint256 const retiredFix1368;
-extern uint256 const retiredEscrow;
-extern uint256 const retiredFix1373;
-extern uint256 const retiredEnforceInvariants;
-extern uint256 const retiredSortedDirectories;
-extern uint256 const retiredFix1201;
-extern uint256 const retiredFix1512;
-extern uint256 const retiredFix1523;
-extern uint256 const retiredFix1528;
+extern uint256 const featureRetire2017Amendments;
 
 }  // namespace ripple
 

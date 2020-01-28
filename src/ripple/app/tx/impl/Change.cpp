@@ -22,6 +22,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/impl/Change.h>
 #include <ripple/basics/Log.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/TxFlags.h>
 
@@ -173,7 +174,6 @@ Change::applyAmendment()
     {
         // No flags, enable amendment
         amendments.push_back(amendment);
-        amendmentObject->setFieldV256(sfAmendments, amendments);
 
         ctx_.app.getAmendmentTable().enable(amendment);
 
@@ -183,6 +183,26 @@ Change::applyAmendment()
                              << " activated: server blocked.";
             ctx_.app.getOPs().setAmendmentBlocked();
         }
+
+        // See if the just enabled amendment retires already-enabled amendments.
+        if (amendment == featureRetire2017Amendments)
+        {
+            // For every retiring amendment, if we find it remove it from
+            // amendmentObject.
+            //
+            // Note that we can't remove the amendments from the AmendmentTable
+            // yet since the AmendmentTable is not a ledger object.  Just
+            // because we do the Change doesn't guarantee enough other
+            // validators will.
+            for (uint256 const& retire : detail::retiringAmendments())
+            {
+                auto const retireItr =
+                    std::find(amendments.begin(), amendments.end(), retire);
+                if (retireItr != amendments.end())
+                    amendments.erase(retireItr);
+            }
+        }
+        amendmentObject->setFieldV256(sfAmendments, amendments);
     }
 
     if (newMajorities.empty())

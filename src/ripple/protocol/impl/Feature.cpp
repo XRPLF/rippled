@@ -80,6 +80,7 @@ static detail::FeatureCollections const featureCollections;
 std::vector<std::string> const&
 detail::supportedAmendments()
 {
+    // clang-format off
     // Commented out amendments will be supported in a future release (and
     // uncommented at that time).
     //
@@ -92,10 +93,10 @@ detail::supportedAmendments()
     // Removing them will cause servers to become amendment blocked.
     static std::vector<std::string> const supported{
         "MultiSign",      // Unconditionally supported.
-                          //        "Tickets",
+//        "Tickets",
         "TrustSetAuth",   // Unconditionally supported.
         "FeeEscalation",  // Unconditionally supported.
-                          //        "OwnerPaysFee",
+//        "OwnerPaysFee",
         "PayChan",
         "Flow",
         "CryptoConditions",
@@ -130,7 +131,9 @@ detail::supportedAmendments()
         "fixQualityUpperBound",
         "RequireFullyCanonicalSig",
         "fix1781",
+        "Retire2017Amendments",
     };
+    // clang-format on
     return supported;
 }
 
@@ -140,6 +143,21 @@ boost::optional<uint256>
 getRegisteredFeature(std::string const& name)
 {
     return featureCollections.getRegisteredFeature(name);
+}
+
+// Used for static initialization.  It's a LogicError if the named feature
+// is missing
+static uint256
+getMandatoryFeature(std::string const& name)
+{
+    boost::optional<uint256> const optFeatureId = getRegisteredFeature(name);
+    if (!optFeatureId)
+    {
+        LogicError(
+            std::string("Requested feature \"") + name +
+            "\" is not registered in FeatureCollections::featureName.");
+    }
+    return *optFeatureId;
 }
 
 size_t
@@ -154,56 +172,93 @@ bitsetIndexToFeature(size_t i)
     return featureCollections.bitsetIndexToFeature(i);
 }
 
-uint256 const featureTickets = *getRegisteredFeature("Tickets");
-uint256 const featureOwnerPaysFee = *getRegisteredFeature("OwnerPaysFee");
-uint256 const featureFlow = *getRegisteredFeature("Flow");
-uint256 const featureCompareTakerFlowCross =
-    *getRegisteredFeature("CompareTakerFlowCross");
-uint256 const featureFlowCross = *getRegisteredFeature("FlowCross");
-uint256 const featureCryptoConditionsSuite =
-    *getRegisteredFeature("CryptoConditionsSuite");
-uint256 const fix1513 = *getRegisteredFeature("fix1513");
-uint256 const featureDepositAuth = *getRegisteredFeature("DepositAuth");
-uint256 const featureChecks = *getRegisteredFeature("Checks");
-uint256 const fix1571 = *getRegisteredFeature("fix1571");
-uint256 const fix1543 = *getRegisteredFeature("fix1543");
-uint256 const fix1623 = *getRegisteredFeature("fix1623");
-uint256 const featureDepositPreauth = *getRegisteredFeature("DepositPreauth");
-uint256 const fix1515 = *getRegisteredFeature("fix1515");
-uint256 const fix1578 = *getRegisteredFeature("fix1578");
-uint256 const featureMultiSignReserve =
-    *getRegisteredFeature("MultiSignReserve");
-uint256 const fixTakerDryOfferRemoval =
-    *getRegisteredFeature("fixTakerDryOfferRemoval");
-uint256 const fixMasterKeyAsRegularKey =
-    *getRegisteredFeature("fixMasterKeyAsRegularKey");
-uint256 const fixCheckThreading = *getRegisteredFeature("fixCheckThreading");
-uint256 const fixPayChanRecipientOwnerDir =
-    *getRegisteredFeature("fixPayChanRecipientOwnerDir");
-uint256 const featureDeletableAccounts =
-    *getRegisteredFeature("DeletableAccounts");
-uint256 const fixQualityUpperBound =
-    *getRegisteredFeature("fixQualityUpperBound");
-uint256 const featureRequireFullyCanonicalSig =
-    *getRegisteredFeature("RequireFullyCanonicalSig");
-uint256 const fix1781 = *getRegisteredFeature("fix1781");
+// clang-format off
+uint256 const featureTickets = getMandatoryFeature("Tickets");
+uint256 const featureOwnerPaysFee = getMandatoryFeature("OwnerPaysFee");
+uint256 const featurePayChan = getMandatoryFeature("PayChan");
+uint256 const featureFlow = getMandatoryFeature("Flow");
+uint256 const featureCompareTakerFlowCross = getMandatoryFeature("CompareTakerFlowCross");
+uint256 const featureFlowCross = getMandatoryFeature("FlowCross");
+uint256 const featureCryptoConditions = getMandatoryFeature("CryptoConditions");
+uint256 const featureTickSize = getMandatoryFeature("TickSize");
+uint256 const fix1368 = getMandatoryFeature("fix1368");
+uint256 const featureEscrow = getMandatoryFeature("Escrow");
+uint256 const featureCryptoConditionsSuite = getMandatoryFeature("CryptoConditionsSuite");
+uint256 const fix1373 = getMandatoryFeature("fix1373");
+uint256 const featureEnforceInvariants = getMandatoryFeature("EnforceInvariants");
+uint256 const featureSortedDirectories = getMandatoryFeature("SortedDirectories");
+uint256 const fix1201 = getMandatoryFeature("fix1201");
+uint256 const fix1512 = getMandatoryFeature("fix1512");
+uint256 const fix1513 = getMandatoryFeature("fix1513");
+uint256 const fix1523 = getMandatoryFeature("fix1523");
+uint256 const fix1528 = getMandatoryFeature("fix1528");
+uint256 const featureDepositAuth = getMandatoryFeature("DepositAuth");
+uint256 const featureChecks = getMandatoryFeature("Checks");
+uint256 const fix1571 = getMandatoryFeature("fix1571");
+uint256 const fix1543 = getMandatoryFeature("fix1543");
+uint256 const fix1623 = getMandatoryFeature("fix1623");
+uint256 const featureDepositPreauth = getMandatoryFeature("DepositPreauth");
+uint256 const fix1515 = getMandatoryFeature("fix1515");
+uint256 const fix1578 = getMandatoryFeature("fix1578");
+uint256 const featureMultiSignReserve = getMandatoryFeature("MultiSignReserve");
+uint256 const fixTakerDryOfferRemoval = getMandatoryFeature("fixTakerDryOfferRemoval");
+uint256 const fixMasterKeyAsRegularKey = getMandatoryFeature("fixMasterKeyAsRegularKey");
+uint256 const fixCheckThreading = getMandatoryFeature("fixCheckThreading");
+uint256 const fixPayChanRecipientOwnerDir = getMandatoryFeature("fixPayChanRecipientOwnerDir");
+uint256 const featureDeletableAccounts = getMandatoryFeature("DeletableAccounts");
+uint256 const fixQualityUpperBound = getMandatoryFeature("fixQualityUpperBound");
+uint256 const featureRequireFullyCanonicalSig = getMandatoryFeature("RequireFullyCanonicalSig");
+uint256 const fix1781 = getMandatoryFeature("fix1781");
+uint256 const featureRetire2017Amendments = getMandatoryFeature("Retire2017Amendments");
 
 // The following amendments have been active for at least two years.
 // Their pre-amendment code has been removed.
-uint256 const retiredPayChan = *getRegisteredFeature("PayChan");
-uint256 const retiredCryptoConditions =
-    *getRegisteredFeature("CryptoConditions");
-uint256 const retiredTickSize = *getRegisteredFeature("TickSize");
-uint256 const retiredFix1368 = *getRegisteredFeature("fix1368");
-uint256 const retiredEscrow = *getRegisteredFeature("Escrow");
-uint256 const retiredFix1373 = *getRegisteredFeature("fix1373");
-uint256 const retiredEnforceInvariants =
-    *getRegisteredFeature("EnforceInvariants");
-uint256 const retiredSortedDirectories =
-    *getRegisteredFeature("SortedDirectories");
-uint256 const retiredFix1201 = *getRegisteredFeature("fix1201");
-uint256 const retiredFix1512 = *getRegisteredFeature("fix1512");
-uint256 const retiredFix1523 = *getRegisteredFeature("fix1523");
-uint256 const retiredFix1528 = *getRegisteredFeature("fix1528");
+//
+// The static retired amendments could hypothetically be moved so they are only
+// inside the detail::retiringAmendments() implementation.  However doing so
+// would postpone the discovery of any construction problems until the first
+// call to retiringAmendments().  By leaving these definitions at file
+// scope any run-time build problems will be revealed before main() is called.
+static uint256 const retiredFeeEscalation = getMandatoryFeature("FeeEscalation");
+static uint256 const retiredMultiSign = getMandatoryFeature("MultiSign");
+static uint256 const retiredTrustSetAuth = getMandatoryFeature("TrustSetAuth");
+static uint256 const retiredFlow = getMandatoryFeature("Flow");
+static uint256 const retiredCryptoConditions = getMandatoryFeature("CryptoConditions");
+static uint256 const retiredTickSize = getMandatoryFeature("TickSize");
+static uint256 const retiredPayChan = getMandatoryFeature("PayChan");
+static uint256 const retiredFix1368 = getMandatoryFeature("fix1368");
+static uint256 const retiredEscrow = getMandatoryFeature("Escrow");
+static uint256 const retiredFix1373 = getMandatoryFeature("fix1373");
+static uint256 const retiredEnforceInvariants = getMandatoryFeature("EnforceInvariants");
+static uint256 const retiredSortedDirectories = getMandatoryFeature("SortedDirectories");
+static uint256 const retiredFix1528 = getMandatoryFeature("fix1528");
+static uint256 const retiredFix1523 = getMandatoryFeature("fix1523");
+static uint256 const retiredFix1512 = getMandatoryFeature("fix1512");
+static uint256 const retiredFix1201 = getMandatoryFeature("fix1201");
+// clang-format on
+
+std::initializer_list<uint256> const&
+detail::retiringAmendments()
+{
+    static std::initializer_list<uint256> const retiring{
+        retiredFeeEscalation,
+        retiredMultiSign,
+        retiredTrustSetAuth,
+        retiredFlow,
+        retiredCryptoConditions,
+        retiredTickSize,
+        retiredPayChan,
+        retiredFix1368,
+        retiredEscrow,
+        retiredFix1373,
+        retiredEnforceInvariants,
+        retiredSortedDirectories,
+        retiredFix1528,
+        retiredFix1523,
+        retiredFix1512,
+        retiredFix1201,
+    };
+    return retiring;
+};
 
 }  // namespace ripple

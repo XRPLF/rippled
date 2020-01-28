@@ -21,6 +21,7 @@
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/jss.h>
@@ -28,6 +29,7 @@
 #include <boost/regex.hpp>
 #include <algorithm>
 #include <mutex>
+#include <utility>
 
 namespace ripple {
 
@@ -139,7 +141,7 @@ public:
 class AmendmentTableImpl final : public AmendmentTable
 {
 protected:
-    std::mutex mutex_;
+    mutable std::mutex mutex_;
 
     hash_map<uint256, AmendmentState> amendmentMap_;
     std::uint32_t lastUpdateSeq_;
@@ -157,6 +159,7 @@ protected:
 
     // True if an unsupported amendment is enabled
     bool unsupportedEnabled_;
+
     // Unset if no unsupported amendments reach majority,
     // else set to the earliest time an unsupported amendment
     // will be enabled.
@@ -164,16 +167,24 @@ protected:
 
     beast::Journal const j_;
 
-    // Finds or creates state
+    // Finds or creates state.  Must be called with mutex_ locked.
     AmendmentState*
-    add(uint256 const& amendment);
+    add(uint256 const& amendment, std::lock_guard<std::mutex> const& sl);
 
-    // Finds existing state
+    // Finds existing state.  Must be called with mutex_ locked.
     AmendmentState*
-    get(uint256 const& amendment);
+    get(uint256 const& amendment, std::lock_guard<std::mutex> const& sl);
 
+    AmendmentState const*
+    get(uint256 const& amendment, std::lock_guard<std::mutex> const& sl) const;
+
+    // Injects amendment json into v.  Must be called with mutex_ locked.
     void
-    setJson(Json::Value& v, uint256 const& amendment, const AmendmentState&);
+    injectJson(
+        Json::Value& v,
+        uint256 const& amendment,
+        AmendmentState const& state,
+        std::lock_guard<std::mutex> const& sl) const;
 
 public:
     AmendmentTableImpl(
@@ -185,7 +196,7 @@ public:
         beast::Journal journal);
 
     uint256
-    find(std::string const& name) override;
+    find(std::string const& name) const override;
 
     bool
     veto(uint256 const& amendment) override;
@@ -195,37 +206,39 @@ public:
     bool
     enable(uint256 const& amendment) override;
     bool
-    disable(uint256 const& amendment) override;
+    retire(uint256 const& amendment) override;
 
     bool
-    isEnabled(uint256 const& amendment) override;
+    isEnabled(uint256 const& amendment) const override;
     bool
-    isSupported(uint256 const& amendment) override;
+    isSupported(uint256 const& amendment) const override;
 
     bool
-    hasUnsupportedEnabled() override;
+    hasUnsupportedEnabled() const override;
+
     boost::optional<NetClock::time_point>
-    firstUnsupportedExpected() override;
+    firstUnsupportedExpected() const override;
 
     Json::Value
-    getJson(int) override;
+    getJson() const override;
     Json::Value
-    getJson(uint256 const&) override;
+    getJson(uint256 const&) const override;
 
     bool
-    needValidatedLedger(LedgerIndex seq) override;
+    needValidatedLedger(LedgerIndex seq) const override;
 
     void
     doValidatedLedger(
         LedgerIndex seq,
         std::set<uint256> const& enabled,
-        majorityAmendments_t const& majority) override;
+        majorityAmendments_t const& majority,
+        Rules const& rules) override;
 
     std::vector<uint256>
-    doValidation(std::set<uint256> const& enabledAmendments) override;
+    doValidation(std::set<uint256> const& enabledAmendments) const override;
 
     std::vector<uint256>
-    getDesired() override;
+    getDesired() const override;
 
     std::map<uint256, std::uint32_t>
     doVoting(
@@ -256,7 +269,7 @@ AmendmentTableImpl::AmendmentTableImpl(
 
     for (auto const& a : parseSection(supported))
     {
-        if (auto s = add(a.first))
+        if (auto s = add(a.first, sl))
         {
             JLOG(j_.debug()) << "Amendment " << a.first << " is supported.";
 
@@ -269,7 +282,7 @@ AmendmentTableImpl::AmendmentTableImpl(
 
     for (auto const& a : parseSection(enabled))
     {
-        if (auto s = add(a.first))
+        if (auto s = add(a.first, sl))
         {
             JLOG(j_.debug()) << "Amendment " << a.first << " is enabled.";
 
@@ -284,7 +297,7 @@ AmendmentTableImpl::AmendmentTableImpl(
     for (auto const& a : parseSection(vetoed))
     {
         // Unknown amendments are effectively vetoed already
-        if (auto s = get(a.first))
+        if (auto s = get(a.first, sl))
         {
             JLOG(j_.info()) << "Amendment " << a.first << " is vetoed.";
 
@@ -297,14 +310,28 @@ AmendmentTableImpl::AmendmentTableImpl(
 }
 
 AmendmentState*
-AmendmentTableImpl::add(uint256 const& amendmentHash)
+AmendmentTableImpl::add(
+    uint256 const& amendmentHash,
+    std::lock_guard<std::mutex> const&)
 {
     // call with the mutex held
     return &amendmentMap_[amendmentHash];
 }
 
 AmendmentState*
-AmendmentTableImpl::get(uint256 const& amendmentHash)
+AmendmentTableImpl::get(
+    uint256 const& amendmentHash,
+    std::lock_guard<std::mutex> const& sl)
+{
+    // Forward to the const version of get.
+    return const_cast<AmendmentState*>(
+        std::as_const(*this).get(amendmentHash, sl));
+}
+
+AmendmentState const*
+AmendmentTableImpl::get(
+    uint256 const& amendmentHash,
+    std::lock_guard<std::mutex> const&) const
 {
     // call with the mutex held
     auto ret = amendmentMap_.find(amendmentHash);
@@ -316,7 +343,7 @@ AmendmentTableImpl::get(uint256 const& amendmentHash)
 }
 
 uint256
-AmendmentTableImpl::find(std::string const& name)
+AmendmentTableImpl::find(std::string const& name) const
 {
     std::lock_guard sl(mutex_);
 
@@ -333,7 +360,7 @@ bool
 AmendmentTableImpl::veto(uint256 const& amendment)
 {
     std::lock_guard sl(mutex_);
-    auto s = add(amendment);
+    auto s = add(amendment, sl);
 
     if (s->vetoed)
         return false;
@@ -345,7 +372,7 @@ bool
 AmendmentTableImpl::unVeto(uint256 const& amendment)
 {
     std::lock_guard sl(mutex_);
-    auto s = get(amendment);
+    auto s = get(amendment, sl);
 
     if (!s || !s->vetoed)
         return false;
@@ -357,7 +384,7 @@ bool
 AmendmentTableImpl::enable(uint256 const& amendment)
 {
     std::lock_guard sl(mutex_);
-    auto s = add(amendment);
+    auto s = add(amendment, sl);
 
     if (s->enabled)
         return false;
@@ -375,58 +402,59 @@ AmendmentTableImpl::enable(uint256 const& amendment)
 }
 
 bool
-AmendmentTableImpl::disable(uint256 const& amendment)
+AmendmentTableImpl::retire(uint256 const& amendment)
 {
     std::lock_guard sl(mutex_);
-    auto s = get(amendment);
 
-    if (!s || !s->enabled)
-        return false;
+    // Only enabled amendments can be retired.  They should also be
+    // unconditionally enabled, but that can't be easily verified.
+    auto s = get(amendment, sl);
+    if (s && s->enabled)
+        return amendmentMap_.erase(amendment) > 0;
 
-    s->enabled = false;
-    return true;
+    return false;
 }
 
 bool
-AmendmentTableImpl::isEnabled(uint256 const& amendment)
+AmendmentTableImpl::isEnabled(uint256 const& amendment) const
 {
     std::lock_guard sl(mutex_);
-    auto s = get(amendment);
+    auto s = get(amendment, sl);
     return s && s->enabled;
 }
 
 bool
-AmendmentTableImpl::isSupported(uint256 const& amendment)
+AmendmentTableImpl::isSupported(uint256 const& amendment) const
 {
     std::lock_guard sl(mutex_);
-    auto s = get(amendment);
+    auto s = get(amendment, sl);
     return s && s->supported;
 }
 
 bool
-AmendmentTableImpl::hasUnsupportedEnabled()
+AmendmentTableImpl::hasUnsupportedEnabled() const
 {
     std::lock_guard sl(mutex_);
     return unsupportedEnabled_;
 }
 
 boost::optional<NetClock::time_point>
-AmendmentTableImpl::firstUnsupportedExpected()
+AmendmentTableImpl::firstUnsupportedExpected() const
 {
     std::lock_guard sl(mutex_);
     return firstUnsupportedExpected_;
 }
 
 std::vector<uint256>
-AmendmentTableImpl::doValidation(std::set<uint256> const& enabled)
+AmendmentTableImpl::doValidation(std::set<uint256> const& enabled) const
 {
     // Get the list of amendments we support and do not
     // veto, but that are not already enabled
     std::vector<uint256> amendments;
-    amendments.reserve(amendmentMap_.size());
 
     {
         std::lock_guard sl(mutex_);
+        amendments.reserve(amendmentMap_.size());
         for (auto const& e : amendmentMap_)
         {
             if (e.second.supported && !e.second.vetoed &&
@@ -444,7 +472,7 @@ AmendmentTableImpl::doValidation(std::set<uint256> const& enabled)
 }
 
 std::vector<uint256>
-AmendmentTableImpl::getDesired()
+AmendmentTableImpl::getDesired() const
 {
     // Get the list of amendments we support and do not veto
     return doValidation({});
@@ -547,7 +575,7 @@ AmendmentTableImpl::doVoting(
 }
 
 bool
-AmendmentTableImpl::needValidatedLedger(LedgerIndex ledgerSeq)
+AmendmentTableImpl::needValidatedLedger(LedgerIndex ledgerSeq) const
 {
     std::lock_guard sl(mutex_);
 
@@ -561,40 +589,84 @@ void
 AmendmentTableImpl::doValidatedLedger(
     LedgerIndex ledgerSeq,
     std::set<uint256> const& enabled,
-    majorityAmendments_t const& majority)
+    majorityAmendments_t const& majority,
+    Rules const& rules)
 {
     for (auto& e : enabled)
         enable(e);
 
-    std::lock_guard sl(mutex_);
-    // Since we have the whole list in `majority`, reset the time flag, even if
-    // it's currently set. If it's not set when the loop is done, then any
-    // prior unknown amendments have lost majority.
-    firstUnsupportedExpected_.reset();
-    for (auto const& [hash, time] : majority)
     {
-        auto s = add(hash);
-
-        if (s->enabled)
-            continue;
-
-        if (!s->supported)
+        std::lock_guard sl(mutex_);
+        // Since we have the whole list in `majority`, reset the time flag,
+        // even if it's currently set. If it's not set when the loop is done,
+        // then any prior unknown amendments have lost majority.
+        firstUnsupportedExpected_.reset();
+        for (auto const& [hash, time] : majority)
         {
-            JLOG(j_.info()) << "Unsupported amendment " << hash
-                            << " reached majority at " << to_string(time);
-            if (!firstUnsupportedExpected_ || firstUnsupportedExpected_ > time)
-                firstUnsupportedExpected_ = time;
+            auto s = add(hash, sl);
+
+            if (s->enabled)
+                continue;
+
+            if (!s->supported)
+            {
+                JLOG(j_.info()) << "Unsupported amendment " << hash
+                                << " reached majority at " << to_string(time);
+                if (!firstUnsupportedExpected_ ||
+                    firstUnsupportedExpected_ > time)
+                {
+                    firstUnsupportedExpected_ = time;
+                }
+            }
+        }
+        if (firstUnsupportedExpected_)
+            firstUnsupportedExpected_ =
+                *firstUnsupportedExpected_ + majorityTime_;
+    }
+
+    if (rules.enabled(featureRetire2017Amendments))
+    {
+        // Remove retired amendments from the AmendmentMap_ so we stop
+        // reporting about amendments that are retired.  This should only
+        // need to be done once, so check whether it needs to be done
+        // before actually doing the work.
+        bool const needsRetiring = [this, ledgerSeq]() {
+            std::lock_guard sl(mutex_);
+            lastUpdateSeq_ = ledgerSeq;
+
+            for (uint256 const& retiring : detail::retiringAmendments())
+            {
+                if (amendmentMap_.find(retiring) != amendmentMap_.end())
+                    return true;
+            }
+            return false;
+        }();
+
+        if (needsRetiring)
+        {
+            for (uint256 const& retiring : detail::retiringAmendments())
+            {
+                // It should never happen that an entry in
+                // detail::retiringAmendments() is still present in
+                // enabled.  But, out of an abundance of caution, don't
+                // retire any amendment that is still present in
+                // enabled.
+                //
+                // If we did retire an amendment that was still in enabled,
+                // then that would leave this server amendment blocked.
+                if (enabled.count(retiring) == 0)
+                    retire(retiring);
+            }
         }
     }
-    if (firstUnsupportedExpected_)
-        firstUnsupportedExpected_ = *firstUnsupportedExpected_ + majorityTime_;
 }
 
 void
-AmendmentTableImpl::setJson(
+AmendmentTableImpl::injectJson(
     Json::Value& v,
     const uint256& id,
-    const AmendmentState& fs)
+    const AmendmentState& fs,
+    std::lock_guard<std::mutex> const&) const
 {
     if (!fs.name.empty())
         v[jss::name] = fs.name;
@@ -621,30 +693,34 @@ AmendmentTableImpl::setJson(
 }
 
 Json::Value
-AmendmentTableImpl::getJson(int)
+AmendmentTableImpl::getJson() const
 {
     Json::Value ret(Json::objectValue);
     {
         std::lock_guard sl(mutex_);
         for (auto const& e : amendmentMap_)
         {
-            setJson(
-                ret[to_string(e.first)] = Json::objectValue, e.first, e.second);
+            injectJson(
+                ret[to_string(e.first)] = Json::objectValue,
+                e.first,
+                e.second,
+                sl);
         }
     }
     return ret;
 }
 
 Json::Value
-AmendmentTableImpl::getJson(uint256 const& amendmentID)
+AmendmentTableImpl::getJson(uint256 const& amendmentID) const
 {
     Json::Value ret = Json::objectValue;
     Json::Value& jAmendment = (ret[to_string(amendmentID)] = Json::objectValue);
 
     {
         std::lock_guard sl(mutex_);
-        auto a = add(amendmentID);
-        setJson(jAmendment, amendmentID, *a);
+        auto a = get(amendmentID, sl);
+        if (a)
+            injectJson(jAmendment, amendmentID, *a, sl);
     }
 
     return ret;
