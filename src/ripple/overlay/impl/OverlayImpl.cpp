@@ -577,14 +577,9 @@ OverlayImpl::onPrepare()
             for (auto const& addr : addresses)
             {
                 if (addr.port() == 0)
-                {
-                    Throw<std::runtime_error>(
-                        "Port not specified for "
-                        "address:" +
-                        addr.to_string());
-                }
-
-                ips.push_back(to_string(addr));
+                    ips.push_back(to_string(addr.at_port(DEFAULT_PEER_PORT)));
+                else
+                    ips.push_back(to_string(addr));
             }
 
             std::string const base("config: ");
@@ -600,8 +595,19 @@ OverlayImpl::onPrepare()
             [this](
                 std::string const& name,
                 std::vector<beast::IP::Endpoint> const& addresses) {
-                if (!addresses.empty())
-                    m_peerFinder->addFixedPeer(name, addresses);
+                std::vector<beast::IP::Endpoint> ips;
+                ips.reserve(addresses.size());
+
+                for (auto& addr : addresses)
+                {
+                    if (addr.port() == 0)
+                        ips.emplace_back(addr.address(), DEFAULT_PEER_PORT);
+                    else
+                        ips.emplace_back(addr);
+                }
+
+                if (!ips.empty())
+                    m_peerFinder->addFixedPeer(name, ips);
             });
     }
 }
