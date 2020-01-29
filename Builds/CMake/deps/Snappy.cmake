@@ -50,7 +50,8 @@ else()
           <BINARY_DIR>
         >
     TEST_COMMAND ""
-    INSTALL_COMMAND ""
+    INSTALL_COMMAND
+      ${CMAKE_COMMAND} -E copy_if_different <BINARY_DIR>/config.h <BINARY_DIR>/snappy-stubs-public.h <SOURCE_DIR>
     BUILD_BYPRODUCTS
       <BINARY_DIR>/${ep_lib_prefix}snappy${ep_lib_suffix}
       <BINARY_DIR>/${ep_lib_prefix}snappy_d${ep_lib_suffix}
@@ -67,7 +68,7 @@ else()
     IMPORTED_LOCATION_RELEASE
       ${BINARY_DIR}/${ep_lib_prefix}snappy${ep_lib_suffix}
     INTERFACE_INCLUDE_DIRECTORIES
-      "${SOURCE_DIR};${BINARY_DIR}")
+      ${SOURCE_DIR})
 endif()
 
 add_dependencies (snappy_lib snappy)
