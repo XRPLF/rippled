@@ -2,23 +2,65 @@
    NIH dep: rocksdb
 #]===================================================================]
 
-find_package (RocksDB CONFIG QUIET)
-if (TARGET RocksDB::rocksdb)
-  get_target_property (_rockslib_l RocksDB::rocksdb IMPORTED_LOCATION_DEBUG)
-  if (NOT _rockslib_l)
+add_library (rocksdb_lib UNKNOWN IMPORTED GLOBAL)
+set_target_properties (rocksdb_lib
+  PROPERTIES INTERFACE_COMPILE_DEFINITIONS RIPPLE_ROCKSDB_AVAILABLE=1)
+
+option (local_rocksdb "use local build of rocksdb." OFF)
+if (NOT local_rocksdb)
+  find_package (RocksDB 6.5 QUIET CONFIG)
+  if (TARGET RocksDB::rocksdb)
+    message (STATUS "Found RocksDB using config.")
+    get_target_property (_rockslib_l RocksDB::rocksdb IMPORTED_LOCATION_DEBUG)
+    if (_rockslib_l)
+      set_target_properties (rocksdb_lib PROPERTIES IMPORTED_LOCATION_DEBUG ${_rockslib_l})
+    endif ()
     get_target_property (_rockslib_l RocksDB::rocksdb IMPORTED_LOCATION_RELEASE)
-  endif ()
-  if (NOT _rockslib_l)
+    if (_rockslib_l)
+      set_target_properties (rocksdb_lib PROPERTIES IMPORTED_LOCATION_RELEASE ${_rockslib_l})
+    endif ()
     get_target_property (_rockslib_l RocksDB::rocksdb IMPORTED_LOCATION)
+    if (_rockslib_l)
+      set_target_properties (rocksdb_lib PROPERTIES IMPORTED_LOCATION ${_rockslib_l})
+    endif ()
+    get_target_property (_rockslib_i RocksDB::rocksdb INTERFACE_INCLUDE_DIRECTORIES)
+    if (_rockslib_i)
+      set_target_properties (rocksdb_lib PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${_rockslib_i})
+    endif ()
+    target_link_libraries (ripple_libs INTERFACE RocksDB::rocksdb)
+  else ()
+    # using a find module with rocksdb is difficult because
+    # you have no idea how it was configured (transitive dependencies).
+    # the code below will generally find rocksdb using the module, but
+    # will then result in linker errors for static linkage since the
+    # transitive dependencies are unknown. force local build here for now, but leave the code as
+    # a placeholder for future investigation.
+    if (static)
+      set (local_rocksdb ON CACHE BOOL "" FORCE)
+      # TBD if there is some way to extract transitive deps..then:
+      #set (RocksDB_USE_STATIC ON)
+    else ()
+      find_package (RocksDB 6.5 MODULE)
+      if (ROCKSDB_FOUND)
+        if (RocksDB_LIBRARY_DEBUG)
+          set_target_properties (rocksdb_lib PROPERTIES IMPORTED_LOCATION_DEBUG ${RocksDB_LIBRARY_DEBUG})
+        endif ()
+        set_target_properties (rocksdb_lib PROPERTIES IMPORTED_LOCATION_RELEASE ${RocksDB_LIBRARIES})
+        set_target_properties (rocksdb_lib PROPERTIES IMPORTED_LOCATION ${RocksDB_LIBRARIES})
+        set_target_properties (rocksdb_lib PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${RocksDB_INCLUDE_DIRS})
+      else ()
+        set (local_rocksdb ON CACHE BOOL "" FORCE)
+      endif ()
+    endif ()
   endif ()
-  message (STATUS "Found RocksDB using module/config. Using ${_rockslib_l}.")
-  target_link_libraries (ripple_libs INTERFACE RocksDB::rocksdb)
-else ()
-  add_library (rocksdb_lib STATIC IMPORTED GLOBAL)
+endif ()
+
+if (local_rocksdb)
+  message (STATUS "Using local build of RocksDB.")
   ExternalProject_Add (rocksdb
     PREFIX ${nih_cache_path}
     GIT_REPOSITORY https://github.com/facebook/rocksdb.git
-    GIT_TAG v5.17.2
+    GIT_TAG v6.5.3
     PATCH_COMMAND
       # only used by windows build
       ${CMAKE_COMMAND} -E copy
@@ -47,13 +89,15 @@ else ()
       -DWITH_GFLAGS=OFF
       -DWITH_BZ2=OFF
       -ULZ4_*
-      -DLZ4_INCLUDE_DIR=$<JOIN:$<TARGET_PROPERTY:lz4_lib,INTERFACE_INCLUDE_DIRECTORIES>,::>
-      -DLZ4_LIBRARIES=$<IF:$<CONFIG:Debug>,$<TARGET_PROPERTY:lz4_lib,IMPORTED_LOCATION_DEBUG>,$<TARGET_PROPERTY:lz4_lib,IMPORTED_LOCATION_RELEASE>>
-      -DLZ4_FOUND=ON
+      -Ulz4_*
+      -Dlz4_INCLUDE_DIRS=$<JOIN:$<TARGET_PROPERTY:lz4_lib,INTERFACE_INCLUDE_DIRECTORIES>,::>
+      -Dlz4_LIBRARIES=$<IF:$<CONFIG:Debug>,$<TARGET_PROPERTY:lz4_lib,IMPORTED_LOCATION_DEBUG>,$<TARGET_PROPERTY:lz4_lib,IMPORTED_LOCATION_RELEASE>>
+      -Dlz4_FOUND=ON
       -USNAPPY_*
-      -DSNAPPY_INCLUDE_DIR=$<JOIN:$<TARGET_PROPERTY:snappy_lib,INTERFACE_INCLUDE_DIRECTORIES>,::>
-      -DSNAPPY_LIBRARIES=$<IF:$<CONFIG:Debug>,$<TARGET_PROPERTY:snappy_lib,IMPORTED_LOCATION_DEBUG>,$<TARGET_PROPERTY:snappy_lib,IMPORTED_LOCATION_RELEASE>>
-      -DSNAPPY_FOUND=ON
+      -Usnappy_*
+      -Dsnappy_INCLUDE_DIRS=$<JOIN:$<TARGET_PROPERTY:snappy_lib,INTERFACE_INCLUDE_DIRECTORIES>,::>
+      -Dsnappy_LIBRARIES=$<IF:$<CONFIG:Debug>,$<TARGET_PROPERTY:snappy_lib,IMPORTED_LOCATION_DEBUG>,$<TARGET_PROPERTY:snappy_lib,IMPORTED_LOCATION_RELEASE>>
+      -Dsnappy_FOUND=ON
       -DWITH_MD_LIBRARY=OFF
       -DWITH_RUNTIME_DEBUG=$<IF:$<CONFIG:Debug>,ON,OFF>
       -DFAIL_ON_WARNINGS=OFF
@@ -114,15 +158,15 @@ else ()
     IMPORTED_LOCATION_RELEASE
       ${BINARY_DIR}/${ep_lib_prefix}rocksdb${ep_lib_suffix}
     INTERFACE_INCLUDE_DIRECTORIES
-      ${SOURCE_DIR}/include
-    INTERFACE_COMPILE_DEFINITIONS
-      RIPPLE_ROCKSDB_AVAILABLE=1)
+      ${SOURCE_DIR}/include)
   add_dependencies (rocksdb_lib rocksdb)
-  target_link_libraries (rocksdb_lib INTERFACE snappy_lib lz4_lib)
-  if (MSVC)
-    target_link_libraries (rocksdb_lib INTERFACE rpcrt4)
-  endif ()
-  target_link_libraries (ripple_libs INTERFACE rocksdb_lib)
   exclude_if_included (rocksdb)
-  exclude_if_included (rocksdb_lib)
 endif ()
+
+target_link_libraries (rocksdb_lib
+  INTERFACE
+    snappy_lib
+    lz4_lib
+    $<$<BOOL:${MSVC}>:rpcrt4>)
+exclude_if_included (rocksdb_lib)
+target_link_libraries (ripple_libs INTERFACE rocksdb_lib)

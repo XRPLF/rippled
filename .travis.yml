@@ -115,7 +115,7 @@ matrix:
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - BUILD_TYPE=Release
-        - CMAKE_ADD="-Dassert=ON"
+        - CMAKE_ADD="-Dassert=ON -Dunity=OFF"
         - MANUAL_TESTS=true
     # release builds
     - <<: *linux
@@ -125,7 +125,7 @@ matrix:
       env:
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - BUILD_TYPE=Release
-        - CMAKE_ADD="-Dassert=ON"
+        - CMAKE_ADD="-Dassert=ON -Dunity=OFF"
     - <<: *linux
       if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_release/
       compiler: clang-8

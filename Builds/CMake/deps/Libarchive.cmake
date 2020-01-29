@@ -3,7 +3,7 @@
 #]===================================================================]
 
 option (local_libarchive "use local build of libarchive." OFF)
-add_library (archive_lib STATIC IMPORTED GLOBAL)
+add_library (archive_lib UNKNOWN IMPORTED GLOBAL)
 
 if (NOT local_libarchive)
   if (NOT WIN32)
@@ -18,6 +18,15 @@ if (NOT local_libarchive)
         ${archive}
       INTERFACE_INCLUDE_DIRECTORIES
         ${LIBARCHIVE_INCLUDE_DIR})
+      # pkg-config can return extra info for static lib linking
+      # this is probably needed/useful generally, but apply
+      # to APPLE for now (mostly for homebrew)
+      if (APPLE AND static AND libarchive_PC_STATIC_LIBRARIES)
+        message(STATUS "NOTE: libarchive static libs: ${libarchive_PC_STATIC_LIBRARIES}")
+        # also, APPLE seems to need iconv...maybe linux does too (TBD)
+        target_link_libraries (archive_lib
+          INTERFACE iconv ${libarchive_PC_STATIC_LIBRARIES})
+      endif ()
   else ()
     ## now try searching using the minimal find module that cmake provides
     find_package(LibArchive 3.3.3 QUIET)
