@@ -462,18 +462,21 @@ private:
     {
 
         template <class Handler>
-        Stats (Handler const& handler, beast::insight::Collector::ptr const& collector)
-            : hook (collector->make_hook (handler))
+        Stats (
+                Handler const& handler, 
+                beast::insight::Collector::ptr const& collector_,
+                std::vector<beast::insight::Gauge>&& trafficGauges_)
+            : collector (collector_) 
             , peerDisconnects (collector->make_gauge("Overlay","Peer_Disconnects"))
-            , collector(collector) 
+            , trafficGauges (trafficGauges_)
+            , hook (collector->make_hook (handler))
             { 
             }
 
-        beast::insight::Hook hook;
+        beast::insight::Collector::ptr collector;
         beast::insight::Gauge peerDisconnects;
         std::vector<beast::insight::Gauge> trafficGauges;
-        beast::insight::Collector::ptr collector;
-        
+        beast::insight::Hook hook;
     };
     
     Stats m_stats;
@@ -482,25 +485,9 @@ private:
     void collect_metrics()
     {   
         std::lock_guard lock (mutex_);
-        auto const stats = m_traffic.getCounts();
+        std::size_t i = 0;
 
-        if(m_stats.trafficGauges.empty()){
-            for (auto const& s : stats)
-            {   
-                m_stats.trafficGauges.push_back(
-                    beast::insight::Gauge (m_stats.collector->make_gauge(s.name,"Bytes_In")));
-                m_stats.trafficGauges.push_back(
-                    beast::insight::Gauge (m_stats.collector->make_gauge(s.name,"Bytes_Out")));
-                m_stats.trafficGauges.push_back(
-                    beast::insight::Gauge (m_stats.collector->make_gauge(s.name,"Messages_In")));
-                m_stats.trafficGauges.push_back(
-                    beast::insight::Gauge (m_stats.collector->make_gauge(s.name,"Messages_Out")));
-            }
-        }
-
-        int i = 0;
-
-        for (auto const& s : stats)
+        for (auto const& s : m_traffic.getCounts())
         {
             m_stats.trafficGauges[i++] = s.bytesIn;
             m_stats.trafficGauges[i++] = s.bytesOut;
