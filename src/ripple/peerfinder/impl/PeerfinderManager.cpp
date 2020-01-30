@@ -52,7 +52,8 @@ public:
         boost::asio::io_service& io_service,
         clock_type& clock,
         beast::Journal journal,
-        BasicConfig const& config)
+        BasicConfig const& config,
+        beast::insight::Collector::ptr const& collector)
         : Manager (stoppable)
         , io_service_(io_service)
         , work_(boost::in_place(std::ref(io_service_)))
@@ -62,6 +63,7 @@ public:
         , checker_ (io_service_)
         , m_logic (clock, m_store, checker_, journal)
         , m_sociConfig (config, "peerfinder")
+        , m_stats(std::bind(&ManagerImp::collect_metrics, this),collector)
     {
     }
 
@@ -238,6 +240,34 @@ public:
     {
         m_logic.onWrite (map);
     }
+
+private:
+    struct Stats
+    {
+
+        template <class Handler>
+        Stats (
+                Handler const& handler, 
+                beast::insight::Collector::ptr const& collector)
+            : hook (collector->make_hook (handler))
+            , activeInboundPeers(collector->make_gauge("Peer_Finder","Active_Inbound_Peers"))
+            , activeOutboundPeers(collector->make_gauge("Peer_Finder","Active_Outbound_Peers"))
+            { 
+            }
+        
+        beast::insight::Hook hook;
+        beast::insight::Gauge activeInboundPeers;
+        beast::insight::Gauge activeOutboundPeers;
+    };
+    
+    std::mutex m_statsMutex;
+    Stats m_stats;
+    
+    void collect_metrics(){
+        std::lock_guard lock (m_statsMutex);
+        m_stats.activeInboundPeers = m_logic.counts_.inboundActive();
+        m_stats.activeOutboundPeers = m_logic.counts_.out_active();
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -250,10 +280,10 @@ Manager::Manager (Stoppable& parent)
 
 std::unique_ptr<Manager>
 make_Manager (Stoppable& parent, boost::asio::io_service& io_service,
-        clock_type& clock, beast::Journal journal, BasicConfig const& config)
+        clock_type& clock, beast::Journal journal, BasicConfig const& config, beast::insight::Collector::ptr const& collector)
 {
     return std::make_unique<ManagerImp> (
-        parent, io_service, clock, journal, config);
+        parent, io_service, clock, journal, config, collector);
 }
 
 }

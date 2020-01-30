@@ -156,7 +156,7 @@ OverlayImpl::OverlayImpl (
     , serverHandler_(serverHandler)
     , m_resourceManager (resourceManager)
     , m_peerFinder (PeerFinder::make_Manager (*this, io_service,
-        stopwatch(), app_.journal("PeerFinder"), config))
+        stopwatch(), app_.journal("PeerFinder"), config, collector))
     , m_resolver (resolver)
     , next_id_(1)
     , timer_count_(0)
