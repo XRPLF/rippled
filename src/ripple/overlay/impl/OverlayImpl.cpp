@@ -165,15 +165,12 @@ OverlayImpl::OverlayImpl (
         collector,
         [counts = m_traffic.getCounts(), collector]()
         {
-            std::vector<beast::insight::Gauge> ret;
-            ret.reserve(counts.size() * 4);
+            std::vector<TrafficGauges> ret;
+            ret.reserve(counts.size());
 
-            for (auto const& s : counts)
+            for (size_t i =0; i < counts.size(); ++i)
             {
-                ret.push_back(collector->make_gauge(s.name, "Bytes_In"));
-                ret.push_back(collector->make_gauge(s.name, "Bytes_Out"));
-                ret.push_back(collector->make_gauge(s.name, "Messages_In"));
-                ret.push_back(collector->make_gauge(s.name, "Messages_Out"));
+                ret.push_back(TrafficGauges(counts[i].name,collector));
             }
 
             return ret;

@@ -458,6 +458,22 @@ private:
     sendEndpoints();
 
 private:
+
+    struct TrafficGauges{
+        TrafficGauges (char const* name, beast::insight::Collector::ptr const& collector)
+        : bytesIn(collector->make_gauge(name,"Bytes_In"))
+        , bytesOut(collector->make_gauge(name,"Bytes_Out"))
+        , messagesIn(collector->make_gauge(name,"Messages_In"))
+        , messagesOut(collector->make_gauge(name,"Messages_Out"))
+        {   
+        }
+        beast::insight::Gauge bytesIn;
+        beast::insight::Gauge bytesOut;
+        beast::insight::Gauge messagesIn;
+        beast::insight::Gauge messagesOut;
+    };
+
+    
     struct Stats
     {
 
@@ -465,7 +481,7 @@ private:
         Stats (
                 Handler const& handler, 
                 beast::insight::Collector::ptr const& collector,
-                std::vector<beast::insight::Gauge>&& trafficGauges_)
+                std::vector<TrafficGauges>&& trafficGauges_)
             : peerDisconnects (collector->make_gauge("Overlay","Peer_Disconnects"))
             , trafficGauges (trafficGauges_)
             , hook (collector->make_hook (handler))
@@ -473,24 +489,25 @@ private:
             }
             
         beast::insight::Gauge peerDisconnects;
-        std::vector<beast::insight::Gauge> trafficGauges;
+        std::vector<TrafficGauges> trafficGauges;
         beast::insight::Hook hook;
     };
     
     Stats m_stats;
+    std::mutex m_statsMutex;
 
 private:
     void collect_metrics()
     {   
-        std::lock_guard lock (mutex_);
-        std::size_t i = 0;
+        std::lock_guard lock (m_statsMutex);
+        auto counts= m_traffic.getCounts();
 
-        for (auto const& s : m_traffic.getCounts())
+        for (std::size_t i = 0; i < counts.size(); ++i)
         {
-            m_stats.trafficGauges[i++] = s.bytesIn;
-            m_stats.trafficGauges[i++] = s.bytesOut;
-            m_stats.trafficGauges[i++] = s.messagesIn;
-            m_stats.trafficGauges[i  ] = s.messagesOut;
+            m_stats.trafficGauges[i].bytesIn = counts[i].bytesIn;
+            m_stats.trafficGauges[i].bytesOut = counts[i].bytesOut;
+            m_stats.trafficGauges[i].messagesIn = counts[i].messagesIn;
+            m_stats.trafficGauges[i].messagesOut = counts[i].messagesOut;
         }
         m_stats.peerDisconnects = getPeerDisconnect();
     }
