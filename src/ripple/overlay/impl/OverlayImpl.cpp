@@ -168,9 +168,9 @@ OverlayImpl::OverlayImpl (
             std::vector<TrafficGauges> ret;
             ret.reserve(counts.size());
 
-            for (size_t i =0; i < counts.size(); ++i)
+            for (size_t i = 0; i < counts.size(); ++i)
             {
-                ret.push_back(TrafficGauges(counts[i].name,collector));
+                ret.push_back(TrafficGauges(counts[i].name, collector));
             }
 
             return ret;
