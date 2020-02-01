@@ -237,7 +237,6 @@ Json::Output makeOutput (Session& session)
     };
 }
 
-// HACK!
 static
 std::map<std::string, std::string>
 build_map(boost::beast::http::fields const& h)
@@ -246,11 +245,10 @@ build_map(boost::beast::http::fields const& h)
     for (auto const& e : h)
     {
         auto key (e.name_string().to_string());
-        // TODO Replace with safe C++14 version
         std::transform (key.begin(), key.end(), key.begin(),
                         [](auto kc)
                         {
-                            return ::tolower(static_cast<unsigned char>(kc));
+                            return std::tolower(static_cast<unsigned char>(kc));
                         });
         c [key] = e.value().to_string();
     }

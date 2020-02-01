@@ -193,7 +193,7 @@ struct LexicalCast <Out, std::string>
         std::transform(in.begin (), in.end (), in.begin (),
             [](auto c)
             {
-                return ::tolower(static_cast<unsigned char>(c));
+                return std::tolower(static_cast<unsigned char>(c));
             });
 
         if (in == "1" || in == "true")
