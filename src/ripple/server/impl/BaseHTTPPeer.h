@@ -24,7 +24,6 @@
 #include <ripple/server/Session.h>
 #include <ripple/server/impl/io_list.h>
 #include <ripple/beast/net/IPAddressConversion.h>
-#include <ripple/beast/asio/ssl_error.h> // for is_short_read?
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/parser.hpp>
