@@ -788,7 +788,6 @@ else ()
     src/test/beast/beast_PropertyStream_test.cpp
     src/test/beast/beast_Zero_test.cpp
     src/test/beast/beast_abstract_clock_test.cpp
-    src/test/beast/beast_asio_error_test.cpp
     src/test/beast/beast_basic_seconds_clock_test.cpp
     src/test/beast/beast_io_latency_probe_test.cpp
     src/test/beast/define_print.cpp
