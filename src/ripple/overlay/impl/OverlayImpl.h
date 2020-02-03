@@ -499,13 +499,12 @@ private:
 private:
     void collect_metrics()
     {   
-        std::lock_guard lock (m_statsMutex);
         auto counts = m_traffic.getCounts();
-
+        std::lock_guard lock (m_statsMutex);
+        assert(counts.size() == m_stats.trafficGauges.size());
+        
         for (std::size_t i = 0; i < counts.size(); ++i)
         {
-            assert(counts.size() == m_stats.trafficGauges.size());
-
             m_stats.trafficGauges[i].bytesIn = counts[i].bytesIn;
             m_stats.trafficGauges[i].bytesOut = counts[i].bytesOut;
             m_stats.trafficGauges[i].messagesIn = counts[i].messagesIn;
