@@ -19,6 +19,7 @@ override_dh_auto_configure:
 	cmake .. -G Ninja \
 		-DCMAKE_INSTALL_PREFIX=/opt/ripple \
 		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_UNITY_BUILD_BATCH_SIZE=10 \
 		-Dstatic=ON \
 		-Dvalidator_keys=ON \
 		-DCMAKE_VERBOSE_MAKEFILE=ON

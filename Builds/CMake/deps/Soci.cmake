@@ -58,6 +58,7 @@ else()
       $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:-DCMAKE_VERBOSE_MAKEFILE=ON>
       $<$<BOOL:${CMAKE_TOOLCHAIN_FILE}>:-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}>
       $<$<BOOL:${VCPKG_TARGET_TRIPLET}>:-DVCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET}>
+      $<$<BOOL:${unity}>:-DCMAKE_UNITY_BUILD=ON}>
       -DCMAKE_PREFIX_PATH=${CMAKE_BINARY_DIR}/sqlite3
       -DCMAKE_MODULE_PATH=${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake
       -DCMAKE_INCLUDE_PATH=$<JOIN:$<TARGET_PROPERTY:sqlite,INTERFACE_INCLUDE_DIRECTORIES>,::>
@@ -74,6 +75,7 @@ else()
       # proper imported targets, this next line can be removed
       # (as well as the get_property above that sets _boost_incs)
       -DBoost_INCLUDE_DIRS=$<JOIN:${_boost_incs},::>
+      -DBoost_INCLUDE_DIR=$<JOIN:${_boost_incs},::>
       -DBOOST_ROOT=${BOOST_ROOT}
       -DWITH_BOOST=ON
       -DBoost_FOUND=ON

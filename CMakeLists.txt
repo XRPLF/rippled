@@ -18,9 +18,7 @@ include (ExternalProject)
 include (CMakeFuncs) # must come *after* ExternalProject b/c it overrides one function in EP
 include (ProcessorCount)
 if (target)
-  message (WARNING
-    "The target option is deprecated and will be removed in a future release")
-  parse_target()
+  message (FATAL_ERROR "The target option has been removed - use native cmake options to control build")
 endif ()
 project (rippled)
 

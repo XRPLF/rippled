@@ -10,4 +10,13 @@ foreach (line_ ${sourcecode})
 endforeach ()
 file (RENAME include/soci/unsigned-types.h include/soci/unsigned-types.h.orig)
 file (RENAME include/soci/unsigned-types.h.patched include/soci/unsigned-types.h)
+# also fix Boost.cmake so that it just returns when we override the Boost_FOUND var
+file (APPEND cmake/dependencies/Boost.cmake.patched "if (Boost_FOUND)\n")
+file (APPEND cmake/dependencies/Boost.cmake.patched "  return ()\n")
+file (APPEND cmake/dependencies/Boost.cmake.patched "endif ()\n")
+file (STRINGS cmake/dependencies/Boost.cmake sourcecode)
+foreach (line_ ${sourcecode})
+  file (APPEND cmake/dependencies/Boost.cmake.patched "${line_}\n")
+endforeach ()
+file (RENAME cmake/dependencies/Boost.cmake.patched cmake/dependencies/Boost.cmake)
 

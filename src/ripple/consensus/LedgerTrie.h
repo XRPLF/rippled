@@ -21,6 +21,8 @@
 #define RIPPLE_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
 
 #include <ripple/json/json_value.h>
+#include <ripple/basics/tagged_integer.h>
+#include <ripple/basics/ToString.h>
 #include <boost/optional.hpp>
 #include <algorithm>
 #include <memory>
