@@ -59,7 +59,7 @@ template <class Duration>
 std::string
 to_string(date::sys_time<Duration> tp)
 {
-    return date::format("%Y-%b-%d %T", tp);
+    return date::format("%Y-%b-%d %T %Z", tp);
 }
 
 inline
