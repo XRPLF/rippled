@@ -204,6 +204,7 @@ else ()
         $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:-DCMAKE_VERBOSE_MAKEFILE=ON>
         $<$<BOOL:${CMAKE_TOOLCHAIN_FILE}>:-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}>
         $<$<BOOL:${VCPKG_TARGET_TRIPLET}>:-DVCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET}>
+        $<$<BOOL:${unity}>:-DCMAKE_UNITY_BUILD=ON}>
         -DCMAKE_DEBUG_POSTFIX=_d
         $<$<NOT:$<BOOL:${is_multiconfig}>>:-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}>
         -DgRPC_BUILD_TESTS=OFF
@@ -347,7 +348,9 @@ target_link_libraries (grpc_pbufs protobuf::libprotobuf "gRPC::grpc++${grpc_suff
 target_compile_options (grpc_pbufs
   PRIVATE
     $<$<BOOL:${MSVC}>:-wd4065>
+    $<$<NOT:$<BOOL:${MSVC}>>:-Wno-deprecated-declarations>
   PUBLIC
+    $<$<BOOL:${MSVC}>:-wd4996>
     $<$<BOOL:${is_xcode}>:
       --system-header-prefix="google/protobuf"
       -Wno-deprecated-dynamic-exception-spec

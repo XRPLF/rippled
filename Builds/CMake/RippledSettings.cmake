@@ -3,7 +3,18 @@
 #]===================================================================]
 
 option (assert "Enables asserts, even in release builds" OFF)
-option (unity "Creates a build based on unity sources. This is the default" ON)
+
+option (unity "Creates a build using UNITY support in cmake. This is the default" ON)
+if (unity)
+  if (CMAKE_VERSION VERSION_LESS 3.16)
+    message (WARNING "unity option only supported for with cmake 3.16+ (please upgrade)")
+    set (unity OFF CACHE BOOL "unity only available for cmake 3.16+" FORCE)
+  else ()
+    if (NOT is_ci)
+      set (CMAKE_UNITY_BUILD_BATCH_SIZE 15 CACHE STRING "")
+    endif ()
+  endif ()
+endif ()
 if (is_gcc OR is_clang)
   option (coverage "Generates coverage info." OFF)
   option (profile "Add profiling flags" OFF)

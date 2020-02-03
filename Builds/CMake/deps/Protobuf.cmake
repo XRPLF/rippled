@@ -42,6 +42,7 @@ if (local_protobuf OR NOT Protobuf_FOUND)
       -Dprotobuf_DEBUG_POSTFIX=_d
       -Dprotobuf_WITH_ZLIB=$<IF:$<BOOL:${has_zlib}>,ON,OFF>
       $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:-DCMAKE_VERBOSE_MAKEFILE=ON>
+      $<$<BOOL:${unity}>:-DCMAKE_UNITY_BUILD=ON}>
       $<$<NOT:$<BOOL:${is_multiconfig}>>:-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}>
       $<$<BOOL:${MSVC}>:
 	"-DCMAKE_CXX_FLAGS=-GR -Gd -fp:precise -FS -EHa -MP"

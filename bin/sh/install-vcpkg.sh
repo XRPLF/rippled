@@ -20,7 +20,7 @@ else
     if [[ -d "${VCPKG_DIR}" ]] ; then
         rm -rf "${VCPKG_DIR}"
     fi
-    git clone --branch 2019.11 https://github.com/Microsoft/vcpkg.git ${VCPKG_DIR}
+    git clone --branch 2019.12 https://github.com/Microsoft/vcpkg.git ${VCPKG_DIR}
     pushd ${VCPKG_DIR}
     BSARGS=()
     if [[ "$(uname)" == "Darwin" ]] ; then

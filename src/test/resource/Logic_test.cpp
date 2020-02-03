@@ -26,6 +26,7 @@
 #include <test/unit_test/SuiteJournal.h>
 
 #include <boost/utility/base_from_member.hpp>
+#include <functional>
 
 
 namespace ripple {
@@ -93,11 +94,11 @@ public:
         beast::IP::Endpoint const addr (
             beast::IP::Endpoint::from_string ("192.0.2.2"));
 
-        using namespace std::placeholders;
-
         std::function<Consumer(beast::IP::Endpoint)> ep = limited ?
-            std::bind(&TestLogic::newInboundEndpoint, &logic, _1) :
-            std::bind(&TestLogic::newUnlimitedEndpoint, &logic, _1);
+            std::bind(
+                &TestLogic::newInboundEndpoint, &logic, std::placeholders::_1) :
+            std::bind(
+                &TestLogic::newUnlimitedEndpoint, &logic, std::placeholders::_1);
 
         {
             Consumer c (ep(addr));
