@@ -27,7 +27,9 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
+#include <ripple/rpc/impl/GRPCHelpers.h>
 #include <ripple/rpc/GRPCHandlers.h>
+#include <ripple/basics/ToString.h>
 
 namespace ripple {
 
@@ -64,13 +66,6 @@ isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, uint256 const& hash)
     return ledgerMaster.getHashBySeq (seq) == hash;
 }
 
-static
-bool
-isValidated (RPC::JsonContext& context, std::uint32_t seq, uint256 const& hash)
-{
-    return isValidated(context.ledgerMaster, seq, hash);
-}
-
 bool
 getMetaHex (Ledger const& ledger,
     uint256 const& transID, std::string& hex)
@@ -91,206 +86,103 @@ getMetaHex (Ledger const& ledger,
     return true;
 }
 
-Json::Value doTx (RPC::JsonContext& context)
+enum class SearchedAll { no, yes, unknown };
+
+struct TxResult
 {
-    if (!context.params.isMember (jss::transaction))
-        return rpcError (rpcINVALID_PARAMS);
+    Transaction::pointer txn;
+    std::variant<std::shared_ptr<TxMeta>, Blob> meta;
+    bool validated = false;
+    SearchedAll searchedAll;
+};
 
-    bool binary = context.params.isMember (jss::binary)
-            && context.params[jss::binary].asBool ();
+struct TxArgs
+{
+    uint256 hash;
+    bool binary = false;
+    std::optional<std::pair<uint32_t,uint32_t>> ledgerRange;
+};
 
-    auto const txid  = context.params[jss::transaction].asString ();
-
-    if (!isHexTxID (txid))
-        return rpcError (rpcNOT_IMPL);
+std::pair<TxResult, RPC::Status>
+doTxHelp(RPC::Context& context, TxArgs const& args)
+{
+    TxResult result;
 
     ClosedInterval<uint32_t> range;
 
-    auto rangeProvided = context.params.isMember (jss::min_ledger) &&
-        context.params.isMember (jss::max_ledger);
-
-    if (rangeProvided)
+    if (args.ledgerRange)
     {
-        try
-        {
-            auto const& min = context.params[jss::min_ledger].asUInt ();
-            auto const& max = context.params[jss::max_ledger].asUInt ();
+        constexpr uint16_t MAX_RANGE = 1000;
 
-            constexpr uint16_t MAX_RANGE = 1000;
+        if (args.ledgerRange->second < args.ledgerRange->first)
+            return {result, rpcINVALID_LGR_RANGE};
 
-            if (max < min)
-                return rpcError (rpcINVALID_LGR_RANGE);
+        if (args.ledgerRange->second - args.ledgerRange->first > MAX_RANGE)
+            return {result, rpcEXCESSIVE_LGR_RANGE};
 
-            if (max - min > MAX_RANGE)
-                return rpcError (rpcEXCESSIVE_LGR_RANGE);
-
-            range = ClosedInterval<uint32_t> (min, max);
-        }
-        catch (...)
-        {
-            // One of the calls to `asUInt ()` failed.
-            return rpcError (rpcINVALID_LGR_RANGE);
-        }
+        range = ClosedInterval<uint32_t>(
+            args.ledgerRange->first, args.ledgerRange->second);
     }
 
-    using pointer = Transaction::pointer;
-
-    auto ec {rpcSUCCESS};
-    pointer txn;
-
-    if (rangeProvided)
-    {
-        boost::variant<pointer, bool> v =
-            context.app.getMasterTransaction().fetch(
-                from_hex_text<uint256>(txid), range, ec);
-
-        if (v.which () == 1)
-        {
-            auto jvResult = Json::Value (Json::objectValue);
-
-            jvResult[jss::searched_all] = boost::get<bool> (v);
-
-            return rpcError (rpcTXN_NOT_FOUND, jvResult);
-        }
-        else
-            txn = boost::get<pointer> (v);
-    }
-    else
-        txn = context.app.getMasterTransaction().fetch(
-            from_hex_text<uint256>(txid), ec);
-
-    if (ec == rpcDB_DESERIALIZATION)
-        return rpcError (ec);
-
-    if (!txn)
-        return rpcError (rpcTXN_NOT_FOUND);
-
-    Json::Value ret = txn->getJson (JsonOptions::include_date, binary);
-
-    if (txn->getLedger () == 0)
-        return ret;
-
-    if (auto lgr = context.ledgerMaster.getLedgerBySeq (txn->getLedger ()))
-    {
-        bool okay = false;
-
-        if (binary)
-        {
-            std::string meta;
-
-            if (getMetaHex (*lgr, txn->getID (), meta))
-            {
-                ret[jss::meta] = meta;
-                okay = true;
-            }
-        }
-        else
-        {
-            auto rawMeta = lgr->txRead (txn->getID()).second;
-            if (rawMeta)
-            {
-                auto txMeta = std::make_shared<TxMeta>(
-                    txn->getID(), lgr->seq(), *rawMeta);
-                okay = true;
-                auto meta = txMeta->getJson (JsonOptions::none);
-                insertDeliveredAmount (meta, context, txn, *txMeta);
-                ret[jss::meta] = std::move(meta);
-            }
-        }
-
-        if (okay)
-            ret[jss::validated] = isValidated (
-                context, lgr->info().seq, lgr->info().hash);
-    }
-
-    return ret;
-}
-
-std::pair<rpc::v1::GetTxResponse, grpc::Status>
-doTxGrpc(RPC::GRPCContext<rpc::v1::GetTxRequest>& context)
-{
-    // return values
-    rpc::v1::GetTxResponse result;
-    grpc::Status status = grpc::Status::OK;
-
-    // input
-    rpc::v1::GetTxRequest& request = context.params;
-
-    std::string const& hashBytes = request.hash();
-    uint256 hash = uint256::fromVoid(hashBytes.data());
-
-    // hash is included in the response
-    result.set_hash(request.hash());
-
+    std::shared_ptr<Transaction> txn;
     auto ec{rpcSUCCESS};
 
-    // get the transaction
-    std::shared_ptr<Transaction> txn =
-        context.app.getMasterTransaction().fetch(hash, ec);
+    result.searchedAll = SearchedAll::unknown;
+    if (args.ledgerRange)
+    {
+        boost::variant<std::shared_ptr<Transaction>, bool> v =
+            context.app.getMasterTransaction().fetch(args.hash, range, ec);
+
+        if (v.which() == 1)
+        {
+            result.searchedAll =
+                boost::get<bool>(v) ? SearchedAll::yes : SearchedAll::no;
+            return {result, rpcTXN_NOT_FOUND};
+        }
+        else
+        {
+            txn = boost::get<std::shared_ptr<Transaction>>(v);
+        }
+    }
+    else
+    {
+        txn = context.app.getMasterTransaction().fetch(args.hash, ec);
+    }
 
     if (ec == rpcDB_DESERIALIZATION)
     {
-        auto errorInfo = RPC::get_error_info(ec);
-        grpc::Status errorStatus{grpc::StatusCode::INTERNAL,
-                                 errorInfo.message.c_str()};
-        return {result, errorStatus};
+        return {result, ec};
     }
     if (!txn)
     {
-        grpc::Status errorStatus{grpc::StatusCode::NOT_FOUND, "txn not found"};
-        return {result, errorStatus};
-    }
-
-    std::shared_ptr<STTx const> stTxn = txn->getSTransaction();
-    if (stTxn->getTxnType() != ttPAYMENT)
-    {
-        auto getTypeStr = [&stTxn]() {
-            return TxFormats::getInstance()
-                .findByType(stTxn->getTxnType())
-                ->getName();
-        };
-
-        grpc::Status errorStatus{grpc::StatusCode::UNIMPLEMENTED,
-                                 "txn type not supported: " + getTypeStr()};
-        return {result, errorStatus};
+        return {result, rpcTXN_NOT_FOUND};
     }
 
     // populate transaction data
-    if (request.binary())
+    result.txn = txn;
+    if (txn->getLedger() == 0)
     {
-        Serializer s = stTxn->getSerializer();
-        result.set_transaction_binary(s.data(), s.size());
+        return {result, rpcSUCCESS};
     }
-    else
-    {
-        RPC::populateTransaction(*result.mutable_transaction(), stTxn);
-    }
-
-    result.set_ledger_index(txn->getLedger());
 
     std::shared_ptr<Ledger const> ledger =
         context.ledgerMaster.getLedgerBySeq(txn->getLedger());
     // get meta data
     if (ledger)
     {
-        if (request.binary())
+        bool ok = false;
+        if (args.binary)
         {
             SHAMapTreeNode::TNType type;
             auto const item = ledger->txMap().peekItem(txn->getID(), type);
 
             if (item && type == SHAMapTreeNode::tnTRANSACTION_MD)
             {
+                ok = true;
                 SerialIter it(item->slice());
                 it.skip(it.getVLDataLength());  // skip transaction
                 Blob blob = it.getVL();
-                Slice slice = makeSlice(blob);
-                result.set_meta_binary(slice.data(), slice.size());
-
-                bool validated = isValidated(
-                    context.ledgerMaster,
-                    ledger->info().seq,
-                    ledger->info().hash);
-                result.set_validated(validated);
+                result.meta = std::move(blob);
             }
         }
         else
@@ -298,25 +190,239 @@ doTxGrpc(RPC::GRPCContext<rpc::v1::GetTxRequest>& context)
             auto rawMeta = ledger->txRead(txn->getID()).second;
             if (rawMeta)
             {
-                auto txMeta = std::make_shared<TxMeta>(
+                ok = true;
+                result.meta = std::make_shared<TxMeta>(
                     txn->getID(), ledger->seq(), *rawMeta);
-
-                bool validated = isValidated(
-                    context.ledgerMaster,
-                    ledger->info().seq,
-                    ledger->info().hash);
-                result.set_validated(validated);
-
-                RPC::populateMeta(*result.mutable_meta(), txMeta);
-                insertDeliveredAmount(
-                    *result.mutable_meta()->mutable_delivered_amount(),
-                    context,
-                    txn,
-                    *txMeta);
             }
         }
+        if (ok)
+        {
+            result.validated = isValidated(
+                context.ledgerMaster, ledger->info().seq, ledger->info().hash);
+        }
     }
-    return {result, status};
+
+    return {result, rpcSUCCESS};
+}
+
+std::pair<org::xrpl::rpc::v1::GetTransactionResponse, grpc::Status>
+populateProtoResponse(
+    std::pair<TxResult, RPC::Status> const& res,
+    TxArgs const& args,
+    RPC::GRPCContext<org::xrpl::rpc::v1::GetTransactionRequest> const& context)
+{
+    org::xrpl::rpc::v1::GetTransactionResponse response;
+    grpc::Status status = grpc::Status::OK;
+    RPC::Status const& error = res.second;
+    TxResult const& result = res.first;
+    // handle errors
+    if (error.toErrorCode() != rpcSUCCESS)
+    {
+        if (error.toErrorCode() == rpcTXN_NOT_FOUND &&
+            result.searchedAll != SearchedAll::unknown)
+        {
+            status = {
+                grpc::StatusCode::NOT_FOUND,
+                "txn not found. searched_all = " +
+                    to_string(
+                        (result.searchedAll == SearchedAll::yes ? "true"
+                                                                : "false"))};
+        }
+        else
+        {
+            if (error.toErrorCode() == rpcTXN_NOT_FOUND)
+                status = {grpc::StatusCode::NOT_FOUND, "txn not found"};
+            else
+                status = {grpc::StatusCode::INTERNAL, error.message()};
+        }
+    }
+    // no errors
+    else if (result.txn)
+    {
+        auto& txn = result.txn;
+
+        std::shared_ptr<STTx const> stTxn = txn->getSTransaction();
+        if (args.binary)
+        {
+            Serializer s = stTxn->getSerializer();
+            response.set_transaction_binary(s.data(), s.size());
+        }
+        else
+        {
+            RPC::convert(*response.mutable_transaction(), stTxn);
+        }
+
+        response.set_hash(context.params.hash());
+
+        auto ledgerIndex = txn->getLedger();
+        response.set_ledger_index(ledgerIndex);
+        if (ledgerIndex)
+        {
+            auto ct =
+                context.app.getLedgerMaster().getCloseTimeBySeq(ledgerIndex);
+            if (ct)
+                response.mutable_date()->set_value(
+                    ct->time_since_epoch().count());
+        }
+
+        RPC::convert(
+            *response.mutable_meta()->mutable_transaction_result(),
+            txn->getResult());
+        response.mutable_meta()->mutable_transaction_result()->set_result(
+            transToken(txn->getResult()));
+
+        // populate binary metadata
+        if (auto blob = std::get_if<Blob>(&result.meta))
+        {
+            assert(args.binary);
+            Slice slice = makeSlice(*blob);
+            response.set_meta_binary(slice.data(), slice.size());
+        }
+        // populate meta data
+        else if (auto m = std::get_if<std::shared_ptr<TxMeta>>(&result.meta))
+        {
+            auto& meta = *m;
+            if (meta)
+            {
+                RPC::convert(*response.mutable_meta(), meta);
+                auto amt =
+                    getDeliveredAmount(context, stTxn, *meta, txn->getLedger());
+                if (amt)
+                {
+                    RPC::convert(
+                        *response.mutable_meta()->mutable_delivered_amount(),
+                        *amt);
+                }
+            }
+        }
+        response.set_validated(result.validated);
+    }
+    return {response, status};
+}
+
+Json::Value
+populateJsonResponse(
+    std::pair<TxResult, RPC::Status> const& res,
+    TxArgs const& args,
+    RPC::JsonContext const& context)
+{
+    Json::Value response;
+    RPC::Status const& error = res.second;
+    TxResult const& result = res.first;
+    // handle errors
+    if (error.toErrorCode() != rpcSUCCESS)
+    {
+        if (error.toErrorCode() == rpcTXN_NOT_FOUND &&
+            result.searchedAll != SearchedAll::unknown)
+        {
+            response = Json::Value(Json::objectValue);
+            response[jss::searched_all] =
+                (result.searchedAll == SearchedAll::yes);
+            error.inject(response);
+        }
+        else
+        {
+            error.inject(response);
+        }
+    }
+    // no errors
+    else if (result.txn)
+    {
+        response = result.txn->getJson(JsonOptions::include_date, args.binary);
+
+        // populate binary metadata
+        if (auto blob = std::get_if<Blob>(&result.meta))
+        {
+            assert(args.binary);
+            response[jss::meta] = strHex(makeSlice(*blob));
+        }
+        // populate meta data
+        else if (auto m = std::get_if<std::shared_ptr<TxMeta>>(&result.meta))
+        {
+            auto& meta = *m;
+            if (meta)
+            {
+                response[jss::meta] = meta->getJson(JsonOptions::none);
+                insertDeliveredAmount(
+                    response[jss::meta], context, result.txn, *meta);
+            }
+        }
+        response[jss::validated] = result.validated;
+    }
+    return response;
+}
+
+Json::Value
+doTxJson(RPC::JsonContext& context)
+{
+    // Deserialize and validate JSON arguments
+
+    if (!context.params.isMember(jss::transaction))
+        return rpcError(rpcINVALID_PARAMS);
+
+    std::string txHash = context.params[jss::transaction].asString();
+    if (!isHexTxID(txHash))
+        return rpcError(rpcNOT_IMPL);
+
+    TxArgs args;
+    args.hash = from_hex_text<uint256>(txHash);
+
+    args.binary = context.params.isMember(jss::binary) &&
+        context.params[jss::binary].asBool();
+
+    if (context.params.isMember(jss::min_ledger) &&
+        context.params.isMember(jss::max_ledger))
+    {
+        try
+        {
+            args.ledgerRange = std::make_pair(
+                context.params[jss::min_ledger].asUInt(),
+                context.params[jss::max_ledger].asUInt());
+        }
+        catch (...)
+        {
+            // One of the calls to `asUInt ()` failed.
+            return rpcError(rpcINVALID_LGR_RANGE);
+        }
+    }
+
+    std::pair<TxResult, RPC::Status> res = doTxHelp(context, args);
+    return populateJsonResponse(res, args, context);
+}
+
+std::pair<org::xrpl::rpc::v1::GetTransactionResponse, grpc::Status>
+doTxGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetTransactionRequest>& context)
+{
+    // return values
+    org::xrpl::rpc::v1::GetTransactionResponse response;
+    grpc::Status status = grpc::Status::OK;
+
+    // input
+    org::xrpl::rpc::v1::GetTransactionRequest& request = context.params;
+
+    TxArgs args;
+
+    std::string const& hashBytes = request.hash();
+    args.hash = uint256::fromVoid(hashBytes.data());
+    if (args.hash.size() != hashBytes.size())
+    {
+        grpc::Status errorStatus{grpc::StatusCode::INVALID_ARGUMENT,
+                                 "ledger hash malformed"};
+        return {response, errorStatus};
+    }
+
+    args.binary = request.binary();
+
+    if (request.ledger_range().ledger_index_min() != 0 &&
+        request.ledger_range().ledger_index_max() != 0)
+    {
+        args.ledgerRange = std::make_pair(
+            request.ledger_range().ledger_index_min(),
+            request.ledger_range().ledger_index_max());
+    }
+
+    std::pair<TxResult, RPC::Status> res = doTxHelp(context, args);
+    return populateProtoResponse(res, args, context);
 }
 
 }  // namespace ripple

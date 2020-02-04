@@ -57,6 +57,7 @@
 #include <ripple/rpc/impl/Role.cpp>
 #include <ripple/rpc/impl/RPCHandler.cpp>
 #include <ripple/rpc/impl/RPCHelpers.cpp>
+#include <ripple/rpc/impl/GRPCHelpers.cpp>
 #include <ripple/rpc/impl/ServerHandlerImp.cpp>
 #include <ripple/rpc/impl/ShardArchiveHandler.cpp>
 #include <ripple/rpc/impl/Status.cpp>

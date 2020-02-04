@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package org.xrpl.rpc.v1;
+option java_package = "org.xrpl.rpc.v1";
+option java_multiple_files = true;
+
+import "org/xrpl/rpc/v1/get_account_info.proto";
+import "org/xrpl/rpc/v1/get_fee.proto";
+import "org/xrpl/rpc/v1/submit.proto";
+import "org/xrpl/rpc/v1/get_transaction.proto";
+import "org/xrpl/rpc/v1/get_account_transaction_history.proto";
+
+
+// RPCs available to interact with the XRP Ledger.
+service XRPLedgerAPIService {
+
+  // Get account info for an account on the XRP Ledger.
+  rpc GetAccountInfo (GetAccountInfoRequest) returns (GetAccountInfoResponse);
+
+  // Get the fee for a transaction on the XRP Ledger.
+  rpc GetFee (GetFeeRequest) returns (GetFeeResponse);
+
+  // Submit a signed transaction to the XRP Ledger.
+  rpc SubmitTransaction (SubmitTransactionRequest) returns (SubmitTransactionResponse);
+
+  // Get the status of a transaction
+  rpc GetTransaction(GetTransactionRequest) returns (GetTransactionResponse);
+
+  rpc GetAccountTransactionHistory(GetAccountTransactionHistoryRequest) returns (GetAccountTransactionHistoryResponse);
+}

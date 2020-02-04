@@ -1,12 +1,19 @@
 syntax = "proto3";
 
-package rpc.v1;
+package org.xrpl.rpc.v1;
+option java_package = "org.xrpl.rpc.v1";
+option java_multiple_files = true;
 
-import "rpc/v1/ledger_objects.proto";
-import "rpc/v1/amount.proto";
+import "org/xrpl/rpc/v1/ledger_objects.proto";
+import "org/xrpl/rpc/v1/amount.proto";
+import "org/xrpl/rpc/v1/account.proto";
+import "org/xrpl/rpc/v1/ledger.proto";
+import "org/xrpl/rpc/v1/common.proto";
 
 // A request to get info about an account.
-message GetAccountInfoRequest {
+// Next field: 6
+message GetAccountInfoRequest
+{
     // The address to get info about.
     AccountAddress account = 1;
 
@@ -19,25 +26,10 @@ message GetAccountInfoRequest {
     bool signer_lists = 5;
 }
 
-message LedgerSpecifier {
-    enum Shortcut {
-        SHORTCUT_UNSPECIFIED = 0;
-        SHORTCUT_VALIDATED   = 1;
-        SHORTCUT_CLOSED      = 2;
-        SHORTCUT_CURRENT     = 3;
-    }
-
-    oneof ledger {
-        Shortcut shortcut = 1;
-        uint32 sequence = 2;
-        // 32 bytes
-        bytes hash = 3;
-    }
-}
-
 // Response to GetAccountInfo RPC
-message GetAccountInfoResponse {
-
+// Next field: 6
+message GetAccountInfoResponse
+{
     AccountRoot account_data = 1;
 
     SignerList signer_list = 2;
@@ -50,8 +42,9 @@ message GetAccountInfoResponse {
 }
 
 // Aggregate data about queued transactions
-message QueueData {
-
+// Next field: 7
+message QueueData
+{
     uint32 txn_count = 1;
 
     bool auth_change_queued = 2;
@@ -66,16 +59,18 @@ message QueueData {
 }
 
 // Data about a single queued transaction
-message QueuedTransaction {
+// Next field: 7
+message QueuedTransaction
+{
     bool auth_change = 1;
 
     XRPDropsAmount fee = 2;
 
-    uint64 fee_level = 3;
+    uint64 fee_level = 3 [jstype=JS_STRING];
 
     XRPDropsAmount max_spend_drops = 4;
 
-    uint32 sequence = 5;
+    Sequence sequence = 5;
 
-    uint32 last_ledger_sequence = 6;
+    LastLedgerSequence last_ledger_sequence = 6;
 }

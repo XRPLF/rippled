@@ -1,0 +1,319 @@
+syntax = "proto3";
+
+package org.xrpl.rpc.v1;
+option java_package = "org.xrpl.rpc.v1";
+option java_multiple_files = true;
+
+import "org/xrpl/rpc/v1/common.proto";
+import "org/xrpl/rpc/v1/amount.proto";
+import "org/xrpl/rpc/v1/account.proto";
+
+// A message encompassing all transaction types
+// Next field: 30
+message Transaction
+{
+    Account account = 1;
+
+    XRPDropsAmount fee = 2;
+
+    Sequence sequence = 3;
+
+    // Data specific to the type of transaction
+    oneof transaction_data
+    {
+        Payment payment = 4;
+
+        AccountSet account_set = 13;
+
+        AccountDelete account_delete = 14;
+
+        CheckCancel check_cancel = 15;
+
+        CheckCash check_cash = 16;
+
+        CheckCreate check_create = 17;
+
+        DepositPreauth deposit_preauth = 18;
+
+        EscrowCancel escrow_cancel = 19;
+
+        EscrowCreate escrow_create = 20;
+
+        EscrowFinish escrow_finish = 21;
+
+        OfferCancel offer_cancel = 22;
+
+        OfferCreate offer_create = 23;
+
+        PaymentChannelClaim payment_channel_claim = 24;
+
+        PaymentChannelCreate payment_channel_create= 25;
+
+        PaymentChannelFund payment_channel_fund = 26;
+
+        SetRegularKey set_regular_key = 27;
+
+        SignerListSet signer_list_set = 28;
+
+        TrustSet trust_set = 29;
+
+    }
+
+    SigningPublicKey signing_public_key = 5;
+
+    TransactionSignature transaction_signature = 6;
+
+    Flags flags = 7;
+
+    LastLedgerSequence last_ledger_sequence = 8;
+
+    SourceTag source_tag = 9;
+
+    repeated Memo memos = 10;
+
+    repeated Signer signers = 11;
+
+    AccountTransactionID account_transaction_id = 12;
+}
+
+// Next field: 4
+message Memo
+{
+    MemoData memo_data = 1;
+
+    MemoFormat memo_format = 2;
+
+    MemoType memo_type = 3;
+}
+
+// Next field: 4
+message Signer
+{
+    Account account = 1;
+
+    TransactionSignature transaction_signature = 2;
+
+    SigningPublicKey signing_public_key = 3;
+}
+
+// Next field: 8
+message AccountSet
+{
+    ClearFlag clear_flag = 1;
+
+    Domain domain = 2;
+
+    EmailHash email_hash = 3;
+
+    MessageKey message_key = 4;
+
+    SetFlag set_flag = 5;
+
+    TransferRate transfer_rate = 6;
+
+    TickSize tick_size = 7;
+}
+
+// Next field: 3
+message AccountDelete
+{
+   Destination destination = 1;
+
+   DestinationTag destination_tag = 2;
+}
+
+// Next field: 2
+message CheckCancel
+{
+    CheckID check_id = 1;
+}
+
+// Next field: 4
+message CheckCash
+{
+    CheckID check_id = 1;
+
+    oneof amount_oneof
+    {
+        Amount amount = 2;
+
+        DeliverMin deliver_min = 3;
+    }
+}
+
+// Next field: 6
+message CheckCreate
+{
+    Destination destination = 1;
+
+    SendMax send_max = 2;
+
+    DestinationTag destination_tag = 3;
+
+    Expiration expiration = 4;
+
+    InvoiceID invoice_id = 5;
+}
+
+// Next field: 3
+message DepositPreauth
+{
+    oneof authorization_oneof
+    {
+        Authorize authorize = 1;
+
+        Unauthorize unauthorize = 2;
+    }
+}
+
+// Next field: 3
+message EscrowCancel
+{
+    Owner owner = 1;
+
+    OfferSequence offer_sequence = 2;
+}
+
+// Next field: 7
+message EscrowCreate
+{
+    Amount amount = 1;
+
+    Destination destination = 2;
+
+    CancelAfter cancel_after = 3;
+
+    FinishAfter finish_after = 4;
+
+    Condition condition = 5;
+
+    DestinationTag destination_tag = 6;
+}
+
+// Next field: 5
+message EscrowFinish
+{
+    Owner owner = 1;
+
+    OfferSequence offer_sequence = 2;
+
+    Condition condition = 3;
+
+    Fulfillment fulfillment = 4;
+}
+
+// Next field: 2
+message OfferCancel
+{
+   OfferSequence offer_sequence = 1;
+}
+
+// Next field: 5
+message OfferCreate
+{
+    Expiration expiration = 1;
+
+    OfferSequence offer_sequence = 2;
+
+    TakerGets taker_gets = 3;
+
+    TakerPays taker_pays = 4;
+}
+
+// Next field: 8
+message Payment
+{
+    // Next field: 4
+    message PathElement
+    {
+        AccountAddress account = 1;
+
+        Currency currency = 2;
+
+        AccountAddress issuer = 3;
+    }
+
+    // Next field: 2
+    message Path
+    {
+        repeated PathElement elements = 1;
+    }
+
+    Amount amount = 1;
+
+    Destination destination = 2;
+
+    DestinationTag destination_tag = 3;
+
+    InvoiceID invoice_id = 4;
+
+    repeated Path paths = 5;
+
+    SendMax send_max = 6;
+
+    DeliverMin deliver_min = 7;
+}
+
+// Next field: 6
+message PaymentChannelClaim
+{
+    Channel channel = 1;
+
+    Balance balance = 2;
+
+    Amount amount = 3;
+
+    PaymentChannelSignature payment_channel_signature = 4;
+
+    PublicKey public_key = 5;
+}
+
+// Next field: 7
+message PaymentChannelCreate
+{
+    Amount amount = 1;
+
+    Destination destination = 2;
+
+    SettleDelay settle_delay = 3;
+
+    PublicKey public_key = 4;
+
+    CancelAfter cancel_after = 5;
+
+    DestinationTag destination_tag = 6;
+}
+
+// Next field: 4
+message PaymentChannelFund
+{
+    Channel channel = 1;
+
+    Amount amount = 2;
+
+    Expiration expiration = 3;
+}
+
+// Next field: 2
+message SetRegularKey
+{
+    RegularKey regular_key = 1;
+}
+
+// Next field: 3
+message SignerListSet
+{
+   SignerQuorum signer_quorum = 1;
+
+   repeated SignerEntry signer_entries = 2;
+}
+
+// Next field: 4
+message TrustSet
+{
+    LimitAmount limit_amount = 1;
+
+    QualityIn quality_in = 2;
+
+    QualityOut quality_out = 3;
+}

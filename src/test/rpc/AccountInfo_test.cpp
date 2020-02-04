@@ -324,8 +324,8 @@ public:
     class GetAccountInfoClient : public GRPCTestClientBase
     {
     public:
-        rpc::v1::GetAccountInfoRequest request;
-        rpc::v1::GetAccountInfoResponse reply;
+        org::xrpl::rpc::v1::GetAccountInfoRequest request;
+        org::xrpl::rpc::v1::GetAccountInfoResponse reply;
 
         explicit GetAccountInfoClient(std::string const& port)
             : GRPCTestClientBase(port)
@@ -358,11 +358,10 @@ public:
             client.GetAccountInfo();
             if (!BEAST_EXPECT(client.status.ok()))
             {
-                std::cout << client.reply.DebugString() << std::endl;
                 return;
             }
             BEAST_EXPECT(
-                client.reply.account_data().account().address() ==
+                client.reply.account_data().account().value().address() ==
                 alice.human());
         }
         {
@@ -374,13 +373,13 @@ public:
             if (!BEAST_EXPECT(client.status.ok()))
                 return;
             BEAST_EXPECT(
-                client.reply.account_data().balance().drops() ==
+                client.reply.account_data().balance().value().xrp_amount().drops() ==
                 1000 * 1000 * 1000);
             BEAST_EXPECT(
-                client.reply.account_data().account().address() ==
+                client.reply.account_data().account().value().address() ==
                 alice.human());
             BEAST_EXPECT(
-                client.reply.account_data().sequence() == env.seq(alice));
+                client.reply.account_data().sequence().value() == env.seq(alice));
             BEAST_EXPECT(client.reply.queue_data().txn_count() == 0);
         }
     }
@@ -473,7 +472,7 @@ public:
             {
                 return;
             }
-            BEAST_EXPECT(client.reply.account_data().owner_count() == 1);
+            BEAST_EXPECT(client.reply.account_data().owner_count().value() == 1);
             BEAST_EXPECT(client.reply.signer_list().signer_entries_size() == 1);
         }
 
@@ -518,16 +517,16 @@ public:
             {
                 return;
             }
-            BEAST_EXPECT(client.reply.account_data().owner_count() == 1);
+            BEAST_EXPECT(client.reply.account_data().owner_count().value() == 1);
             auto& signerList = client.reply.signer_list();
-            BEAST_EXPECT(signerList.signer_quorum() == 4);
+            BEAST_EXPECT(signerList.signer_quorum().value() == 4);
             BEAST_EXPECT(signerList.signer_entries_size() == 8);
             for (int i = 0; i < 8; ++i)
             {
-                BEAST_EXPECT(signerList.signer_entries(i).signer_weight() == 1);
+                BEAST_EXPECT(signerList.signer_entries(i).signer_weight().value() == 1);
                 BEAST_EXPECT(
                     accounts.erase(
-                        signerList.signer_entries(i).account().address()) == 1);
+                        signerList.signer_entries(i).account().value().address()) == 1);
             }
             BEAST_EXPECT(accounts.size() == 0);
         }

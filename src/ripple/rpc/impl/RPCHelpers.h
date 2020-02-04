@@ -29,9 +29,9 @@
 #include <ripple/rpc/Status.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/TxQ.h>
-#include <rpc/v1/xrp_ledger.pb.h>
+#include <org/xrpl/rpc/v1/xrp_ledger.pb.h>
 #include <boost/optional.hpp>
-#include <rpc/v1/xrp_ledger.pb.h>
+#include <org/xrpl/rpc/v1/xrp_ledger.pb.h>
 
 namespace Json {
 class Value;
@@ -82,6 +82,37 @@ getAccountObjects (ReadView const& ledger, AccountID const& account,
     boost::optional<std::vector<LedgerEntryType>> const& typeFilter, uint256 dirIndex,
     uint256 const& entryIndex, std::uint32_t const limit, Json::Value& jvResult);
 
+/** Get ledger by hash
+    If there is no error in the return value, the ledger pointer will have
+    been filled
+*/
+Status
+getLedger(std::shared_ptr<ReadView const>& ledger, uint256 const & ledgerHash, Context& context);
+
+
+/** Get ledger by sequence
+    If there is no error in the return value, the ledger pointer will have
+    been filled
+*/
+template <class T>
+Status
+getLedger(T& ledger, uint32_t ledgerIndex, Context& context);
+
+enum LedgerShortcut
+{
+    CURRENT,
+    CLOSED,
+    VALIDATED
+};
+/** Get ledger specified in shortcut.
+    If there is no error in the return value, the ledger pointer will have
+    been filled
+*/
+template <class T>
+Status
+getLedger(T& ledger, LedgerShortcut shortcut, Context& context);
+
+
 /** Look up a ledger from a request and fill a Json::Result with either
     an error, or data representing a ledger.
 
@@ -103,7 +134,7 @@ template <class T>
 Status
 ledgerFromRequest(
     T& ledger,
-    GRPCContext<rpc::v1::GetAccountInfoRequest>& context);
+    GRPCContext<org::xrpl::rpc::v1::GetAccountInfoRequest>& context);
 
 bool
 isValidated(LedgerMaster& ledgerMaster, ReadView const& ledger,
@@ -203,45 +234,6 @@ std::pair<RPC::Status, LedgerEntryType>
  * @return the api version number
  */
 unsigned int getAPIVersionNumber(const Json::Value & value);
-
-/*
- * For all of the below populate* functions, the proto argument is an
- * output parameter, and is populated with the data stored in the
- * serialized object
- */
-void
-populateAccountRoot(rpc::v1::AccountRoot& proto, STObject const& obj);
-
-void
-populateRippleState(rpc::v1::RippleState& proto, STObject const& obj);
-
-void
-populateOffer(rpc::v1::Offer& proto, STObject const& obj);
-
-void
-populateSignerList(rpc::v1::SignerList& proto, STObject const& obj);
-
-void
-populateQueueData(
-    rpc::v1::QueueData& proto,
-    std::map<TxSeq, TxQ::AccountTxDetails const> const& txs);
-
-void
-populateDirectoryNode(rpc::v1::DirectoryNode& proto, STObject const& obj);
-
-void
-populateMeta(rpc::v1::Meta& proto, std::shared_ptr<TxMeta> txMeta);
-
-void
-populateTransaction(
-    rpc::v1::Transaction& proto,
-    std::shared_ptr<STTx const> txnSt);
-
-void
-populateAmount(rpc::v1::CurrencyAmount& proto, STAmount const& amount);
-
-void
-populateTransactionResultType(rpc::v1::TransactionResult& proto, TER result);
 
 } // RPC
 } // ripple

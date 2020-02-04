@@ -1,0 +1,331 @@
+syntax = "proto3";
+
+package org.xrpl.rpc.v1;
+option java_package = "org.xrpl.rpc.v1";
+option java_multiple_files = true;
+
+import "org/xrpl/rpc/v1/common.proto";
+
+// Next field: 13
+message LedgerObject
+{
+    oneof object
+    {
+        AccountRoot account_root = 1;
+        Amendments amendments = 2;
+        Check check = 3;
+        DepositPreauthObject deposit_preauth = 4;
+        DirectoryNode directory_node = 5;
+        Escrow escrow = 6;
+        FeeSettings fee_settings = 7;
+        LedgerHashes ledger_hashes = 8;
+        Offer offer = 9;
+        PayChannel pay_channel = 10;
+        RippleState ripple_state = 11;
+        SignerList signer_list = 12;
+    }
+}
+
+// Next field: 13
+enum LedgerEntryType
+{
+    LEDGER_ENTRY_TYPE_UNSPECIFIED     = 0;
+    LEDGER_ENTRY_TYPE_ACCOUNT_ROOT    = 1;
+    LEDGER_ENTRY_TYPE_AMENDMENTS      = 2;
+    LEDGER_ENTRY_TYPE_CHECK           = 3;
+    LEDGER_ENTRY_TYPE_DEPOSIT_PREAUTH = 4;
+    LEDGER_ENTRY_TYPE_DIRECTORY_NODE  = 5;
+    LEDGER_ENTRY_TYPE_ESCROW          = 6;
+    LEDGER_ENTRY_TYPE_FEE_SETTINGS    = 7;
+    LEDGER_ENTRY_TYPE_LEDGER_HASHES   = 8;
+    LEDGER_ENTRY_TYPE_OFFER           = 9;
+    LEDGER_ENTRY_TYPE_PAY_CHANNEL     = 10;
+    LEDGER_ENTRY_TYPE_RIPPLE_STATE    = 11;
+    LEDGER_ENTRY_TYPE_SIGNER_LIST     = 12;
+}
+
+// Next field: 15
+message AccountRoot
+{
+    Account account = 1;
+
+    Balance balance = 2;
+
+    Sequence sequence = 3;
+
+    Flags flags = 4;
+
+    OwnerCount owner_count = 5;
+
+    PreviousTransactionID previous_transaction_id = 6;
+
+    PreviousTransactionLedgerSequence previous_transaction_ledger_sequence = 7;
+
+    AccountTransactionID account_transaction_id = 8;
+
+    Domain domain = 9;
+
+    EmailHash email_hash = 10;
+
+    MessageKey message_key = 11;
+
+    RegularKey regular_key = 12;
+
+    TickSize tick_size = 13;
+
+    TransferRate transfer_rate = 14;
+}
+
+// Next field: 4
+message Amendments
+{
+    // Next field: 2
+    message Amendment
+    {
+        // 32 bytes
+        bytes value = 1;
+    }
+
+    // Next field: 3
+    message Majority
+    {
+        Amendment amendment = 1;
+
+        CloseTime close_time = 2;
+    }
+
+    repeated Amendment amendments = 1;
+
+    repeated Majority majorities = 2;
+
+    Flags flags = 3;
+}
+
+// Next field: 14
+message Check
+{
+    Account account = 1;
+
+    Destination destination = 2;
+
+    Flags flags = 3;
+
+    OwnerNode owner_node = 4;
+
+    PreviousTransactionID previous_transaction_id = 5;
+
+    PreviousTransactionLedgerSequence previous_transaction_ledger_sequence = 6;
+
+    SendMax send_max = 7;
+
+    Sequence sequence = 8;
+
+    DestinationNode destination_node = 9;
+
+    DestinationTag destination_tag = 10;
+
+    Expiration expiration = 11;
+
+    InvoiceID invoice_id = 12;
+
+    SourceTag source_tag = 13;
+}
+
+// Next field: 7
+message DepositPreauthObject
+{
+    Account account = 1;
+
+    Authorize authorize = 2;
+
+    Flags flags = 3;
+
+    OwnerNode owner_node = 4;
+
+    PreviousTransactionID previous_transaction_id = 5;
+
+    PreviousTransactionLedgerSequence previous_transaction_ledger_sequence = 6;
+}
+
+// Next field: 11
+message DirectoryNode
+{
+    Flags flags = 1;
+
+    RootIndex root_index = 2;
+
+    repeated Index indexes = 3;
+
+    IndexNext index_next = 4;
+
+    IndexPrevious index_previous = 5;
+
+    Owner owner = 6;
+
+    TakerPaysCurrency taker_pays_currency = 7;
+
+    TakerPaysIssuer taker_pays_issuer = 8;
+
+    TakerGetsCurreny taker_gets_currency = 9;
+
+    TakerGetsIssuer taker_gets_issuer = 10;
+}
+
+// Next field: 14
+message Escrow
+{
+    Account account = 1;
+
+    Destination destination = 2;
+
+    Amount amount = 3;
+
+    Condition condition = 4;
+
+    CancelAfter cancel_after = 5;
+
+    FinishAfter finish_after = 6;
+
+    Flags flags = 7;
+
+    SourceTag source_tag = 8;
+
+    DestinationTag destination_tag = 9;
+
+    OwnerNode owner_node = 10;
+
+    DestinationNode destination_node = 11;
+
+    PreviousTransactionID previous_transaction_id = 12;
+
+    PreviousTransactionLedgerSequence previous_transaction_ledger_sequence = 13;
+}
+
+// Next field: 6
+message FeeSettings
+{
+    BaseFee base_fee = 1;
+
+    ReferenceFeeUnits reference_fee_units = 2;
+
+    ReserveBase reserve_base = 3;
+
+    ReserveIncrement reserve_increment = 4;
+
+    Flags flags = 5;
+}
+
+// Next field: 4
+message LedgerHashes
+{
+    LastLedgerSequence last_ledger_sequence = 1;
+
+    repeated Hash hashes = 2;
+
+    Flags flags = 3;
+}
+
+// Next field: 12
+message Offer
+{
+    Account account = 1;
+
+    Sequence sequence = 2;
+
+    Flags flags = 3;
+
+    TakerPays taker_pays = 4;
+
+    TakerGets taker_gets = 5;
+
+    BookDirectory book_directory = 6;
+
+    BookNode book_node = 7;
+
+    OwnerNode owner_node = 8;
+
+    Expiration expiration = 9;
+
+    PreviousTransactionID previous_transaction_id = 10;
+
+    PreviousTransactionLedgerSequence previous_transaction_ledger_sequence = 11;
+}
+
+// Next field: 13
+message PayChannel
+{
+    Account account = 1;
+
+    Destination destination = 2;
+
+    Amount amount = 3;
+
+    Balance balance = 4;
+
+    PublicKey public_key = 5;
+
+    SettleDelay settle_delay = 6;
+
+    OwnerNode owner_node = 7;
+
+    PreviousTransactionID previous_transaction_id = 8;
+
+    PreviousTransactionLedgerSequence previous_transaction_ledger_sequence = 9;
+
+    Flags flags = 10;
+
+    Expiration expiration = 11;
+
+    CancelAfter cancel_after = 12;
+
+    SourceTag source_tag = 13;
+
+    DestinationTag destination_tag = 14;
+
+}
+
+// Next field: 13
+message RippleState
+{
+    Balance balance = 1;
+
+    Flags flags = 2;
+
+    LowLimit low_limit = 3;
+
+    HighLimit high_limit = 4;
+
+    LowNode low_node = 5;
+
+    HighNode high_node = 6;
+
+    LowQualityIn low_quality_in = 7;
+
+    LowQualityOut low_quality_out = 8;
+
+    HighQualityIn high_quality_in = 9;
+
+    HighQualityOut high_quality_out = 10;
+
+    PreviousTransactionID previous_transaction_id = 11;
+
+    PreviousTransactionLedgerSequence previous_transaction_ledger_sequence = 12;
+}
+
+// Next field: 8
+message SignerList
+{
+    Flags flags = 1;
+
+    PreviousTransactionID previous_transaction_id = 2;
+
+    PreviousTransactionLedgerSequence previous_transaction_ledger_sequence = 3;
+
+    OwnerNode owner_node = 4;
+
+    repeated SignerEntry signer_entries = 5;
+
+    SignerListID signer_list_id = 6;
+
+    SignerQuorum signer_quorum = 7;
+}

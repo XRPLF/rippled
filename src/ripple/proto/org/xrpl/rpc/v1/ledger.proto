@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package org.xrpl.rpc.v1;
+option java_package = "org.xrpl.rpc.v1";
+option java_multiple_files = true;
+
+// Next field: 4
+message LedgerSpecifier
+{
+    // Next field: 4
+    enum Shortcut
+    {
+        SHORTCUT_UNSPECIFIED = 0;
+        SHORTCUT_VALIDATED   = 1;
+        SHORTCUT_CLOSED      = 2;
+        SHORTCUT_CURRENT     = 3;
+    }
+
+    oneof ledger
+    {
+        Shortcut shortcut = 1;
+        uint32 sequence = 2;
+        // 32 bytes
+        bytes hash = 3;
+    }
+}
+
+// Next field: 3
+message LedgerRange
+{
+    uint32 ledger_index_min = 1;
+
+    // Note, if ledger_index_min is non-zero and ledger_index_max is 0, the
+    // software will use the max validated ledger in place of ledger_index_max
+    uint32 ledger_index_max = 2;
+};
+

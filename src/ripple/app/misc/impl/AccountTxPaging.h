@@ -44,23 +44,23 @@ void
 saveLedgerAsync (Application& app, std::uint32_t seq);
 
 void
-accountTxPage (
-    DatabaseCon& database,
+accountTxPage(
+    DatabaseCon& connection,
     AccountIDCache const& idCache,
-    std::function<void (std::uint32_t)> const& onUnsavedLedger,
-    std::function<void (std::uint32_t,
-                        std::string const&,
-                        Blob const&,
-                        Blob const&)> const&,
+    std::function<void(std::uint32_t)> const& onUnsavedLedger,
+    std::function<void(
+        std::uint32_t,
+        std::string const&,
+        Blob const&,
+        Blob const&)> const& onTransaction,
     AccountID const& account,
     std::int32_t minLedger,
     std::int32_t maxLedger,
     bool forward,
-    Json::Value& token,
+    std::optional<NetworkOPs::AccountTxMarker>& marker,
     int limit,
     bool bAdmin,
-    std::uint32_t pageLength);
-
+    std::uint32_t page_length);
 }
 
 #endif

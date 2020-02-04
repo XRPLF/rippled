@@ -28,6 +28,7 @@
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
+#include <ripple/rpc/impl/GRPCHelpers.h>
 
 namespace ripple {
 
@@ -183,11 +184,11 @@ Json::Value doSubmit (RPC::JsonContext& context)
     }
 }
 
-std::pair<rpc::v1::SubmitTransactionResponse, grpc::Status>
-doSubmitGrpc(RPC::GRPCContext<rpc::v1::SubmitTransactionRequest>& context)
+std::pair<org::xrpl::rpc::v1::SubmitTransactionResponse, grpc::Status>
+doSubmitGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::SubmitTransactionRequest>& context)
 {
     // return values
-    rpc::v1::SubmitTransactionResponse result;
+    org::xrpl::rpc::v1::SubmitTransactionResponse result;
     grpc::Status status = grpc::Status::OK;
 
     // input
@@ -261,8 +262,7 @@ doSubmitGrpc(RPC::GRPCContext<rpc::v1::SubmitTransactionRequest>& context)
     // return preliminary result
     if (temUNCERTAIN != tpTrans->getResult())
     {
-        RPC::populateTransactionResultType(
-            *result.mutable_engine_result(), tpTrans->getResult());
+        RPC::convert(*result.mutable_engine_result(), tpTrans->getResult());
 
         std::string sToken;
         std::string sHuman;

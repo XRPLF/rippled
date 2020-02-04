@@ -20,8 +20,12 @@
 #ifndef RIPPLE_RPC_DELIVEREDAMOUNT_H_INCLUDED
 #define RIPPLE_RPC_DELIVEREDAMOUNT_H_INCLUDED
 
+#include <org/xrpl/rpc/v1/amount.pb.h>
+#include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/Protocol.h>
+
+#include <functional>
 #include <memory>
-#include <rpc/v1/amount.pb.h>
 
 namespace Json {
 class Value;
@@ -53,23 +57,22 @@ void
 insertDeliveredAmount(
     Json::Value& meta,
     ReadView const&,
-    std::shared_ptr<STTx const> serializedTx,
+    std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const&);
 
 void
 insertDeliveredAmount(
     Json::Value& meta,
-    JsonContext&,
-    std::shared_ptr<Transaction>,
+    RPC::JsonContext const&,
+    std::shared_ptr<Transaction> const&,
     TxMeta const&);
 
-void
-insertDeliveredAmount(
-    rpc::v1::CurrencyAmount& proto,
-    Context&,
-    std::shared_ptr<Transaction>,
-    TxMeta const&);
-
+std::optional<STAmount>
+getDeliveredAmount(
+    RPC::Context const& context,
+    std::shared_ptr<STTx const> const& serializedTx,
+    TxMeta const& transactionMeta,
+    LedgerIndex const& ledgerIndex);
 /** @} */
 
 } // RPC

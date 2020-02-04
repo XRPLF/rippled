@@ -17,26 +17,26 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_TEST_JTX_ACCOUNT_TXN_ID_H_INCLUDED
+#define RIPPLE_TEST_JTX_ACCOUNT_TXN_ID_H_INCLUDED
 
-#include <test/jtx/Env_test.cpp>
-#include <test/jtx/WSClient_test.cpp>
+#include <test/jtx/Env.h>
 
-#include <test/jtx/impl/Account.cpp>
-#include <test/jtx/impl/acctdelete.cpp>
-#include <test/jtx/impl/account_txn_id.cpp>
-#include <test/jtx/impl/amount.cpp>
-#include <test/jtx/impl/balance.cpp>
-#include <test/jtx/impl/check.cpp>
-#include <test/jtx/impl/delivermin.cpp>
-#include <test/jtx/impl/deposit.cpp>
-#include <test/jtx/impl/Env.cpp>
-#include <test/jtx/impl/envconfig.cpp>
-#include <test/jtx/impl/fee.cpp>
-#include <test/jtx/impl/flags.cpp>
-#include <test/jtx/impl/invoice_id.cpp>
-#include <test/jtx/impl/JSONRPCClient.cpp>
-#include <test/jtx/impl/jtx_json.cpp>
-#include <test/jtx/impl/last_ledger_sequence.cpp>
-#include <test/jtx/impl/ManualTimeKeeper.cpp>
-#include <test/jtx/impl/memo.cpp>
-#include <test/jtx/impl/multisign.cpp>
+namespace ripple {
+namespace test {
+namespace jtx {
+
+struct account_txn_id
+{
+    private:
+      uint256 hash_;
+public:
+    explicit account_txn_id(uint256 const& hash) : hash_(hash) {}
+
+void
+operator()(Env&, JTx& jt) const;
+};
+} // jtx
+} // test
+} // ripple
+#endif

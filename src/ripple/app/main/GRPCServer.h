@@ -32,7 +32,7 @@
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/Tuning.h>
 
-#include "rpc/v1/xrp_ledger.grpc.pb.h"
+#include "org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h"
 #include <grpcpp/grpcpp.h>
 
 namespace ripple {
@@ -53,10 +53,6 @@ public:
     // process a request that has arrived. Can only be called once per instance
     virtual void
     process() = 0;
-
-    // abort processing this request. called when server shutsdown
-    virtual void
-    abort() = 0;
 
     // create a new instance of this CallData object, with the same type
     //(same template parameters) as original. This is called when a CallData
@@ -81,7 +77,7 @@ private:
     std::vector<std::shared_ptr<Processor>> requests_;
 
     // The gRPC service defined by the .proto files
-    rpc::v1::XRPLedgerAPIService::AsyncService service_;
+    org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService service_;
 
     std::unique_ptr<grpc::Server> server_;
 
@@ -89,12 +85,14 @@ private:
 
     std::string serverAddress_;
 
+    beast::Journal journal_;
+
     // typedef for function to bind a listener
     // This is always of the form:
-    // rpc::v1::XRPLedgerAPIService::AsyncService::Request[RPC NAME]
+    // org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::Request[RPC NAME]
     template <class Request, class Response>
     using BindListener = std::function<void(
-        rpc::v1::XRPLedgerAPIService::AsyncService&,
+        org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService&,
         grpc::ServerContext*,
         Request*,
         grpc::ServerAsyncResponseWriter<Response>*,
@@ -142,7 +140,7 @@ private:
     private:
         // The means of communication with the gRPC runtime for an asynchronous
         // server.
-        rpc::v1::XRPLedgerAPIService::AsyncService& service_;
+        org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService& service_;
 
         // The producer-consumer queue for asynchronous server notifications.
         grpc::ServerCompletionQueue& cq_;
@@ -153,15 +151,13 @@ private:
         grpc::ServerContext ctx_;
 
         // true if finished processing request
-        bool finished_;
+        // Note, this variable does not need to be atomic, since it is
+        // currently only accessed from one thread. However, isFinished(),
+        // which returns the value of this variable, is public facing. In the
+        // interest of avoiding future concurrency bugs, we make it atomic.
+        std::atomic_bool finished_;
 
         Application& app_;
-
-        // mutex for signaling abort
-        std::mutex mut_;
-
-        // whether the call should be aborted, due to server shutdown
-        bool aborted_;
 
         // What we get from the client.
         Request request_;
@@ -191,7 +187,7 @@ private:
         // asynchronous server) and the completion queue "cq" used for
         // asynchronous communication with the gRPC runtime.
         explicit CallData(
-            rpc::v1::XRPLedgerAPIService::AsyncService& service,
+            org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService& service,
             grpc::ServerCompletionQueue& cq,
             Application& app,
             BindListener<Request, Response> bindListener,
@@ -209,9 +205,6 @@ private:
 
         virtual bool
         isFinished() override;
-
-        virtual void
-        abort() override;
 
         std::shared_ptr<Processor>
         clone() override;

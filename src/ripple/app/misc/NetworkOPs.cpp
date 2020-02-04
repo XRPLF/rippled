@@ -406,15 +406,21 @@ public:
         bool binary, bool count, bool bUnlimited);
 
     // Client information retrieval functions.
+    using NetworkOPs::AccountTxMarker;
     using NetworkOPs::AccountTxs;
     AccountTxs getAccountTxs (
         AccountID const& account,
         std::int32_t minLedger, std::int32_t maxLedger, bool descending,
         std::uint32_t offset, int limit, bool bUnlimited) override;
 
-    AccountTxs getTxsAccount (
-        AccountID const& account, std::int32_t minLedger,
-        std::int32_t maxLedger, bool forward, Json::Value& token, int limit,
+    AccountTxs
+    getTxsAccount(
+        AccountID const& account,
+        std::int32_t minLedger,
+        std::int32_t maxLedger,
+        bool forward,
+        std::optional<AccountTxMarker>& marker,
+        int limit,
         bool bUnlimited) override;
 
     using NetworkOPs::txnMetaLedgerType;
@@ -426,11 +432,16 @@ public:
         std::int32_t maxLedger,  bool descending, std::uint32_t offset,
         int limit, bool bUnlimited) override;
 
+
     MetaTxsList
-    getTxsAccountB (
-        AccountID const& account, std::int32_t minLedger,
-        std::int32_t maxLedger,  bool forward, Json::Value& token,
-        int limit, bool bUnlimited) override;
+    getTxsAccountB(
+        AccountID const& account,
+        std::int32_t minLedger,
+        std::int32_t maxLedger,
+        bool forward,
+        std::optional<AccountTxMarker>& marker,
+        int limit,
+        bool bUnlimited) override;
 
     //
     // Monitoring: publisher side.
@@ -2108,7 +2119,7 @@ std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
                 rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or (0));
 
             ret.emplace_back (
-                strHex (rawTxn), strHex (txnMeta), seq);
+                std::move(rawTxn), std::move(txnMeta), seq);
         }
     }
 
@@ -2116,59 +2127,80 @@ std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
 }
 
 NetworkOPsImp::AccountTxs
-NetworkOPsImp::getTxsAccount (
-    AccountID const& account, std::int32_t minLedger,
-    std::int32_t maxLedger, bool forward, Json::Value& token,
-    int limit, bool bUnlimited)
+NetworkOPsImp::getTxsAccount(
+    AccountID const& account,
+    std::int32_t minLedger,
+    std::int32_t maxLedger,
+    bool forward,
+    std::optional<AccountTxMarker>& marker,
+    int limit,
+    bool bUnlimited)
 {
-    static std::uint32_t const page_length (200);
+    static std::uint32_t const page_length(200);
 
     Application& app = app_;
     NetworkOPsImp::AccountTxs ret;
 
     auto bound = [&ret, &app](
-        std::uint32_t ledger_index,
-        std::string const& status,
-        Blob const& rawTxn,
-        Blob const& rawMeta)
-    {
-        convertBlobsToTxResult (
-            ret, ledger_index, status, rawTxn, rawMeta, app);
+                     std::uint32_t ledger_index,
+                     std::string const& status,
+                     Blob const& rawTxn,
+                     Blob const& rawMeta) {
+        convertBlobsToTxResult(ret, ledger_index, status, rawTxn, rawMeta, app);
     };
 
-    accountTxPage(app_.getTxnDB (), app_.accountIDCache(),
-        std::bind(saveLedgerAsync, std::ref(app_),
-            std::placeholders::_1), bound, account, minLedger,
-                maxLedger, forward, token, limit, bUnlimited,
-                    page_length);
+    accountTxPage(
+        app_.getTxnDB(),
+        app_.accountIDCache(),
+        std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1),
+        bound,
+        account,
+        minLedger,
+        maxLedger,
+        forward,
+        marker,
+        limit,
+        bUnlimited,
+        page_length);
 
     return ret;
 }
 
 NetworkOPsImp::MetaTxsList
-NetworkOPsImp::getTxsAccountB (
-    AccountID const& account, std::int32_t minLedger,
-    std::int32_t maxLedger,  bool forward, Json::Value& token,
-    int limit, bool bUnlimited)
+NetworkOPsImp::getTxsAccountB(
+    AccountID const& account,
+    std::int32_t minLedger,
+    std::int32_t maxLedger,
+    bool forward,
+    std::optional<AccountTxMarker>& marker,
+    int limit,
+    bool bUnlimited)
 {
-    static const std::uint32_t page_length (500);
+    static const std::uint32_t page_length(500);
 
     MetaTxsList ret;
 
     auto bound = [&ret](
-        std::uint32_t ledgerIndex,
-        std::string const& status,
-        Blob const& rawTxn,
-        Blob const& rawMeta)
-    {
-        ret.emplace_back (strHex(rawTxn), strHex (rawMeta), ledgerIndex);
+                     std::uint32_t ledgerIndex,
+                     std::string const& status,
+                     Blob const& rawTxn,
+                     Blob const& rawMeta) {
+        ret.emplace_back(std::move(rawTxn), std::move(rawMeta), ledgerIndex);
     };
 
-    accountTxPage(app_.getTxnDB (), app_.accountIDCache(),
-        std::bind(saveLedgerAsync, std::ref(app_),
-            std::placeholders::_1), bound, account, minLedger,
-                maxLedger, forward, token, limit, bUnlimited,
-                    page_length);
+    accountTxPage(
+        app_.getTxnDB(),
+        app_.accountIDCache(),
+        std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1),
+        bound,
+        account,
+        minLedger,
+        maxLedger,
+        forward,
+        marker,
+        limit,
+        bUnlimited,
+        page_length);
     return ret;
 }
 

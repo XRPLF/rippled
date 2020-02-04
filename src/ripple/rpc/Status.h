@@ -106,7 +106,7 @@ public:
     /** Apply the Status to a JsonObject
      */
     template <class Object>
-    void inject (Object& object)
+    void inject (Object& object) const
     {
         if (auto ec = toErrorCode())
         {

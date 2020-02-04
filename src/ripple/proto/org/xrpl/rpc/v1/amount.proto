@@ -1,29 +1,32 @@
 syntax = "proto3";
 
-package rpc.v1;
+package org.xrpl.rpc.v1;
+option java_package = "org.xrpl.rpc.v1";
+option java_multiple_files = true;
 
-message CurrencyAmount {
-    oneof amount {
+import "org/xrpl/rpc/v1/account.proto";
+
+// Next field: 3
+message CurrencyAmount
+{
+    oneof amount
+    {
         XRPDropsAmount xrp_amount = 1;
         IssuedCurrencyAmount issued_currency_amount = 2;
     }
 }
 
 // A representation of an amount of XRP.
-message XRPDropsAmount {
-
-    uint64 drops = 1;
-}
-
-// A representation of an account address
-message AccountAddress {
-
-    //base58 encoding of an account
-    string address = 1;
+// Next field: 2
+message XRPDropsAmount
+{
+    uint64 drops = 1 [jstype=JS_STRING];
 }
 
 // A representation of an amount of issued currency.
-message IssuedCurrencyAmount {
+// Next field: 4
+message IssuedCurrencyAmount
+{
     // The currency used to value the amount.
     Currency currency = 1;
 
@@ -34,8 +37,9 @@ message IssuedCurrencyAmount {
     AccountAddress issuer = 3;
 }
 
-message Currency {
-
+// Next field: 3
+message Currency
+{
     // 3 character ASCII code
     string name = 1;
 
