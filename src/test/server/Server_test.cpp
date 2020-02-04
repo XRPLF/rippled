@@ -29,6 +29,7 @@
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
 #include <chrono>
 #include <stdexcept>
 #include <thread>
@@ -37,7 +38,7 @@ namespace ripple {
 namespace test {
 
 using socket_type   = boost::asio::ip::tcp::socket;
-using stream_type   = boost::asio::ssl::stream <socket_type>;
+using stream_type   = boost::beast::ssl_stream <socket_type>;
 
 class Server_test : public beast::unit_test::suite
 {

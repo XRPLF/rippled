@@ -28,6 +28,7 @@
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/app/main/CollectorManager.h>
 #include <ripple/json/Output.h>
+#include <boost/beast/ssl/ssl_stream.hpp>
 #include <boost/utility/string_view.hpp>
 #include <map>
 #include <mutex>
@@ -85,7 +86,7 @@ public:
 
 private:
     using socket_type = boost::asio::ip::tcp::socket;
-    using stream_type = boost::asio::ssl::stream <socket_type>;
+    using stream_type = boost::beast::ssl_stream <socket_type>;
 
     Application& app_;
     Resource::Manager& m_resourceManager;

@@ -25,6 +25,7 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/stream.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
 #include <memory>
 
 namespace ripple {
@@ -38,7 +39,7 @@ private:
     friend class BaseHTTPPeer<Handler, SSLHTTPPeer>;
     using waitable_timer = typename BaseHTTPPeer<Handler, SSLHTTPPeer>::waitable_timer;
     using socket_type = boost::asio::ip::tcp::socket;
-    using stream_type = boost::asio::ssl::stream <socket_type>;
+    using stream_type = boost::beast::ssl_stream <socket_type>;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using yield_context = boost::asio::yield_context;
     using error_code = boost::system::error_code;
@@ -116,7 +117,7 @@ run()
                 this->shared_from_this()));
         return;
     }
-    if (! stream_.lowest_layer().is_open())
+    if (! stream_.next_layer().is_open())
         return;
     boost::asio::spawn(this->strand_, std::bind(
         &SSLHTTPPeer::do_handshake, this->shared_from_this(),
@@ -210,7 +211,7 @@ on_shutdown(error_code ec)
     }
 
     // Close socket now in case this->destructor is delayed
-    stream_.lowest_layer().close(ec);
+    stream_.next_layer().close(ec);
 }
 
 } // ripple

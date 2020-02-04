@@ -94,7 +94,7 @@ private:
     using clock_type    = std::chrono::steady_clock;
     using error_code    = boost::system::error_code;
     using socket_type   = boost::asio::ip::tcp::socket;
-    using stream_type   = boost::asio::ssl::stream <socket_type>;
+    using stream_type   = boost::beast::ssl_stream <socket_type>;
     using address_type  = boost::asio::ip::address;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using waitable_timer = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;

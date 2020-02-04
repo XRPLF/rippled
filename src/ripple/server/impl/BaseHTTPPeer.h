@@ -25,6 +25,7 @@
 #include <ripple/server/impl/io_list.h>
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/beast/asio/ssl_error.h> // for is_short_read?
+#include <boost/beast/core/stream_traits.hpp>
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/parser.hpp>
@@ -262,7 +263,7 @@ close()
                 (void (BaseHTTPPeer::*)(void)) & BaseHTTPPeer::close,
                 impl().shared_from_this()));
     error_code ec;
-    impl().stream_.lowest_layer().close(ec);
+    boost::beast::get_lowest_layer(impl().stream_).close(ec);
 }
 
 //------------------------------------------------------------------------------
@@ -277,7 +278,7 @@ fail(error_code ec, char const* what)
         ec_ = ec;
         JLOG(journal_.trace()) << id_ <<
             std::string(what) << ": " << ec.message();
-        impl().stream_.lowest_layer().close(ec);
+        boost::beast::get_lowest_layer(impl().stream_).close(ec);
     }
 }
 
@@ -550,7 +551,7 @@ close(bool graceful)
     }
 
     error_code ec;
-    impl().stream_.lowest_layer().close(ec);
+    boost::beast::get_lowest_layer(impl().stream_).close(ec);
 }
 
 } // ripple
