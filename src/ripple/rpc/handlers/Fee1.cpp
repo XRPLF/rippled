@@ -38,10 +38,10 @@ namespace ripple
         return context.params;
     }
 
-std::pair<rpc::v1::GetFeeResponse, grpc::Status>
-doFeeGrpc(RPC::GRPCContext<rpc::v1::GetFeeRequest>& context)
+std::pair<org::xrpl::rpc::v1::GetFeeResponse, grpc::Status>
+doFeeGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetFeeRequest>& context)
 {
-    rpc::v1::GetFeeResponse reply;
+    org::xrpl::rpc::v1::GetFeeResponse reply;
     grpc::Status status = grpc::Status::OK;
 
     Application& app = context.app;
@@ -62,23 +62,23 @@ doFeeGrpc(RPC::GRPCContext<rpc::v1::GetFeeRequest>& context)
     reply.set_max_queue_size(*metrics.txQMaxSize);
 
     // fee levels data
-    rpc::v1::FeeLevels& levels = *reply.mutable_levels();
+    org::xrpl::rpc::v1::FeeLevels& levels = *reply.mutable_levels();
     levels.set_median_level(metrics.medFeeLevel.fee());
     levels.set_minimum_level(metrics.minProcessingFeeLevel.fee());
     levels.set_open_ledger_level(metrics.openLedgerFeeLevel.fee());
     levels.set_reference_level(metrics.referenceFeeLevel.fee());
 
     // fee data
-    rpc::v1::Fee& drops = *reply.mutable_drops();
+    org::xrpl::rpc::v1::Fee& fee = *reply.mutable_fee();
     auto const baseFee = view->fees().base;
-    drops.mutable_base_fee()->set_drops(
+    fee.mutable_base_fee()->set_drops(
         toDrops(metrics.referenceFeeLevel, baseFee).second.drops());
-    drops.mutable_minimum_fee()->set_drops(
+    fee.mutable_minimum_fee()->set_drops(
         toDrops(metrics.minProcessingFeeLevel, baseFee).second.drops());
-    drops.mutable_median_fee()->set_drops(
+    fee.mutable_median_fee()->set_drops(
         toDrops(metrics.medFeeLevel, baseFee).second.drops());
 
-    drops.mutable_open_ledger_fee()->set_drops(
+    fee.mutable_open_ledger_fee()->set_drops(
         (toDrops(metrics.openLedgerFeeLevel - FeeLevel64{1}, baseFee).second +
          1)
             .drops());

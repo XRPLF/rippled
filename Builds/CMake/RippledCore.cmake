@@ -3,6 +3,7 @@
    core functionality, useable by some client software perhaps
 #]===================================================================]
 
+
 file (GLOB_RECURSE rb_headers
   src/ripple/beast/*.h
   src/ripple/beast/*.hpp)
@@ -613,6 +614,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/WalletPropose.cpp
   src/ripple/rpc/impl/DeliveredAmount.cpp
   src/ripple/rpc/impl/Handler.cpp
+  src/ripple/rpc/impl/GRPCHelpers.cpp
   src/ripple/rpc/impl/LegacyPathFind.cpp
   src/ripple/rpc/impl/RPCHandler.cpp
   src/ripple/rpc/impl/RPCHelpers.cpp
@@ -621,6 +623,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/impl/ShardArchiveHandler.cpp
   src/ripple/rpc/impl/Status.cpp
   src/ripple/rpc/impl/TransactionSign.cpp
+
   #[===============================[
      main sources:
        subdir: server
@@ -786,6 +789,7 @@ target_sources (rippled PRIVATE
   src/test/jtx/impl/ManualTimeKeeper.cpp
   src/test/jtx/impl/WSClient.cpp
   src/test/jtx/impl/acctdelete.cpp
+  src/test/jtx/impl/account_txn_id.cpp
   src/test/jtx/impl/amount.cpp
   src/test/jtx/impl/balance.cpp
   src/test/jtx/impl/check.cpp
@@ -794,7 +798,9 @@ target_sources (rippled PRIVATE
   src/test/jtx/impl/envconfig.cpp
   src/test/jtx/impl/fee.cpp
   src/test/jtx/impl/flags.cpp
+  src/test/jtx/impl/invoice_id.cpp
   src/test/jtx/impl/jtx_json.cpp
+  src/test/jtx/impl/last_ledger_sequence.cpp
   src/test/jtx/impl/memo.cpp
   src/test/jtx/impl/multisign.cpp
   src/test/jtx/impl/offer.cpp
@@ -812,6 +818,7 @@ target_sources (rippled PRIVATE
   src/test/jtx/impl/trust.cpp
   src/test/jtx/impl/txflags.cpp
   src/test/jtx/impl/utility.cpp
+
   #[===============================[
      test sources:
        subdir: ledger

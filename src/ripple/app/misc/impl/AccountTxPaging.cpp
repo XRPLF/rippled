@@ -61,24 +61,25 @@ saveLedgerAsync (Application& app, std::uint32_t seq)
 }
 
 void
-accountTxPage (
+accountTxPage(
     DatabaseCon& connection,
     AccountIDCache const& idCache,
-    std::function<void (std::uint32_t)> const& onUnsavedLedger,
-    std::function<void (std::uint32_t,
-                        std::string const&,
-                        Blob const&,
-                        Blob const&)> const& onTransaction,
+    std::function<void(std::uint32_t)> const& onUnsavedLedger,
+    std::function<void(
+        std::uint32_t,
+        std::string const&,
+        Blob const&,
+        Blob const&)> const& onTransaction,
     AccountID const& account,
     std::int32_t minLedger,
     std::int32_t maxLedger,
     bool forward,
-    Json::Value& token,
+    std::optional<NetworkOPs::AccountTxMarker>& marker,
     int limit,
     bool bAdmin,
     std::uint32_t page_length)
 {
-    bool lookingForMarker = token.isObject();
+    bool lookingForMarker = marker.has_value();
 
     std::uint32_t numberOfResults;
 
@@ -97,24 +98,14 @@ accountTxPage (
 
     if (lookingForMarker)
     {
-        try
-        {
-            if (!token.isMember(jss::ledger) || !token.isMember(jss::seq))
-                return;
-            findLedger = token[jss::ledger].asInt();
-            findSeq = token[jss::seq].asInt();
-        }
-        catch (std::exception const&)
-        {
-            return;
-        }
+        findLedger = marker->ledgerSeq;
+        findSeq = marker->txnSeq;
     }
 
-    // We're using the token reference both for passing inputs and outputs, so
-    // we need to clear it in between.
-    token = Json::nullValue;
+    // marker is also an output parameter, so need to reset
+    marker.reset();
 
-    static std::string const prefix (
+    static std::string const prefix(
         R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
           Status,RawTxn,TxnMeta
           FROM AccountTransactions INNER JOIN Transactions
@@ -128,22 +119,20 @@ accountTxPage (
 
     if (forward && (findLedger == 0))
     {
-        sql = boost::str (boost::format(
-            prefix +
-            (R"(AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u'
+        sql = boost::str(
+            boost::format(
+                prefix + (R"(AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u'
              ORDER BY AccountTransactions.LedgerSeq ASC,
              AccountTransactions.TxnSeq ASC
-             LIMIT %u;)"))
-            % idCache.toBase58(account)
-            % minLedger
-            % maxLedger
-            % queryLimit);
+             LIMIT %u;)")) %
+            idCache.toBase58(account) % minLedger % maxLedger % queryLimit);
     }
     else if (forward && (findLedger != 0))
     {
         auto b58acct = idCache.toBase58(account);
-        sql = boost::str (boost::format(
-            (R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
+        sql = boost::str(
+            boost::format((
+                R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
             Status,RawTxn,TxnMeta
             FROM AccountTransactions, Transactions WHERE
             (AccountTransactions.TransID = Transactions.TransID AND
@@ -157,33 +146,26 @@ accountTxPage (
             ORDER BY AccountTransactions.LedgerSeq ASC,
             AccountTransactions.TxnSeq ASC
             LIMIT %u;
-            )"))
-        % b58acct
-        % (findLedger + 1)
-        % maxLedger
-        % b58acct
-        % findLedger
-        % findSeq
-        % queryLimit);
+            )")) %
+            b58acct % (findLedger + 1) % maxLedger % b58acct % findLedger %
+            findSeq % queryLimit);
     }
     else if (!forward && (findLedger == 0))
     {
-        sql = boost::str (boost::format(
-            prefix +
-            (R"(AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u'
+        sql = boost::str(
+            boost::format(
+                prefix + (R"(AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u'
              ORDER BY AccountTransactions.LedgerSeq DESC,
              AccountTransactions.TxnSeq DESC
-             LIMIT %u;)"))
-            % idCache.toBase58(account)
-            % minLedger
-            % maxLedger
-            % queryLimit);
+             LIMIT %u;)")) %
+            idCache.toBase58(account) % minLedger % maxLedger % queryLimit);
     }
     else if (!forward && (findLedger != 0))
     {
         auto b58acct = idCache.toBase58(account);
-        sql = boost::str (boost::format(
-            (R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
+        sql = boost::str(
+            boost::format((
+                R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
             Status,RawTxn,TxnMeta
             FROM AccountTransactions, Transactions WHERE
             (AccountTransactions.TransID = Transactions.TransID AND
@@ -197,24 +179,19 @@ accountTxPage (
             ORDER BY AccountTransactions.LedgerSeq DESC,
             AccountTransactions.TxnSeq DESC
             LIMIT %u;
-            )"))
-            % b58acct
-            % minLedger
-            % (findLedger - 1)
-            % b58acct
-            % findLedger
-            % findSeq
-            % queryLimit);
+            )")) %
+            b58acct % minLedger % (findLedger - 1) % b58acct % findLedger %
+            findSeq % queryLimit);
     }
     else
     {
-        assert (false);
+        assert(false);
         // sql is empty
         return;
     }
 
     {
-        auto db (connection.checkoutDb());
+        auto db(connection.checkoutDb());
 
         Blob rawData;
         Blob rawMeta;
@@ -222,55 +199,59 @@ accountTxPage (
         boost::optional<std::uint64_t> ledgerSeq;
         boost::optional<std::uint32_t> txnSeq;
         boost::optional<std::string> status;
-        soci::blob txnData (*db);
-        soci::blob txnMeta (*db);
+        soci::blob txnData(*db);
+        soci::blob txnMeta(*db);
         soci::indicator dataPresent, metaPresent;
 
-        soci::statement st = (db->prepare << sql,
-            soci::into (ledgerSeq),
-            soci::into (txnSeq),
-            soci::into (status),
-            soci::into (txnData, dataPresent),
-            soci::into (txnMeta, metaPresent));
+        soci::statement st =
+            (db->prepare << sql,
+             soci::into(ledgerSeq),
+             soci::into(txnSeq),
+             soci::into(status),
+             soci::into(txnData, dataPresent),
+             soci::into(txnMeta, metaPresent));
 
-        st.execute ();
+        st.execute();
 
-        while (st.fetch ())
+        while (st.fetch())
         {
             if (lookingForMarker)
             {
-                if (findLedger == ledgerSeq.value_or (0) &&
-                    findSeq == txnSeq.value_or (0))
+                if (findLedger == ledgerSeq.value_or(0) &&
+                    findSeq == txnSeq.value_or(0))
                 {
                     lookingForMarker = false;
                 }
             }
             else if (numberOfResults == 0)
             {
-                token = Json::objectValue;
-                token[jss::ledger] = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or (0));
-                token[jss::seq] = txnSeq.value_or (0);
+                marker = {
+                    rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
+                    txnSeq.value_or(0)};
                 break;
             }
 
             if (!lookingForMarker)
             {
                 if (dataPresent == soci::i_ok)
-                    convert (txnData, rawData);
+                    convert(txnData, rawData);
                 else
-                    rawData.clear ();
+                    rawData.clear();
 
                 if (metaPresent == soci::i_ok)
-                    convert (txnMeta, rawMeta);
+                    convert(txnMeta, rawMeta);
                 else
-                    rawMeta.clear ();
+                    rawMeta.clear();
 
                 // Work around a bug that could leave the metadata missing
                 if (rawMeta.size() == 0)
-                    onUnsavedLedger(ledgerSeq.value_or (0));
+                    onUnsavedLedger(ledgerSeq.value_or(0));
 
-                onTransaction(rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or (0)),
-                    *status, rawData, rawMeta);
+                onTransaction(
+                    rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
+                    *status,
+                    rawData,
+                    rawMeta);
                 --numberOfResults;
             }
         }
@@ -278,5 +259,4 @@ accountTxPage (
 
     return;
 }
-
 }

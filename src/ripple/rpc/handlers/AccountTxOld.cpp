@@ -155,8 +155,8 @@ Json::Value doAccountTxOld (RPC::JsonContext& context)
                 Json::Value& jvObj = jvTxns.append (Json::objectValue);
 
                 std::uint32_t  uLedgerIndex = std::get<2> (*it);
-                jvObj[jss::tx_blob]            = std::get<0> (*it);
-                jvObj[jss::meta]               = std::get<1> (*it);
+                jvObj[jss::tx_blob]            = strHex(std::get<0> (*it));
+                jvObj[jss::meta]               = strHex(std::get<1> (*it));
                 jvObj[jss::ledger_index]       = uLedgerIndex;
                 jvObj[jss::validated]
                         = bValidated

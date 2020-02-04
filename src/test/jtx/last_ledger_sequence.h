@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,29 +17,28 @@
 */
 //==============================================================================
 
-#include <ripple/json/json_value.h>
-#include <ripple/net/RPCErr.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/rpc/Context.h>
+#ifndef RIPPLE_TEST_JTX_LAST_LEDGER_SEQUENCE_H_INCLUDED
+#define RIPPLE_TEST_JTX_LAST_LEDGER_SEQUENCE_H_INCLUDED
+
+#include <test/jtx/Env.h>
 
 namespace ripple {
+namespace test {
+namespace jtx {
 
-Json::Value doAccountTxOld (RPC::JsonContext& context);
-Json::Value doAccountTxJson (RPC::JsonContext& context);
-
-// Temporary switching code until the old account_tx is removed
-Json::Value doAccountTxSwitch (RPC::JsonContext& context)
+struct last_ledger_seq
 {
-    if (context.params.isMember(jss::offset) ||
-        context.params.isMember(jss::count) ||
-        context.params.isMember(jss::descending) ||
-        context.params.isMember(jss::ledger_max) ||
-        context.params.isMember(jss::ledger_min))
-    {
-        return doAccountTxOld(context);
-    }
-    return doAccountTxJson(context);
-}
+    private:
+        std::uint32_t num_;
+public:
+    explicit last_ledger_seq(std::uint32_t num) : num_(num) {}
 
+void
+operator()(Env&, JTx& jt) const;
+};
+
+} // jtx
+} // test
 } // ripple
+
+#endif

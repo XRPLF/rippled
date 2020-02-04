@@ -82,25 +82,6 @@ public:
     }
 };
 
-/** Set InvoiceID on a JTx. */
-class invoice_id
-{
-private:
-    uint256 const id_;
-
-public:
-    explicit invoice_id (uint256 const& id)
-        : id_{id}
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt[sfInvoiceID.jsonName] = to_string (id_);
-    }
-};
-
 } // namespace jtx
 } // namespace test
 

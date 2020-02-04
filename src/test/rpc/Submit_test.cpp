@@ -36,8 +36,8 @@ public:
     class SubmitClient : public GRPCTestClientBase
     {
     public:
-        rpc::v1::SubmitTransactionRequest request;
-        rpc::v1::SubmitTransactionResponse reply;
+        org::xrpl::rpc::v1::SubmitTransactionRequest request;
+        org::xrpl::rpc::v1::SubmitTransactionResponse reply;
 
         explicit SubmitClient(std::string const& port)
             : GRPCTestClientBase(port)

@@ -28,6 +28,7 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
+#include <ripple/rpc/impl/GRPCHelpers.h>
 #include <grpc/status.h>
 
 namespace ripple {
@@ -184,15 +185,15 @@ Json::Value doAccountInfo (RPC::JsonContext& context)
     return result;
 }
 
-std::pair<rpc::v1::GetAccountInfoResponse, grpc::Status>
-doAccountInfoGrpc(RPC::GRPCContext<rpc::v1::GetAccountInfoRequest>& context)
+std::pair<org::xrpl::rpc::v1::GetAccountInfoResponse, grpc::Status>
+doAccountInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAccountInfoRequest>& context)
 {
     // Return values
-    rpc::v1::GetAccountInfoResponse result;
+    org::xrpl::rpc::v1::GetAccountInfoResponse result;
     grpc::Status status = grpc::Status::OK;
 
     // input
-    rpc::v1::GetAccountInfoRequest& params = context.params;
+    org::xrpl::rpc::v1::GetAccountInfoRequest& params = context.params;
 
     // get ledger
     std::shared_ptr<ReadView const> ledger;
@@ -233,7 +234,7 @@ doAccountInfoGrpc(RPC::GRPCContext<rpc::v1::GetAccountInfoRequest>& context)
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
     {
-        RPC::populateAccountRoot(*result.mutable_account_data(), *sleAccepted);
+        RPC::convert(*result.mutable_account_data(), *sleAccepted);
 
         // signer lists
         if (params.signer_lists())
@@ -241,9 +242,9 @@ doAccountInfoGrpc(RPC::GRPCContext<rpc::v1::GetAccountInfoRequest>& context)
             auto const sleSigners = ledger->read(keylet::signers(accountID));
             if (sleSigners)
             {
-                rpc::v1::SignerList& signerListProto =
+                org::xrpl::rpc::v1::SignerList& signerListProto =
                     *result.mutable_signer_list();
-                RPC::populateSignerList(signerListProto, *sleSigners);
+                RPC::convert(signerListProto, *sleSigners);
             }
         }
 
@@ -259,8 +260,8 @@ doAccountInfoGrpc(RPC::GRPCContext<rpc::v1::GetAccountInfoRequest>& context)
             }
             auto const txs =
                 context.app.getTxQ().getAccountTxs(accountID, *ledger);
-            rpc::v1::QueueData& queueData = *result.mutable_queue_data();
-            RPC::populateQueueData(queueData, txs);
+            org::xrpl::rpc::v1::QueueData& queueData = *result.mutable_queue_data();
+            RPC::convert(queueData, txs);
         }
     }
     else
