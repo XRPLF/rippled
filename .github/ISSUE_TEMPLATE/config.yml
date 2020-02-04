@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: XRP Ledger Documentation
+    url: https://xrpl.org/
+    about: All things about XRPL
+  - name: General question for the community
+    url: https://forum.xpring.io/c/community/
+    about: Please ask and answer questions here.
+  - name: Security bug bounty program
+    url: https://ripple.com/bug-bounty/
+    about: Please report security-relevant bugs in our software here.
