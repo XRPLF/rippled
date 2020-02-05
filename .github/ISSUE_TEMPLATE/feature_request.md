@@ -8,18 +8,14 @@ assignees: ''
 ---
 <!-- Please search existing issues to avoid creating duplicates.-->
 
-## Description
-### Describe the feature you'd like
-<!-- Be as detailed as possible here.-->
+## Summary
+<!-- Provide a summary to the feature request-->
 
-### Describe The rationale
+## Motivation
 <!-- Why do we need this feature?-->
 
-### Describe the Solution
+## Solution
 <!-- What is the solution?-->
 
-### Describe path not taken
+## Paths Not Taken
 <!-- What other alternatives have been considered?-->
-
-### Additional context
-<!-- Anything else you would like to mention?-->
