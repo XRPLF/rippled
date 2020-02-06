@@ -263,7 +263,7 @@ close()
                 (void (BaseHTTPPeer::*)(void)) & BaseHTTPPeer::close,
                 impl().shared_from_this()));
     error_code ec;
-    boost::beast::get_lowest_layer(impl().stream_).close(ec);
+    boost::beast::get_lowest_layer(impl().stream_).socket().close(ec);
 }
 
 //------------------------------------------------------------------------------
@@ -278,7 +278,7 @@ fail(error_code ec, char const* what)
         ec_ = ec;
         JLOG(journal_.trace()) << id_ <<
             std::string(what) << ": " << ec.message();
-        boost::beast::get_lowest_layer(impl().stream_).close(ec);
+        boost::beast::get_lowest_layer(impl().stream_).socket().close(ec);
     }
 }
 
@@ -551,7 +551,7 @@ close(bool graceful)
     }
 
     error_code ec;
-    boost::beast::get_lowest_layer(impl().stream_).close(ec);
+    boost::beast::get_lowest_layer(impl().stream_).socket().close(ec);
 }
 
 } // ripple

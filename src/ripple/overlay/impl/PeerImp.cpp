@@ -68,7 +68,7 @@ PeerImp::PeerImp (Application& app, id_t id,
     , journal_ (sink_)
     , p_journal_(p_sink_)
     , stream_ptr_(std::move(stream_ptr))
-    , socket_ (stream_ptr_->next_layer())
+    , socket_ (stream_ptr_->next_layer().socket())
     , stream_ (*stream_ptr_)
     , strand_ (socket_.get_executor())
     , timer_ (waitable_timer{socket_.get_executor()})
@@ -857,7 +857,7 @@ PeerImp::onReadMessage (error_code ec, std::size_t bytes_transferred)
             read_buffer_.data(), *this);
         if (ec)
             return fail("onReadMessage", ec);
-        if (! stream_.next_layer().is_open())
+        if (! socket_.is_open())
             return;
         if(gracefulClose_)
             return;

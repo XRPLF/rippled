@@ -25,6 +25,7 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/stream.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 #include <memory>
 
@@ -39,13 +40,15 @@ private:
     friend class BaseHTTPPeer<Handler, SSLHTTPPeer>;
     using waitable_timer = typename BaseHTTPPeer<Handler, SSLHTTPPeer>::waitable_timer;
     using socket_type = boost::asio::ip::tcp::socket;
-    using stream_type = boost::beast::ssl_stream <socket_type>;
+    using middle_type = boost::beast::tcp_stream;
+    using stream_type = boost::beast::ssl_stream <middle_type>;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using yield_context = boost::asio::yield_context;
     using error_code = boost::system::error_code;
 
     std::unique_ptr<stream_type> stream_ptr_;
     stream_type& stream_;
+    socket_type& socket_;
 
 public:
     template <class ConstBufferSequence>
@@ -56,7 +59,7 @@ public:
         beast::Journal journal,
         endpoint_type remote_address,
         ConstBufferSequence const& buffers,
-        socket_type&& socket);
+        middle_type&& stream);
 
     void
     run();
@@ -89,7 +92,7 @@ SSLHTTPPeer<Handler>::SSLHTTPPeer(
     beast::Journal journal,
     endpoint_type remote_address,
     ConstBufferSequence const& buffers,
-    socket_type&& socket)
+    middle_type&& stream)
     : BaseHTTPPeer<Handler, SSLHTTPPeer>(
           port,
           handler,
@@ -99,8 +102,9 @@ SSLHTTPPeer<Handler>::SSLHTTPPeer(
           remote_address,
           buffers)
     , stream_ptr_(std::make_unique<stream_type>(
-        socket_type(std::move(socket)), *port.context))
+        middle_type(std::move(stream)), *port.context))
     , stream_(*stream_ptr_)
+    , socket_(stream_.next_layer().socket())
 {
 }
 
@@ -117,7 +121,7 @@ run()
                 this->shared_from_this()));
         return;
     }
-    if (! stream_.next_layer().is_open())
+    if (! socket_.is_open())
         return;
     boost::asio::spawn(this->strand_, std::bind(
         &SSLHTTPPeer::do_handshake, this->shared_from_this(),
@@ -211,7 +215,7 @@ on_shutdown(error_code ec)
     }
 
     // Close socket now in case this->destructor is delayed
-    stream_.next_layer().close(ec);
+    socket_.close(ec);
 }
 
 } // ripple

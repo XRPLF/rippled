@@ -196,7 +196,7 @@ OverlayImpl::onHandoff (std::unique_ptr <stream_type>&& stream_ptr,
     JLOG(journal.debug()) << "Peer connection upgrade from " << remote_endpoint;
 
     error_code ec;
-    auto const local_endpoint (stream_ptr->next_layer().local_endpoint(ec));
+    auto const local_endpoint (stream_ptr->next_layer().socket().local_endpoint(ec));
     if (ec)
     {
         JLOG(journal.debug()) << remote_endpoint << " failed: " << ec.message();

@@ -21,6 +21,7 @@
 #define RIPPLE_SERVER_PLAINWSPEER_H_INCLUDED
 
 #include <ripple/server/impl/BaseWSPeer.h>
+#include <boost/beast/core/tcp_stream.hpp>
 #include <memory>
 
 namespace ripple {
@@ -37,7 +38,7 @@ class PlainWSPeer
     using error_code = boost::system::error_code;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using waitable_timer = boost::asio::basic_waitable_timer <clock_type>;
-    using socket_type = boost::asio::ip::tcp::socket;
+    using socket_type = boost::beast::tcp_stream;
 
     boost::beast::websocket::stream<socket_type> ws_;
 

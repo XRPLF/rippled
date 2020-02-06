@@ -94,7 +94,8 @@ private:
     using clock_type    = std::chrono::steady_clock;
     using error_code    = boost::system::error_code;
     using socket_type   = boost::asio::ip::tcp::socket;
-    using stream_type   = boost::beast::ssl_stream <socket_type>;
+    using middle_type   = boost::beast::tcp_stream;
+    using stream_type   = boost::beast::ssl_stream <middle_type>;
     using address_type  = boost::asio::ip::address;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using waitable_timer = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
@@ -554,7 +555,7 @@ PeerImp::PeerImp (Application& app, std::unique_ptr<stream_type>&& stream_ptr,
     , journal_ (sink_)
     , p_journal_ (p_sink_)
     , stream_ptr_(std::move(stream_ptr))
-    , socket_ (stream_ptr_->next_layer())
+    , socket_ (stream_ptr_->next_layer().socket())
     , stream_ (*stream_ptr_)
     , strand_ (socket_.get_executor())
     , timer_ (waitable_timer{socket_.get_executor()})

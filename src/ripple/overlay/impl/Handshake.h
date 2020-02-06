@@ -24,6 +24,7 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/stream.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/BuildInfo.h>
@@ -35,7 +36,7 @@
 
 namespace ripple {
 
-using socket_type   = boost::asio::ip::tcp::socket;
+using socket_type   = boost::beast::tcp_stream;
 using stream_type   = boost::beast::ssl_stream <socket_type>;
 
 /** Computes a shared value based on the SSL connection state.

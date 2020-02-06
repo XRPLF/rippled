@@ -42,7 +42,8 @@ private:
         boost::beast::http::response<boost::beast::http::dynamic_body>;
 
     using socket_type = boost::asio::ip::tcp::socket;
-    using stream_type = boost::beast::ssl_stream <socket_type>;
+    using middle_type = boost::beast::tcp_stream;
+    using stream_type = boost::beast::ssl_stream <middle_type>;
     using shared_context = std::shared_ptr<boost::asio::ssl::context>;
 
     Application& app_;

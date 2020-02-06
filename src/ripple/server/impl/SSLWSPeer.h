@@ -25,6 +25,7 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/stream.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 #include <boost/beast/websocket/ssl.hpp>
 #include <memory>
@@ -42,7 +43,7 @@ class SSLWSPeer
     using clock_type = std::chrono::system_clock;
     using error_code = boost::system::error_code;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using socket_type = boost::asio::ip::tcp::socket;
+    using socket_type = boost::beast::tcp_stream;
     using stream_type = boost::beast::ssl_stream <socket_type>;
     using waitable_timer =
         boost::asio::basic_waitable_timer <clock_type>;

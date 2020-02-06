@@ -28,6 +28,7 @@
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/stream.hpp>
 #include <boost/beast/http/message.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 #include <ripple/core/Stoppable.h>
 #include <ripple/beast/utility/PropertyStream.h>
@@ -48,7 +49,7 @@ class Overlay
     , public beast::PropertyStream::Source
 {
 protected:
-    using socket_type = boost::asio::ip::tcp::socket;
+    using socket_type = boost::beast::tcp_stream;
     using stream_type = boost::beast::ssl_stream <socket_type>;
 
     // VFALCO NOTE The requirement of this constructor is an

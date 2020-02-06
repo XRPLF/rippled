@@ -41,7 +41,7 @@ ConnectAttempt::ConnectAttempt (Application& app, boost::asio::io_service& io_se
     , timer_ (io_service)
     , stream_ptr_ (std::make_unique<stream_type>(
         socket_type(std::forward<boost::asio::io_service&>(io_service)), *context))
-    , socket_ (stream_ptr_->next_layer())
+    , socket_ (stream_ptr_->next_layer().socket())
     , stream_ (*stream_ptr_)
     , slot_ (slot)
 {
@@ -63,7 +63,7 @@ ConnectAttempt::stop()
     if (! strand_.running_in_this_thread())
         return strand_.post(std::bind(
             &ConnectAttempt::stop, shared_from_this()));
-    if (stream_.next_layer().is_open())
+    if (socket_.is_open())
     {
         JLOG(journal_.debug()) <<
             "Stop";
@@ -85,7 +85,7 @@ void
 ConnectAttempt::close()
 {
     assert(strand_.running_in_this_thread());
-    if (stream_.next_layer().is_open())
+    if (socket_.is_open())
     {
         error_code ec;
         timer_.cancel(ec);
@@ -135,7 +135,7 @@ ConnectAttempt::cancelTimer()
 void
 ConnectAttempt::onTimer (error_code ec)
 {
-    if (! stream_.next_layer().is_open())
+    if (! socket_.is_open())
         return;
     if (ec == boost::asio::error::operation_aborted)
         return;
@@ -158,10 +158,10 @@ ConnectAttempt::onConnect (error_code ec)
         return;
     endpoint_type local_endpoint;
     if(! ec)
-        local_endpoint = stream_.next_layer().local_endpoint(ec);
+        local_endpoint = socket_.local_endpoint(ec);
     if(ec)
         return fail("onConnect", ec);
-    if(! stream_.next_layer().is_open())
+    if(! socket_.is_open())
         return;
     JLOG(journal_.trace()) <<
         "onConnect";
@@ -177,13 +177,13 @@ void
 ConnectAttempt::onHandshake (error_code ec)
 {
     cancelTimer();
-    if(! stream_.next_layer().is_open())
+    if(! socket_.is_open())
         return;
     if(ec == boost::asio::error::operation_aborted)
         return;
     endpoint_type local_endpoint;
     if (! ec)
-        local_endpoint = stream_.next_layer().local_endpoint(ec);
+        local_endpoint = socket_.local_endpoint(ec);
     if(ec)
         return fail("onHandshake", ec);
     JLOG(journal_.trace()) <<
@@ -212,7 +212,7 @@ void
 ConnectAttempt::onWrite (error_code ec)
 {
     cancelTimer();
-    if(! stream_.next_layer().is_open())
+    if(! socket_.is_open())
         return;
     if(ec == boost::asio::error::operation_aborted)
         return;
@@ -228,7 +228,7 @@ ConnectAttempt::onRead (error_code ec)
 {
     cancelTimer();
 
-    if(! stream_.next_layer().is_open())
+    if(! socket_.is_open())
         return;
     if(ec == boost::asio::error::operation_aborted)
         return;
