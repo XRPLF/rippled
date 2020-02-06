@@ -11,10 +11,10 @@ variables:
   # these containers are built manually using the rippled
   # cmake build (container targets) and tagged/pushed so they 
   # can be used here
-  RPM_CONTAINER_TAG: "2020-01-08"
+  RPM_CONTAINER_TAG: "2020-02-10"
   RPM_CONTAINER_NAME: "rippled-rpm-builder"
   RPM_CONTAINER_FULLNAME: "${RPM_CONTAINER_NAME}:${RPM_CONTAINER_TAG}"
-  DPKG_CONTAINER_TAG: "2020-01-08"
+  DPKG_CONTAINER_TAG: "2020-02-10"
   DPKG_CONTAINER_NAME: "rippled-dpkg-builder"
   DPKG_CONTAINER_FULLNAME: "${DPKG_CONTAINER_NAME}:${DPKG_CONTAINER_TAG}"
   ARTIFACTORY_HOST: "artifactory.ops.ripple.com"

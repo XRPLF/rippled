@@ -13,38 +13,62 @@ while getopts ":e:c:" opt; do
             ;;
         \?)
             echo "Invalid option: -$OPTARG"
+            exit -1
     esac
 done
 
-tmp_loc=$(mktemp -d --tmpdir ripple_info.XXXX)
-cd /tmp
-chmod 751 ripple_info.*
-cd ~
-echo ${tmp_loc}
+tmp_loc=$(mktemp -d --tmpdir ripple_info.XXXXX)
+chmod 751 ${tmp_loc}
+awk_prog=${tmp_loc}/cfg.awk
+summary_out=${tmp_loc}/rippled_info.md
+printf "# rippled report info\n\n> generated at %s\n" "$(date -R)" > ${summary_out}
 
-cleaned_conf=${tmp_loc}/cleaned_rippled_cfg.txt
+function log_section {
+    printf "\n## %s\n" "$*" >> ${summary_out}
 
-if [[ -f ${conf_file} ]]
-then
-    db=$(sed -r -e 's/\<s[a-zA-Z0-9]{28}\>/secretsecretsecretsecretmaybe/g' ${conf_file} |\
-            awk -v OUT_FILE=${cleaned_conf} '
-    BEGIN {skip=0; db_path="";print > OUT_FILE}
-    /^\[validation_seed\]/ {skip=1; next}
-    /^\[node_seed\]/ {skip=1; next}
-    /^\[validation_manifest\]/ {skip=1; next}
-    /^\[validator_token\]/ {skip=1; next}
-    /^\[.*\]/ {skip=0}
+    while read -r l; do
+        echo "    $l" >> ${summary_out}
+    done </dev/stdin
+}
+
+function join_by {
+    local IFS="$1"; shift; echo "$*";
+}
+
+if [[ -f ${conf_file} ]] ; then
+    exclude=( ips ips_fixed node_seed validation_seed validator_token )
+    cleaned_conf=${tmp_loc}/cleaned_rippled_cfg.txt
+    cat << 'EOP' >> ${awk_prog}
+    BEGIN {FS="[[:space:]]*=[[:space:]]*"; skip=0; db_path=""; print > OUT_FILE; split(exl,exa,"|")}
+    /^#/ {next}
+    save==2 && /^[[:space:]]*$/ {next}
+    /^\[.+\]$/ {
+      section=tolower(gensub(/^\[[[:space:]]*([a-zA-Z_]+)[[:space:]]*\]$/, "\\1", "g"))
+      skip = 0
+      for (i in exa) {
+        if (section == exa[i])
+          skip = 1
+      }
+      if (section == "database_path")
+        save = 1
+    }
     skip==1 {next}
-    save==1 {save=0;db_path=$0}
-    /^\[database_path\]/ {save=1}
+    save==2 {save=0; db_path=$0}
+    save==1 {save=2}
+    $1 ~ /password/ {$0=$1"=<redacted>"}
     {print >> OUT_FILE}
     END {print db_path}
-    ')
-fi
+EOP
 
-echo "database_path: ${db}"
-df ${db} > ${tmp_loc}/db_path_df.txt
-echo
+    db=$(\
+        sed -r -e 's/\<s[[:alnum:]]{28}\>/<redactedsecret>/g;s/^[[:space:]]*//;s/[[:space:]]*$//' ${conf_file} |\
+        awk -v OUT_FILE=${cleaned_conf} -v exl="$(join_by '|' "${exclude[@]}")" -f ${awk_prog})
+    rm ${awk_prog}
+    cat ${cleaned_conf} | log_section "cleaned config file"
+    rm ${cleaned_conf}
+    echo "${db}"  | log_section "database path"
+    df ${db}      | log_section "df: database"
+fi
 
 # Send output from this script to a log file
 ## this captures any messages
@@ -55,32 +79,65 @@ exec 3>&1 1>>${log_file} 2>&1
 
 ## Send all stdout files to /tmp
 
-if [[ -x ${rippled_exe} ]]
-then
+if [[ -x ${rippled_exe} ]] ; then
     pgrep rippled && \
     ${rippled_exe} --conf ${conf_file} \
-    -- server_info                  > ${tmp_loc}/server_info.txt
+    -- server_info                  | log_section "server info"
 fi
 
-df -h                               > ${tmp_loc}/free_disk_space.txt
-cat /proc/meminfo                   > ${tmp_loc}/amount_mem.txt
-cat /proc/swaps                     > ${tmp_loc}/swap_space.txt
-ulimit -a                           > ${tmp_loc}/reported_current_limits.txt
+cat /proc/meminfo                   | log_section "meminfo"
+cat /proc/swaps                     | log_section "swap space"
+ulimit -a                           | log_section "ulimit"
 
-for dev_path in $(df | awk '$1 ~ /^\/dev\// {print $1}'); do
-    # strip numbers from end and remove '/dev/'
-    dev=$(basename ${dev_path%%[0-9]})
-    if [[ "$(cat /sys/block/${dev}/queue/rotational)" = 0 ]]
-    then
-        echo "${dev} : SSD" >> ${tmp_loc}/is_ssd.txt
-    else
-        echo "${dev} : NO SSD" >> ${tmp_loc}/is_ssd.txt
-    fi
+if command -v lshw >/dev/null 2>&1 ; then
+    lshw    2>/dev/null             | log_section "hardware info"
+else
+    lscpu                           >  ${tmp_loc}/hw_info.txt
+    hwinfo                          >> ${tmp_loc}/hw_info.txt
+    lspci                           >> ${tmp_loc}/hw_info.txt
+    lsblk                           >> ${tmp_loc}/hw_info.txt
+    cat ${tmp_loc}/hw_info.txt | log_section "hardware info"
+    rm ${tmp_loc}/hw_info.txt
+fi
+
+if command -v iostat >/dev/null 2>&1 ; then
+    iostat -t -d -x 2 6             | log_section "iostat"
+fi
+
+df -h                               | log_section "free disk space"
+drives=($(df | awk '$1 ~ /^\/dev\// {print $1}' | xargs -n 1 basename))
+block_devs=($(ls /sys/block/))
+for d in "${drives[@]}"; do
+    for dev in "${block_devs[@]}"; do
+        #echo "D: [$d], DEV: [$dev]"
+        if [[ $d =~ $dev ]]; then
+            # this file (if exists) has 0 for SSD and 1 for HDD
+            if [[ "$(cat /sys/block/${dev}/queue/rotational 2>/dev/null)" == 0 ]] ; then
+                echo "${d} : SSD" >> ${tmp_loc}/is_ssd.txt
+            else
+                echo "${d} : NO SSD" >> ${tmp_loc}/is_ssd.txt
+            fi
+        fi
+    done
 done
 
-pushd ${tmp_loc}
-tar -czvf info-package.tar.gz *.txt *.log
-popd
+if [[ -f ${tmp_loc}/is_ssd.txt ]] ; then
+    cat ${tmp_loc}/is_ssd.txt | log_section "SSD"
+    rm ${tmp_loc}/is_ssd.txt
+fi
 
-echo "Use the following command on your local machine to download from your rippled instance: scp <remote_rippled_username>@<remote_host>:${tmp_loc}/info-package.tar.gz <path/to/local_machine/directory>"| tee /dev/fd/3
+cat ${log_file} | log_section "script log"
+
+cat << MSG | tee /dev/fd/3
+####################################################
+  rippled info has been gathered. Please copy the
+  contents of ${summary_out}
+  to a github gist at https://gist.github.com/
+
+  PLEASE REVIEW THIS FILE FOR ANY SENSITIVE DATA
+  BEFORE POSTING! We have tried our best to omit
+  any sensitive information from this file, but you
+  should verify before posting.
+####################################################
+MSG
 

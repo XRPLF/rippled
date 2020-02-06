@@ -34,9 +34,6 @@ RUN source scl_source enable devtoolset-7 python27 && \
 # prep files for package building
 RUN mkdir -m 777 -p /opt/rippled_bld/pkg
 WORKDIR /opt/rippled_bld/pkg
-
-COPY packaging/rpm/rippled.spec ./
-COPY shared/update_sources.sh ./
 RUN mkdir -m 777 ./rpmbuild
 RUN mkdir -m 777 ./rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
