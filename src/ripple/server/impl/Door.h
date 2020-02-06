@@ -70,7 +70,6 @@ private:
         boost::asio::io_context& ioc_;
         stream_type stream_;
         socket_type &socket_;
-        timer_type timer_;
         endpoint_type remote_address_;
         boost::asio::io_context::strand strand_;
         beast::Journal const j_;
@@ -87,7 +86,6 @@ private:
         void close() override;
 
     private:
-        void do_timer (yield_context yield);
         void do_detect (yield_context yield);
     };
 
@@ -141,7 +139,6 @@ Door<Handler>::Detector::Detector(
     , ioc_(ioc)
     , stream_(std::move(stream))
     , socket_(stream_.socket())
-    , timer_(ioc_)
     , remote_address_(remote_address)
     , strand_(ioc_)
     , j_(j)
@@ -153,12 +150,7 @@ void
 Door<Handler>::Detector::
 run()
 {
-    // do_detect must be called before do_timer or else
-    // the timer can be canceled before it gets set.
     boost::asio::spawn(strand_, std::bind (&Detector::do_detect,
-        this->shared_from_this(), std::placeholders::_1));
-
-    boost::asio::spawn(strand_, std::bind (&Detector::do_timer,
         this->shared_from_this(), std::placeholders::_1));
 }
 
@@ -167,23 +159,7 @@ void
 Door<Handler>::Detector::
 close()
 {
-    error_code ec;
-    socket_.close(ec);
-    timer_.cancel(ec);
-}
-
-template<class Handler>
-void
-Door<Handler>::Detector::
-do_timer(yield_context do_yield)
-{
-    error_code ec; // ignored
-    while (socket_.is_open())
-    {
-        timer_.async_wait (do_yield[ec]);
-        if (timer_.expires_from_now() <= std::chrono::seconds(0))
-            socket_.close(ec);
-    }
+    stream_.close();
 }
 
 template<class Handler>
@@ -192,11 +168,10 @@ Door<Handler>::Detector::
 do_detect(boost::asio::yield_context do_yield)
 {
     boost::beast::multi_buffer buf(16);
-    timer_.expires_from_now(std::chrono::seconds(15));
+    stream_.expires_after(std::chrono::seconds(15));
     boost::system::error_code ec;
-    bool const ssl = async_detect_ssl(socket_, buf, do_yield[ec]);
-    error_code unused;
-    timer_.cancel(unused);
+    bool const ssl = async_detect_ssl(stream_, buf, do_yield[ec]);
+    stream_.expires_never();
     if (! ec)
     {
         if (ssl)
