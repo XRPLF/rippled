@@ -10,6 +10,7 @@ if (static)
 endif ()
 find_package (Protobuf 3.8)
 if (local_protobuf OR NOT Protobuf_FOUND)
+  include (GNUInstallDirs)
   message (STATUS "using local protobuf build.")
   if (WIN32)
     # protobuf prepends lib even on windows
@@ -56,10 +57,10 @@ if (local_protobuf OR NOT Protobuf_FOUND)
     INSTALL_COMMAND
       ${CMAKE_COMMAND} -E env --unset=DESTDIR ${CMAKE_COMMAND} --build . --config $<CONFIG> --target install
     BUILD_BYPRODUCTS
-      <BINARY_DIR>/_installed_/lib/${pbuf_lib_pre}protobuf${ep_lib_suffix}
-      <BINARY_DIR>/_installed_/lib/${pbuf_lib_pre}protobuf_d${ep_lib_suffix}
-      <BINARY_DIR>/_installed_/lib/${pbuf_lib_pre}protoc${ep_lib_suffix}
-      <BINARY_DIR>/_installed_/lib/${pbuf_lib_pre}protoc_d${ep_lib_suffix}
+      <BINARY_DIR>/_installed_/${CMAKE_INSTALL_LIBDIR}/${pbuf_lib_pre}protobuf${ep_lib_suffix}
+      <BINARY_DIR>/_installed_/${CMAKE_INSTALL_LIBDIR}/${pbuf_lib_pre}protobuf_d${ep_lib_suffix}
+      <BINARY_DIR>/_installed_/${CMAKE_INSTALL_LIBDIR}/${pbuf_lib_pre}protoc${ep_lib_suffix}
+      <BINARY_DIR>/_installed_/${CMAKE_INSTALL_LIBDIR}/${pbuf_lib_pre}protoc_d${ep_lib_suffix}
       <BINARY_DIR>/_installed_/bin/protoc${CMAKE_EXECUTABLE_SUFFIX}
   )
   ExternalProject_Get_Property (protobuf_src BINARY_DIR)
@@ -75,9 +76,9 @@ if (local_protobuf OR NOT Protobuf_FOUND)
   file (MAKE_DIRECTORY ${BINARY_DIR}/_installed_/include)
   set_target_properties (protobuf::libprotobuf PROPERTIES
     IMPORTED_LOCATION_DEBUG
-      ${BINARY_DIR}/_installed_/lib/${pbuf_lib_pre}protobuf_d${ep_lib_suffix}
+      ${BINARY_DIR}/_installed_/${CMAKE_INSTALL_LIBDIR}/${pbuf_lib_pre}protobuf_d${ep_lib_suffix}
     IMPORTED_LOCATION_RELEASE
-      ${BINARY_DIR}/_installed_/lib/${pbuf_lib_pre}protobuf${ep_lib_suffix}
+      ${BINARY_DIR}/_installed_/${CMAKE_INSTALL_LIBDIR}/${pbuf_lib_pre}protobuf${ep_lib_suffix}
     INTERFACE_INCLUDE_DIRECTORIES
       ${BINARY_DIR}/_installed_/include)
   add_dependencies (protobuf::libprotobuf protobuf_src)
@@ -88,9 +89,9 @@ if (local_protobuf OR NOT Protobuf_FOUND)
   endif ()
   set_target_properties (protobuf::libprotoc PROPERTIES
     IMPORTED_LOCATION_DEBUG
-      ${BINARY_DIR}/_installed_/lib/${pbuf_lib_pre}protoc_d${ep_lib_suffix}
+      ${BINARY_DIR}/_installed_/${CMAKE_INSTALL_LIBDIR}/${pbuf_lib_pre}protoc_d${ep_lib_suffix}
     IMPORTED_LOCATION_RELEASE
-      ${BINARY_DIR}/_installed_/lib/${pbuf_lib_pre}protoc${ep_lib_suffix}
+      ${BINARY_DIR}/_installed_/${CMAKE_INSTALL_LIBDIR}/${pbuf_lib_pre}protoc${ep_lib_suffix}
     INTERFACE_INCLUDE_DIRECTORIES
       ${BINARY_DIR}/_installed_/include)
   add_dependencies (protobuf::libprotoc protobuf_src)
