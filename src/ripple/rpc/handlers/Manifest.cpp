@@ -25,7 +25,7 @@
 #include <ripple/rpc/Context.h>
 
 namespace ripple {
-Json::Value doManifest (RPC::Context& context)
+Json::Value doManifest (RPC::JsonContext& context)
 {
     auto& params = context.params;
 

@@ -57,7 +57,7 @@ Json::Value doLedgerHeader          (RPC::JsonContext&);
 Json::Value doLedgerRequest         (RPC::JsonContext&);
 Json::Value doLogLevel              (RPC::JsonContext&);
 Json::Value doLogRotate             (RPC::JsonContext&);
-Json::Value doManifest              (RPC::Context&);
+Json::Value doManifest              (RPC::JsonContext&);
 Json::Value doNoRippleCheck         (RPC::JsonContext&);
 Json::Value doOwnerInfo             (RPC::JsonContext&);
 Json::Value doPathFind              (RPC::JsonContext&);
@@ -87,7 +87,7 @@ Json::Value doValidationCreate      (RPC::JsonContext&);
 Json::Value doWalletPropose         (RPC::JsonContext&);
 Json::Value doValidators            (RPC::JsonContext&);
 Json::Value doValidatorListSites    (RPC::JsonContext&);
-Json::Value doValidatorInfo         (RPC::Context&);
+Json::Value doValidatorInfo         (RPC::JsonContext&);
 } // ripple
 
 #endif

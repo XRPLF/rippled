@@ -26,7 +26,7 @@
 #include <ripple/rpc/Context.h>
 
 namespace ripple {
-Json::Value doValidatorInfo (RPC::Context& context)
+Json::Value doValidatorInfo (RPC::JsonContext& context)
 {
     // return error if not configured as validator
     if (context.app.getValidationPublicKey().empty())
