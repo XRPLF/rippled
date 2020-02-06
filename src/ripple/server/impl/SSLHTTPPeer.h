@@ -38,7 +38,6 @@ class SSLHTTPPeer
 {
 private:
     friend class BaseHTTPPeer<Handler, SSLHTTPPeer>;
-    using waitable_timer = typename BaseHTTPPeer<Handler, SSLHTTPPeer>::waitable_timer;
     using socket_type = boost::asio::ip::tcp::socket;
     using middle_type = boost::beast::tcp_stream;
     using stream_type = boost::beast::ssl_stream <middle_type>;
@@ -97,7 +96,6 @@ SSLHTTPPeer<Handler>::SSLHTTPPeer(
           port,
           handler,
           ioc.get_executor(),
-          waitable_timer{ioc},
           journal,
           remote_address,
           buffers)
@@ -151,6 +149,8 @@ do_handshake(yield_context do_yield)
     this->read_buf_.consume(stream_.async_handshake(
         stream_type::server, this->read_buf_.data(), do_yield[ec]));
     this->cancel_timer();
+    if(ec == boost::beast::error::timeout)
+        return this->on_timer();
     if (ec)
         return this->fail(ec, "handshake");
     bool const http =
@@ -215,7 +215,7 @@ on_shutdown(error_code ec)
     }
 
     // Close socket now in case this->destructor is delayed
-    socket_.close(ec);
+    stream_.next_layer().close();
 }
 
 } // ripple

@@ -35,7 +35,6 @@ class PlainHTTPPeer
 {
 private:
     friend class BaseHTTPPeer<Handler, PlainHTTPPeer>;
-    using waitable_timer = typename BaseHTTPPeer<Handler, PlainHTTPPeer>::waitable_timer;
     using socket_type = boost::asio::ip::tcp::socket;
     using stream_type = boost::beast::tcp_stream;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
@@ -83,7 +82,6 @@ PlainHTTPPeer<Handler>::PlainHTTPPeer(
           port,
           handler,
           ioc.get_executor(),
-          waitable_timer{ioc},
           journal,
           remote_endpoint,
           buffers)

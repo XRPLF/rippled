@@ -55,7 +55,6 @@ protected:
     using clock_type = std::chrono::system_clock;
     using error_code = boost::system::error_code;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using waitable_timer = boost::asio::basic_waitable_timer <clock_type>;
     using yield_context = boost::asio::yield_context;
 
     enum
@@ -87,7 +86,6 @@ protected:
     Handler& handler_;
     boost::asio::executor_work_guard<boost::asio::executor> work_;
     boost::asio::strand<boost::asio::executor> strand_;
-    waitable_timer timer_;
     endpoint_type remote_address_;
     beast::Journal const journal_;
 
@@ -115,7 +113,6 @@ public:
         Port const& port,
         Handler& handler,
         boost::asio::executor const& executor,
-        waitable_timer timer,
         beast::Journal journal,
         endpoint_type remote_address,
         ConstBufferSequence const& buffers);
@@ -148,7 +145,7 @@ protected:
     cancel_timer();
 
     void
-    on_timer(error_code ec);
+    on_timer();
 
     void
     do_read(yield_context do_yield);
@@ -220,7 +217,6 @@ BaseHTTPPeer<Handler, Impl>::BaseHTTPPeer(
     Port const& port,
     Handler& handler,
     boost::asio::executor const& executor,
-    waitable_timer timer,
     beast::Journal journal,
     endpoint_type remote_address,
     ConstBufferSequence const& buffers)
@@ -228,7 +224,6 @@ BaseHTTPPeer<Handler, Impl>::BaseHTTPPeer(
     , handler_(handler)
     , work_(executor)
     , strand_(executor)
-    , timer_(std::move(timer))
     , remote_address_(remote_address)
     , journal_(journal)
 {
@@ -262,8 +257,7 @@ close()
             std::bind(
                 (void (BaseHTTPPeer::*)(void)) & BaseHTTPPeer::close,
                 impl().shared_from_this()));
-    error_code ec;
-    boost::beast::get_lowest_layer(impl().stream_).socket().close(ec);
+    boost::beast::get_lowest_layer(impl().stream_).close();
 }
 
 //------------------------------------------------------------------------------
@@ -278,7 +272,7 @@ fail(error_code ec, char const* what)
         ec_ = ec;
         JLOG(journal_.trace()) << id_ <<
             std::string(what) << ": " << ec.message();
-        boost::beast::get_lowest_layer(impl().stream_).socket().close(ec);
+        boost::beast::get_lowest_layer(impl().stream_).close();
     }
 }
 
@@ -287,21 +281,12 @@ void
 BaseHTTPPeer<Handler, Impl>::
 start_timer()
 {
-    error_code ec;
-    timer_.expires_from_now(
+    boost::beast::get_lowest_layer(impl().stream_).expires_after(
         std::chrono::seconds(
             remote_address_.address().is_loopback() ?
                 timeoutSecondsLocal :
-                timeoutSeconds),
-        ec);
-    if(ec)
-        return fail(ec, "start_timer");
-    timer_.async_wait(bind_executor(
-        strand_,
-        std::bind(
-            &BaseHTTPPeer<Handler, Impl>::on_timer,
-            impl().shared_from_this(),
-            std::placeholders::_1)));
+                timeoutSeconds)
+        );
 }
 
 // Convenience for discarding the error code
@@ -310,20 +295,16 @@ void
 BaseHTTPPeer<Handler, Impl>::
 cancel_timer()
 {
-    error_code ec;
-    timer_.cancel(ec);
+    boost::beast::get_lowest_layer(impl().stream_).expires_never();
 }
 
 // Called when session times out
 template<class Handler, class Impl>
 void
 BaseHTTPPeer<Handler, Impl>::
-on_timer(error_code ec)
+on_timer()
 {
-    if(ec == boost::asio::error::operation_aborted)
-        return;
-    if(! ec)
-        ec = boost::system::errc::make_error_code(
+    auto ec = boost::system::errc::make_error_code(
             boost::system::errc::timed_out);
     fail(ec, "timer");
 }
@@ -343,6 +324,8 @@ do_read(yield_context do_yield)
     cancel_timer();
     if(ec == boost::beast::http::error::end_of_stream)
         return do_close();
+    if(ec == boost::beast::error::timeout)
+        return on_timer();
     if(ec)
         return fail(ec, "http::read");
     do_request();
@@ -357,6 +340,8 @@ on_write(error_code const& ec,
     std::size_t bytes_transferred)
 {
     cancel_timer();
+    if(ec == boost::beast::error::timeout)
+        return on_timer();
     if(ec)
         return fail(ec, "write");
     bytes_out_ += bytes_transferred;
@@ -550,8 +535,7 @@ close(bool graceful)
         return do_close();
     }
 
-    error_code ec;
-    boost::beast::get_lowest_layer(impl().stream_).socket().close(ec);
+    boost::beast::get_lowest_layer(impl().stream_).close();
 }
 
 } // ripple
