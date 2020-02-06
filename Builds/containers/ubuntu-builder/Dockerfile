@@ -27,15 +27,10 @@ ENV BOOST_ROOT="/opt/local/boost/_INSTALLED_"
 ENV OPENSSL_ROOT="/opt/local/openssl"
 
 # prep files for package building
-RUN mkdir -m 777 -p /opt/rippled_bld/pkg
+RUN mkdir -m 777 -p /opt/rippled_bld/pkg/debian
+RUN update-alternatives --set gcc /usr/bin/gcc-8
 WORKDIR /opt/rippled_bld/pkg
 
-COPY packaging/dpkg/debian /opt/rippled_bld/pkg/debian/
-COPY shared/update_sources.sh ./
-COPY shared/rippled.service /opt/rippled_bld/pkg/debian/
-
 COPY packaging/dpkg/build_dpkg.sh ./
-RUN update-alternatives --set gcc /usr/bin/gcc-8
-
 CMD ./build_dpkg.sh
 

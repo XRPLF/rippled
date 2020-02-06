@@ -54,6 +54,7 @@ if (is_root_project)
         Builds/containers/shared/update-rippled.sh
         Builds/containers/packaging/rpm/rippled.spec
         Builds/containers/packaging/rpm/build_rpm.sh
+        bin/getRippledInfo
     )
     exclude_from_default (rpm_container)
     add_custom_target (rpm
@@ -64,6 +65,7 @@ if (is_root_project)
         -v ${CMAKE_CURRENT_BINARY_DIR}/packages:/opt/rippled_bld/pkg/out
         "$<$<BOOL:${map_user}>:--volume=/etc/passwd:/etc/passwd;--volume=/etc/group:/etc/group;--user=${DOCKER_USER_ID}:${DOCKER_GROUP_ID}>"
         -t rippled-rpm-builder:${container_label}
+        /bin/bash -c "cp -pu rippled/Builds/containers/packaging/rpm/build_rpm.sh . && ./build_rpm.sh"
       VERBATIM
       USES_TERMINAL
       COMMAND_EXPAND_LISTS
@@ -115,6 +117,7 @@ if (is_root_project)
         Builds/containers/packaging/dpkg/debian/rippled.preinst
         Builds/containers/packaging/dpkg/debian/rippled.prerm
         Builds/containers/packaging/dpkg/debian/rules
+        bin/getRippledInfo
     )
     exclude_from_default (dpkg_container)
     add_custom_target (dpkg
@@ -125,6 +128,7 @@ if (is_root_project)
         -v ${CMAKE_CURRENT_BINARY_DIR}/packages:/opt/rippled_bld/pkg/out
         "$<$<BOOL:${map_user}>:--volume=/etc/passwd:/etc/passwd;--volume=/etc/group:/etc/group;--user=${DOCKER_USER_ID}:${DOCKER_GROUP_ID}>"
         -t rippled-dpkg-builder:${container_label}
+        /bin/bash -c "cp -pu rippled/Builds/containers/packaging/dpkg/build_dpkg.sh . && ./build_dpkg.sh"
       VERBATIM
       USES_TERMINAL
       COMMAND_EXPAND_LISTS
@@ -177,9 +181,6 @@ if (is_root_project)
         Builds/containers/ubuntu-builder/Dockerfile
         Builds/containers/ubuntu-builder/ubuntu_setup.sh
         Builds/containers/shared/build_deps.sh
-        Builds/containers/shared/rippled.service
-        Builds/containers/shared/update_sources.sh
-        Builds/containers/shared/update-rippled.sh
     )
     exclude_from_default (ci_container)
   else ()
