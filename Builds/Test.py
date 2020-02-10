@@ -272,9 +272,17 @@ def run_cmake(directory, cmake_dir, args):
         args += ( '-DCMAKE_BUILD_TYPE=Debug', )
     if re.search('release', cmake_dir):
         args += ( '-DCMAKE_BUILD_TYPE=Release', )
-    if re.search('gcc', cmake_dir):
+    m = re.search('gcc(-[^.]*)', cmake_dir)
+    if m:
+        args += ( '-DCMAKE_C_COMPILER=' + m.group(0),
+          '-DCMAKE_CXX_COMPILER=g++' + m.group(1), )
+    elif re.search('gcc', cmake_dir):
         args += ( '-DCMAKE_C_COMPILER=gcc', '-DCMAKE_CXX_COMPILER=g++', )
-    if re.search('clang', cmake_dir):
+    m = re.search('clang(-[^.]*)', cmake_dir)
+    if m:
+        args += ( '-DCMAKE_C_COMPILER=' + m.group(0),
+          '-DCMAKE_CXX_COMPILER=clang++' + m.group(1), )
+    elif re.search('clang', cmake_dir):
         args += ( '-DCMAKE_C_COMPILER=clang', '-DCMAKE_CXX_COMPILER=clang++', )
 
     args += ( os.path.join('..', '..', '..'), )
