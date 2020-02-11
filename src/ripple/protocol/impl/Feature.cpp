@@ -129,6 +129,7 @@ detail::supportedAmendments ()
         "fixPayChanRecipientOwnerDir",
         "DeletableAccounts",
         "fixQualityUpperBound",
+        "RequireFullyCanonicalSig"
     };
     return supported;
 }
@@ -187,5 +188,6 @@ uint256 const fixCheckThreading = *getRegisteredFeature("fixCheckThreading");
 uint256 const fixPayChanRecipientOwnerDir = *getRegisteredFeature("fixPayChanRecipientOwnerDir");
 uint256 const featureDeletableAccounts = *getRegisteredFeature("DeletableAccounts");
 uint256 const fixQualityUpperBound = *getRegisteredFeature("fixQualityUpperBound");
+uint256 const featureRequireFullyCanonicalSig = *getRegisteredFeature("RequireFullyCanonicalSig");
 
 } // ripple

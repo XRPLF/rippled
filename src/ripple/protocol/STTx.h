@@ -30,6 +30,8 @@
 
 namespace ripple {
 
+class Rules;
+
 enum TxnSql : char
 {
     txnSqlNew = 'N',
@@ -133,7 +135,7 @@ public:
         @return `true` if valid signature. If invalid, the error message string.
     */
     std::pair<bool, std::string>
-    checkSign() const;
+    checkSign(Rules const& rules) const;
 
     // SQL Functions with metadata.
     static
@@ -150,8 +152,8 @@ public:
         std::string const& escapedMetaData) const;
 
 private:
-    std::pair<bool, std::string> checkSingleSign () const;
-    std::pair<bool, std::string> checkMultiSign () const;
+    std::pair<bool, std::string> checkSingleSign (Rules const& rules) const;
+    std::pair<bool, std::string> checkMultiSign (Rules const& rules) const;
 
     uint256 tid_;
     TxType tx_type_;

@@ -1467,6 +1467,7 @@ public:
 
     void testSTTx(KeyType keyType)
     {
+        test::jtx::Env env(*this);
         auto const keypair = randomKeyPair (keyType);
 
         STTx j (ttACCOUNT_SET,
@@ -1478,7 +1479,7 @@ public:
             });
         j.sign (keypair.first, keypair.second);
 
-        unexpected (!j.checkSign().first, "Transaction fails signature test");
+        unexpected (!j.checkSign(env.current()->rules()).first, "Transaction fails signature test");
 
         Serializer rawTxn;
         j.add (rawTxn);

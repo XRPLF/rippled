@@ -47,7 +47,7 @@ checkValidity(HashRouter& router,
     if (!(flags & SF_SIGGOOD))
     {
         // Don't know signature state. Check it.
-        auto const sigVerify = tx.checkSign();
+        auto const sigVerify = tx.checkSign(rules);
         if (! sigVerify.first)
         {
             router.setFlags(id, SF_SIGBAD);
