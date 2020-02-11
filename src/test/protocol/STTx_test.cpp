@@ -1489,7 +1489,8 @@ public:
             });
         j.sign (keypair.first, keypair.second);
 
-        unexpected (!j.checkSign().first, "Transaction fails signature test");
+        unexpected (!j.checkSign(STTx::RequireFullyCanonicalSig::yes).first,
+            "Transaction fails signature test");
 
         Serializer rawTxn;
         j.add (rawTxn);

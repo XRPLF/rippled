@@ -22,6 +22,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/protocol/Protocol.h>
@@ -177,7 +178,8 @@ void STTx::sign (
     tid_ = getHash(HashPrefix::transactionID);
 }
 
-std::pair<bool, std::string> STTx::checkSign() const
+std::pair<bool, std::string>
+STTx::checkSign(RequireFullyCanonicalSig requireCanonicalSig) const
 {
     std::pair<bool, std::string> ret {false, ""};
     try
@@ -186,7 +188,9 @@ std::pair<bool, std::string> STTx::checkSign() const
         // at the SigningPubKey.  It it's empty we must be
         // multi-signing.  Otherwise we're single-signing.
         Blob const& signingPubKey = getFieldVL (sfSigningPubKey);
-        ret = signingPubKey.empty () ? checkMultiSign () : checkSingleSign ();
+        ret = signingPubKey.empty () ?
+            checkMultiSign (requireCanonicalSig) :
+            checkSingleSign (requireCanonicalSig);
     }
     catch (std::exception const&)
     {
@@ -250,7 +254,8 @@ STTx::getMetaSQL (Serializer rawTxn,
                 % getSequence () % inLedger % status % rTxn % escapedMetaData);
 }
 
-std::pair<bool, std::string> STTx::checkSingleSign () const
+std::pair<bool, std::string>
+STTx::checkSingleSign (RequireFullyCanonicalSig requireCanonicalSig) const
 {
     // We don't allow both a non-empty sfSigningPubKey and an sfSigners.
     // That would allow the transaction to be signed two ways.  So if both
@@ -261,7 +266,10 @@ std::pair<bool, std::string> STTx::checkSingleSign () const
     bool validSig = false;
     try
     {
-        bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig);
+        bool const fullyCanonical =
+            (getFlags() & tfFullyCanonicalSig) ||
+            (requireCanonicalSig == RequireFullyCanonicalSig::yes);
+
         auto const spk = getFieldVL (sfSigningPubKey);
 
         if (publicKeyType (makeSlice(spk)))
@@ -287,7 +295,8 @@ std::pair<bool, std::string> STTx::checkSingleSign () const
     return {true, ""};
 }
 
-std::pair<bool, std::string> STTx::checkMultiSign () const
+std::pair<bool, std::string>
+STTx::checkMultiSign (RequireFullyCanonicalSig requireCanonicalSig) const
 {
     // Make sure the MultiSigners are present.  Otherwise they are not
     // attempting multi-signing and we just have a bad SigningPubKey.
@@ -314,7 +323,9 @@ std::pair<bool, std::string> STTx::checkMultiSign () const
     auto const txnAccountID = getAccountID (sfAccount);
 
     // Determine whether signatures must be full canonical.
-    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig);
+    bool const fullyCanonical =
+        (getFlags() & tfFullyCanonicalSig) ||
+        (requireCanonicalSig == RequireFullyCanonicalSig::yes);
 
     // Signers must be in sorted order by AccountID.
     AccountID lastAccountID (beast::zero);

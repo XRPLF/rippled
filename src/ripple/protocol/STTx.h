@@ -132,8 +132,13 @@ public:
     /** Check the signature.
         @return `true` if valid signature. If invalid, the error message string.
     */
+    enum class RequireFullyCanonicalSig : bool
+    {
+        no,
+        yes
+    };
     std::pair<bool, std::string>
-    checkSign() const;
+    checkSign(RequireFullyCanonicalSig requireCanonicalSig) const;
 
     // SQL Functions with metadata.
     static
@@ -150,8 +155,11 @@ public:
         std::string const& escapedMetaData) const;
 
 private:
-    std::pair<bool, std::string> checkSingleSign () const;
-    std::pair<bool, std::string> checkMultiSign () const;
+    std::pair<bool, std::string>
+    checkSingleSign (RequireFullyCanonicalSig requireCanonicalSig) const;
+
+    std::pair<bool, std::string>
+    checkMultiSign (RequireFullyCanonicalSig requireCanonicalSig) const;
 
     uint256 tid_;
     TxType tx_type_;
