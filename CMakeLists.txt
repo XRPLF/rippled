@@ -4,6 +4,8 @@ if (POLICY CMP0074)
   cmake_policy(SET CMP0074 NEW)
 endif ()
 
+project (rippled)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake/deps")
 
@@ -20,7 +22,6 @@ include (ProcessorCount)
 if (target)
   message (FATAL_ERROR "The target option has been removed - use native cmake options to control build")
 endif ()
-project (rippled)
 
 include(RippledSanity)
 include(RippledVersion)
