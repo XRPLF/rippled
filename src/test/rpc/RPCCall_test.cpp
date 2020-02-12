@@ -330,6 +330,7 @@ static RPCCallTestData const rpcCallTestArray [] =
     "params" : [
       {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+         "api_version" : %MAX_API_VER%,
          "ledger_index" : "current",
          "strict" : 1
       }
@@ -539,6 +540,7 @@ static RPCCallTestData const rpcCallTestArray [] =
     "params" : [
       {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+         "api_version" : %MAX_API_VER%,
          "ledger_index" : "validated",
          "strict" : 1
       }
@@ -5042,6 +5044,7 @@ static RPCCallTestData const rpcCallTestArray [] =
     "params" : [
       {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+         "api_version" : %MAX_API_VER%,
          "ledger_index" : "validated",
          "strict" : 1
       }
@@ -5141,6 +5144,7 @@ static RPCCallTestData const rpcCallTestArray [] =
     "params" : [
        {
          "account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+         "api_version" : %MAX_API_VER%,
          "ledger_index" : 0,
          "strict" : 1
        }
