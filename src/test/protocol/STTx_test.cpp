@@ -27,6 +27,7 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/protocol/messages.h>
+#include <test/jtx/Env.h>
 
 #include <memory>
 

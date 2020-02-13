@@ -23,6 +23,7 @@
 #include <ripple/basics/safe_cast.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/ledger/ReadView.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/protocol/Protocol.h>
