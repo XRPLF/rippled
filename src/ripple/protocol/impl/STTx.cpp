@@ -187,7 +187,11 @@ std::pair<bool, std::string> STTx::checkSign(Rules const& rules) const
         // at the SigningPubKey.  It it's empty we must be
         // multi-signing.  Otherwise we're single-signing.
         Blob const& signingPubKey = getFieldVL (sfSigningPubKey);
-        ret = signingPubKey.empty () ? checkMultiSign (rules) : checkSingleSign (rules);
+        bool require_fully_canonical =
+            rules.enabled(featureRequireFullyCanonicalSig);
+        ret = signingPubKey.empty () ?
+            checkMultiSign (require_fully_canonical) : checkSingleSign (require_fully_canonical);
+
     }
     catch (std::exception const&)
     {
@@ -251,7 +255,7 @@ STTx::getMetaSQL (Serializer rawTxn,
                 % getSequence () % inLedger % status % rTxn % escapedMetaData);
 }
 
-std::pair<bool, std::string> STTx::checkSingleSign (Rules const& rules) const
+std::pair<bool, std::string> STTx::checkSingleSign (bool require_fully_canonical) const
 {
     // We don't allow both a non-empty sfSigningPubKey and an sfSigners.
     // That would allow the transaction to be signed two ways.  So if both
@@ -262,7 +266,7 @@ std::pair<bool, std::string> STTx::checkSingleSign (Rules const& rules) const
     bool validSig = false;
     try
     {
-        bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) || rules.enabled(featureRequireFullyCanonicalSig);
+        bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) || require_fully_canonical;
         auto const spk = getFieldVL (sfSigningPubKey);
 
         if (publicKeyType (makeSlice(spk)))
@@ -288,7 +292,7 @@ std::pair<bool, std::string> STTx::checkSingleSign (Rules const& rules) const
     return {true, ""};
 }
 
-std::pair<bool, std::string> STTx::checkMultiSign (Rules const& rules) const
+std::pair<bool, std::string> STTx::checkMultiSign (bool require_fully_canonical) const
 {
     // Make sure the MultiSigners are present.  Otherwise they are not
     // attempting multi-signing and we just have a bad SigningPubKey.
@@ -315,7 +319,7 @@ std::pair<bool, std::string> STTx::checkMultiSign (Rules const& rules) const
     auto const txnAccountID = getAccountID (sfAccount);
 
     // Determine whether signatures must be full canonical.
-    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) || rules.enabled(featureRequireFullyCanonicalSig);
+    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) || require_fully_canonical;
 
     // Signers must be in sorted order by AccountID.
     AccountID lastAccountID (beast::zero);

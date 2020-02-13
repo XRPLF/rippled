@@ -152,8 +152,8 @@ public:
         std::string const& escapedMetaData) const;
 
 private:
-    std::pair<bool, std::string> checkSingleSign (Rules const& rules) const;
-    std::pair<bool, std::string> checkMultiSign (Rules const& rules) const;
+    std::pair<bool, std::string> checkSingleSign (bool require_fully_canonical) const;
+    std::pair<bool, std::string> checkMultiSign (bool require_fully_canonical) const;
 
     uint256 tid_;
     TxType tx_type_;
