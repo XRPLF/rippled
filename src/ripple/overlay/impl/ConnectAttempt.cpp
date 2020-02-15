@@ -197,7 +197,7 @@ ConnectAttempt::onHandshake (error_code ec)
     if (! sharedValue)
         return close(); // makeSharedValue logs
 
-    req_ = makeRequest(!overlay_.peerFinder().config().peerPrivate);
+    req_ = makeRequest(!overlay_.peerFinder().config().peerPrivate, app_.config().COMPRESSION);
 
     buildHandshake(req_, *sharedValue, overlay_.setup().networkID,
         overlay_.setup().public_ip, remote_endpoint_.address(), app_);
@@ -264,7 +264,7 @@ ConnectAttempt::onShutdown (error_code ec)
 //--------------------------------------------------------------------------
 
 auto
-ConnectAttempt::makeRequest (bool crawl) -> request_type
+ConnectAttempt::makeRequest (bool crawl, bool compressionEnabled) -> request_type
 {
     request_type m;
     m.method(boost::beast::http::verb::get);
@@ -275,6 +275,8 @@ ConnectAttempt::makeRequest (bool crawl) -> request_type
     m.insert ("Connection", "Upgrade");
     m.insert ("Connect-As", "Peer");
     m.insert ("Crawl", crawl ? "public" : "private");
+    if (compressionEnabled)
+        m.insert("X-Offer-Compression", "lz4");
     return m;
 }
 

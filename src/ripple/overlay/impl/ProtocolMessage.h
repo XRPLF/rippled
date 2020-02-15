@@ -22,6 +22,7 @@
 
 #include <ripple/basics/ByteUtilities.h>
 #include <ripple/protocol/messages.h>
+#include <ripple/overlay/Compression.h>
 #include <ripple/overlay/Message.h>
 #include <ripple/overlay/impl/ZeroCopyStream.h>
 #include <boost/asio/buffer.hpp>
@@ -81,35 +82,65 @@ struct MessageHeader
     /** The size of the payload on the wire. */
     std::uint32_t payload_wire_size = 0;
 
+    /** Uncompressed message size if the message is compressed. */
+    std::uint32_t uncompressed_size = 0;
+
     /** The type of the message. */
     std::uint16_t message_type = 0;
+
+    /** Indicates which compression algorithm the payload is compressed with.
+     * Currenly only lz4 is supported. If None then the message is not compressed.
+     */
+    compression::Algorithm algorithm = compression::Algorithm::None;
 };
+
+template<typename BufferSequence>
+auto
+buffersBegin(BufferSequence const &bufs)
+{
+    return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::begin(bufs);
+}
 
 template <class BufferSequence>
 boost::optional<MessageHeader> parseMessageHeader(
     BufferSequence const& bufs,
     std::size_t size)
 {
-    auto iter = boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::begin(bufs);
+    using namespace ripple::compression;
+    auto iter = buffersBegin(bufs);
 
     MessageHeader hdr;
+    auto const compressed = (*iter & 0x80) == 0x80;
 
-    // Version 1 header: uncompressed payload.
-    // The top six bits of the first byte are 0.
-    if ((*iter & 0xFC) == 0)
+    // Check valid header
+    if ((*iter & 0xFC) == 0 || compressed)
     {
-        hdr.header_size = 6;
+        hdr.header_size = compressed ? headerBytesCompressed : headerBytes;
 
         if (size < hdr.header_size)
             return {};
 
+        if (compressed)
+        {
+            uint8_t algorithm = (*iter & 0x70) >> 4;
+            if (algorithm != static_cast<std::uint8_t>(compression::Algorithm::LZ4))
+                return {};
+            hdr.algorithm = compression::Algorithm::LZ4;
+        }
+
         for (int i = 0; i != 4; ++i)
             hdr.payload_wire_size = (hdr.payload_wire_size << 8) + *iter++;
+        // clear the compression bits
+        hdr.payload_wire_size &= 0x03FFFFFF;
 
         hdr.total_wire_size = hdr.header_size + hdr.payload_wire_size;
 
         for (int i = 0; i != 2; ++i)
             hdr.message_type = (hdr.message_type << 8) + *iter++;
+
+        if (compressed)
+            for (int i = 0; i != 4; ++i)
+                hdr.uncompressed_size = (hdr.uncompressed_size << 8) + *iter++;
 
         return hdr;
     }
@@ -130,7 +161,22 @@ invoke (
     ZeroCopyInputStream<Buffers> stream(buffers);
     stream.Skip(header.header_size);
 
-    if (! m->ParseFromZeroCopyStream(&stream))
+    if (header.algorithm != compression::Algorithm::None)
+    {
+        std::vector<std::uint8_t> payload;
+        payload.resize(header.uncompressed_size);
+
+        auto payloadSize = ripple::compression::decompress(
+            stream,
+            header.payload_wire_size,
+            payload.data(),
+            header.uncompressed_size,
+            header.algorithm);
+
+        if (payloadSize == 0 || !m->ParseFromArray(payload.data(), payloadSize))
+            return false;
+    }
+    else if (!m->ParseFromZeroCopyStream(&stream))
         return false;
 
     handler.onMessageBegin (header.message_type, m, header.payload_wire_size);

@@ -855,6 +855,7 @@ target_sources (rippled PRIVATE
   src/test/overlay/ProtocolVersion_test.cpp
   src/test/overlay/cluster_test.cpp
   src/test/overlay/short_read_test.cpp
+  src/test/overlay/compression_test.cpp
   #[===============================[
      test sources:
        subdir: peerfinder
