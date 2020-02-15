@@ -20,6 +20,7 @@
 #ifndef RIPPLE_OVERLAY_MESSAGE_H_INCLUDED
 #define RIPPLE_OVERLAY_MESSAGE_H_INCLUDED
 
+#include <ripple/overlay/Compression.h>
 #include <ripple/protocol/messages.h>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
@@ -47,27 +48,61 @@ namespace ripple {
 
 class Message : public std::enable_shared_from_this <Message>
 {
+    using Compressed = compression::Compressed;
+    using Algorithm = compression::Algorithm;
 public:
+    /** Constructor
+     * @param message Protocol message to serialize
+     * @param type Protocol message type
+     */
     Message (::google::protobuf::Message const& message, int type);
 
-public:
-    /** Retrieve the packed message data. */
+    /** Retrieve the packed message data. If compressed message is requested but the message
+     * is not compressible then the uncompressed buffer is returned.
+     * @param compressed Request compressed (Compress::On) or
+     *     uncompressed (Compress::Off) payload buffer
+     * @return Payload buffer
+     */
     std::vector <uint8_t> const&
-    getBuffer () const
-    {
-        return mBuffer;
-    }
+    getBuffer (Compressed tryCompressed);
 
     /** Get the traffic category */
     std::size_t
     getCategory () const
     {
-        return mCategory;
+        return category_;
     }
 
 private:
-    std::vector <uint8_t> mBuffer;
-    std::size_t mCategory;
+    std::vector <uint8_t> buffer_;
+    std::vector <uint8_t> bufferCompressed_;
+    std::size_t category_;
+    std::once_flag once_flag_;
+
+    /** Set the payload header
+     * @param in Pointer to the payload
+     * @param payloadBytes Size of the payload excluding the header size
+     * @param type Protocol message type
+     * @param comprAlgorithm Compression algorithm used in compression,
+     *   currently LZ4 only. If None then the message is uncompressed.
+     * @param uncompressedBytes Size of the uncompressed message
+     */
+    void setHeader(std::uint8_t* in, std::uint32_t payloadBytes, int type,
+            Algorithm comprAlgorithm, std::uint32_t uncompressedBytes);
+
+    /** Try to compress the payload.
+     * Can be called concurrently by multiple peers but is compressed once.
+     * If the message is not compressible then the serialized buffer_ is used.
+     */
+    void compress();
+
+    /** Get the message type from the payload header.
+     * First four bytes are the compression/algorithm flag and the payload size.
+     * Next two bytes are the message type
+     * @param in Payload header pointer
+     * @return Message type
+     */
+    int getType(std::uint8_t const* in) const;
 };
 
 }

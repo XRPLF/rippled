@@ -99,6 +99,7 @@ private:
     using address_type  = boost::asio::ip::address;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using waitable_timer = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
+    using Compressed    = compression::Compressed;
 
     Application& app_;
     id_t const id_;
@@ -200,6 +201,8 @@ private:
 
     std::mutex mutable shardInfoMutex_;
     hash_map<PublicKey, ShardInfo> shardInfo_;
+
+    Compressed compressionEnabled_ = Compressed::Off;
 
     friend class OverlayImpl;
 
@@ -600,6 +603,9 @@ PeerImp::PeerImp (Application& app, std::unique_ptr<stream_type>&& stream_ptr,
     , slot_ (std::move(slot))
     , response_(std::move(response))
     , headers_(response_)
+    , compressionEnabled_(
+            headers_["X-Offer-Compression"] == "lz4" && app_.config().COMPRESSION
+                ? Compressed::On : Compressed::Off)
 {
     read_buffer_.commit (boost::asio::buffer_copy(read_buffer_.prepare(
         boost::asio::buffer_size(buffers)), buffers));

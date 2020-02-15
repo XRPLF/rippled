@@ -454,6 +454,9 @@ void Config::loadFromString (std::string const& fileContents)
     if (getSingleSection (secConfig, SECTION_WORKERS, strTemp, j_))
         WORKERS      = beast::lexicalCastThrow <std::size_t> (strTemp);
 
+    if (getSingleSection (secConfig, SECTION_COMPRESSION, strTemp, j_))
+        COMPRESSION  = beast::lexicalCastThrow <bool> (strTemp);
+
     // Do not load trusted validator configuration for standalone mode
     if (! RUN_STANDALONE)
     {
