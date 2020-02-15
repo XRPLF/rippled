@@ -171,6 +171,9 @@ public:
     std::string                 SSL_VERIFY_FILE;
     std::string                 SSL_VERIFY_DIR;
 
+    // Compression
+    bool                        COMPRESSION = false;
+
     // Thread pool configuration
     std::size_t                 WORKERS = 0;
 

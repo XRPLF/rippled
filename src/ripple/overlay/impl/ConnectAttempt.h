@@ -93,7 +93,7 @@ private:
 
     static
     request_type
-    makeRequest (bool crawl);
+    makeRequest (bool crawl, bool compressionEnabled);
 
     void processResponse();
 

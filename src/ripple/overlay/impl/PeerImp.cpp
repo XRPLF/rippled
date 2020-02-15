@@ -86,6 +86,7 @@ PeerImp::PeerImp (Application& app, id_t id,
     , slot_ (slot)
     , request_(std::move(request))
     , headers_(request_)
+    , compressionEnabled_(headers_["X-Offer-Compression"] == "lz4" ? Compressed::On : Compressed::Off)
 {
 }
 
@@ -219,7 +220,7 @@ PeerImp::send (std::shared_ptr<Message> const& m)
 
     overlay_.reportTraffic (
         safe_cast<TrafficCount::category>(m->getCategory()),
-        false, static_cast<int>(m->getBuffer().size()));
+        false, static_cast<int>(m->getBuffer(compressionEnabled_).size()));
 
     auto sendq_size = send_queue_.size();
 
@@ -246,7 +247,7 @@ PeerImp::send (std::shared_ptr<Message> const& m)
 
     boost::asio::async_write(
         stream_,
-        boost::asio::buffer(send_queue_.front()->getBuffer()),
+        boost::asio::buffer(send_queue_.front()->getBuffer(compressionEnabled_)),
         bind_executor(
             strand_,
             std::bind(
@@ -757,6 +758,8 @@ PeerImp::makeResponse (bool crawl,
     resp.insert("Connect-As", "Peer");
     resp.insert("Server", BuildInfo::getFullVersionString());
     resp.insert("Crawl", crawl ? "public" : "private");
+    if (req["X-Offer-Compression"] == "lz4" && app_.config().COMPRESSION)
+        resp.insert("X-Offer-Compression", "lz4");
 
     buildHandshake(resp, sharedValue, overlay_.setup().networkID,
         overlay_.setup().public_ip, remote_ip, app_);
@@ -945,7 +948,7 @@ PeerImp::onWriteMessage (error_code ec, std::size_t bytes_transferred)
         // Timeout on writes only
         return boost::asio::async_write(
             stream_,
-            boost::asio::buffer(send_queue_.front()->getBuffer()),
+            boost::asio::buffer(send_queue_.front()->getBuffer(compressionEnabled_)),
             bind_executor(
                 strand_,
                 std::bind(
