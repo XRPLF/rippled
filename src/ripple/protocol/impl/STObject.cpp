@@ -343,7 +343,7 @@ const STBase& STObject::peekAtField (SField const& field) const
     int index = getFieldIndex (field);
 
     if (index == -1)
-        Throw<std::runtime_error> ("Field not found");
+        throwFieldNotFound(field);
 
     return peekAtIndex (index);
 }
@@ -353,7 +353,7 @@ STBase& STObject::getField (SField const& field)
     int index = getFieldIndex (field);
 
     if (index == -1)
-        Throw<std::runtime_error> ("Field not found");
+        throwFieldNotFound(field);
 
     return getIndex (index);
 }
@@ -453,7 +453,7 @@ STBase* STObject::makeFieldPresent (SField const& field)
     if (index == -1)
     {
         if (!isFree ())
-            Throw<std::runtime_error> ("Field not found");
+            throwFieldNotFound(field);
 
         return getPIndex (emplace_back(detail::nonPresentObject, field));
     }
@@ -473,7 +473,7 @@ void STObject::makeFieldAbsent (SField const& field)
     int index = getFieldIndex (field);
 
     if (index == -1)
-        Throw<std::runtime_error> ("Field not found");
+        throwFieldNotFound(field);
 
     const STBase& f = peekAtIndex (index);
 

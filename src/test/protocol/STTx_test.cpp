@@ -29,8 +29,21 @@
 #include <ripple/protocol/messages.h>
 
 #include <memory>
+#include <regex>
 
 namespace ripple {
+
+/**
+ * Return true if the string loosely matches the regex.
+ *
+ * Meant for testing human-readable strings that may change over time.
+ */
+inline bool
+matches(char const* string, char const* regex)
+{
+    return std::regex_search(
+        string, std::basic_regex<char>(regex, std::regex_constants::icase));
+}
 
 class STTx_test : public beast::unit_test::suite
 {
@@ -1283,8 +1296,7 @@ public:
                 }
                 catch (std::runtime_error const& ex)
                 {
-                    BEAST_EXPECT (
-                        std::strcmp (ex.what(), "Field not found") == 0);
+                    BEAST_EXPECT(matches(ex.what(), "field not found"));
                 }
             }
 
@@ -1348,8 +1360,7 @@ public:
                 }
                 catch (std::runtime_error const& ex)
                 {
-                    BEAST_EXPECT (
-                        std::strcmp (ex.what(), "Field not found") == 0);
+                    BEAST_EXPECT(matches(ex.what(), "field not found"));
                 }
             }
 
