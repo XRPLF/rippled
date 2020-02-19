@@ -41,7 +41,11 @@ namespace ripple {
 
 class STArray;
 
-//------------------------------------------------------------------------------
+inline void
+throwFieldNotFound(SField const& field)
+{
+    Throw<std::runtime_error>("Field not found: " + field.getName());
+}
 
 class STObject
     : public STBase
@@ -492,7 +496,7 @@ public:
         STBase* rf = getPField (field, true);
 
         if (! rf)
-            Throw<std::runtime_error> ("Field not found");
+            throwFieldNotFound(field);
 
         if (rf->getSType () == STI_NOTPRESENT)
             rf = makeFieldPresent (field);
@@ -552,7 +556,7 @@ private:
         const STBase* rf = peekAtPField (field);
 
         if (! rf)
-            Throw<std::runtime_error> ("Field not found");
+            throwFieldNotFound(field);
 
         SerializedTypeID id = rf->getSType ();
 
@@ -578,7 +582,7 @@ private:
         const STBase* rf = peekAtPField (field);
 
         if (! rf)
-            Throw<std::runtime_error> ("Field not found");
+            throwFieldNotFound(field);
 
         SerializedTypeID id = rf->getSType ();
 
@@ -602,7 +606,7 @@ private:
         STBase* rf = getPField (field, true);
 
         if (! rf)
-            Throw<std::runtime_error> ("Field not found");
+            throwFieldNotFound(field);
 
         if (rf->getSType () == STI_NOTPRESENT)
             rf = makeFieldPresent (field);
@@ -622,7 +626,7 @@ private:
         STBase* rf = getPField (field, true);
 
         if (! rf)
-            Throw<std::runtime_error> ("Field not found");
+            throwFieldNotFound(field);
 
         if (rf->getSType () == STI_NOTPRESENT)
             rf = makeFieldPresent (field);
@@ -642,7 +646,7 @@ private:
         STBase* rf = getPField (field, true);
 
         if (! rf)
-            Throw<std::runtime_error> ("Field not found");
+            throwFieldNotFound(field);
 
         if (rf->getSType () == STI_NOTPRESENT)
             rf = makeFieldPresent (field);
