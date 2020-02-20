@@ -55,6 +55,8 @@ template <class = void>
 std::size_t
 read_varint(void const* buf, std::size_t buflen, std::size_t& t)
 {
+    if (buflen == 0)
+        return 0;
     t = 0;
     std::uint8_t const* p = reinterpret_cast<std::uint8_t const*>(buf);
     std::size_t n = 0;
