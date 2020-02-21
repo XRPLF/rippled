@@ -42,7 +42,7 @@ inline bool
 matches(char const* string, char const* regex)
 {
     return std::regex_search(
-        string, std::basic_regex(regex, std::regex_constants::icase));
+        string, std::basic_regex<char>(regex, std::regex_constants::icase));
 }
 
 class STTx_test : public beast::unit_test::suite
