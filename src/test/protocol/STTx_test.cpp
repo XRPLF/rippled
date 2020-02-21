@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/basics/StringUtilities.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/STTx.h>
@@ -48,6 +50,9 @@ public:
 
         testcase ("STObject constructor errors");
         testObjectCtorErrors();
+
+        testcase ("Require Fully Canonicial Signature");
+        testFullyCanonicalSigs();
     }
 
     void testMalformedSerializedForm()
@@ -1604,6 +1609,35 @@ public:
             BEAST_EXPECT (
                 got == "Field 'Fee' is required but missing.");
         }
+    }
+
+    void testFullyCanonicalSigs()
+    {
+        // Construct a payments w/out a fully-canonical tx
+        const std::string non_fully_canonical_tx =
+          "12000022000000002400000001201B00497D9C6140000000000F695068400000000000000C732103767C7B2C13AD90050A4263745E4BAB2B975417FA22E87780E1506DDAF21139BE74483046022100E95670988A34C4DB0FA73A8BFD6383872AF438C147A62BC8387406298C3EADC1022100A7DC80508ED5A4750705C702A81CBF9D2C2DC3AFEDBED37BBCCD97BC8C40E08F8114E25A26437D923EEF4D6D815DF93368B62E6440848314BB85996936E4F595287774684DC2AC6266024BEF";
+
+        auto ret = strUnHex (non_fully_canonical_tx);
+        SerialIter sitTrans (makeSlice(*ret));
+        STTx const tx = *std::make_shared<STTx const> (std::ref (sitTrans));
+
+        {
+            test::jtx::Env no_fully_canonical (*this, test::jtx::supported_amendments() - featureRequireFullyCanonicalSig);
+
+            bool valid = tx.checkSign(no_fully_canonical.current()->rules()).first;
+            if(!valid)
+              fail("Non-Fully canoncial signature was not permitted");
+        }
+
+        {
+            test::jtx::Env fully_canonical (*this, test::jtx::supported_amendments());
+
+            bool valid = tx.checkSign(fully_canonical.current()->rules()).first;
+            if(valid)
+              fail("Non-Fully canoncial signature was permitted");
+        }
+
+        pass();
     }
 };
 
