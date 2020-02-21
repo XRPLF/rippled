@@ -32,7 +32,7 @@
 
 namespace ripple {
 
-/** A transaction discovered to be in dispute during conensus.
+/** A transaction discovered to be in dispute during consensus.
 
     During consensus, a @ref DisputedTx is created when a transaction
     is discovered to be disputed. The object persists only as long as
@@ -174,7 +174,7 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
     }
 }
 
-// Remove a peer's vote on this disputed transasction
+// Remove a peer's vote on this disputed transaction
 template <class Tx_t, class NodeID_t>
 void
 DisputedTx<Tx_t, NodeID_t>::unVote(NodeID_t const& peer)

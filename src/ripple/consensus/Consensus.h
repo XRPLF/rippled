@@ -180,7 +180,7 @@ checkConsensus(
     using ID = ...;
     using Seq = ...;
 
-    // Unique identifier of ledgerr
+    // Unique identifier of ledger
     ID const id() const;
     Seq seq() const;
     auto closeTimeResolution() const;
