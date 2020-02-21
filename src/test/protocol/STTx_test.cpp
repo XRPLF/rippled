@@ -29,7 +29,6 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/protocol/messages.h>
-#include <test/jtx/Env.h>
 
 #include <memory>
 
@@ -1622,17 +1621,13 @@ public:
         STTx const tx = *std::make_shared<STTx const> (std::ref (sitTrans));
 
         {
-            test::jtx::Env no_fully_canonical (*this, test::jtx::supported_amendments() - featureRequireFullyCanonicalSig);
-
-            bool valid = tx.checkSign(no_fully_canonical.current()->rules()).first;
+            bool valid = tx.checkSign(STTx::RequireFullyCanonicalSig::no).first;
             if(!valid)
               fail("Non-Fully canoncial signature was not permitted");
         }
 
         {
-            test::jtx::Env fully_canonical (*this, test::jtx::supported_amendments());
-
-            bool valid = tx.checkSign(fully_canonical.current()->rules()).first;
+            bool valid = tx.checkSign(STTx::RequireFullyCanonicalSig::yes).first;
             if(valid)
               fail("Non-Fully canoncial signature was permitted");
         }
