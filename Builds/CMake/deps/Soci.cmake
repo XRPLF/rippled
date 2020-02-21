@@ -77,6 +77,7 @@ else()
       -DBOOST_ROOT=${BOOST_ROOT}
       -DWITH_BOOST=ON
       -DBoost_FOUND=ON
+      -DBoost_NO_BOOST_CMAKE=ON
       -DBoost_DATE_TIME_FOUND=ON
       -DSOCI_HAVE_BOOST=ON
       -DSOCI_HAVE_BOOST_DATE_TIME=ON
