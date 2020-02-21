@@ -69,7 +69,7 @@ struct ConsensusParms
 
 
     //-------------------------------------------------------------------------
-    // Consensus durations are relative to the internal Consenus clock and use
+    // Consensus durations are relative to the internal Consensus clock and use
     // millisecond resolution.
 
     //! The percentage threshold above which we can declare consensus.
@@ -112,7 +112,7 @@ struct ConsensusParms
     //------------------------------------------------------------------------------
     // Avalanche tuning
     // As a function of the percent this round's duration is of the prior round,
-    // we increase the threshold for yes vots to add a tranasaction to our
+    // we increase the threshold for yes votes to add a transaction to our
     // position.
 
     //! Percentage of nodes on our UNL that must vote yes

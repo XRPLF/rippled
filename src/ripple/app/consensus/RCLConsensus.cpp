@@ -568,7 +568,7 @@ RCLConsensus::Adaptor::doAccept(
                     auto txn = std::make_shared<STTx const>(sit);
 
                     // Disputed pseudo-transactions that were not accepted
-                    // can't be succesfully applied in the next ledger
+                    // can't be successfully applied in the next ledger
                     if (isPseudoTx(*txn))
                         continue;
 

@@ -118,7 +118,7 @@ getNextLedgerTimeResolution(
 
 /** Calculates the close time for a ledger, given a close time resolution.
 
-    @param closeTime The time to be rouned.
+    @param closeTime The time to be rounded
     @param closeResolution The resolution
     @return @b closeTime rounded to the nearest multiple of @b closeResolution.
     Rounds up if @b closeTime is midway between multiples of @b closeResolution.

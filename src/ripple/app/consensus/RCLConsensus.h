@@ -173,7 +173,7 @@ class RCLConsensus
         //---------------------------------------------------------------------
         // The following members implement the generic Consensus requirements
         // and are marked private to indicate ONLY Consensus<Adaptor> will call
-        // them (via friendship). Since they are called only from Consenus<Adaptor>
+        // them (via friendship). Since they are called only from Consensus<Adaptor>
         // methods and since RCLConsensus::consensus_ should only be accessed
         // under lock, these will only be called under lock.
         //
@@ -225,7 +225,7 @@ class RCLConsensus
         bool
         hasOpenTransactions() const;
 
-        /** Number of proposers that have vallidated the given ledger
+        /** Number of proposers that have validated the given ledger
 
             @param h The hash of the ledger of interest
             @return the number of proposers that validated a ledger
@@ -337,7 +337,7 @@ class RCLConsensus
 
             @param ne Event type for notification
             @param ledger The ledger at the time of the state change
-            @param haveCorrectLCL Whether we believ we have the correct LCL.
+            @param haveCorrectLCL Whether we believe we have the correct LCL.
         */
         void
         notify(
@@ -374,7 +374,7 @@ class RCLConsensus
             @param closeTimeCorrect Whether consensus agreed on close time
             @param closeResolution Resolution used to determine consensus close
                                    time
-            @param roundTime Duration of this consensus rorund
+            @param roundTime Duration of this consensus round
             @param failedTxs Populate with transactions that we could not
                              successfully apply.
             @return The newly built ledger
