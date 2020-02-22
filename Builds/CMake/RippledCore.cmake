@@ -750,6 +750,7 @@ else ()
     src/test/app/ValidatorKeys_test.cpp
     src/test/app/ValidatorList_test.cpp
     src/test/app/ValidatorSite_test.cpp
+    src/test/app/tx/apply_test.cpp
     #[===============================[
        nounity, test sources:
          subdir: basics

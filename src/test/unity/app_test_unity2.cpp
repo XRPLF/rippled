@@ -38,3 +38,4 @@
 #include <test/app/ValidatorKeys_test.cpp>
 #include <test/app/ValidatorList_test.cpp>
 #include <test/app/ValidatorSite_test.cpp>
+#include <test/app/tx/apply_test.cpp>
