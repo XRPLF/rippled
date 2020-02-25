@@ -54,7 +54,7 @@ if (is_root_project)
         Builds/containers/shared/update-rippled.sh
         Builds/containers/packaging/rpm/rippled.spec
         Builds/containers/packaging/rpm/build_rpm.sh
-        bin/getInfoRippled.sh
+        bin/getRippledInfo
     )
     exclude_from_default (rpm_container)
     add_custom_target (rpm
@@ -117,7 +117,7 @@ if (is_root_project)
         Builds/containers/packaging/dpkg/debian/rippled.preinst
         Builds/containers/packaging/dpkg/debian/rippled.prerm
         Builds/containers/packaging/dpkg/debian/rules
-        bin/getInfoRippled.sh
+        bin/getRippledInfo
     )
     exclude_from_default (dpkg_container)
     add_custom_target (dpkg

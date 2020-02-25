@@ -51,7 +51,7 @@ install -D rippled/bld.release/validator-keys/validator-keys ${RPM_BUILD_ROOT}%{
 install -D ./rippled/Builds/containers/shared/rippled.service ${RPM_BUILD_ROOT}/usr/lib/systemd/system/rippled.service
 install -D ./rippled/Builds/containers/packaging/rpm/50-rippled.preset ${RPM_BUILD_ROOT}/usr/lib/systemd/system-preset/50-rippled.preset
 install -D ./rippled/Builds/containers/shared/update-rippled.sh ${RPM_BUILD_ROOT}%{_bindir}/update-rippled.sh
-install -D ./rippled/bin/getInfoRippled.sh ${RPM_BUILD_ROOT}%{_bindir}/getInfoRippled.sh
+install -D ./rippled/bin/getRippledInfo ${RPM_BUILD_ROOT}%{_bindir}/getRippledInfo
 install -D ./rippled/Builds/containers/shared/update-rippled-cron ${RPM_BUILD_ROOT}%{_prefix}/etc/update-rippled-cron
 install -D ./rippled/Builds/containers/shared/rippled-logrotate ${RPM_BUILD_ROOT}/etc/logrotate.d/rippled
 install -d $RPM_BUILD_ROOT/var/log/rippled
@@ -80,7 +80,7 @@ chown -R root:$GROUP_NAME %{_prefix}/etc/update-rippled-cron
 %{_bindir}/rippled
 /usr/local/bin/rippled
 %{_bindir}/update-rippled.sh
-%{_bindir}/getInfoRippled.sh
+%{_bindir}/getRippledInfo
 %{_prefix}/etc/update-rippled-cron
 %{_bindir}/validator-keys
 %config(noreplace) %{_prefix}/etc/rippled.cfg

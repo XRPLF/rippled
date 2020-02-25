@@ -31,7 +31,7 @@ override_dh_auto_install:
 	cd bld && DESTDIR=../debian/tmp cmake --build . --target install -- -v
 	install -D bld/validator-keys/validator-keys debian/tmp/opt/ripple/bin/validator-keys
 	install -D Builds/containers/shared/update-rippled.sh debian/tmp/opt/ripple/bin/update-rippled.sh
-	install -D bin/getInfoRippled.sh debian/tmp/opt/ripple/bin/getInfoRippled.sh
+	install -D bin/getRippledInfo debian/tmp/opt/ripple/bin/getRippledInfo
 	install -D Builds/containers/shared/update-rippled-cron debian/tmp/opt/ripple/etc/update-rippled-cron
 	install -D Builds/containers/shared/rippled-logrotate debian/tmp/etc/logrotate.d/rippled
 	rm -rf debian/tmp/opt/ripple/lib64/cmake/date
