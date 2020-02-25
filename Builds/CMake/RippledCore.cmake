@@ -947,3 +947,10 @@ if (is_ci)
   target_compile_definitions(rippled PRIVATE RIPPLED_RUNNING_IN_CI)
 endif ()
 
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
+  # any files that don't play well with unity should be added here
+  set_source_files_properties(
+    # this one seems to produce conflicts in beast teardown template methods:
+    src/test/rpc/ValidatorRPC_test.cpp
+    PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE)
+endif ()

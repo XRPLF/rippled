@@ -75,6 +75,7 @@ else()
       # proper imported targets, this next line can be removed
       # (as well as the get_property above that sets _boost_incs)
       -DBoost_INCLUDE_DIRS=$<JOIN:${_boost_incs},::>
+      -DBoost_INCLUDE_DIR=$<JOIN:${_boost_incs},::>
       -DBOOST_ROOT=${BOOST_ROOT}
       -DWITH_BOOST=ON
       -DBoost_FOUND=ON
