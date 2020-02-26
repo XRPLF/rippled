@@ -582,6 +582,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/LedgerRequest.cpp
   src/ripple/rpc/handlers/LogLevel.cpp
   src/ripple/rpc/handlers/LogRotate.cpp
+  src/ripple/rpc/handlers/Manifest.cpp
   src/ripple/rpc/handlers/NoRippleCheck.cpp
   src/ripple/rpc/handlers/OwnerInfo.cpp
   src/ripple/rpc/handlers/PathFind.cpp
@@ -606,6 +607,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/UnlList.cpp
   src/ripple/rpc/handlers/Unsubscribe.cpp
   src/ripple/rpc/handlers/ValidationCreate.cpp
+  src/ripple/rpc/handlers/ValidatorInfo.cpp
   src/ripple/rpc/handlers/ValidatorListSites.cpp
   src/ripple/rpc/handlers/Validators.cpp
   src/ripple/rpc/handlers/WalletPropose.cpp
@@ -898,6 +900,7 @@ target_sources (rippled PRIVATE
   src/test/rpc/LedgerData_test.cpp
   src/test/rpc/LedgerRPC_test.cpp
   src/test/rpc/LedgerRequestRPC_test.cpp
+  src/test/rpc/ManifestRPC_test.cpp
   src/test/rpc/NoRippleCheck_test.cpp
   src/test/rpc/NoRipple_test.cpp
   src/test/rpc/OwnerInfo_test.cpp
@@ -914,6 +917,7 @@ target_sources (rippled PRIVATE
   src/test/rpc/TransactionEntry_test.cpp
   src/test/rpc/TransactionHistory_test.cpp
   src/test/rpc/Tx_test.cpp
+  src/test/rpc/ValidatorInfo_test.cpp
   src/test/rpc/ValidatorRPC_test.cpp
   src/test/rpc/Version_test.cpp
   #[===============================[
