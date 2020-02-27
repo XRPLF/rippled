@@ -34,6 +34,7 @@
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/basics/contract.h>
+#include <ripple/basics/safe_cast.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/TaggedCache.h>
 #include <ripple/basics/UptimeClock.h>
@@ -1497,7 +1498,7 @@ LedgerMaster::getCloseTimeByHash(LedgerHash const& ledgerHash,
         (node->getData().size() >= 120))
     {
         SerialIter it (node->getData().data(), node->getData().size());
-        if (it.get32() == HashPrefix::ledgerMaster)
+        if (safe_cast<HashPrefix>(it.get32()) == HashPrefix::ledgerMaster)
         {
             it.skip (
                 4+8+32+    // seq drops parentHash

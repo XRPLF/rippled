@@ -25,6 +25,7 @@
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/FeeUnits.h>
 #include <ripple/basics/Slice.h>
+#include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/STVector256.h>
@@ -383,8 +384,8 @@ public:
     bool isFlag(std::uint32_t) const;
     std::uint32_t getFlags () const;
 
-    uint256 getHash (std::uint32_t prefix) const;
-    uint256 getSigningHash (std::uint32_t prefix) const;
+    uint256 getHash (HashPrefix prefix) const;
+    uint256 getSigningHash (HashPrefix prefix) const;
 
     const STBase& peekAtIndex (int offset) const
     {

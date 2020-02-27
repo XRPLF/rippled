@@ -73,7 +73,6 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/BuildInfo.cpp
   src/ripple/protocol/impl/ErrorCodes.cpp
   src/ripple/protocol/impl/Feature.cpp
-  src/ripple/protocol/impl/HashPrefix.cpp
   src/ripple/protocol/impl/Indexes.cpp
   src/ripple/protocol/impl/InnerObjectFormats.cpp
   src/ripple/protocol/impl/Issue.cpp

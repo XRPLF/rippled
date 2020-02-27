@@ -307,7 +307,7 @@ bool STObject::isEquivalent (const STBase& t) const
         });
 }
 
-uint256 STObject::getHash (std::uint32_t prefix) const
+uint256 STObject::getHash (HashPrefix prefix) const
 {
     Serializer s;
     s.add32 (prefix);
@@ -315,7 +315,7 @@ uint256 STObject::getHash (std::uint32_t prefix) const
     return s.getSHA512Half ();
 }
 
-uint256 STObject::getSigningHash (std::uint32_t prefix) const
+uint256 STObject::getSigningHash (HashPrefix prefix) const
 {
     Serializer s;
     s.add32 (prefix);

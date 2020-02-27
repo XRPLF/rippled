@@ -21,6 +21,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/Serializer.h>
+#include <type_traits>
 
 namespace ripple {
 
@@ -50,6 +51,17 @@ int Serializer::add32 (std::uint32_t i)
     mData.push_back (static_cast<unsigned char> ((i >> 8) & 0xff));
     mData.push_back (static_cast<unsigned char> (i & 0xff));
     return ret;
+}
+
+
+int Serializer::add32 (HashPrefix p)
+{
+    // This should never trigger; the size & type of a hash prefix are
+    // integral parts of the protocol and unlikely to ever change.
+    static_assert(std::is_same_v<std::uint32_t,
+        std::underlying_type_t<decltype(p)>>);
+
+    return add32(safe_cast<std::uint32_t>(p));
 }
 
 int Serializer::add64 (std::uint64_t i)
