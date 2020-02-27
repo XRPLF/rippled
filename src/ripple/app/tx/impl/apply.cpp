@@ -47,7 +47,7 @@ checkValidity(HashRouter& router,
     if (!(flags & SF_SIGGOOD))
     {
         // Don't know signature state. Check it.
-        STTx::RequireFullyCanonicalSig const requireCanonicalSig =
+        auto const requireCanonicalSig =
             rules.enabled(featureRequireFullyCanonicalSig) ?
             STTx::RequireFullyCanonicalSig::yes :
             STTx::RequireFullyCanonicalSig::no;

@@ -268,7 +268,7 @@ STTx::checkSingleSign (RequireFullyCanonicalSig requireCanonicalSig) const
     {
         bool const fullyCanonical =
             (getFlags() & tfFullyCanonicalSig) ||
-            (requireCanonicalSig != RequireFullyCanonicalSig::no);
+            (requireCanonicalSig == RequireFullyCanonicalSig::yes);
 
         auto const spk = getFieldVL (sfSigningPubKey);
 
@@ -325,7 +325,7 @@ STTx::checkMultiSign (RequireFullyCanonicalSig requireCanonicalSig) const
     // Determine whether signatures must be full canonical.
     bool const fullyCanonical =
         (getFlags() & tfFullyCanonicalSig) ||
-        (requireCanonicalSig != RequireFullyCanonicalSig::no);
+        (requireCanonicalSig == RequireFullyCanonicalSig::yes);
 
     // Signers must be in sorted order by AccountID.
     AccountID lastAccountID (beast::zero);
