@@ -59,19 +59,19 @@ class Feature_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env {*this};
 
-        auto jrr = env.rpc("feature", "CryptoConditions") [jss::result];
+        auto jrr = env.rpc("feature", "MultiSignReserve") [jss::result];
         BEAST_EXPECTS(jrr[jss::status] == jss::success, "status");
         jrr.removeMember(jss::status);
         BEAST_EXPECT(jrr.size() == 1);
         auto feature = *(jrr.begin());
 
-        BEAST_EXPECTS(feature[jss::name] == "CryptoConditions", "name");
+        BEAST_EXPECTS(feature[jss::name] == "MultiSignReserve", "name");
         BEAST_EXPECTS(! feature[jss::enabled].asBool(), "enabled");
         BEAST_EXPECTS(! feature[jss::vetoed].asBool(), "vetoed");
         BEAST_EXPECTS(feature[jss::supported].asBool(), "supported");
 
         // feature names are case-sensitive - expect error here
-        jrr = env.rpc("feature", "cryptoconditions") [jss::result];
+        jrr = env.rpc("feature", "multiSignReserve") [jss::result];
         BEAST_EXPECT(jrr[jss::error] == "badFeature");
         BEAST_EXPECT(jrr[jss::error_message] == "Feature unknown or invalid.");
     }
@@ -115,7 +115,7 @@ class Feature_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env {*this,
-            FeatureBitset(featureEscrow, featureCryptoConditions)};
+            FeatureBitset(featureDepositAuth, featureDepositPreauth)};
 
         auto jrr = env.rpc("feature") [jss::result];
         if(! BEAST_EXPECT(jrr.isMember(jss::features)))
@@ -215,40 +215,40 @@ class Feature_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env {*this,
-            FeatureBitset(featureCryptoConditions)};
+            FeatureBitset(featureMultiSignReserve)};
 
-        auto jrr = env.rpc("feature", "CryptoConditions") [jss::result];
+        auto jrr = env.rpc("feature", "MultiSignReserve") [jss::result];
         if(! BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))
             return;
         jrr.removeMember(jss::status);
         if(! BEAST_EXPECT(jrr.size() == 1))
             return;
         auto feature = *(jrr.begin());
-        BEAST_EXPECTS(feature[jss::name] == "CryptoConditions", "name");
+        BEAST_EXPECTS(feature[jss::name] == "MultiSignReserve", "name");
         BEAST_EXPECTS(! feature[jss::vetoed].asBool(), "vetoed");
 
-        jrr = env.rpc("feature", "CryptoConditions", "reject") [jss::result];
+        jrr = env.rpc("feature", "MultiSignReserve", "reject") [jss::result];
         if(! BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))
             return;
         jrr.removeMember(jss::status);
         if(! BEAST_EXPECT(jrr.size() == 1))
             return;
         feature = *(jrr.begin());
-        BEAST_EXPECTS(feature[jss::name] == "CryptoConditions", "name");
+        BEAST_EXPECTS(feature[jss::name] == "MultiSignReserve", "name");
         BEAST_EXPECTS(feature[jss::vetoed].asBool(), "vetoed");
 
-        jrr = env.rpc("feature", "CryptoConditions", "accept") [jss::result];
+        jrr = env.rpc("feature", "MultiSignReserve", "accept") [jss::result];
         if(! BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))
             return;
         jrr.removeMember(jss::status);
         if(! BEAST_EXPECT(jrr.size() == 1))
             return;
         feature = *(jrr.begin());
-        BEAST_EXPECTS(feature[jss::name] == "CryptoConditions", "name");
+        BEAST_EXPECTS(feature[jss::name] == "MultiSignReserve", "name");
         BEAST_EXPECTS(! feature[jss::vetoed].asBool(), "vetoed");
 
         // anything other than accept or reject is an error
-        jrr = env.rpc("feature", "CryptoConditions", "maybe");
+        jrr = env.rpc("feature", "MultiSignReserve", "maybe");
         BEAST_EXPECT(jrr[jss::error] == "invalidParams");
         BEAST_EXPECT(jrr[jss::error_message] == "Invalid parameters.");
     }
