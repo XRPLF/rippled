@@ -215,36 +215,25 @@ struct Escrow_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::chrono;
 
-        { // Escrow not enabled
-            Env env(*this, supported_amendments() - featureEscrow);
-            env.fund(XRP(5000), "alice", "bob");
-            env(escrow("alice", "bob", XRP(1000)),
-                finish_time(env.now() + 1s),        ter(temDISABLED));
-            env(finish("bob", "alice", 1),          ter(temDISABLED));
-            env(cancel("bob", "alice", 1),          ter(temDISABLED));
-        }
+        Env env(*this);
+        env.fund(XRP(5000), "alice", "bob");
+        env(escrow("alice", "bob", XRP(1000)), finish_time(env.now() + 1s));
+        env.close();
 
-        { // Escrow enabled
-            Env env(*this);
-            env.fund(XRP(5000), "alice", "bob");
-            env(escrow("alice", "bob", XRP(1000)), finish_time(env.now() + 1s));
-            env.close();
+        auto const seq1 = env.seq("alice");
 
-            auto const seq1 = env.seq("alice");
+        env(escrow("alice", "bob", XRP(1000)), condition (cb1),
+            finish_time(env.now() + 1s), fee(1500));
+        env.close();
+        env(finish("bob", "alice", seq1),
+            condition(cb1), fulfillment(fb1), fee(1500));
 
-            env(escrow("alice", "bob", XRP(1000)), condition (cb1),
-                finish_time(env.now() + 1s), fee(1500));
-            env.close();
-            env(finish("bob", "alice", seq1),
-                condition(cb1), fulfillment(fb1), fee(1500));
+        auto const seq2 = env.seq("alice");
 
-            auto const seq2 = env.seq("alice");
-
-            env(escrow("alice", "bob", XRP(1000)), condition(cb2),
-                finish_time(env.now() + 1s), cancel_time(env.now() + 2s), fee(1500));
-            env.close();
-            env(cancel("bob", "alice", seq2), fee(1500));
-        }
+        env(escrow("alice", "bob", XRP(1000)), condition(cb2),
+            finish_time(env.now() + 1s), cancel_time(env.now() + 2s), fee(1500));
+        env.close();
+        env(cancel("bob", "alice", seq2), fee(1500));
     }
 
     void

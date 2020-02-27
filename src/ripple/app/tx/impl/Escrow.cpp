@@ -98,9 +98,6 @@ EscrowCreate::calculateMaxSpend(STTx const& tx)
 NotTEC
 EscrowCreate::preflight (PreflightContext const& ctx)
 {
-    if (! ctx.rules.enabled(featureEscrow))
-        return temDISABLED;
-
     if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
@@ -300,9 +297,6 @@ checkCondition (Slice f, Slice c)
 NotTEC
 EscrowFinish::preflight (PreflightContext const& ctx)
 {
-    if (! ctx.rules.enabled(featureEscrow))
-        return temDISABLED;
-
     if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
@@ -518,9 +512,6 @@ EscrowFinish::doApply()
 NotTEC
 EscrowCancel::preflight (PreflightContext const& ctx)
 {
-    if (! ctx.rules.enabled(featureEscrow))
-        return temDISABLED;
-
     if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
