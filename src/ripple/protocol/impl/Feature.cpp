@@ -156,7 +156,7 @@ uint256 bitsetIndexToFeature(size_t i)
 
 uint256 const featureTickets = *getRegisteredFeature("Tickets");
 uint256 const featureOwnerPaysFee = *getRegisteredFeature("OwnerPaysFee");
-uint256 const featurePayChan = *getRegisteredFeature("PayChan");
+uint256 const retiredPayChan = *getRegisteredFeature("PayChan");
 uint256 const featureFlow = *getRegisteredFeature("Flow");
 uint256 const featureCompareTakerFlowCross = *getRegisteredFeature("CompareTakerFlowCross");
 uint256 const featureFlowCross = *getRegisteredFeature("FlowCross");

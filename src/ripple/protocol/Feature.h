@@ -365,7 +365,7 @@ foreachFeature(FeatureBitset bs, F&& f)
 
 extern uint256 const featureTickets;
 extern uint256 const featureOwnerPaysFee;
-extern uint256 const featurePayChan;
+extern uint256 const retiredPayChan;
 extern uint256 const featureFlow;
 extern uint256 const featureCompareTakerFlowCross;
 extern uint256 const featureFlowCross;
