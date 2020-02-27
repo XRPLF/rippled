@@ -180,7 +180,6 @@ PaymentSandbox::balanceHook (AccountID const& account,
 
     auto const currency = amount.getCurrency ();
 
-    auto adjustedAmt = amount;
     auto delta = amount.zeroed ();
     auto lastBal = amount;
     auto minBal = amount;
@@ -194,16 +193,12 @@ PaymentSandbox::balanceHook (AccountID const& account,
                 minBal = lastBal;
         }
     }
-    adjustedAmt = std::min(amount, lastBal - delta);
-    if (rules().enabled(fix1368))
-    {
-        // The adjusted amount should never be larger than the balance. In
-        // some circumstances, it is possible for the deferred credits table
-        // to compute usable balance just slightly above what the ledger
-        // calculates (but always less than the actual balance).
-        adjustedAmt = std::min(adjustedAmt, minBal);
-    }
 
+    // The adjusted amount should never be larger than the balance. In
+    // some circumstances, it is possible for the deferred credits table
+    // to compute usable balance just slightly above what the ledger
+    // calculates (but always less than the actual balance).
+    auto adjustedAmt = std::min({amount, lastBal - delta, minBal});
     adjustedAmt.setIssuer(amount.getIssuer());
 
     if (isXRP(issuer) && adjustedAmt < beast::zero)

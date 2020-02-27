@@ -1291,7 +1291,7 @@ struct Flow_test : public beast::unit_test::suite
         testSelfFundedXRPEndpoint(false, features);
         testSelfFundedXRPEndpoint(true, features);
         testUnfundedOffer(features);
-        testReexecuteDirectStep(features | fix1368);
+        testReexecuteDirectStep(features);
         testSelfPayLowQualityOffer(features);
     }
 
