@@ -21,8 +21,8 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/digest.h>
+#include <ripple/basics/safe_cast.h>
 #include <ripple/basics/Slice.h>
-#include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <mutex>
@@ -194,7 +194,7 @@ SHAMapAbstractNode::make(Slice const& rawNode, std::uint32_t seq, SHANodeFormat 
         prefix |= rawNode[3];
         Serializer s (rawNode.data() + 4, rawNode.size() - 4);
 
-        if (prefix == HashPrefix::transactionID)
+        if (safe_cast<HashPrefix>(prefix) == HashPrefix::transactionID)
         {
             auto item = std::make_shared<SHAMapItem const>(
                 sha512Half(rawNode),
@@ -203,7 +203,7 @@ SHAMapAbstractNode::make(Slice const& rawNode, std::uint32_t seq, SHANodeFormat 
                 return std::make_shared<SHAMapTreeNode>(item, tnTRANSACTION_NM, seq, hash);
             return std::make_shared<SHAMapTreeNode>(item, tnTRANSACTION_NM, seq);
         }
-        else if (prefix == HashPrefix::leafNode)
+        else if (safe_cast<HashPrefix>(prefix) == HashPrefix::leafNode)
         {
             if (s.getLength () < 32)
                 Throw<std::runtime_error> ("short PLN node");
@@ -223,7 +223,7 @@ SHAMapAbstractNode::make(Slice const& rawNode, std::uint32_t seq, SHANodeFormat 
                 return std::make_shared<SHAMapTreeNode>(item, tnACCOUNT_STATE, seq, hash);
             return std::make_shared<SHAMapTreeNode>(item, tnACCOUNT_STATE, seq);
         }
-        else if (prefix == HashPrefix::innerNode)
+        else if (safe_cast<HashPrefix>(prefix) == HashPrefix::innerNode)
         {
             auto len = s.getLength();
 
@@ -246,7 +246,7 @@ SHAMapAbstractNode::make(Slice const& rawNode, std::uint32_t seq, SHANodeFormat 
                 ret->updateHash();
             return ret;
         }
-        else if (prefix == HashPrefix::txNode)
+        else if (safe_cast<HashPrefix>(prefix) == HashPrefix::txNode)
         {
             // transaction with metadata
             if (s.getLength () < 32)

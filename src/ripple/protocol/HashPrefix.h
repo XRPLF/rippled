@@ -25,6 +25,20 @@
 
 namespace ripple {
 
+namespace detail {
+
+constexpr
+std::uint32_t
+make_hash_prefix(char a, char b, char c)
+{
+    return
+        (static_cast<std::uint32_t>(a) << 24) +
+        (static_cast<std::uint32_t>(b) << 16) +
+        (static_cast<std::uint32_t>(c) << 8);
+}
+
+}
+
 /** Prefix for hashing functions.
 
     These prefixes are inserted before the source material used to generate
@@ -36,69 +50,43 @@ namespace ripple {
     three bytes formed from the ASCII equivalent of some arbitrary string. For
     example "TXN".
 
-    @note Hash prefixes are part of the Ripple protocol.
-
-    @ingroup protocol
+    @note Hash prefixes are part of the protocol; you cannot, arbitrarily,
+          change the type or the value of any of these without causing breakage.
 */
-class HashPrefix
+enum class HashPrefix : std::uint32_t
 {
-private:
-    std::uint32_t m_prefix;
-
-    HashPrefix (char a, char b, char c)
-        : m_prefix (0)
-    {
-        m_prefix = a;
-        m_prefix = (m_prefix << 8) + b;
-        m_prefix = (m_prefix << 8) + c;
-        m_prefix = m_prefix << 8;
-    }
-
-public:
-    HashPrefix(HashPrefix const&) = delete;
-    HashPrefix& operator=(HashPrefix const&) = delete;
-
-    /** Returns the hash prefix associated with this object */
-    operator std::uint32_t () const
-    {
-        return m_prefix;
-    }
-
-    // VFALCO TODO Expand the description to complete, concise sentences.
-    //
-
     /** transaction plus signature to give transaction ID */
-    static HashPrefix const transactionID;
+    transactionID       = detail::make_hash_prefix('T', 'X', 'N'),
 
     /** transaction plus metadata */
-    static HashPrefix const txNode;
+    txNode              = detail::make_hash_prefix('S', 'N', 'D'),
 
     /** account state */
-    static HashPrefix const leafNode;
+    leafNode            = detail::make_hash_prefix('M', 'L', 'N'),
 
     /** inner node in V1 tree */
-    static HashPrefix const innerNode;
+    innerNode           = detail::make_hash_prefix('M', 'I', 'N'),
 
     /** ledger master data for signing */
-    static HashPrefix const ledgerMaster;
+    ledgerMaster        = detail::make_hash_prefix('L', 'W', 'R'),
 
     /** inner transaction to sign */
-    static HashPrefix const txSign;
+    txSign              = detail::make_hash_prefix('S', 'T', 'X'),
 
     /** inner transaction to multi-sign */
-    static HashPrefix const txMultiSign;
+    txMultiSign         = detail::make_hash_prefix('S', 'M', 'T'),
 
     /** validation for signing */
-    static HashPrefix const validation;
+    validation          = detail::make_hash_prefix('V', 'A', 'L'),
 
     /** proposal for signing */
-    static HashPrefix const proposal;
+    proposal            = detail::make_hash_prefix('P', 'R', 'P'),
 
     /** Manifest */
-    static HashPrefix const manifest;
+    manifest            = detail::make_hash_prefix('M', 'A', 'N'),
 
     /** Payment Channel Claim */
-    static HashPrefix const paymentChannelClaim;
+    paymentChannelClaim = detail::make_hash_prefix('C', 'L', 'M'),
 };
 
 template <class Hasher>

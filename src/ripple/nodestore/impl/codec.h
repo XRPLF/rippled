@@ -24,6 +24,7 @@
 #define LZ4_DISABLE_DEPRECATE_WARNINGS
 
 #include <ripple/basics/contract.h>
+#include <ripple/basics/safe_cast.h>
 #include <nudb/detail/field.hpp>
 #include <ripple/nodestore/impl/varint.h>
 #include <ripple/nodestore/NodeObject.h>
@@ -240,7 +241,7 @@ nodeobject_compress (void const* in,
         read<std::uint32_t>(is, unused);
         read<std::uint8_t> (is, kind);
         read<std::uint32_t>(is, prefix);
-        if (prefix == HashPrefix::innerNode)
+        if (safe_cast<HashPrefix>(prefix) == HashPrefix::innerNode)
         {
             std::size_t n = 0;
             std::uint16_t mask = 0;
@@ -350,7 +351,7 @@ filter_inner (void* in, std::size_t in_size)
         read<std::uint32_t>(is, unused);
         read<std::uint8_t> (is, kind);
         read<std::uint32_t>(is, prefix);
-        if (prefix == HashPrefix::innerNode)
+        if (safe_cast<HashPrefix>(prefix) == HashPrefix::innerNode)
         {
             ostream os(in, 9);
             write<std::uint32_t>(os, 0);
