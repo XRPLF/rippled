@@ -370,7 +370,7 @@ extern uint256 const featureFlow;
 extern uint256 const featureCompareTakerFlowCross;
 extern uint256 const featureFlowCross;
 extern uint256 const retiredCryptoConditions;
-extern uint256 const featureTickSize;
+extern uint256 const retiredTickSize;
 extern uint256 const fix1368;
 extern uint256 const featureEscrow;
 extern uint256 const featureCryptoConditionsSuite;

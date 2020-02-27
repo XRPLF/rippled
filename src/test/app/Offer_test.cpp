@@ -4420,20 +4420,6 @@ public:
 
         using namespace jtx;
 
-        // Should be called with TickSize enabled.
-        BEAST_EXPECT(features[featureTickSize]);
-
-        // Try to set tick size without enabling feature
-        {
-            Env env{*this, features - featureTickSize};
-            auto const gw = Account {"gateway"};
-            env.fund (XRP(10000), gw);
-
-            auto txn = noop(gw);
-            txn[sfTickSize.fieldName] = 0;
-            env(txn, ter(temDISABLED));
-        }
-
         // Try to set tick size out of range
         {
             Env env {*this, features};
@@ -4609,7 +4595,7 @@ public:
         testRCSmoketest (features);
         testSelfAuth (features);
         testDeletedOfferIssuer (features);
-        testTickSize (features | featureTickSize);
+        testTickSize (features);
     }
 
     void run () override
