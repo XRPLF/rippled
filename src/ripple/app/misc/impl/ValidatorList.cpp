@@ -585,7 +585,7 @@ ValidatorList::trusted (PublicKey const& identity) const
     std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey (identity);
-    return trustedKeys_.find (pubKey) != trustedKeys_.end();
+    return trustedMasterKeys_.find (pubKey) != trustedMasterKeys_.end();
 }
 
 boost::optional<PublicKey>
@@ -606,7 +606,7 @@ ValidatorList::getTrustedKey (PublicKey const& identity) const
     std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey (identity);
-    if (trustedKeys_.find (pubKey) != trustedKeys_.end())
+    if (trustedMasterKeys_.find (pubKey) != trustedMasterKeys_.end())
         return pubKey;
     return boost::none;
 }
@@ -755,7 +755,7 @@ ValidatorList::getJson() const
     // Trusted validator keys
     Json::Value& jValidatorKeys =
         (res[jss::trusted_validator_keys] = Json::arrayValue);
-    for (auto const& k : trustedKeys_)
+    for (auto const& k : trustedMasterKeys_)
     {
         jValidatorKeys.append(toBase58(TokenType::NodePublic, k));
     }
@@ -912,14 +912,14 @@ ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
 
     TrustChanges trustChanges;
 
-    auto it = trustedKeys_.cbegin();
-    while (it != trustedKeys_.cend())
+    auto it = trustedMasterKeys_.cbegin();
+    while (it != trustedMasterKeys_.cend())
     {
-        if (! keyListings_.count(*it) ||
+        if (!keyListings_.count(*it) ||
             validatorManifests_.revoked(*it))
         {
             trustChanges.removed.insert(calcNodeID(*it));
-            it = trustedKeys_.erase(it);
+            it = trustedMasterKeys_.erase(it);
         }
         else
         {
@@ -929,28 +929,38 @@ ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
 
     for (auto const& val : keyListings_)
     {
-        if (! validatorManifests_.revoked(val.first) &&
-                trustedKeys_.emplace(val.first).second)
+        if (!validatorManifests_.revoked(val.first) &&
+            trustedMasterKeys_.emplace(val.first).second)
             trustChanges.added.insert(calcNodeID(val.first));
     }
 
-    JLOG (j_.debug()) <<
-        trustedKeys_.size() << "  of " << keyListings_.size() <<
-        " listed validators eligible for inclusion in the trusted set";
-
-    quorum_ = calculateQuorum (trustedKeys_.size(), seenValidators.size());
-
-    JLOG(j_.debug()) << "Using quorum of " << quorum_ << " for new set of "
-                     << trustedKeys_.size() << " trusted validators ("
-                     << trustChanges.added.size() << " added, "
-                     << trustChanges.removed.size() << " removed)";
-
-    if (trustedKeys_.size() < quorum_)
+    // If there were any changes, we need to update the ephemeral signing keys:
+    if (!trustChanges.added.empty() || !trustChanges.removed.empty())
     {
-        JLOG (j_.warn()) <<
-            "New quorum of " << quorum_ <<
-            " exceeds the number of trusted validators (" <<
-            trustedKeys_.size() << ")";
+        trustedSigningKeys_.clear();
+
+        for (auto const& k : trustedMasterKeys_)
+            trustedSigningKeys_.insert(validatorManifests_.getSigningKey(k));
+    }
+
+    JLOG (j_.debug())
+        << trustedMasterKeys_.size() << "  of " << keyListings_.size()
+        << " listed validators eligible for inclusion in the trusted set";
+
+    quorum_ = calculateQuorum (trustedMasterKeys_.size(), seenValidators.size());
+
+    JLOG(j_.debug())
+        << "Using quorum of " << quorum_ << " for new set of "
+        << trustedMasterKeys_.size() << " trusted validators ("
+        << trustChanges.added.size() << " added, "
+        << trustChanges.removed.size() << " removed)";
+
+    if (trustedMasterKeys_.size() < quorum_)
+    {
+        JLOG (j_.warn())
+            << "New quorum of " << quorum_
+            << " exceeds the number of trusted validators ("
+            << trustedMasterKeys_.size() << ")";
     }
 
     return trustChanges;

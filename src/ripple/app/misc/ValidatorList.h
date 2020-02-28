@@ -151,7 +151,12 @@ class ValidatorList
     hash_map<PublicKey, std::size_t> keyListings_;
 
     // The current list of trusted master keys
-    hash_set<PublicKey> trustedKeys_;
+    hash_set<PublicKey> trustedMasterKeys_;
+
+    // The current list of trusted signing keys. For those validators using
+    // a manifest, the signing key is the ephemeral key. For the ones using
+    // a seed, the signing key is the same as the master key.
+    hash_set<PublicKey> trustedSigningKeys_;
 
     PublicKey localPubKey_;
 
@@ -503,7 +508,7 @@ public:
     getQuorumKeys() const
     {
         std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
-        return {quorum_, trustedKeys_};
+        return {quorum_, trustedSigningKeys_};
     }
 
 
