@@ -1050,7 +1050,6 @@ struct PayStrand_test : public beast::unit_test::suite
         auto const USD = gw["USD"];
         auto const EUR = gw["EUR"];
 
-        if (features[fix1373])
         {
             Env env(*this, features);
             env.fund(XRP(10000), alice, bob, gw);
@@ -1147,17 +1146,12 @@ struct PayStrand_test : public beast::unit_test::suite
             env(offer(bob, XRP(100), USD(100)), txflags(tfPassive));
             env(offer(bob, USD(100), XRP(100)), txflags(tfPassive));
 
-            auto const expectedResult = [&] () -> TER {
-                if (!features[fix1373])
-                    return tesSUCCESS;
-                return temBAD_PATH_LOOP;
-            }();
             // payment path: USD -> USD/XRP -> XRP/USD
             env(pay(alice, carol, USD(100)),
                 sendmax(USD(100)),
                 path(~XRP, ~USD),
                 txflags(tfNoRippleDirect),
-                ter(expectedResult));
+                ter(temBAD_PATH_LOOP));
         }
         {
             Env env(*this, features);
@@ -1245,16 +1239,13 @@ struct PayStrand_test : public beast::unit_test::suite
     {
         using namespace jtx;
         auto const sa = supported_amendments();
-        testToStrand(sa - fix1373 - featureFlowCross);
-        testToStrand(sa           - featureFlowCross);
+        testToStrand(sa - featureFlowCross);
         testToStrand(sa);
 
-        testRIPD1373(sa - fix1373 - featureFlowCross);
-        testRIPD1373(sa           - featureFlowCross);
+        testRIPD1373(sa - featureFlowCross);
         testRIPD1373(sa);
 
-        testLoop(sa - fix1373 - featureFlowCross);
-        testLoop(sa           - featureFlowCross);
+        testLoop(sa - featureFlowCross);
         testLoop(sa);
 
         testNoAccount(sa);

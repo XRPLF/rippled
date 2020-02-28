@@ -4602,14 +4602,13 @@ public:
     {
         using namespace jtx;
         FeatureBitset const all{supported_amendments()};
-        FeatureBitset const f1373{fix1373};
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
 
-        testAll(all - f1373             - takerDryOffer);
-        testAll(all         - flowCross - takerDryOffer);
-        testAll(all         - flowCross                );
-        testAll(all                                    );
+        testAll(all             - takerDryOffer);
+        testAll(all - flowCross - takerDryOffer);
+        testAll(all - flowCross                );
+        testAll(all                            );
         testFalseAssert();
     }
 };
@@ -4620,21 +4619,16 @@ class Offer_manual_test : public Offer_test
     {
         using namespace jtx;
         FeatureBitset const all{supported_amendments()};
-        FeatureBitset const f1373{fix1373};
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const f1513{fix1513};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
 
-        testAll(all - f1373 - flowCross - f1513);
-        testAll(all - f1373 - flowCross        );
-        testAll(all - f1373             - f1513);
-        testAll(all - f1373                    );
-        testAll(all         - flowCross - f1513);
-        testAll(all         - flowCross        );
-        testAll(all                     - f1513);
-        testAll(all                            );
+        testAll(all - flowCross - f1513);
+        testAll(all - flowCross        );
+        testAll(all             - f1513);
+        testAll(all                    );
 
-        testAll(all - f1373 - flowCross - takerDryOffer);
+        testAll(all - flowCross - takerDryOffer);
     }
 };
 

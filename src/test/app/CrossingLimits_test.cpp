@@ -528,9 +528,8 @@ public:
         };
         using namespace jtx;
         auto const sa = supported_amendments();
-        testAll(sa - fix1373 - featureFlowCross);
-        testAll(sa           - featureFlowCross);
-        testAll(sa                             );
+        testAll(sa - featureFlowCross);
+        testAll(sa                   );
     }
 };
 

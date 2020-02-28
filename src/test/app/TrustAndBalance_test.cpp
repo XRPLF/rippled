@@ -510,8 +510,7 @@ public:
 
         using namespace test::jtx;
         auto const sa = supported_amendments();
-        testWithFeatures(sa - fix1373 - featureFlowCross);
-        testWithFeatures(sa            -featureFlowCross);
+        testWithFeatures(sa -featureFlowCross);
         testWithFeatures(sa);
     }
 };

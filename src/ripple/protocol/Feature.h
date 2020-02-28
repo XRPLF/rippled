@@ -374,7 +374,7 @@ extern uint256 const retiredTickSize;
 extern uint256 const retiredFix1368;
 extern uint256 const retiredEscrow;
 extern uint256 const featureCryptoConditionsSuite;
-extern uint256 const fix1373;
+extern uint256 const retiredFix1373;
 extern uint256 const featureEnforceInvariants;
 extern uint256 const featureSortedDirectories;
 extern uint256 const fix1201;

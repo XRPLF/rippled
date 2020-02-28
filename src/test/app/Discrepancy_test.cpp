@@ -146,8 +146,7 @@ public:
     {
         using namespace test::jtx;
         auto const sa = supported_amendments();
-        testXRPDiscrepancy (sa - fix1373 - featureFlowCross);
-        testXRPDiscrepancy (sa           - featureFlowCross);
+        testXRPDiscrepancy (sa - featureFlowCross);
         testXRPDiscrepancy (sa);
     }
 };
