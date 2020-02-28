@@ -1697,10 +1697,7 @@ template <class Adaptor>
 NetClock::time_point
 Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
 {
-    if (adaptor_.parms().useRoundedCloseTime)
-        return roundCloseTime(raw, closeResolution_);
-    else
-        return effCloseTime(raw, closeResolution_, previousLedger_.closeTime());
+    return roundCloseTime(raw, closeResolution_);
 }
 
 }  // namespace ripple

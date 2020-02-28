@@ -381,7 +381,7 @@ extern uint256 const fix1201;
 extern uint256 const fix1512;
 extern uint256 const fix1513;
 extern uint256 const fix1523;
-extern uint256 const fix1528;
+extern uint256 const retiredFix1528;
 extern uint256 const featureDepositAuth;
 extern uint256 const featureChecks;
 extern uint256 const fix1571;
