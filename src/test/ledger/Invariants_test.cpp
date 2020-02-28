@@ -40,7 +40,7 @@ class Invariants_test : public beast::unit_test::suite
             ApplyContext& ac)>;
 
     void
-    doInvariantCheck( bool enabled,
+    doInvariantCheck(
         std::vector<std::string> const& expect_logs,
         Precheck const& precheck,
         XRPAmount fee = XRPAmount{},
@@ -50,13 +50,6 @@ class Invariants_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
         Env env {*this};
-        if (! enabled)
-        {
-            auto& features = env.app().config().features;
-            auto it = features.find(featureEnforceInvariants);
-            if (it != features.end())
-                features.erase(it);
-        }
 
         Account A1 {"A1"};
         Account A2 {"A2"};
@@ -86,49 +79,26 @@ class Invariants_test : public beast::unit_test::suite
         for (TER const terExpect : ters)
         {
             terActual = ac.checkInvariants(terActual, fee);
-            if (enabled)
+            BEAST_EXPECT(terExpect == terActual);
+            BEAST_EXPECT(
+                boost::starts_with(sink.messages().str(), "Invariant failed:") ||
+                boost::starts_with(sink.messages().str(),
+                    "Transaction caused an exception"));
+            //uncomment if you want to log the invariant failure message
+            //log << "   --> " << sink.messages().str() << std::endl;
+            for (auto const& m : expect_logs)
             {
-                BEAST_EXPECT(terExpect == terActual);
-                BEAST_EXPECT(
-                    boost::starts_with(sink.messages().str(), "Invariant failed:") ||
-                    boost::starts_with(sink.messages().str(),
-                        "Transaction caused an exception"));
-                //uncomment if you want to log the invariant failure message
-                //log << "   --> " << sink.messages().str() << std::endl;
-                for (auto const& m : expect_logs)
-                {
-                    BEAST_EXPECT(sink.messages().str().find(m) != std::string::npos);
-                }
-            }
-            else
-            {
-                BEAST_EXPECT(terActual == tesSUCCESS);
-                BEAST_EXPECT(sink.messages().str().empty());
+                BEAST_EXPECT(sink.messages().str().find(m) != std::string::npos);
             }
         }
     }
 
     void
-    testEnabled ()
+    testXRPNotCreated ()
     {
         using namespace test::jtx;
-        testcase ("feature enabled");
-        Env env {*this};
-
-        auto hasInvariants =
-            env.app().config().features.find (featureEnforceInvariants);
-        BEAST_EXPECT(hasInvariants != env.app().config().features.end());
-
-        BEAST_EXPECT(env.current()->rules().enabled(featureEnforceInvariants));
-    }
-
-    void
-    testXRPNotCreated (bool enabled)
-    {
-        using namespace test::jtx;
-        testcase << "checks " << (enabled ? "enabled" : "disabled") <<
-            " - XRP created";
-        doInvariantCheck (enabled,
+        testcase << "XRP created";
+        doInvariantCheck (
             {{ "XRP net change was positive: 500" }},
             [](Account const& A1, Account const&, ApplyContext& ac)
             {
@@ -144,14 +114,13 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
-    testAccountRootsNotRemoved(bool enabled)
+    testAccountRootsNotRemoved()
     {
         using namespace test::jtx;
-        testcase << "checks " << (enabled ? "enabled" : "disabled") <<
-            " - account root removed";
+        testcase << "account root removed";
 
         // An account was deleted, but not by an AccountDelete transaction.
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "an account root was deleted" }},
             [](Account const& A1, Account const&, ApplyContext& ac)
             {
@@ -168,7 +137,7 @@ class Invariants_test : public beast::unit_test::suite
         // Note that this is a case where a second invocation of the invariant
         // checker returns a tecINVARIANT_FAILED, not a tefINVARIANT_FAILED.
         // After a discussion with the team, we believe that's okay.
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "account deletion succeeded without deleting an account" }},
             [](Account const&, Account const&, ApplyContext& ac){return true;},
             XRPAmount{},
@@ -176,7 +145,7 @@ class Invariants_test : public beast::unit_test::suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
         // Successful AccountDelete that deleted more than one account.
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "account deletion succeeded but deleted multiple accounts" }},
             [](Account const& A1, Account const& A2, ApplyContext& ac)
             {
@@ -194,12 +163,11 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
-    testTypesMatch(bool enabled)
+    testTypesMatch()
     {
         using namespace test::jtx;
-        testcase << "checks " << (enabled ? "enabled" : "disabled") <<
-            " - LE types don't match";
-        doInvariantCheck (enabled,
+        testcase << "ledger entry types don't match";
+        doInvariantCheck (
             {{ "ledger entry type mismatch" },
              { "XRP net change of -1000000000 doesn't match fee 0" }},
             [](Account const& A1, Account const&, ApplyContext& ac)
@@ -213,7 +181,7 @@ class Invariants_test : public beast::unit_test::suite
                 return true;
             });
 
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "invalid ledger entry type added" }},
             [](Account const& A1, Account const&, ApplyContext& ac)
             {
@@ -233,12 +201,11 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
-    testNoXRPTrustLine(bool enabled)
+    testNoXRPTrustLine()
     {
         using namespace test::jtx;
-        testcase << "checks " << (enabled ? "enabled" : "disabled") <<
-            " - trust lines with XRP not allowed";
-        doInvariantCheck (enabled,
+        testcase << "trust lines with XRP not allowed";
+        doInvariantCheck (
             {{ "an XRP trust line was created" }},
             [](Account const& A1, Account const& A2, ApplyContext& ac)
             {
@@ -252,13 +219,12 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
-    testXRPBalanceCheck(bool enabled)
+    testXRPBalanceCheck()
     {
         using namespace test::jtx;
-        testcase << "checks " << (enabled ? "enabled" : "disabled") <<
-            " - XRP balance checks";
+        testcase << "XRP balance checks";
 
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "Cannot return non-native STAmount as XRPAmount" }},
             [](Account const& A1, Account const& A2, ApplyContext& ac)
             {
@@ -272,7 +238,7 @@ class Invariants_test : public beast::unit_test::suite
                 return true;
             });
 
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "incorrect account XRP balance" },
              {  "XRP net change was positive: 99999999000000001" }},
             [this](Account const& A1, Account const&, ApplyContext& ac)
@@ -290,7 +256,7 @@ class Invariants_test : public beast::unit_test::suite
                 return true;
             });
 
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "incorrect account XRP balance" },
              { "XRP net change of -1000000001 doesn't match fee 0" }},
             [this](Account const& A1, Account const&, ApplyContext& ac)
@@ -307,20 +273,19 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
-    testTransactionFeeCheck(bool enabled)
+    testTransactionFeeCheck()
     {
         using namespace test::jtx;
         using namespace std::string_literals;
-        testcase << "checks " << (enabled ? "enabled" : "disabled") <<
-            " - Transaction fee checks";
+        testcase << "Transaction fee checks";
 
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "fee paid was negative: -1" },
              { "XRP net change of 0 doesn't match fee -1" }},
             [](Account const&, Account const&, ApplyContext&) { return true; },
             XRPAmount{-1});
 
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "fee paid exceeds system limit: "s +
                 to_string(INITIAL_XRP) },
              { "XRP net change of 0 doesn't match fee "s +
@@ -328,8 +293,7 @@ class Invariants_test : public beast::unit_test::suite
             [](Account const&, Account const&, ApplyContext&) { return true; },
             XRPAmount{INITIAL_XRP});
 
-        doInvariantCheck(
-            enabled,
+        doInvariantCheck (
             {{"fee paid is 20 exceeds fee specified in transaction."},
              {"XRP net change of 0 doesn't match fee 20"}},
             [](Account const&, Account const&, ApplyContext&) { return true; },
@@ -340,13 +304,12 @@ class Invariants_test : public beast::unit_test::suite
 
 
     void
-    testNoBadOffers(bool enabled)
+    testNoBadOffers()
     {
         using namespace test::jtx;
-        testcase << "checks " << (enabled ? "enabled" : "disabled") <<
-            " - no bad offers";
+        testcase << "no bad offers";
 
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "offer with a bad amount" }},
             [](Account const& A1, Account const&, ApplyContext& ac)
             {
@@ -364,7 +327,7 @@ class Invariants_test : public beast::unit_test::suite
                 return true;
             });
 
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "offer with a bad amount" }},
             [](Account const& A1, Account const&, ApplyContext& ac)
             {
@@ -383,7 +346,7 @@ class Invariants_test : public beast::unit_test::suite
                 return true;
             });
 
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "offer with a bad amount" }},
             [](Account const& A1, Account const&, ApplyContext& ac)
             {
@@ -404,13 +367,12 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
-    testNoZeroEscrow(bool enabled)
+    testNoZeroEscrow()
     {
         using namespace test::jtx;
-        testcase << "checks " << (enabled ? "enabled" : "disabled") <<
-            " - no zero escrow";
+        testcase << "no zero escrow";
 
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "Cannot return non-native STAmount as XRPAmount" }},
             [](Account const& A1, Account const& A2, ApplyContext& ac)
             {
@@ -426,7 +388,7 @@ class Invariants_test : public beast::unit_test::suite
                 return true;
             });
 
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "XRP net change of -1000000 doesn't match fee 0"},
              {  "escrow specifies invalid amount" }},
             [](Account const& A1, Account const&, ApplyContext& ac)
@@ -442,7 +404,7 @@ class Invariants_test : public beast::unit_test::suite
                 return true;
             });
 
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "XRP net change was positive: 100000000000000001" },
              {  "escrow specifies invalid amount" }},
             [](Account const& A1, Account const&, ApplyContext& ac)
@@ -463,13 +425,12 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
-    testValidNewAccountRoot(bool enabled)
+    testValidNewAccountRoot()
     {
         using namespace test::jtx;
-        testcase << "checks " << (enabled ? "enabled" : "disabled") <<
-            " - valid new account root";
+        testcase << "valid new account root";
 
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "account root created by a non-Payment" }},
             [](Account const&, Account const&, ApplyContext& ac)
             {
@@ -482,7 +443,7 @@ class Invariants_test : public beast::unit_test::suite
                 return true;
             });
 
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "multiple accounts created in a single transaction" }},
             [](Account const&, Account const&, ApplyContext& ac)
             {
@@ -502,7 +463,7 @@ class Invariants_test : public beast::unit_test::suite
                 return true;
             });
 
-        doInvariantCheck (enabled,
+        doInvariantCheck (
             {{ "account created with wrong starting sequence number" }},
             [](Account const&, Account const&, ApplyContext& ac)
             {
@@ -521,22 +482,15 @@ class Invariants_test : public beast::unit_test::suite
 public:
     void run () override
     {
-        testEnabled ();
-
-        // now run each invariant check test with
-        // the feature enabled and disabled
-        for(auto const& b : {false, true})
-        {
-            testXRPNotCreated (b);
-            testAccountRootsNotRemoved (b);
-            testTypesMatch (b);
-            testNoXRPTrustLine (b);
-            testXRPBalanceCheck (b);
-            testTransactionFeeCheck(b);
-            testNoBadOffers (b);
-            testNoZeroEscrow (b);
-            testValidNewAccountRoot (b);
-        }
+        testXRPNotCreated ();
+        testAccountRootsNotRemoved ();
+        testTypesMatch ();
+        testNoXRPTrustLine ();
+        testXRPBalanceCheck ();
+        testTransactionFeeCheck();
+        testNoBadOffers ();
+        testNoZeroEscrow ();
+        testValidNewAccountRoot ();
     }
 };
 

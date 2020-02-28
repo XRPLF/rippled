@@ -90,50 +90,49 @@ ApplyContext::checkInvariantsHelper(
     XRPAmount const fee,
     std::index_sequence<Is...>)
 {
-    if (view_->rules().enabled(featureEnforceInvariants))
+    try
     {
         auto checkers = getInvariantChecks();
-        try
-        {
-            // call each check's per-entry method
-            visit (
-                [&checkers](
-                    uint256 const& index,
-                    bool isDelete,
-                    std::shared_ptr <SLE const> const& before,
-                    std::shared_ptr <SLE const> const& after)
-                {
-                    (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
-                });
 
-            // Note: do not replace this logic with a `...&&` fold expression.
-            // The fold expression will only run until the first check fails (it
-            // short-circuits). While the logic is still correct, the log
-            // message won't be. Every failed invariant should write to the log,
-            // not just the first one.
-            std::array<bool, sizeof...(Is)> finalizers{
-                {std::get<Is>(checkers).finalize(tx, result, fee, *view_, journal)...}};
-
-            // call each check's finalizer to see that it passes
-            if (! std::all_of( finalizers.cbegin(), finalizers.cend(),
-                    [](auto const& b) { return b; }))
+        // call each check's per-entry method
+        visit (
+            [&checkers](
+                uint256 const& index,
+                bool isDelete,
+                std::shared_ptr <SLE const> const& before,
+                std::shared_ptr <SLE const> const& after)
             {
-                JLOG(journal.fatal()) <<
-                    "Transaction has failed one or more invariants: " <<
-                    to_string(tx.getJson (JsonOptions::none));
+                (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
+            });
 
-                return failInvariantCheck (result);
-            }
-        }
-        catch(std::exception const& ex)
+        // Note: do not replace this logic with a `...&&` fold expression.
+        // The fold expression will only run until the first check fails (it
+        // short-circuits). While the logic is still correct, the log
+        // message won't be. Every failed invariant should write to the log,
+        // not just the first one.
+        std::array<bool, sizeof...(Is)> finalizers{
+            {std::get<Is>(
+                checkers).finalize(tx, result, fee, *view_, journal)...}};
+
+        // call each check's finalizer to see that it passes
+        if (! std::all_of( finalizers.cbegin(), finalizers.cend(),
+                [](auto const& b) { return b; }))
         {
             JLOG(journal.fatal()) <<
-                "Transaction caused an exception in an invariant" <<
-                ", ex: " << ex.what() <<
-                ", tx: " << to_string(tx.getJson (JsonOptions::none));
+                "Transaction has failed one or more invariants: " <<
+                to_string(tx.getJson (JsonOptions::none));
 
             return failInvariantCheck (result);
         }
+    }
+    catch(std::exception const& ex)
+    {
+        JLOG(journal.fatal()) <<
+            "Transaction caused an exception in an invariant" <<
+            ", ex: " << ex.what() <<
+            ", tx: " << to_string(tx.getJson (JsonOptions::none));
+
+        return failInvariantCheck (result);
     }
 
     return result;
