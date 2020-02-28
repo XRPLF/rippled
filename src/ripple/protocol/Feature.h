@@ -76,7 +76,6 @@ class FeatureCollections
         "TrustSetAuth",                // Unconditionally supported.
         "FeeEscalation",               // Unconditionally supported.
         "OwnerPaysFee",
-        "CompareFlowV1V2",
         "PayChan",
         "Flow",                        // Unconditionally supported.
         "CompareTakerFlowCross",
@@ -366,7 +365,6 @@ foreachFeature(FeatureBitset bs, F&& f)
 
 extern uint256 const featureTickets;
 extern uint256 const featureOwnerPaysFee;
-extern uint256 const featureCompareFlowV1V2;
 extern uint256 const featurePayChan;
 extern uint256 const featureFlow;
 extern uint256 const featureCompareTakerFlowCross;
