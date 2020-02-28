@@ -1173,7 +1173,7 @@ Consensus<Adaptor>::shouldPause() const
         !adaptor_.haveValidated() ||
         result_->roundTime.read() > parms.ledgerMAX_CONSENSUS)
     {
-        j_.debug() << "not pausing" << vars.str();
+        j_.debug() << "not pausing (early)" << vars.str();
         return false;
     }
 
