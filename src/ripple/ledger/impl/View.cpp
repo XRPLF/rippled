@@ -713,104 +713,10 @@ dirAdd (ApplyView& view,
     std::function<void (SLE::ref)>          fDescriber,
     beast::Journal j)
 {
-    if (view.rules().enabled(featureSortedDirectories))
-    {
-        if (strictOrder)
-            return view.dirAppend(dir, uLedgerIndex, fDescriber);
-        else
-            return view.dirInsert(dir, uLedgerIndex, fDescriber);
-    }
+    if (strictOrder)
+        return view.dirAppend(dir, uLedgerIndex, fDescriber);
 
-    JLOG (j.trace()) << "dirAdd:" <<
-        " dir=" << to_string (dir.key) <<
-        " uLedgerIndex=" << to_string (uLedgerIndex);
-
-    auto sleRoot = view.peek(dir);
-    std::uint64_t uNodeDir = 0;
-
-    if (! sleRoot)
-    {
-        // No root, make it.
-        sleRoot = std::make_shared<SLE>(dir);
-        sleRoot->setFieldH256 (sfRootIndex, dir.key);
-        view.insert (sleRoot);
-        fDescriber (sleRoot);
-
-        STVector256 v;
-        v.push_back (uLedgerIndex);
-        sleRoot->setFieldV256 (sfIndexes, v);
-
-        JLOG (j.trace()) <<
-            "dirAdd: created root " << to_string (dir.key) <<
-            " for entry " << to_string (uLedgerIndex);
-
-        return uNodeDir;
-    }
-
-    SLE::pointer sleNode;
-    STVector256 svIndexes;
-
-    uNodeDir = sleRoot->getFieldU64 (sfIndexPrevious);       // Get index to last directory node.
-
-    if (uNodeDir)
-    {
-        // Try adding to last node.
-        sleNode = view.peek (keylet::page(dir, uNodeDir));
-        assert (sleNode);
-    }
-    else
-    {
-        // Try adding to root.  Didn't have a previous set to the last node.
-        sleNode     = sleRoot;
-    }
-
-    svIndexes = sleNode->getFieldV256 (sfIndexes);
-
-    if (dirNodeMaxEntries != svIndexes.size ())
-    {
-        // Add to current node.
-        view.update(sleNode);
-    }
-    // Add to new node.
-    else if (!++uNodeDir)
-    {
-        return boost::none;
-    }
-    else
-    {
-        // Have old last point to new node
-        sleNode->setFieldU64 (sfIndexNext, uNodeDir);
-        view.update(sleNode);
-
-        // Have root point to new node.
-        sleRoot->setFieldU64 (sfIndexPrevious, uNodeDir);
-        view.update (sleRoot);
-
-        // Create the new node.
-        sleNode = std::make_shared<SLE>(
-            keylet::page(dir, uNodeDir));
-        sleNode->setFieldH256 (sfRootIndex, dir.key);
-        view.insert (sleNode);
-
-        if (uNodeDir != 1)
-            sleNode->setFieldU64 (sfIndexPrevious, uNodeDir - 1);
-
-        fDescriber (sleNode);
-
-        svIndexes   = STVector256 ();
-    }
-
-    svIndexes.push_back (uLedgerIndex); // Append entry.
-    sleNode->setFieldV256 (sfIndexes, svIndexes);   // Save entry.
-
-    JLOG (j.trace()) <<
-        "dirAdd:   creating: root: " << to_string (dir.key);
-    JLOG (j.trace()) <<
-        "dirAdd:  appending: Entry: " << to_string (uLedgerIndex);
-    JLOG (j.trace()) <<
-        "dirAdd:  appending: Node: " << strHex (uNodeDir);
-
-    return uNodeDir;
+    return view.dirInsert(dir, uLedgerIndex, fDescriber);
 }
 
 TER

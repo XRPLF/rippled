@@ -85,94 +85,61 @@ struct Directory_test : public beast::unit_test::suite
         auto alice = Account("alice");
         auto bob = Account("bob");
 
+        testcase ("Directory Ordering");
+
+        Env env(*this);
+        env.fund(XRP(10000000), alice, gw);
+
+        std::uint32_t const firstOfferSeq {env.seq (alice)};
+        for (std::size_t i = 1; i <= 400; ++i)
+            env(offer(alice, USD(i), XRP(i)));
+        env.close();
+
+        // Check Alice's directory: it should contain one
+        // entry for each offer she added, and, within each
+        // page the entries should be in sorted order.
         {
-            testcase ("Directory Ordering (without 'SortedDirectories' amendment");
+            auto const view = env.closed();
 
-            Env env(
-                *this,
-                supported_amendments().reset(featureSortedDirectories));
-            env.fund(XRP(10000000), alice, bob, gw);
+            std::uint64_t page = 0;
 
-            // Insert 400 offers from Alice, then one from Bob:
-            std::uint32_t const firstOfferSeq {env.seq (alice)};
-            for (std::size_t i = 1; i <= 400; ++i)
-                env(offer(alice, USD(10), XRP(10)));
-
-            // Check Alice's directory: it should contain one
-            // entry for each offer she added. Within each
-            // page, the entries should be in sorted order.
+            do
             {
-                auto dir = Dir(*env.current(),
-                    keylet::ownerDir(alice));
+                auto p = view->read(keylet::page(keylet::ownerDir(alice), page));
 
-                std::uint32_t lastSeq = firstOfferSeq - 1;
+                // Ensure that the entries in the page are sorted
+                auto const& v = p->getFieldV256(sfIndexes);
+                BEAST_EXPECT (std::is_sorted(v.begin(), v.end()));
 
-                // Check that the orders are sequential by checking
-                // that their sequence numbers are:
-                for (auto iter = dir.begin(); iter != std::end(dir); ++iter) {
-                    BEAST_EXPECT(++lastSeq == (*iter)->getFieldU32(sfSequence));
+                // Ensure that the page contains the correct orders by
+                // calculating which sequence numbers belong here.
+                std::uint32_t const minSeq =
+                    firstOfferSeq + (page * dirNodeMaxEntries);
+                std::uint32_t const maxSeq = minSeq + dirNodeMaxEntries;
+
+                for (auto const& e : v)
+                {
+                    auto c = view->read(keylet::child(e));
+                    BEAST_EXPECT(c);
+                    BEAST_EXPECT(c->getFieldU32(sfSequence) >= minSeq);
+                    BEAST_EXPECT(c->getFieldU32(sfSequence) < maxSeq);
                 }
-                BEAST_EXPECT(lastSeq != 1);
-            }
+
+                page = p->getFieldU64(sfIndexNext);
+            } while (page != 0);
         }
 
+        // Now check the orderbook: it should be in the order we placed
+        // the offers.
+        auto book = BookDirs(*env.current(),
+            Book({xrpIssue(), USD.issue()}));
+        int count = 1;
+
+        for (auto const& offer : book)
         {
-            testcase ("Directory Ordering (with 'SortedDirectories' amendment)");
-
-            Env env(*this);
-            env.fund(XRP(10000000), alice, gw);
-
-            std::uint32_t const firstOfferSeq {env.seq (alice)};
-            for (std::size_t i = 1; i <= 400; ++i)
-                env(offer(alice, USD(i), XRP(i)));
-            env.close();
-
-            // Check Alice's directory: it should contain one
-            // entry for each offer she added, and, within each
-            // page the entries should be in sorted order.
-            {
-                auto const view = env.closed();
-
-                std::uint64_t page = 0;
-
-                do
-                {
-                    auto p = view->read(keylet::page(keylet::ownerDir(alice), page));
-
-                    // Ensure that the entries in the page are sorted
-                    auto const& v = p->getFieldV256(sfIndexes);
-                    BEAST_EXPECT (std::is_sorted(v.begin(), v.end()));
-
-                    // Ensure that the page contains the correct orders by
-                    // calculating which sequence numbers belong here.
-                    std::uint32_t const minSeq =
-                        firstOfferSeq + (page * dirNodeMaxEntries);
-                    std::uint32_t const maxSeq = minSeq + dirNodeMaxEntries;
-
-                    for (auto const& e : v)
-                    {
-                        auto c = view->read(keylet::child(e));
-                        BEAST_EXPECT(c);
-                        BEAST_EXPECT(c->getFieldU32(sfSequence) >= minSeq);
-                        BEAST_EXPECT(c->getFieldU32(sfSequence) < maxSeq);
-                    }
-
-                    page = p->getFieldU64(sfIndexNext);
-                } while (page != 0);
-            }
-
-            // Now check the orderbook: it should be in the order we placed
-            // the offers.
-            auto book = BookDirs(*env.current(),
-                Book({xrpIssue(), USD.issue()}));
-            int count = 1;
-
-            for (auto const& offer : book)
-            {
-                count++;
-                BEAST_EXPECT(offer->getFieldAmount(sfTakerPays) == USD(count));
-                BEAST_EXPECT(offer->getFieldAmount(sfTakerGets) == XRP(count));
-            }
+            count++;
+            BEAST_EXPECT(offer->getFieldAmount(sfTakerPays) == USD(count));
+            BEAST_EXPECT(offer->getFieldAmount(sfTakerGets) == XRP(count));
         }
     }
 

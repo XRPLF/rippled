@@ -376,7 +376,7 @@ extern uint256 const retiredEscrow;
 extern uint256 const featureCryptoConditionsSuite;
 extern uint256 const retiredFix1373;
 extern uint256 const retiredEnforceInvariants;
-extern uint256 const featureSortedDirectories;
+extern uint256 const retiredSortedDirectories;
 extern uint256 const fix1201;
 extern uint256 const fix1512;
 extern uint256 const fix1513;
