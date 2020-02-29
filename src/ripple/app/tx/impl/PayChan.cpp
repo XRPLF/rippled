@@ -384,12 +384,6 @@ PayChanFund::doApply()
 NotTEC
 PayChanClaim::preflight (PreflightContext const& ctx)
 {
-    // A search through historic MainNet ledgers by the data team found no
-    // occurrences of a transaction with the error that fix1512 fixed.  That
-    // means there are no old transactions with that error that we might
-    // need to replay.  So the check for fix1512 is removed.  Apr 2018.
-//  bool const noTecs = ctx.rules.enabled(fix1512);
-
     auto const ret = preflight1 (ctx);
     if (!isTesSuccess (ret))
         return ret;
