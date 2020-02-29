@@ -1056,28 +1056,7 @@ struct Escrow_test : public beast::unit_test::suite
         auto const carol = Account("carol");
 
         {
-            testcase ("Metadata & Ownership (without fix1523)");
-            Env env(*this, supported_amendments() - fix1523);
-            env.fund(XRP(5000), alice, bruce, carol);
-
-            auto const seq = env.seq(alice);
-            env(escrow(alice, carol, XRP(1000)), finish_time(env.now() + 1s));
-
-            BEAST_EXPECT((*env.meta())[sfTransactionResult] ==
-                static_cast<std::uint8_t>(tesSUCCESS));
-
-            auto const escrow = env.le(keylet::escrow(alice.id(), seq));
-            BEAST_EXPECT(escrow);
-
-            ripple::Dir aod (*env.current(), keylet::ownerDir(alice.id()));
-            BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
-            BEAST_EXPECT(std::find(aod.begin(), aod.end(), escrow) != aod.end());
-
-            ripple::Dir cod (*env.current(), keylet::ownerDir(carol.id()));
-            BEAST_EXPECT(cod.begin() == cod.end());
-        }
-        {
-            testcase ("Metadata (with fix1523, to self)");
+            testcase ("Metadata to self");
 
             Env env(*this);
             env.fund(XRP(5000), alice, bruce, carol);
@@ -1141,7 +1120,7 @@ struct Escrow_test : public beast::unit_test::suite
             }
         }
         {
-            testcase ("Metadata (with fix1523, to other)");
+            testcase ("Metadata to other");
 
             Env env(*this);
             env.fund(XRP(5000), alice, bruce, carol);
@@ -1266,139 +1245,6 @@ struct Escrow_test : public beast::unit_test::suite
         }
     }
 
-    void testDeletedDestination()
-    {
-        // Make sure an Escrow behaves as expected if its destination is
-        // deleted from the ledger.  This can only happen if fix1523 is
-        // not enabled.  fix1523 is what adds the Escrow to the Escrow's
-        // destination directory.
-        testcase ("Deleted destination");
-
-        using namespace jtx;
-        using namespace std::chrono;
-
-        Account const alice {"alice"};
-        Account const bruce {"bruce"};
-        Account const carol {"carol"};
-        Account const daria {"daria"};
-        Account const evita {"evita"};
-        Account const fiona {"fiona"};
-        Account const grace {"grace"};
-
-        Env env(*this, supported_amendments() - fix1523);
-
-        env.fund(XRP(5000), alice, bruce, carol, daria, evita, fiona, grace);
-        env.close();
-
-        // Because fix1523 is not in play, bruce does not have a back link
-        // from his directory to the escrow.  So we should be able to delete
-        // bruce's account even though he is the destination of an escrow.
-        std::uint32_t const aliceEscrowSeq {env.seq(alice)};
-        env(escrow(alice, bruce, XRP(1000)), finish_time(env.now() + 1s));
-
-        // Similar to bruce, we should be able to delete daria's account.
-        std::uint32_t const carolEscrowSeq {env.seq(carol)};
-        env(escrow(carol, daria, XRP(1000)),
-            finish_time(env.now() + 1s), cancel_time(env.now() + 2s));
-        env.close();
-
-        // Now engage fix1523 so any additional escrows we make will have
-        // back links from both the source and the destination.
-        env.enableFeature (fix1523);
-        env.close();
-
-        // Neither evita not fiona should be able to delete their accounts
-        // once this escrow is created.
-        std::uint32_t const evitaEscrowSeq {env.seq(evita)};
-        env(escrow(evita, fiona, XRP(1000)), finish_time(env.now() + 1s));
-        env.close();
-
-        // Close enough ledgers to be able to delete any of the accounts.
-        {
-            std::uint32_t const openLedgerSeq {env.current()->seq()};
-            int const delta = [&]()->int {
-                if (env.seq(alice) + 255 > openLedgerSeq)
-                    return env.seq(alice) - openLedgerSeq + 255;
-                return 0;
-            }();
-            for (int i = 0; i < delta; ++i)
-                env.close();
-        }
-
-        // The presence of escrows should prevent all of the accounts from
-        // being deleted except for bruce and daria.
-        auto const acctDelFee {drops (env.current()->fees().increment)};
-        env (acctdelete (alice, grace), fee (acctDelFee), ter (tecHAS_OBLIGATIONS));
-        env (acctdelete (bruce, grace), fee (acctDelFee));
-        env (acctdelete (carol, grace), fee (acctDelFee), ter (tecHAS_OBLIGATIONS));
-        env (acctdelete (daria, grace), fee (acctDelFee));
-        env (acctdelete (evita, grace), fee (acctDelFee), ter (tecHAS_OBLIGATIONS));
-        env (acctdelete (fiona, grace), fee (acctDelFee), ter (tecHAS_OBLIGATIONS));
-        env.close();
-
-        // At this point the destination of alice's escrow is missing.  Make
-        // sure the escrow still behaves well.  In particular, an EscrowFinish
-        // should fail but leave the Escrow object in the ledger.
-        env(finish(alice, alice, aliceEscrowSeq), ter(tecNO_DST));
-        env.close();
-
-        // Verify that alice's escrow remains in the ledger.
-        Keylet const aliceEscrowKey {
-            keylet::escrow (alice.id(), aliceEscrowSeq)};
-        BEAST_EXPECT (env.current()->exists (aliceEscrowKey));
-
-        // Since alice still has the escrow she should not be able to delete
-        // her account.
-        env (acctdelete (alice, grace), fee (acctDelFee), ter (tecHAS_OBLIGATIONS));
-
-        // The fact that the destination of carol's escrow has evaporated
-        // should have no impact on whether carol's escrow can be canceled.
-        env(cancel(carol, carol, carolEscrowSeq));
-        env.close();
-
-        // Now that carol's escrow is gone carol should be able to delete
-        // her account.
-        env (acctdelete (carol, grace), fee (acctDelFee));
-        env.close();
-
-        // We'll now resurrect bruce's account.  alice should then be able to
-        // finish her escrow.
-        env(pay (grace, bruce, XRP (5000)));
-        env.close();
-
-        // bruce's account should have returned to the ledger.
-        BEAST_EXPECT (env.current()->exists (keylet::account (bruce.id())));
-        BEAST_EXPECT (env.balance (bruce) == XRP (5000));
-
-        // Verify that alice's escrow is still in the ledger.
-        BEAST_EXPECT (env.current()->exists (aliceEscrowKey));
-
-        // alice finishes her escrow to bruce's resurrected account.
-        env(finish(alice, alice, aliceEscrowSeq));
-        env.close();
-
-        // Verify that alice's escrow is gone from the ledger.
-        BEAST_EXPECT (! env.current()->exists (aliceEscrowKey));
-
-        // Now alice can delete her account.
-        env (acctdelete (alice, grace), fee (acctDelFee));
-        env.close();
-
-        // eveta and fiona are still prevented from deletion by evita's escrow.
-        env (acctdelete (evita, grace), fee (acctDelFee), ter (tecHAS_OBLIGATIONS));
-        env (acctdelete (fiona, grace), fee (acctDelFee), ter (tecHAS_OBLIGATIONS));
-        env.close();
-
-        // Finish evita's escrow.  Then both evita's and fiona's accounts can
-        // be deleted.
-        env(finish(fiona, evita, evitaEscrowSeq));
-        env.close();
-
-        env (acctdelete (evita, grace), fee (acctDelFee));
-        env (acctdelete (fiona, grace), fee (acctDelFee));
-        env.close();
-    }
-
     void run() override
     {
         testEnablement();
@@ -1411,7 +1257,6 @@ struct Escrow_test : public beast::unit_test::suite
         testEscrowConditions();
         testMetaAndOwnership();
         testConsequences();
-        testDeletedDestination();
     }
 };
 

@@ -82,7 +82,7 @@ namespace ripple {
 
     @param now  the current time
     @param mark the cutoff point
-    @return true if \a now refers to a time strictly after \a mark, false otherwise.
+    @return true if \a now refers to a time strictly after \a mark, else false.
 */
 static inline bool after (NetClock::time_point now, std::uint32_t mark)
 {
@@ -251,18 +251,13 @@ EscrowCreate::doApply()
     }
 
     // If it's not a self-send, add escrow to recipient's owner directory.
-    if (ctx_.view ().rules().enabled(fix1523))
+    if (auto const dest = ctx_.tx[sfDestination]; dest != ctx_.tx[sfAccount])
     {
-        auto const dest = ctx_.tx[sfDestination];
-
-        if (dest != ctx_.tx[sfAccount])
-        {
-            auto page = dirAdd(ctx_.view(), keylet::ownerDir(dest), slep->key(),
-                false, describeOwnerDir(dest), ctx_.app.journal ("View"));
-            if (!page)
-                return tecDIR_FULL;
-            (*slep)[sfDestinationNode] = *page;
-        }
+        auto page = dirAdd(ctx_.view(), keylet::ownerDir(dest), slep->key(),
+            false, describeOwnerDir(dest), ctx_.app.journal ("View"));
+        if (!page)
+            return tecDIR_FULL;
+        (*slep)[sfDestinationNode] = *page;
     }
 
     // Deduct owner's balance, increment owner count
@@ -482,10 +477,10 @@ EscrowFinish::doApply()
     }
 
     // Remove escrow from recipient's owner directory, if present.
-    if (ctx_.view ().rules().enabled(fix1523) && (*slep)[~sfDestinationNode])
+    if (auto const optPage = (*slep)[~sfDestinationNode])
     {
-        auto const page = (*slep)[sfDestinationNode];
-        if (! ctx_.view().dirRemove(keylet::ownerDir(destID), page, k.key, true))
+        if (! ctx_.view().dirRemove(
+                keylet::ownerDir(destID), *optPage, k.key, true))
         {
             return tefBAD_LEDGER;
         }
@@ -564,11 +559,10 @@ EscrowCancel::doApply()
     }
 
     // Remove escrow from recipient's owner directory, if present.
-    if (ctx_.view ().rules().enabled(fix1523) && (*slep)[~sfDestinationNode])
+    if (auto const optPage = (*slep)[~sfDestinationNode]; optPage)
     {
-        auto const page = (*slep)[sfDestinationNode];
         if (! ctx_.view().dirRemove(
-                keylet::ownerDir((*slep)[sfDestination]), page, k.key, true))
+            keylet::ownerDir((*slep)[sfDestination]), *optPage, k.key, true))
         {
             return tefBAD_LEDGER;
         }
