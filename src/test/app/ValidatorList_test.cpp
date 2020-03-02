@@ -1267,6 +1267,185 @@ private:
         }
     }
 
+    void
+    testNegativeUNL()
+    {
+        testcase("NegativeUNL");
+        jtx::Env env(*this);
+        PublicKey emptyLocalKey;
+        ManifestCache manifests;
+
+        auto createValidatorList =
+            [&](std::uint32_t vlSize,
+                boost::optional<std::size_t> minimumQuorum = {})
+            -> std::shared_ptr<ValidatorList> {
+            auto trustedKeys = std::make_shared<ValidatorList>(
+                manifests,
+                manifests,
+                env.timeKeeper(),
+                env.app().config().legacy("database_path"),
+                env.journal,
+                minimumQuorum);
+
+            std::vector<std::string> cfgPublishers;
+            std::vector<std::string> cfgKeys;
+            hash_set<NodeID> activeValidators;
+            cfgKeys.reserve(vlSize);
+            while (cfgKeys.size() < cfgKeys.capacity())
+            {
+                auto const valKey = randomNode();
+                cfgKeys.push_back(toBase58(TokenType::NodePublic, valKey));
+                activeValidators.emplace(calcNodeID(valKey));
+            }
+            if (trustedKeys->load(emptyLocalKey, cfgKeys, cfgPublishers))
+            {
+                trustedKeys->updateTrusted(activeValidators);
+                if (trustedKeys->quorum() == std::ceil(cfgKeys.size() * 0.8f))
+                    return trustedKeys;
+            }
+            return nullptr;
+        };
+
+        /*
+         * Test NegativeUNL
+         * == Combinations ==
+         * -- UNL size: 34, 35, 57
+         * -- nUNL size: 0%, 20%, 30%, 50%
+         *
+         * == with UNL size 60
+         * -- set == get,
+         * -- check quorum, with nUNL size: 0, 12, 30, 18
+         * -- nUNL overlap: |nUNL - UNL| = 5, with nUNL size: 18
+         * -- with command line minimumQuorum = 50%,
+         *    seen_reliable affected by nUNL
+         */
+
+        {
+            hash_set<NodeID> activeValidators;
+            //== Combinations ==
+            std::array<std::uint32_t, 4> unlSizes = {34, 35, 39, 60};
+            std::array<std::uint32_t, 4> nUnlPercent = {0, 20, 30, 50};
+            for (auto us : unlSizes)
+            {
+                for (auto np : nUnlPercent)
+                {
+                    auto validators = createValidatorList(us);
+                    BEAST_EXPECT(validators);
+                    if (validators)
+                    {
+                        std::uint32_t nUnlSize = us * np / 100;
+                        auto unl = validators->getTrustedMasterKeys();
+                        hash_set<PublicKey> nUnl;
+                        auto it = unl.begin();
+                        for (std::uint32_t i = 0; i < nUnlSize; ++i)
+                        {
+                            nUnl.insert(*it);
+                            ++it;
+                        }
+                        validators->setNegativeUnl(nUnl);
+                        validators->updateTrusted(activeValidators);
+                        BEAST_EXPECT(
+                            validators->quorum() ==
+                            static_cast<std::size_t>(std::ceil(
+                                std::max((us - nUnlSize) * 0.8f, us * 0.6f))));
+                    }
+                }
+            }
+        }
+
+        {
+            //== with UNL size 60
+            auto validators = createValidatorList(60);
+            BEAST_EXPECT(validators);
+            if (validators)
+            {
+                hash_set<NodeID> activeValidators;
+                auto unl = validators->getTrustedMasterKeys();
+                BEAST_EXPECT(unl.size() == 60);
+                {
+                    //-- set == get,
+                    //-- check quorum, with nUNL size: 0, 30, 18, 12
+                    auto nUnlChange = [&](std::uint32_t nUnlSize,
+                                          std::uint32_t quorum) -> bool {
+                        hash_set<PublicKey> nUnl;
+                        auto it = unl.begin();
+                        for (std::uint32_t i = 0; i < nUnlSize; ++i)
+                        {
+                            nUnl.insert(*it);
+                            ++it;
+                        }
+                        validators->setNegativeUnl(nUnl);
+                        auto nUnl_temp = validators->getNegativeUnl();
+                        if (nUnl_temp.size() == nUnl.size())
+                        {
+                            for (auto& n : nUnl_temp)
+                            {
+                                if (nUnl.find(n) == nUnl.end())
+                                    return false;
+                            }
+                            validators->updateTrusted(activeValidators);
+                            return validators->quorum() == quorum;
+                        }
+                        return false;
+                    };
+                    BEAST_EXPECT(nUnlChange(0, 48));
+                    BEAST_EXPECT(nUnlChange(30, 36));
+                    BEAST_EXPECT(nUnlChange(18, 36));
+                    BEAST_EXPECT(nUnlChange(12, 39));
+                }
+
+                {
+                    // nUNL overlap: |nUNL - UNL| = 5, with nUNL size: 18
+                    auto nUnl = validators->getNegativeUnl();
+                    BEAST_EXPECT(nUnl.size() == 12);
+                    std::size_t ss = 33;
+                    std::vector<uint8_t> data(ss, 0);
+                    data[0] = 0xED;
+                    for (int i = 0; i < 6; ++i)
+                    {
+                        Slice s(data.data(), ss);
+                        data[1]++;
+                        nUnl.emplace(s);
+                    }
+                    validators->setNegativeUnl(nUnl);
+                    validators->updateTrusted(activeValidators);
+                    BEAST_EXPECT(validators->quorum() == 39);
+                }
+            }
+        }
+
+        {
+            //== with UNL size 60
+            //-- with command line minimumQuorum = 50%,
+            //   seen_reliable affected by nUNL
+            auto validators = createValidatorList(60, 30);
+            BEAST_EXPECT(validators);
+            if (validators)
+            {
+                hash_set<NodeID> activeValidators;
+                hash_set<PublicKey> unl = validators->getTrustedMasterKeys();
+                auto it = unl.begin();
+                for (std::uint32_t i = 0; i < 50; ++i)
+                {
+                    activeValidators.insert(calcNodeID(*it));
+                    ++it;
+                }
+                validators->updateTrusted(activeValidators);
+                BEAST_EXPECT(validators->quorum() == 48);
+                hash_set<PublicKey> nUnl;
+                it = unl.begin();
+                for (std::uint32_t i = 0; i < 20; ++i)
+                {
+                    nUnl.insert(*it);
+                    ++it;
+                }
+                validators->setNegativeUnl(nUnl);
+                validators->updateTrusted(activeValidators);
+                BEAST_EXPECT(validators->quorum() == 30);
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -1276,6 +1455,7 @@ public:
         testApplyList();
         testUpdateTrusted();
         testExpires();
+        testNegativeUNL();
     }
 };
 

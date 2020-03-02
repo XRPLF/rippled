@@ -152,6 +152,15 @@ TxFormats::TxFormats()
         },
         commonFields);
 
+    add(jss::UNLModify,
+        ttUNL_MODIFY,
+        {
+            {sfUNLModifyDisabling, soeREQUIRED},
+            {sfLedgerSequence, soeREQUIRED},
+            {sfUNLModifyValidator, soeREQUIRED},
+        },
+        commonFields);
+
     add(jss::TicketCreate,
         ttTICKET_CREATE,
         {

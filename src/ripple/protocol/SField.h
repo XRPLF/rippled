@@ -340,6 +340,7 @@ extern SF_U8 const sfCloseResolution;
 extern SF_U8 const sfMethod;
 extern SF_U8 const sfTransactionResult;
 extern SF_U8 const sfTickSize;
+extern SF_U8 const sfUNLModifyDisabling;
 
 // 16-bit integers
 extern SF_U16 const sfLedgerEntryType;
@@ -375,7 +376,7 @@ extern SF_U32 const sfStampEscrow;
 extern SF_U32 const sfBondAmount;
 extern SF_U32 const sfLoadFee;
 extern SF_U32 const sfOfferSequence;
-extern SF_U32 const sfFirstLedgerSequence;  // Deprecated: do not use
+extern SF_U32 const sfFirstLedgerSequence;
 extern SF_U32 const sfLastLedgerSequence;
 extern SF_U32 const sfTransactionIndex;
 extern SF_U32 const sfOperationLimit;
@@ -471,6 +472,9 @@ extern SF_Blob const sfMemoFormat;
 extern SF_Blob const sfFulfillment;
 extern SF_Blob const sfCondition;
 extern SF_Blob const sfMasterSignature;
+extern SF_Blob const sfUNLModifyValidator;
+extern SF_Blob const sfNegativeUNLToDisable;
+extern SF_Blob const sfNegativeUNLToReEnable;
 
 // account
 extern SF_Account const sfAccount;
@@ -504,6 +508,7 @@ extern SField const sfMemo;
 extern SField const sfSignerEntry;
 extern SField const sfSigner;
 extern SField const sfMajority;
+extern SField const sfNegativeUNLEntry;
 
 // array of objects
 // ARRAY/1 is reserved for end of array
@@ -516,7 +521,7 @@ extern SField const sfSufficient;
 extern SField const sfAffectedNodes;
 extern SField const sfMemos;
 extern SField const sfMajorities;
-
+extern SField const sfNegativeUNL;
 //------------------------------------------------------------------------------
 
 }  // namespace ripple

@@ -40,6 +40,7 @@
 #include <ripple/core/SociDB.h>
 #include <ripple/json/to_string.h>
 #include <ripple/nodestore/Database.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/PublicKey.h>
@@ -598,6 +599,112 @@ Ledger::peek(Keylet const& k) const
     return sle;
 }
 
+hash_set<PublicKey>
+Ledger::negativeUnl() const
+{
+    hash_set<PublicKey> negUnl;
+    if (auto sle = read(keylet::negativeUNL());
+        sle && sle->isFieldPresent(sfNegativeUNL))
+    {
+        auto const& nUnlData = sle->getFieldArray(sfNegativeUNL);
+        for (auto const& n : nUnlData)
+        {
+            if (n.isFieldPresent(sfPublicKey))
+            {
+                auto d = n.getFieldVL(sfPublicKey);
+                auto s = makeSlice(d);
+                if (!publicKeyType(s))
+                {
+                    continue;
+                }
+                negUnl.emplace(s);
+            }
+        }
+    }
+
+    return negUnl;
+}
+
+boost::optional<PublicKey>
+Ledger::negativeUnlToDisable() const
+{
+    if (auto sle = read(keylet::negativeUNL());
+        sle && sle->isFieldPresent(sfNegativeUNLToDisable))
+    {
+        auto d = sle->getFieldVL(sfNegativeUNLToDisable);
+        auto s = makeSlice(d);
+        if (publicKeyType(s))
+            return PublicKey(s);
+    }
+
+    return boost::none;
+}
+
+boost::optional<PublicKey>
+Ledger::negativeUnlToReEnable() const
+{
+    if (auto sle = read(keylet::negativeUNL());
+        sle && sle->isFieldPresent(sfNegativeUNLToReEnable))
+    {
+        auto d = sle->getFieldVL(sfNegativeUNLToReEnable);
+        auto s = makeSlice(d);
+        if (publicKeyType(s))
+            return PublicKey(s);
+    }
+
+    return boost::none;
+}
+
+void
+Ledger::updateNegativeUNL()
+{
+    auto sle = peek(keylet::negativeUNL());
+    if (!sle)
+        return;
+
+    bool const hasToDisable = sle->isFieldPresent(sfNegativeUNLToDisable);
+    bool const hasToReEnable = sle->isFieldPresent(sfNegativeUNLToReEnable);
+
+    if (!hasToDisable && !hasToReEnable)
+        return;
+
+    STArray newNUnl;
+    if (sle->isFieldPresent(sfNegativeUNL))
+    {
+        auto const& oldNUnl = sle->getFieldArray(sfNegativeUNL);
+        for (auto v : oldNUnl)
+        {
+            if (hasToReEnable && v.isFieldPresent(sfPublicKey) &&
+                v.getFieldVL(sfPublicKey) ==
+                    sle->getFieldVL(sfNegativeUNLToReEnable))
+                continue;
+            newNUnl.push_back(v);
+        }
+    }
+
+    if (hasToDisable)
+    {
+        newNUnl.emplace_back(sfNegativeUNLEntry);
+        newNUnl.back().setFieldVL(
+            sfPublicKey, sle->getFieldVL(sfNegativeUNLToDisable));
+        newNUnl.back().setFieldU32(sfFirstLedgerSequence, seq());
+    }
+
+    if (!newNUnl.empty())
+    {
+        sle->setFieldArray(sfNegativeUNL, newNUnl);
+        if (hasToReEnable)
+            sle->makeFieldAbsent(sfNegativeUNLToReEnable);
+        if (hasToDisable)
+            sle->makeFieldAbsent(sfNegativeUNLToDisable);
+        rawReplace(sle);
+    }
+    else
+    {
+        rawErase(sle);
+    }
+}
+
 //------------------------------------------------------------------------------
 bool
 Ledger::walkLedger(beast::Journal j) const
@@ -733,6 +840,23 @@ Ledger::updateSkipList()
         rawInsert(sle);
     else
         rawReplace(sle);
+}
+
+bool
+Ledger::isFlagLedger() const
+{
+    return info_.seq % FLAG_LEDGER_INTERVAL == 0;
+}
+bool
+Ledger::isVotingLedger() const
+{
+    return (info_.seq + 1) % FLAG_LEDGER_INTERVAL == 0;
+}
+
+bool
+isFlagLedger(LedgerIndex seq)
+{
+    return seq % FLAG_LEDGER_INTERVAL == 0;
 }
 
 static bool

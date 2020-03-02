@@ -56,6 +56,7 @@ SF_U8 const sfTransactionResult(access, STI_UINT8, 3, "TransactionResult");
 
 // 8-bit integers (uncommon)
 SF_U8 const sfTickSize(access, STI_UINT8, 16, "TickSize");
+SF_U8 const sfUNLModifyDisabling(access, STI_UINT8, 17, "UNLModifyDisabling");
 
 // 16-bit integers
 SF_U16 const sfLedgerEntryType(
@@ -101,11 +102,8 @@ SF_U32 const sfStampEscrow(access, STI_UINT32, 22, "StampEscrow");
 SF_U32 const sfBondAmount(access, STI_UINT32, 23, "BondAmount");
 SF_U32 const sfLoadFee(access, STI_UINT32, 24, "LoadFee");
 SF_U32 const sfOfferSequence(access, STI_UINT32, 25, "OfferSequence");
-SF_U32 const sfFirstLedgerSequence(
-    access,
-    STI_UINT32,
-    26,
-    "FirstLedgerSequence");  // Deprecated: do not use
+SF_U32 const
+    sfFirstLedgerSequence(access, STI_UINT32, 26, "FirstLedgerSequence");
 SF_U32 const sfLastLedgerSequence(access, STI_UINT32, 27, "LastLedgerSequence");
 SF_U32 const sfTransactionIndex(access, STI_UINT32, 28, "TransactionIndex");
 SF_U32 const sfOperationLimit(access, STI_UINT32, 29, "OperationLimit");
@@ -225,6 +223,10 @@ SF_Blob const sfMasterSignature(
     "MasterSignature",
     SField::sMD_Default,
     SField::notSigning);
+SF_Blob const sfUNLModifyValidator(access, STI_VL, 19, "UNLModifyValidator");
+SF_Blob const sfNegativeUNLToDisable(access, STI_VL, 20, "ValidatorToDisable");
+SF_Blob const
+    sfNegativeUNLToReEnable(access, STI_VL, 21, "ValidatorToReEnable");
 
 // account
 SF_Account const sfAccount(access, STI_ACCOUNT, 1, "Account");
@@ -263,6 +265,7 @@ SField const sfSignerEntry(access, STI_OBJECT, 11, "SignerEntry");
 SField const sfSigner(access, STI_OBJECT, 16, "Signer");
 //                                                                                 17 has not been used yet...
 SField const sfMajority(access, STI_OBJECT, 18, "Majority");
+SField const sfNegativeUNLEntry(access, STI_OBJECT, 19, "DisabledValidator");
 
 // array of objects
 // ARRAY/1 is reserved for end of array
@@ -284,6 +287,7 @@ SField const sfMemos(access, STI_ARRAY, 9, "Memos");
 
 // array of objects (uncommon)
 SField const sfMajorities(access, STI_ARRAY, 16, "Majorities");
+SField const sfNegativeUNL(access, STI_ARRAY, 17, "NegativeUNL");
 
 SField::SField(
     private_access_tag_t,

@@ -25,6 +25,7 @@
 #include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/app/consensus/RCLCxTx.h>
 #include <ripple/app/misc/FeeVote.h>
+#include <ripple/app/misc/NegativeUNLVote.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/Log.h>
 #include <ripple/beast/utility/Journal.h>
@@ -85,6 +86,7 @@ class RCLConsensus
         std::atomic<ConsensusMode> mode_{ConsensusMode::observing};
 
         RCLCensorshipDetector<TxID, LedgerIndex> censorshipDetector_;
+        NegativeUNLVote nUnlVote_;
 
     public:
         using Ledger_t = RCLCxLedger;
@@ -131,10 +133,13 @@ class RCLConsensus
         /** Called before kicking off a new consensus round.
 
             @param prevLedger Ledger that will be prior ledger for next round
+            @param nowTrusted the new validators
             @return Whether we enter the round proposing
         */
         bool
-        preStartRound(RCLCxLedger const& prevLedger);
+        preStartRound(
+            RCLCxLedger const& prevLedger,
+            hash_set<NodeID> const& nowTrusted);
 
         bool
         haveValidated() const;
@@ -471,13 +476,16 @@ public:
     Json::Value
     getJson(bool full) const;
 
-    //! @see Consensus::startRound
+    /** Adjust the set of trusted validators and kick-off the next round of
+       consensus. For more details, @see Consensus::startRound
+     */
     void
     startRound(
         NetClock::time_point const& now,
         RCLCxLedger::ID const& prevLgrId,
         RCLCxLedger const& prevLgr,
-        hash_set<NodeID> const& nowUntrusted);
+        hash_set<NodeID> const& nowUntrusted,
+        hash_set<NodeID> const& nowTrusted);
 
     //! @see Consensus::timerEntry
     void

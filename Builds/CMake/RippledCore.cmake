@@ -377,6 +377,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/misc/CanonicalTXSet.cpp
   src/ripple/app/misc/FeeVoteImpl.cpp
   src/ripple/app/misc/HashRouter.cpp
+  src/ripple/app/misc/NegativeUNLVote.cpp
   src/ripple/app/misc/NetworkOPs.cpp
   src/ripple/app/misc/SHAMapStoreImp.cpp
   src/ripple/app/misc/impl/AccountTxPaging.cpp
@@ -746,6 +747,7 @@ target_sources (rippled PRIVATE
   src/test/consensus/DistributedValidatorsSim_test.cpp
   src/test/consensus/LedgerTiming_test.cpp
   src/test/consensus/LedgerTrie_test.cpp
+  src/test/consensus/NegativeUNL_test.cpp
   src/test/consensus/ScaleFreeSim_test.cpp
   src/test/consensus/Validations_test.cpp
   #[===============================[

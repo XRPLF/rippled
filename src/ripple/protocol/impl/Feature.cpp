@@ -131,7 +131,9 @@ detail::supportedAmendments()
         "RequireFullyCanonicalSig",
         "fix1781",
         "HardenedValidations",
-        "fixAmendmentMajorityCalc"};
+        "fixAmendmentMajorityCalc",
+        //"NegativeUNL"      // Commented out to prevent automatic enablement
+    };
     return supported;
 }
 
@@ -182,7 +184,8 @@ uint256 const
     featureRequireFullyCanonicalSig = *getRegisteredFeature("RequireFullyCanonicalSig"),
     fix1781                         = *getRegisteredFeature("fix1781"),
     featureHardenedValidations      = *getRegisteredFeature("HardenedValidations"),
-    fixAmendmentMajorityCalc        = *getRegisteredFeature("fixAmendmentMajorityCalc");
+    fixAmendmentMajorityCalc        = *getRegisteredFeature("fixAmendmentMajorityCalc"),
+    featureNegativeUNL              = *getRegisteredFeature("NegativeUNL");
 
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.

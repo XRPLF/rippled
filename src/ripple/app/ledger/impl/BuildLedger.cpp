@@ -47,6 +47,11 @@ buildLedgerImpl(
 {
     auto built = std::make_shared<Ledger>(*parent, closeTime);
 
+    if (built->isFlagLedger() && built->rules().enabled(featureNegativeUNL))
+    {
+        built->updateNegativeUNL();
+    }
+
     // Set up to write SHAMap changes to our database,
     //   perform updates, extract changes
 

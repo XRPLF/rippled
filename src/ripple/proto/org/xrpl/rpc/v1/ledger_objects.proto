@@ -6,7 +6,7 @@ option java_multiple_files = true;
 
 import "org/xrpl/rpc/v1/common.proto";
 
-// Next field: 13
+// Next field: 14
 message LedgerObject
 {
     oneof object
@@ -23,10 +23,11 @@ message LedgerObject
         PayChannel pay_channel = 10;
         RippleState ripple_state = 11;
         SignerList signer_list = 12;
+        NegativeUnl negative_unl = 13;
     }
 }
 
-// Next field: 13
+// Next field: 14
 enum LedgerEntryType
 {
     LEDGER_ENTRY_TYPE_UNSPECIFIED     = 0;
@@ -42,6 +43,7 @@ enum LedgerEntryType
     LEDGER_ENTRY_TYPE_PAY_CHANNEL     = 10;
     LEDGER_ENTRY_TYPE_RIPPLE_STATE    = 11;
     LEDGER_ENTRY_TYPE_SIGNER_LIST     = 12;
+    LEDGER_ENTRY_TYPE_NEGATIVE_UNL    = 13;
 }
 
 // Next field: 15
@@ -328,4 +330,14 @@ message SignerList
     SignerListID signer_list_id = 6;
 
     SignerQuorum signer_quorum = 7;
+}
+
+// Next field: 4
+message NegativeUnl
+{
+    repeated NegativeUnlEntry negative_unl_entries = 1;
+
+    NegativeUnlToDisable validator_to_disable = 2;
+
+    NegativeUnlToReEnable validator_to_re_enable = 3;
 }

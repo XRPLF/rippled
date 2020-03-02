@@ -86,6 +86,7 @@ invoke_preflight(PreflightContext const& ctx)
             return DeleteAccount ::preflight(ctx);
         case ttAMENDMENT:
         case ttFEE:
+        case ttUNL_MODIFY:
             return Change ::preflight(ctx);
         default:
             assert(false);
@@ -173,6 +174,7 @@ invoke_preclaim(PreclaimContext const& ctx)
             return invoke_preclaim<DeleteAccount>(ctx);
         case ttAMENDMENT:
         case ttFEE:
+        case ttUNL_MODIFY:
             return invoke_preclaim<Change>(ctx);
         default:
             assert(false);
@@ -227,6 +229,7 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             return DeleteAccount::calculateBaseFee(view, tx);
         case ttAMENDMENT:
         case ttFEE:
+        case ttUNL_MODIFY:
             return Change::calculateBaseFee(view, tx);
         default:
             assert(false);
@@ -294,6 +297,7 @@ invoke_calculateConsequences(STTx const& tx)
             return invoke_calculateConsequences<DeleteAccount>(tx);
         case ttAMENDMENT:
         case ttFEE:
+        case ttUNL_MODIFY:
             [[fallthrough]];
         default:
             assert(false);
@@ -390,7 +394,8 @@ invoke_apply(ApplyContext& ctx)
             return p();
         }
         case ttAMENDMENT:
-        case ttFEE: {
+        case ttFEE:
+        case ttUNL_MODIFY: {
             Change p(ctx);
             return p();
         }

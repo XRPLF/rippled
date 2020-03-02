@@ -329,6 +329,46 @@ public:
     void
     unshare() const;
 
+    /**
+     * get Negative UNL validators' master public keys
+     *
+     * @return the public keys
+     */
+    hash_set<PublicKey>
+    negativeUnl() const;
+
+    /**
+     * get the to be disabled validator's master public key if any
+     *
+     * @return the public key if any
+     */
+    boost::optional<PublicKey>
+    negativeUnlToDisable() const;
+
+    /**
+     * get the to be re-enabled validator's master public key if any
+     *
+     * @return the public key if any
+     */
+    boost::optional<PublicKey>
+    negativeUnlToReEnable() const;
+
+    /**
+     * update the Negative UNL ledger component.
+     * @note must be called at and only at flag ledgers
+     *       must be called before applying UNLModify Tx
+     */
+    void
+    updateNegativeUNL();
+
+    /** Returns true if the ledger is a flag ledger */
+    bool
+    isFlagLedger() const;
+
+    /** Returns true if the ledger directly precedes a flag ledger */
+    bool
+    isVotingLedger() const;
+
 private:
     class sles_iter_impl;
     class txs_iter_impl;
@@ -354,6 +394,11 @@ private:
 
 /** A ledger wrapped in a CachedView. */
 using CachedLedger = CachedView<Ledger>;
+
+std::uint32_t constexpr FLAG_LEDGER_INTERVAL = 256;
+/** Returns true if the given ledgerIndex is a flag ledgerIndex */
+bool
+isFlagLedger(LedgerIndex seq);
 
 //------------------------------------------------------------------------------
 //

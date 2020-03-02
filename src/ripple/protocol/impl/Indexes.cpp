@@ -58,6 +58,7 @@ enum class LedgerNameSpace : std::uint16_t {
     XRP_PAYMENT_CHANNEL = 'x',
     CHECK = 'C',
     DEPOSIT_PREAUTH = 'p',
+    NEGATIVE_UNL = 'N',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -159,6 +160,14 @@ fees() noexcept
 {
     static Keylet const ret{
         ltFEE_SETTINGS, indexHash(LedgerNameSpace::FEE_SETTINGS)};
+    return ret;
+}
+
+Keylet const&
+negativeUNL() noexcept
+{
+    static Keylet const ret{
+        ltNEGATIVE_UNL, indexHash(LedgerNameSpace::NEGATIVE_UNL)};
     return ret;
 }
 

@@ -58,6 +58,9 @@ convert(org::xrpl::rpc::v1::AccountRoot& to, STObject const& from);
 void
 convert(org::xrpl::rpc::v1::SignerList& to, STObject const& from);
 
+void
+convert(org::xrpl::rpc::v1::NegativeUnl& to, STObject const& from);
+
 template <class T>
 void
 convert(T& to, STAmount const& from)

@@ -85,6 +85,10 @@ skip(LedgerIndex ledger) noexcept;
 Keylet const&
 fees() noexcept;
 
+/** The (fixed) index of the object containing the ledger negativeUnl. */
+Keylet const&
+negativeUNL() noexcept;
+
 /** The beginning of an order book */
 struct book_t
 {
