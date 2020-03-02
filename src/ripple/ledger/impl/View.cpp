@@ -566,39 +566,37 @@ hashOfSeq (ReadView const& ledger, LedgerIndex seq,
     if (seq == (ledger.seq() - 1))
         return ledger.info().parentHash;
 
-    // Within 256...
+    if (int diff = ledger.seq() - seq; diff <= 256)
     {
-        int diff = ledger.seq() - seq;
-        if (diff <= 256)
+        // Within 256...
+        auto const hashIndex =
+            ledger.read(keylet::skip());
+        if (hashIndex)
         {
-            auto const hashIndex =
-                ledger.read(keylet::skip());
-            if (hashIndex)
-            {
-                assert (hashIndex->getFieldU32 (sfLastLedgerSequence) ==
-                        (ledger.seq() - 1));
-                STVector256 vec = hashIndex->getFieldV256 (sfHashes);
-                if (vec.size () >= diff)
-                    return vec[vec.size () - diff];
-                JLOG (journal.warn()) <<
-                    "Ledger " << ledger.seq() <<
-                    " missing hash for " << seq <<
-                    " (" << vec.size () << "," << diff << ")";
-            }
-            else
-            {
-                JLOG (journal.warn()) <<
-                    "Ledger " << ledger.seq() <<
-                    ":" << ledger.info().hash << " missing normal list";
-            }
+            assert (hashIndex->getFieldU32 (sfLastLedgerSequence) ==
+                    (ledger.seq() - 1));
+            STVector256 vec = hashIndex->getFieldV256 (sfHashes);
+            if (vec.size () >= diff)
+                return vec[vec.size () - diff];
+            JLOG (journal.warn()) <<
+                "Ledger " << ledger.seq() <<
+                " missing hash for " << seq <<
+                " (" << vec.size () << "," << diff << ")";
         }
-        if ((seq & 0xff) != 0)
+        else
         {
-            JLOG (journal.debug()) <<
-                "Can't get seq " << seq <<
-                " from " << ledger.seq() << " past";
-            return boost::none;
+            JLOG (journal.warn()) <<
+                "Ledger " << ledger.seq() <<
+                ":" << ledger.info().hash << " missing normal list";
         }
+    }
+
+    if ((seq & 0xff) != 0)
+    {
+        JLOG (journal.debug()) <<
+            "Can't get seq " << seq <<
+            " from " << ledger.seq() << " past";
+        return boost::none;
     }
 
     // in skiplist
