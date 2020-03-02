@@ -329,6 +329,30 @@ public:
     void
     unshare() const;
 
+    /**
+     * get Negative UNL validators' master public keys
+     *
+     * @return the public keys
+     */
+    hash_set<PublicKey>
+    nUnl() const;
+
+    /**
+     * get the to be disabled validator's master public key if any
+     *
+     * @return the public key if any
+     */
+    boost::optional<PublicKey>
+    nUnlToDisable() const;
+
+    /**
+     * get the to be re-enabled validator's master public key if any
+     *
+     * @return the public key if any
+     */
+    boost::optional<PublicKey>
+    nUnlToReEnable() const;
+
 private:
     class sles_iter_impl;
     class txs_iter_impl;
@@ -338,6 +362,12 @@ private:
 
     std::shared_ptr<SLE>
     peek(Keylet const& k) const;
+
+    /**
+     * update the Negative UNL ledger component, only at flag ledgers
+     */
+    void
+    updateNegativeUNL();
 
     bool mImmutable;
 

@@ -22,6 +22,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/tx/impl/Change.h>
 #include <ripple/basics/Log.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/TxFlags.h>
 
@@ -62,6 +63,13 @@ Change::preflight(PreflightContext const& ctx)
         return temBAD_SEQUENCE;
     }
 
+    if (ctx.tx.getTxnType() == ttUNL_MODIDY &&
+        !ctx.rules.enabled(featureNegativeUNL))
+    {
+        JLOG(ctx.j.warn()) << "Change: NegativeUNL not enabled";
+        return temDISABLED;
+    }
+
     return tesSUCCESS;
 }
 
@@ -76,7 +84,8 @@ Change::preclaim(PreclaimContext const& ctx)
         return temINVALID;
     }
 
-    if (ctx.tx.getTxnType() != ttAMENDMENT && ctx.tx.getTxnType() != ttFEE)
+    if (ctx.tx.getTxnType() != ttAMENDMENT && ctx.tx.getTxnType() != ttFEE &&
+        ctx.tx.getTxnType() != ttUNL_MODIDY)
         return temUNKNOWN;
 
     return tesSUCCESS;
@@ -85,11 +94,16 @@ Change::preclaim(PreclaimContext const& ctx)
 TER
 Change::doApply()
 {
+    assert(
+        ctx_.tx.getTxnType() == ttAMENDMENT || ctx_.tx.getTxnType() == ttFEE ||
+        ctx_.tx.getTxnType() == ttUNL_MODIDY);
+
     if (ctx_.tx.getTxnType() == ttAMENDMENT)
         return applyAmendment();
-
-    assert(ctx_.tx.getTxnType() == ttFEE);
-    return applyFee();
+    else if (ctx_.tx.getTxnType() == ttFEE)
+        return applyFee();
+    else
+        return applyUNLModify();
 }
 
 void
@@ -218,6 +232,129 @@ Change::applyFee()
     view().update(feeObject);
 
     JLOG(j_.warn()) << "Fees have been changed";
+    return tesSUCCESS;
+}
+
+TER
+Change::applyUNLModify()
+{
+    if (view().seq() % 256 != 0)
+    {
+        JLOG(j_.warn()) << "N-UNL: applyUNLModify, not a flag ledger, seq="
+                        << view().seq();
+        return tefFAILURE;
+    }
+
+    if (!ctx_.tx.isFieldPresent(sfUNLModifyDisabling) ||
+        ctx_.tx.getFieldU8(sfUNLModifyDisabling) > 1 ||
+        !ctx_.tx.isFieldPresent(sfLedgerSequence) ||
+        !ctx_.tx.isFieldPresent(sfUNLModifyValidator))
+    {
+        JLOG(j_.warn()) << "N-UNL: applyUNLModify, wrong Tx format.";
+        return tefFAILURE;
+    }
+
+    bool disabling = ctx_.tx.getFieldU8(sfUNLModifyDisabling);
+    auto seq = ctx_.tx.getFieldU32(sfLedgerSequence);
+    if (seq != view().seq())
+    {
+        JLOG(j_.warn()) << "N-UNL: applyUNLModify, wrong ledger seq=" << seq;
+        return tefFAILURE;
+    }
+
+    Blob validator = ctx_.tx.getFieldVL(sfUNLModifyValidator);
+    if (!publicKeyType(makeSlice(validator)))
+    {
+        JLOG(j_.warn()) << "N-UNL: applyUNLModify, bad validator key";
+        return tefFAILURE;
+    }
+
+    JLOG(j_.info()) << "N-UNL: applyUNLModify, disabling=" << disabling
+                    << " seq=" << seq
+                    << " validator data:" << strHex(validator);
+
+    auto const k = keylet::negativeUNL();
+    SLE::pointer nUnlObject = view().peek(k);
+    if (!nUnlObject)
+    {
+        nUnlObject = std::make_shared<SLE>(k);
+        view().insert(nUnlObject);
+    }
+
+    bool found = false;
+    if (nUnlObject->isFieldPresent(sfNegativeUNL))
+    {
+        auto const& nUnl = nUnlObject->getFieldArray(sfNegativeUNL);
+        for (auto it = nUnl.begin(); it != nUnl.end(); ++it)
+        {
+            if (it->isFieldPresent(sfPublicKey) &&
+                it->getFieldVL(sfPublicKey) == validator)
+                found = true;
+        }
+    }
+
+    if (disabling)
+    {
+        // cannot have more than one toDisable
+        if (nUnlObject->isFieldPresent(sfNegativeUNLToDisable))
+        {
+            JLOG(j_.warn()) << "N-UNL: applyUNLModify, already has ToDisable";
+            return tefFAILURE;
+        }
+
+        // cannot be the same as toReEnable
+        if (nUnlObject->isFieldPresent(sfNegativeUNLToReEnable))
+        {
+            if (nUnlObject->getFieldVL(sfNegativeUNLToReEnable) == validator)
+            {
+                JLOG(j_.warn())
+                    << "N-UNL: applyUNLModify, ToDisable is same as ToReEnable";
+                return tefFAILURE;
+            }
+        }
+
+        // cannot be in nUNL already
+        if (found)
+        {
+            JLOG(j_.warn())
+                << "N-UNL: applyUNLModify, ToDisable is already in nUNL";
+            return tefFAILURE;
+        }
+
+        nUnlObject->setFieldVL(sfNegativeUNLToDisable, validator);
+    }
+    else
+    {
+        // cannot have more than one toReEnable
+        if (nUnlObject->isFieldPresent(sfNegativeUNLToReEnable))
+        {
+            JLOG(j_.warn()) << "N-UNL: applyUNLModify, already has ToReEnable";
+            return tefFAILURE;
+        }
+
+        // cannot be the same as toDisable
+        if (nUnlObject->isFieldPresent(sfNegativeUNLToDisable))
+        {
+            if (nUnlObject->getFieldVL(sfNegativeUNLToDisable) == validator)
+            {
+                JLOG(j_.warn())
+                    << "N-UNL: applyUNLModify, ToReEnable is same as ToDisable";
+                return tefFAILURE;
+            }
+        }
+
+        // must be in nUNL
+        if (!found)
+        {
+            JLOG(j_.warn())
+                << "N-UNL: applyUNLModify, ToReEnable is not in nUNL";
+            return tefFAILURE;
+        }
+
+        nUnlObject->setFieldVL(sfNegativeUNLToReEnable, validator);
+    }
+
+    view().update(nUnlObject);
     return tesSUCCESS;
 }
 

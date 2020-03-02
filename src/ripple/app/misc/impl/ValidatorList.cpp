@@ -746,6 +746,16 @@ ValidatorList::getJson() const
         }
     });
 
+    // Negative UNL
+    if (!nUnl_.empty())
+    {
+        Json::Value& jNegativeUNL = (res[jss::NegativeUNL] = Json::arrayValue);
+        for (auto const& k : nUnl_)
+        {
+            jNegativeUNL.append(toBase58(TokenType::NodePublic, k));
+        }
+    }
+
     return res;
 }
 
@@ -818,7 +828,10 @@ ValidatorList::getAvailable(boost::beast::string_view const& pubKey)
 }
 
 std::size_t
-ValidatorList::calculateQuorum(std::size_t trusted, std::size_t seen)
+ValidatorList::calculateQuorum(
+    std::size_t unlSize,
+    std::size_t effectiveUnlSize,
+    std::size_t seenSize)
 {
     // Do not use achievable quorum until lists from all configured
     // publishers are available
@@ -858,11 +871,12 @@ ValidatorList::calculateQuorum(std::size_t trusted, std::size_t seen)
     // Oi,j > nj/2 + ni − qi + ti,j
     // ni - pi > (ni - pi + pj)/2 + ni − .8*ni + .2*ni
     // pi + pj < .2*ni
-    auto quorum = static_cast<std::size_t>(std::ceil(trusted * 0.8f));
+    auto quorum = static_cast<std::size_t>(std::max(
+        std::ceil(effectiveUnlSize * 0.8f), std::ceil(unlSize * 0.6f)));
 
     // Use lower quorum specified via command line if the normal quorum appears
     // unreachable based on the number of recently received validations.
-    if (minimumQuorum_ && *minimumQuorum_ < quorum && seen < quorum)
+    if (minimumQuorum_ && *minimumQuorum_ < quorum && seenSize < quorum)
     {
         quorum = *minimumQuorum_;
 
@@ -922,7 +936,27 @@ ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
         << trustedMasterKeys_.size() << "  of " << keyListings_.size()
         << " listed validators eligible for inclusion in the trusted set";
 
-    quorum_ = calculateQuorum(trustedMasterKeys_.size(), seenValidators.size());
+    auto numUNL = trustedMasterKeys_.size();
+    auto numEffectiveUNL = numUNL;
+    auto numSeen = seenValidators.size();
+    if (!nUnl_.empty())
+    {
+        for (auto const& k : trustedMasterKeys_)
+        {
+            if (nUnl_.find(k) != nUnl_.end())
+                --numEffectiveUNL;
+        }
+
+        hash_set<NodeID> nUnl;
+        for (auto const& k : nUnl_)
+            nUnl.insert(calcNodeID(k));
+        for (auto const& nid : seenValidators)
+        {
+            if (nUnl.find(nid) != nUnl.end())
+                --numSeen;
+        }
+    }
+    quorum_ = calculateQuorum(numUNL, numEffectiveUNL, numSeen);
 
     JLOG(j_.debug()) << "Using quorum of " << quorum_ << " for new set of "
                      << trustedMasterKeys_.size() << " trusted validators ("

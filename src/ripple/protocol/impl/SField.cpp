@@ -56,6 +56,7 @@ SF_U8 const sfTransactionResult(access, STI_UINT8, 3, "TransactionResult");
 
 // 8-bit integers (uncommon)
 SF_U8 const sfTickSize(access, STI_UINT8, 16, "TickSize");
+SF_U8 const sfUNLModifyDisabling(access, STI_UINT8, 17, "UNLModifyDisabling");
 
 // 16-bit integers
 SF_U16 const sfLedgerEntryType(
@@ -119,6 +120,7 @@ SF_U32 const sfCancelAfter(access, STI_UINT32, 36, "CancelAfter");
 SF_U32 const sfFinishAfter(access, STI_UINT32, 37, "FinishAfter");
 SF_U32 const sfSignerListID(access, STI_UINT32, 38, "SignerListID");
 SF_U32 const sfSettleDelay(access, STI_UINT32, 39, "SettleDelay");
+SF_U32 const sfNegativeUNLLgrSeq(access, STI_UINT32, 40, "BeginLedgerSeq");
 
 // 64-bit integers
 SF_U64 const sfIndexNext(access, STI_UINT64, 1, "IndexNext");
@@ -225,6 +227,10 @@ SF_Blob const sfMasterSignature(
     "MasterSignature",
     SField::sMD_Default,
     SField::notSigning);
+SF_Blob const sfUNLModifyValidator(access, STI_VL, 19, "UNLModifyValidator");
+SF_Blob const sfNegativeUNLToDisable(access, STI_VL, 20, "ValidatorToDisable");
+SF_Blob const
+    sfNegativeUNLToReEnable(access, STI_VL, 21, "ValidatorToReEnable");
 
 // account
 SF_Account const sfAccount(access, STI_ACCOUNT, 1, "Account");
@@ -263,6 +269,7 @@ SField const sfSignerEntry(access, STI_OBJECT, 11, "SignerEntry");
 SField const sfSigner(access, STI_OBJECT, 16, "Signer");
 //                                                                                 17 has not been used yet...
 SField const sfMajority(access, STI_OBJECT, 18, "Majority");
+SField const sfNegativeUNLEntry(access, STI_OBJECT, 19, "DisabledValidator");
 
 // array of objects
 // ARRAY/1 is reserved for end of array
@@ -284,6 +291,7 @@ SField const sfMemos(access, STI_ARRAY, 9, "Memos");
 
 // array of objects (uncommon)
 SField const sfMajorities(access, STI_ARRAY, 16, "Majorities");
+SField const sfNegativeUNL(access, STI_ARRAY, 17, "NegativeUNL");
 
 SField::SField(
     private_access_tag_t,

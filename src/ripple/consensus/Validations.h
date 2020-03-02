@@ -322,6 +322,9 @@ class Validations
         beast::uhash<>>
         bySequence_;
 
+    // Sequence of the earliest validation to keep from expire
+    boost::optional<Seq> toKeep_;
+
     // Represents the ancestry of validated ledgers
     LedgerTrie<Ledger> trie_;
 
@@ -686,15 +689,39 @@ public:
         return ValStatus::current;
     }
 
+    /**
+     * Set the smallest sequence number of validations to keep from expire
+     * @param s the sequence number
+     */
+    void
+    setSeqToKeep(Seq const& s)
+    {
+        std::lock_guard lock{mutex_};
+        toKeep_ = s;
+    }
+
     /** Expire old validation sets
 
         Remove validation sets that were accessed more than
-        validationSET_EXPIRES ago.
+        validationSET_EXPIRES ago and were not asked to keep.
     */
     void
     expire()
     {
         std::lock_guard lock{mutex_};
+        if (toKeep_)
+        {
+            for (auto i = byLedger_.begin(); i != byLedger_.end(); ++i)
+            {
+                auto const& validationMap = i->second;
+                if (!validationMap.empty() &&
+                    validationMap.begin()->second.seq() >= toKeep_)
+                {
+                    byLedger_.touch(i);
+                }
+            }
+        }
+
         beast::expire(byLedger_, parms_.validationSET_EXPIRES);
         beast::expire(bySequence_, parms_.validationSET_EXPIRES);
     }

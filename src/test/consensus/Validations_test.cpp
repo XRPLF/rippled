@@ -707,10 +707,18 @@ class Validations_test : public beast::unit_test::suite
         Node a = harness.makeNode();
 
         Ledger ledgerA = h["a"];
-
         BEAST_EXPECT(ValStatus::current == harness.add(a.validate(ledgerA)));
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerA.id()));
+
+        // Keep the validation from expire
         harness.clock().advance(harness.parms().validationSET_EXPIRES);
+        harness.vals().setSeqToKeep(ledgerA.seq());
+        harness.vals().expire();
+        BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerA.id()));
+
+        // Allow the validation to expire
+        harness.clock().advance(harness.parms().validationSET_EXPIRES);
+        harness.vals().setSeqToKeep(++ledgerA.seq());
         harness.vals().expire();
         BEAST_EXPECT(!harness.vals().numTrustedForLedger(ledgerA.id()));
     }

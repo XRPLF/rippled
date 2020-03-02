@@ -40,6 +40,7 @@
 #include <ripple/core/SociDB.h>
 #include <ripple/json/to_string.h>
 #include <ripple/nodestore/Database.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/PublicKey.h>
@@ -281,6 +282,11 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     {
         info_.closeTime =
             prevLedger.info_.closeTime + info_.closeTimeResolution;
+    }
+
+    if (prevLedger.rules().enabled(featureNegativeUNL))
+    {
+        updateNegativeUNL();
     }
 }
 
@@ -596,6 +602,119 @@ Ledger::peek(Keylet const& k) const
     if (!k.check(*sle))
         return nullptr;
     return sle;
+}
+
+hash_set<PublicKey>
+Ledger::nUnl() const
+{
+    hash_set<PublicKey> nUnl;
+    if (auto sle = read(keylet::negativeUNL()))
+    {
+        if (sle->isFieldPresent(sfNegativeUNL))
+        {
+            auto const& nUnlData = sle->getFieldArray(sfNegativeUNL);
+            for (auto const& n : nUnlData)
+            {
+                if (n.isFieldPresent(sfPublicKey))
+                {
+                    auto d = n.getFieldVL(sfPublicKey);
+                    auto s = makeSlice(d);
+                    if (!publicKeyType(s))
+                    {
+                        continue;
+                    }
+                    nUnl.emplace(s);
+                }
+            }
+        }
+    }
+
+    return nUnl;
+}
+
+boost::optional<PublicKey>
+Ledger::nUnlToDisable() const
+{
+    if (auto sle = read(keylet::negativeUNL()))
+    {
+        if (sle->isFieldPresent(sfNegativeUNLToDisable))
+        {
+            auto d = sle->getFieldVL(sfNegativeUNLToDisable);
+            auto s = makeSlice(d);
+            if (publicKeyType(s))
+                return PublicKey(s);
+        }
+    }
+
+    return boost::none;
+}
+
+boost::optional<PublicKey>
+Ledger::nUnlToReEnable() const
+{
+    if (auto sle = read(keylet::negativeUNL()))
+    {
+        if (sle->isFieldPresent(sfNegativeUNLToReEnable))
+        {
+            auto d = sle->getFieldVL(sfNegativeUNLToReEnable);
+            auto s = makeSlice(d);
+            if (publicKeyType(s))
+                return PublicKey(s);
+        }
+    }
+
+    return boost::none;
+}
+
+void
+Ledger::updateNegativeUNL()
+{
+    if (info_.seq % 256 == 0)
+    {
+        if (auto sle = peek(keylet::negativeUNL()))
+        {
+            bool hasToDisable = sle->isFieldPresent(sfNegativeUNLToDisable);
+            bool hasToReEnable = sle->isFieldPresent(sfNegativeUNLToReEnable);
+            if (hasToDisable || hasToReEnable)
+            {
+                STArray newNUnl;
+                if (sle->isFieldPresent(sfNegativeUNL))
+                {
+                    auto const& oldNUnl = sle->getFieldArray(sfNegativeUNL);
+                    for (auto v : oldNUnl)
+                    {
+                        if (hasToReEnable && v.isFieldPresent(sfPublicKey) &&
+                            v.getFieldVL(sfPublicKey) ==
+                                sle->getFieldVL(sfNegativeUNLToReEnable))
+                            continue;
+                        newNUnl.push_back(v);
+                    }
+                }
+
+                if (hasToDisable)
+                {
+                    newNUnl.emplace_back(sfNegativeUNLEntry);
+                    newNUnl.back().setFieldVL(
+                        sfPublicKey, sle->getFieldVL(sfNegativeUNLToDisable));
+                    newNUnl.back().setFieldU32(sfNegativeUNLLgrSeq, seq());
+                }
+
+                if (!newNUnl.empty())
+                {
+                    sle->setFieldArray(sfNegativeUNL, newNUnl);
+                    if (hasToReEnable)
+                        sle->delField(sfNegativeUNLToReEnable);
+                    if (hasToDisable)
+                        sle->delField(sfNegativeUNLToDisable);
+                    rawReplace(sle);
+                }
+                else
+                {
+                    rawErase(sle);
+                }
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

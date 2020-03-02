@@ -112,8 +112,8 @@ class FeatureCollections
         "fix1781",  // XRPEndpointSteps should be included in the circular
                     // payment check
         "HardenedValidations",
-        "fixAmendmentMajorityCalc"};  // Fix Amendment majority calculation
-
+        "fixAmendmentMajorityCalc",  // Fix Amendment majority calculation
+        "NegativeUNL"};
     std::vector<uint256> features;
     boost::container::flat_map<uint256, std::size_t> featureToIndex;
     boost::container::flat_map<std::string, uint256> nameToFeature;
@@ -368,6 +368,7 @@ extern uint256 const featureRequireFullyCanonicalSig;
 extern uint256 const fix1781;
 extern uint256 const featureHardenedValidations;
 extern uint256 const fixAmendmentMajorityCalc;
+extern uint256 const featureNegativeUNL;
 
 }  // namespace ripple
 

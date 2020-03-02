@@ -28,6 +28,7 @@
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
+#include <ripple/app/misc/NegativeUNLVote.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/ValidatorKeys.h>
@@ -89,6 +90,7 @@ RCLConsensus::Adaptor::Adaptor(
     , valSecret_{validatorKeys.secretKey}
     , valCookie_{
           rand_int<std::uint64_t>(1, std::numeric_limits<std::uint64_t>::max())}
+    , nUnlVote_(nodeID_, j_)
 {
     assert(valCookie_ != 0);
 
@@ -190,7 +192,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
     prop.set_currenttxhash(
         proposal.position().begin(), proposal.position().size());
     prop.set_previousledger(
-        proposal.prevLedger().begin(), proposal.position().size());
+        proposal.prevLedger().begin(), proposal.prevLedger().size());
     prop.set_proposeseq(proposal.proposeSeq());
     prop.set_closetime(proposal.closeTime().time_since_epoch().count());
 
@@ -317,18 +319,32 @@ RCLConsensus::Adaptor::onClose(
     }
 
     // Add pseudo-transactions to the set
-    if ((app_.config().standalone() || (proposing && !wrongLCL)) &&
-        ((prevLedger->info().seq % 256) == 0))
+    if (app_.config().standalone() || (proposing && !wrongLCL))
     {
-        // previous ledger was flag ledger, add pseudo-transactions
-        auto const validations = app_.getValidations().getTrustedForLedger(
-            prevLedger->info().parentHash);
-
-        if (validations.size() >= app_.validators().quorum())
+        auto seq = prevLedger->info().seq + 1;
+        if (((seq - 1) % 256) == 0)
         {
-            feeVote_->doVoting(prevLedger, validations, initialSet);
-            app_.getAmendmentTable().doVoting(
-                prevLedger, validations, initialSet);
+            // previous ledger was flag ledger, add fee and amendment
+            // pseudo-transactions
+            auto validations = app_.getValidations().getTrustedForLedger(
+                prevLedger->info().parentHash);
+            filterValsWithnUnl(validations, app_.validators().getnUnlNodeIDs());
+            if (validations.size() >= app_.validators().quorum())
+            {
+                feeVote_->doVoting(prevLedger, validations, initialSet);
+                app_.getAmendmentTable().doVoting(
+                    prevLedger, validations, initialSet);
+            }
+        }
+        else if (
+            (seq % 256) == 0 && prevLedger->rules().enabled(featureNegativeUNL))
+        {
+            // flag ledger now, add negative UNL pseudo-transactions
+            nUnlVote_.doVoting(
+                prevLedger,
+                app_.validators().getTrustedMasterKeys(),
+                app_.getValidations(),
+                initialSet);
         }
     }
 
@@ -1005,13 +1021,25 @@ RCLConsensus::Adaptor::updateOperatingMode(std::size_t const positions) const
 }
 
 void
+RCLConsensus::Adaptor::newValidators(
+    LedgerIndex seq,
+    hash_set<NodeID> const& nowTrusted)
+{
+    if (!nowTrusted.empty())
+        nUnlVote_.newValidators(seq, nowTrusted);
+}
+
+void
 RCLConsensus::startRound(
     NetClock::time_point const& now,
     RCLCxLedger::ID const& prevLgrId,
     RCLCxLedger const& prevLgr,
-    hash_set<NodeID> const& nowUntrusted)
+    hash_set<NodeID> const& nowUntrusted,
+    hash_set<NodeID> const& nowTrusted)
 {
     std::lock_guard _{mutex_};
+    if (prevLgr.ledger_->rules().enabled(featureNegativeUNL))
+        adaptor_.newValidators(prevLgr.seq() + 1, nowTrusted);
     consensus_.startRound(
         now, prevLgrId, prevLgr, nowUntrusted, adaptor_.preStartRound(prevLgr));
 }

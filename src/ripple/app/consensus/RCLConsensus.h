@@ -25,6 +25,7 @@
 #include <ripple/app/consensus/RCLCxPeerPos.h>
 #include <ripple/app/consensus/RCLCxTx.h>
 #include <ripple/app/misc/FeeVote.h>
+#include <ripple/app/misc/NegativeUNLVote.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/Log.h>
 #include <ripple/beast/utility/Journal.h>
@@ -85,6 +86,7 @@ class RCLConsensus
         std::atomic<ConsensusMode> mode_{ConsensusMode::observing};
 
         RCLCensorshipDetector<TxID, LedgerIndex> censorshipDetector_;
+        NegativeUNLVote nUnlVote_;
 
     public:
         using Ledger_t = RCLCxLedger;
@@ -173,6 +175,15 @@ class RCLConsensus
         {
             return parms_;
         }
+
+        /**
+         * to inform NegativeUNLVote that new validators are added
+         *
+         * @param seq the current LedgerIndex
+         * @param nowTrusted the new validators
+         */
+        void
+        newValidators(LedgerIndex seq, hash_set<NodeID> const& nowTrusted);
 
     private:
         //---------------------------------------------------------------------
@@ -472,12 +483,14 @@ public:
     getJson(bool full) const;
 
     //! @see Consensus::startRound
+    //! Except nowTrusted is for informing NegativeUNLVote of new validators.
     void
     startRound(
         NetClock::time_point const& now,
         RCLCxLedger::ID const& prevLgrId,
         RCLCxLedger const& prevLgr,
-        hash_set<NodeID> const& nowUntrusted);
+        hash_set<NodeID> const& nowUntrusted,
+        hash_set<NodeID> const& nowTrusted);
 
     //! @see Consensus::timerEntry
     void
