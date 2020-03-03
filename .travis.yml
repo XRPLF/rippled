@@ -408,7 +408,8 @@ cache:
     - $CACHE_DIR
 
 before_install:
-  - if [ "$(uname)" = "Darwin" ] ; then export NUM_PROCESSORS=$(sysctl -n hw.physicalcpu); else export NUM_PROCESSORS=$(nproc); fi
+  # NUM_PROCESSORS was set to 1 due to problems in parallel launch of unit tests on Mac platform
+  - if [ "$(uname)" = "Darwin" ] ; then export NUM_PROCESSORS=1; else export NUM_PROCESSORS=$(nproc); fi
   - echo "NUM PROC is ${NUM_PROCESSORS}"
   - if [ "$(uname)" = "Linux" ] ; then docker pull ${DOCKER_IMAGE}; fi
   - if [ "${MATRIX_EVAL}" != "" ] ; then eval "${MATRIX_EVAL}"; fi
