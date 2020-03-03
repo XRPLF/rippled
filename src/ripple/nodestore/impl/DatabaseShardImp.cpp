@@ -135,13 +135,12 @@ DatabaseShardImp::init()
                     std::make_unique<Shard>(app_, *this, shardIndex, j_)};
                 if (!shard->open(scheduler_, *ctx_))
                 {
-                    if (!shard->isLegacy())
-                        return false;
-
-                    // Remove legacy shard
+                    // Remove corrupted or legacy shard
                     shard->removeOnDestroy();
                     JLOG(j_.warn())
-                        << "shard " << shardIndex << " removed, legacy shard";
+                        << "shard " << shardIndex << " removed, "
+                        << (shard->isLegacy() ? "legacy" : "corrupted")
+                        << " shard";
                     continue;
                 }
 
@@ -276,11 +275,11 @@ DatabaseShardImp::prepareShard(std::uint32_t shardIndex)
     // is greater or equal to the current shard.
     auto seqCheck = [&](std::uint32_t seq) {
         // seq will be greater than zero if valid
-        if (seq > earliestLedgerSeq() && shardIndex >= seqToShardIndex(seq))
+        if (seq >= earliestLedgerSeq() && shardIndex >= seqToShardIndex(seq))
             return fail("has an invalid index");
         return true;
     };
-    if (!seqCheck(app_.getLedgerMaster().getValidLedgerIndex()) ||
+    if (!seqCheck(app_.getLedgerMaster().getValidLedgerIndex() + 1) ||
         !seqCheck(app_.getLedgerMaster().getCurrentLedgerIndex()))
     {
         return false;
@@ -1100,6 +1099,9 @@ DatabaseShardImp::initConfig(std::lock_guard<std::mutex>&)
         ledgersPerShard_ = get<std::uint32_t>(section, "ledgers_per_shard");
         if (ledgersPerShard_ == 0 || ledgersPerShard_ % 256 != 0)
             return fail("'ledgers_per_shard' must be a multiple of 256");
+
+        earliestShardIndex_ = seqToShardIndex(earliestLedgerSeq());
+        avgShardFileSz_ = ledgersPerShard_ * kilobytes(192);
     }
 
     // NuDB is the default and only supported permanent storage backend

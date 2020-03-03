@@ -325,8 +325,10 @@ public:
 
             The Application network time is set to
             the close time of the resulting ledger.
+
+        @return true if no error, false if error
     */
-    void
+    bool
     close(
         NetClock::time_point closeTime,
         boost::optional<std::chrono::milliseconds> consensusDelay =
@@ -336,25 +338,29 @@ public:
 
         The time is calculated as the duration from
         the previous ledger closing time.
+
+        @return true if no error, false if error
     */
     template <class Rep, class Period>
-    void
+    bool
     close(std::chrono::duration<Rep, Period> const& elapsed)
     {
         // VFALCO Is this the correct time?
-        close(now() + elapsed);
+        return close(now() + elapsed);
     }
 
     /** Close and advance the ledger.
 
         The time is calculated as five seconds from
         the previous ledger closing time.
+
+        @return true if no error, false if error
     */
-    void
+    bool
     close()
     {
         // VFALCO Is this the correct time?
-        close(std::chrono::seconds(5));
+        return close(std::chrono::seconds(5));
     }
 
     /** Turn on JSON tracing.

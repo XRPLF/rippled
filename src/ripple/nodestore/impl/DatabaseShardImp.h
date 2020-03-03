@@ -234,7 +234,7 @@ private:
     std::uint32_t ledgersPerShard_ = ledgersPerShardDefault;
 
     // The earliest shard index
-    std::uint32_t const earliestShardIndex_;
+    std::uint32_t earliestShardIndex_;
 
     // Average storage space required by a shard (in bytes)
     std::uint64_t avgShardFileSz_;

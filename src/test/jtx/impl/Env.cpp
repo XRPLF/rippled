@@ -107,13 +107,14 @@ Env::closed()
     return app().getLedgerMaster().getClosedLedger();
 }
 
-void
+bool
 Env::close(
     NetClock::time_point closeTime,
     boost::optional<std::chrono::milliseconds> consensusDelay)
 {
     // Round up to next distinguishable value
     using namespace std::chrono_literals;
+    bool res = true;
     closeTime += closed()->info().closeTimeResolution - 1s;
     timeKeeper().set(closeTime);
     // Go through the rpc interface unless we need to simulate
@@ -122,10 +123,17 @@ Env::close(
         app().getOPs().acceptLedger(consensusDelay);
     else
     {
-        rpc("ledger_accept");
-        // VFALCO No error check?
+        auto resp = rpc("ledger_accept");
+        if (resp["result"]["status"] != std::string("success"))
+        {
+            JLOG(journal.error())
+                << "Env::close() failed: " << resp["result"]["status"]
+                << std::endl;
+            res = false;
+        }
     }
     timeKeeper().set(closed()->info().closeTime);
+    return res;
 }
 
 void
