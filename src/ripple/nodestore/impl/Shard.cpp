@@ -394,7 +394,9 @@ Shard::isLegacy() const
 }
 
 bool
-Shard::finalize(const bool writeSQLite)
+Shard::finalize(
+    bool const writeSQLite,
+    boost::optional<uint256> const& referenceHash)
 {
     assert(backend_);
 
@@ -497,6 +499,11 @@ Shard::finalize(const bool writeSQLite)
         return fail(
             std::string("exception ") + e.what() + " in function " + __func__);
     }
+
+    // Validate the last ledger hash of a downloaded shard
+    // using a ledger hash obtained from the peer network
+    if (referenceHash && *referenceHash != hash)
+        return fail("invalid last ledger hash");
 
     // Validate every ledger stored in the backend
     std::shared_ptr<Ledger> ledger;
