@@ -167,6 +167,9 @@ public:
         section.set("path", tempDir.path());
         section.set("max_size_gb", "100");
         section.set("ledgers_per_shard", "256");
+        section.set("earliest_seq", "257");
+        auto& sectionNode = c->section(ConfigSection::nodeDatabase());
+        sectionNode.set("earliest_seq", "257");
         c->setupControl(true, true, true);
 
         jtx::Env env(*this, std::move(c));
@@ -262,6 +265,9 @@ public:
             section.set("path", tempDir.path());
             section.set("max_size_gb", "100");
             section.set("ledgers_per_shard", "256");
+            section.set("earliest_seq", "257");
+            auto& sectionNode = c->section(ConfigSection::nodeDatabase());
+            sectionNode.set("earliest_seq", "257");
             c->setupControl(true, true, true);
 
             jtx::Env env(*this, std::move(c));
@@ -358,6 +364,9 @@ public:
         section.set("ledgers_per_shard", "256");
         section.set("shard_verification_retry_interval", "1");
         section.set("shard_verification_max_attempts", "10000");
+        section.set("earliest_seq", "257");
+        auto& sectionNode = c->section(ConfigSection::nodeDatabase());
+        sectionNode.set("earliest_seq", "257");
         c->setupControl(true, true, true);
 
         jtx::Env env(*this, std::move(c));
