@@ -126,9 +126,13 @@ public:
 
         @param writeSQLite If true, SQLite entries will be rewritten using
         verified backend data.
+        @param referenceHash If present, this hash must match the hash
+        of the last ledger in the shard.
     */
     bool
-    finalize(const bool writeSQLite);
+    finalize(
+        bool const writeSQLite,
+        boost::optional<uint256> const& referenceHash);
 
     void
     stop()
