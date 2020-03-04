@@ -65,7 +65,7 @@ if (is_root_project)
         -v ${CMAKE_CURRENT_BINARY_DIR}/packages:/opt/rippled_bld/pkg/out
         "$<$<BOOL:${map_user}>:--volume=/etc/passwd:/etc/passwd;--volume=/etc/group:/etc/group;--user=${DOCKER_USER_ID}:${DOCKER_GROUP_ID}>"
         -t rippled-rpm-builder:${container_label}
-        /bin/bash -c "cp -pu rippled/Builds/containers/packaging/rpm/build_rpm.sh . && ./build_rpm.sh"
+        /bin/bash -c "cp -fpu rippled/Builds/containers/packaging/rpm/build_rpm.sh . && ./build_rpm.sh"
       VERBATIM
       USES_TERMINAL
       COMMAND_EXPAND_LISTS
@@ -128,7 +128,7 @@ if (is_root_project)
         -v ${CMAKE_CURRENT_BINARY_DIR}/packages:/opt/rippled_bld/pkg/out
         "$<$<BOOL:${map_user}>:--volume=/etc/passwd:/etc/passwd;--volume=/etc/group:/etc/group;--user=${DOCKER_USER_ID}:${DOCKER_GROUP_ID}>"
         -t rippled-dpkg-builder:${container_label}
-        /bin/bash -c "cp -pu rippled/Builds/containers/packaging/dpkg/build_dpkg.sh . && ./build_dpkg.sh"
+        /bin/bash -c "cp -fpu rippled/Builds/containers/packaging/dpkg/build_dpkg.sh . && ./build_dpkg.sh"
       VERBATIM
       USES_TERMINAL
       COMMAND_EXPAND_LISTS
