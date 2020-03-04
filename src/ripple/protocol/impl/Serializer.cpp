@@ -61,7 +61,7 @@ int Serializer::add32 (HashPrefix p)
     static_assert(std::is_same_v<std::uint32_t,
         std::underlying_type_t<decltype(p)>>);
 
-    return add32(static_cast<std::uint32_t>(p));
+    return add32(safe_cast<std::uint32_t>(p));
 }
 
 int Serializer::add64 (std::uint64_t i)
