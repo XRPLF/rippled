@@ -3,9 +3,9 @@ set -ex
 
 # make sure pkg source files are up to date with repo
 cd /opt/rippled_bld/pkg
-cp -pru rippled/Builds/containers/packaging/dpkg/debian/. debian/
-cp -pu rippled/Builds/containers/shared/rippled.service debian/
-cp -pu rippled/Builds/containers/shared/update_sources.sh .
+cp -fpru rippled/Builds/containers/packaging/dpkg/debian/. debian/
+cp -fpu rippled/Builds/containers/shared/rippled.service debian/
+cp -fpu rippled/Builds/containers/shared/update_sources.sh .
 source update_sources.sh
 
 # Build the dpkg

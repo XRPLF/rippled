@@ -2,8 +2,8 @@
 set -ex
 
 cd /opt/rippled_bld/pkg
-cp -pu rippled/Builds/containers/packaging/rpm/rippled.spec .
-cp -pu rippled/Builds/containers/shared/update_sources.sh .
+cp -fpu rippled/Builds/containers/packaging/rpm/rippled.spec .
+cp -fpu rippled/Builds/containers/shared/update_sources.sh .
 source update_sources.sh
 
 # Build the rpm
