@@ -835,7 +835,7 @@ static bool saveValidatedLedger (
         if (! aLedger)
         {
             aLedger = std::make_shared<AcceptedLedger>(ledger, app.accountIDCache(), app.logs());
-            app.getAcceptedLedgerCache().canonicalize(ledger->info().hash, aLedger);
+            app.getAcceptedLedgerCache().canonicalize_replace_client(ledger->info().hash, aLedger);
         }
     }
     catch (std::exception const&)

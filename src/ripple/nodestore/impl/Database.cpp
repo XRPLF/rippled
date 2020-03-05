@@ -216,7 +216,7 @@ Database::doFetch(uint256 const& hash, std::uint32_t seq,
         else
         {
             // Ensure all threads get the same object
-            pCache.canonicalize(hash, nObj);
+            pCache.canonicalize_replace_client(hash, nObj);
 
             // Since this was a 'hard' fetch, we will log it.
             JLOG(j_.trace()) <<
@@ -265,7 +265,7 @@ Database::storeLedger(
         {
             for (auto& nObj : batch)
             {
-                dstPCache->canonicalize(nObj->getHash(), nObj, true);
+                dstPCache->canonicalize_replace_cache(nObj->getHash(), nObj);
                 dstNCache->erase(nObj->getHash());
                 storeStats(nObj->getData().size());
             }
