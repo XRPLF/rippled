@@ -1605,9 +1605,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 {
     protocol::TMProposeSet& set = *m;
 
-    if (set.has_hops() && !cluster())
-        set.set_hops(set.hops() + 1);
-
     auto const sig = makeSlice(set.signature());
 
     // Preliminary check for the validity of the signature: A DER encoded
@@ -2110,9 +2107,6 @@ void
 PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 {
     auto const closeTime = app_.timeKeeper().closeTime();
-
-    if (m->has_hops() && !cluster())
-        m->set_hops(m->hops() + 1);
 
     if (m->validation().size() < 50)
     {

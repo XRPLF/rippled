@@ -1186,16 +1186,12 @@ OverlayImpl::findPeerByPublicKey(PublicKey const& pubKey)
 void
 OverlayImpl::send(protocol::TMProposeSet& m)
 {
-    if (setup_.expire)
-        m.set_hops(0);
     auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
     for_each([&](std::shared_ptr<PeerImp>&& p) { p->send(sm); });
 }
 void
 OverlayImpl::send(protocol::TMValidation& m)
 {
-    if (setup_.expire)
-        m.set_hops(0);
     auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
     for_each([&](std::shared_ptr<PeerImp>&& p) { p->send(sm); });
 
@@ -1212,8 +1208,6 @@ OverlayImpl::send(protocol::TMValidation& m)
 void
 OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid)
 {
-    if (m.has_hops() && m.hops() >= maxTTL)
-        return;
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
         auto const sm =
@@ -1228,8 +1222,6 @@ OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid)
 void
 OverlayImpl::relay(protocol::TMValidation& m, uint256 const& uid)
 {
-    if (m.has_hops() && m.hops() >= maxTTL)
-        return;
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
         auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
@@ -1335,7 +1327,6 @@ setup_Overlay(BasicConfig const& config)
     {
         auto const& section = config.section("overlay");
         setup.context = make_SSLContext("");
-        setup.expire = get<bool>(section, "expire", false);
 
         set(setup.ipLimit, "ip_limit", section);
         if (setup.ipLimit < 0)

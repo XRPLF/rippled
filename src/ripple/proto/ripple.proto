@@ -179,10 +179,14 @@ message TMProposeSet
     required uint32 closeTime           = 4;
     required bytes signature            = 5;    // signature of above fields
     required bytes previousledger       = 6;
-    optional bool checkedSignature      = 7;    // node vouches signature is correct
     repeated bytes addedTransactions    = 10;   // not required if number is large
     repeated bytes removedTransactions  = 11;   // not required if number is large
-    optional uint32 hops                = 12;   // Number of hops traveled
+
+    // node vouches signature is correct
+    optional bool checkedSignature      = 7     [deprecated=true];
+
+    // Number of hops traveled
+    optional uint32 hops                = 12    [deprecated=true];
 }
 
 enum TxSetStatus
@@ -210,9 +214,14 @@ message TMValidatorList
 // Used to sign a final closed ledger after reprocessing
 message TMValidation
 {
-    required bytes validation       = 1;    // in STValidation signed form
-    optional bool checkedSignature  = 2;    // node vouches signature is correct
-    optional uint32 hops            = 3;    // Number of hops traveled
+    // The serialized validation
+    required bytes validation = 1;
+
+    // node vouches signature is correct
+    optional bool checkedSignature = 2 [deprecated = true];
+
+    // Number of hops traveled
+    optional uint32 hops = 3           [deprecated = true];
 }
 
 message TMIPv4Endpoint

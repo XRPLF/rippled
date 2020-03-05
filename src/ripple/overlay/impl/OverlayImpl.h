@@ -52,8 +52,6 @@ namespace ripple {
 class PeerImp;
 class BasicConfig;
 
-constexpr std::uint32_t maxTTL = 2;
-
 class OverlayImpl : public Overlay
 {
 public:

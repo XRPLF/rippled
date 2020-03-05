@@ -72,7 +72,6 @@ public:
         explicit Setup() = default;
 
         std::shared_ptr<boost::asio::ssl::context> context;
-        bool expire = false;
         beast::IP::Address public_ip;
         int ipLimit = 0;
         std::uint32_t crawlOptions = 0;
