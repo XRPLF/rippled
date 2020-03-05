@@ -64,7 +64,7 @@ DatabaseRotatingImp::store(NodeObjectType type, Blob&& data,
     uint256 const& hash, std::uint32_t seq)
 {
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
-    pCache_->canonicalize(hash, nObj, true);
+    pCache_->canonicalize_replace_cache(hash, nObj);
     getWritableBackend()->store(nObj);
     nCache_->erase(hash);
     storeStats(nObj->getData().size());

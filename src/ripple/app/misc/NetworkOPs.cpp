@@ -2665,7 +2665,7 @@ void NetworkOPsImp::pubLedger (
     {
         alpAccepted = std::make_shared<AcceptedLedger> (
             lpAccepted, app_.accountIDCache(), app_.logs());
-        app_.getAcceptedLedgerCache().canonicalize (
+        app_.getAcceptedLedgerCache().canonicalize_replace_client(
             lpAccepted->info().hash, alpAccepted);
     }
 

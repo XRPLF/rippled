@@ -892,7 +892,7 @@ DatabaseShardImp::store(
     auto [backend, pCache, nCache] = shard->getBackendAll();
     auto nObj {NodeObject::createObject(type, std::move(data), hash)};
 
-    pCache->canonicalize(hash, nObj, true);
+    pCache->canonicalize_replace_cache(hash, nObj);
     backend->store(nObj);
     nCache->erase(hash);
 

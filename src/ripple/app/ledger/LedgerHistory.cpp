@@ -62,8 +62,8 @@ LedgerHistory::insert(
 
     std::unique_lock sl (m_ledgers_by_hash.peekMutex ());
 
-    const bool alreadyHad = m_ledgers_by_hash.canonicalize (
-        ledger->info().hash, ledger, true);
+    const bool alreadyHad = m_ledgers_by_hash.canonicalize_replace_cache(
+        ledger->info().hash, ledger);
     if (validated)
         mLedgersByIndex[ledger->info().seq] = ledger->info().hash;
 
@@ -108,7 +108,7 @@ LedgerHistory::getLedgerBySeq (LedgerIndex index)
         std::unique_lock sl (m_ledgers_by_hash.peekMutex ());
 
         assert (ret->isImmutable ());
-        m_ledgers_by_hash.canonicalize (ret->info().hash, ret);
+        m_ledgers_by_hash.canonicalize_replace_client(ret->info().hash, ret);
         mLedgersByIndex[ret->info().seq] = ret->info().hash;
         return (ret->info().seq == index) ? ret : nullptr;
     }
@@ -133,7 +133,7 @@ LedgerHistory::getLedgerByHash (LedgerHash const& hash)
 
     assert (ret->isImmutable ());
     assert (ret->info().hash == hash);
-    m_ledgers_by_hash.canonicalize (ret->info().hash, ret);
+    m_ledgers_by_hash.canonicalize_replace_client(ret->info().hash, ret);
     assert (ret->info().hash == hash);
 
     return ret;
@@ -432,7 +432,7 @@ void LedgerHistory::builtLedger (
         m_consensus_validated.peekMutex());
 
     auto entry = std::make_shared<cv_entry>();
-    m_consensus_validated.canonicalize(index, entry, false);
+    m_consensus_validated.canonicalize_replace_client(index, entry);
 
     if (entry->validated && ! entry->built)
     {
@@ -472,7 +472,7 @@ void LedgerHistory::validatedLedger (
         m_consensus_validated.peekMutex());
 
     auto entry = std::make_shared<cv_entry>();
-    m_consensus_validated.canonicalize(index, entry, false);
+    m_consensus_validated.canonicalize_replace_client(index, entry);
 
     if (entry->built && ! entry->validated)
     {
