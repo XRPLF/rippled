@@ -1072,7 +1072,7 @@ SHAMap::canonicalize(SHAMapHash const& hash, std::shared_ptr<SHAMapAbstractNode>
     assert (node->getSeq() == 0);
     assert (node->getNodeHash() == hash);
 
-    f_.treecache().canonicalize (hash.as_uint256(), node);
+    f_.treecache().canonicalize_replace_client(hash.as_uint256(), node);
 }
 
 void

@@ -1946,7 +1946,7 @@ LedgerMaster::addFetchPack (
     uint256 const& hash,
     std::shared_ptr< Blob >& data)
 {
-    fetch_packs_.canonicalize (hash, data);
+    fetch_packs_.canonicalize_replace_client(hash, data);
 }
 
 boost::optional<Blob>

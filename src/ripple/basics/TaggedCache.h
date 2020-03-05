@@ -291,7 +291,14 @@ public:
 
         @return `true` If the key already existed.
     */
-    bool canonicalize (const key_type& key, std::shared_ptr<T>& data, bool replace = false)
+private:
+
+    template <bool replace>
+    bool
+    canonicalize(
+        const key_type& key,
+        std::conditional_t<replace, std::shared_ptr<T> const, std::shared_ptr<T>>& data
+    )
     {
         // Return canonical value, store if needed, refresh in cache
         // Return values: true=we had the data already
@@ -313,7 +320,7 @@ public:
 
         if (entry.isCached ())
         {
-            if (replace)
+            if constexpr (replace)
             {
                 entry.ptr = data;
                 entry.weak_ptr = data;
@@ -330,7 +337,7 @@ public:
 
         if (cachedData)
         {
-            if (replace)
+            if constexpr (replace)
             {
                 entry.ptr = data;
                 entry.weak_ptr = data;
@@ -350,6 +357,17 @@ public:
         ++m_cache_count;
 
         return false;
+    }
+
+public:
+    bool canonicalize_replace_cache(const key_type& key, std::shared_ptr<T> const& data)
+    {
+        return canonicalize<true>(key, data);
+    }
+
+    bool canonicalize_replace_client(const key_type& key, std::shared_ptr<T>& data)
+    {
+        return canonicalize<false>(key, data);
     }
 
     std::shared_ptr<T> fetch (const key_type& key)
@@ -396,7 +414,7 @@ public:
     {
         mapped_ptr p (std::make_shared <T> (
             std::cref (value)));
-        return canonicalize (key, p);
+        return canonicalize_replace_client(key, p);
     }
 
     // VFALCO NOTE It looks like this returns a copy of the data in

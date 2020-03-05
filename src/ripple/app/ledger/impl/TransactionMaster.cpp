@@ -62,7 +62,7 @@ TransactionMaster::fetch (uint256 const& txnID, error_code_i& ec)
     if (!txn)
         return txn;
 
-    mCache.canonicalize (txnID, txn);
+    mCache.canonicalize_replace_client(txnID, txn);
 
     return txn;
 }
@@ -82,7 +82,7 @@ TransactionMaster::fetch (uint256 const& txnID, ClosedInterval<uint32_t> const& 
         txnID, mApp, range, ec);
 
     if (v.which () == 0 && boost::get<pointer> (v))
-        mCache.canonicalize (txnID, boost::get<pointer> (v));
+        mCache.canonicalize_replace_client(txnID, boost::get<pointer> (v));
 
     return v;
 }
@@ -127,7 +127,7 @@ TransactionMaster::canonicalize(std::shared_ptr<Transaction>* pTransaction)
     {
         auto txn = *pTransaction;
         // VFALCO NOTE canonicalize can change the value of txn!
-        mCache.canonicalize(tid, txn);
+        mCache.canonicalize_replace_client(tid, txn);
         *pTransaction = txn;
     }
 }

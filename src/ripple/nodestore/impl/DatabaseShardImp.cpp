@@ -867,7 +867,7 @@ DatabaseShardImp::store(NodeObjectType type,
         }
         nObj = NodeObject::createObject(
             type, std::move(data), hash);
-        incomplete_->pCache()->canonicalize(hash, nObj, true);
+        incomplete_->pCache()->canonicalize_replace_cache(hash, nObj);
         incomplete_->getBackend()->store(nObj);
         incomplete_->nCache()->erase(hash);
     }

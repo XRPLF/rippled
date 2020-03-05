@@ -32,7 +32,7 @@ DatabaseNodeImp::store(NodeObjectType type, Blob&& data,
     assert(hash == sha512Hash(makeSlice(data)));
 #endif
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
-    pCache_->canonicalize(hash, nObj, true);
+    pCache_->canonicalize_replace_cache(hash, nObj);
     backend_->store(nObj);
     nCache_->erase(hash);
     storeStats(nObj->getData().size());
