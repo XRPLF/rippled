@@ -33,6 +33,8 @@ public:
 
     void testNullAccountSet()
     {
+        testcase ("No AccountSet");
+
         using namespace test::jtx;
         Env env(*this);
         Account const alice ("alice");
@@ -44,6 +46,8 @@ public:
 
     void testMostFlags()
     {
+        testcase ("Most Flags");
+
         using namespace test::jtx;
         Account const alice ("alice");
 
@@ -112,6 +116,8 @@ public:
 
     void testSetAndResetAccountTxnID()
     {
+        testcase ("Set and reset AccountTxnID");
+
         using namespace test::jtx;
         Env env(*this);
         Account const alice ("alice");
@@ -132,6 +138,8 @@ public:
 
     void testSetNoFreeze()
     {
+        testcase ("Set NoFreeze");
+
         using namespace test::jtx;
         Env env(*this);
         Account const alice ("alice");
@@ -150,6 +158,8 @@ public:
 
     void testDomain()
     {
+        testcase ("Domain");
+
         using namespace test::jtx;
         Env env(*this);
         Account const alice ("alice");
@@ -197,6 +207,8 @@ public:
 
     void testMessageKey()
     {
+        testcase ("MessageKey");
+
         using namespace test::jtx;
         Env env(*this);
         Account const alice ("alice");
@@ -219,6 +231,8 @@ public:
 
     void testWalletID()
     {
+        testcase ("WalletID");
+
         using namespace test::jtx;
         Env env(*this);
         Account const alice ("alice");
@@ -237,6 +251,8 @@ public:
 
     void testEmailHash()
     {
+        testcase ("EmailHash");
+
         using namespace test::jtx;
         Env env(*this);
         Account const alice ("alice");
@@ -262,6 +278,8 @@ public:
             double get;
         };
 
+        testcase ("TransferRate");
+
         using namespace test::jtx;
         auto doTests = [this] (FeatureBitset const& features,
             std::initializer_list<test_results> testData)
@@ -274,6 +292,7 @@ public:
             for (auto const& r : testData)
             {
                 env(rate(alice, r.set), ter(r.code));
+                env.close();
 
                 // If the field is not present expect the default value
                 if (!(*env.le(alice))[~sfTransferRate])
@@ -284,100 +303,117 @@ public:
             }
         };
 
-        {
-            testcase ("Setting transfer rate (without fix1201)");
-            doTests (supported_amendments().reset(fix1201),
-                {
-                    { 1.0, tesSUCCESS,              1.0 },
-                    { 1.1, tesSUCCESS,              1.1 },
-                    { 2.0, tesSUCCESS,              2.0 },
-                    { 2.1, tesSUCCESS,              2.1 },
-                    { 0.0, tesSUCCESS,              1.0 },
-                    { 2.0, tesSUCCESS,              2.0 },
-                    { 0.9, temBAD_TRANSFER_RATE,    2.0 }});
-        }
-
-        {
-            testcase ("Setting transfer rate (with fix1201)");
-            doTests (supported_amendments(),
-                {
-                    { 1.0, tesSUCCESS,              1.0 },
-                    { 1.1, tesSUCCESS,              1.1 },
-                    { 2.0, tesSUCCESS,              2.0 },
-                    { 2.1, temBAD_TRANSFER_RATE,    2.0 },
-                    { 0.0, tesSUCCESS,              1.0 },
-                    { 2.0, tesSUCCESS,              2.0 },
-                    { 0.9, temBAD_TRANSFER_RATE,    2.0 }});
-        }
+        doTests (supported_amendments(),
+            {
+                { 1.0, tesSUCCESS,              1.0 },
+                { 1.1, tesSUCCESS,              1.1 },
+                { 2.0, tesSUCCESS,              2.0 },
+                { 2.1, temBAD_TRANSFER_RATE,    2.0 },
+                { 0.0, tesSUCCESS,              1.0 },
+                { 2.0, tesSUCCESS,              2.0 },
+                { 0.9, temBAD_TRANSFER_RATE,    2.0 }
+            });
     }
 
     void testGateway()
     {
+        testcase ("Gateway");
+
         using namespace test::jtx;
-        auto runTest = [](Env&& env, double tr)
-        {
-            Account const alice ("alice");
-            Account const bob ("bob");
-            Account const gw ("gateway");
-            auto const USD = gw["USD"];
 
+        Account const alice ("alice");
+        Account const bob ("bob");
+        Account const gw ("gateway");
+        auto const USD = gw["USD"];
+
+        // Test gateway with a variety of allowed transfer rates
+        for (double transferRate = 1.0;
+            transferRate <= 2.0; transferRate += 0.03125)
+        {
+            Env env (*this);
             env.fund(XRP(10000), gw, alice, bob);
-            env.trust(USD(3), alice, bob);
-            env(rate(gw, tr));
+            env.close();
+            env.trust(USD(10), alice, bob);
+            env.close();
+            env(rate(gw, transferRate));
             env.close();
 
             auto const amount = USD(1);
-            Rate const rate (tr * QUALITY_ONE);
+            Rate const rate (transferRate * QUALITY_ONE);
             auto const amountWithRate =
                 toAmount<STAmount> (multiply(amount.value(), rate));
 
-            env(pay(gw, alice, USD(3)));
-            env(pay(alice, bob, USD(1)), sendmax(USD(3)));
+            env(pay(gw, alice, USD(10)));
+            env.close();
+            env(pay(alice, bob, USD(1)), sendmax(USD(10)));
+            env.close();
 
-            env.require(balance(alice, USD(3) - amountWithRate));
+            env.require(balance(alice, USD(10) - amountWithRate));
             env.require(balance(bob, USD(1)));
-        };
+       }
 
-        // Test gateway with allowed transfer rates
-        auto const noFix1201 = supported_amendments().reset(fix1201);
-        runTest (Env{*this, noFix1201}, 1.02);
-        runTest (Env{*this, noFix1201}, 1);
-        runTest (Env{*this, noFix1201}, 2);
-        runTest (Env{*this, noFix1201}, 2.1);
-        runTest (Env{*this, supported_amendments()}, 1.02);
-        runTest (Env{*this, supported_amendments()}, 2);
-
-        // Test gateway when amendment is set after transfer rate
+        // Since fix1201 was enabled on Nov 14 2017 a rate in excess of
+        // 2.0 has been blocked by the transactor.  But there are a few
+        // accounts on the MainNet that have larger-than-currently-allowed
+        // TransferRates.  We'll bypass the transactor so we can check
+        // operation of these legacy TransferRates.
+        //
+        // Two out-of-bound values are currently in the ledger (March 2020)
+        // They are 4.0 and 4.294967295.  So those are the values we test.
+        for (double transferRate : {4.0, 4.294967295})
         {
-            Env env (*this, noFix1201);
-            Account const alice ("alice");
-            Account const bob ("bob");
-            Account const gw ("gateway");
-            auto const USD = gw["USD"];
-            double const tr = 2.75;
-
+            Env env (*this);
             env.fund(XRP(10000), gw, alice, bob);
-            env.trust(USD(3), alice, bob);
-            env(rate(gw, tr));
             env.close();
-            env.enableFeature(fix1201);
+            env.trust(USD(10), alice, bob);
             env.close();
+
+            // We'd like to use transferRate here, but the transactor
+            // blocks transfer rates that large.  So we use an acceptable
+            // transfer rate here and later hack the ledger to replace
+            // the acceptable value with an out-of-bounds value.
+            env(rate(gw, 2.0));
+            env.close();
+
+            // Note that we're bypassing almost all of the ledger's safety
+            // checks with this modify() call.  If you call close() between
+            // here and the end of the test all the effort will be lost.
+            env.app().openLedger().modify(
+                [&gw, transferRate] (OpenView& view, beast::Journal j)
+                {
+                    // Get the account root we want to hijack.
+                    auto const sle = view.read (keylet::account(gw.id()));
+                    if (! sle)
+                        return false;   // This would be really surprising!
+
+                    // We'll insert a replacement for the account root
+                    // with the higher (currently invalid) transfer rate.
+                    auto replacement =
+                        std::make_shared<SLE>(*sle, sle->key());
+                    (*replacement)[sfTransferRate] =
+                        static_cast<std::uint32_t>(transferRate * QUALITY_ONE);
+                    view.rawReplace (replacement);
+                    return true;
+                });
 
             auto const amount = USD(1);
-            Rate const rate (tr * QUALITY_ONE);
             auto const amountWithRate =
-                toAmount<STAmount> (multiply(amount.value(), rate));
+                toAmount<STAmount> (
+                    multiply(amount.value(),
+                        Rate (transferRate * QUALITY_ONE)));
 
-            env(pay(gw, alice, USD(3)));
-            env(pay(alice, bob, amount), sendmax(USD(3)));
+            env(pay(gw, alice, USD(10)));
+            env(pay(alice, bob, amount), sendmax(USD(10)));
 
-            env.require(balance(alice, USD(3) - amountWithRate));
+            env.require(balance(alice, USD(10) - amountWithRate));
             env.require(balance(bob, amount));
         }
     }
 
     void testBadInputs()
     {
+        testcase ("Bad inputs");
+
         using namespace test::jtx;
         Env env (*this);
         Account const alice ("alice");
@@ -418,6 +454,8 @@ public:
 
     void testRequireAuthWithDir()
     {
+        testcase ("Require auth");
+
         using namespace test::jtx;
         Env env(*this);
         Account const alice ("alice");

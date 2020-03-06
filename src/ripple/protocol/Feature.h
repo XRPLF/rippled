@@ -365,23 +365,11 @@ foreachFeature(FeatureBitset bs, F&& f)
 
 extern uint256 const featureTickets;
 extern uint256 const featureOwnerPaysFee;
-extern uint256 const retiredPayChan;
 extern uint256 const featureFlow;
 extern uint256 const featureCompareTakerFlowCross;
 extern uint256 const featureFlowCross;
-extern uint256 const retiredCryptoConditions;
-extern uint256 const retiredTickSize;
-extern uint256 const retiredFix1368;
-extern uint256 const retiredEscrow;
 extern uint256 const featureCryptoConditionsSuite;
-extern uint256 const retiredFix1373;
-extern uint256 const retiredEnforceInvariants;
-extern uint256 const retiredSortedDirectories;
-extern uint256 const fix1201;
-extern uint256 const retiredFix1512;
 extern uint256 const fix1513;
-extern uint256 const retiredFix1523;
-extern uint256 const retiredFix1528;
 extern uint256 const featureDepositAuth;
 extern uint256 const featureChecks;
 extern uint256 const fix1571;
@@ -399,6 +387,21 @@ extern uint256 const featureDeletableAccounts;
 extern uint256 const fixQualityUpperBound;
 extern uint256 const featureRequireFullyCanonicalSig;
 extern uint256 const fix1781;
+
+// The following amendments have been active for at least two years.
+// Their pre-amendment code has been removed.
+extern uint256 const retiredPayChan;
+extern uint256 const retiredCryptoConditions;
+extern uint256 const retiredTickSize;
+extern uint256 const retiredFix1368;
+extern uint256 const retiredEscrow;
+extern uint256 const retiredFix1373;
+extern uint256 const retiredEnforceInvariants;
+extern uint256 const retiredSortedDirectories;
+extern uint256 const retiredFix1201;
+extern uint256 const retiredFix1512;
+extern uint256 const retiredFix1523;
+extern uint256 const retiredFix1528;
 
 } // ripple
 

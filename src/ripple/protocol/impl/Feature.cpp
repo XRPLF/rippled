@@ -156,23 +156,11 @@ uint256 bitsetIndexToFeature(size_t i)
 
 uint256 const featureTickets = *getRegisteredFeature("Tickets");
 uint256 const featureOwnerPaysFee = *getRegisteredFeature("OwnerPaysFee");
-uint256 const retiredPayChan = *getRegisteredFeature("PayChan");
 uint256 const featureFlow = *getRegisteredFeature("Flow");
 uint256 const featureCompareTakerFlowCross = *getRegisteredFeature("CompareTakerFlowCross");
 uint256 const featureFlowCross = *getRegisteredFeature("FlowCross");
-uint256 const retiredCryptoConditions = *getRegisteredFeature("CryptoConditions");
-uint256 const retiredTickSize = *getRegisteredFeature("TickSize");
-uint256 const retiredFix1368 = *getRegisteredFeature("fix1368");
-uint256 const retiredEscrow = *getRegisteredFeature("Escrow");
 uint256 const featureCryptoConditionsSuite = *getRegisteredFeature("CryptoConditionsSuite");
-uint256 const retiredFix1373 = *getRegisteredFeature("fix1373");
-uint256 const retiredEnforceInvariants = *getRegisteredFeature("EnforceInvariants");
-uint256 const retiredSortedDirectories = *getRegisteredFeature("SortedDirectories");
-uint256 const fix1201 = *getRegisteredFeature("fix1201");
-uint256 const retiredFix1512 = *getRegisteredFeature("fix1512");
 uint256 const fix1513 = *getRegisteredFeature("fix1513");
-uint256 const retiredFix1523 = *getRegisteredFeature("fix1523");
-uint256 const retiredFix1528 = *getRegisteredFeature("fix1528");
 uint256 const featureDepositAuth = *getRegisteredFeature("DepositAuth");
 uint256 const featureChecks = *getRegisteredFeature("Checks");
 uint256 const fix1571 = *getRegisteredFeature("fix1571");
@@ -190,5 +178,20 @@ uint256 const featureDeletableAccounts = *getRegisteredFeature("DeletableAccount
 uint256 const fixQualityUpperBound = *getRegisteredFeature("fixQualityUpperBound");
 uint256 const featureRequireFullyCanonicalSig = *getRegisteredFeature("RequireFullyCanonicalSig");
 uint256 const fix1781 = *getRegisteredFeature("fix1781");
+
+// The following amendments have been active for at least two years.
+// Their pre-amendment code has been removed.
+uint256 const retiredPayChan = *getRegisteredFeature("PayChan");
+uint256 const retiredCryptoConditions = *getRegisteredFeature("CryptoConditions");
+uint256 const retiredTickSize = *getRegisteredFeature("TickSize");
+uint256 const retiredFix1368 = *getRegisteredFeature("fix1368");
+uint256 const retiredEscrow = *getRegisteredFeature("Escrow");
+uint256 const retiredFix1373 = *getRegisteredFeature("fix1373");
+uint256 const retiredEnforceInvariants = *getRegisteredFeature("EnforceInvariants");
+uint256 const retiredSortedDirectories = *getRegisteredFeature("SortedDirectories");
+uint256 const retiredFix1201 = *getRegisteredFeature("fix1201");
+uint256 const retiredFix1512 = *getRegisteredFeature("fix1512");
+uint256 const retiredFix1523 = *getRegisteredFeature("fix1523");
+uint256 const retiredFix1528 = *getRegisteredFeature("fix1528");
 
 } // ripple

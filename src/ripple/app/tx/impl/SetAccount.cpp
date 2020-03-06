@@ -122,7 +122,7 @@ SetAccount::preflight (PreflightContext const& ctx)
             return temBAD_TRANSFER_RATE;
         }
 
-        if (ctx.rules.enabled(fix1201) && (uRate > 2 * QUALITY_ONE))
+        if (uRate > 2 * QUALITY_ONE)
         {
             JLOG(j.trace()) << "Malformed transaction: Transfer rate too large.";
             return temBAD_TRANSFER_RATE;
