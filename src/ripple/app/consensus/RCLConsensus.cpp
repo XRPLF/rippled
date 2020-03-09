@@ -38,6 +38,7 @@
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
+#include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/digest.h>
 
@@ -790,6 +791,11 @@ RCLConsensus::Adaptor::validate(
                     v.setFieldH256(sfValidatedHash, vl->info().hash);
 
                 v.setFieldU64(sfCookie, valCookie_);
+
+                // Report our server version every flag ledger:
+                if ((ledger.seq() + 1) % 256 == 0)
+                    v.setFieldU64(
+                        sfServerVersion, BuildInfo::getEncodedVersion());
             }
 
             // Report our load

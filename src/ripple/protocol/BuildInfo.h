@@ -43,6 +43,31 @@ getVersionString();
 std::string const&
 getFullVersionString();
 
+/** Returns the server version packed in a 64-bit integer.
+
+    The general format is:
+
+    ........-........-........-........-........-........-........-........
+    XXXXXXXX-XXXXXXXX-YYYYYYYY-YYYYYYYY-YYYYYYYY-YYYYYYYY-YYYYYYYY-YYYYYYYY
+
+    X: 16 bits identifying the particular implementation
+    Y: 48 bits of data specific to the implementation
+
+    The rippled-specific format (implementation ID is: 0x18 0x3B) is:
+
+    00011000-00111011-MMMMMMMM-mmmmmmmm-pppppppp-TTNNNNNN-00000000-00000000
+
+        M: 8-bit major version (0-255)
+        m: 8-bit minor version (0-255)
+        p: 8-bit patch version (0-255)
+        T: 11 if neither an RC nor a beta
+           10 if an RC
+           01 if a beta
+        N: 6-bit rc/beta number (1-63)
+*/
+std::uint64_t
+getEncodedVersion();
+
 }  // namespace BuildInfo
 
 }  // namespace ripple

@@ -47,6 +47,7 @@ STValidation::validationFormat()
         {sfConsensusHash, soeOPTIONAL},
         {sfCookie, soeDEFAULT},
         {sfValidatedHash, soeOPTIONAL},
+        {sfServerVersion, soeOPTIONAL},
     };
 
     return format;
