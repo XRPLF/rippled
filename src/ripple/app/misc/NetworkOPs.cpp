@@ -1184,6 +1184,7 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
             {
                 pubProposedTransaction (newOL,
                     e.transaction->getSTransaction(), e.result);
+                e.transaction->setApplied();
             }
 
             e.transaction->setResult (e.result);
@@ -1224,7 +1225,6 @@ void NetworkOPsImp::apply (std::unique_lock<std::mutex>& batchLock)
                         t, false, false, FailHard::no);
                     t->setApplying();
                 }
-                e.transaction->setApplied();
             }
             else if (e.result == tefPAST_SEQ)
             {
