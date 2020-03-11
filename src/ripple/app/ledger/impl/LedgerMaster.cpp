@@ -47,6 +47,7 @@
 #include <ripple/resource/Fees.h>
 #include <algorithm>
 #include <cassert>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -1439,6 +1440,15 @@ LedgerMaster::newPFWork (const char *name, std::unique_lock<std::recursive_mutex
     return mPathFindThread > 0 && !isStopping();
 }
 
+boost::optional<LedgerIndex>
+LedgerMaster::minSqlSeq() const
+{
+    boost::optional<LedgerIndex> seq;
+    *app_.getLedgerDB().checkoutDb()
+        << "SELECT MIN(LedgerSeq) FROM Ledgers", soci::into(seq);
+    return seq;
+}
+
 std::recursive_mutex&
 LedgerMaster::peekMutex ()
 {
@@ -1701,17 +1711,21 @@ bool
 LedgerMaster::shouldAcquire (
     std::uint32_t const currentLedger,
     std::uint32_t const ledgerHistory,
+    boost::optional<LedgerIndex> minSeq,
     std::uint32_t const ledgerHistoryIndex,
     std::uint32_t const candidateLedger) const
 {
 
     // Fetch ledger if it might be the current ledger,
-    // is requested by the advisory delete setting, or
-    // is within our configured history range
+    // is the greater of both the minimum persisted ledger, if any,
+    // and the minimum ledger for online deletion to retain, or
+    // is within our configured history range.
 
     bool ret (candidateLedger >= currentLedger ||
-        ((ledgerHistoryIndex > 0) &&
-            (candidateLedger > ledgerHistoryIndex)) ||
+        candidateLedger >= std::max(
+            minSeq.has_value() ?
+                *minSeq : std::numeric_limits<LedgerIndex>::max(),
+                ledgerHistoryIndex + 1) ||
         (currentLedger - candidateLedger) <= ledgerHistory);
 
     JLOG (m_journal.trace())
@@ -1875,7 +1889,8 @@ void LedgerMaster::doAdvance (std::unique_lock<std::recursive_mutex>& sl)
                         "tryAdvance discovered missing " << *missing;
                     if ((mFillInProgress == 0 || *missing > mFillInProgress) &&
                         shouldAcquire(mValidLedgerSeq, ledger_history_,
-                            app_.getSHAMapStore().getCanDelete(), *missing))
+                            minSqlSeq(), app_.getSHAMapStore().getCanDelete(),
+                            *missing))
                     {
                         JLOG(m_journal.trace()) <<
                             "advanceThread should acquire";

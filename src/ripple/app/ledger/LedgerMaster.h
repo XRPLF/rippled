@@ -34,11 +34,13 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/beast/insight/Collector.h>
 #include <ripple/beast/utility/PropertyStream.h>
+#include <ripple/core/DatabaseCon.h>
 #include <ripple/core/Stoppable.h>
 #include <ripple/protocol/messages.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STValidation.h>
+#include <boost/optional.hpp>
 
 #include <mutex>
 
@@ -283,6 +285,7 @@ private:
     bool shouldAcquire(
         std::uint32_t const currentLedger,
         std::uint32_t const ledgerHistory,
+        boost::optional<LedgerIndex> minSeq,
         std::uint32_t const ledgerHistoryIndex,
         std::uint32_t const candidateLedger) const;
 
@@ -295,7 +298,8 @@ private:
     // The passed lock is a reminder to callers.
     bool newPFWork(const char *name, std::unique_lock<std::recursive_mutex>&);
 
-private:
+    boost::optional<LedgerIndex> minSqlSeq() const;
+
     Application& app_;
     beast::Journal m_journal;
 

@@ -171,7 +171,7 @@ SHAMapStoreImp::SHAMapStoreImp(
     , scheduler_ (scheduler)
     , journal_ (journal)
     , working_(true)
-    , canDelete_ (std::numeric_limits <LedgerIndex>::max())
+    , canDelete_ (0)
 {
     Config& config {app.config()};
     Section& section {config.section(ConfigSection::nodeDatabase())};
