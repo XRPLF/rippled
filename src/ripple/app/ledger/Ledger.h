@@ -317,9 +317,6 @@ public:
     void invariants() const;
     void unshare() const;
 private:
-    class sles_iter_impl;
-    class txs_iter_impl;
-
     bool
     setup (Config const& config);
 

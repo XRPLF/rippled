@@ -75,8 +75,7 @@ calculateLedgerHash (LedgerInfo const& info)
 
 //------------------------------------------------------------------------------
 
-class Ledger::sles_iter_impl
-    : public sles_type::iter_base
+class sles_iter_impl : public Ledger::sles_type::iter_base
 {
 private:
     SHAMap::const_iterator iter_;
@@ -113,7 +112,7 @@ public:
         ++iter_;
     }
 
-    sles_type::value_type
+    Ledger::sles_type::value_type
     dereference() const override
     {
         auto const item = *iter_;
@@ -125,8 +124,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-class Ledger::txs_iter_impl
-    : public txs_type::iter_base
+class txs_iter_impl : public Ledger::txs_type::iter_base
 {
 private:
     bool metadata_;
@@ -165,7 +163,7 @@ public:
         ++iter_;
     }
 
-    txs_type::value_type
+    Ledger::txs_type::value_type
     dereference() const override
     {
         auto const item = *iter_;
