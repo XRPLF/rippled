@@ -255,6 +255,12 @@ public:
         return mImmutable;
     }
 
+    bool
+    isMutable() const
+    {
+        return !isImmutable();
+    }
+
     /*  Mark this ledger as "should be full".
 
         "Full" is metadata property of the ledger, it indicates

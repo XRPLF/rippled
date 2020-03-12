@@ -55,7 +55,7 @@ LedgerHistory::insert(
     std::shared_ptr<Ledger const> ledger,
         bool validated)
 {
-    if(! ledger->isImmutable())
+    if (ledger->isMutable())
         LogicError("mutable Ledger in insert");
 
     assert (ledger->stateMap().getHash ().isNonZero ());

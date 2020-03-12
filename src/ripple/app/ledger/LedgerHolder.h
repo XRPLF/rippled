@@ -44,7 +44,7 @@ public:
     {
         if(! ledger)
             LogicError("LedgerHolder::set with nullptr");
-        if(! ledger->isImmutable())
+        if (ledger->isMutable())
             LogicError("LedgerHolder::set with mutable Ledger");
         std::lock_guard sl (m_lock);
         m_heldLedger = std::move(ledger);

@@ -432,7 +432,7 @@ void
 LedgerMaster::switchLCL(std::shared_ptr<Ledger const> const& lastClosed)
 {
     assert (lastClosed);
-    if(! lastClosed->isImmutable())
+    if (lastClosed->isMutable())
         LogicError("mutable ledger in switchLCL");
 
     if (lastClosed->open())
