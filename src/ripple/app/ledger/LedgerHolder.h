@@ -20,7 +20,8 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
 
-#include <ripple/basics/contract.h>
+#include <ripple/app/ledger/Ledger.h>
+#include <memory>
 #include <mutex>
 
 namespace ripple {
