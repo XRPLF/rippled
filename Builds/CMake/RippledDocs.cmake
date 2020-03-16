@@ -3,29 +3,44 @@
 #]===================================================================]
 
 find_package (Doxygen)
-if (TARGET Doxygen::doxygen)
-  set (doc_srcs docs/source.dox)
-  file (GLOB_RECURSE other_docs docs/*.md)
-  list (APPEND doc_srcs "${other_docs}")
-  # read the source config and make a modified one
-  # that points the output files to our build directory
-  file (READ "${CMAKE_CURRENT_SOURCE_DIR}/docs/source.dox" dox_content)
-  string (REGEX REPLACE "[\t ]*OUTPUT_DIRECTORY[\t ]*=(.*)"
-    "OUTPUT_DIRECTORY=${CMAKE_BINARY_DIR}\n\\1"
-    new_config "${dox_content}")
-  file (WRITE "${CMAKE_BINARY_DIR}/source.dox" "${new_config}")
-  add_custom_target (docs
-    COMMAND "${DOXYGEN_EXECUTABLE}" "${CMAKE_BINARY_DIR}/source.dox"
-    BYPRODUCTS "${CMAKE_BINARY_DIR}/html_doc/index.html"
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/docs"
-    SOURCES "${doc_srcs}")
-  if (is_multiconfig)
-    set_property (
-      SOURCE ${doc_srcs}
-      APPEND
-      PROPERTY HEADER_FILE_ONLY
-      true)
-  endif ()
-else ()
+if (NOT TARGET Doxygen::doxygen)
   message (STATUS "doxygen executable not found -- skipping docs target")
+  return ()
+endif ()
+
+set (doxygen_output_directory "${CMAKE_BINARY_DIR}/html_doc")
+set (doxygen_index_file "${doxygen_output_directory}/index.html")
+set (doxyfile_in "${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile")
+set (doxyfile_out "${CMAKE_BINARY_DIR}/Doxyfile")
+
+file (GLOB_RECURSE doxygen_input
+  docs/*.md
+  src/ripple/*.h
+  src/ripple/*.md
+  src/test/*.h
+  src/test/*.md
+  Builds/*/README.md)
+list (APPEND doxygen_input
+  README.md
+  RELEASENOTES.md
+  src/README.md)
+set (dependencies "${doxygen_input}" docs/Doxyfile)
+
+# Substitute doxygen_output_directory.
+# TODO: Generate this file at build time, not configure time.
+configure_file ("${doxyfile_in}" "${doxyfile_out}" @ONLY)
+
+add_custom_command (
+  OUTPUT "${doxygen_index_file}"
+  COMMAND "${DOXYGEN_EXECUTABLE}" "${doxyfile_out}"
+  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/docs"
+  DEPENDS "${dependencies}")
+add_custom_target (docs
+  DEPENDS "${doxygen_index_file}"
+  SOURCES "${dependencies}")
+if (is_multiconfig)
+  set_property (
+    SOURCE ${dependencies}
+    APPEND PROPERTY
+    HEADER_FILE_ONLY true)
 endif ()

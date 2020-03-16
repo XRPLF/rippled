@@ -3,7 +3,7 @@
 ## Specifying Files
 
 To specify the source files for which to build documentation, modify `INPUT`
-and its related fields in `docs/source.dox`. Note that the `INPUT` paths are
+and its related fields in `docs/Doxyfile`. Note that the `INPUT` paths are
 relative to the `docs/` directory.
 
 ## Install Dependencies
@@ -48,7 +48,7 @@ From the rippled root folder:
 ```
 cd docs
 mkdir -p html_doc
-doxygen source.dox
+doxygen Doxyfile
 ```
 The output will be in `docs/html_doc`.
 

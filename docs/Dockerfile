@@ -28,4 +28,5 @@ RUN mkdir -p /opt/plantuml
 RUN wget -O /opt/plantuml/plantuml.jar http://sourceforge.net/projects/plantuml/files/plantuml.jar/download
 ENV PLANTUML_JAR=/opt/plantuml/plantuml.jar
 
-CMD cd /opt/rippled/docs && doxygen source.dox
+RUN sed -i -e 's/@doxygen_output_directory@//' /opt/rippled/docs/Doxyfile
+CMD cd /opt/rippled/docs && doxygen Doxyfile
