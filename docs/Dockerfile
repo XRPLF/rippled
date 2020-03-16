@@ -26,6 +26,7 @@ RUN rm -rf /tmp/doxygen-1.8.14
 
 RUN mkdir -p /opt/plantuml
 RUN wget -O /opt/plantuml/plantuml.jar http://sourceforge.net/projects/plantuml/files/plantuml.jar/download
-ENV PLANTUML_JAR=/opt/plantuml/plantuml.jar
+ENV DOXYGEN_PLANTUML_JAR_PATH=/opt/plantuml/plantuml.jar
 
-CMD cd /opt/rippled/docs && doxygen source.dox
+ENV DOXYGEN_OUTPUT_DIRECTORY=html
+CMD cd /opt/rippled && doxygen docs/Doxyfile

@@ -64,6 +64,7 @@ public:
     {
     }
 
+    /** @callgraph */
     std::shared_ptr<Ledger const>
     acquire(uint256 const& hash, std::uint32_t seq,
         InboundLedger::Reason reason) override

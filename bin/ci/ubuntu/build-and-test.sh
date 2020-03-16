@@ -105,7 +105,7 @@ ${time} eval cmake --build . ${BUILDARGS} -- ${BUILDTOOLARGS}
 if [[ ${TARGET} == "docs" ]]; then
     ## mimic the standard test output for docs build
     ## to make controlling processes like jenkins happy
-    if [ -f html_doc/index.html ]; then
+    if [ -f docs/html/index.html ]; then
         echo "1 case, 1 test total, 0 failures"
     else
         echo "1 case, 1 test total, 1 failures"

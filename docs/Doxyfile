@@ -4,10 +4,10 @@
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = "rippled"
 PROJECT_NUMBER         =
-PROJECT_BRIEF          = C++ Library
+PROJECT_BRIEF          =
 PROJECT_LOGO           =
-PROJECT_LOGO           = images/LogoForDocumentation.png
-OUTPUT_DIRECTORY       =
+PROJECT_LOGO           =
+OUTPUT_DIRECTORY       = $(DOXYGEN_OUTPUT_DIRECTORY)
 CREATE_SUBDIRS         = NO
 ALLOW_UNICODE_NAMES    = NO
 OUTPUT_LANGUAGE        = English
@@ -17,7 +17,7 @@ ABBREVIATE_BRIEF       =
 ALWAYS_DETAILED_SEC    = NO
 INLINE_INHERITED_MEMB  = YES
 FULL_PATH_NAMES        = NO
-STRIP_FROM_PATH        = ../src/
+STRIP_FROM_PATH        = src/
 STRIP_FROM_INC_PATH    =
 SHORT_NAMES            = NO
 JAVADOC_AUTOBRIEF      = YES
@@ -27,7 +27,6 @@ INHERIT_DOCS           = YES
 SEPARATE_MEMBER_PAGES  = NO
 TAB_SIZE               = 4
 ALIASES                =
-TCL_SUBST              =
 OPTIMIZE_OUTPUT_FOR_C  = NO
 OPTIMIZE_OUTPUT_JAVA   = NO
 OPTIMIZE_FOR_FORTRAN   = NO
@@ -35,7 +34,7 @@ OPTIMIZE_OUTPUT_VHDL   = NO
 EXTENSION_MAPPING      =
 MARKDOWN_SUPPORT       = YES
 AUTOLINK_SUPPORT       = YES
-BUILTIN_STL_SUPPORT    = NO
+BUILTIN_STL_SUPPORT    = YES
 CPP_CLI_SUPPORT        = NO
 SIP_SUPPORT            = NO
 IDL_PROPERTY_SUPPORT   = YES
@@ -83,7 +82,7 @@ ENABLED_SECTIONS       =
 MAX_INITIALIZER_LINES  = 30
 SHOW_USED_FILES        = NO
 SHOW_FILES             = NO
-SHOW_NAMESPACES        = NO
+SHOW_NAMESPACES        = YES
 FILE_VERSION_FILTER    =
 LAYOUT_FILE            =
 CITE_BIB_FILES         =
@@ -104,71 +103,17 @@ WARN_LOGFILE           =
 # Configuration options related to the input files
 #---------------------------------------------------------------------------
 INPUT                  = \
-\
-    ../src/ripple/app/misc/TxQ.h \
-    ../src/ripple/app/tx/apply.h \
-    ../src/ripple/app/tx/applySteps.h \
-    ../src/ripple/protocol/STObject.h \
-    ../src/ripple/protocol/JsonFields.h \
-    ../src/test/jtx/AbstractClient.h \
-    ../src/test/jtx/JSONRPCClient.h \
-    ../src/test/jtx/WSClient.h \
-    ../src/ripple/consensus/Consensus.h \
-    ../src/ripple/consensus/ConsensusProposal.h \
-    ../src/ripple/consensus/ConsensusTypes.h \
-    ../src/ripple/consensus/DisputedTx.h \
-    ../src/ripple/consensus/LedgerTiming.h \
-    ../src/ripple/consensus/LedgerTrie.h \
-    ../src/ripple/consensus/Validations.h \
-    ../src/ripple/consensus/ConsensusParms.h \
-    ../src/ripple/app/consensus/RCLCxTx.h \
-    ../src/ripple/app/consensus/RCLCxLedger.h \
-    ../src/ripple/app/consensus/RCLConsensus.h \
-    ../src/ripple/app/consensus/RCLCxPeerPos.h \
-    ../src/ripple/app/tx/apply.h \
-    ../src/ripple/app/tx/applySteps.h \
-    ../src/ripple/app/tx/impl/InvariantCheck.h \
-    ../src/ripple/app/consensus/RCLValidations.h \
-    ../src/README.md \
-    ../src/ripple/README.md \
-    ../README.md \
-    ../RELEASENOTES.md \
-    ../docs/CodingStyle.md \
-    ../docs/CheatSheet.md \
-    ../docs/README.md \
-    ../docs/sample_chart.doc \
-    ../docs/HeapProfiling.md \
-    ../docs/Docker.md \
-    ../docs/consensus.md \
-    ../Builds/macos/README.md \
-    ../Builds/linux/README.md \
-    ../Builds/VisualStudio2017/README.md \
-    ../src/ripple/consensus/README.md \
-    ../src/ripple/app/consensus/README.md \
-    ../src/test/csf/README.md \
-    ../src/ripple/basics/README.md \
-    ../src/ripple/crypto/README.md \
-    ../src/ripple/peerfinder/README.md \
-    ../src/ripple/app/misc/README.md \
-    ../src/ripple/app/misc/FeeEscalation.md \
-    ../src/ripple/app/ledger/README.md \
-    ../src/ripple/app/paths/README.md \
-    ../src/ripple/app/tx/README.md \
-    ../src/ripple/proto/README.md \
-    ../src/ripple/shamap/README.md \
-    ../src/ripple/protocol/README.md \
-    ../src/ripple/json/README.md \
-    ../src/ripple/json/TODO.md \
-    ../src/ripple/resource/README.md \
-    ../src/ripple/rpc/README.md \
-    ../src/ripple/overlay/README.md \
-    ../src/ripple/nodestore/README.md \
-    ../src/ripple/nodestore/Benchmarks.md \
+    docs \
+    src/ripple \
+    src/test \
+    src/README.md \
+    README.md \
+    RELEASENOTES.md \
 
 
 INPUT_ENCODING         = UTF-8
-FILE_PATTERNS          =
-RECURSIVE              = NO
+FILE_PATTERNS          = *.h *.cpp *.md
+RECURSIVE              = YES
 EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       =
@@ -177,20 +122,20 @@ EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = NO
 IMAGE_PATH             =  \
-     ./images/            \
-     ./images/consensus/  \
-     ../src/test/csf/     \
+     docs/images/            \
+     docs/images/consensus/  \
+     src/test/csf/     \
 
 INPUT_FILTER           =
 FILTER_PATTERNS        =
 FILTER_SOURCE_FILES    = NO
 FILTER_SOURCE_PATTERNS =
-USE_MDFILE_AS_MAINPAGE = ../src/README.md
+USE_MDFILE_AS_MAINPAGE = src/README.md
 
 #---------------------------------------------------------------------------
 # Configuration options related to source browsing
 #---------------------------------------------------------------------------
-SOURCE_BROWSER         = NO
+SOURCE_BROWSER         = YES
 INLINE_SOURCES         = NO
 STRIP_CODE_COMMENTS    = YES
 REFERENCED_BY_RELATION = NO
@@ -213,7 +158,7 @@ IGNORE_PREFIX          =
 # Configuration options related to the HTML output
 #---------------------------------------------------------------------------
 GENERATE_HTML          = YES
-HTML_OUTPUT            = html_doc
+HTML_OUTPUT            = html
 HTML_FILE_EXTENSION    = .html
 HTML_HEADER            =
 HTML_FOOTER            =
@@ -273,7 +218,7 @@ EXTRA_SEARCH_MAPPINGS  =
 #---------------------------------------------------------------------------
 GENERATE_LATEX         = NO
 LATEX_OUTPUT           = latex
-LATEX_CMD_NAME         = latex
+LATEX_CMD_NAME         =
 MAKEINDEX_CMD_NAME     = makeindex
 COMPACT_LATEX          = NO
 PAPER_TYPE             = a4
@@ -314,7 +259,7 @@ MAN_LINKS              = NO
 # Configuration options related to the XML output
 #---------------------------------------------------------------------------
 GENERATE_XML           = NO
-XML_OUTPUT             = temp
+XML_OUTPUT             = xml
 XML_PROGRAMLISTING     = YES
 
 #---------------------------------------------------------------------------
@@ -340,7 +285,7 @@ ENABLE_PREPROCESSING   = YES
 MACRO_EXPANSION        = YES
 EXPAND_ONLY_PREDEF     = YES
 SEARCH_INCLUDES        = YES
-INCLUDE_PATH           = ../
+INCLUDE_PATH           = $(DOXYGEN_INCLUDE_PATH)
 INCLUDE_FILE_PATTERNS  =
 PREDEFINED             = DOXYGEN \
                          GENERATING_DOCS \
@@ -353,21 +298,20 @@ SKIP_FUNCTION_MACROS   = YES
 #---------------------------------------------------------------------------
 # Configuration options related to external references
 #---------------------------------------------------------------------------
-TAGFILES               =
+TAGFILES               = $(DOXYGEN_TAGFILES)
 GENERATE_TAGFILE       =
 ALLEXTERNALS           = NO
 EXTERNAL_GROUPS        = YES
 EXTERNAL_PAGES         = YES
-PERL_PATH              = /usr/bin/perl
 
 #---------------------------------------------------------------------------
 # Configuration options related to the dot tool
 #---------------------------------------------------------------------------
 CLASS_DIAGRAMS         = NO
-MSCGEN_PATH            =
 DIA_PATH               =
 HIDE_UNDOC_RELATIONS   = YES
-HAVE_DOT               = NO
+HAVE_DOT               = YES
+# DOT_NUM_THREADS = 0 means 1 for every processor.
 DOT_NUM_THREADS        = 0
 DOT_FONTNAME           = Helvetica
 DOT_FONTSIZE           = 10
@@ -386,11 +330,11 @@ GRAPHICAL_HIERARCHY    = YES
 DIRECTORY_GRAPH        = YES
 DOT_IMAGE_FORMAT       = png
 INTERACTIVE_SVG        = NO
-DOT_PATH               =
+DOT_PATH               = $(DOXYGEN_DOT_PATH)
 DOTFILE_DIRS           =
 MSCFILE_DIRS           =
 DIAFILE_DIRS           =
-PLANTUML_JAR_PATH      = $(PLANTUML_JAR)
+PLANTUML_JAR_PATH      = $(DOXYGEN_PLANTUML_JAR_PATH)
 PLANTUML_INCLUDE_PATH  =
 DOT_GRAPH_MAX_NODES    = 50
 MAX_DOT_GRAPH_DEPTH    = 0
