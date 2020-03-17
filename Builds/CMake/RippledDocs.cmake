@@ -33,7 +33,7 @@ configure_file ("${doxyfile_in}" "${doxyfile_out}" @ONLY)
 add_custom_command (
   OUTPUT "${doxygen_index_file}"
   COMMAND "${DOXYGEN_EXECUTABLE}" "${doxyfile_out}"
-  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/docs"
+  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
   DEPENDS "${dependencies}")
 add_custom_target (docs
   DEPENDS "${doxygen_index_file}"

@@ -17,7 +17,7 @@ ABBREVIATE_BRIEF       =
 ALWAYS_DETAILED_SEC    = NO
 INLINE_INHERITED_MEMB  = YES
 FULL_PATH_NAMES        = NO
-STRIP_FROM_PATH        = ../src/
+STRIP_FROM_PATH        = src/
 STRIP_FROM_INC_PATH    =
 SHORT_NAMES            = NO
 JAVADOC_AUTOBRIEF      = YES
@@ -104,12 +104,12 @@ WARN_LOGFILE           =
 # Configuration options related to the input files
 #---------------------------------------------------------------------------
 INPUT                  = \
-    ../docs \
-    ../src/ripple \
-    ../src/test \
-    ../src/README.md \
-    ../README.md \
-    ../RELEASENOTES.md \
+    docs \
+    src/ripple \
+    src/test \
+    src/README.md \
+    README.md \
+    RELEASENOTES.md \
 
 
 INPUT_ENCODING         = UTF-8
@@ -123,15 +123,15 @@ EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = NO
 IMAGE_PATH             =  \
-     ./images/            \
-     ./images/consensus/  \
-     ../src/test/csf/     \
+     docs/images/            \
+     docs/images/consensus/  \
+     src/test/csf/     \
 
 INPUT_FILTER           =
 FILTER_PATTERNS        =
 FILTER_SOURCE_FILES    = NO
 FILTER_SOURCE_PATTERNS =
-USE_MDFILE_AS_MAINPAGE = ../src/README.md
+USE_MDFILE_AS_MAINPAGE = src/README.md
 
 #---------------------------------------------------------------------------
 # Configuration options related to source browsing
@@ -286,7 +286,7 @@ ENABLE_PREPROCESSING   = YES
 MACRO_EXPANSION        = YES
 EXPAND_ONLY_PREDEF     = YES
 SEARCH_INCLUDES        = YES
-INCLUDE_PATH           = ../
+INCLUDE_PATH           = ./
 INCLUDE_FILE_PATTERNS  =
 PREDEFINED             = DOXYGEN \
                          GENERATING_DOCS \
