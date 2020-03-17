@@ -1,0 +1,23 @@
+name: Build and publish documentation
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  job:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: set OUTPUT_DIRECTORY
+        run: echo 'OUTPUT_DIRECTORY = html' >> docs/Doxyfile
+      - name: build
+        uses: mattnotmitt/doxygen-action@v1
+        with:
+          doxyfile-path: 'docs/Doxyfile'
+      - name: publish
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./html
