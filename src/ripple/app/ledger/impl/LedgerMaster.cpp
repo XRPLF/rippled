@@ -849,7 +849,8 @@ LedgerMaster::setFullLedger (
 
         if (ledger->info().seq > mValidLedgerSeq)
             setValidLedger(ledger);
-        if (!mPubLedger)
+        if (!mPubLedger ||
+            ledger->info().seq > (mPubLedgerSeq + MAX_LEDGER_GAP))
         {
             setPubLedger(ledger);
             app_.getOrderBookDB().setup(ledger);
@@ -1156,8 +1157,6 @@ LedgerMaster::getLedgerHashForHistory(
 std::vector<std::shared_ptr<Ledger const>>
 LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl)
 {
-    std::vector<std::shared_ptr<Ledger const>> ret;
-
     JLOG (m_journal.trace()) << "findNewLedgersToPublish<";
 
     // No valid ledger, nothing to do
@@ -1181,12 +1180,7 @@ LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl
             "Gap in validated ledger stream " << mPubLedgerSeq <<
             " - " << mValidLedgerSeq - 1;
 
-        auto valLedger = mValidLedger.get ();
-        ret.push_back (valLedger);
-        setPubLedger (valLedger);
-        app_.getOrderBookDB().setup(valLedger);
-
-        return { valLedger };
+        return {mValidLedger.get()};
     }
 
     if (mValidLedgerSeq <= mPubLedgerSeq)
@@ -1201,6 +1195,8 @@ LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl
     auto pubSeq = mPubLedgerSeq + 1; // Next sequence to publish
     auto valLedger = mValidLedger.get ();
     std::uint32_t valSeq = valLedger->info().seq;
+
+    std::vector<std::shared_ptr<Ledger const>> ret;
 
     ScopedUnlock sul{sl};
     try
@@ -1269,10 +1265,8 @@ LedgerMaster::tryAdvance()
     mAdvanceWork = true;
     if (!mAdvanceThread && !mValidLedger.empty ())
     {
-        mAdvanceThread = true;
-        app_.getJobQueue ().addJob (
-            jtADVANCE, "advanceLedger",
-            [this] (Job&) { advanceThread(); });
+        mAdvanceThread = app_.getJobQueue().addJob(
+            jtADVANCE, "advanceLedger", [this](Job&) { advanceThread(); });
     }
 }
 
