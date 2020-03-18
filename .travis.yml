@@ -344,7 +344,9 @@ matrix:
       install:
         - choco upgrade cmake.install
         - choco install ninja visualstudio2017-workload-vctools -y
-        - choco install visualstudio2019buildtools visualstudio2019community visualstudio2019-workload-vctools -y
+        #Force install 14.24 to fix build issue. TODO - this should be deleted when rocksdb fixes their issue with the new compiler.
+        - choco install visualstudio2019buildtools visualstudio2019community -y
+        - choco install visualstudio2019-workload-vctools --package-parameters "--add Microsoft.VisualStudio.Component.VC.14.24.x86.x64" -y
       script:
         - export BOOST_TOOLSET=msvc-14.1
         - travis_wait ${MAX_TIME_MIN} Builds/containers/shared/install_boost.sh
@@ -383,7 +385,9 @@ matrix:
       install:
         - choco upgrade cmake.install
         - choco install ninja -y
-        - choco install visualstudio2019buildtools visualstudio2019community visualstudio2019-workload-vctools -y
+        #Force install 14.24 to fix build issue. TODO - this should be deleted when rocksdb fixes their issue with the new compiler.
+        - choco install visualstudio2019buildtools visualstudio2019community -y
+        - choco install visualstudio2019-workload-vctools --package-parameters "--add Microsoft.VisualStudio.Component.VC.14.24.x86.x64" -y
       before_script:
         - export BLD_CONFIG=Release
         # we want to use the boost build from cache, which was built using the
