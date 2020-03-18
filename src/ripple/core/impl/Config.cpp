@@ -39,6 +39,8 @@
 
 namespace ripple {
 
+// Settings whose default value depends on the size of the node.
+// Each setting has defaults for tiny, small, medium, large, and huge.
 inline constexpr
 std::array<std::pair<SizedItem, std::array<int, 5>>, 11>
 sizedItems

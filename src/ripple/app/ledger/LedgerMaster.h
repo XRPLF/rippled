@@ -337,7 +337,11 @@ private:
     // Publish thread is running.
     bool                        mAdvanceThread {false};
 
-    // Publish thread has work to do.
+    // Answers the question: should the ledger publishing and acquisition loop
+    // (`doAdvance`, which runs in its own thread) continue running?
+    // Set to false when entering the loop.
+    // Set to true whenever a caller wants to schedule the loop,
+    // or when the loop makes progress.
     bool                        mAdvanceWork {false};
     int                         mFillInProgress {0};
 

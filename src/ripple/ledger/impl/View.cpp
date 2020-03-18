@@ -568,38 +568,38 @@ hashOfSeq (ReadView const& ledger, LedgerIndex seq,
 
     if (int diff = ledger.seq() - seq; diff <= 256)
     {
-        // Within 256...
-        auto const hashIndex =
-            ledger.read(keylet::skip());
+        // Up to the last 256 ledger digests are in the "recent history"
+        // LedgerHashes object.
+        auto const hashIndex = ledger.read(keylet::skip());
         if (hashIndex)
         {
-            assert (hashIndex->getFieldU32 (sfLastLedgerSequence) ==
-                    (ledger.seq() - 1));
-            STVector256 vec = hashIndex->getFieldV256 (sfHashes);
-            if (vec.size () >= diff)
-                return vec[vec.size () - diff];
-            JLOG (journal.warn()) <<
-                "Ledger " << ledger.seq() <<
-                " missing hash for " << seq <<
-                " (" << vec.size () << "," << diff << ")";
+            assert(
+                hashIndex->getFieldU32(sfLastLedgerSequence) ==
+                (ledger.seq() - 1));
+            STVector256 vec = hashIndex->getFieldV256(sfHashes);
+            if (vec.size() >= diff)
+                return vec[vec.size() - diff];
+            JLOG(journal.warn())
+                << "Ledger " << ledger.seq() << " missing hash for " << seq
+                << " (" << vec.size() << "," << diff << ")";
         }
         else
         {
-            JLOG (journal.warn()) <<
-                "Ledger " << ledger.seq() <<
-                ":" << ledger.info().hash << " missing normal list";
+            JLOG(journal.warn())
+                << "Ledger " << ledger.seq() << ":" << ledger.info().hash
+                << " missing normal list";
         }
     }
 
     if ((seq & 0xff) != 0)
     {
-        JLOG (journal.debug()) <<
-            "Can't get seq " << seq <<
-            " from " << ledger.seq() << " past";
+        JLOG(journal.debug())
+            << "Can't get seq " << seq << " from " << ledger.seq() << " past";
         return boost::none;
     }
 
-    // in skiplist
+    // Every 256th ledger digest is in one of the "previous history"
+    // LedgerHashes objects.
     auto const hashIndex =
         ledger.read(keylet::skip(seq));
     if (hashIndex)
