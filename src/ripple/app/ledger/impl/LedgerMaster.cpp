@@ -1190,11 +1190,15 @@ LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl
         return {};
     }
 
+    // We have established that the last ledger we validated comes after the
+    // last ledger we published. We want to publish ledgers in the half-open
+    // range (mPubLedgerSeq, mValidLedgerSeq].
+
     int acqCount = 0;
 
-    auto pubSeq = mPubLedgerSeq + 1; // Next sequence to publish
+    auto pubSeq = mPubLedgerSeq + 1;
     auto valLedger = mValidLedger.get ();
-    std::uint32_t valSeq = valLedger->info().seq;
+    std::uint32_t valSeq = mValidLedgerSeq;
 
     std::vector<std::shared_ptr<Ledger const>> ret;
 
@@ -1207,23 +1211,20 @@ LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl
                 << "Trying to fetch/publish valid ledger " << seq;
 
             std::shared_ptr<Ledger const> ledger;
-            // This can throw
+            // This can throw.
             auto hash = hashOfSeq(*valLedger, seq, m_journal);
-            // VFALCO TODO Restructure this code so that zero is not
-            // used.
-            if (! hash)
-                hash = beast::zero; // kludge
-            if (seq == valSeq)
-            {
-                // We need to publish the ledger we just fully validated
-                ledger = valLedger;
-            }
-            else if (hash->isZero())
+            // VFALCO TODO Restructure this code so that zero is not used.
+            if (!hash || hash->isZero())
             {
                 JLOG (m_journal.fatal())
                     << "Ledger: " << valSeq
                     << " does not have hash for " << seq;
                 assert (false);
+            }
+            if (seq == valSeq)
+            {
+                // Shortcut to publish the ledger we just fully validated.
+                ledger = valLedger;
             }
             else
             {
