@@ -578,6 +578,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/LedgerData.cpp
   src/ripple/rpc/handlers/LedgerEntry.cpp
   src/ripple/rpc/handlers/LedgerHandler.cpp
+  src/ripple/rpc/handlers/LedgersHandler.cpp
   src/ripple/rpc/handlers/LedgerHeader.cpp
   src/ripple/rpc/handlers/LedgerRequest.cpp
   src/ripple/rpc/handlers/LogLevel.cpp

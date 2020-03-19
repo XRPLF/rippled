@@ -130,6 +130,9 @@ lookupLedger (std::shared_ptr<ReadView const>&, JsonContext&);
 Status
 lookupLedger (std::shared_ptr<ReadView const>&, JsonContext&, Json::Value& result);
 
+Status
+lookupLedgers (std::vector<std::shared_ptr<ReadView const>>&, JsonContext&);
+
 template <class T>
 Status
 ledgerFromRequest(

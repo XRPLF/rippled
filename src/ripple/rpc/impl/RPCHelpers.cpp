@@ -256,6 +256,81 @@ ledgerFromRequest(T& ledger, JsonContext& context)
 
     return Status::OK;
 }
+
+template <class T>
+Status
+ledgersFromRequest(std::vector<T>& ledgers, JsonContext& context)
+{
+    auto& params = context.params;
+
+    auto indexesValue = params[jss::ledger_indexes];
+    auto indexRange = params[jss::ledger_index_range];
+
+    auto hashesValue = params[jss::ledger_hashes];
+
+    if (hashesValue)
+    {
+      if(! hashesValue.isArray())
+        return {rpcINVALID_PARAMS, "ledgerHashesNotArray"};
+
+      for (auto const& hashValue : hashesValue){
+        if (! hashValue.isString ())
+            return {rpcINVALID_PARAMS, "ledgerHashNotString"};
+
+        uint256 ledgerHash;
+        if(!ledgerHash.SetHex (hashValue.asString ()))
+            return {rpcINVALID_PARAMS, "ledgerHashMalformed"};
+
+        ledgers.push_back(T());
+        auto& ledger = ledgers.back();
+
+        getLedger(ledger, ledgerHash, context);
+      }
+
+      return Status::OK;
+    }
+    else if(indexRange)
+    {
+      if(! indexRange.isArray())
+          return {rpcINVALID_PARAMS, "ledgerIndexRangeNotArray"};
+
+      if(indexRange.size() != 2)
+          return {rpcINVALID_PARAMS, "ledgerIndexRangeWrongSize"};
+
+      if (!indexRange[0u].isNumeric() || !indexRange[1u].isNumeric())
+          return {rpcINVALID_PARAMS, "ledgerIndexRangeMalformed"};
+
+      int first = indexRange[0u].asInt();
+      int last  = indexRange[1u].asInt();
+
+      if(first > last)
+          return {rpcINVALID_PARAMS, "ledgerIndexRangeInvalid"};
+
+      for(; first <= last; first++){
+          ledgers.push_back(T());
+          auto& ledger = ledgers.back();
+
+          getLedger(ledger, first, context);
+      }
+    }
+    else if(indexesValue)
+    {
+      if(! indexesValue.isArray())
+          return {rpcINVALID_PARAMS, "ledgerIndexesNotArray"};
+
+      for (auto const& indexValue : indexesValue){
+          if (!indexValue.isNumeric())
+              return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
+
+          ledgers.push_back(T());
+          auto& ledger = ledgers.back();
+
+          getLedger(ledger, indexValue.asInt(),context);
+      }
+    }
+
+    return Status::OK;
+}
 }  // namespace
 
 template <class T>
@@ -512,6 +587,16 @@ lookupLedger(std::shared_ptr<ReadView const>& ledger, JsonContext& context)
         status.inject (result);
 
     return result;
+}
+
+Status
+lookupLedgers(std::vector<std::shared_ptr<ReadView const>>& ledgers,
+    JsonContext& context)
+{
+    if (auto status = ledgersFromRequest (ledgers, context))
+        return status;
+
+    return Status::OK;
 }
 
 hash_set<AccountID>

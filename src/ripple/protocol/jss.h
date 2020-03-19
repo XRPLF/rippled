@@ -297,6 +297,7 @@ JSS ( last_refresh_message );       // out: ValidatorSite
 JSS ( ledger );                     // in: NetworkOPs, LedgerCleaner,
                                     //     RPCHelpers
                                     // out: NetworkOPs, PeerImp
+JSS ( ledgers );
 JSS ( ledger_current_index );       // out: NetworkOPs, RPCHelpers,
                                     //      LedgerCurrent, LedgerAccept,
                                     //      AccountLines
@@ -307,8 +308,11 @@ JSS ( ledger_hash );                // in: RPCHelpers, LedgerRequest,
                                     // out: NetworkOPs, RPCHelpers,
                                     //      LedgerClosed, LedgerData,
                                     //      AccountLines
+JSS ( ledger_hashes );              // in: RPCHelpers, LedgerRequest
 JSS ( ledger_hit_rate );            // out: GetCounts
 JSS ( ledger_index );               // in/out: many
+JSS ( ledger_indexes );             // in: RPCHelpers, LedgerRequest
+JSS ( ledger_index_range );         // in: RPCHelpers, LedgerRequest
 JSS ( ledger_index_max );           // in, out: AccountTx*
 JSS ( ledger_index_min );           // in, out: AccountTx*
 JSS ( ledger_max );                 // in, out: AccountTx*

@@ -145,6 +145,7 @@ class HandlerTable {
             // This is where the new-style handlers are added.
             // This is also where different versions of handlers are added.
             addHandler<LedgerHandler>(v);
+            addHandler<LedgersHandler>(v);
             addHandler<VersionHandler>(v);
         }
     }
