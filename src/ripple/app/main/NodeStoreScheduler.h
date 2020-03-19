@@ -40,7 +40,6 @@ public:
     //
     void setJobQueue (JobQueue& jobQueue);
 
-    void onStop () override;
     void onChildrenStopped () override;
     void scheduleTask (NodeStore::Task& task) override;
     void onFetch (NodeStore::FetchReport const& report) override;

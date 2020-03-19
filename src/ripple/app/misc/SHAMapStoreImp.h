@@ -222,11 +222,6 @@ private:
     // Stoppable
     //
     void
-    onPrepare() override
-    {
-    }
-
-    void
     onStart() override
     {
         if (deleteInterval_)

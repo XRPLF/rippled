@@ -243,8 +243,6 @@ private:
     void collect();
     JobTypeData& getJobTypeData (JobType type);
 
-    void onStop() override;
-
     // Signals the service stopped if the stopped condition is met.
     void checkStopped (std::lock_guard<std::mutex> const& lock);
 

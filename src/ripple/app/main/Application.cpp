@@ -1025,10 +1025,6 @@ public:
     // Stoppable
     //
 
-    void onPrepare() override
-    {
-    }
-
     void onStart () override
     {
         JLOG(m_journal.info())

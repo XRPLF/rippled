@@ -97,9 +97,10 @@ class RootStoppable;
 
     7.  stop()
 
-        This first calls stopAsync(), and then blocks on each child Stoppable in
-        the in the tree from the bottom up, until the Stoppable indicates it has
-        stopped. This will usually be called from the main thread of execution
+        This first calls stopAsync(), then blocks on each child Stoppable in
+        the tree from the bottom up, then calls onChildrenStopped(), then
+        blocks until the Stoppable calls stopped().
+        This will usually be called from the main thread of execution
         when some external signal indicates that the process should stop. For
         example, an RPC 'stop' command, or a SIGINT POSIX signal.
 
@@ -168,9 +169,9 @@ class RootStoppable;
 
         Derived class that manage one or more threads should typically notify
         those threads in onStop that they should exit. In the thread function,
-        when the last thread is about to exit it would call stopped().
+        when the last thread is about to exit it should call stopped().
 
-    @note A Stoppable may not be restarted.
+    @note A Stoppable cannot be restarted.
 
     The form of the Stoppable tree in the rippled application evolves as
     the source code changes and reacts to new demands.  As of March in 2017

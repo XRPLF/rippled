@@ -299,13 +299,6 @@ JobQueue::getJobTypeData (JobType type)
 }
 
 void
-JobQueue::onStop()
-{
-    // onStop must be defined and empty here,
-    // otherwise the base class will do the wrong thing.
-}
-
-void
 JobQueue::checkStopped (std::lock_guard <std::mutex> const& lock)
 {
     // We are stopped when all of the following are true:

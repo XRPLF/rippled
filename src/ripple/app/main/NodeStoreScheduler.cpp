@@ -32,14 +32,10 @@ void NodeStoreScheduler::setJobQueue (JobQueue& jobQueue)
     m_jobQueue = &jobQueue;
 }
 
-void NodeStoreScheduler::onStop ()
-{
-}
-
 void NodeStoreScheduler::onChildrenStopped ()
 {
     assert (m_taskCount == 0);
-    stopped ();
+    stopped();
 }
 
 void NodeStoreScheduler::scheduleTask (NodeStore::Task& task)

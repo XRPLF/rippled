@@ -73,10 +73,6 @@ void LoadManager::resetDeadlockDetector ()
 
 //------------------------------------------------------------------------------
 
-void LoadManager::onPrepare ()
-{
-}
-
 void LoadManager::onStart ()
 {
     JLOG(journal_.debug()) << "Starting";

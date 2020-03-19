@@ -716,18 +716,7 @@ SHAMapStoreImp::onStop()
 void
 SHAMapStoreImp::onChildrenStopped()
 {
-    if (deleteInterval_)
-    {
-        {
-            std::lock_guard lock (mutex_);
-            stop_ = true;
-        }
-        cond_.notify_one();
-    }
-    else
-    {
-        stopped();
-    }
+    SHAMapStoreImp::onStop();
 }
 
 //------------------------------------------------------------------------------

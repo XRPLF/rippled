@@ -85,11 +85,11 @@ void Stoppable::onStart ()
 
 void Stoppable::onStop ()
 {
-    stopped();
 }
 
 void Stoppable::onChildrenStopped ()
 {
+    stopped();
 }
 
 //------------------------------------------------------------------------------

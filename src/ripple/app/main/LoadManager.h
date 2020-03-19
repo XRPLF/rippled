@@ -78,9 +78,6 @@ public:
 
     //--------------------------------------------------------------------------
 
-    // Stoppable members
-    void onPrepare () override;
-
     void onStart () override;
 
     void onStop () override;

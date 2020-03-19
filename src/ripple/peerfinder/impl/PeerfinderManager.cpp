@@ -220,11 +220,6 @@ public:
         m_logic.load ();
     }
 
-    void
-    onStart() override
-    {
-    }
-
     void onStop () override
     {
         close();
