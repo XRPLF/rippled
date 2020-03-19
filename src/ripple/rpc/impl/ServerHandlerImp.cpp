@@ -563,6 +563,12 @@ ServerHandlerImp::processRequest (Port const& port,
 {
     auto rpcJ = app_.journal ("RPC");
 
+    if (request.size () == 0)
+    {
+        HTTPReply (200, "Okay", output, rpcJ);
+        return;
+    }
+
     Json::Value jsonOrig;
     {
         Json::Reader reader;
