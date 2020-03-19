@@ -150,6 +150,7 @@ void printHelp (const po::options_description& desc)
            "     json <method> <json>\n"
            "     ledger [<id>|current|closed|validated] [full]\n"
            "     ledger_accept\n"
+           "     ledger_cleaner\n"
            "     ledger_closed\n"
            "     ledger_current\n"
            "     ledger_request <ledger>\n"
