@@ -588,6 +588,20 @@ public:
     }
 
     void
+    testMemoResult()
+    {
+        using namespace jtx;
+        Env env(*this);
+        JTx jt(noop("alice"));
+        memo("data", "format", "type")(env, jt);
+
+        auto const& memo = jt.jv["Memos"][0u]["Memo"];
+        BEAST_EXPECT(memo["MemoData"].asString() == strHex(std::string("data")));
+        BEAST_EXPECT(memo["MemoFormat"].asString() == strHex(std::string("format")));
+        BEAST_EXPECT(memo["MemoType"].asString() == strHex(std::string("type")));
+    }
+
+    void
     testAdvance()
     {
         using namespace jtx;
@@ -859,6 +873,7 @@ public:
         testJTxCopy();
         testJTxMove();
         testMemo();
+        testMemoResult();
         testAdvance();
         testClose();
         testPath();
