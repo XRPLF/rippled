@@ -227,7 +227,6 @@ STAmount::STAmount (Issue const& issue,
     , mOffset (exponent)
     , mIsNegative (negative)
 {
-    assert(mValue <= std::numeric_limits<std::int64_t>::max());
     canonicalize ();
 }
 
