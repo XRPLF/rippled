@@ -4537,6 +4537,23 @@ public:
         BEAST_EXPECT (++it == offers.end());
     }
 
+    void testFalseAssert()
+    {
+        // An assert was falsely triggering when computing rates for offers.
+        // This unit test would trigger that assert (which has been removed).
+        testcase ("false assert");
+        using namespace jtx;
+
+        Env env{*this};
+        auto const alice = Account ("alice");
+        auto const USD = alice["USD"];
+
+        env.fund (XRP(10000), alice);
+        env.close();
+        env (offer (alice, XRP(100000000000), USD(100000000)));
+        pass();
+    }
+
     void testAll(FeatureBitset features)
     {
         testCanceledOffer(features);
@@ -4607,6 +4624,7 @@ public:
         testAll(all         - flowCross - takerDryOffer);
         testAll(all         - flowCross                );
         testAll(all                                    );
+        testFalseAssert();
     }
 };
 
