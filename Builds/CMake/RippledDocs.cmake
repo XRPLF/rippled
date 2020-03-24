@@ -26,6 +26,11 @@ list (APPEND doxygen_input
   src/README.md)
 set (dependencies "${doxygen_input}" docs/Doxyfile)
 
+find_path (doxygen_plantuml_jar_path plantuml.jar PATH_SUFFIXES share/plantuml)
+if (NOT doxygen_plantuml_jar_path)
+  set (doxygen_plantuml_jar_path)
+endif ()
+
 # https://en.cppreference.com/w/Cppreference:Archives
 # https://stackoverflow.com/questions/60822559/how-to-move-a-file-download-from-configure-step-to-build-step
 set (download_script "${CMAKE_BINARY_DIR}/docs/download-cppreference.cmake")
