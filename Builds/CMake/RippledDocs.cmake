@@ -10,8 +10,7 @@ endif ()
 
 set (doxygen_output_directory "${CMAKE_BINARY_DIR}/docs/html")
 set (doxygen_index_file "${doxygen_output_directory}/index.html")
-set (doxyfile_in "${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile")
-set (doxyfile_out "${CMAKE_BINARY_DIR}/docs/Doxyfile")
+set (doxyfile "${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile")
 
 file (GLOB_RECURSE doxygen_input
   docs/*.md
@@ -24,7 +23,7 @@ list (APPEND doxygen_input
   README.md
   RELEASENOTES.md
   src/README.md)
-set (dependencies "${doxygen_input}" docs/Doxyfile)
+set (dependencies "${doxygen_input}" "${doxyfile}")
 
 find_path (doxygen_plantuml_jar_path plantuml.jar PATH_SUFFIXES share/plantuml)
 if (NOT doxygen_plantuml_jar_path)
@@ -51,15 +50,15 @@ add_custom_command (
   COMMAND "${CMAKE_COMMAND}" -P "${download_script}"
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/docs"
 )
-set (doxygen_tag_files "${tagfile}=http://en.cppreference.com/w/")
-
-# Substitute doxygen_output_directory.
-# TODO: Generate this file at build time, not configure time.
-configure_file ("${doxyfile_in}" "${doxyfile_out}" @ONLY)
+set (doxygen_tagfiles "${tagfile}=http://en.cppreference.com/w/")
 
 add_custom_command (
   OUTPUT "${doxygen_index_file}"
-  COMMAND "${DOXYGEN_EXECUTABLE}" "${doxyfile_out}"
+  COMMAND "${CMAKE_COMMAND}" -E env
+    "DOXYGEN_OUTPUT_DIRECTORY=${doxygen_output_directory}"
+    "DOXYGEN_TAGFILES=${doxygen_tagfiles}"
+    "DOXYGEN_PLANTUML_JAR_PATH=${doxygen_plantuml_jar_path}"
+    "${DOXYGEN_EXECUTABLE}" "${doxyfile}"
   WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
   DEPENDS "${dependencies}" "${tagfile}")
 add_custom_target (docs

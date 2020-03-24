@@ -1,11 +1,5 @@
 # Building documentation
 
-## Specifying Files
-
-To specify the source files for which to build documentation, modify `INPUT`
-and its related fields in `docs/Doxyfile`. Note that the `INPUT` paths are
-relative to the `docs/` directory.
-
 ## Install Dependencies
 
 ### Windows
@@ -30,7 +24,7 @@ Install these dependencies:
 
 ### [Optional] Install Plantuml (all platforms)
 
-Doxygen supports the optional use of [plantuml](http://plantuml.com) to 
+Doxygen supports the optional use of [plantuml](http://plantuml.com) to
 generate diagrams from `@startuml` sections. We don't currently rely on this
 functionality for docs, so it's largely optional. Requirements:
 
@@ -40,22 +34,28 @@ functionality for docs, so it's largely optional. Requirements:
    Set a system environment variable named `PLANTUML_JAR` with a value of the fullpath
    to the file system location of the `plantuml.jar` file you downloaded.
 
-## Do it
 
-### all platforms
+## Configuration
+
+You should set these environment variables:
+
+- `DOXYGEN_OUTPUT_DIRECTORY`
+- `DOXYGEN_PLANTUML_JAR_PATH`
+
+## Build
 
 From the rippled root folder:
+
 ```
-cd docs
-mkdir -p html_doc
-doxygen Doxyfile
+doxygen docs/Doxyfile
 ```
-The output will be in `docs/html_doc`.
+
+The output will be wherever you chose for `DOXYGEN_OUTPUT_DIRECTORY`.
 
 ## Docker
 
 (applicable to all platforms)
-    
+
 Instead of installing the doxygen tools locally, you can use the provided `Dockerfile` to create
 an ubuntu based image for running the tools:
 
@@ -72,5 +72,4 @@ Then to run the image, from the rippled root folder:
 sudo docker run -v $PWD:/opt/rippled --rm rippled-docs
 ```
 
-The output will be in `docs/html_doc`.
-
+The output will be in `html`.

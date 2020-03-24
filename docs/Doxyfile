@@ -7,7 +7,7 @@ PROJECT_NUMBER         =
 PROJECT_BRIEF          = C++ Library
 PROJECT_LOGO           =
 PROJECT_LOGO           = images/LogoForDocumentation.png
-OUTPUT_DIRECTORY       = @doxygen_output_directory@
+OUTPUT_DIRECTORY       = $(DOXYGEN_OUTPUT_DIRECTORY)
 CREATE_SUBDIRS         = NO
 ALLOW_UNICODE_NAMES    = NO
 OUTPUT_LANGUAGE        = English
@@ -299,7 +299,7 @@ SKIP_FUNCTION_MACROS   = YES
 #---------------------------------------------------------------------------
 # Configuration options related to external references
 #---------------------------------------------------------------------------
-TAGFILES               = @doxygen_tag_files@
+TAGFILES               = $(DOXYGEN_TAGFILES)
 GENERATE_TAGFILE       =
 ALLEXTERNALS           = NO
 EXTERNAL_GROUPS        = YES
@@ -336,7 +336,7 @@ DOT_PATH               =
 DOTFILE_DIRS           =
 MSCFILE_DIRS           =
 DIAFILE_DIRS           =
-PLANTUML_JAR_PATH      = @doxygen_plantuml_jar_path@
+PLANTUML_JAR_PATH      = $(DOXYGEN_PLANTUML_JAR_PATH)
 PLANTUML_INCLUDE_PATH  =
 DOT_GRAPH_MAX_NODES    = 50
 MAX_DOT_GRAPH_DEPTH    = 0
