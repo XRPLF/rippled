@@ -31,11 +31,11 @@ functionality for docs, so it's largely optional. Requirements:
 1. Download/install a functioning java runtime, if you don't already have one.
 2. Download [plantuml](http://plantuml.com) from
    [here](http://sourceforge.net/projects/plantuml/files/plantuml.jar/download).
-   Set a system environment variable named `PLANTUML_JAR` with a value of the fullpath
-   to the file system location of the `plantuml.jar` file you downloaded.
+   Set a system environment variable named `DOXYGEN_PLANTUML_JAR_PATH` to
+   the absolute path of the `plantuml.jar` file you downloaded.
 
 
-## Configuration
+## Configure
 
 You should set these environment variables:
 
