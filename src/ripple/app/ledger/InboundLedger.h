@@ -66,7 +66,7 @@ public:
 
     // Called when the PeerSet timer expires
     void
-    execute() override;
+    queueJob() override;
 
     // Called when another attempt is made to fetch this same ledger
     void
@@ -157,7 +157,7 @@ private:
     onTimer(bool progress, ScopedLockType& peerSetLock) override;
 
     void
-    newPeer(std::shared_ptr<Peer> const& peer) override
+    onPeerAdded(std::shared_ptr<Peer> const& peer) override
     {
         // For historical nodes, do not trigger too soon
         // since a fetch pack is probably coming

@@ -50,7 +50,7 @@ TransactionAcquire::TransactionAcquire(Application& app, uint256 const& hash)
 }
 
 void
-TransactionAcquire::execute()
+TransactionAcquire::queueJob()
 {
     app_.getJobQueue().addJob(
         jtTXN_DATA, "TransactionAcquire", [ptr = shared_from_this()](Job&) {

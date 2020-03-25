@@ -77,7 +77,7 @@ PeerSet::addPeers(
         auto const peer = pair.second;
         if (!mPeers.insert(peer->id()).second)
             continue;
-        newPeer(peer);
+        onPeerAdded(peer);
         if (++accepted >= limit)
             break;
     }
@@ -93,7 +93,7 @@ PeerSet::setTimer()
                 return;
 
             if (auto ptr = wptr.lock())
-                ptr->execute();
+                ptr->queueJob();
         });
 }
 
