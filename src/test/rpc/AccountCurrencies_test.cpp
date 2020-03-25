@@ -153,7 +153,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         // does not change
         env(trust(alice, gw["USD"](100), tfSetFreeze));
         result = env.rpc ("account_lines", alice.human());
-        for (auto const l : result[jss::lines])
+        for (auto const& l : result[jss::lines])
             BEAST_EXPECT(
                 l[jss::freeze].asBool() == (l[jss::currency] == "USD"));
         result = env.rpc ("json", "account_currencies",
