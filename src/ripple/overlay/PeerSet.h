@@ -70,8 +70,9 @@ public:
     }
 
     /** Insert a peer to the managed set.
-        This will call the derived class hook function.
-        @return `true` If the peer was added
+        Calls the hook function newPeer().
+
+        @return `true` if the peer was added
     */
     bool
     insert(std::shared_ptr<Peer> const&);
