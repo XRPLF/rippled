@@ -1584,11 +1584,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     {
         // got data for a candidate transaction set
         std::weak_ptr<PeerImp> weak = shared_from_this();
-        auto& journal = p_journal_;
         app_.getJobQueue().addJob(
-            jtTXN_DATA, "recvPeerData", [weak, hash, journal, m](Job&) {
+            jtTXN_DATA, "recvPeerData", [weak, hash, m](Job&) {
                 if (auto peer = weak.lock())
-                    peer->peerTXData(hash, m, journal);
+                    peer->app_.getInboundTransactions().gotData(hash, peer, m);
             });
         return;
     }
@@ -2905,15 +2904,6 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
 
     auto oPacket = std::make_shared<Message>(reply, protocol::mtLEDGER_DATA);
     send(oPacket);
-}
-
-void
-PeerImp::peerTXData(
-    uint256 const& hash,
-    std::shared_ptr<protocol::TMLedgerData> const& pPacket,
-    beast::Journal journal)
-{
-    app_.getInboundTransactions().gotData(hash, shared_from_this(), pPacket);
 }
 
 int
