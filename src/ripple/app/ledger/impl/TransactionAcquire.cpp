@@ -106,7 +106,7 @@ TransactionAcquire::onTimer(bool progress, ScopedLockType& psl)
 std::weak_ptr<PeerSet>
 TransactionAcquire::pmDowncast()
 {
-    return std::dynamic_pointer_cast<PeerSet>(shared_from_this());
+    return shared_from_this();
 }
 
 void
