@@ -946,7 +946,7 @@ struct PayChan_test : public beast::unit_test::suite
 
         Env env(*this);
         env.fund(XRP(10000), alice);
-        for (auto const a : bobs)
+        for (auto const& a : bobs)
         {
             env.fund(XRP(10000), a);
             env.close();
@@ -956,7 +956,7 @@ struct PayChan_test : public beast::unit_test::suite
             // create a channel from alice to every bob account
             auto const settleDelay = 3600s;
             auto const channelFunds = XRP(1);
-            for (auto const b : bobs)
+            for (auto const& b : bobs)
             {
                 env(create(alice, b, channelFunds, settleDelay, alice.pk()));
             }
@@ -990,7 +990,7 @@ struct PayChan_test : public beast::unit_test::suite
 
         auto const bobsB58 = [&bobs]() -> std::set<std::string> {
             std::set<std::string> r;
-            for (auto const a : bobs)
+            for (auto const& a : bobs)
                 r.insert(a.human());
             return r;
         }();
