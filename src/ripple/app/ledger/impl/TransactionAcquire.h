@@ -43,10 +43,7 @@ public:
     using pointer = std::shared_ptr<TransactionAcquire>;
 
 public:
-    TransactionAcquire(
-        Application& app,
-        uint256 const& hash,
-        clock_type& clock);
+    TransactionAcquire(Application& app, uint256 const& hash);
     ~TransactionAcquire() = default;
 
     std::shared_ptr<SHAMap> const&

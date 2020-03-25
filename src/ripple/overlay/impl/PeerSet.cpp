@@ -30,20 +30,17 @@ PeerSet::PeerSet(
     Application& app,
     uint256 const& hash,
     std::chrono::milliseconds interval,
-    clock_type& clock,
     beast::Journal journal)
     : app_(app)
     , m_journal(journal)
-    , m_clock(clock)
     , mHash(hash)
-    , mTimerInterval(interval)
     , mTimeouts(0)
     , mComplete(false)
     , mFailed(false)
     , mProgress(false)
+    , mTimerInterval(interval)
     , mTimer(app_.getIOService())
 {
-    mLastAction = m_clock.now();
     assert((mTimerInterval > 10ms) && (mTimerInterval < 30s));
 }
 
@@ -64,7 +61,7 @@ PeerSet::insert(std::shared_ptr<Peer> const& ptr)
 void
 PeerSet::setTimer()
 {
-    mTimer.expires_from_now(mTimerInterval);
+    mTimer.expires_after(mTimerInterval);
     mTimer.async_wait(
         [wptr = pmDowncast()](boost::system::error_code const& ec) {
             if (ec == boost::asio::error::operation_aborted)
@@ -83,7 +80,7 @@ PeerSet::invokeOnTimer()
     if (isDone())
         return;
 
-    if (!isProgress())
+    if (!mProgress)
     {
         ++mTimeouts;
         JLOG(m_journal.debug())
@@ -101,27 +98,14 @@ PeerSet::invokeOnTimer()
         setTimer();
 }
 
-bool
-PeerSet::isActive()
-{
-    ScopedLockType sl(mLock);
-    return !isDone();
-}
-
 void
 PeerSet::sendRequest(
     const protocol::TMGetLedger& tmGL,
     std::shared_ptr<Peer> const& peer)
 {
-    if (!peer)
-        sendRequest(tmGL);
-    else
+    if (peer)
         peer->send(std::make_shared<Message>(tmGL, protocol::mtGET_LEDGER));
-}
 
-void
-PeerSet::sendRequest(const protocol::TMGetLedger& tmGL)
-{
     ScopedLockType sl(mLock);
 
     if (mPeers.empty())
@@ -131,23 +115,9 @@ PeerSet::sendRequest(const protocol::TMGetLedger& tmGL)
 
     for (auto id : mPeers)
     {
-        if (auto peer = app_.overlay().findPeerByShortID(id))
-            peer->send(packet);
+        if (auto p = app_.overlay().findPeerByShortID(id))
+            p->send(packet);
     }
-}
-
-std::size_t
-PeerSet::getPeerCount() const
-{
-    std::size_t ret(0);
-
-    for (auto id : mPeers)
-    {
-        if (app_.overlay().findPeerByShortID(id))
-            ++ret;
-    }
-
-    return ret;
 }
 
 }  // namespace ripple

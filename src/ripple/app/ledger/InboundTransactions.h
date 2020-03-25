@@ -81,7 +81,6 @@ public:
 std::unique_ptr<InboundTransactions>
 make_InboundTransactions(
     Application& app,
-    InboundTransactions::clock_type& clock,
     Stoppable& parent,
     beast::insight::Collector::ptr const& collector,
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet);

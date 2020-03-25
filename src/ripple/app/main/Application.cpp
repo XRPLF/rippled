@@ -516,7 +516,6 @@ public:
 
         , m_inboundTransactions(make_InboundTransactions(
               *this,
-              stopwatch(),
               *m_jobQueue,
               m_collectorManager->collector(),
               [this](std::shared_ptr<SHAMap> const& set, bool fromAcquire) {

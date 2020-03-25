@@ -77,12 +77,8 @@ InboundLedger::InboundLedger(
     std::uint32_t seq,
     Reason reason,
     clock_type& clock)
-    : PeerSet(
-          app,
-          hash,
-          ledgerAcquireTimeout,
-          clock,
-          app.journal("InboundLedger"))
+    : PeerSet(app, hash, ledgerAcquireTimeout, app.journal("InboundLedger"))
+    , m_clock(clock)
     , mHaveHeader(false)
     , mHaveState(false)
     , mHaveTransactions(false)
@@ -93,6 +89,7 @@ InboundLedger::InboundLedger(
     , mReceiveDispatched(false)
 {
     JLOG(m_journal.trace()) << "Acquiring ledger " << mHash;
+    touch();
 }
 
 void
@@ -156,6 +153,20 @@ InboundLedger::init(ScopedLockType& collectionLock)
         app_.getLedgerMaster().checkAccept(mLedger);
 }
 
+std::size_t
+InboundLedger::getPeerCount() const
+{
+    std::size_t ret(0);
+
+    for (auto id : mPeers)
+    {
+        if (app_.overlay().findPeerByShortID(id))
+            ++ret;
+    }
+
+    return ret;
+}
+
 void
 InboundLedger::execute()
 {
@@ -171,6 +182,7 @@ InboundLedger::execute()
             ptr->invokeOnTimer();
         });
 }
+
 void
 InboundLedger::update(std::uint32_t seq)
 {
@@ -409,7 +421,7 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
             JLOG(m_journal.warn())
                 << getTimeouts() << " timeouts for ledger " << mHash;
         }
-        setFailed();
+        mFailed = true;
         done();
         return;
     }
@@ -443,7 +455,7 @@ InboundLedger::addPeers()
     app_.overlay().selectPeers(
         *this,
         (getPeerCount() == 0) ? peerCountStart : peerCountAdd,
-        ScoreHasLedger(getHash(), mSeq));
+        ScoreHasLedger(mHash, mSeq));
 }
 
 std::weak_ptr<PeerSet>
@@ -492,12 +504,12 @@ InboundLedger::done()
         jtLEDGER_DATA, "AcquisitionDone", [self = shared_from_this()](Job&) {
             if (self->mComplete && !self->mFailed)
             {
-                self->app().getLedgerMaster().checkAccept(self->getLedger());
-                self->app().getLedgerMaster().tryAdvance();
+                self->app_.getLedgerMaster().checkAccept(self->getLedger());
+                self->app_.getLedgerMaster().tryAdvance();
             }
             else
-                self->app().getInboundLedgers().logFailure(
-                    self->getHash(), self->getSeq());
+                self->app_.getInboundLedgers().logFailure(
+                    self->mHash, self->getSeq());
         });
 }
 
@@ -547,7 +559,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     {  // Be more aggressive if we've timed out at least once
         tmGL.set_querytype(protocol::qtINDIRECT);
 
-        if (!isProgress() && !mFailed && mByHash &&
+        if (!mProgress && !mFailed && mByHash &&
             (getTimeouts() > ledgerBecomeAggressiveThreshold))
         {
             auto need = getNeededHashes();
@@ -1172,7 +1184,7 @@ InboundLedger::processData(
         }
 
         if (san.isUseful())
-            progress();
+            mProgress = true;
 
         mStats += san;
         return san.getGood();
@@ -1224,7 +1236,7 @@ InboundLedger::processData(
         }
 
         if (san.isUseful())
-            progress();
+            mProgress = true;
 
         mStats += san;
         return san.getGood();

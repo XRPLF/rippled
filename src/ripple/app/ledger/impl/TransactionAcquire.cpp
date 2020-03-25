@@ -39,16 +39,8 @@ enum {
     MAX_TIMEOUTS = 20,
 };
 
-TransactionAcquire::TransactionAcquire(
-    Application& app,
-    uint256 const& hash,
-    clock_type& clock)
-    : PeerSet(
-          app,
-          hash,
-          TX_ACQUIRE_TIMEOUT,
-          clock,
-          app.journal("TransactionAcquire"))
+TransactionAcquire::TransactionAcquire(Application& app, uint256 const& hash)
+    : PeerSet(app, hash, TX_ACQUIRE_TIMEOUT, app.journal("TransactionAcquire"))
     , mHaveRoot(false)
     , j_(app.journal("TransactionAcquire"))
 {
@@ -98,21 +90,14 @@ TransactionAcquire::done()
 void
 TransactionAcquire::onTimer(bool progress, ScopedLockType& psl)
 {
-    bool aggressive = false;
-
-    if (getTimeouts() >= NORM_TIMEOUTS)
+    if (getTimeouts() > MAX_TIMEOUTS)
     {
-        aggressive = true;
-
-        if (getTimeouts() > MAX_TIMEOUTS)
-        {
-            mFailed = true;
-            done();
-            return;
-        }
+        mFailed = true;
+        done();
+        return;
     }
 
-    if (aggressive)
+    if (getTimeouts() >= NORM_TIMEOUTS)
         trigger(nullptr);
 
     addPeers(1);
@@ -225,7 +210,7 @@ TransactionAcquire::takeNodes(
                 if (mHaveRoot)
                     JLOG(j_.debug()) << "Got root TXS node, already have it";
                 else if (!mMap->addRootNode(
-                                  SHAMapHash{getHash()},
+                                  SHAMapHash{mHash},
                                   makeSlice(*nodeDatait),
                                   snfWIRE,
                                   nullptr)
@@ -248,7 +233,7 @@ TransactionAcquire::takeNodes(
         }
 
         trigger(peer);
-        progress();
+        mProgress = true;
         return SHAMapAddNode::useful();
     }
     catch (std::exception const&)
@@ -261,7 +246,7 @@ TransactionAcquire::takeNodes(
 void
 TransactionAcquire::addPeers(int numPeers)
 {
-    app_.overlay().selectPeers(*this, numPeers, ScoreHasTxSet(getHash()));
+    app_.overlay().selectPeers(*this, numPeers, ScoreHasTxSet(mHash));
 }
 
 void
