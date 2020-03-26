@@ -90,14 +90,14 @@ TransactionAcquire::done()
 void
 TransactionAcquire::onTimer(bool progress, ScopedLockType& psl)
 {
-    if (getTimeouts() > MAX_TIMEOUTS)
+    if (mTimeouts > MAX_TIMEOUTS)
     {
         mFailed = true;
         done();
         return;
     }
 
-    if (getTimeouts() >= NORM_TIMEOUTS)
+    if (mTimeouts >= NORM_TIMEOUTS)
         trigger(nullptr);
 
     addPeers(1);
@@ -132,7 +132,7 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
         tmGL.set_itype(protocol::liTS_CANDIDATE);
         tmGL.set_querydepth(3);  // We probably need the whole thing
 
-        if (getTimeouts() != 0)
+        if (mTimeouts != 0)
             tmGL.set_querytype(protocol::qtINDIRECT);
 
         *(tmGL.add_nodeids()) = SHAMapNodeID().getRawString();
@@ -163,7 +163,7 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
         tmGL.set_ledgerhash(mHash.begin(), mHash.size());
         tmGL.set_itype(protocol::liTS_CANDIDATE);
 
-        if (getTimeouts() != 0)
+        if (mTimeouts != 0)
             tmGL.set_querytype(protocol::qtINDIRECT);
 
         for (auto const& node : nodes)

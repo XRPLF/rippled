@@ -230,9 +230,9 @@ InboundLedger::~InboundLedger()
     {
         JLOG(m_journal.debug())
             << "Acquire " << mHash << " abort "
-            << ((getTimeouts() == 0) ? std::string()
-                                     : (std::string("timeouts:") +
-                                        std::to_string(getTimeouts()) + " "))
+            << ((mTimeouts == 0) ? std::string()
+                                 : (std::string("timeouts:") +
+                                    std::to_string(mTimeouts) + " "))
             << mStats.get();
     }
 }
@@ -409,17 +409,17 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
         return;
     }
 
-    if (getTimeouts() > ledgerTimeoutRetriesMax)
+    if (mTimeouts > ledgerTimeoutRetriesMax)
     {
         if (mSeq != 0)
         {
             JLOG(m_journal.warn())
-                << getTimeouts() << " timeouts for ledger " << mSeq;
+                << mTimeouts << " timeouts for ledger " << mSeq;
         }
         else
         {
             JLOG(m_journal.warn())
-                << getTimeouts() << " timeouts for ledger " << mHash;
+                << mTimeouts << " timeouts for ledger " << mHash;
         }
         mFailed = true;
         done();
@@ -474,9 +474,9 @@ InboundLedger::done()
 
     JLOG(m_journal.debug())
         << "Acquire " << mHash << (mFailed ? " fail " : " ")
-        << ((getTimeouts() == 0) ? std::string()
-                                 : (std::string("timeouts:") +
-                                    std::to_string(getTimeouts()) + " "))
+        << ((mTimeouts == 0)
+                ? std::string()
+                : (std::string("timeouts:") + std::to_string(mTimeouts) + " "))
         << mStats.get();
 
     assert(mComplete || mFailed);
@@ -554,12 +554,13 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     protocol::TMGetLedger tmGL;
     tmGL.set_ledgerhash(mHash.begin(), mHash.size());
 
-    if (getTimeouts() != 0)
-    {  // Be more aggressive if we've timed out at least once
+    if (mTimeouts != 0)
+    {
+        // Be more aggressive if we've timed out at least once
         tmGL.set_querytype(protocol::qtINDIRECT);
 
         if (!mProgress && !mFailed && mByHash &&
-            (getTimeouts() > ledgerBecomeAggressiveThreshold))
+            (mTimeouts > ledgerBecomeAggressiveThreshold))
         {
             auto need = getNeededHashes();
 
@@ -1316,7 +1317,7 @@ InboundLedger::getJson(int)
         ret[jss::have_transactions] = mHaveTransactions;
     }
 
-    ret[jss::timeouts] = getTimeouts();
+    ret[jss::timeouts] = mTimeouts;
 
     if (mHaveHeader && !mHaveState)
     {

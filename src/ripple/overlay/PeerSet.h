@@ -47,28 +47,6 @@ namespace ripple {
 */
 class PeerSet
 {
-public:
-    /** Returns true if we got all the data. */
-    bool
-    isComplete() const
-    {
-        return mComplete;
-    }
-
-    /** Returns false if we failed to get the data. */
-    bool
-    isFailed() const
-    {
-        return mFailed;
-    }
-
-    /** Returns the number of times we timed out. */
-    int
-    getTimeouts() const
-    {
-        return mTimeouts;
-    }
-
 protected:
     using ScopedLockType = std::unique_lock<std::recursive_mutex>;
 
