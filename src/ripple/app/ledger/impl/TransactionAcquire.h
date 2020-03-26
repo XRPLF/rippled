@@ -46,12 +46,6 @@ public:
     TransactionAcquire(Application& app, uint256 const& hash);
     ~TransactionAcquire() = default;
 
-    std::shared_ptr<SHAMap> const&
-    getMap()
-    {
-        return mMap;
-    }
-
     SHAMapAddNode
     takeNodes(
         const std::list<SHAMapNodeID>& IDs,

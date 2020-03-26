@@ -45,20 +45,35 @@ public:
 
     virtual ~InboundTransactions() = 0;
 
-    /** Retrieves a transaction set by hash
+    /** Find and return a transaction set, or nullptr if it is missing.
+     *
+     * @param setHash The transaction set ID (digest of the SHAMap root node).
+     * @param acquire Whether to fetch the transaction set from the network if
+     * it is missing.
+     * @return The transaction set with ID setHash, or nullptr if it is
+     * missing.
      */
     virtual std::shared_ptr<SHAMap>
     getSet(uint256 const& setHash, bool acquire) = 0;
 
-    /** Gives data to an inbound transaction set
+    /** Add a transaction set from a LedgerData message.
+     *
+     * @param setHash The transaction set ID (digest of the SHAMap root node).
+     * @param peer The peer that sent the message.
+     * @param message The LedgerData message.
      */
     virtual void
     gotData(
         uint256 const& setHash,
-        std::shared_ptr<Peer>,
-        std::shared_ptr<protocol::TMLedgerData>) = 0;
+        std::shared_ptr<Peer> peer,
+        std::shared_ptr<protocol::TMLedgerData> message) = 0;
 
-    /** Gives set to the container
+    /** Add a transaction set.
+     *
+     * @param setHash The transaction set ID (should match set.getHash()).
+     * @param set The transaction set.
+     * @param acquired Whether this transaction set was acquired from a peer,
+     * or constructed by ourself during consensus.
      */
     virtual void
     giveSet(
@@ -70,12 +85,6 @@ public:
      */
     virtual void
     newRound(std::uint32_t seq) = 0;
-
-    virtual Json::Value
-    getInfo() = 0;
-
-    virtual void
-    onStop() = 0;
 };
 
 std::unique_ptr<InboundTransactions>

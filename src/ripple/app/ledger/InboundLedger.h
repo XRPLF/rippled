@@ -86,13 +86,6 @@ public:
         return mFailed;
     }
 
-    /** Returns the number of times we timed out. */
-    int
-    getTimeouts() const
-    {
-        return mTimeouts;
-    }
-
     std::shared_ptr<Ledger const>
     getLedger() const
     {
@@ -103,12 +96,6 @@ public:
     getSeq() const
     {
         return mSeq;
-    }
-
-    Reason
-    getReason() const
-    {
-        return mReason;
     }
 
     bool
@@ -144,12 +131,6 @@ public:
     getLastAction() const
     {
         return mLastAction;
-    }
-
-    bool
-    isActive() const
-    {
-        return !isDone();
     }
 
 private:

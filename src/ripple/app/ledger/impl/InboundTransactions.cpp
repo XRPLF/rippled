@@ -204,34 +204,6 @@ public:
             m_gotSet(set, fromAcquire);
     }
 
-    Json::Value
-    getInfo() override
-    {
-        Json::Value ret(Json::objectValue);
-
-        Json::Value& sets = (ret["sets"] = Json::arrayValue);
-
-        {
-            std::lock_guard sl(mLock);
-
-            ret["seq"] = m_seq;
-
-            for (auto const& it : m_map)
-            {
-                Json::Value& set = sets[to_string(it.first)];
-                set["seq"] = it.second.mSeq;
-                if (it.second.mSet)
-                    set["state"] = "complete";
-                else if (it.second.mAcquire)
-                    set["state"] = "acquiring";
-                else
-                    set["state"] = "dead";
-            }
-        }
-
-        return ret;
-    }
-
     void
     newRound(std::uint32_t seq) override
     {
