@@ -179,7 +179,7 @@ handleNewValidation(
         s << (val->isTrusted() ? "trusted" : "untrusted") << " "
           << (val->isFull() ? "full" : "partial") << " validation: " << hash
           << " from " << id << " via " << source << ": " << msg << "\n"
-          << " [" << val->getSerializer().getHex() << "]";
+          << " [" << val->getSerializer().slice() << "]";
     };
 
     if (!val->isFieldPresent(sfLedgerSequence))

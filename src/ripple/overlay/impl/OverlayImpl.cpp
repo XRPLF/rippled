@@ -237,7 +237,7 @@ OverlayImpl::onHandoff(
         return handoff;
     }
 
-    // TODO Validate HTTP request
+    // Validate HTTP request
 
     {
         auto const types = beast::rfc2616::split_commas(request["Connect-As"]);
@@ -1083,14 +1083,13 @@ OverlayImpl::processValidatorList(
 {
     // If the target is in the form "/vl/<validator_list_public_key>",
     // return the most recent validator list for that key.
-    if (!req.target().starts_with("/vl/") || !setup_.vlEnabled)
+    constexpr std::string_view prefix("/vl/");
+
+    if (!req.target().starts_with(prefix.data()) || !setup_.vlEnabled)
         return false;
 
-    auto key = req.target();
-    if (key.starts_with("/vl/"))
-        key.remove_prefix(strlen("/vl/"));
-    else
-        key.remove_prefix(strlen("/unl/"));
+    auto key = req.target().substr(prefix.size());
+
     if (key.empty())
         return false;
 

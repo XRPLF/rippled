@@ -78,7 +78,6 @@ LoadMonitor::update()
         mLatencyMSAvg = 0ms;
         mLatencyMSPeak = 0ms;
         mLastUpdate = now;
-        // VFALCO TODO don't return from the middle...
         return;
     }
 

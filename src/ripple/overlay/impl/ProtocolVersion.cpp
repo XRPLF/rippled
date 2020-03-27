@@ -32,7 +32,16 @@ namespace ripple {
     @note The list must be sorted in strictly ascending order (and so
           it may not contain any duplicates!)
 */
-constexpr ProtocolVersion const supportedProtocolList[]{{1, 2}, {2, 0}, {2, 1}};
+
+// clang-format off
+constexpr ProtocolVersion const supportedProtocolList[]
+{
+    {1, 2},
+    {2, 0},
+    {2, 1}
+};
+// clang-format on
+
 
 // This ugly construct ensures that supportedProtocolList is sorted in strictly
 // ascending order and doesn't contain any duplicates.

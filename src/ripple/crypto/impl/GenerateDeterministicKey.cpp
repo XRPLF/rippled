@@ -18,14 +18,13 @@
 //==============================================================================
 
 #include <ripple/basics/contract.h>
-#include <ripple/beast/crypto/secure_erase.h>
 #include <ripple/crypto/GenerateDeterministicKey.h>
 #include <ripple/crypto/impl/ec_key.h>
 #include <ripple/crypto/impl/openssl.h>
+#include <ripple/crypto/secure_erase.h>
 #include <ripple/protocol/digest.h>
 #include <array>
 #include <openssl/pem.h>
-#include <openssl/sha.h>
 #include <string>
 
 namespace ripple {
@@ -101,11 +100,11 @@ generateRootDeterministicKey(uint128 const& seed)
         std::copy(seed.begin(), seed.end(), buf.begin());
         copy_uint32(buf.begin() + 16, seq++);
         auto root = sha512Half(buf);
-        beast::secure_erase(buf.data(), buf.size());
+        secure_erase(buf.data(), buf.size());
         privKey.assign(root.data(), root.size());
-        beast::secure_erase(root.data(), root.size());
+        secure_erase(root.data(), root.size());
     } while (privKey.is_zero() || privKey >= secp256k1curve().order);
-    beast::secure_erase(&seq, sizeof(seq));
+    secure_erase(&seq, sizeof(seq));
     return privKey;
 }
 
@@ -163,9 +162,9 @@ makeHash(Blob const& pubGen, int seq, bignum const& order)
         copy_uint32(buf.begin() + 33, seq);
         copy_uint32(buf.begin() + 37, subSeq++);
         auto root = sha512Half_s(buf);
-        beast::secure_erase(buf.data(), buf.size());
+        secure_erase(buf.data(), buf.size());
         result.assign(root.data(), root.size());
-        beast::secure_erase(root.data(), root.size());
+        secure_erase(root.data(), root.size());
     } while (result.is_zero() || result >= order);
 
     return result;

@@ -19,10 +19,10 @@
 
 #include <ripple/basics/Buffer.h>
 #include <ripple/basics/contract.h>
-#include <ripple/beast/crypto/secure_erase.h>
 #include <ripple/beast/utility/rngfill.h>
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/crypto/csprng.h>
+#include <ripple/crypto/secure_erase.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
@@ -36,7 +36,7 @@ namespace ripple {
 
 Seed::~Seed()
 {
-    beast::secure_erase(buf_.data(), buf_.size());
+    secure_erase(buf_.data(), buf_.size());
 }
 
 Seed::Seed(Slice const& slice)
@@ -61,7 +61,7 @@ randomSeed()
     std::array<std::uint8_t, 16> buffer;
     beast::rngfill(buffer.data(), buffer.size(), crypto_prng());
     Seed seed(makeSlice(buffer));
-    beast::secure_erase(buffer.data(), buffer.size());
+    secure_erase(buffer.data(), buffer.size());
     return seed;
 }
 

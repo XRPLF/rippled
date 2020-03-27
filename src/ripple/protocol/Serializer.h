@@ -26,19 +26,15 @@
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>
-#include <ripple/beast/crypto/secure_erase.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/SField.h>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <iomanip>
-#include <sstream>
 #include <type_traits>
 
 namespace ripple {
-
-class CKey;  // forward declaration
 
 class Serializer
 {
@@ -83,34 +79,24 @@ public:
 
     // assemble functions
     int
-    add8(unsigned char byte);
-    int add16(std::uint16_t);
-    int add32(std::uint32_t);  // ledger indexes, account sequence, timestamps
-    int add32(HashPrefix);
-    int add64(std::uint64_t);  // native currency amounts
+    add8(unsigned char i);
     int
-    add128(const uint128&);  // private key generators
+    add16(std::uint16_t i);
     int
-    add256(uint256 const&);  // transaction and ledger hashes
+    add32(std::uint32_t i);  // ledger indexes, account sequence, timestamps
+    int
+    add32(HashPrefix p);
+    int
+    add64(std::uint64_t i);  // native currency amounts
 
     template <typename Integer>
     int addInteger(Integer);
 
-    template <int Bits, class Tag>
+    template <std::size_t Bits, class Tag>
     int
     addBitString(base_uint<Bits, Tag> const& v)
     {
-        int ret = mData.size();
-        mData.insert(mData.end(), v.begin(), v.end());
-        return ret;
-    }
-
-    // TODO(tom): merge with add128 and add256.
-    template <class Tag>
-    int
-    add160(base_uint<160, Tag> const& i)
-    {
-        return addBitString<160, Tag>(i);
+        return addRaw(v.data(), v.size());
     }
 
     int
@@ -119,8 +105,6 @@ public:
     addRaw(const void* ptr, int len);
     int
     addRaw(const Serializer& s);
-    int
-    addZeros(size_t uBytes);
 
     int
     addVL(Blob const& vector);
@@ -135,8 +119,6 @@ public:
     // disassemble functions
     bool
     get8(int&, int offset) const;
-    bool
-    get256(uint256&, int offset) const;
 
     template <typename Integer>
     bool
@@ -157,7 +139,7 @@ public:
         return true;
     }
 
-    template <int Bits, typename Tag = void>
+    template <std::size_t Bits, typename Tag = void>
     bool
     getBitString(base_uint<Bits, Tag>& data, int offset) const
     {
@@ -166,24 +148,6 @@ public:
             memcpy(data.begin(), &(mData.front()) + offset, (Bits / 8));
         return success;
     }
-
-    // TODO(tom): merge with get128 and get256.
-    template <class Tag>
-    bool
-    get160(base_uint<160, Tag>& o, int offset) const
-    {
-        return getBitString<160, Tag>(o, offset);
-    }
-
-    bool
-    getRaw(Blob&, int offset, int length) const;
-    Blob
-    getRaw(int offset, int length) const;
-
-    bool
-    getVL(Blob& objectVL, int offset, int& length) const;
-    bool
-    getVLLength(int& length, int offset) const;
 
     int
     addFieldID(int type, int name);
@@ -238,12 +202,6 @@ public:
     getString() const
     {
         return std::string(static_cast<const char*>(getDataPtr()), size());
-    }
-    void
-    secureErase()
-    {
-        beast::secure_erase(mData.data(), mData.size());
-        mData.clear();
     }
     void
     erase()
@@ -311,19 +269,6 @@ public:
         return v.mData != mData;
     }
 
-    std::string
-    getHex() const
-    {
-        std::stringstream h;
-
-        for (unsigned char const& element : mData)
-        {
-            h << std::setw(2) << std::hex << std::setfill('0')
-              << safe_cast<unsigned int>(element);
-        }
-        return h.str();
-    }
-
     static int
     decodeLengthLength(int b1);
     static int
@@ -334,11 +279,6 @@ public:
     decodeVLLength(int b1, int b2, int b3);
 
 private:
-    static int
-    lengthVL(int length)
-    {
-        return length + encodeLengthLength(length);
-    }
     static int
     encodeLengthLength(int length);  // length to encode length
     int
@@ -414,7 +354,7 @@ public:
     std::uint64_t
     get64();
 
-    template <int Bits, class Tag = void>
+    template <std::size_t Bits, class Tag = void>
     base_uint<Bits, Tag>
     getBitString();
 
@@ -467,7 +407,7 @@ public:
     getRawHelper(int size);
 };
 
-template <int Bits, class Tag>
+template <std::size_t Bits, class Tag>
 base_uint<Bits, Tag>
 SerialIter::getBitString()
 {

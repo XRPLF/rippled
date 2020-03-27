@@ -239,8 +239,6 @@ private:
         }
     };
 
-    enum { reserveSize = 20 };
-
     using list_type = std::vector<detail::STVar>;
 
     list_type v_;
@@ -281,7 +279,7 @@ public:
 
     explicit STObject(SField const& name);
 
-    virtual ~STObject();
+    virtual ~STObject() = default;
 
     STBase*
     copy(std::size_t n, void* buf) const override

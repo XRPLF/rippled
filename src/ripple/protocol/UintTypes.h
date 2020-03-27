@@ -81,11 +81,22 @@ isXRP(Currency const& c)
 std::string
 to_string(Currency const& c);
 
-/** Tries to convert a string to a Currency, returns true on success. */
+/** Tries to convert a string to a Currency, returns true on success.
+
+    @note This function will return success if the resulting currency is
+          badCurrency(). This legacy behavior is unfortunate; changing this
+          will require very careful checking everywhere and may mean having
+          to rewrite some unit test code.
+*/
 bool
 to_currency(Currency&, std::string const&);
 
-/** Tries to convert a string to a Currency, returns noCurrency() on failure. */
+/** Tries to convert a string to a Currency, returns noCurrency() on failure.
+
+    @note This function can return badCurrency(). This legacy behavior is
+          unfortunate; changing this will require very careful checking
+          everywhere and may mean having to rewrite some unit test code.
+*/
 Currency
 to_currency(std::string const&);
 

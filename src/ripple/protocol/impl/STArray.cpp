@@ -24,14 +24,6 @@
 
 namespace ripple {
 
-STArray::STArray()
-{
-    // VFALCO NOTE We need to determine if this is
-    //             the right thing to do, and consider
-    //             making it optional.
-    // v_.reserve(reserveSize);
-}
-
 STArray::STArray(STArray&& other)
     : STBase(other.getFName()), v_(std::move(other.v_))
 {
@@ -52,7 +44,6 @@ STArray::STArray(int n)
 
 STArray::STArray(SField const& f) : STBase(f)
 {
-    v_.reserve(reserveSize);
 }
 
 STArray::STArray(SField const& f, int n) : STBase(f)

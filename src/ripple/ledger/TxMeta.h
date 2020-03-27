@@ -29,13 +29,8 @@
 
 namespace ripple {
 
-// VFALCO Move to ripple/app/ledger/detail, rename to TxMeta
 class TxMeta
 {
-public:
-    using pointer = std::shared_ptr<TxMeta>;
-    using ref = const pointer&;
-
 private:
     struct CtorHelper
     {
@@ -49,31 +44,10 @@ private:
         CtorHelper);
 
 public:
-    TxMeta() : mLedger(0), mIndex(static_cast<std::uint32_t>(-1)), mResult(255)
-    {
-    }
-
-    TxMeta(uint256 const& txID, std::uint32_t ledger, std::uint32_t index)
-        : mTransactionID(txID)
-        , mLedger(ledger)
-        , mIndex(static_cast<std::uint32_t>(-1))
-        , mResult(255)
-    {
-    }
-
+    TxMeta(uint256 const& transactionID, std::uint32_t ledger);
     TxMeta(uint256 const& txID, std::uint32_t ledger, Blob const&);
     TxMeta(uint256 const& txID, std::uint32_t ledger, std::string const&);
     TxMeta(uint256 const& txID, std::uint32_t ledger, STObject const&);
-
-    void
-    init(uint256 const& transactionID, std::uint32_t ledger);
-    void
-    clear()
-    {
-        mNodes.clear();
-    }
-    void
-    swap(TxMeta&) noexcept;
 
     uint256 const&
     getTxID()
@@ -101,16 +75,12 @@ public:
         return mIndex;
     }
 
-    bool
-    isNodeAffected(uint256 const&) const;
     void
     setAffectedNode(uint256 const&, SField const& type, std::uint16_t nodeType);
     STObject&
     getAffectedNode(SLE::ref node, SField const& type);  // create if needed
     STObject&
     getAffectedNode(uint256 const&);
-    const STObject&
-    peekAffectedNode(uint256 const&) const;
 
     /** Return a list of accounts affected by this transaction */
     boost::container::flat_set<AccountID>
@@ -150,9 +120,6 @@ public:
     {
         return static_cast<bool>(mDelivered);
     }
-
-    static bool
-    thread(STObject& node, uint256 const& prevTxID, std::uint32_t prevLgrID);
 
 private:
     uint256 mTransactionID;

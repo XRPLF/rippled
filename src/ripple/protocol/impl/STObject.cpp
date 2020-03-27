@@ -26,15 +26,6 @@
 
 namespace ripple {
 
-STObject::~STObject()
-{
-#if 0
-    // Turn this on to get a histogram on exit
-    static Log log;
-    log(v_.size());
-#endif
-}
-
 STObject::STObject(STObject&& other)
     : STBase(other.getFName()), v_(std::move(other.v_)), mType(other.mType)
 {
@@ -42,8 +33,6 @@ STObject::STObject(STObject&& other)
 
 STObject::STObject(SField const& name) : STBase(name), mType(nullptr)
 {
-    // VFALCO TODO See if this is the right thing to do
-    // v_.reserve(reserveSize);
 }
 
 STObject::STObject(SOTemplate const& type, SField const& name) : STBase(name)

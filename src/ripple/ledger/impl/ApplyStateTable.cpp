@@ -123,9 +123,7 @@ ApplyStateTable::apply(
     std::shared_ptr<Serializer> sMeta;
     if (!to.open())
     {
-        TxMeta meta;
-        // VFALCO Shouldn't TxMeta ctor do this?
-        meta.init(tx.getTransactionID(), to.seq());
+        TxMeta meta(tx.getTransactionID(), to.seq());
         if (deliver)
             meta.setDeliveredAmount(*deliver);
         Mods newMod;
@@ -526,12 +524,24 @@ ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 {
     key_type prevTxID;
     LedgerIndex prevLgrID;
+
     if (!sle->thread(meta.getTxID(), meta.getLgrSeq(), prevTxID, prevLgrID))
         return;
-    if (prevTxID.isZero())
-        return;
-    TxMeta::thread(
-        meta.getAffectedNode(sle, sfModifiedNode), prevTxID, prevLgrID);
+
+    if (!prevTxID.isZero())
+    {
+        auto& node = meta.getAffectedNode(sle, sfModifiedNode);
+
+        if (node.getFieldIndex(sfPreviousTxnID) == -1)
+        {
+            assert(node.getFieldIndex(sfPreviousTxnLgrSeq) == -1);
+            node.setFieldH256(sfPreviousTxnID, prevTxID);
+            node.setFieldU32(sfPreviousTxnLgrSeq, prevLgrID);
+        }
+
+        assert(node.getFieldH256(sfPreviousTxnID) == prevTxID);
+        assert(node.getFieldU32(sfPreviousTxnLgrSeq) == prevLgrID);
+    }
 }
 
 std::shared_ptr<SLE>

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2020 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,27 +17,15 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_PAYCHAN_H_INCLUDED
-#define RIPPLE_PROTOCOL_PAYCHAN_H_INCLUDED
-
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/basics/base_uint.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/Serializer.h>
+#include <ripple/crypto/secure_erase.h>
+#include <openssl/crypto.h>
 
 namespace ripple {
 
-inline void
-serializePayChanAuthorization(
-    Serializer& msg,
-    uint256 const& key,
-    XRPAmount const& amt)
+void
+secure_erase(void* dest, std::size_t bytes)
 {
-    msg.add32(HashPrefix::paymentChannelClaim);
-    msg.addBitString(key);
-    msg.add64(amt.drops());
+    OPENSSL_cleanse(dest, bytes);
 }
 
 }  // namespace ripple
-
-#endif

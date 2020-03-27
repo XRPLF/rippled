@@ -26,8 +26,6 @@
 
 namespace ripple {
 
-// VFALCO TODO rename class to TransactionMeta
-
 template <class T>
 TxMeta::TxMeta(
     uint256 const& txid,
@@ -78,16 +76,14 @@ TxMeta::TxMeta(
 {
 }
 
-bool
-TxMeta::isNodeAffected(uint256 const& node) const
+TxMeta::TxMeta(uint256 const& transactionID, std::uint32_t ledger)
+    : mTransactionID(transactionID)
+    , mLedger(ledger)
+    , mIndex(static_cast<std::uint32_t>(-1))
+    , mResult(255)
+    , mNodes(sfAffectedNodes)
 {
-    for (auto const& n : mNodes)
-    {
-        if (n.getFieldH256(sfLedgerIndex) == node)
-            return true;
-    }
-
-    return false;
+    mNodes.reserve(32);
 }
 
 void
@@ -205,57 +201,6 @@ TxMeta::getAffectedNode(uint256 const& node)
     return *(mNodes.begin());  // Silence compiler warning.
 }
 
-const STObject&
-TxMeta::peekAffectedNode(uint256 const& node) const
-{
-    for (auto const& n : mNodes)
-    {
-        if (n.getFieldH256(sfLedgerIndex) == node)
-            return n;
-    }
-
-    Throw<std::runtime_error>("Affected node not found");
-    return *(mNodes.begin());  // Silence compiler warning.
-}
-
-void
-TxMeta::init(uint256 const& id, std::uint32_t ledger)
-{
-    mTransactionID = id;
-    mLedger = ledger;
-    mNodes = STArray(sfAffectedNodes, 32);
-    mDelivered = boost::optional<STAmount>();
-}
-
-void
-TxMeta::swap(TxMeta& s) noexcept
-{
-    assert((mTransactionID == s.mTransactionID) && (mLedger == s.mLedger));
-    mNodes.swap(s.mNodes);
-}
-
-bool
-TxMeta::thread(STObject& node, uint256 const& prevTxID, std::uint32_t prevLgrID)
-{
-    if (node.getFieldIndex(sfPreviousTxnID) == -1)
-    {
-        assert(node.getFieldIndex(sfPreviousTxnLgrSeq) == -1);
-        node.setFieldH256(sfPreviousTxnID, prevTxID);
-        node.setFieldU32(sfPreviousTxnLgrSeq, prevLgrID);
-        return true;
-    }
-
-    assert(node.getFieldH256(sfPreviousTxnID) == prevTxID);
-    assert(node.getFieldU32(sfPreviousTxnLgrSeq) == prevLgrID);
-    return false;
-}
-
-static bool
-compare(const STObject& o1, const STObject& o2)
-{
-    return o1.getFieldH256(sfLedgerIndex) < o2.getFieldH256(sfLedgerIndex);
-}
-
 STObject
 TxMeta::getAsObject() const
 {
@@ -276,7 +221,9 @@ TxMeta::addRaw(Serializer& s, TER result, std::uint32_t index)
     mIndex = index;
     assert((mResult == 0) || ((mResult > 100) && (mResult <= 255)));
 
-    mNodes.sort(compare);
+    mNodes.sort([](STObject const& o1, STObject const& o2) {
+        return o1.getFieldH256(sfLedgerIndex) < o2.getFieldH256(sfLedgerIndex);
+    });
 
     getAsObject().add(s);
 }

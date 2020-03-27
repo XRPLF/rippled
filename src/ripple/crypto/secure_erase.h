@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2020 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,24 +17,30 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_VISITCALLBACK_H_INCLUDED
-#define RIPPLE_NODESTORE_VISITCALLBACK_H_INCLUDED
+#ifndef RIPPLE_CRYPTO_SECURE_ERASE_H_INCLUDED
+#define RIPPLE_CRYPTO_SECURE_ERASE_H_INCLUDED
+
+#include <cstddef>
 
 namespace ripple {
-namespace NodeStore {
 
-/** Callback for iterating through objects.
+/** Attempts to fill memory with zeroes.
 
-    @see visitAll
+    The underlying implementation of this function takes pains to
+    attempt to outsmart compilers from optimizing the zeroization
+    away. Please note that, despite that, remnants of content may
+    remain floating around in memory as well as registers, caches
+    and more.
+
+    For a comprehensive treatise on the subject of secure
+    memory clearing, see:
+
+    http://www.daemonology.net/blog/2014-09-04-how-to-zero-a-buffer.html
+    http://www.daemonology.net/blog/2014-09-06-zeroing-buffers-is-insufficient.html
 */
-// VFALCO DEPRECATED Use std::function instead
-struct VisitCallback
-{
-    virtual void
-    visitObject(NodeObject::Ptr const& object) = 0;
-};
+void
+secure_erase(void* dest, std::size_t bytes);
 
-}  // namespace NodeStore
 }  // namespace ripple
 
 #endif

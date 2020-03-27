@@ -778,7 +778,7 @@ DatabaseShardImp::import(Database& source)
                 s.add32(Shard::version);
                 s.add32(firstLedgerSeq(shardIndex));
                 s.add32(lastLedgerSeq(shardIndex));
-                s.add256(*lastLedgerHash);
+                s.addBitString(*lastLedgerHash);
                 auto nObj{NodeObject::createObject(
                     hotUNKNOWN, std::move(s.modData()), Shard::finalKey)};
 

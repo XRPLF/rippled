@@ -253,7 +253,8 @@ public:
     };
 
     // client information retrieval functions
-    using AccountTx = std::pair<std::shared_ptr<Transaction>, TxMeta::pointer>;
+    using AccountTx =
+        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
     using AccountTxs = std::vector<AccountTx>;
 
     virtual AccountTxs

@@ -114,7 +114,8 @@ target_sources (xrpl_core PRIVATE
   src/ripple/crypto/impl/RFC1751.cpp
   src/ripple/crypto/impl/csprng.cpp
   src/ripple/crypto/impl/ec_key.cpp
-  src/ripple/crypto/impl/openssl.cpp)
+  src/ripple/crypto/impl/openssl.cpp
+  src/ripple/crypto/impl/secure_erase.cpp)
 
 add_library (Ripple::xrpl_core ALIAS xrpl_core)
 target_include_directories (xrpl_core
@@ -168,6 +169,7 @@ install (
     src/ripple/crypto/GenerateDeterministicKey.h
     src/ripple/crypto/RFC1751.h
     src/ripple/crypto/csprng.h
+    src/ripple/crypto/secure_erase.h
   DESTINATION include/ripple/crypto)
 install (
   FILES
@@ -267,7 +269,6 @@ install (
     src/ripple/beast/crypto/detail/ripemd_context.h
     src/ripple/beast/crypto/detail/sha2_context.h
     src/ripple/beast/crypto/ripemd.h
-    src/ripple/beast/crypto/secure_erase.h
     src/ripple/beast/crypto/sha2.h
   DESTINATION include/ripple/beast/crypto)
 install (

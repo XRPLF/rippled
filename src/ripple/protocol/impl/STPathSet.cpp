@@ -202,13 +202,13 @@ STPathSet::add(Serializer& s) const
             s.add8(iType);
 
             if (iType & STPathElement::typeAccount)
-                s.add160(speElement.getAccountID());
+                s.addBitString(speElement.getAccountID());
 
             if (iType & STPathElement::typeCurrency)
-                s.add160(speElement.getCurrency());
+                s.addBitString(speElement.getCurrency());
 
             if (iType & STPathElement::typeIssuer)
-                s.add160(speElement.getIssuerID());
+                s.addBitString(speElement.getIssuerID());
         }
 
         first = false;

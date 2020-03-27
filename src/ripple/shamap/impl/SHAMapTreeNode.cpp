@@ -116,7 +116,7 @@ SHAMapAbstractNode::make(
                 Throw<std::runtime_error>("short AS node");
 
             uint256 u;
-            s.get256(u, len - (256 / 8));
+            s.getBitString(u, len - (256 / 8));
             s.chop(256 / 8);
 
             if (u.isZero())
@@ -137,7 +137,7 @@ SHAMapAbstractNode::make(
             auto ret = std::make_shared<SHAMapInnerNode>(seq);
             for (int i = 0; i < 16; ++i)
             {
-                s.get256(ret->mHashes[i].as_uint256(), i * 32);
+                s.getBitString(ret->mHashes[i].as_uint256(), i * 32);
 
                 if (ret->mHashes[i].isNonZero())
                     ret->mIsBranch |= (1 << i);
@@ -159,7 +159,7 @@ SHAMapAbstractNode::make(
                     Throw<std::runtime_error>("short CI node");
                 if ((pos < 0) || (pos >= 16))
                     Throw<std::runtime_error>("invalid CI node");
-                s.get256(ret->mHashes[pos].as_uint256(), i * 33);
+                s.getBitString(ret->mHashes[pos].as_uint256(), i * 33);
                 if (ret->mHashes[pos].isNonZero())
                     ret->mIsBranch |= (1 << pos);
             }
@@ -176,7 +176,7 @@ SHAMapAbstractNode::make(
                 Throw<std::runtime_error>("short TM node");
 
             uint256 u;
-            s.get256(u, len - (256 / 8));
+            s.getBitString(u, len - (256 / 8));
             s.chop(256 / 8);
 
             if (u.isZero())
@@ -224,7 +224,7 @@ SHAMapAbstractNode::make(
                 Throw<std::runtime_error>("short PLN node");
 
             uint256 u;
-            s.get256(u, s.getLength() - 32);
+            s.getBitString(u, s.getLength() - 32);
             s.chop(32);
 
             if (u.isZero())
@@ -250,7 +250,7 @@ SHAMapAbstractNode::make(
 
             for (int i = 0; i < 16; ++i)
             {
-                s.get256(ret->mHashes[i].as_uint256(), i * 32);
+                s.getBitString(ret->mHashes[i].as_uint256(), i * 32);
 
                 if (ret->mHashes[i].isNonZero())
                     ret->mIsBranch |= (1 << i);
@@ -269,7 +269,7 @@ SHAMapAbstractNode::make(
                 Throw<std::runtime_error>("short TXN node");
 
             uint256 txID;
-            s.get256(txID, s.getLength() - 32);
+            s.getBitString(txID, s.getLength() - 32);
             s.chop(32);
             auto item = std::make_shared<SHAMapItem const>(txID, s.peekData());
             if (hashValid)
@@ -359,7 +359,7 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
 
     if (format == snfHASH)
     {
-        s.add256(mHash.as_uint256());
+        s.addBitString(mHash.as_uint256());
     }
     else if (mType == tnINNER)
     {
@@ -370,7 +370,7 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
             s.add32(HashPrefix::innerNode);
 
             for (auto const& hh : mHashes)
-                s.add256(hh.as_uint256());
+                s.addBitString(hh.as_uint256());
         }
         else  // format == snfWIRE
         {
@@ -380,7 +380,7 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
                 for (int i = 0; i < mHashes.size(); ++i)
                     if (!isEmptyBranch(i))
                     {
-                        s.add256(mHashes[i].as_uint256());
+                        s.addBitString(mHashes[i].as_uint256());
                         s.add8(i);
                     }
 
@@ -389,7 +389,7 @@ SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
             else
             {
                 for (auto const& hh : mHashes)
-                    s.add256(hh.as_uint256());
+                    s.addBitString(hh.as_uint256());
 
                 s.add8(2);
             }
@@ -409,7 +409,7 @@ SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format) const
 
     if (format == snfHASH)
     {
-        s.add256(mHash.as_uint256());
+        s.addBitString(mHash.as_uint256());
     }
     else if (mType == tnACCOUNT_STATE)
     {
@@ -417,12 +417,12 @@ SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format) const
         {
             s.add32(HashPrefix::leafNode);
             s.addRaw(mItem->peekData());
-            s.add256(mItem->key());
+            s.addBitString(mItem->key());
         }
         else
         {
             s.addRaw(mItem->peekData());
-            s.add256(mItem->key());
+            s.addBitString(mItem->key());
             s.add8(1);
         }
     }
@@ -445,12 +445,12 @@ SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format) const
         {
             s.add32(HashPrefix::txNode);
             s.addRaw(mItem->peekData());
-            s.add256(mItem->key());
+            s.addBitString(mItem->key());
         }
         else
         {
             s.addRaw(mItem->peekData());
-            s.add256(mItem->key());
+            s.addBitString(mItem->key());
             s.add8(4);
         }
     }
