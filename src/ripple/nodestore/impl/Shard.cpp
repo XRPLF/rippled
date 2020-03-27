@@ -32,7 +32,7 @@
 namespace ripple {
 namespace NodeStore {
 
-uint256 const Shard::finalKey_ {0};
+uint256 const Shard::finalKey {0};
 
 Shard::Shard(
     Application& app,
@@ -177,7 +177,7 @@ Shard::open(Scheduler& scheduler, nudb::context& ctx)
         {
             // A finalized shard or has all ledgers stored in the backend
             std::shared_ptr<NodeObject> nObj;
-            if (backend_->fetch(finalKey_.data(), &nObj) != Status::ok)
+            if (backend_->fetch(finalKey.data(), &nObj) != Status::ok)
             {
                 legacy_ = true;
                 return fail("incompatible, missing backend final key");
@@ -185,7 +185,7 @@ Shard::open(Scheduler& scheduler, nudb::context& ctx)
 
             // Check final key's value
             SerialIter sIt(nObj->getData().data(), nObj->getData().size());
-            if (sIt.get32() != version_)
+            if (sIt.get32() != version)
                 return fail("invalid version");
 
             if (sIt.get32() != firstSeq_ || sIt.get32() != lastSeq_)
@@ -422,11 +422,11 @@ Shard::finalize(const bool writeSQLite)
         // Check if a final key has been stored
         lock.unlock();
         if (std::shared_ptr<NodeObject> nObj;
-            backend_->fetch(finalKey_.data(), &nObj) == Status::ok)
+            backend_->fetch(finalKey.data(), &nObj) == Status::ok)
         {
             // Check final key's value
             SerialIter sIt(nObj->getData().data(), nObj->getData().size());
-            if (sIt.get32() != version_)
+            if (sIt.get32() != version)
                 return fail("invalid version");
 
             if (sIt.get32() != firstSeq_ || sIt.get32() != lastSeq_)
@@ -585,14 +585,14 @@ Shard::finalize(const bool writeSQLite)
 
     // Store final key's value, may already be stored
     Serializer s;
-    s.add32(version_);
+    s.add32(version);
     s.add32(firstSeq_);
     s.add32(lastSeq_);
     s.add256(lastLedgerHash);
     auto nObj {NodeObject::createObject(
         hotUNKNOWN,
         std::move(s.modData()),
-        finalKey_)};
+        finalKey)};
     try
     {
         backend_->store(nObj);

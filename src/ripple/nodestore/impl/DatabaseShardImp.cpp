@@ -810,7 +810,9 @@ DatabaseShardImp::import(Database& source)
             }
 
             // Copy the ledgers from node store
-            std::shared_ptr<Ledger> lastStoredLedger;
+            std::shared_ptr<Ledger> recentStored;
+            uint256 lastLedgerHash;
+
             while (auto seq = shard->prepare())
             {
                 auto ledger {loadByIndex(*seq, app_, false)};
@@ -822,20 +824,38 @@ DatabaseShardImp::import(Database& source)
                     shard->getBackend(),
                     nullptr,
                     nullptr,
-                    lastStoredLedger))
+                    recentStored))
                 {
                     break;
                 }
 
                 if (!shard->store(ledger))
                     break;
+
+                if (seq == lastLedgerSeq(shardIndex))
+                    lastLedgerHash = ledger->info().hash;
+
                 if (shard->isBackendComplete())
                 {
-                    JLOG(j_.debug()) <<
-                        "shard " << shardIndex << " was successfully imported";
+                    // Store shard final key
+                    Serializer s;
+                    s.add32(Shard::version);
+                    s.add32(firstLedgerSeq(shardIndex));
+                    s.add32(lastLedgerSeq(shardIndex));
+                    s.add256(lastLedgerHash);
+                    auto nObj {NodeObject::createObject(
+                        hotUNKNOWN,
+                        std::move(s.modData()),
+                        Shard::finalKey)};
+
                     try
                     {
+                        shard->getBackend()->store(nObj);
                         boost::filesystem::remove_all(markerFile);
+
+                        JLOG(j_.debug()) <<
+                            "shard " << shardIndex <<
+                            " was successfully imported";
                     }
                     catch (std::exception const& e)
                     {
@@ -843,10 +863,11 @@ DatabaseShardImp::import(Database& source)
                             "exception " << e.what() <<
                             " in function " << __func__;
                     }
+
                     break;
                 }
 
-                lastStoredLedger = ledger;
+                recentStored = ledger;
             }
 
             if (shard->isBackendComplete())

@@ -125,15 +125,15 @@ public:
     void
     stop() {stop_ = true;}
 
-private:
     // Current shard version
-    static constexpr std::uint32_t version_ {2};
+    static constexpr std::uint32_t version {2};
 
-    // The finalKey_ is a hard coded value of zero. It is used to store
+    // The finalKey is a hard coded value of zero. It is used to store
     // finalizing shard data to the backend. The data contains a version,
     // last ledger's hash, and the first and last ledger sequences.
-    static uint256 const finalKey_;
+    static uint256 const finalKey;
 
+private:
     struct AcquireInfo
     {
         // SQLite database to track information about what has been acquired
