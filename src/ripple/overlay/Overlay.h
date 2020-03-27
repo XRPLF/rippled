@@ -209,30 +209,6 @@ public:
     networkID() const = 0;
 };
 
-struct ScoreHasLedger
-{
-    uint256 const& hash_;
-    std::uint32_t seq_;
-    bool
-    operator()(std::shared_ptr<Peer> const&) const;
-
-    ScoreHasLedger(uint256 const& hash, std::uint32_t seq)
-        : hash_(hash), seq_(seq)
-    {
-    }
-};
-
-struct ScoreHasTxSet
-{
-    uint256 const& hash_;
-    bool
-    operator()(std::shared_ptr<Peer> const&) const;
-
-    ScoreHasTxSet(uint256 const& hash) : hash_(hash)
-    {
-    }
-};
-
 }  // namespace ripple
 
 #endif

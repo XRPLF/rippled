@@ -1261,24 +1261,6 @@ OverlayImpl::sendEndpoints()
     }
 }
 
-//------------------------------------------------------------------------------
-
-bool
-ScoreHasLedger::operator()(std::shared_ptr<Peer> const& bp) const
-{
-    auto const& p = std::dynamic_pointer_cast<PeerImp>(bp);
-    return p->hasLedger(hash_, seq_);
-}
-
-bool
-ScoreHasTxSet::operator()(std::shared_ptr<Peer> const& bp) const
-{
-    auto const& p = std::dynamic_pointer_cast<PeerImp>(bp);
-    return p->hasTxSet(hash_);
-}
-
-//------------------------------------------------------------------------------
-
 Overlay::Setup
 setup_Overlay(BasicConfig const& config)
 {

@@ -451,7 +451,7 @@ InboundLedger::addPeers()
 {
     PeerSet::addPeers(
         (getPeerCount() == 0) ? peerCountStart : peerCountAdd,
-        ScoreHasLedger(mHash, mSeq));
+        [this](auto peer) { return peer->hasLedger(mHash, mSeq); });
 }
 
 std::weak_ptr<PeerSet>

@@ -246,7 +246,8 @@ TransactionAcquire::takeNodes(
 void
 TransactionAcquire::addPeers(std::size_t limit)
 {
-    PeerSet::addPeers(limit, ScoreHasTxSet(mHash));
+    PeerSet::addPeers(
+        limit, [this](auto peer) { return peer->hasTxSet(mHash); });
 }
 
 void
