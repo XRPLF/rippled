@@ -156,15 +156,9 @@ InboundLedger::init(ScopedLockType& collectionLock)
 std::size_t
 InboundLedger::getPeerCount() const
 {
-    std::size_t ret(0);
-
-    for (auto id : mPeers)
-    {
-        if (app_.overlay().findPeerByShortID(id))
-            ++ret;
-    }
-
-    return ret;
+    return std::count_if(mPeers.begin(), mPeers.end(), [this](auto id) {
+        return app_.overlay().findPeerByShortID(id) != nullptr;
+    });
 }
 
 void
