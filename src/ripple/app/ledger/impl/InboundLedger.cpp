@@ -270,12 +270,9 @@ InboundLedger::neededStateHashes(int max, SHAMapSyncFilter* filter) const
 }
 
 LedgerInfo
-InboundLedger::deserializeHeader(Slice data, bool hasPrefix)
+deserializeHeader(Slice data)
 {
     SerialIter sit(data.data(), data.size());
-
-    if (hasPrefix)
-        sit.get32();
 
     LedgerInfo info;
 
@@ -293,6 +290,12 @@ InboundLedger::deserializeHeader(Slice data, bool hasPrefix)
     return info;
 }
 
+LedgerInfo
+deserializePrefixedHeader(Slice data)
+{
+    return deserializeHeader(data + 4);
+}
+
 // See how much of the ledger data is stored locally
 // Data found in a fetch pack will be stored
 void
@@ -303,7 +306,7 @@ InboundLedger::tryDB(Family& f)
         auto makeLedger = [&, this](Blob const& data) {
             JLOG(m_journal.trace()) << "Ledger header found in fetch pack";
             mLedger = std::make_shared<Ledger>(
-                deserializeHeader(makeSlice(data), true), app_.config(), f);
+                deserializePrefixedHeader(makeSlice(data)), app_.config(), f);
             if (mLedger->info().hash != mHash ||
                 (mSeq != 0 && mSeq != mLedger->info().seq))
             {
@@ -846,7 +849,7 @@ InboundLedger::takeHeader(std::string const& data)
 
     auto* f = mReason == Reason::SHARD ? app_.shardFamily() : &app_.family();
     mLedger = std::make_shared<Ledger>(
-        deserializeHeader(makeSlice(data), false), app_.config(), *f);
+        deserializeHeader(makeSlice(data)), app_.config(), *f);
     if (mLedger->info().hash != mHash ||
         (mSeq != 0 && mSeq != mLedger->info().seq))
     {
