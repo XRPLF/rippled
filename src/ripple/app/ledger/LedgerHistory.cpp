@@ -107,7 +107,7 @@ LedgerHistory::getLedgerBySeq (LedgerIndex index)
         // Add this ledger to the local tracking by index
         std::unique_lock sl (m_ledgers_by_hash.peekMutex ());
 
-        assert (ret->isImmutable ());
+        assert(!ret->isMutable());
         m_ledgers_by_hash.canonicalize (ret->info().hash, ret);
         mLedgersByIndex[ret->info().seq] = ret->info().hash;
         return (ret->info().seq == index) ? ret : nullptr;
@@ -121,7 +121,7 @@ LedgerHistory::getLedgerByHash (LedgerHash const& hash)
 
     if (ret)
     {
-        assert (ret->isImmutable ());
+        assert(!ret->isMutable());
         assert (ret->info().hash == hash);
         return ret;
     }
@@ -131,7 +131,7 @@ LedgerHistory::getLedgerByHash (LedgerHash const& hash)
     if (!ret)
         return ret;
 
-    assert (ret->isImmutable ());
+    assert(!ret->isMutable());
     assert (ret->info().hash == hash);
     m_ledgers_by_hash.canonicalize (ret->info().hash, ret);
     assert (ret->info().hash == hash);

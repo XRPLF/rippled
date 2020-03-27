@@ -250,15 +250,10 @@ public:
 
     void setImmutable (Config const& config);
 
-    bool isImmutable () const
-    {
-        return mImmutable;
-    }
-
     bool
     isMutable() const
     {
-        return !isImmutable();
+        return mMutable;
     }
 
     /*  Mark this ledger as "should be full".
@@ -329,7 +324,7 @@ private:
     std::shared_ptr<SLE>
     peek (Keylet const& k) const;
 
-    bool mImmutable;
+    bool mMutable;
 
     std::shared_ptr<SHAMap> txMap_;
     std::shared_ptr<SHAMap> stateMap_;

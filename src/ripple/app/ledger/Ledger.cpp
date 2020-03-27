@@ -175,16 +175,14 @@ public:
 
 //------------------------------------------------------------------------------
 
-Ledger::Ledger (
-        create_genesis_t,
-        Config const& config,
-        std::vector<uint256> const& amendments,
-        Family& family)
-    : mImmutable (false)
-    , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
-        family))
-    , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
-        family))
+Ledger::Ledger(
+    create_genesis_t,
+    Config const& config,
+    std::vector<uint256> const& amendments,
+    Family& family)
+    : mMutable(true)
+    , txMap_(std::make_shared<SHAMap>(SHAMapType::TRANSACTION, family))
+    , stateMap_(std::make_shared<SHAMap>(SHAMapType::STATE, family))
     , rules_{config.features}
 {
     info_.seq = 1;
@@ -213,20 +211,22 @@ Ledger::Ledger (
     setImmutable(config);
 }
 
-Ledger::Ledger (
-        LedgerInfo const& info,
-        bool& loaded,
-        bool acquire,
-        Config const& config,
-        Family& family,
-        beast::Journal j)
-    : mImmutable (true)
-    , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
-        info.txHash, family))
-    , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
-        info.accountHash, family))
-    , rules_ (config.features)
-    , info_ (info)
+Ledger::Ledger(
+    LedgerInfo const& info,
+    bool& loaded,
+    bool acquire,
+    Config const& config,
+    Family& family,
+    beast::Journal j)
+    : mMutable(false)
+    , txMap_(std::make_shared<SHAMap>(
+          SHAMapType::TRANSACTION,
+          info.txHash,
+          family))
+    , stateMap_(
+          std::make_shared<SHAMap>(SHAMapType::STATE, info.accountHash, family))
+    , rules_(config.features)
+    , info_(info)
 {
     loaded = true;
 
@@ -259,13 +259,12 @@ Ledger::Ledger (
 }
 
 // Create a new ledger that follows this one
-Ledger::Ledger (Ledger const& prevLedger,
-    NetClock::time_point closeTime)
-    : mImmutable (false)
-    , txMap_ (std::make_shared <SHAMap> (
-        SHAMapType::TRANSACTION,
-        prevLedger.stateMap_->family()))
-    , stateMap_ (prevLedger.stateMap_->snapShot (true))
+Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
+    : mMutable(true)
+    , txMap_(std::make_shared<SHAMap>(
+          SHAMapType::TRANSACTION,
+          prevLedger.stateMap_->family()))
+    , stateMap_(prevLedger.stateMap_->snapShot(true))
     , fees_(prevLedger.fees_)
     , rules_(prevLedger.rules_)
 {
@@ -291,29 +290,28 @@ Ledger::Ledger (Ledger const& prevLedger,
     }
 }
 
-Ledger::Ledger (
-        LedgerInfo const& info,
-        Config const& config,
-        Family& family)
-    : mImmutable (true)
-    , txMap_ (std::make_shared <SHAMap> (SHAMapType::TRANSACTION,
-        info.txHash, family))
-    , stateMap_ (std::make_shared <SHAMap> (SHAMapType::STATE,
-        info.accountHash, family))
+Ledger::Ledger(LedgerInfo const& info, Config const& config, Family& family)
+    : mMutable(false)
+    , txMap_(std::make_shared<SHAMap>(
+          SHAMapType::TRANSACTION,
+          info.txHash,
+          family))
+    , stateMap_(
+          std::make_shared<SHAMap>(SHAMapType::STATE, info.accountHash, family))
     , rules_{config.features}
-    , info_ (info)
+    , info_(info)
 {
     info_.hash = calculateLedgerHash (info_);
 }
 
-Ledger::Ledger (std::uint32_t ledgerSeq,
-        NetClock::time_point closeTime, Config const& config,
-            Family& family)
-    : mImmutable (false)
-    , txMap_ (std::make_shared <SHAMap> (
-          SHAMapType::TRANSACTION, family))
-    , stateMap_ (std::make_shared <SHAMap> (
-          SHAMapType::STATE, family))
+Ledger::Ledger(
+    std::uint32_t ledgerSeq,
+    NetClock::time_point closeTime,
+    Config const& config,
+    Family& family)
+    : mMutable(true)
+    , txMap_(std::make_shared<SHAMap>(SHAMapType::TRANSACTION, family))
+    , stateMap_(std::make_shared<SHAMap>(SHAMapType::STATE, family))
     , rules_{config.features}
 {
     info_.seq = ledgerSeq;
@@ -326,7 +324,7 @@ void Ledger::setImmutable (Config const& config)
 {
     // Force update, since this is the only
     // place the hash transitions to valid
-    if (! mImmutable)
+    if (mMutable)
     {
         info_.txHash = txMap_->getHash ().as_uint256();
         info_.accountHash = stateMap_->getHash ().as_uint256();
@@ -334,7 +332,7 @@ void Ledger::setImmutable (Config const& config)
 
     info_.hash = calculateLedgerHash (info_);
 
-    mImmutable = true;
+    mMutable = false;
     txMap_->setImmutable ();
     stateMap_->setImmutable ();
     setup(config);
@@ -1001,7 +999,7 @@ bool pendSaveValidated (
         }
     }
 
-    assert (ledger->isImmutable ());
+    assert(!ledger->isMutable());
 
     if (! app.pendingSaves().shouldWork (ledger->info().seq, isSynchronous))
     {

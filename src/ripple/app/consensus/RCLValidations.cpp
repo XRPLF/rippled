@@ -141,7 +141,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const & hash)
         return boost::none;
     }
 
-    assert(!ledger->open() && ledger->isImmutable());
+    assert(!ledger->open() && !ledger->isMutable());
     assert(ledger->info().hash == hash);
 
     return RCLValidatedLedger(std::move(ledger), j_);

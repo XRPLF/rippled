@@ -113,7 +113,7 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
         return boost::none;
     }
 
-    assert(!built->open() && built->isImmutable());
+    assert(!built->open() && !built->isMutable());
     assert(built->info().hash == hash);
 
     // Notify inbound transactions of the new ledger sequence number
