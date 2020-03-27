@@ -30,14 +30,9 @@ class STArray final : public STBase, public CountedObject<STArray>
 private:
     using list_type = std::vector<STObject>;
 
-    enum { reserveSize = 8 };
-
     list_type v_;
 
 public:
-    // Read-only iteration
-    class Items;
-
     static char const*
     getCountedObjectName()
     {
@@ -48,7 +43,7 @@ public:
     using iterator = list_type::iterator;
     using const_iterator = list_type::const_iterator;
 
-    STArray();
+    STArray() = default;
     STArray(STArray&&);
     STArray(STArray const&) = default;
     STArray(SField const& f, int n);

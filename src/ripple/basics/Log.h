@@ -105,10 +105,6 @@ private:
             first.
             @return `true` if the file was opened.
         */
-        // VFALCO NOTE The parameter is unfortunately a boost type because it
-        //             can be either wchar or char based depending on platform.
-        //        TODO Replace with beast::File
-        //
         bool
         open(boost::filesystem::path const& path);
 

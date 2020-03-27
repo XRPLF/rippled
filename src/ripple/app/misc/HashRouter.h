@@ -29,12 +29,11 @@
 
 namespace ripple {
 
-// VFALCO NOTE Are these the flags?? Why aren't we using a packed struct?
-// VFALCO TODO convert these macros to int constants
-// VFALCO NOTE How can both bad and good be set on a hash?
+// TODO convert these macros to int constants or an enum
 #define SF_BAD 0x02  // Temporarily bad
 #define SF_SAVED 0x04
 #define SF_TRUSTED 0x10  // comes from trusted source
+
 // Private flags, used internally in apply.cpp.
 // Do not attempt to read, set, or reuse.
 #define SF_PRIVATE1 0x0100

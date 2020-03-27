@@ -208,7 +208,7 @@ private:
 
     inline void erase(std::true_type)
     {
-        beast::secure_erase(&h_, sizeof(h_));
+        secure_erase(&h_, sizeof(h_));
     }
 };
 
@@ -220,16 +220,6 @@ using sha512_half_hasher = detail::basic_sha512_half_hasher<false>;
 using sha512_half_hasher_s = detail::basic_sha512_half_hasher<true>;
 
 //------------------------------------------------------------------------------
-
-#ifdef _MSC_VER
-// Call from main to fix magic statics pre-VS2015
-inline void
-sha512_deprecatedMSVCWorkaround()
-{
-    beast::sha512_hasher h;
-    auto const digest = static_cast<beast::sha512_hasher::result_type>(h);
-}
-#endif
 
 /** Returns the SHA512-Half of a series of objects. */
 template <class... Args>

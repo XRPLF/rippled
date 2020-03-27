@@ -63,9 +63,7 @@ Cluster::update(
 {
     std::lock_guard lock(mutex_);
 
-    // We can't use auto here yet due to the libstdc++ issue
-    // described at https://gcc.gnu.org/bugzilla/show_bug.cgi?id=68190
-    std::set<ClusterNode, Comparator>::iterator iter = nodes_.find(identity);
+    auto iter = nodes_.find(identity);
 
     if (iter != nodes_.end())
     {

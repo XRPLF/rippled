@@ -78,8 +78,8 @@ proposalUniqueId(
     Slice const& signature)
 {
     Serializer s(512);
-    s.add256(proposeHash);
-    s.add256(previousLedger);
+    s.addBitString(proposeHash);
+    s.addBitString(previousLedger);
     s.add32(proposeSeq);
     s.add32(closeTime.time_since_epoch().count());
     s.addVL(publicKey);

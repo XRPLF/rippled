@@ -44,9 +44,9 @@ addRaw(LedgerInfo const& info, Serializer& s)
 {
     s.add32(info.seq);
     s.add64(info.drops.drops());
-    s.add256(info.parentHash);
-    s.add256(info.txHash);
-    s.add256(info.accountHash);
+    s.addBitString(info.parentHash);
+    s.addBitString(info.txHash);
+    s.addBitString(info.accountHash);
     s.add32(info.parentCloseTime.time_since_epoch().count());
     s.add32(info.closeTime.time_since_epoch().count());
     s.add8(info.closeTimeResolution.count());

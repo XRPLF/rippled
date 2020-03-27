@@ -594,7 +594,7 @@ Shard::finalize(const bool writeSQLite)
     s.add32(version);
     s.add32(firstSeq_);
     s.add32(lastSeq_);
-    s.add256(lastLedgerHash);
+    s.addBitString(lastLedgerHash);
     auto nObj{
         NodeObject::createObject(hotUNKNOWN, std::move(s.modData()), finalKey)};
     try

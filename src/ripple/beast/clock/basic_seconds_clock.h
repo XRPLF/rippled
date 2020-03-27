@@ -134,21 +134,6 @@ public:
 
 }  // namespace detail
 
-//------------------------------------------------------------------------------
-
-/** Called before main exits to terminate the utility thread.
-    This is a workaround for Visual Studio 2013:
-    http://connect.microsoft.com/VisualStudio/feedback/details/786016/creating-a-global-c-object-that-used-thread-join-in-its-destructor-causes-a-lockup
-    http://stackoverflow.com/questions/10915233/stdthreadjoin-hangs-if-called-after-main-exits-when-using-vs2012-rc
-*/
-inline void
-basic_seconds_clock_main_hook()
-{
-#ifdef _MSC_VER
-    detail::seconds_clock_thread::instance().stop();
-#endif
-}
-
 /** A clock whose minimum resolution is one second.
 
     The purpose of this class is to optimize the performance of the now()

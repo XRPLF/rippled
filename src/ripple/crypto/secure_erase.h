@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2020 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,26 +17,29 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_PAYCHAN_H_INCLUDED
-#define RIPPLE_PROTOCOL_PAYCHAN_H_INCLUDED
+#ifndef RIPPLE_CRYPTO_SECURE_ERASE_H_INCLUDED
+#define RIPPLE_CRYPTO_SECURE_ERASE_H_INCLUDED
 
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/basics/base_uint.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/Serializer.h>
+#include <cstdint>
 
 namespace ripple {
 
-inline void
-serializePayChanAuthorization(
-    Serializer& msg,
-    uint256 const& key,
-    XRPAmount const& amt)
-{
-    msg.add32(HashPrefix::paymentChannelClaim);
-    msg.addBitString(key);
-    msg.add64(amt.drops());
-}
+/** Attempts to fill memory with zeroes.
+
+    The underlying implementation of this function takes pains to
+    attempt to outsmart compilers from optimizing the zeroization
+    away. Please note that, despite that, remnants of content may
+    remain floating around in memory as well as registers, caches
+    and more.
+
+    For a comprehensive treatise on the subject of secure
+    memory clearing, see:
+
+    http://www.daemonology.net/blog/2014-09-04-how-to-zero-a-buffer.html
+    http://www.daemonology.net/blog/2014-09-06-zeroing-buffers-is-insufficient.html
+*/
+void
+secure_erase(void* dest, std::size_t bytes);
 
 }  // namespace ripple
 

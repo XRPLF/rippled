@@ -19,10 +19,10 @@
 
 #include <ripple/basics/contract.h>
 #include <ripple/basics/strHex.h>
-#include <ripple/beast/crypto/secure_erase.h>
 #include <ripple/beast/utility/rngfill.h>
 #include <ripple/crypto/GenerateDeterministicKey.h>
 #include <ripple/crypto/csprng.h>
+#include <ripple/crypto/secure_erase.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/impl/secp256k1.h>
@@ -33,7 +33,7 @@ namespace ripple {
 
 SecretKey::~SecretKey()
 {
-    beast::secure_erase(buf_, sizeof(buf_));
+    secure_erase(buf_, sizeof(buf_));
 }
 
 SecretKey::SecretKey(std::array<std::uint8_t, 32> const& key)
@@ -86,8 +86,8 @@ public:
         auto gpk = generatePublicDeterministicKey(gen_, ordinal);
         SecretKey const sk(Slice{gsk.data(), gsk.size()});
         PublicKey const pk(Slice{gpk.data(), gpk.size()});
-        beast::secure_erase(ui.data(), ui.size());
-        beast::secure_erase(gsk.data(), gsk.size());
+        secure_erase(ui.data(), ui.size());
+        secure_erase(gsk.data(), gsk.size());
         return {pk, sk};
     }
 };
@@ -169,7 +169,7 @@ randomSecretKey()
     std::uint8_t buf[32];
     beast::rngfill(buf, sizeof(buf), crypto_prng());
     SecretKey sk(Slice{buf, sizeof(buf)});
-    beast::secure_erase(buf, sizeof(buf));
+    secure_erase(buf, sizeof(buf));
     return sk;
 }
 
@@ -182,7 +182,7 @@ generateSecretKey(KeyType type, Seed const& seed)
     {
         auto key = sha512Half_s(Slice(seed.data(), seed.size()));
         SecretKey sk = Slice{key.data(), key.size()};
-        beast::secure_erase(key.data(), key.size());
+        secure_erase(key.data(), key.size());
         return sk;
     }
 
@@ -194,7 +194,7 @@ generateSecretKey(KeyType type, Seed const& seed)
         std::memcpy(ps.data(), seed.data(), seed.size());
         auto const upk = generateRootDeterministicPrivateKey(ps);
         SecretKey sk = Slice{upk.data(), upk.size()};
-        beast::secure_erase(ps.data(), ps.size());
+        secure_erase(ps.data(), ps.size());
         return sk;
     }
 
