@@ -287,7 +287,7 @@ LedgerMaster::getValidatedLedgerAge()
     if (valClose == 0s)
     {
         JLOG(m_journal.debug()) << "No validated ledger";
-        return weeks{2};
+        return NO_VALIDATED_LEDGER_AGE;
     }
 
     std::chrono::seconds ret = app_.timeKeeper().closeTime().time_since_epoch();

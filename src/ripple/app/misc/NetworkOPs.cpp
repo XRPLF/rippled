@@ -2760,16 +2760,26 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             if (std::abs(closeOffset.count()) >= 60)
                 l[jss::close_time_offset] = closeOffset.count();
 
-            auto lCloseTime = lpClosed->info().closeTime;
-            auto closeTime = app_.timeKeeper().closeTime();
-            if (lCloseTime <= closeTime)
+            constexpr std::chrono::seconds HIGH_AGE_THRESHOLD{1000000};
+            if (m_ledgerMaster.haveValidated())
             {
-                using namespace std::chrono_literals;
-                auto age = closeTime - lCloseTime;
-                if (age < 1000000s)
-                    l[jss::age] = Json::UInt(age.count());
-                else
-                    l[jss::age] = 0;
+                auto const age = m_ledgerMaster.getValidatedLedgerAge();
+                l[jss::age] =
+                    Json::UInt(age < HIGH_AGE_THRESHOLD ? age.count() : 0);
+            }
+            else
+            {
+                auto lCloseTime = lpClosed->info().closeTime;
+                auto closeTime = app_.timeKeeper().closeTime();
+                if (lCloseTime <= closeTime)
+                {
+                    using namespace std::chrono_literals;
+                    auto age = closeTime - lCloseTime;
+                    if (age < HIGH_AGE_THRESHOLD)
+                        l[jss::age] = Json::UInt(age.count());
+                    else
+                        l[jss::age] = 0;
+                }
             }
         }
 
