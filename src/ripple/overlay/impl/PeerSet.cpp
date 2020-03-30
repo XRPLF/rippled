@@ -138,9 +138,6 @@ PeerSet::sendRequest(
 
     ScopedLockType sl(mLock);
 
-    if (mPeers.empty())
-        return;
-
     for (auto id : mPeers)
     {
         if (auto p = app_.overlay().findPeerByShortID(id))
