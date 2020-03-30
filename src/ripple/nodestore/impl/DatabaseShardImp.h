@@ -240,6 +240,11 @@ private:
     // File name used to mark shards being imported from node store
     static constexpr auto importMarker_ = "import";
 
+    // Initialize settings from the configuration file
+    // Lock must be held
+    bool
+    initConfig(std::lock_guard<std::mutex>&);
+
     std::shared_ptr<NodeObject>
     fetchFrom(uint256 const& hash, std::uint32_t seq) override;
 

@@ -65,89 +65,34 @@ DatabaseShardImp::~DatabaseShardImp()
 bool
 DatabaseShardImp::init()
 {
-    using namespace boost::filesystem;
-    using namespace boost::beast::detail;
-    auto fail = [j = j_](std::string const& msg)
-    {
-        JLOG(j.error()) <<
-            "[" << ConfigSection::shardDatabase() << "] " << msg;
-        return false;
-    };
-
     {
         std::lock_guard lock(mutex_);
-
         if (init_)
-            return fail("already initialized");
-
-        Config const& config {app_.config()};
-        Section const& section {config.section(ConfigSection::shardDatabase())};
-
         {
-            // Node and shard stores must use same earliest ledger sequence
-            std::uint32_t seq;
-            if (get_if_exists<std::uint32_t>(
-                    config.section(ConfigSection::nodeDatabase()),
-                    "earliest_seq",
-                    seq))
-            {
-                std::uint32_t seq2;
-                if (get_if_exists<std::uint32_t>(
-                        section,
-                        "earliest_seq", seq2) &&
-                    seq != seq2)
-                {
-                    return fail("and [" + ConfigSection::nodeDatabase() +
-                        "] both define 'earliest_seq'");
-                }
-            }
+            JLOG(j_.error()) << "already initialized";
+            return false;
         }
 
-        if (!get_if_exists<path>(section, "path", dir_))
-            return fail("'path' missing");
-
-        if (exists(dir_))
+        if (!initConfig(lock))
         {
-            if (!is_directory(dir_))
-                return fail("'path' must be a directory");
+            JLOG(j_.error()) << "invalid configuration file settings";
+            return false;
         }
-        else
-            create_directories(dir_);
-
-        {
-            std::uint64_t sz;
-            if (!get_if_exists<std::uint64_t>(section, "max_size_gb", sz))
-                return fail("'max_size_gb' missing");
-
-            if ((sz << 30) < sz)
-                return fail("'max_size_gb' overflow");
-
-            // Minimum storage space required (in gigabytes)
-            if (sz < 10)
-                return fail("'max_size_gb' must be at least 10");
-
-            // Convert to bytes
-            maxFileSz_ = sz << 30;
-        }
-
-        if (section.exists("ledgers_per_shard"))
-        {
-            // To be set only in standalone for testing
-            if (!config.standalone())
-                return fail("'ledgers_per_shard' only honored in stand alone");
-
-            ledgersPerShard_ = get<std::uint32_t>(section, "ledgers_per_shard");
-            if (ledgersPerShard_ == 0 || ledgersPerShard_ % 256 != 0)
-                return fail("'ledgers_per_shard' must be a multiple of 256");
-        }
-
-        // NuDB is the default and only supported permanent storage backend
-        backendName_ = get<std::string>(section, "type", "nudb");
-        if (!boost::iequals(backendName_, "NuDB"))
-            return fail("'type' value unsupported");
 
         try
         {
+            using namespace boost::filesystem;
+            if (exists(dir_))
+            {
+                if (!is_directory(dir_))
+                {
+                    JLOG(j_.error()) << "'path' must be a directory";
+                    return false;
+                }
+            }
+            else
+                create_directories(dir_);
+
             ctx_ = std::make_unique<nudb::context>();
             ctx_->start();
 
@@ -172,9 +117,11 @@ DatabaseShardImp::init()
                 auto const shardIndex {std::stoul(dirName)};
                 if (shardIndex < earliestShardIndex())
                 {
-                    return fail("shard " + std::to_string(shardIndex) +
-                        " comes before earliest shard index " +
-                        std::to_string(earliestShardIndex()));
+                    JLOG(j_.error()) <<
+                        "shard " << shardIndex <<
+                        " comes before earliest shard index " <<
+                        earliestShardIndex();
+                    return false;
                 }
 
                 auto const shardDir {dir_ / std::to_string(shardIndex)};
@@ -223,7 +170,11 @@ DatabaseShardImp::init()
                 else
                 {
                     if (acquireIndex_ != 0)
-                        return fail("more than one shard being acquired");
+                    {
+                        JLOG(j_.error()) <<
+                            "more than one shard being acquired";
+                        return false;
+                    }
 
                     shards_.emplace(
                         shardIndex,
@@ -234,8 +185,8 @@ DatabaseShardImp::init()
         }
         catch (std::exception const& e)
         {
-            return fail(std::string("exception ") +
-                e.what() + " in function " + __func__);
+            JLOG(j_.error()) <<
+                "exception " << e.what() << " in function " << __func__;
         }
 
         updateStatus(lock);
@@ -1089,6 +1040,85 @@ DatabaseShardImp::sweep()
     }
 }
 
+bool
+DatabaseShardImp::initConfig(std::lock_guard<std::mutex>&)
+{
+    auto fail = [j = j_](std::string const& msg)
+    {
+        JLOG(j.error()) <<
+            "[" << ConfigSection::shardDatabase() << "] " << msg;
+        return false;
+    };
+
+    Config const& config {app_.config()};
+    Section const& section {config.section(ConfigSection::shardDatabase())};
+
+    {
+        // The earliest ledger sequence defaults to XRP_LEDGER_EARLIEST_SEQ.
+        // A custom earliest ledger sequence can be set through the
+        // configuration file using the 'earliest_seq' field under the
+        // 'node_db' and 'shard_db' stanzas. If specified, this field must
+        // have a value greater than zero and be equally assigned in
+        // both stanzas.
+
+        std::uint32_t shardDBEarliestSeq {0};
+        get_if_exists<std::uint32_t>(
+            section,
+            "earliest_seq",
+            shardDBEarliestSeq);
+
+        std::uint32_t nodeDBEarliestSeq {0};
+        get_if_exists<std::uint32_t>(
+            config.section(ConfigSection::nodeDatabase()),
+            "earliest_seq",
+            nodeDBEarliestSeq);
+
+        if (shardDBEarliestSeq != nodeDBEarliestSeq)
+        {
+            return fail("and [" + ConfigSection::nodeDatabase() +
+                "] define different 'earliest_seq' values");
+        }
+    }
+
+    using namespace boost::filesystem;
+    if (!get_if_exists<path>(section, "path", dir_))
+        return fail("'path' missing");
+
+    {
+        std::uint64_t sz;
+        if (!get_if_exists<std::uint64_t>(section, "max_size_gb", sz))
+            return fail("'max_size_gb' missing");
+
+        if ((sz << 30) < sz)
+            return fail("'max_size_gb' overflow");
+
+        // Minimum storage space required (in gigabytes)
+        if (sz < 10)
+            return fail("'max_size_gb' must be at least 10");
+
+        // Convert to bytes
+        maxFileSz_ = sz << 30;
+    }
+
+    if (section.exists("ledgers_per_shard"))
+    {
+        // To be set only in standalone for testing
+        if (!config.standalone())
+            return fail("'ledgers_per_shard' only honored in stand alone");
+
+        ledgersPerShard_ = get<std::uint32_t>(section, "ledgers_per_shard");
+        if (ledgersPerShard_ == 0 || ledgersPerShard_ % 256 != 0)
+            return fail("'ledgers_per_shard' must be a multiple of 256");
+    }
+
+    // NuDB is the default and only supported permanent storage backend
+    backendName_ = get<std::string>(section, "type", "nudb");
+    if (!boost::iequals(backendName_, "NuDB"))
+        return fail("'type' value unsupported");
+
+    return true;
+}
+
 std::shared_ptr<NodeObject>
 DatabaseShardImp::fetchFrom(uint256 const& hash, std::uint32_t seq)
 {
@@ -1269,10 +1299,6 @@ DatabaseShardImp::setFileStats()
     {
         std::lock_guard lock(mutex_);
         assert(init_);
-
-        fileSz_ = 0;
-        fdRequired_ = 0;
-        avgShardFileSz_ = 0;
 
         if (shards_.empty())
             return;
