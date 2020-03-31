@@ -762,7 +762,7 @@ DatabaseShardImp::import(Database& source)
 
             // Copy the ledgers from node store
             std::shared_ptr<Ledger> recentStored;
-            uint256 lastLedgerHash;
+            boost::optional<uint256> lastLedgerHash;
 
             while (auto seq = shard->prepare())
             {
@@ -783,50 +783,50 @@ DatabaseShardImp::import(Database& source)
                 if (!shard->store(ledger))
                     break;
 
-                if (seq == lastLedgerSeq(shardIndex))
+                if (!lastLedgerHash && seq == lastLedgerSeq(shardIndex))
                     lastLedgerHash = ledger->info().hash;
-
-                if (shard->isBackendComplete())
-                {
-                    // Store shard final key
-                    Serializer s;
-                    s.add32(Shard::version);
-                    s.add32(firstLedgerSeq(shardIndex));
-                    s.add32(lastLedgerSeq(shardIndex));
-                    s.add256(lastLedgerHash);
-                    auto nObj {NodeObject::createObject(
-                        hotUNKNOWN,
-                        std::move(s.modData()),
-                        Shard::finalKey)};
-
-                    try
-                    {
-                        shard->getBackend()->store(nObj);
-                        boost::filesystem::remove_all(markerFile);
-
-                        JLOG(j_.debug()) <<
-                            "shard " << shardIndex <<
-                            " was successfully imported";
-                    }
-                    catch (std::exception const& e)
-                    {
-                        JLOG(j_.error()) <<
-                            "exception " << e.what() <<
-                            " in function " << __func__;
-                    }
-
-                    break;
-                }
 
                 recentStored = ledger;
             }
 
-            if (shard->isBackendComplete())
+            using namespace boost::filesystem;
+            if (lastLedgerHash && shard->isBackendComplete())
             {
-                auto const result {shards_.emplace(
-                    shardIndex,
-                    ShardInfo(std::move(shard), ShardInfo::State::none))};
-                finalizeShard(result.first->second, true, lock);
+                // Store shard final key
+                Serializer s;
+                s.add32(Shard::version);
+                s.add32(firstLedgerSeq(shardIndex));
+                s.add32(lastLedgerSeq(shardIndex));
+                s.add256(*lastLedgerHash);
+                auto nObj {NodeObject::createObject(
+                    hotUNKNOWN,
+                    std::move(s.modData()),
+                    Shard::finalKey)};
+
+                try
+                {
+                    shard->getBackend()->store(nObj);
+
+                    // The import process is complete and the
+                    // marker file is no longer required
+                    remove_all(markerFile);
+
+                    JLOG(j_.debug()) <<
+                        "shard " << shardIndex <<
+                        " was successfully imported";
+
+                    auto const result {shards_.emplace(
+                        shardIndex,
+                        ShardInfo(std::move(shard), ShardInfo::State::none))};
+                    finalizeShard(result.first->second, true, lock);
+                }
+                catch (std::exception const& e)
+                {
+                    JLOG(j_.error()) <<
+                        "exception " << e.what() <<
+                        " in function " << __func__;
+                    remove_all(shardDir);
+                }
             }
             else
             {
@@ -1245,7 +1245,8 @@ DatabaseShardImp::finalizeShard(
                 shards_.erase(shardIndex);
                 updateStatus(lock);
 
-                boost::filesystem::path const dir {shard->getDir()};
+                using namespace boost::filesystem;
+                path const dir {shard->getDir()};
                 shard.reset();
                 try
                 {
@@ -1412,7 +1413,8 @@ DatabaseShardImp::storeLedgerInShard(
 
         updateStatus(lock);
 
-        boost::filesystem::path const dir {shard->getDir()};
+        using namespace boost::filesystem;
+        path const dir {shard->getDir()};
         shard.reset();
         try
         {
