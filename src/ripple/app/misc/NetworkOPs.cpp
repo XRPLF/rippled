@@ -1496,8 +1496,8 @@ NetworkOPsImp::getOwnerInfo(
     AccountID const& account)
 {
     Json::Value jvObjects(Json::objectValue);
-    auto uRootIndex = getOwnerDirIndex(account);
-    auto sleNode = lpLedger->read(keylet::page(uRootIndex));
+    auto root = keylet::ownerDir(account);
+    auto sleNode = lpLedger->read(keylet::page(root));
     if (sleNode)
     {
         std::uint64_t uNodeDir;
@@ -1543,7 +1543,7 @@ NetworkOPsImp::getOwnerInfo(
 
             if (uNodeDir)
             {
-                sleNode = lpLedger->read(keylet::page(uRootIndex, uNodeDir));
+                sleNode = lpLedger->read(keylet::page(root, uNodeDir));
                 assert(sleNode);
             }
         } while (uNodeDir);

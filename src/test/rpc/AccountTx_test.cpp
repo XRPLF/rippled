@@ -385,10 +385,10 @@ class AccountTx_test : public beast::unit_test::suite
 
         // Check
         {
-            uint256 const aliceCheckId{getCheckIndex(alice, env.seq(alice))};
+            auto const aliceCheckId = keylet::check(alice, env.seq(alice)).key;
             env(check::create(alice, gw, XRP(300)), sig(alie));
 
-            uint256 const gwCheckId{getCheckIndex(gw, env.seq(gw))};
+            auto const gwCheckId = keylet::check(gw, env.seq(gw)).key;
             env(check::create(gw, alice, XRP(200)));
             env.close();
 

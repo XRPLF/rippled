@@ -187,12 +187,16 @@ class Invariants_test : public beast::unit_test::suite
                 auto const sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
+
                 // make a dummy escrow ledger entry, then change the type to an
                 // unsupported value so that the valid type invariant check
                 // will fail.
                 auto sleNew = std::make_shared<SLE>(
                     keylet::escrow(A1, (*sle)[sfSequence] + 2));
-                sleNew->type_ = ltNICKNAME;
+
+                // We don't use ltNICKNAME directly since it's marked deprecated
+                // to prevent accidental use elsewhere.
+                sleNew->type_ = static_cast<LedgerEntryType>('n');
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -207,9 +211,8 @@ class Invariants_test : public beast::unit_test::suite
             {{"an XRP trust line was created"}},
             [](Account const& A1, Account const& A2, ApplyContext& ac) {
                 // create simple trust SLE with xrp currency
-                auto index = getRippleStateIndex(A1, A2, xrpIssue().currency);
-                auto const sleNew =
-                    std::make_shared<SLE>(ltRIPPLE_STATE, index);
+                auto const sleNew = std::make_shared<SLE>(
+                    keylet::line(A1, A2, xrpIssue().currency));
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -308,9 +311,8 @@ class Invariants_test : public beast::unit_test::suite
                 auto const sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
-                auto const offer_index =
-                    getOfferIndex(A1.id(), (*sle)[sfSequence]);
-                auto sleNew = std::make_shared<SLE>(ltOFFER, offer_index);
+                auto sleNew = std::make_shared<SLE>(
+                    keylet::offer(A1.id(), (*sle)[sfSequence]));
                 sleNew->setAccountID(sfAccount, A1.id());
                 sleNew->setFieldU32(sfSequence, (*sle)[sfSequence]);
                 sleNew->setFieldAmount(sfTakerPays, XRP(-1));
@@ -325,9 +327,8 @@ class Invariants_test : public beast::unit_test::suite
                 auto const sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
-                auto const offer_index =
-                    getOfferIndex(A1.id(), (*sle)[sfSequence]);
-                auto sleNew = std::make_shared<SLE>(ltOFFER, offer_index);
+                auto sleNew = std::make_shared<SLE>(
+                    keylet::offer(A1.id(), (*sle)[sfSequence]));
                 sleNew->setAccountID(sfAccount, A1.id());
                 sleNew->setFieldU32(sfSequence, (*sle)[sfSequence]);
                 sleNew->setFieldAmount(sfTakerPays, A1["USD"](10));
@@ -343,9 +344,8 @@ class Invariants_test : public beast::unit_test::suite
                 auto const sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
-                auto const offer_index =
-                    getOfferIndex(A1.id(), (*sle)[sfSequence]);
-                auto sleNew = std::make_shared<SLE>(ltOFFER, offer_index);
+                auto sleNew = std::make_shared<SLE>(
+                    keylet::offer(A1.id(), (*sle)[sfSequence]));
                 sleNew->setAccountID(sfAccount, A1.id());
                 sleNew->setFieldU32(sfSequence, (*sle)[sfSequence]);
                 sleNew->setFieldAmount(sfTakerPays, XRP(10));

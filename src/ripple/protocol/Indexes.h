@@ -32,130 +32,58 @@
 
 namespace ripple {
 
-// get the index of the node that holds the last 256 ledgers
-uint256
-getLedgerHashIndex();
+/** Keylet computation funclets.
 
-// Get the index of the node that holds the set of 256 ledgers that includes
-// this ledger's hash (or the first ledger after it if it's not a multiple
-// of 256).
-uint256
-getLedgerHashIndex(std::uint32_t desiredLedgerIndex);
+    Entries in the ledger are located using 256-bit locators. The locators are
+    calculated using a wide range of parameters specific to the entry whose
+    locator we are calculating (e.g. an account's locator is derived from the
+    account's address, whereas the locator for an offer is derived from the
+    account and the offer sequence.)
 
-// get the index of the node that holds the enabled amendments
-uint256
-getLedgerAmendmentIndex();
+    To enhance type safety during lookup and make the code more robust, we use
+    keylets, which contain not only the locator of the object but also the type
+    of the object being referenced.
 
-// get the index of the node that holds the fee schedule
-uint256
-getLedgerFeeIndex();
-
-uint256
-getGeneratorIndex(AccountID const& uGeneratorID);
-
-uint256
-getBookBase(Book const& book);
-
-uint256
-getOfferIndex(AccountID const& account, std::uint32_t uSequence);
-
-uint256
-getOwnerDirIndex(AccountID const& account);
-
-uint256
-getDirNodeIndex(uint256 const& uDirRoot, const std::uint64_t uNodeIndex);
-
-uint256
-getQualityIndex(uint256 const& uBase, const std::uint64_t uNodeDir = 0);
-
-uint256
-getQualityNext(uint256 const& uBase);
-
-// VFALCO This name could be better
-std::uint64_t
-getQuality(uint256 const& uBase);
-
-uint256
-getTicketIndex(AccountID const& account, std::uint32_t uSequence);
-
-uint256
-getRippleStateIndex(
-    AccountID const& a,
-    AccountID const& b,
-    Currency const& currency);
-
-uint256
-getRippleStateIndex(AccountID const& a, Issue const& issue);
-
-uint256
-getSignerListIndex(AccountID const& account);
-
-uint256
-getCheckIndex(AccountID const& account, std::uint32_t uSequence);
-
-uint256
-getDepositPreauthIndex(AccountID const& owner, AccountID const& preauthorized);
-
-//------------------------------------------------------------------------------
-
-/* VFALCO TODO
-    For each of these operators that take just the uin256 and
-    only attach the LedgerEntryType, we can comment out that
-    operator to see what breaks, and those call sites are
-    candidates for having the Keylet either passed in as a
-    parameter, or having a data member that stores the keylet.
+    These functions each return a type-specific keylet.
 */
-
-/** Keylet computation funclets. */
 namespace keylet {
 
 /** AccountID root */
-struct account_t
-{
-    explicit account_t() = default;
+Keylet
+account(AccountID const& id) noexcept;
 
-    Keylet
-    operator()(AccountID const& id) const;
-};
-static account_t const account{};
-
-/** The amendment table */
-struct amendments_t
-{
-    explicit amendments_t() = default;
-
-    Keylet
-    operator()() const;
-};
-static amendments_t const amendments{};
+/** The index of the amendment table */
+Keylet const&
+amendments() noexcept;
 
 /** Any item that can be in an owner dir. */
 Keylet
-child(uint256 const& key);
+child(uint256 const& key) noexcept;
 
-/** Skip list */
-struct skip_t
-{
-    explicit skip_t() = default;
+/** The index of the "short" skip list
 
-    Keylet
-    operator()() const;
+    The "short" skip list is a node (at a fixed index) that holds the hashes
+    of ledgers since the last flag ledger. It will contain, at most, 256 hashes.
+*/
+Keylet const&
+skip() noexcept;
 
-    Keylet
-    operator()(LedgerIndex ledger) const;
-};
-static skip_t const skip{};
+/** The index of the long skip for a particular ledger range.
 
-/** The ledger fees */
-struct fees_t
-{
-    explicit fees_t() = default;
+    The "long" skip list is a node that holds the hashes of (up to) 256 flag
+    ledgers.
 
-    // VFALCO This could maybe be constexpr
-    Keylet
-    operator()() const;
-};
-static fees_t const fees{};
+    It can be used to efficiently skip back to any ledger using only two hops:
+    the first hop gets the "long" skip list for the ledger it wants to retrieve
+    and uses it to get the hash of the flag ledger whose short skip list will
+    contain the hash of the requested ledger.
+*/
+Keylet
+skip(LedgerIndex ledger) noexcept;
+
+/** The (fixed) index of the object containing the ledger fees. */
+Keylet const&
+fees() noexcept;
 
 /** The beginning of an order book */
 struct book_t
@@ -167,53 +95,42 @@ struct book_t
 };
 static book_t const book{};
 
-/** A trust line */
-struct line_t
+/** The index of a trust line for a given currency
+
+    Note that a trustline is *shared* between two accounts (commonly referred
+    to as the issuer and the holder); if Alice sets up a trust line to Bob for
+    BTC, and Bob trusts Alice for BTC, here is only a single BTC trust line
+    between them.
+ * */
+/** @{ */
+Keylet
+line(
+    AccountID const& id0,
+    AccountID const& id1,
+    Currency const& currency) noexcept;
+
+inline Keylet
+line(AccountID const& id, Issue const& issue) noexcept
 {
-    explicit line_t() = default;
-
-    Keylet
-    operator()(
-        AccountID const& id0,
-        AccountID const& id1,
-        Currency const& currency) const;
-
-    Keylet
-    operator()(AccountID const& id, Issue const& issue) const;
-
-    Keylet
-    operator()(uint256 const& key) const
-    {
-        return {ltRIPPLE_STATE, key};
-    }
-};
-static line_t const line{};
+    return line(id, issue.account, issue.currency);
+}
+/** @} */
 
 /** An offer from an account */
-struct offer_t
+/** @{ */
+Keylet
+offer(AccountID const& id, std::uint32_t seq) noexcept;
+
+inline Keylet
+offer(uint256 const& key) noexcept
 {
-    explicit offer_t() = default;
-
-    Keylet
-    operator()(AccountID const& id, std::uint32_t seq) const;
-
-    Keylet
-    operator()(uint256 const& key) const
-    {
-        return {ltOFFER, key};
-    }
-};
-static offer_t const offer{};
+    return {ltOFFER, key};
+}
+/** @} */
 
 /** The initial directory page for a specific quality */
-struct quality_t
-{
-    explicit quality_t() = default;
-
-    Keylet
-    operator()(Keylet const& k, std::uint64_t q) const;
-};
-static quality_t const quality{};
+Keylet
+quality(Keylet const& k, std::uint64_t q) noexcept;
 
 /** The directory for the next lower quality */
 struct next_t
@@ -242,87 +159,80 @@ struct ticket_t
 static ticket_t const ticket{};
 
 /** A SignerList */
-struct signers_t
-{
-    explicit signers_t() = default;
-
-    Keylet
-    operator()(AccountID const& id) const;
-
-    Keylet
-    operator()(uint256 const& key) const
-    {
-        return {ltSIGNER_LIST, key};
-    }
-};
-static signers_t const signers{};
+Keylet
+signers(AccountID const& account) noexcept;
 
 /** A Check */
-struct check_t
+/** @{ */
+Keylet
+check(AccountID const& id, std::uint32_t seq) noexcept;
+
+inline Keylet
+check(uint256 const& key) noexcept
 {
-    explicit check_t() = default;
-
-    Keylet
-    operator()(AccountID const& id, std::uint32_t seq) const;
-
-    Keylet
-    operator()(uint256 const& key) const
-    {
-        return {ltCHECK, key};
-    }
-};
-static check_t const check{};
+    return {ltCHECK, key};
+}
+/** @} */
 
 /** A DepositPreauth */
-struct depositPreauth_t
+/** @{ */
+Keylet
+depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept;
+
+inline Keylet
+depositPreauth(uint256 const& key) noexcept
 {
-    explicit depositPreauth_t() = default;
-
-    Keylet
-    operator()(AccountID const& owner, AccountID const& preauthorized) const;
-
-    Keylet
-    operator()(uint256 const& key) const
-    {
-        return {ltDEPOSIT_PREAUTH, key};
-    }
-};
-static depositPreauth_t const depositPreauth{};
+    return {ltDEPOSIT_PREAUTH, key};
+}
+/** @} */
 
 //------------------------------------------------------------------------------
 
 /** Any ledger entry */
 Keylet
-unchecked(uint256 const& key);
+unchecked(uint256 const& key) noexcept;
 
 /** The root page of an account's directory */
 Keylet
-ownerDir(AccountID const& id);
+ownerDir(AccountID const& id) noexcept;
 
 /** A page in a directory */
 /** @{ */
 Keylet
-page(uint256 const& root, std::uint64_t index);
-Keylet
-page(Keylet const& root, std::uint64_t index);
-/** @} */
+page(uint256 const& root, std::uint64_t index = 0) noexcept;
 
-// DEPRECATED
 inline Keylet
-page(uint256 const& key)
+page(Keylet const& root, std::uint64_t index = 0) noexcept
 {
-    return {ltDIR_NODE, key};
+    assert(root.type == ltDIR_NODE);
+    return page(root.key, index);
 }
+/** @} */
 
 /** An escrow entry */
 Keylet
-escrow(AccountID const& source, std::uint32_t seq);
+escrow(AccountID const& src, std::uint32_t seq) noexcept;
 
 /** A PaymentChannel */
 Keylet
-payChan(AccountID const& source, AccountID const& dst, std::uint32_t seq);
+payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept;
 
 }  // namespace keylet
+
+// Everything below is deprecated and should be removed in favor of keylets:
+
+uint256
+getBookBase(Book const& book);
+
+uint256
+getQualityNext(uint256 const& uBase);
+
+// VFALCO This name could be better
+std::uint64_t
+getQuality(uint256 const& uBase);
+
+uint256
+getTicketIndex(AccountID const& account, std::uint32_t uSequence);
 
 }  // namespace ripple
 

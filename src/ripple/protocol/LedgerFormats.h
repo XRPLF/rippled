@@ -88,37 +88,9 @@ enum LedgerEntryType {
 
     // No longer used or supported. Left here to prevent accidental
     // reassignment of the ledger type.
-    ltNICKNAME = 'n',
+    ltNICKNAME [[deprecated]] = 'n',
 
-    ltNotUsed01 = 'c',
-};
-
-/**
-    @ingroup protocol
-*/
-// Used as a prefix for computing ledger indexes (keys).
-enum LedgerNameSpace {
-    spaceAccount = 'a',
-    spaceDirNode = 'd',
-    spaceGenerator = 'g',
-    spaceRipple = 'r',
-    spaceOffer = 'o',     // Entry for an offer.
-    spaceOwnerDir = 'O',  // Directory of things owned by an account.
-    spaceBookDir = 'B',   // Directory of order books.
-    spaceContract = 'c',
-    spaceSkipList = 's',
-    spaceEscrow = 'u',
-    spaceAmendment = 'f',
-    spaceFee = 'e',
-    spaceTicket = 'T',
-    spaceSignerList = 'S',
-    spaceXRPUChannel = 'x',
-    spaceCheck = 'C',
-    spaceDepositPreauth = 'p',
-
-    // No longer used or supported. Left here to reserve the space and
-    // avoid accidental reuse of the space.
-    spaceNickname = 'n',
+    ltNotUsed01 [[deprecated]] = 'c',
 };
 
 /**

@@ -255,8 +255,7 @@ CashCheck::doApply()
     // directly on a View.
     PaymentSandbox psb(&ctx_.view());
 
-    uint256 const checkKey{ctx_.tx[sfCheckID]};
-    auto const sleCheck = psb.peek(keylet::check(checkKey));
+    auto const sleCheck = psb.peek(keylet::check(ctx_.tx[sfCheckID]));
     if (!sleCheck)
     {
         JLOG(j_.fatal()) << "Precheck did not verify check's existence.";
@@ -390,7 +389,7 @@ CashCheck::doApply()
     {
         std::uint64_t const page{(*sleCheck)[sfDestinationNode]};
         if (!ctx_.view().dirRemove(
-                keylet::ownerDir(account_), page, checkKey, true))
+                keylet::ownerDir(account_), page, sleCheck->key(), true))
         {
             JLOG(j_.warn()) << "Unable to delete check from destination.";
             return tefBAD_LEDGER;
@@ -400,7 +399,7 @@ CashCheck::doApply()
     {
         std::uint64_t const page{(*sleCheck)[sfOwnerNode]};
         if (!ctx_.view().dirRemove(
-                keylet::ownerDir(srcId), page, checkKey, true))
+                keylet::ownerDir(srcId), page, sleCheck->key(), true))
         {
             JLOG(j_.warn()) << "Unable to delete check from owner.";
             return tefBAD_LEDGER;

@@ -42,7 +42,6 @@ constexpr ProtocolVersion const supportedProtocolList[]
 };
 // clang-format on
 
-
 // This ugly construct ensures that supportedProtocolList is sorted in strictly
 // ascending order and doesn't contain any duplicates.
 // FIXME: With C++20 we can use std::is_sorted with an appropriate comparator

@@ -83,7 +83,7 @@ struct Directory_test : public beast::unit_test::suite
         auto alice = Account("alice");
         auto bob = Account("bob");
 
-        testcase("Directory Ordering");
+        testcase("Directory Ordering (with 'SortedDirectories' amendment)");
 
         Env env(*this);
         env.fund(XRP(10000000), alice, gw);

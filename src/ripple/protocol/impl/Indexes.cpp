@@ -20,97 +20,75 @@
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/digest.h>
 #include <boost/endian/conversion.hpp>
+#include <algorithm>
 #include <cassert>
 
 namespace ripple {
 
-// get the index of the node that holds the last 256 ledgers
-uint256
-getLedgerHashIndex()
-{
-    return sha512Half(std::uint16_t(spaceSkipList));
-}
+/** Type-specific prefix for calculating ledger indices.
 
-// Get the index of the node that holds the set of 256 ledgers that includes
-// this ledger's hash (or the first ledger after it if it's not a multiple
-// of 256).
-uint256
-getLedgerHashIndex(std::uint32_t desiredLedgerIndex)
-{
-    return sha512Half(
-        std::uint16_t(spaceSkipList), std::uint32_t(desiredLedgerIndex >> 16));
-}
-// get the index of the node that holds the enabled amendments
-uint256
-getLedgerAmendmentIndex()
-{
-    return sha512Half(std::uint16_t(spaceAmendment));
-}
+    The identifier for a given object within the ledger is calculated based
+    on some object-specific parameters. To ensure that different types of
+    objects have different indices, even if they happen to use the same set
+    of parameters, we use "tagged hashing" by adding a type-specific prefix.
 
-// get the index of the node that holds the fee schedule
-uint256
-getLedgerFeeIndex()
-{
-    return sha512Half(std::uint16_t(spaceFee));
-}
+    @note These values are part of the protocol and *CANNOT* be arbitrarily
+          changed. If they were, on-ledger objects may no longer be able to
+          be located or addressed.
 
-uint256
-getGeneratorIndex(AccountID const& uGeneratorID)
+          Additions to this list are OK, but changing existing entries to
+          assign them a different values should never be needed.
+
+          Entries that are removed should be moved to the bottom of the enum
+          and marked as [[deprecated]] to prevent accidental reuse.
+*/
+enum class LedgerNameSpace : std::uint16_t {
+    ACCOUNT = 'a',
+    DIR_NODE = 'd',
+    TRUST_LINE = 'r',
+    OFFER = 'o',
+    OWNER_DIR = 'O',
+    BOOK_DIR = 'B',
+    SKIP_LIST = 's',
+    ESCROW = 'u',
+    AMENDMENTS = 'f',
+    FEE_SETTINGS = 'e',
+    TICKET = 'T',
+    SIGNER_LIST = 'S',
+    XRP_PAYMENT_CHANNEL = 'x',
+    CHECK = 'C',
+    DEPOSIT_PREAUTH = 'p',
+
+    // No longer used or supported. Left here to reserve the space
+    // to avoid accidental reuse.
+    CONTRACT [[deprecated]] = 'c',
+    GENERATOR [[deprecated]] = 'g',
+    NICKNAME [[deprecated]] = 'n',
+};
+
+template <class... Args>
+static uint256
+indexHash(LedgerNameSpace space, Args const&... args)
 {
-    return sha512Half(std::uint16_t(spaceGenerator), uGeneratorID);
+    return sha512Half(safe_cast<std::uint16_t>(space), args...);
 }
 
 uint256
 getBookBase(Book const& book)
 {
     assert(isConsistent(book));
-    // Return with quality 0.
-    return getQualityIndex(sha512Half(
-        std::uint16_t(spaceBookDir),
+
+    auto const index = indexHash(
+        LedgerNameSpace::BOOK_DIR,
         book.in.currency,
         book.out.currency,
         book.in.account,
-        book.out.account));
-}
+        book.out.account);
 
-uint256
-getOfferIndex(AccountID const& account, std::uint32_t uSequence)
-{
-    return sha512Half(
-        std::uint16_t(spaceOffer), account, std::uint32_t(uSequence));
-}
+    // Return with quality 0.
+    auto k = keylet::quality({ltDIR_NODE, index}, 0);
 
-uint256
-getOwnerDirIndex(AccountID const& account)
-{
-    return sha512Half(std::uint16_t(spaceOwnerDir), account);
-}
-
-uint256
-getDirNodeIndex(uint256 const& uDirRoot, const std::uint64_t uNodeIndex)
-{
-    if (uNodeIndex == 0)
-        return uDirRoot;
-
-    return sha512Half(
-        std::uint16_t(spaceDirNode), uDirRoot, std::uint64_t(uNodeIndex));
-}
-
-uint256
-getQualityIndex(uint256 const& uBase, const std::uint64_t uNodeDir)
-{
-    // Indexes are stored in big endian format: they print as hex as stored.
-    // Most significant bytes are first.  Least significant bytes represent
-    // adjacent entries.  We place uNodeDir in the 8 right most bytes to be
-    // adjacent.  Want uNodeDir in big endian format so ++ goes to the next
-    // entry for indexes.
-    uint256 uNode(uBase);
-
-    // TODO(tom): there must be a better way.
-    // VFALCO [base_uint] This assumes a certain storage format
-    ((std::uint64_t*)uNode.end())[-1] = boost::endian::native_to_big(uNodeDir);
-
-    return uNode;
+    return k.key;
 }
 
 uint256
@@ -130,51 +108,8 @@ getQuality(uint256 const& uBase)
 uint256
 getTicketIndex(AccountID const& account, std::uint32_t uSequence)
 {
-    return sha512Half(
-        std::uint16_t(spaceTicket), account, std::uint32_t(uSequence));
-}
-
-uint256
-getRippleStateIndex(
-    AccountID const& a,
-    AccountID const& b,
-    Currency const& currency)
-{
-    if (a < b)
-        return sha512Half(std::uint16_t(spaceRipple), a, b, currency);
-    return sha512Half(std::uint16_t(spaceRipple), b, a, currency);
-}
-
-uint256
-getRippleStateIndex(AccountID const& a, Issue const& issue)
-{
-    return getRippleStateIndex(a, issue.account, issue.currency);
-}
-
-uint256
-getSignerListIndex(AccountID const& account)
-{
-    // We are prepared for there to be multiple SignerLists in the future,
-    // but we don't have them yet.  In anticipation of multiple SignerLists
-    // We supply a 32-bit ID to locate the SignerList.  Until we actually
-    // *have* multiple signer lists, we can default that ID to zero.
-    return sha512Half(
-        std::uint16_t(spaceSignerList),
-        account,
-        std::uint32_t(0));  // 0 == default SignerList ID.
-}
-
-uint256
-getCheckIndex(AccountID const& account, std::uint32_t uSequence)
-{
-    return sha512Half(
-        std::uint16_t(spaceCheck), account, std::uint32_t(uSequence));
-}
-
-uint256
-getDepositPreauthIndex(AccountID const& owner, AccountID const& preauthorized)
-{
-    return sha512Half(std::uint16_t(spaceDepositPreauth), owner, preauthorized);
+    return indexHash(
+        LedgerNameSpace::TICKET, account, std::uint32_t(uSequence));
 }
 
 //------------------------------------------------------------------------------
@@ -182,39 +117,49 @@ getDepositPreauthIndex(AccountID const& owner, AccountID const& preauthorized)
 namespace keylet {
 
 Keylet
-account_t::operator()(AccountID const& id) const
+account(AccountID const& id) noexcept
 {
-    return {ltACCOUNT_ROOT, sha512Half(std::uint16_t(spaceAccount), id)};
+    return {ltACCOUNT_ROOT, indexHash(LedgerNameSpace::ACCOUNT, id)};
 }
 
 Keylet
-child(uint256 const& key)
+child(uint256 const& key) noexcept
 {
     return {ltCHILD, key};
 }
 
-Keylet
-skip_t::operator()() const
+Keylet const&
+skip() noexcept
 {
-    return {ltLEDGER_HASHES, getLedgerHashIndex()};
+    static Keylet const ret{
+        ltLEDGER_HASHES, indexHash(LedgerNameSpace::SKIP_LIST)};
+    return ret;
 }
 
 Keylet
-skip_t::operator()(LedgerIndex ledger) const
+skip(LedgerIndex ledger) noexcept
 {
-    return {ltLEDGER_HASHES, getLedgerHashIndex(ledger)};
+    return {
+        ltLEDGER_HASHES,
+        indexHash(
+            LedgerNameSpace::SKIP_LIST,
+            std::uint32_t(static_cast<std::uint32_t>(ledger) >> 16))};
 }
 
-Keylet
-amendments_t::operator()() const
+Keylet const&
+amendments() noexcept
 {
-    return {ltAMENDMENTS, getLedgerAmendmentIndex()};
+    static Keylet const ret{
+        ltAMENDMENTS, indexHash(LedgerNameSpace::AMENDMENTS)};
+    return ret;
 }
 
-Keylet
-fees_t::operator()() const
+Keylet const&
+fees() noexcept
 {
-    return {ltFEE_SETTINGS, getLedgerFeeIndex()};
+    static Keylet const ret{
+        ltFEE_SETTINGS, indexHash(LedgerNameSpace::FEE_SETTINGS)};
+    return ret;
 }
 
 Keylet
@@ -224,31 +169,56 @@ book_t::operator()(Book const& b) const
 }
 
 Keylet
-line_t::operator()(
+line(
     AccountID const& id0,
     AccountID const& id1,
-    Currency const& currency) const
+    Currency const& currency) noexcept
 {
-    return {ltRIPPLE_STATE, getRippleStateIndex(id0, id1, currency)};
+    // There is code in SetTrust that calls us with id0 == id1, to allow users
+    // to locate and delete such "weird" trustlines. If we remove that code, we
+    // could enable this assert:
+    // assert(id0 != id1);
+
+    // A trust line is shared between two accounts; while we typically think
+    // of this as an "issuer" and a "holder" the relationship is actually fully
+    // bidirectional.
+    //
+    // So that we can generate a unique ID for a trust line, regardess of which
+    // side of the line we're looking at, we define a "canonical" order for the
+    // two accounts (smallest then largest)  and hash them in that order:
+    auto const accounts = std::minmax(id0, id1);
+
+    return {
+        ltRIPPLE_STATE,
+        indexHash(
+            LedgerNameSpace::TRUST_LINE,
+            accounts.first,
+            accounts.second,
+            currency)};
 }
 
 Keylet
-line_t::operator()(AccountID const& id, Issue const& issue) const
+offer(AccountID const& id, std::uint32_t seq) noexcept
 {
-    return {ltRIPPLE_STATE, getRippleStateIndex(id, issue)};
+    return {ltOFFER, indexHash(LedgerNameSpace::OFFER, id, seq)};
 }
 
 Keylet
-offer_t::operator()(AccountID const& id, std::uint32_t seq) const
-{
-    return {ltOFFER, getOfferIndex(id, seq)};
-}
-
-Keylet
-quality_t::operator()(Keylet const& k, std::uint64_t q) const
+quality(Keylet const& k, std::uint64_t q) noexcept
 {
     assert(k.type == ltDIR_NODE);
-    return {ltDIR_NODE, getQualityIndex(k.key, q)};
+
+    // Indexes are stored in big endian format: they print as hex as stored.
+    // Most significant bytes are first and the least significant bytes
+    // represent adjacent entries. We place the quality, in big endian format,
+    // in the 8 right most bytes; this way, incrementing goes to the next entry
+    // for indexes.
+    uint256 x = k.key;
+
+    // FIXME This is ugly and we can and should do better...
+    ((std::uint64_t*)x.end())[-1] = boost::endian::native_to_big(q);
+
+    return {ltDIR_NODE, x};
 }
 
 Keylet
@@ -264,74 +234,71 @@ ticket_t::operator()(AccountID const& id, std::uint32_t seq) const
     return {ltTICKET, getTicketIndex(id, seq)};
 }
 
-Keylet
-signers_t::operator()(AccountID const& id) const
+// This function is presently static, since it's never accessed from anywhere
+// else. If we ever support multiple pages of signer lists, this would be the
+// keylet used to locate them.
+static Keylet
+signers(AccountID const& account, std::uint32_t page) noexcept
 {
-    return {ltSIGNER_LIST, getSignerListIndex(id)};
+    return {
+        ltSIGNER_LIST, indexHash(LedgerNameSpace::SIGNER_LIST, account, page)};
 }
 
 Keylet
-check_t::operator()(AccountID const& id, std::uint32_t seq) const
+signers(AccountID const& account) noexcept
 {
-    return {ltCHECK, getCheckIndex(id, seq)};
+    return signers(account, 0);
 }
 
 Keylet
-depositPreauth_t::operator()(
-    AccountID const& owner,
-    AccountID const& preauthorized) const
+check(AccountID const& id, std::uint32_t seq) noexcept
 {
-    return {ltDEPOSIT_PREAUTH, getDepositPreauthIndex(owner, preauthorized)};
+    return {ltCHECK, indexHash(LedgerNameSpace::CHECK, id, seq)};
+}
+
+Keylet
+depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept
+{
+    return {
+        ltDEPOSIT_PREAUTH,
+        indexHash(LedgerNameSpace::DEPOSIT_PREAUTH, owner, preauthorized)};
 }
 
 //------------------------------------------------------------------------------
 
 Keylet
-unchecked(uint256 const& key)
+unchecked(uint256 const& key) noexcept
 {
     return {ltANY, key};
 }
 
 Keylet
-ownerDir(AccountID const& id)
+ownerDir(AccountID const& id) noexcept
 {
-    return {ltDIR_NODE, getOwnerDirIndex(id)};
+    return {ltDIR_NODE, indexHash(LedgerNameSpace::OWNER_DIR, id)};
 }
 
 Keylet
-page(uint256 const& key, std::uint64_t index)
+page(uint256 const& key, std::uint64_t index) noexcept
 {
-    return {ltDIR_NODE, getDirNodeIndex(key, index)};
+    if (index == 0)
+        return {ltDIR_NODE, key};
+
+    return {ltDIR_NODE, indexHash(LedgerNameSpace::DIR_NODE, key, index)};
 }
 
 Keylet
-page(Keylet const& root, std::uint64_t index)
+escrow(AccountID const& src, std::uint32_t seq) noexcept
 {
-    assert(root.type == ltDIR_NODE);
-    return page(root.key, index);
+    return {ltESCROW, indexHash(LedgerNameSpace::ESCROW, src, seq)};
 }
 
 Keylet
-escrow(AccountID const& source, std::uint32_t seq)
+payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept
 {
-    sha512_half_hasher h;
-    using beast::hash_append;
-    hash_append(h, std::uint16_t(spaceEscrow));
-    hash_append(h, source);
-    hash_append(h, seq);
-    return {ltESCROW, static_cast<uint256>(h)};
-}
-
-Keylet
-payChan(AccountID const& source, AccountID const& dst, std::uint32_t seq)
-{
-    sha512_half_hasher h;
-    using beast::hash_append;
-    hash_append(h, std::uint16_t(spaceXRPUChannel));
-    hash_append(h, source);
-    hash_append(h, dst);
-    hash_append(h, seq);
-    return {ltPAYCHAN, static_cast<uint256>(h)};
+    return {
+        ltPAYCHAN,
+        indexHash(LedgerNameSpace::XRP_PAYMENT_CHANNEL, src, dst, seq)};
 }
 
 }  // namespace keylet
