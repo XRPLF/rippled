@@ -24,16 +24,16 @@
 
 namespace ripple {
 
-/** Attempts to fill memory with zeroes.
+/** Attempts to clear the given blob of memory.
 
     The underlying implementation of this function takes pains to
-    attempt to outsmart compilers from optimizing the zeroization
+    attempt to outsmart the compiler from optimizing the clearing
     away. Please note that, despite that, remnants of content may
     remain floating around in memory as well as registers, caches
     and more.
 
-    For a comprehensive treatise on the subject of secure
-    memory clearing, see:
+    For a more in-depth discussion of the subject please see the
+    below posts by Colin Percival:
 
     http://www.daemonology.net/blog/2014-09-04-how-to-zero-a-buffer.html
     http://www.daemonology.net/blog/2014-09-06-zeroing-buffers-is-insufficient.html

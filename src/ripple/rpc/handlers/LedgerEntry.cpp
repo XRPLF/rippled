@@ -144,7 +144,7 @@ doLedgerEntry(RPC::JsonContext& context)
                         context.params[jss::directory][jss::dir_root]
                             .asString());
 
-                    uNodeIndex = getDirNodeIndex(uDirRoot, uSubIndex);
+                    uNodeIndex = keylet::page(uDirRoot, uSubIndex).key;
                 }
             }
             else if (context.params[jss::directory].isMember(jss::owner))
@@ -158,8 +158,8 @@ doLedgerEntry(RPC::JsonContext& context)
                 }
                 else
                 {
-                    uint256 uDirRoot = getOwnerDirIndex(*ownerID);
-                    uNodeIndex = getDirNodeIndex(uDirRoot, uSubIndex);
+                    uNodeIndex =
+                        keylet::page(keylet::ownerDir(*ownerID), uSubIndex).key;
                 }
             }
             else
@@ -216,8 +216,10 @@ doLedgerEntry(RPC::JsonContext& context)
             if (!id)
                 jvResult[jss::error] = "malformedAddress";
             else
-                uNodeIndex = getOfferIndex(
-                    *id, context.params[jss::offer][jss::seq].asUInt());
+                uNodeIndex =
+                    keylet::offer(
+                        *id, context.params[jss::offer][jss::seq].asUInt())
+                        .key;
         }
     }
     else if (context.params.isMember(jss::payment_channel))
@@ -260,7 +262,7 @@ doLedgerEntry(RPC::JsonContext& context)
             }
             else
             {
-                uNodeIndex = getRippleStateIndex(*id1, *id2, uCurrency);
+                uNodeIndex = keylet::line(*id1, *id2, uCurrency).key;
             }
         }
     }

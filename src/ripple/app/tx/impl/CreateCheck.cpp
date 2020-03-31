@@ -185,8 +185,7 @@ CreateCheck::doApply()
 
     AccountID const dstAccountId{ctx_.tx[sfDestination]};
     std::uint32_t const seq{ctx_.tx.getSequence()};
-    auto sleCheck =
-        std::make_shared<SLE>(ltCHECK, getCheckIndex(account_, seq));
+    auto sleCheck = std::make_shared<SLE>(keylet::check(account_, seq));
 
     sleCheck->setAccountID(sfAccount, account_);
     sleCheck->setAccountID(sfDestination, dstAccountId);

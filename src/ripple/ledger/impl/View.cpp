@@ -952,51 +952,13 @@ rippleCredit(
     assert(uSenderID != uReceiverID);
 
     bool const bSenderHigh = uSenderID > uReceiverID;
-    uint256 const uIndex =
-        getRippleStateIndex(uSenderID, uReceiverID, currency);
-    auto const sleRippleState = view.peek(keylet::line(uIndex));
-
-    TER terResult;
+    auto const index = keylet::line(uSenderID, uReceiverID, currency);
 
     assert(!isXRP(uSenderID) && uSenderID != noAccount());
     assert(!isXRP(uReceiverID) && uReceiverID != noAccount());
 
-    if (!sleRippleState)
-    {
-        STAmount const saReceiverLimit({currency, uReceiverID});
-        STAmount saBalance{saAmount};
-
-        saBalance.setIssuer(noAccount());
-
-        JLOG(j.debug()) << "rippleCredit: "
-                           "create line: "
-                        << to_string(uSenderID) << " -> "
-                        << to_string(uReceiverID) << " : "
-                        << saAmount.getFullText();
-
-        auto const sleAccount = view.peek(keylet::account(uReceiverID));
-        if (!sleAccount)
-            return tefINTERNAL;
-
-        bool const noRipple = (sleAccount->getFlags() & lsfDefaultRipple) == 0;
-
-        terResult = trustCreate(
-            view,
-            bSenderHigh,
-            uSenderID,
-            uReceiverID,
-            uIndex,
-            sleAccount,
-            false,
-            noRipple,
-            false,
-            saBalance,
-            saReceiverLimit,
-            0,
-            0,
-            j);
-    }
-    else
+    // If the line exists, modify it accordingly.
+    if (auto const sleRippleState = view.peek(index))
     {
         STAmount saBalance = sleRippleState->getFieldAmount(sfBalance);
 
@@ -1018,7 +980,8 @@ rippleCredit(
         std::uint32_t const uFlags(sleRippleState->getFieldU32(sfFlags));
         bool bDelete = false;
 
-        // YYY Could skip this if rippling in reverse.
+        // FIXME This NEEDS to be cleaned up and simplified. It's impossible
+        //       for anyone to understand.
         if (saBefore > beast::zero
             // Sender balance was positive.
             && saBalance <= beast::zero
@@ -1066,21 +1029,49 @@ rippleCredit(
 
         if (bDelete)
         {
-            terResult = trustDelete(
+            return trustDelete(
                 view,
                 sleRippleState,
                 bSenderHigh ? uReceiverID : uSenderID,
                 !bSenderHigh ? uReceiverID : uSenderID,
                 j);
         }
-        else
-        {
-            view.update(sleRippleState);
-            terResult = tesSUCCESS;
-        }
+
+        view.update(sleRippleState);
+        return tesSUCCESS;
     }
 
-    return terResult;
+    STAmount const saReceiverLimit({currency, uReceiverID});
+    STAmount saBalance{saAmount};
+
+    saBalance.setIssuer(noAccount());
+
+    JLOG(j.debug()) << "rippleCredit: "
+                       "create line: "
+                    << to_string(uSenderID) << " -> " << to_string(uReceiverID)
+                    << " : " << saAmount.getFullText();
+
+    auto const sleAccount = view.peek(keylet::account(uReceiverID));
+    if (!sleAccount)
+        return tefINTERNAL;
+
+    bool const noRipple = (sleAccount->getFlags() & lsfDefaultRipple) == 0;
+
+    return trustCreate(
+        view,
+        bSenderHigh,
+        uSenderID,
+        uReceiverID,
+        index.key,
+        sleAccount,
+        false,
+        noRipple,
+        false,
+        saBalance,
+        saReceiverLimit,
+        0,
+        0,
+        j);
 }
 
 // Send regardless of limits.
@@ -1309,81 +1300,80 @@ issueIOU(
                     << amount.getFullText();
 
     bool bSenderHigh = issue.account > account;
-    uint256 const index =
-        getRippleStateIndex(issue.account, account, issue.currency);
-    auto state = view.peek(keylet::line(index));
 
-    if (!state)
+    auto const index = keylet::line(issue.account, account, issue.currency);
+
+    if (auto state = view.peek(index))
     {
-        // NIKB TODO: The limit uses the receiver's account as the issuer and
-        // this is unnecessarily inefficient as copying which could be avoided
-        // is now required. Consider available options.
-        STAmount const limit({issue.currency, account});
-        STAmount final_balance = amount;
+        STAmount final_balance = state->getFieldAmount(sfBalance);
 
-        final_balance.setIssuer(noAccount());
+        if (bSenderHigh)
+            final_balance.negate();  // Put balance in sender terms.
 
-        auto const receiverAccount = view.peek(keylet::account(account));
-        if (!receiverAccount)
-            return tefINTERNAL;
+        STAmount const start_balance = final_balance;
 
-        bool noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
+        final_balance -= amount;
 
-        return trustCreate(
-            view,
-            bSenderHigh,
-            issue.account,
-            account,
-            index,
-            receiverAccount,
-            false,
-            noRipple,
-            false,
-            final_balance,
-            limit,
-            0,
-            0,
-            j);
-    }
-
-    STAmount final_balance = state->getFieldAmount(sfBalance);
-
-    if (bSenderHigh)
-        final_balance.negate();  // Put balance in sender terms.
-
-    STAmount const start_balance = final_balance;
-
-    final_balance -= amount;
-
-    auto const must_delete = updateTrustLine(
-        view,
-        state,
-        bSenderHigh,
-        issue.account,
-        start_balance,
-        final_balance,
-        j);
-
-    view.creditHook(issue.account, account, amount, start_balance);
-
-    if (bSenderHigh)
-        final_balance.negate();
-
-    // Adjust the balance on the trust line if necessary. We do this even if we
-    // are going to delete the line to reflect the correct balance at the time
-    // of deletion.
-    state->setFieldAmount(sfBalance, final_balance);
-    if (must_delete)
-        return trustDelete(
+        auto const must_delete = updateTrustLine(
             view,
             state,
-            bSenderHigh ? account : issue.account,
-            bSenderHigh ? issue.account : account,
+            bSenderHigh,
+            issue.account,
+            start_balance,
+            final_balance,
             j);
 
-    view.update(state);
+        view.creditHook(issue.account, account, amount, start_balance);
 
-    return tesSUCCESS;
+        if (bSenderHigh)
+            final_balance.negate();
+
+        // Adjust the balance on the trust line if necessary. We do this even if
+        // we are going to delete the line to reflect the correct balance at the
+        // time of deletion.
+        state->setFieldAmount(sfBalance, final_balance);
+        if (must_delete)
+            return trustDelete(
+                view,
+                state,
+                bSenderHigh ? account : issue.account,
+                bSenderHigh ? issue.account : account,
+                j);
+
+        view.update(state);
+
+        return tesSUCCESS;
+    }
+
+    // NIKB TODO: The limit uses the receiver's account as the issuer and
+    // this is unnecessarily inefficient as copying which could be avoided
+    // is now required. Consider available options.
+    STAmount const limit({issue.currency, account});
+    STAmount final_balance = amount;
+
+    final_balance.setIssuer(noAccount());
+
+    auto const receiverAccount = view.peek(keylet::account(account));
+    if (!receiverAccount)
+        return tefINTERNAL;
+
+    bool noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
+
+    return trustCreate(
+        view,
+        bSenderHigh,
+        issue.account,
+        account,
+        index.key,
+        receiverAccount,
+        false,
+        noRipple,
+        false,
+        final_balance,
+        limit,
+        0,
+        0,
+        j);
 }
 
 TER
@@ -1406,56 +1396,54 @@ redeemIOU(
                     << amount.getFullText();
 
     bool bSenderHigh = account > issue.account;
-    uint256 const index =
-        getRippleStateIndex(account, issue.account, issue.currency);
-    auto state = view.peek(keylet::line(index));
 
-    if (!state)
+    if (auto state =
+            view.peek(keylet::line(account, issue.account, issue.currency)))
     {
-        // In order to hold an IOU, a trust line *MUST* exist to track the
-        // balance. If it doesn't, then something is very wrong. Don't try
-        // to continue.
-        JLOG(j.fatal()) << "redeemIOU: " << to_string(account)
-                        << " attempts to redeem " << amount.getFullText()
-                        << " but no trust line exists!";
+        STAmount final_balance = state->getFieldAmount(sfBalance);
 
-        return tefINTERNAL;
+        if (bSenderHigh)
+            final_balance.negate();  // Put balance in sender terms.
+
+        STAmount const start_balance = final_balance;
+
+        final_balance -= amount;
+
+        auto const must_delete = updateTrustLine(
+            view, state, bSenderHigh, account, start_balance, final_balance, j);
+
+        view.creditHook(account, issue.account, amount, start_balance);
+
+        if (bSenderHigh)
+            final_balance.negate();
+
+        // Adjust the balance on the trust line if necessary. We do this even if
+        // we are going to delete the line to reflect the correct balance at the
+        // time of deletion.
+        state->setFieldAmount(sfBalance, final_balance);
+
+        if (must_delete)
+        {
+            return trustDelete(
+                view,
+                state,
+                bSenderHigh ? issue.account : account,
+                bSenderHigh ? account : issue.account,
+                j);
+        }
+
+        view.update(state);
+        return tesSUCCESS;
     }
 
-    STAmount final_balance = state->getFieldAmount(sfBalance);
+    // In order to hold an IOU, a trust line *MUST* exist to track the
+    // balance. If it doesn't, then something is very wrong. Don't try
+    // to continue.
+    JLOG(j.fatal()) << "redeemIOU: " << to_string(account)
+                    << " attempts to redeem " << amount.getFullText()
+                    << " but no trust line exists!";
 
-    if (bSenderHigh)
-        final_balance.negate();  // Put balance in sender terms.
-
-    STAmount const start_balance = final_balance;
-
-    final_balance -= amount;
-
-    auto const must_delete = updateTrustLine(
-        view, state, bSenderHigh, account, start_balance, final_balance, j);
-
-    view.creditHook(account, issue.account, amount, start_balance);
-
-    if (bSenderHigh)
-        final_balance.negate();
-
-    // Adjust the balance on the trust line if necessary. We do this even if we
-    // are going to delete the line to reflect the correct balance at the time
-    // of deletion.
-    state->setFieldAmount(sfBalance, final_balance);
-
-    if (must_delete)
-    {
-        return trustDelete(
-            view,
-            state,
-            bSenderHigh ? issue.account : account,
-            bSenderHigh ? account : issue.account,
-            j);
-    }
-
-    view.update(state);
-    return tesSUCCESS;
+    return tefINTERNAL;
 }
 
 TER

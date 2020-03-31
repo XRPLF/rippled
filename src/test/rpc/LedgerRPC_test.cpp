@@ -353,7 +353,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        uint256 const checkId{getCheckIndex(env.master, env.seq(env.master))};
+        auto const checkId = keylet::check(env.master, env.seq(env.master));
 
         env(check::create(env.master, alice, XRP(100)));
         env.close();
@@ -362,7 +362,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         {
             // Request a check.
             Json::Value jvParams;
-            jvParams[jss::check] = to_string(checkId);
+            jvParams[jss::check] = to_string(checkId.key);
             jvParams[jss::ledger_hash] = ledgerHash;
             Json::Value const jrr = env.rpc(
                 "json", "ledger_entry", to_string(jvParams))[jss::result];

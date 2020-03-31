@@ -85,6 +85,12 @@ public:
 
 class Check_test : public beast::unit_test::suite
 {
+    static uint256
+    getCheckIndex(AccountID const& account, std::uint32_t uSequence)
+    {
+        return keylet::check(account, uSequence).key;
+    }
+
     // Helper function that returns the Checks on an account.
     static std::vector<std::shared_ptr<SLE const>>
     checksOnAccount(test::jtx::Env& env, test::jtx::Account account)
@@ -1064,7 +1070,7 @@ class Check_test : public beast::unit_test::suite
             env(trust(truster, iou(1000)), inOrOut(pct));
             env.close();
 
-            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
+            uint256 const chkId = getCheckIndex(alice, env.seq(alice));
             env(check::create(alice, bob, USD(10)));
             env.close();
 

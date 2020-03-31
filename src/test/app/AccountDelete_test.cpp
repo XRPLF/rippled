@@ -317,7 +317,7 @@ public:
         // alice writes a check to becky.  Until that check is cashed or
         // canceled it will prevent alice's and becky's accounts from being
         // deleted.
-        uint256 const checkId{getCheckIndex(alice, env.seq(alice))};
+        uint256 const checkId = keylet::check(alice, env.seq(alice)).key;
         env(check::create(alice, becky, XRP(1)));
         env.close();
 

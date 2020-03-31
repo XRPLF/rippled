@@ -88,8 +88,7 @@ CancelCheck::preclaim(PreclaimContext const& ctx)
 TER
 CancelCheck::doApply()
 {
-    uint256 const checkId{ctx_.tx[sfCheckID]};
-    auto const sleCheck = view().peek(keylet::check(checkId));
+    auto const sleCheck = view().peek(keylet::check(ctx_.tx[sfCheckID]));
     if (!sleCheck)
     {
         // Error should have been caught in preclaim.
@@ -106,7 +105,8 @@ CancelCheck::doApply()
     if (srcId != dstId)
     {
         std::uint64_t const page{(*sleCheck)[sfDestinationNode]};
-        if (!view().dirRemove(keylet::ownerDir(dstId), page, checkId, true))
+        if (!view().dirRemove(
+                keylet::ownerDir(dstId), page, sleCheck->key(), true))
         {
             JLOG(j_.warn()) << "Unable to delete check from destination.";
             return tefBAD_LEDGER;
@@ -114,7 +114,8 @@ CancelCheck::doApply()
     }
     {
         std::uint64_t const page{(*sleCheck)[sfOwnerNode]};
-        if (!view().dirRemove(keylet::ownerDir(srcId), page, checkId, true))
+        if (!view().dirRemove(
+                keylet::ownerDir(srcId), page, sleCheck->key(), true))
         {
             JLOG(j_.warn()) << "Unable to delete check from owner.";
             return tefBAD_LEDGER;

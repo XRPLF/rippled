@@ -83,11 +83,7 @@ CancelOffer::doApply()
     if (!sle)
         return tefINTERNAL;
 
-    uint256 const offerIndex(getOfferIndex(account_, offerSequence));
-
-    auto sleOffer = view().peek(keylet::offer(offerIndex));
-
-    if (sleOffer)
+    if (auto sleOffer = view().peek(keylet::offer(account_, offerSequence)))
     {
         JLOG(j_.debug()) << "Trying to cancel offer #" << offerSequence;
         return offerDelete(view(), sleOffer, ctx_.app.journal("View"));
