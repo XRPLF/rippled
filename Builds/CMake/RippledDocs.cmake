@@ -8,8 +8,9 @@ if (NOT TARGET Doxygen::doxygen)
   return ()
 endif ()
 
-set (doxygen_output_directory "${CMAKE_BINARY_DIR}/docs/html")
-set (doxygen_index_file "${doxygen_output_directory}/index.html")
+set (doxygen_output_directory "${CMAKE_BINARY_DIR}/docs")
+set (doxygen_include_path "${CMAKE_SOURCE_DIR}/src")
+set (doxygen_index_file "${doxygen_output_directory}/html/index.html")
 set (doxyfile "${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile")
 
 file (GLOB_RECURSE doxygen_input
@@ -27,12 +28,14 @@ list (APPEND doxygen_input
 set (dependencies "${doxygen_input}" "${doxyfile}")
 
 function (verbose_find_path variable name)
-  find_path(path "${name}" ${ARGN})
-  if (NOT path)
+  # Someone set the variable "path" as a CACHE variable,
+  # which means we cannot use it as a local variable.
+  find_path (vfp_path "${name}" ${ARGN})
+  if (NOT vfp_path)
     message (WARNING "could not find ${name}")
   else ()
-    message (STATUS "found ${name}: ${path}/${name}")
-    set (variable "${path}" PARENT_SCOPE)
+    message (STATUS "found ${name}: ${vfp_path}/${name}")
+    set (${variable} "${vfp_path}" PARENT_SCOPE)
   endif ()
 endfunction ()
 
@@ -65,6 +68,7 @@ add_custom_command (
   OUTPUT "${doxygen_index_file}"
   COMMAND "${CMAKE_COMMAND}" -E env
     "DOXYGEN_OUTPUT_DIRECTORY=${doxygen_output_directory}"
+    "DOXYGEN_INCLUDE_PATH=${doxygen_include_path}"
     "DOXYGEN_TAGFILES=${doxygen_tagfiles}"
     "DOXYGEN_PLANTUML_JAR_PATH=${doxygen_plantuml_jar_path}"
     "DOXYGEN_DOT_PATH=${doxygen_dot_path}"

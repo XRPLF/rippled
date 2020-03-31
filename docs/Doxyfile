@@ -159,7 +159,7 @@ IGNORE_PREFIX          =
 # Configuration options related to the HTML output
 #---------------------------------------------------------------------------
 GENERATE_HTML          = YES
-HTML_OUTPUT            = .
+HTML_OUTPUT            = html
 HTML_FILE_EXTENSION    = .html
 HTML_HEADER            =
 HTML_FOOTER            =
@@ -286,7 +286,7 @@ ENABLE_PREPROCESSING   = YES
 MACRO_EXPANSION        = YES
 EXPAND_ONLY_PREDEF     = YES
 SEARCH_INCLUDES        = YES
-INCLUDE_PATH           = ./
+INCLUDE_PATH           = $(DOXYGEN_INCLUDE_PATH)
 INCLUDE_FILE_PATTERNS  =
 PREDEFINED             = DOXYGEN \
                          GENERATING_DOCS \
