@@ -15,6 +15,7 @@ set (doxyfile "${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile")
 file (GLOB_RECURSE doxygen_input
   docs/*.md
   src/ripple/*.h
+  src/ripple/*.cpp
   src/ripple/*.md
   src/test/*.h
   src/test/*.md
@@ -25,10 +26,18 @@ list (APPEND doxygen_input
   src/README.md)
 set (dependencies "${doxygen_input}" "${doxyfile}")
 
-find_path (doxygen_plantuml_jar_path plantuml.jar PATH_SUFFIXES share/plantuml)
-if (NOT doxygen_plantuml_jar_path)
-  set (doxygen_plantuml_jar_path)
-endif ()
+function (verbose_find_path variable name)
+  find_path(path "${name}" ${ARGN})
+  if (NOT path)
+    message (WARNING "could not find ${name}")
+  else ()
+    message (STATUS "found ${name}: ${path}/${name}")
+    set (variable "${path}" PARENT_SCOPE)
+  endif ()
+endfunction ()
+
+verbose_find_path (doxygen_plantuml_jar_path plantuml.jar PATH_SUFFIXES share/plantuml)
+verbose_find_path (doxygen_dot_path dot)
 
 # https://en.cppreference.com/w/Cppreference:Archives
 # https://stackoverflow.com/questions/60822559/how-to-move-a-file-download-from-configure-step-to-build-step
@@ -58,6 +67,7 @@ add_custom_command (
     "DOXYGEN_OUTPUT_DIRECTORY=${doxygen_output_directory}"
     "DOXYGEN_TAGFILES=${doxygen_tagfiles}"
     "DOXYGEN_PLANTUML_JAR_PATH=${doxygen_plantuml_jar_path}"
+    "DOXYGEN_DOT_PATH=${doxygen_dot_path}"
     "${DOXYGEN_EXECUTABLE}" "${doxyfile}"
   WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
   DEPENDS "${dependencies}" "${tagfile}")
