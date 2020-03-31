@@ -505,7 +505,7 @@ InboundLedger::done()
             }
             else
                 self->app_.getInboundLedgers().logFailure(
-                    self->mHash, self->getSeq());
+                    self->mHash, self->mSeq);
         });
 }
 

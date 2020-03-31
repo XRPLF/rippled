@@ -219,8 +219,9 @@ public:
         return mRecentFailures.find(h) != mRecentFailures.end();
     }
 
+    /** Called (indirectly) only by gotLedgerData(). */
     void
-    doLedgerData(LedgerHash hash) override
+    doLedgerData(LedgerHash hash)
     {
         if (auto ledger = find(hash))
             ledger->runData();
