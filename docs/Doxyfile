@@ -4,9 +4,9 @@
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = "rippled"
 PROJECT_NUMBER         =
-PROJECT_BRIEF          = C++ Library
+PROJECT_BRIEF          =
 PROJECT_LOGO           =
-PROJECT_LOGO           = images/LogoForDocumentation.png
+PROJECT_LOGO           =
 OUTPUT_DIRECTORY       = $(DOXYGEN_OUTPUT_DIRECTORY)
 CREATE_SUBDIRS         = NO
 ALLOW_UNICODE_NAMES    = NO
@@ -27,7 +27,6 @@ INHERIT_DOCS           = YES
 SEPARATE_MEMBER_PAGES  = NO
 TAB_SIZE               = 4
 ALIASES                =
-TCL_SUBST              =
 OPTIMIZE_OUTPUT_FOR_C  = NO
 OPTIMIZE_OUTPUT_JAVA   = NO
 OPTIMIZE_FOR_FORTRAN   = NO
@@ -219,7 +218,7 @@ EXTRA_SEARCH_MAPPINGS  =
 #---------------------------------------------------------------------------
 GENERATE_LATEX         = NO
 LATEX_OUTPUT           = latex
-LATEX_CMD_NAME         = latex
+LATEX_CMD_NAME         =
 MAKEINDEX_CMD_NAME     = makeindex
 COMPACT_LATEX          = NO
 PAPER_TYPE             = a4
@@ -260,7 +259,7 @@ MAN_LINKS              = NO
 # Configuration options related to the XML output
 #---------------------------------------------------------------------------
 GENERATE_XML           = NO
-XML_OUTPUT             = temp
+XML_OUTPUT             = xml
 XML_PROGRAMLISTING     = YES
 
 #---------------------------------------------------------------------------
@@ -304,13 +303,11 @@ GENERATE_TAGFILE       =
 ALLEXTERNALS           = NO
 EXTERNAL_GROUPS        = YES
 EXTERNAL_PAGES         = YES
-PERL_PATH              = /usr/bin/perl
 
 #---------------------------------------------------------------------------
 # Configuration options related to the dot tool
 #---------------------------------------------------------------------------
 CLASS_DIAGRAMS         = NO
-MSCGEN_PATH            =
 DIA_PATH               =
 HIDE_UNDOC_RELATIONS   = YES
 HAVE_DOT               = YES
