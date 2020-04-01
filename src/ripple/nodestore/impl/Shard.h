@@ -26,6 +26,7 @@
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <ripple/nodestore/Scheduler.h>
+#include <ripple/nodestore/impl/DeterministicShard.h>
 
 #include <boost/filesystem.hpp>
 #include <nudb/nudb.hpp>
@@ -128,11 +129,14 @@ public:
         verified backend data.
         @param referenceHash If present, this hash must match the hash
         of the last ledger in the shard.
+        @param writeDeterministicShard If true, shard will be rewritten
+        deterministically.
     */
     bool
     finalize(
         bool const writeSQLite,
-        boost::optional<uint256> const& referenceHash);
+        boost::optional<uint256> const& referenceHash,
+        const bool writeDeterministicShard = true);
 
     void
     stop()
@@ -169,6 +173,8 @@ private:
 
     Application& app_;
     mutable std::recursive_mutex mutex_;
+
+    DatabaseShard const& db_;
 
     // Shard Index
     std::uint32_t const index_;
@@ -252,10 +258,12 @@ private:
     setFileStats(std::lock_guard<std::recursive_mutex> const& lock);
 
     // Validate this ledger by walking its SHAMaps and verifying Merkle trees
+    // If dsh != NULL then save all walking SHAMaps to deterministic shard dsh
     bool
-    valLedger(
+    verifyLedger(
         std::shared_ptr<Ledger const> const& ledger,
-        std::shared_ptr<Ledger const> const& next) const;
+        std::shared_ptr<Ledger const> const& next,
+        std::shared_ptr<DeterministicShard> dsh = {}) const;
 
     // Fetches from backend and log errors based on status codes
     std::shared_ptr<NodeObject>
