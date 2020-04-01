@@ -58,6 +58,25 @@ public:
     virtual void
     open(bool createIfMissing = true) = 0;
 
+    /** Open the backend.
+        @param createIfMissing Create the database files if necessary.
+        @param appType Deterministic appType used to create a backend.
+        @param uid Deterministic uid used to create a backend.
+        @param salt Deterministic salt used to create a backend.
+        This allows the caller to catch exceptions.
+    */
+    virtual void
+    open(
+        bool createIfMissing,
+        boost::optional<uint64_t> appType,
+        boost::optional<uint64_t> uid,
+        boost::optional<uint64_t> salt)
+    {
+        Throw<std::runtime_error>(std::string(
+            "Deterministic appType/uid/salt not supported by backend " +
+            getName()));
+    }
+
     /** Close the backend.
         This allows the caller to catch exceptions.
     */
