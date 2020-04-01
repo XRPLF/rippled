@@ -1,4 +1,4 @@
-name: Build and publish documentation
+name: Build and publish Doxygen documentation
 on:
   push:
     branches:
