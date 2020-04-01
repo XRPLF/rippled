@@ -154,6 +154,7 @@ test.nodestore > ripple.basics
 test.nodestore > ripple.beast
 test.nodestore > ripple.core
 test.nodestore > ripple.nodestore
+test.nodestore > ripple.protocol
 test.nodestore > ripple.unity
 test.nodestore > test.jtx
 test.nodestore > test.toplevel

@@ -38,7 +38,11 @@ namespace NodeStore {
 class NuDBBackend : public Backend
 {
 public:
-    static constexpr std::size_t currentType = 1;
+    static constexpr std::uint64_t currentType = 1;
+    static constexpr std::uint64_t deterministicMask = 0xFFFFFFFF00000000ull;
+
+    /* "SHRD" in ASCII */
+    static constexpr std::uint64_t deterministicType = 0x5348524400000000ull;
 
     beast::Journal const j_;
     size_t const keyBytes_;
@@ -98,7 +102,8 @@ public:
     }
 
     void
-    open(bool createIfMissing) override
+    open(bool createIfMissing, uint64_t appType, uint64_t uid, uint64_t salt)
+        override
     {
         using namespace boost::filesystem;
         if (db_.is_open())
@@ -119,8 +124,9 @@ public:
                 dp,
                 kp,
                 lp,
-                currentType,
-                nudb::make_salt(),
+                appType,
+                uid,
+                salt,
                 keyBytes_,
                 nudb::block_size(kp),
                 0.50,
@@ -133,7 +139,17 @@ public:
         db_.open(dp, kp, lp, ec);
         if (ec)
             Throw<nudb::system_error>(ec);
-        if (db_.appnum() != currentType)
+
+        /** Old value currentType is accepted for appnum in traditional
+         *  databases, new value is used for deterministic shard databases.
+         *  New 64-bit value is constructed from fixed and random parts.
+         *  Fixed part is bounded by bitmask deterministicMask,
+         *  and the value of fixed part is deterministicType.
+         *  Random part depends on the contents of the shard and may be any.
+         *  The contents of appnum field should match either old or new rule.
+         */
+        if (db_.appnum() != currentType &&
+            (db_.appnum() & deterministicMask) != deterministicType)
             Throw<std::runtime_error>("nodestore: unknown appnum");
         db_.set_burst(burstSize_);
     }
@@ -142,6 +158,12 @@ public:
     isOpen() override
     {
         return db_.is_open();
+    }
+
+    void
+    open(bool createIfMissing) override
+    {
+        open(createIfMissing, currentType, nudb::make_uid(), nudb::make_salt());
     }
 
     void
