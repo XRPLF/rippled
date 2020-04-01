@@ -26,6 +26,7 @@
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <ripple/nodestore/Scheduler.h>
+#include <ripple/nodestore/impl/DeterministicShard.h>
 
 #include <boost/filesystem.hpp>
 #include <nudb/nudb.hpp>
@@ -176,7 +177,8 @@ public:
     [[nodiscard]] bool
     isLegacy() const;
 
-    /** Finalize shard by walking its ledgers and verifying each Merkle tree.
+    /** Finalize shard by walking its ledgers, verifying each Merkle tree and
+       creating a deterministic backend.
 
         @param writeSQLite If true, SQLite entries will be rewritten using
         verified backend data.
@@ -184,9 +186,7 @@ public:
         of the last ledger in the shard.
     */
     [[nodiscard]] bool
-    finalize(
-        bool const writeSQLite,
-        boost::optional<uint256> const& referenceHash);
+    finalize(bool writeSQLite, boost::optional<uint256> const& referenceHash);
 
     /** Enables removal of the shard directory on destruction.
      */
@@ -298,6 +298,9 @@ private:
     // Determines if the shard needs to stop processing for shutdown
     std::atomic<bool> stop_{false};
 
+    // Determines if the shard busy with replacing by deterministic one
+    std::atomic<bool> busy_{false};
+
     std::atomic<State> state_{State::acquire};
 
     // Determines if the shard directory should be removed in the destructor
@@ -324,11 +327,13 @@ private:
     void
     setFileStats(std::lock_guard<std::mutex> const&);
 
-    // Validate this ledger by walking its SHAMaps and verifying Merkle trees
+    // Verify this ledger by walking its SHAMaps and verifying its Merkle trees
+    // Every node object verified will be stored in the deterministic shard
     [[nodiscard]] bool
     verifyLedger(
         std::shared_ptr<Ledger const> const& ledger,
-        std::shared_ptr<Ledger const> const& next) const;
+        std::shared_ptr<Ledger const> const& next,
+        std::shared_ptr<DeterministicShard> const& dShard) const;
 
     // Fetches from backend and log errors based on status codes
     [[nodiscard]] std::shared_ptr<NodeObject>
