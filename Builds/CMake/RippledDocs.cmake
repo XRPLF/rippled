@@ -28,14 +28,12 @@ list (APPEND doxygen_input
 set (dependencies "${doxygen_input}" "${doxyfile}")
 
 function (verbose_find_path variable name)
-  # Someone set the variable "path" as a CACHE variable,
-  # which means we cannot use it as a local variable.
-  find_path (vfp_path "${name}" ${ARGN})
-  if (NOT vfp_path)
+  # find_path sets a CACHE variable, so don't try using a "local" variable.
+  find_path (${variable} "${name}" ${ARGN})
+  if (NOT ${variable})
     message (WARNING "could not find ${name}")
   else ()
-    message (STATUS "found ${name}: ${vfp_path}/${name}")
-    set (${variable} "${vfp_path}" PARENT_SCOPE)
+    message (STATUS "found ${name}: ${${variable}}/${name}")
   endif ()
 endfunction ()
 
