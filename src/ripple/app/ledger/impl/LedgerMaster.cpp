@@ -38,6 +38,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/TaggedCache.h>
 #include <ripple/basics/UptimeClock.h>
+#include <ripple/core/DatabaseCon.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Overlay.h>
@@ -47,6 +48,7 @@
 #include <ripple/resource/Fees.h>
 #include <algorithm>
 #include <cassert>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -139,6 +141,57 @@ static constexpr std::chrono::minutes MAX_LEDGER_AGE_ACQUIRE {1};
 
 // Don't acquire history if write load is too high
 static constexpr int MAX_WRITE_LOAD_ACQUIRE {8192};
+
+// Helper function for LedgerMaster::doAdvance()
+// Returns the minimum ledger sequence in SQL database, if any.
+static boost::optional<LedgerIndex>
+minSqlSeq(Application& app)
+{
+    boost::optional<LedgerIndex> seq;
+    auto db = app.getLedgerDB().checkoutDb();
+    *db << "SELECT MIN(LedgerSeq) FROM Ledgers", soci::into(seq);
+    return seq;
+}
+
+// Helper function for LedgerMaster::doAdvance()
+// Return true if candidateLedger should be fetched from the network.
+static bool
+shouldAcquire (
+    std::uint32_t const currentLedger,
+    std::uint32_t const ledgerHistory,
+    boost::optional<LedgerIndex> minSeq,
+    std::uint32_t const lastRotated,
+    std::uint32_t const candidateLedger,
+    beast::Journal j)
+{
+    bool ret = [&]()
+    {
+        // Fetch ledger if it may be the current ledger
+        if (candidateLedger >= currentLedger)
+            return true;
+
+        // Or if it is within our configured history range:
+        if (currentLedger - candidateLedger <= ledgerHistory)
+            return true;
+
+        // Or it's greater than or equal to both:
+        // - the minimum persisted ledger or the maximum possible
+        //   sequence value, if no persisted ledger, and
+        // - minimum ledger that will be persisted as of the next online
+        //   deletion interval, or 1 if online deletion is disabled.
+        return
+            candidateLedger >= std::max(
+                minSeq.value_or(std::numeric_limits<LedgerIndex>::max()),
+                lastRotated + 1);
+    }();
+
+    JLOG (j.trace())
+        << "Missing ledger "
+        << candidateLedger
+        << (ret ? " should" : " should NOT")
+        << " be acquired";
+    return ret;
+}
 
 LedgerMaster::LedgerMaster (Application& app, Stopwatch& stopwatch,
     Stoppable& parent,
@@ -1697,31 +1750,6 @@ LedgerMaster::releaseReplay ()
     return std::move (replayData);
 }
 
-bool
-LedgerMaster::shouldAcquire (
-    std::uint32_t const currentLedger,
-    std::uint32_t const ledgerHistory,
-    std::uint32_t const ledgerHistoryIndex,
-    std::uint32_t const candidateLedger) const
-{
-
-    // Fetch ledger if it might be the current ledger,
-    // is requested by the advisory delete setting, or
-    // is within our configured history range
-
-    bool ret (candidateLedger >= currentLedger ||
-        ((ledgerHistoryIndex > 0) &&
-            (candidateLedger > ledgerHistoryIndex)) ||
-        (currentLedger - candidateLedger) <= ledgerHistory);
-
-    JLOG (m_journal.trace())
-        << "Missing ledger "
-        << candidateLedger
-        << (ret ? " should" : " should NOT")
-        << " be acquired";
-    return ret;
-}
-
 void
 LedgerMaster::fetchForHistory(
     std::uint32_t missing,
@@ -1875,7 +1903,9 @@ void LedgerMaster::doAdvance (std::unique_lock<std::recursive_mutex>& sl)
                         "tryAdvance discovered missing " << *missing;
                     if ((mFillInProgress == 0 || *missing > mFillInProgress) &&
                         shouldAcquire(mValidLedgerSeq, ledger_history_,
-                            app_.getSHAMapStore().getCanDelete(), *missing))
+                            minSqlSeq(app_),
+                            app_.getSHAMapStore().getLastRotated(), *missing,
+                            m_journal))
                     {
                         JLOG(m_journal.trace()) <<
                             "advanceThread should acquire";

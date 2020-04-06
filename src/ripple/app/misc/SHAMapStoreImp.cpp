@@ -322,7 +322,7 @@ void
 SHAMapStoreImp::run()
 {
     beast::setCurrentThreadName ("SHAMapStore");
-    LedgerIndex lastRotated = state_db_.getState().lastRotated;
+    lastRotated_ = state_db_.getState().lastRotated;
     netOPs_ = &app_.getOPs();
     ledgerMaster_ = &app_.getLedgerMaster();
     fullBelowCache_ = &app_.family().fullbelow();
@@ -333,7 +333,7 @@ SHAMapStoreImp::run()
     if (advisoryDelete_)
         canDelete_ = state_db_.getCanDelete ();
 
-    while (1)
+    while (true)
     {
         healthy_ = true;
         std::shared_ptr<Ledger const> validatedLedger;
@@ -356,20 +356,20 @@ SHAMapStoreImp::run()
                 continue;
         }
 
-        LedgerIndex validatedSeq = validatedLedger->info().seq;
-        if (!lastRotated)
+        LedgerIndex const validatedSeq = validatedLedger->info().seq;
+        if (!lastRotated_)
         {
-            lastRotated = validatedSeq;
-            state_db_.setLastRotated (lastRotated);
+            lastRotated_ = validatedSeq;
+            state_db_.setLastRotated (lastRotated_);
         }
 
-        // will delete up to (not including) lastRotated)
-        if (validatedSeq >= lastRotated + deleteInterval_
-                && canDelete_ >= lastRotated - 1)
+        // will delete up to (not including) lastRotated_
+        if (validatedSeq >= lastRotated_ + deleteInterval_
+                && canDelete_ >= lastRotated_ - 1)
         {
             JLOG(journal_.warn()) << "rotating  validatedSeq " << validatedSeq
-                    << " lastRotated " << lastRotated << " deleteInterval "
-                    << deleteInterval_ << " canDelete_ " << canDelete_;
+                << " lastRotated_ " << lastRotated_ << " deleteInterval "
+                << deleteInterval_ << " canDelete_ " << canDelete_;
 
             switch (health())
             {
@@ -383,7 +383,7 @@ SHAMapStoreImp::run()
                     ;
             }
 
-            clearPrior (lastRotated);
+            clearPrior (lastRotated_);
             switch (health())
             {
                 case Health::stopping:
@@ -448,13 +448,13 @@ SHAMapStoreImp::run()
 
             std::string nextArchiveDir =
                 dbRotating_->getWritableBackend()->getName();
-            lastRotated = validatedSeq;
+            lastRotated_ = validatedSeq;
             std::shared_ptr<NodeStore::Backend> oldBackend;
             {
                 std::lock_guard lock (dbRotating_->peekMutex());
 
                 state_db_.setState (SavedState {newBackend->getName(),
-                        nextArchiveDir, lastRotated});
+                                                nextArchiveDir, lastRotated_});
                 clearCaches (validatedSeq);
                 oldBackend = dbRotating_->rotateBackends(
                     std::move(newBackend),
