@@ -1076,10 +1076,97 @@ OverlayImpl::processValidatorList(
 }
 
 bool
+OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
+{
+    if (req.target() != "/health")
+        return false;
+    boost::beast::http::response<json_body> msg;
+    msg.version(req.version());
+    msg.insert("Server", BuildInfo::getFullVersionString());
+    msg.insert("Content-Type", "application/json");
+    msg.insert("Connection", "close");
+
+    auto info = getServerInfo();
+
+    int last_validated_ledger_age = std::numeric_limits<int>::max();
+    if (info.isMember("validated_ledger"))
+        last_validated_ledger_age = info["validated_ledger"]["age"].asInt();
+    bool amendment_blocked = false;
+    if (info.isMember("amendment_blocked"))
+        amendment_blocked = true;
+    int number_peers = info["peers"].asInt();
+    std::string server_state = info["server_state"].asString();
+    auto load_factor = info["load_factor"].asDouble();
+
+    enum { healthy, warning, critical };
+    int health = healthy;
+    auto set_health = [&health](int state) {
+        if (health < state)
+            health = state;
+    };
+
+    if (last_validated_ledger_age >= 7)
+    {
+        msg.body()[jss::info]["validated_ledger"] = last_validated_ledger_age;
+        if (last_validated_ledger_age < 20)
+            set_health(warning);
+        else
+            set_health(critical);
+    }
+
+    if (amendment_blocked)
+    {
+        msg.body()[jss::info]["amendment_blocked"] = true;
+        set_health(critical);
+    }
+
+    if (number_peers <= 7)
+    {
+        msg.body()[jss::info]["peers"] = number_peers;
+        if (number_peers != 0)
+            set_health(warning);
+        else
+            set_health(critical);
+    }
+
+    if (!(server_state == "full" || server_state == "validating" ||
+          server_state == "proposing"))
+    {
+        msg.body()[jss::info]["server_state"] = server_state;
+        if (server_state == "syncing" || server_state == "tracking" ||
+            server_state == "connected")
+        {
+            set_health(warning);
+        }
+        else
+            set_health(critical);
+    }
+
+    if (load_factor > 100)
+    {
+        msg.body()[jss::info]["load_factor"] = load_factor;
+        if (load_factor < 1000)
+            set_health(warning);
+        else
+            set_health(critical);
+    }
+
+    if (health != critical)
+        msg.result(boost::beast::http::status::ok);
+    else
+        msg.result(boost::beast::http::status::service_unavailable);
+
+    msg.prepare_payload();
+    handoff.response = std::make_shared<SimpleWriter>(msg);
+    return true;
+}
+
+bool
 OverlayImpl::processRequest(http_request_type const& req, Handoff& handoff)
 {
     // Take advantage of || short-circuiting
-    return processCrawl(req, handoff) || processValidatorList(req, handoff);
+    return processCrawl(req, handoff) || processValidatorList(req, handoff) ||
+        processHealth(req, handoff);
 }
 
 Overlay::PeerSequence

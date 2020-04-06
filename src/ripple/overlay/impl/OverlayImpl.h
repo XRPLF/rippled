@@ -396,6 +396,14 @@ private:
     bool
     processValidatorList(http_request_type const& req, Handoff& handoff);
 
+    /** Handles health requests. Health returns information about the
+        health of the node.
+
+        @return true if the request was handled.
+    */
+    bool
+    processHealth(http_request_type const& req, Handoff& handoff);
+
     /** Handles non-peer protocol requests.
 
         @return true if the request was handled.
