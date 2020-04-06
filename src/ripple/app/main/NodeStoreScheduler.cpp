@@ -80,7 +80,8 @@ NodeStoreScheduler::onFetch(NodeStore::FetchReport const& report)
 {
     if (report.wentToDisk)
         m_jobQueue->addLoadEvents(
-            report.isAsync ? jtNS_ASYNC_READ : jtNS_SYNC_READ,
+            report.fetchType == NodeStore::FetchType::async ? jtNS_ASYNC_READ
+                                                            : jtNS_SYNC_READ,
             1,
             report.elapsed);
 }

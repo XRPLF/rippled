@@ -217,7 +217,7 @@ public:
         for (int i = 0; i < batch.size(); ++i)
         {
             std::shared_ptr<NodeObject> object =
-                db.fetch(batch[i]->getHash(), 0);
+                db.fetchNodeObject(batch[i]->getHash(), 0);
 
             if (object != nullptr)
                 pCopy->push_back(object);

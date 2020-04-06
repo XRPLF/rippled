@@ -51,6 +51,18 @@ class DatabaseShard;
 class Shard final
 {
 public:
+    enum class State {
+        acquire,     // Being acquired
+        complete,    // Backend contains all ledgers but is not yet final
+        finalizing,  // Being finalized
+        final        // Database verified, shard is immutable
+    };
+
+    static constexpr State acquire = State::acquire;
+    static constexpr State complete = State::complete;
+    static constexpr State finalizing = State::finalizing;
+    static constexpr State final = State::final;
+
     Shard(
         Application& app,
         DatabaseShard const& db,
@@ -66,70 +78,114 @@ public:
 
     ~Shard();
 
+    /** Initialize shard.
+
+        @param scheduler The scheduler to use for performing asynchronous tasks.
+        @param context The context to use for the backend.
+    */
+    [[nodiscard]] bool
+    init(Scheduler& scheduler, nudb::context& context);
+
+    /** Returns true if the database are open.
+     */
+    [[nodiscard]] bool
+    isOpen() const;
+
+    /** Try to close databases if not in use.
+
+        @return true if databases were closed.
+     */
     bool
-    open(Scheduler& scheduler, nudb::context& ctx);
+    tryClose();
 
+    /** Notify shard to prepare for shutdown.
+     */
     void
-    closeAll();
+    stop()
+    {
+        stop_ = true;
+    }
 
-    boost::optional<std::uint32_t>
+    [[nodiscard]] boost::optional<std::uint32_t>
     prepare();
 
-    bool
-    store(std::shared_ptr<Ledger const> const& ledger);
+    [[nodiscard]] bool
+    storeNodeObject(std::shared_ptr<NodeObject> const& nodeObject);
 
-    bool
-    containsLedger(std::uint32_t seq) const;
+    [[nodiscard]] std::shared_ptr<NodeObject>
+    fetchNodeObject(uint256 const& hash, FetchReport& fetchReport);
+
+    [[nodiscard]] bool
+    fetchNodeObjectFromCache(
+        uint256 const& hash,
+        std::shared_ptr<NodeObject>& nodeObject);
+
+    /** Store a ledger.
+
+        @param srcLedger The ledger to store.
+        @param next The ledger that immediately follows srcLedger, can be null.
+        @return StoreLedgerResult containing data about the store.
+    */
+    struct StoreLedgerResult
+    {
+        std::uint64_t count{0};  // Number of storage calls
+        std::uint64_t size{0};   // Number of bytes stored
+        bool error{false};
+    };
+
+    [[nodiscard]] StoreLedgerResult
+    storeLedger(
+        std::shared_ptr<Ledger const> const& srcLedger,
+        std::shared_ptr<Ledger const> const& next);
+
+    [[nodiscard]] bool
+    setLedgerStored(std::shared_ptr<Ledger const> const& ledger);
+
+    [[nodiscard]] bool
+    containsLedger(std::uint32_t ledgerSeq) const;
 
     void
     sweep();
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     index() const
     {
         return index_;
     }
 
-    boost::filesystem::path const&
+    [[nodiscard]] boost::filesystem::path const&
     getDir() const
     {
         return dir_;
     }
 
-    std::tuple<
-        std::shared_ptr<Backend>,
-        std::shared_ptr<PCache>,
-        std::shared_ptr<NCache>>
-    getBackendAll() const;
+    [[nodiscard]] int
+    getDesiredAsyncReadCount();
 
-    std::shared_ptr<Backend>
-    getBackend() const;
+    [[nodiscard]] float
+    getCacheHitRate();
 
-    /** Returns `true` if all shard ledgers have been stored in the backend
-     */
-    bool
-    isBackendComplete() const;
-
-    std::shared_ptr<PCache>
-    pCache() const;
-
-    std::shared_ptr<NCache>
-    nCache() const;
+    [[nodiscard]] std::chrono::steady_clock::time_point
+    getLastUse() const;
 
     /** Returns a pair where the first item describes the storage space
         utilized and the second item is the number of file descriptors required.
     */
-    std::pair<std::uint64_t, std::uint32_t>
-    fileInfo() const;
+    [[nodiscard]] std::pair<std::uint64_t, std::uint32_t>
+    getFileInfo() const;
 
-    /** Returns `true` if the shard is complete, validated, and immutable.
-     */
-    bool
-    isFinal() const;
+    [[nodiscard]] State
+    getState() const
+    {
+        return state_;
+    }
 
-    /** Returns `true` if the shard is older, without final key data
+    [[nodiscard]] std::int32_t
+    getWriteLoad();
+
+    /** Returns `true` if shard is older, without final key data
      */
-    bool
+    [[nodiscard]] bool
     isLegacy() const;
 
     /** Finalize shard by walking its ledgers and verifying each Merkle tree.
@@ -139,20 +195,13 @@ public:
         @param referenceHash If present, this hash must match the hash
         of the last ledger in the shard.
     */
-    bool
+    [[nodiscard]] bool
     finalize(
         bool const writeSQLite,
         boost::optional<uint256> const& referenceHash);
 
-    void
-    stop()
-    {
-        stop_ = true;
-    }
-
-    /** If called, the shard directory will be removed when
-        the shard is destroyed.
-    */
+    /** Enables removal of the shard directory on destruction.
+     */
     void
     removeOnDestroy()
     {
@@ -168,6 +217,41 @@ public:
     static uint256 const finalKey;
 
 private:
+    class Count final
+    {
+    public:
+        Count(Count const&) = delete;
+        Count&
+        operator=(Count&&) = delete;
+        Count&
+        operator=(Count const&) = delete;
+
+        Count(Count&& other) : counter_(other.counter_)
+        {
+            other.counter_ = nullptr;
+        }
+
+        Count(std::uint32_t* counter) : counter_(counter)
+        {
+            if (counter_)
+                ++(*counter_);
+        }
+
+        ~Count()
+        {
+            if (counter_)
+                --(*counter_);
+        }
+
+        operator bool() const
+        {
+            return counter_ != nullptr;
+        }
+
+    private:
+        std::uint32_t* counter_;
+    };
+
     struct AcquireInfo
     {
         // SQLite database to track information about what has been acquired
@@ -178,7 +262,8 @@ private:
     };
 
     Application& app_;
-    mutable std::recursive_mutex mutex_;
+    beast::Journal const j_;
+    mutable std::mutex mutex_;
 
     // Shard Index
     std::uint32_t const index_;
@@ -194,10 +279,10 @@ private:
     std::uint32_t const maxLedgers_;
 
     // Database positive cache
-    std::shared_ptr<PCache> pCache_;
+    std::unique_ptr<PCache> pCache_;
 
     // Database negative cache
-    std::shared_ptr<NCache> nCache_;
+    std::unique_ptr<NCache> nCache_;
 
     // Path to database files
     boost::filesystem::path const dir_;
@@ -209,7 +294,9 @@ private:
     std::uint32_t fdRequired_{0};
 
     // NuDB key/value store for node objects
-    std::shared_ptr<Backend> backend_;
+    std::unique_ptr<Backend> backend_;
+
+    std::uint32_t backendCount_{0};
 
     // Ledger SQLite database used for indexes
     std::unique_ptr<DatabaseCon> lgrSQLiteDB_;
@@ -221,50 +308,55 @@ private:
     // If the shard is final, this member will be null.
     std::unique_ptr<AcquireInfo> acquireInfo_;
 
-    beast::Journal const j_;
-
-    // True if backend has stored all ledgers pertaining to the shard
-    bool backendComplete_{false};
-
     // Older shard without an acquire database or final key
     // Eventually there will be no need for this and should be removed
     bool legacy_{false};
 
-    // True if the backend has a final key stored
-    bool final_{false};
-
     // Determines if the shard needs to stop processing for shutdown
     std::atomic<bool> stop_{false};
+
+    std::atomic<State> state_{State::acquire};
 
     // Determines if the shard directory should be removed in the destructor
     std::atomic<bool> removeOnDestroy_{false};
 
+    // The time of the last access of a shard that has a final state
+    std::chrono::steady_clock::time_point lastAccess_;
+
+    // Open shard databases
+    [[nodiscard]] bool
+    open(std::lock_guard<std::mutex> const& lock);
+
     // Open/Create SQLite databases
     // Lock over mutex_ required
-    bool
-    initSQLite(std::lock_guard<std::recursive_mutex> const& lock);
+    [[nodiscard]] bool
+    initSQLite(std::lock_guard<std::mutex> const&);
 
     // Write SQLite entries for this ledger
     // Lock over mutex_ required
-    bool
+    [[nodiscard]] bool
     storeSQLite(
         std::shared_ptr<Ledger const> const& ledger,
-        std::lock_guard<std::recursive_mutex> const& lock);
+        std::lock_guard<std::mutex> const&);
 
     // Set storage and file descriptor usage stats
     // Lock over mutex_ required
     void
-    setFileStats(std::lock_guard<std::recursive_mutex> const& lock);
+    setFileStats(std::lock_guard<std::mutex> const&);
 
     // Validate this ledger by walking its SHAMaps and verifying Merkle trees
-    bool
-    valLedger(
+    [[nodiscard]] bool
+    verifyLedger(
         std::shared_ptr<Ledger const> const& ledger,
         std::shared_ptr<Ledger const> const& next) const;
 
     // Fetches from backend and log errors based on status codes
-    std::shared_ptr<NodeObject>
-    valFetch(uint256 const& hash) const;
+    [[nodiscard]] std::shared_ptr<NodeObject>
+    verifyFetch(uint256 const& hash) const;
+
+    // Open databases if they are closed
+    [[nodiscard]] Shard::Count
+    makeBackendCount();
 };
 
 }  // namespace NodeStore

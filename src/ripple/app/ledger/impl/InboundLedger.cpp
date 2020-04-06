@@ -321,11 +321,11 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
         };
 
         // Try to fetch the ledger header from the DB
-        if (auto node = srcDB.fetch(mHash, mSeq))
+        if (auto nodeObject = srcDB.fetchNodeObject(mHash, mSeq))
         {
             JLOG(m_journal.trace()) << "Ledger header found in local store";
 
-            makeLedger(node->getData());
+            makeLedger(nodeObject->getData());
             if (mFailed)
                 return;
 
@@ -333,7 +333,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
             auto& dstDB{mLedger->stateMap().family().db()};
             if (std::addressof(dstDB) != std::addressof(srcDB))
             {
-                Blob blob{node->getData()};
+                Blob blob{nodeObject->getData()};
                 dstDB.store(
                     hotLEDGER, std::move(blob), mHash, mLedger->info().seq);
             }

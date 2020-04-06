@@ -1241,8 +1241,7 @@ private:
 
     bool
     nodeToShards();
-    bool
-    validateShards();
+
     void
     startGenesisLedger();
 
@@ -1484,11 +1483,8 @@ ApplicationImp::setup()
 
     if (!config_->standalone())
     {
-        // validation and node import require the sqlite db
+        // NodeStore import into the ShardStore requires the SQLite database
         if (config_->nodeToShard && !nodeToShards())
-            return false;
-
-        if (config_->validateShards && !validateShards())
             return false;
     }
 
@@ -2178,27 +2174,6 @@ ApplicationImp::nodeToShards()
         return false;
     }
     shardStore_->import(getNodeStore());
-    return true;
-}
-
-bool
-ApplicationImp::validateShards()
-{
-    assert(overlay_);
-    assert(!config_->standalone());
-
-    if (config_->section(ConfigSection::shardDatabase()).empty())
-    {
-        JLOG(m_journal.fatal())
-            << "The [shard_db] configuration setting must be set";
-        return false;
-    }
-    if (!shardStore_)
-    {
-        JLOG(m_journal.fatal()) << "Invalid [shard_db] configuration";
-        return false;
-    }
-    shardStore_->validate();
     return true;
 }
 

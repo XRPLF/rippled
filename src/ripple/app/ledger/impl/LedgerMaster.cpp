@@ -703,7 +703,7 @@ LedgerMaster::tryFill(Job& job, std::shared_ptr<Ledger const> ledger)
             if (it == ledgerHashes.end())
                 break;
 
-            if (!nodeStore.fetch(
+            if (!nodeStore.fetchNodeObject(
                     ledgerHashes.begin()->second.first,
                     ledgerHashes.begin()->first))
             {
@@ -1572,10 +1572,11 @@ LedgerMaster::getCloseTimeByHash(
     LedgerHash const& ledgerHash,
     std::uint32_t index)
 {
-    auto node = app_.getNodeStore().fetch(ledgerHash, index);
-    if (node && (node->getData().size() >= 120))
+    auto nodeObject = app_.getNodeStore().fetchNodeObject(ledgerHash, index);
+    if (nodeObject && (nodeObject->getData().size() >= 120))
     {
-        SerialIter it(node->getData().data(), node->getData().size());
+        SerialIter it(
+            nodeObject->getData().data(), nodeObject->getData().size());
         if (safe_cast<HashPrefix>(it.get32()) == HashPrefix::ledgerMaster)
         {
             it.skip(

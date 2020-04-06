@@ -57,13 +57,10 @@ DatabaseShardImp::DatabaseShardImp(
     , parent_(parent)
     , taskQueue_(std::make_unique<TaskQueue>(*this))
     , earliestShardIndex_(seqToShardIndex(earliestLedgerSeq()))
-    , avgShardFileSz_(ledgersPerShard_ * kilobytes(192))
+    , avgShardFileSz_(ledgersPerShard_ * kilobytes(192ull))
+    , openFinalLimit_(
+          app.config().getValueFor(SizedItem::openFinalLimit, boost::none))
 {
-}
-
-DatabaseShardImp::~DatabaseShardImp()
-{
-    onStop();
 }
 
 bool
@@ -87,32 +84,22 @@ DatabaseShardImp::init()
         {
             using namespace boost::filesystem;
 
-            // Consolidate the main storage path and all
-            // historical paths
+            // Consolidate the main storage path and all historical paths
             std::vector<path> paths{dir_};
             paths.insert(
                 paths.end(), historicalPaths_.begin(), historicalPaths_.end());
 
             for (auto const& path : paths)
             {
-                try
+                if (exists(path))
                 {
-                    if (exists(path))
+                    if (!is_directory(path))
                     {
-                        if (!is_directory(path))
-                        {
-                            JLOG(j_.error()) << path << " must be a directory";
-                            return false;
-                        }
-                    }
-                    else if (!create_directories(path))
-                    {
-                        JLOG(j_.error())
-                            << "failed to create path: " + path.string();
+                        JLOG(j_.error()) << path << " must be a directory";
                         return false;
                     }
                 }
-                catch (...)
+                else if (!create_directories(path))
                 {
                     JLOG(j_.error())
                         << "failed to create path: " + path.string();
@@ -122,8 +109,7 @@ DatabaseShardImp::init()
 
             if (!app_.config().standalone() && !historicalPaths_.empty())
             {
-                // Check historical paths for duplicated
-                // filesystems
+                // Check historical paths for duplicated file systems
                 if (!checkHistoricalPaths())
                     return false;
             }
@@ -132,17 +118,18 @@ DatabaseShardImp::init()
             ctx_->start();
 
             // Find shards
+            std::uint32_t openFinals{0};
             for (auto const& path : paths)
             {
-                for (auto const& d : directory_iterator(path))
+                for (auto const& it : directory_iterator(path))
                 {
-                    if (!is_directory(d))
+                    // Ignore files
+                    if (!is_directory(it))
                         continue;
 
-                    auto const shardDir = d.path();
-
-                    // Check shard directory name is numeric
-                    auto dirName = shardDir.stem().string();
+                    // Ignore nonnumerical directory names
+                    auto const shardDir{it.path()};
+                    auto dirName{shardDir.stem().string()};
                     if (!std::all_of(
                             dirName.begin(), dirName.end(), [](auto c) {
                                 return ::isdigit(static_cast<unsigned char>(c));
@@ -151,14 +138,15 @@ DatabaseShardImp::init()
                         continue;
                     }
 
+                    // Ignore values below the earliest shard index
                     auto const shardIndex{std::stoul(dirName)};
                     if (shardIndex < earliestShardIndex())
                     {
-                        JLOG(j_.error())
+                        JLOG(j_.debug())
                             << "shard " << shardIndex
-                            << " comes before earliest shard index "
+                            << " ignored, comes before earliest shard index "
                             << earliestShardIndex();
-                        return false;
+                        continue;
                     }
 
                     // Check if a previous import failed
@@ -171,9 +159,9 @@ DatabaseShardImp::init()
                         continue;
                     }
 
-                    auto shard{std::make_unique<Shard>(
+                    auto shard{std::make_shared<Shard>(
                         app_, *this, shardIndex, shardDir.parent_path(), j_)};
-                    if (!shard->open(scheduler_, *ctx_))
+                    if (!shard->init(scheduler_, *ctx_))
                     {
                         // Remove corrupted or legacy shard
                         shard->removeOnDestroy();
@@ -184,44 +172,46 @@ DatabaseShardImp::init()
                         continue;
                     }
 
-                    if (shard->isFinal())
+                    switch (shard->getState())
                     {
-                        shards_.emplace(
-                            shardIndex,
-                            ShardInfo(
-                                std::move(shard), ShardInfo::State::final));
-                    }
-                    else if (shard->isBackendComplete())
-                    {
-                        auto const result{shards_.emplace(
-                            shardIndex,
-                            ShardInfo(
-                                std::move(shard), ShardInfo::State::none))};
-                        finalizeShard(
-                            result.first->second, true, lock, boost::none);
-                    }
-                    else
-                    {
-                        if (acquireIndex_ != 0)
-                        {
-                            JLOG(j_.error())
-                                << "more than one shard being acquired";
-                            return false;
-                        }
+                        case Shard::final:
+                            if (++openFinals > openFinalLimit_)
+                                shard->tryClose();
+                            shards_.emplace(shardIndex, std::move(shard));
+                            break;
 
-                        shards_.emplace(
-                            shardIndex,
-                            ShardInfo(
-                                std::move(shard), ShardInfo::State::acquire));
-                        acquireIndex_ = shardIndex;
+                        case Shard::complete:
+                            finalizeShard(
+                                shards_.emplace(shardIndex, std::move(shard))
+                                    .first->second,
+                                true,
+                                boost::none);
+                            break;
+
+                        case Shard::acquire:
+                            if (acquireIndex_ != 0)
+                            {
+                                JLOG(j_.error())
+                                    << "more than one shard being acquired";
+                                return false;
+                            }
+
+                            shards_.emplace(shardIndex, std::move(shard));
+                            acquireIndex_ = shardIndex;
+                            break;
+
+                        default:
+                            JLOG(j_.error())
+                                << "shard " << shardIndex << " invalid state";
+                            return false;
                     }
                 }
             }
         }
         catch (std::exception const& e)
         {
-            JLOG(j_.error())
-                << "exception " << e.what() << " in function " << __func__;
+            JLOG(j_.fatal()) << "Exception caught in function " << __func__
+                             << ". Error: " << e.what();
             return false;
         }
 
@@ -245,8 +235,10 @@ DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
 
         if (acquireIndex_ != 0)
         {
-            if (auto it{shards_.find(acquireIndex_)}; it != shards_.end())
-                return it->second.shard->prepare();
+            if (auto const it{shards_.find(acquireIndex_)}; it != shards_.end())
+                return it->second->prepare();
+
+            // Should never get here
             assert(false);
             return boost::none;
         }
@@ -273,7 +265,7 @@ DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
     }();
 
     if (!pathDesignation)
-        return false;
+        return boost::none;
 
     auto const needsHistoricalPath =
         *pathDesignation == PathDesignation::historical;
@@ -288,18 +280,16 @@ DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
             j_);
     }();
 
-    if (!shard->open(scheduler_, *ctx_))
+    if (!shard->init(scheduler_, *ctx_))
         return boost::none;
 
-    auto const seq{shard->prepare()};
+    auto const ledgerSeq{shard->prepare()};
     {
         std::lock_guard lock(mutex_);
-        shards_.emplace(
-            *shardIndex,
-            ShardInfo(std::move(shard), ShardInfo::State::acquire));
+        shards_.emplace(*shardIndex, std::move(shard));
         acquireIndex_ = *shardIndex;
     }
-    return seq;
+    return ledgerSeq;
 }
 
 bool
@@ -309,11 +299,6 @@ DatabaseShardImp::prepareShard(std::uint32_t shardIndex)
         JLOG(j.error()) << "shard " << shardIndex << " " << msg;
         return false;
     };
-    std::lock_guard lock(mutex_);
-    assert(init_);
-
-    if (!canAdd_)
-        return fail("cannot be stored at this time");
 
     if (shardIndex < earliestShardIndex())
     {
@@ -322,43 +307,49 @@ DatabaseShardImp::prepareShard(std::uint32_t shardIndex)
             std::to_string(earliestShardIndex()));
     }
 
-    // If we are synced to the network, check if the shard index
-    // is greater or equal to the current shard.
-    auto seqCheck = [&](std::uint32_t seq) {
-        // seq will be greater than zero if valid
-        if (seq >= earliestLedgerSeq() && shardIndex >= seqToShardIndex(seq))
-            return fail("has an invalid index");
+    // If we are synced to the network, check if the shard index is
+    // greater or equal to the current or validated shard index.
+    auto seqCheck = [&](std::uint32_t ledgerSeq) {
+        if (ledgerSeq >= earliestLedgerSeq() &&
+            shardIndex >= seqToShardIndex(ledgerSeq))
+        {
+            return fail("invalid index");
+        }
         return true;
     };
     if (!seqCheck(app_.getLedgerMaster().getValidLedgerIndex() + 1) ||
         !seqCheck(app_.getLedgerMaster().getCurrentLedgerIndex()))
     {
-        return false;
+        return fail("invalid index");
     }
 
-    if (shards_.find(shardIndex) != shards_.end())
-    {
-        JLOG(j_.debug()) << "shard " << shardIndex
-                         << " is already stored or queued for import";
-        return false;
-    }
+    // Any shard earlier than the two most recent shards is a historical shard
+    auto const isHistoricalShard{shardIndex < shardBoundaryIndex()};
 
-    // Any shard earlier than the two most recent shards
-    // is a historical shard
-    bool const isHistoricalShard = shardIndex < shardBoundaryIndex(lock);
-    auto const numHistShards = numHistoricalShards(lock);
+    std::lock_guard lock(mutex_);
+    assert(init_);
+
+    if (!canAdd_)
+        return fail("cannot be stored at this time");
 
     // Check shard count and available storage space
-    if (isHistoricalShard && numHistShards >= maxHistoricalShards_)
+    if (isHistoricalShard && numHistoricalShards(lock) >= maxHistoricalShards_)
         return fail("maximum number of historical shards reached");
+
     if (!sufficientStorage(
             1,
             isHistoricalShard ? PathDesignation::historical
                               : PathDesignation::none,
             lock))
+    {
         return fail("insufficient storage space available");
+    }
 
-    shards_.emplace(shardIndex, ShardInfo(nullptr, ShardInfo::State::import));
+    if (shards_.find(shardIndex) != shards_.end())
+        return fail("already stored");
+    if (!preparedIndexes_.emplace(shardIndex).second)
+        return fail("already queued for import");
+
     return true;
 }
 
@@ -368,11 +359,7 @@ DatabaseShardImp::removePreShard(std::uint32_t shardIndex)
     std::lock_guard lock(mutex_);
     assert(init_);
 
-    if (auto const it{shards_.find(shardIndex)};
-        it != shards_.end() && it->second.state == ShardInfo::State::import)
-    {
-        shards_.erase(it);
-    }
+    preparedIndexes_.erase(shardIndex);
 }
 
 std::string
@@ -383,9 +370,8 @@ DatabaseShardImp::getPreShards()
         std::lock_guard lock(mutex_);
         assert(init_);
 
-        for (auto const& e : shards_)
-            if (e.second.state == ShardInfo::State::import)
-                rs.insert(e.first);
+        for (auto const& shardIndex : preparedIndexes_)
+            rs.insert(shardIndex);
     }
 
     if (rs.empty())
@@ -399,31 +385,59 @@ DatabaseShardImp::importShard(
     std::uint32_t shardIndex,
     boost::filesystem::path const& srcDir)
 {
+    auto fail = [&](std::string const& msg,
+                    std::lock_guard<std::mutex> const& lock) {
+        JLOG(j_.error()) << "shard " << shardIndex << " " << msg;
+
+        // Remove the failed import shard index so it can be retried
+        preparedIndexes_.erase(shardIndex);
+        return false;
+    };
+
     using namespace boost::filesystem;
     try
     {
         if (!is_directory(srcDir) || is_empty(srcDir))
         {
-            JLOG(j_.error()) << "invalid source directory " << srcDir.string();
-            return false;
+            return fail(
+                "invalid source directory " + srcDir.string(),
+                std::lock_guard(mutex_));
         }
     }
     catch (std::exception const& e)
     {
-        JLOG(j_.error()) << "exception " << e.what() << " in function "
-                         << __func__;
-        return false;
+        return fail(
+            std::string(". Exception caught in function ") + __func__ +
+                ". Error: " + e.what(),
+            std::lock_guard(mutex_));
     }
 
-    auto expectedHash = app_.getLedgerMaster().walkHashBySeq(
-        lastLedgerSeq(shardIndex), InboundLedger::Reason::GENERIC);
-
+    auto const expectedHash{app_.getLedgerMaster().walkHashBySeq(
+        lastLedgerSeq(shardIndex), InboundLedger::Reason::GENERIC)};
     if (!expectedHash)
+        return fail("expected hash not found", std::lock_guard(mutex_));
+
+    path dstDir;
     {
-        JLOG(j_.error()) << "shard " << shardIndex
-                         << " expected hash not found";
-        return false;
+        std::lock_guard lock(mutex_);
+        if (shards_.find(shardIndex) != shards_.end())
+            return fail("already exists", lock);
+
+        // Check shard was prepared for import
+        if (preparedIndexes_.find(shardIndex) == preparedIndexes_.end())
+            return fail("was not prepared for import", lock);
+
+        auto const pathDesignation{
+            prepareForNewShard(shardIndex, numHistoricalShards(lock), lock)};
+        if (!pathDesignation)
+            return fail("failed to import", lock);
+
+        if (*pathDesignation == PathDesignation::historical)
+            dstDir = chooseHistoricalPath(lock);
+        else
+            dstDir = dir_;
     }
+    dstDir /= std::to_string(shardIndex);
 
     auto renameDir = [&](path const& src, path const& dst) {
         try
@@ -432,41 +446,13 @@ DatabaseShardImp::importShard(
         }
         catch (std::exception const& e)
         {
-            JLOG(j_.error())
-                << "exception " << e.what() << " in function " << __func__;
-            return false;
+            return fail(
+                std::string(". Exception caught in function ") + __func__ +
+                    ". Error: " + e.what(),
+                std::lock_guard(mutex_));
         }
         return true;
     };
-
-    path dstDir;
-    {
-        std::lock_guard lock(mutex_);
-        assert(init_);
-
-        // Check shard is prepared
-        if (auto const it{shards_.find(shardIndex)}; it == shards_.end() ||
-            it->second.shard || it->second.state != ShardInfo::State::import)
-        {
-            JLOG(j_.error()) << "shard " << shardIndex << " failed to import";
-            return false;
-        }
-
-        auto const pathDesignation =
-            prepareForNewShard(shardIndex, numHistoricalShards(lock), lock);
-
-        if (!pathDesignation)
-        {
-            JLOG(j_.error()) << "shard " << shardIndex << " failed to import";
-            return false;
-        }
-
-        auto const needsHistoricalPath =
-            *pathDesignation == PathDesignation::historical;
-        dstDir = needsHistoricalPath ? chooseHistoricalPath(lock) : dir_;
-    }
-
-    dstDir /= std::to_string(shardIndex);
 
     // Rename source directory to the shard database directory
     if (!renameDir(srcDir, dstDir))
@@ -476,92 +462,84 @@ DatabaseShardImp::importShard(
     auto shard{std::make_unique<Shard>(
         app_, *this, shardIndex, dstDir.parent_path(), j_)};
 
-    if (!shard->open(scheduler_, *ctx_) || !shard->isBackendComplete())
+    if (!shard->init(scheduler_, *ctx_) || shard->getState() != Shard::complete)
     {
-        JLOG(j_.error()) << "shard " << shardIndex << " failed to import";
         shard.reset();
         renameDir(dstDir, srcDir);
-        return false;
+        return fail("failed to import", std::lock_guard(mutex_));
     }
 
-    {
+    auto const [it, inserted] = [&]() {
         std::lock_guard lock(mutex_);
-        auto const it{shards_.find(shardIndex)};
-        if (it == shards_.end() || it->second.shard ||
-            it->second.state != ShardInfo::State::import)
-        {
-            JLOG(j_.error()) << "shard " << shardIndex << " failed to import";
-            shard.reset();
-            renameDir(dstDir, srcDir);
-            return false;
-        }
+        preparedIndexes_.erase(shardIndex);
+        return shards_.emplace(shardIndex, std::move(shard));
+    }();
 
-        it->second.shard = std::move(shard);
-        finalizeShard(it->second, true, lock, expectedHash);
+    if (!inserted)
+    {
+        shard.reset();
+        renameDir(dstDir, srcDir);
+        return fail("failed to import", std::lock_guard(mutex_));
     }
 
+    finalizeShard(it->second, true, expectedHash);
     return true;
 }
 
 std::shared_ptr<Ledger>
-DatabaseShardImp::fetchLedger(uint256 const& hash, std::uint32_t seq)
+DatabaseShardImp::fetchLedger(uint256 const& hash, std::uint32_t ledgerSeq)
 {
-    auto const shardIndex{seqToShardIndex(seq)};
+    auto const shardIndex{seqToShardIndex(ledgerSeq)};
     {
         std::shared_ptr<Shard> shard;
-        ShardInfo::State state;
         {
             std::lock_guard lock(mutex_);
             assert(init_);
 
-            if (auto const it{shards_.find(shardIndex)}; it != shards_.end())
-            {
-                shard = it->second.shard;
-                state = it->second.state;
-            }
-            else
-                return {};
+            auto const it{shards_.find(shardIndex)};
+            if (it == shards_.end())
+                return nullptr;
+            shard = it->second;
         }
 
-        // Check if the ledger is stored in a final shard
-        // or in the shard being acquired
-        switch (state)
+        // Ledger must be stored in a final or acquiring shard
+        switch (shard->getState())
         {
-            case ShardInfo::State::final:
+            case Shard::final:
                 break;
-            case ShardInfo::State::acquire:
-                if (shard->containsLedger(seq))
+            case Shard::acquire:
+                if (shard->containsLedger(ledgerSeq))
                     break;
                 [[fallthrough]];
             default:
-                return {};
+                return nullptr;
         }
     }
 
-    auto nObj{fetch(hash, seq)};
-    if (!nObj)
-        return {};
+    auto const nodeObject{Database::fetchNodeObject(hash, ledgerSeq)};
+    if (!nodeObject)
+        return nullptr;
 
-    auto fail = [this, seq](std::string const& msg) -> std::shared_ptr<Ledger> {
-        JLOG(j_.error()) << "shard " << seqToShardIndex(seq) << " " << msg;
-        return {};
+    auto fail = [&](std::string const& msg) -> std::shared_ptr<Ledger> {
+        JLOG(j_.error()) << "shard " << shardIndex << " " << msg;
+        return nullptr;
     };
 
     auto ledger{std::make_shared<Ledger>(
-        deserializePrefixedHeader(makeSlice(nObj->getData())),
+        deserializePrefixedHeader(makeSlice(nodeObject->getData())),
         app_.config(),
         *app_.getShardFamily())};
 
-    if (ledger->info().seq != seq)
+    if (ledger->info().seq != ledgerSeq)
     {
         return fail(
-            "encountered invalid ledger sequence " + std::to_string(seq));
+            "encountered invalid ledger sequence " + std::to_string(ledgerSeq));
     }
     if (ledger->info().hash != hash)
     {
         return fail(
             "encountered invalid ledger hash " + to_string(hash) +
-            " on sequence " + std::to_string(seq));
+            " on sequence " + std::to_string(ledgerSeq));
     }
 
     ledger->setFull();
@@ -570,7 +548,7 @@ DatabaseShardImp::fetchLedger(uint256 const& hash, std::uint32_t seq)
     {
         return fail(
             "is missing root STATE node on hash " + to_string(hash) +
-            " on sequence " + std::to_string(seq));
+            " on sequence " + std::to_string(ledgerSeq));
     }
 
     if (ledger->info().txHash.isNonZero())
@@ -580,7 +558,7 @@ DatabaseShardImp::fetchLedger(uint256 const& hash, std::uint32_t seq)
         {
             return fail(
                 "is missing root TXN node on hash " + to_string(hash) +
-                " on sequence " + std::to_string(seq));
+                " on sequence " + std::to_string(ledgerSeq));
         }
     }
     return ledger;
@@ -589,33 +567,34 @@ DatabaseShardImp::fetchLedger(uint256 const& hash, std::uint32_t seq)
 void
 DatabaseShardImp::setStored(std::shared_ptr<Ledger const> const& ledger)
 {
+    auto const ledgerSeq{ledger->info().seq};
     if (ledger->info().hash.isZero())
     {
         JLOG(j_.error()) << "zero ledger hash for ledger sequence "
-                         << ledger->info().seq;
+                         << ledgerSeq;
         return;
     }
     if (ledger->info().accountHash.isZero())
     {
         JLOG(j_.error()) << "zero account hash for ledger sequence "
-                         << ledger->info().seq;
+                         << ledgerSeq;
         return;
     }
     if (ledger->stateMap().getHash().isNonZero() &&
         !ledger->stateMap().isValid())
     {
         JLOG(j_.error()) << "invalid state map for ledger sequence "
-                         << ledger->info().seq;
+                         << ledgerSeq;
         return;
     }
     if (ledger->info().txHash.isNonZero() && !ledger->txMap().isValid())
     {
         JLOG(j_.error()) << "invalid transaction map for ledger sequence "
-                         << ledger->info().seq;
+                         << ledgerSeq;
         return;
     }
 
-    auto const shardIndex{seqToShardIndex(ledger->info().seq)};
+    auto const shardIndex{seqToShardIndex(ledgerSeq)};
     std::shared_ptr<Shard> shard;
     {
         std::lock_guard lock(mutex_);
@@ -628,17 +607,23 @@ DatabaseShardImp::setStored(std::shared_ptr<Ledger const> const& ledger)
             return;
         }
 
-        if (auto const it{shards_.find(shardIndex)}; it != shards_.end())
-            shard = it->second.shard;
-        else
+        auto const it{shards_.find(shardIndex)};
+        if (it == shards_.end())
         {
             JLOG(j_.error())
                 << "shard " << shardIndex << " is not being acquired";
             return;
         }
+        shard = it->second;
     }
 
-    storeLedgerInShard(shard, ledger);
+    if (shard->containsLedger(ledgerSeq))
+    {
+        JLOG(j_.trace()) << "shard " << shardIndex << " ledger already stored";
+        return;
+    }
+
+    setStoredInShard(shard, ledger);
 }
 
 std::string
@@ -651,50 +636,50 @@ DatabaseShardImp::getCompleteShards()
 }
 
 void
-DatabaseShardImp::validate()
+DatabaseShardImp::onStop()
+{
+    // Stop read threads in base before data members are destroyed
+    stopReadThreads();
+
+    std::lock_guard lock(mutex_);
+
+    // Notify shards to stop
+    for (auto const& e : shards_)
+        e.second->stop();
+}
+
+void
+DatabaseShardImp::onChildrenStopped()
 {
     std::vector<std::weak_ptr<Shard>> shards;
     {
         std::lock_guard lock(mutex_);
-        assert(init_);
 
-        // Only shards with a state of final should be validated
-        for (auto& e : shards_)
-            if (e.second.state == ShardInfo::State::final)
-                shards.push_back(e.second.shard);
-
-        if (shards.empty())
-            return;
-
-        JLOG(j_.debug()) << "Validating shards " << status_;
+        shards.reserve(shards_.size());
+        for (auto const& e : shards_)
+            shards.push_back(e.second);
+        shards_.clear();
     }
 
+    // All shards should be expired at this point
     for (auto const& e : shards)
     {
-        if (auto shard{e.lock()}; shard)
-            shard->finalize(true, boost::none);
+        if (!e.expired())
+        {
+            std::string shardIndex;
+            if (auto const shard{e.lock()}; shard)
+                shardIndex = std::to_string(shard->index());
+
+            JLOG(j_.warn()) << " shard " << shardIndex << " unexpired";
+        }
     }
 
-    app_.getShardFamily()->reset();
-}
-
-void
-DatabaseShardImp::onStop()
-{
-    // Stop read threads in base before data members are destroyed
-    stopThreads();
-
-    std::lock_guard lock(mutex_);
-    if (shards_.empty())
-        return;
-
-    // Notify and destroy shards
-    for (auto& e : shards_)
+    if (areChildrenStopped())
+        stopped();
+    else
     {
-        if (e.second.shard)
-            e.second.shard->stop();
+        JLOG(j_.warn()) << " Children failed to stop";
     }
-    shards_.clear();
 }
 
 void
@@ -718,41 +703,41 @@ DatabaseShardImp::import(Database& source)
             auto loadLedger = [&](bool ascendSort =
                                       true) -> boost::optional<std::uint32_t> {
                 std::shared_ptr<Ledger> ledger;
-                std::uint32_t seq;
-                std::tie(ledger, seq, std::ignore) = loadLedgerHelper(
+                std::uint32_t ledgerSeq;
+                std::tie(ledger, ledgerSeq, std::ignore) = loadLedgerHelper(
                     "WHERE LedgerSeq >= " +
                         std::to_string(earliestLedgerSeq()) +
                         " order by LedgerSeq " + (ascendSort ? "asc" : "desc") +
                         " limit 1",
                     app_,
                     false);
-                if (!ledger || seq == 0)
+                if (!ledger || ledgerSeq == 0)
                 {
                     JLOG(j_.error()) << "no suitable ledgers were found in"
                                         " the SQLite database to import";
                     return boost::none;
                 }
-                return seq;
+                return ledgerSeq;
             };
 
             // Find earliest ledger sequence stored
-            auto seq{loadLedger()};
-            if (!seq)
+            auto ledgerSeq{loadLedger()};
+            if (!ledgerSeq)
                 return;
-            earliestIndex = seqToShardIndex(*seq);
+            earliestIndex = seqToShardIndex(*ledgerSeq);
 
             // Consider only complete shards
-            if (seq != firstLedgerSeq(earliestIndex))
+            if (ledgerSeq != firstLedgerSeq(earliestIndex))
                 ++earliestIndex;
 
             // Find last ledger sequence stored
-            seq = loadLedger(false);
-            if (!seq)
+            ledgerSeq = loadLedger(false);
+            if (!ledgerSeq)
                 return;
-            latestIndex = seqToShardIndex(*seq);
+            latestIndex = seqToShardIndex(*ledgerSeq);
 
             // Consider only complete shards
-            if (seq != lastLedgerSeq(latestIndex))
+            if (ledgerSeq != lastLedgerSeq(latestIndex))
                 --latestIndex;
 
             if (latestIndex < earliestIndex)
@@ -779,11 +764,26 @@ DatabaseShardImp::import(Database& source)
             auto const needsHistoricalPath =
                 *pathDesignation == PathDesignation::historical;
 
-            // Skip if already stored
-            if (shardIndex == acquireIndex_ ||
-                shards_.find(shardIndex) != shards_.end())
+            // Skip if being acquired
+            if (shardIndex == acquireIndex_)
             {
-                JLOG(j_.debug()) << "shard " << shardIndex << " already exists";
+                JLOG(j_.debug())
+                    << "shard " << shardIndex << " already being acquired";
+                continue;
+            }
+
+            // Skip if being imported
+            if (preparedIndexes_.find(shardIndex) != preparedIndexes_.end())
+            {
+                JLOG(j_.debug())
+                    << "shard " << shardIndex << " already being imported";
+                continue;
+            }
+
+            // Skip if stored
+            if (shards_.find(shardIndex) != shards_.end())
+            {
+                JLOG(j_.debug()) << "shard " << shardIndex << " already stored";
                 continue;
             }
 
@@ -802,7 +802,7 @@ DatabaseShardImp::import(Database& source)
                 bool valid{true};
                 for (std::uint32_t n = firstSeq; n <= lastSeq; n += 256)
                 {
-                    if (!source.fetch(ledgerHashes[n].first, n))
+                    if (!source.fetchNodeObject(ledgerHashes[n].first, n))
                     {
                         JLOG(j_.warn()) << "SQLite ledger sequence " << n
                                         << " mismatches node store";
@@ -818,10 +818,9 @@ DatabaseShardImp::import(Database& source)
                 needsHistoricalPath ? chooseHistoricalPath(lock) : dir_;
 
             // Create the new shard
-            auto shard =
-                std::make_unique<Shard>(app_, *this, shardIndex, path, j_);
-
-            if (!shard->open(scheduler_, *ctx_))
+            auto shard{
+                std::make_unique<Shard>(app_, *this, shardIndex, path, j_)};
+            if (!shard->init(scheduler_, *ctx_))
                 continue;
 
             // Create a marker file to signify an import in progress
@@ -843,33 +842,29 @@ DatabaseShardImp::import(Database& source)
             std::shared_ptr<Ledger> recentStored;
             boost::optional<uint256> lastLedgerHash;
 
-            while (auto seq = shard->prepare())
+            while (auto const ledgerSeq = shard->prepare())
             {
-                auto ledger{loadByIndex(*seq, app_, false)};
-                if (!ledger || ledger->info().seq != seq)
+                auto ledger{loadByIndex(*ledgerSeq, app_, false)};
+                if (!ledger || ledger->info().seq != ledgerSeq)
                     break;
 
-                if (!Database::storeLedger(
-                        *ledger,
-                        shard->getBackend(),
-                        nullptr,
-                        nullptr,
-                        recentStored))
-                {
-                    break;
-                }
-
-                if (!shard->store(ledger))
+                auto const result{shard->storeLedger(ledger, recentStored)};
+                storeStats(result.count, result.size);
+                if (result.error)
                     break;
 
-                if (!lastLedgerHash && seq == lastLedgerSeq(shardIndex))
+                if (!shard->setLedgerStored(ledger))
+                    break;
+
+                if (!lastLedgerHash && ledgerSeq == lastLedgerSeq(shardIndex))
                     lastLedgerHash = ledger->info().hash;
 
-                recentStored = ledger;
+                recentStored = std::move(ledger);
             }
 
             using namespace boost::filesystem;
-            if (lastLedgerHash && shard->isBackendComplete())
+            bool success{false};
+            if (lastLedgerHash && shard->getState() == Shard::complete)
             {
                 // Store shard final key
                 Serializer s;
@@ -877,37 +872,36 @@ DatabaseShardImp::import(Database& source)
                 s.add32(firstLedgerSeq(shardIndex));
                 s.add32(lastLedgerSeq(shardIndex));
                 s.addBitString(*lastLedgerHash);
-                auto nObj{NodeObject::createObject(
+                auto const nodeObject{NodeObject::createObject(
                     hotUNKNOWN, std::move(s.modData()), Shard::finalKey)};
 
-                try
+                if (shard->storeNodeObject(nodeObject))
                 {
-                    shard->getBackend()->store(nObj);
+                    try
+                    {
+                        // The import process is complete and the
+                        // marker file is no longer required
+                        remove_all(markerFile);
 
-                    // The import process is complete and the
-                    // marker file is no longer required
-                    remove_all(markerFile);
-
-                    JLOG(j_.debug()) << "shard " << shardIndex
-                                     << " was successfully imported";
-
-                    auto const result{shards_.emplace(
-                        shardIndex,
-                        ShardInfo(std::move(shard), ShardInfo::State::none))};
-                    finalizeShard(
-                        result.first->second, true, lock, boost::none);
-
-                    if (shardIndex < shardBoundaryIndex(lock))
-                        ++numHistShards;
-                }
-                catch (std::exception const& e)
-                {
-                    JLOG(j_.error()) << "exception " << e.what()
-                                     << " in function " << __func__;
-                    shard->removeOnDestroy();
+                        JLOG(j_.debug()) << "shard " << shardIndex
+                                         << " was successfully imported";
+                        finalizeShard(
+                            shards_.emplace(shardIndex, std::move(shard))
+                                .first->second,
+                            true,
+                            boost::none);
+                        success = true;
+                    }
+                    catch (std::exception const& e)
+                    {
+                        JLOG(j_.fatal()) << "shard index " << shardIndex
+                                         << ". Exception caught in function "
+                                         << __func__ << ". Error: " << e.what();
+                    }
                 }
             }
-            else
+
+            if (!success)
             {
                 JLOG(j_.error())
                     << "shard " << shardIndex << " failed to import";
@@ -929,13 +923,13 @@ DatabaseShardImp::getWriteLoad() const
         std::lock_guard lock(mutex_);
         assert(init_);
 
-        if (auto const it{shards_.find(acquireIndex_)}; it != shards_.end())
-            shard = it->second.shard;
-        else
+        auto const it{shards_.find(acquireIndex_)};
+        if (it == shards_.end())
             return 0;
+        shard = it->second;
     }
 
-    return shard->getBackend()->getWriteLoad();
+    return shard->getWriteLoad();
 }
 
 void
@@ -943,14 +937,12 @@ DatabaseShardImp::store(
     NodeObjectType type,
     Blob&& data,
     uint256 const& hash,
-    std::uint32_t seq)
+    std::uint32_t ledgerSeq)
 {
-    auto const shardIndex{seqToShardIndex(seq)};
+    auto const shardIndex{seqToShardIndex(ledgerSeq)};
     std::shared_ptr<Shard> shard;
     {
         std::lock_guard lock(mutex_);
-        assert(init_);
-
         if (shardIndex != acquireIndex_)
         {
             JLOG(j_.trace())
@@ -958,59 +950,52 @@ DatabaseShardImp::store(
             return;
         }
 
-        if (auto const it{shards_.find(shardIndex)}; it != shards_.end())
-            shard = it->second.shard;
-        else
+        auto const it{shards_.find(shardIndex)};
+        if (it == shards_.end())
         {
             JLOG(j_.error())
                 << "shard " << shardIndex << " is not being acquired";
             return;
         }
+        shard = it->second;
     }
 
-    auto [backend, pCache, nCache] = shard->getBackendAll();
-    auto nObj{NodeObject::createObject(type, std::move(data), hash)};
-
-    pCache->canonicalize_replace_cache(hash, nObj);
-    backend->store(nObj);
-    nCache->erase(hash);
-
-    storeStats(nObj->getData().size());
-}
-
-std::shared_ptr<NodeObject>
-DatabaseShardImp::fetch(uint256 const& hash, std::uint32_t seq)
-{
-    auto cache{getCache(seq)};
-    if (cache.first)
-        return doFetch(hash, seq, *cache.first, *cache.second, false);
-    return {};
+    auto const nodeObject{
+        NodeObject::createObject(type, std::move(data), hash)};
+    if (shard->storeNodeObject(nodeObject))
+        storeStats(1, nodeObject->getData().size());
 }
 
 bool
 DatabaseShardImp::asyncFetch(
     uint256 const& hash,
-    std::uint32_t seq,
-    std::shared_ptr<NodeObject>& object)
+    std::uint32_t ledgerSeq,
+    std::shared_ptr<NodeObject>& nodeObject)
 {
-    auto cache{getCache(seq)};
-    if (cache.first)
+    std::shared_ptr<Shard> shard;
     {
-        // See if the object is in cache
-        object = cache.first->fetch(hash);
-        if (object || cache.second->touch_if_exists(hash))
-            return true;
-        // Otherwise post a read
-        Database::asyncFetch(hash, seq, cache.first, cache.second);
+        std::lock_guard lock(mutex_);
+        assert(init_);
+
+        auto const it{shards_.find(acquireIndex_)};
+        if (it == shards_.end())
+            return false;
+        shard = it->second;
     }
+
+    if (shard->fetchNodeObjectFromCache(hash, nodeObject))
+        return true;
+
+    // Otherwise post a read
+    Database::asyncFetch(hash, ledgerSeq);
     return false;
 }
 
 bool
 DatabaseShardImp::storeLedger(std::shared_ptr<Ledger const> const& srcLedger)
 {
-    auto const seq{srcLedger->info().seq};
-    auto const shardIndex{seqToShardIndex(seq)};
+    auto const ledgerSeq{srcLedger->info().seq};
+    auto const shardIndex{seqToShardIndex(ledgerSeq)};
     std::shared_ptr<Shard> shard;
     {
         std::lock_guard lock(mutex_);
@@ -1023,54 +1008,40 @@ DatabaseShardImp::storeLedger(std::shared_ptr<Ledger const> const& srcLedger)
             return false;
         }
 
-        if (auto const it{shards_.find(shardIndex)}; it != shards_.end())
-            shard = it->second.shard;
-        else
+        auto const it{shards_.find(shardIndex)};
+        if (it == shards_.end())
         {
             JLOG(j_.error())
                 << "shard " << shardIndex << " is not being acquired";
             return false;
         }
+        shard = it->second;
     }
 
-    if (shard->containsLedger(seq))
-    {
-        JLOG(j_.trace()) << "shard " << shardIndex << " ledger already stored";
+    auto const result{shard->storeLedger(srcLedger, nullptr)};
+    storeStats(result.count, result.size);
+    if (result.error || result.count == 0 || result.size == 0)
         return false;
-    }
 
-    {
-        auto [backend, pCache, nCache] = shard->getBackendAll();
-        if (!Database::storeLedger(
-                *srcLedger, backend, pCache, nCache, nullptr))
-        {
-            return false;
-        }
-    }
-
-    return storeLedgerInShard(shard, srcLedger);
+    return setStoredInShard(shard, srcLedger);
 }
 
 int
-DatabaseShardImp::getDesiredAsyncReadCount(std::uint32_t seq)
+DatabaseShardImp::getDesiredAsyncReadCount(std::uint32_t ledgerSeq)
 {
-    auto const shardIndex{seqToShardIndex(seq)};
+    auto const shardIndex{seqToShardIndex(ledgerSeq)};
     std::shared_ptr<Shard> shard;
     {
         std::lock_guard lock(mutex_);
         assert(init_);
 
-        if (auto const it{shards_.find(shardIndex)}; it != shards_.end() &&
-            (it->second.state == ShardInfo::State::final ||
-             it->second.state == ShardInfo::State::acquire))
-        {
-            shard = it->second.shard;
-        }
-        else
+        auto const it{shards_.find(shardIndex)};
+        if (it == shards_.end())
             return 0;
+        shard = it->second;
     }
 
-    return shard->pCache()->getTargetSize() / asyncDivider;
+    return shard->getDesiredAsyncReadCount();
 }
 
 float
@@ -1081,13 +1052,13 @@ DatabaseShardImp::getCacheHitRate()
         std::lock_guard lock(mutex_);
         assert(init_);
 
-        if (auto const it{shards_.find(acquireIndex_)}; it != shards_.end())
-            shard = it->second.shard;
-        else
+        auto const it{shards_.find(acquireIndex_)};
+        if (it == shards_.end())
             return 0;
+        shard = it->second;
     }
 
-    return shard->pCache()->getHitRate();
+    return shard->getCacheHitRate();
 }
 
 void
@@ -1098,23 +1069,54 @@ DatabaseShardImp::sweep()
         std::lock_guard lock(mutex_);
         assert(init_);
 
+        shards.reserve(shards_.size());
         for (auto const& e : shards_)
-            if (e.second.state == ShardInfo::State::final ||
-                e.second.state == ShardInfo::State::acquire)
-            {
-                shards.push_back(e.second.shard);
-            }
+            shards.push_back(e.second);
     }
+
+    std::vector<std::shared_ptr<Shard>> openFinals;
+    openFinals.reserve(openFinalLimit_);
 
     for (auto const& e : shards)
     {
-        if (auto shard{e.lock()}; shard)
+        if (auto const shard{e.lock()}; shard && shard->isOpen())
+        {
             shard->sweep();
+
+            if (shard->getState() == Shard::final)
+                openFinals.emplace_back(std::move(shard));
+        }
+    }
+
+    if (openFinals.size() > openFinalLimit_)
+    {
+        JLOG(j_.trace()) << "Open shards exceed configured limit of "
+                         << openFinalLimit_ << " by "
+                         << (openFinals.size() - openFinalLimit_);
+
+        // Try to close enough shards to be within the limit.
+        // Sort ascending on last use so the oldest are removed first.
+        std::sort(
+            openFinals.begin(),
+            openFinals.end(),
+            [&](std::shared_ptr<Shard> const& lhsShard,
+                std::shared_ptr<Shard> const& rhsShard) {
+                return lhsShard->getLastUse() < rhsShard->getLastUse();
+            });
+
+        for (auto it{openFinals.cbegin()};
+             it != openFinals.cend() && openFinals.size() > openFinalLimit_;)
+        {
+            if ((*it)->tryClose())
+                it = openFinals.erase(it);
+            else
+                ++it;
+        }
     }
 }
 
 bool
-DatabaseShardImp::initConfig(std::lock_guard<std::mutex>&)
+DatabaseShardImp::initConfig(std::lock_guard<std::mutex> const&)
 {
     auto fail = [j = j_](std::string const& msg) {
         JLOG(j.error()) << "[" << ConfigSection::shardDatabase() << "] " << msg;
@@ -1202,30 +1204,28 @@ DatabaseShardImp::initConfig(std::lock_guard<std::mutex>&)
 }
 
 std::shared_ptr<NodeObject>
-DatabaseShardImp::fetchFrom(uint256 const& hash, std::uint32_t seq)
+DatabaseShardImp::fetchNodeObject(
+    uint256 const& hash,
+    std::uint32_t ledgerSeq,
+    FetchReport& fetchReport)
 {
-    auto const shardIndex{seqToShardIndex(seq)};
+    auto const shardIndex{seqToShardIndex(ledgerSeq)};
     std::shared_ptr<Shard> shard;
     {
         std::lock_guard lock(mutex_);
-        assert(init_);
-
-        if (auto const it{shards_.find(shardIndex)};
-            it != shards_.end() && it->second.shard)
-        {
-            shard = it->second.shard;
-        }
-        else
-            return {};
+        auto const it{shards_.find(shardIndex)};
+        if (it == shards_.end())
+            return nullptr;
+        shard = it->second;
     }
 
-    return fetchInternal(hash, shard->getBackend());
+    return shard->fetchNodeObject(hash, fetchReport);
 }
 
 boost::optional<std::uint32_t>
 DatabaseShardImp::findAcquireIndex(
     std::uint32_t validLedgerSeq,
-    std::lock_guard<std::mutex>&)
+    std::lock_guard<std::mutex> const&)
 {
     if (validLedgerSeq < earliestLedgerSeq())
         return boost::none;
@@ -1254,8 +1254,11 @@ DatabaseShardImp::findAcquireIndex(
              shardIndex <= maxShardIndex;
              ++shardIndex)
         {
-            if (shards_.find(shardIndex) == shards_.end())
+            if (shards_.find(shardIndex) == shards_.end() &&
+                preparedIndexes_.find(shardIndex) == preparedIndexes_.end())
+            {
                 available.push_back(shardIndex);
+            }
         }
 
         if (available.empty())
@@ -1274,8 +1277,11 @@ DatabaseShardImp::findAcquireIndex(
     for (int i = 0; i < 40; ++i)
     {
         auto const shardIndex{rand_int(earliestShardIndex(), maxShardIndex)};
-        if (shards_.find(shardIndex) == shards_.end())
+        if (shards_.find(shardIndex) == shards_.end() &&
+            preparedIndexes_.find(shardIndex) == preparedIndexes_.end())
+        {
             return shardIndex;
+        }
     }
 
     assert(false);
@@ -1284,35 +1290,22 @@ DatabaseShardImp::findAcquireIndex(
 
 void
 DatabaseShardImp::finalizeShard(
-    ShardInfo& shardInfo,
+    std::shared_ptr<Shard>& shard,
     bool writeSQLite,
-    std::lock_guard<std::mutex>&,
     boost::optional<uint256> const& expectedHash)
 {
-    assert(shardInfo.shard);
-    assert(shardInfo.shard->index() != acquireIndex_);
-    assert(shardInfo.shard->isBackendComplete());
-    assert(shardInfo.state != ShardInfo::State::finalize);
-
-    auto const shardIndex{shardInfo.shard->index()};
-
-    shardInfo.state = ShardInfo::State::finalize;
-    taskQueue_->addTask([this, shardIndex, writeSQLite, expectedHash]() {
+    taskQueue_->addTask([this,
+                         wptr = std::weak_ptr<Shard>(shard),
+                         writeSQLite,
+                         expectedHash]() {
         if (isStopping())
             return;
 
-        std::shared_ptr<Shard> shard;
+        auto shard{wptr.lock()};
+        if (!shard)
         {
-            std::lock_guard lock(mutex_);
-            if (auto const it{shards_.find(shardIndex)}; it != shards_.end())
-            {
-                shard = it->second.shard;
-            }
-            else
-            {
-                JLOG(j_.error()) << "Unable to finalize shard " << shardIndex;
-                return;
-            }
+            JLOG(j_.debug()) << "Shard removed before being finalized";
+            return;
         }
 
         if (!shard->finalize(writeSQLite, expectedHash))
@@ -1329,42 +1322,35 @@ DatabaseShardImp::finalizeShard(
             return;
 
         {
+            auto const boundaryIndex{shardBoundaryIndex()};
+
             std::lock_guard lock(mutex_);
-            auto const it{shards_.find(shardIndex)};
-            if (it == shards_.end())
-                return;
-            it->second.state = ShardInfo::State::final;
             updateStatus(lock);
 
-            auto const boundaryIndex = shardBoundaryIndex(lock);
-            auto const isHistoricalShard = shardIndex < boundaryIndex;
-
-            if (isHistoricalShard)
+            if (shard->index() < boundaryIndex)
             {
+                // This is a historical shard
                 if (!historicalPaths_.empty() &&
                     shard->getDir().parent_path() == dir_)
                 {
-                    // This is a historical shard that wasn't
-                    // placed at a separate historical path
-                    JLOG(j_.warn()) << "shard " << shardIndex
+                    // Shard wasn't placed at a separate historical path
+                    JLOG(j_.warn()) << "shard " << shard->index()
                                     << " is not stored at a historical path";
                 }
             }
 
             else
             {
-                // Not a historical shard. Shift recent shards
-                // if necessary
+                // Not a historical shard. Shift recent shards if necessary
                 relocateOutdatedShards(lock);
-                assert(!boundaryIndex || shardIndex - boundaryIndex <= 1);
+                assert(!boundaryIndex || shard->index() - boundaryIndex <= 1);
 
-                auto& recentShard = shardIndex == boundaryIndex
+                auto& recentShard = shard->index() == boundaryIndex
                     ? secondLatestShardIndex_
                     : latestShardIndex_;
 
-                // Set the appropriate recent shard
-                // index
-                recentShard = shardIndex;
+                // Set the appropriate recent shard index
+                recentShard = shard->index();
 
                 if (shard->getDir().parent_path() != dir_)
                 {
@@ -1383,7 +1369,7 @@ DatabaseShardImp::finalizeShard(
             protocol::TMPeerShardInfo message;
             PublicKey const& publicKey{app_.nodeIdentity().first};
             message.set_nodepubkey(publicKey.data(), publicKey.size());
-            message.set_shardindexes(std::to_string(shardIndex));
+            message.set_shardindexes(std::to_string(shard->index()));
             app_.overlay().foreach(send_always(std::make_shared<Message>(
                 message, protocol::mtPEER_SHARD_INFO)));
         }
@@ -1396,14 +1382,12 @@ DatabaseShardImp::setFileStats()
     std::vector<std::weak_ptr<Shard>> shards;
     {
         std::lock_guard lock(mutex_);
-        assert(init_);
-
         if (shards_.empty())
             return;
 
+        shards.reserve(shards_.size());
         for (auto const& e : shards_)
-            if (e.second.shard)
-                shards.push_back(e.second.shard);
+            shards.push_back(e.second);
     }
 
     std::uint64_t sumSz{0};
@@ -1411,9 +1395,9 @@ DatabaseShardImp::setFileStats()
     std::uint32_t numShards{0};
     for (auto const& e : shards)
     {
-        if (auto shard{e.lock()}; shard)
+        if (auto const shard{e.lock()}; shard)
         {
-            auto [sz, fd] = shard->fileInfo();
+            auto const [sz, fd] = shard->getFileInfo();
             sumSz += sz;
             sumFd += fd;
             ++numShards;
@@ -1442,43 +1426,18 @@ DatabaseShardImp::setFileStats()
 }
 
 void
-DatabaseShardImp::updateStatus(std::lock_guard<std::mutex>&)
+DatabaseShardImp::updateStatus(std::lock_guard<std::mutex> const&)
 {
     if (!shards_.empty())
     {
         RangeSet<std::uint32_t> rs;
         for (auto const& e : shards_)
-            if (e.second.state == ShardInfo::State::final)
-                rs.insert(e.second.shard->index());
+            if (e.second->getState() == Shard::final)
+                rs.insert(e.second->index());
         status_ = to_string(rs);
     }
     else
         status_.clear();
-}
-
-std::pair<std::shared_ptr<PCache>, std::shared_ptr<NCache>>
-DatabaseShardImp::getCache(std::uint32_t seq)
-{
-    auto const shardIndex{seqToShardIndex(seq)};
-    std::shared_ptr<Shard> shard;
-    {
-        std::lock_guard lock(mutex_);
-        assert(init_);
-
-        if (auto const it{shards_.find(shardIndex)};
-            it != shards_.end() && it->second.shard)
-        {
-            shard = it->second.shard;
-        }
-        else
-            return {};
-    }
-
-    std::shared_ptr<PCache> pCache;
-    std::shared_ptr<NCache> nCache;
-    std::tie(std::ignore, pCache, nCache) = shard->getBackendAll();
-
-    return std::make_pair(pCache, nCache);
 }
 
 bool
@@ -1528,8 +1487,8 @@ DatabaseShardImp::sufficientStorage(
     }
     catch (std::exception const& e)
     {
-        JLOG(j_.error()) << "exception " << e.what() << " in function "
-                         << __func__;
+        JLOG(j_.fatal()) << "Exception caught in function " << __func__
+                         << ". Error: " << e.what();
         return false;
     }
 
@@ -1537,29 +1496,26 @@ DatabaseShardImp::sufficientStorage(
 }
 
 bool
-DatabaseShardImp::storeLedgerInShard(
+DatabaseShardImp::setStoredInShard(
     std::shared_ptr<Shard>& shard,
     std::shared_ptr<Ledger const> const& ledger)
 {
-    bool result{true};
-
-    if (!shard->store(ledger))
+    if (!shard->setLedgerStored(ledger))
     {
         // Invalid or corrupt shard, remove it
         removeFailedShard(shard);
-        result = false;
+        return false;
     }
-    else if (shard->isBackendComplete())
+
+    if (shard->getState() == Shard::complete)
     {
         std::lock_guard lock(mutex_);
-
         if (auto const it{shards_.find(shard->index())}; it != shards_.end())
         {
             if (shard->index() == acquireIndex_)
                 acquireIndex_ = 0;
 
-            if (it->second.state != ShardInfo::State::finalize)
-                finalizeShard(it->second, false, lock, boost::none);
+            finalizeShard(it->second, false, boost::none);
         }
         else
         {
@@ -1569,7 +1525,7 @@ DatabaseShardImp::storeLedgerInShard(
     }
 
     setFileStats();
-    return result;
+    return true;
 }
 
 void
@@ -1587,8 +1543,11 @@ DatabaseShardImp::removeFailedShard(std::shared_ptr<Shard>& shard)
         if (shard->index() == secondLatestShardIndex_)
             secondLatestShardIndex_ = boost::none;
 
-        if ((shards_.erase(shard->index()) > 0) && shard->isFinal())
+        if ((shards_.erase(shard->index()) > 0) &&
+            shard->getState() == Shard::final)
+        {
             updateStatus(lock);
+        }
     }
 
     shard->removeOnDestroy();
@@ -1600,29 +1559,26 @@ DatabaseShardImp::removeFailedShard(std::shared_ptr<Shard>& shard)
 }
 
 std::uint32_t
-DatabaseShardImp::shardBoundaryIndex(std::lock_guard<std::mutex> const&) const
+DatabaseShardImp::shardBoundaryIndex() const
 {
-    auto const validIndex = app_.getLedgerMaster().getValidLedgerIndex();
-
-    // Shards with an index earlier than recentShardBoundaryIndex
+    // Shards with an index earlier than the recent shard boundary index
     // are considered historical. The three shards at or later than
     // this index consist of the two most recently validated shards
     // and the shard still in the process of being built by live
     // transactions.
-    return NodeStore::seqToShardIndex(validIndex, ledgersPerShard_) - 1;
+    return NodeStore::seqToShardIndex(
+               app_.getLedgerMaster().getValidLedgerIndex(), ledgersPerShard_) -
+        1;
 }
 
 std::uint32_t
 DatabaseShardImp::numHistoricalShards(
     std::lock_guard<std::mutex> const& lock) const
 {
-    auto const recentShardBoundaryIndex = shardBoundaryIndex(lock);
-
+    auto const boundaryIndex{shardBoundaryIndex()};
     return std::count_if(
-        shards_.begin(),
-        shards_.end(),
-        [recentShardBoundaryIndex](auto const& entry) {
-            return entry.first < recentShardBoundaryIndex;
+        shards_.begin(), shards_.end(), [boundaryIndex](auto const& entry) {
+            return entry.first < boundaryIndex;
         });
 }
 
@@ -1633,8 +1589,8 @@ DatabaseShardImp::relocateOutdatedShards(
     if (auto& cur = latestShardIndex_, &prev = secondLatestShardIndex_;
         cur || prev)
     {
-        auto const latestShardIndex = NodeStore::seqToShardIndex(
-            app_.getLedgerMaster().getValidLedgerIndex(), ledgersPerShard_);
+        auto const latestShardIndex =
+            seqToShardIndex(app_.getLedgerMaster().getValidLedgerIndex());
 
         auto const separateHistoricalPath = !historicalPaths_.empty();
 
@@ -1644,8 +1600,8 @@ DatabaseShardImp::relocateOutdatedShards(
 
             if (auto it = shards_.find(shardIndex); it != shards_.end())
             {
-                if (it->second.shard)
-                    removeFailedShard(it->second.shard);
+                if (it->second)
+                    removeFailedShard(it->second);
                 else
                 {
                     JLOG(j_.warn()) << "can't find shard to remove";
@@ -1688,49 +1644,43 @@ DatabaseShardImp::relocateOutdatedShards(
 
             if (auto it = shards_.find(shardIndex); it != shards_.end())
             {
-                if (auto& shard = it->second.shard)
-                {
-                    // Close any open file descriptors before moving
-                    // the shard dir. Don't call removeOnDestroy since
-                    // that would attempt to close the fds after the
-                    // directory has been moved.
-                    shard->closeAll();
+                auto& shard{it->second};
 
-                    try
-                    {
-                        // Move the shard directory to the new path
-                        boost::filesystem::rename(
-                            shard->getDir().string(),
-                            dst / std::to_string(shardIndex));
-                    }
-                    catch (...)
-                    {
-                        JLOG(j_.error())
-                            << "shard " << shardIndex
-                            << " failed to move to historical storage";
-
-                        return;
-                    }
-
-                    // Create a shard instance at the new location
-                    shard = std::make_unique<Shard>(
-                        app_, *this, shardIndex, dst, j_);
-
-                    // Open the new shard
-                    if (!shard->open(scheduler_, *ctx_))
-                    {
-                        JLOG(j_.error())
-                            << "shard " << shardIndex
-                            << " failed to open in historical storage";
-
-                        shard->removeOnDestroy();
-                        shard.reset();
-                    }
-                }
-                else
+                // Close any open file descriptors before moving the shard
+                // directory. Don't call removeOnDestroy since that would
+                // attempt to close the fds after the directory has been moved.
+                if (!shard->tryClose())
                 {
                     JLOG(j_.warn())
-                        << "can't find shard to move to historical path";
+                        << "can't close shard to move to historical path";
+                    return;
+                }
+
+                try
+                {
+                    // Move the shard directory to the new path
+                    boost::filesystem::rename(
+                        shard->getDir().string(),
+                        dst / std::to_string(shardIndex));
+                }
+                catch (...)
+                {
+                    JLOG(j_.error()) << "shard " << shardIndex
+                                     << " failed to move to historical storage";
+                    return;
+                }
+
+                // Create a shard instance at the new location
+                shard =
+                    std::make_shared<Shard>(app_, *this, shardIndex, dst, j_);
+
+                // Open the new shard
+                if (!shard->init(scheduler_, *ctx_))
+                {
+                    JLOG(j_.error()) << "shard " << shardIndex
+                                     << " failed to open in historical storage";
+                    shard->removeOnDestroy();
+                    shard.reset();
                 }
             }
             else
@@ -1740,21 +1690,19 @@ DatabaseShardImp::relocateOutdatedShards(
             }
         };
 
-        // See if either of the recent shards
-        // needs to be updated
+        // See if either of the recent shards needs to be updated
         bool const curNotSynched =
             latestShardIndex_ && *latestShardIndex_ != latestShardIndex;
         bool const prevNotSynched = secondLatestShardIndex_ &&
             *secondLatestShardIndex_ != latestShardIndex - 1;
 
-        // A new shard has been published. Move outdated shards
-        // to historical storage as needed
+        // A new shard has been published. Move outdated
+        // shards to historical storage as needed
         if (curNotSynched || prevNotSynched)
         {
             if (prev)
             {
-                // Move the formerly second latest shard to
-                // historical storage
+                // Move the formerly second latest shard to historical storage
                 if (keepShard(*prev) && separateHistoricalPath)
                 {
                     moveShard(*prev);
@@ -1765,19 +1713,16 @@ DatabaseShardImp::relocateOutdatedShards(
 
             if (cur)
             {
-                // The formerly latest shard is now
-                // the second latest
+                // The formerly latest shard is now the second latest
                 if (cur == latestShardIndex - 1)
                 {
                     prev = cur;
                 }
 
-                // The formerly latest shard is no
-                // longer a 'recent' shard
+                // The formerly latest shard is no longer a 'recent' shard
                 else
                 {
-                    // Move the formerly latest shard to
-                    // historical storage
+                    // Move the formerly latest shard to historical storage
                     if (keepShard(*cur) && separateHistoricalPath)
                     {
                         moveShard(*cur);
@@ -1796,9 +1741,8 @@ DatabaseShardImp::prepareForNewShard(
     std::uint32_t numHistoricalShards,
     std::lock_guard<std::mutex> const& lock) -> boost::optional<PathDesignation>
 {
-    // Any shard earlier than the two most recent shards
-    // is a historical shard
-    auto const boundaryIndex = shardBoundaryIndex(lock);
+    // Any shard earlier than the two most recent shards is a historical shard
+    auto const boundaryIndex{shardBoundaryIndex()};
     auto const isHistoricalShard = shardIndex < boundaryIndex;
 
     auto const designation = isHistoricalShard && !historicalPaths_.empty()
@@ -1860,10 +1804,8 @@ DatabaseShardImp::checkHistoricalPaths() const
 {
 #if BOOST_OS_LINUX
     // Each historical shard path must correspond
-    // to a directory on a distinct device or filesystem.
-    // Currently, this constraint is enforced only on
-    // Linux.
-
+    // to a directory on a distinct device or file system.
+    // Currently, this constraint is enforced only on Linux.
     std::unordered_map<int, std::vector<std::string>> filesystemIDs(
         historicalPaths_.size());
 
@@ -1884,12 +1826,11 @@ DatabaseShardImp::checkHistoricalPaths() const
     bool ret = true;
     for (auto const& entry : filesystemIDs)
     {
-        // Check to see if any of the paths
-        // are stored on the same filesystem
+        // Check to see if any of the paths are stored on the same file system
         if (entry.second.size() > 1)
         {
             // Two or more historical storage paths
-            // correspond to the same filesystem.
+            // correspond to the same file system.
             JLOG(j_.error())
                 << "The following paths correspond to the same filesystem: "
                 << boost::algorithm::join(entry.second, ", ")
@@ -1904,14 +1845,13 @@ DatabaseShardImp::checkHistoricalPaths() const
 
 #else
     // The requirement that each historical storage path
-    // corresponds to a distinct device or filesystem is
+    // corresponds to a distinct device or file system is
     // enforced only on Linux, so on other platforms
     // keep track of the available capacities for each
     // path. Issue a warning if we suspect any of the paths
     // may violate this requirement.
 
-    // Map byte counts to each path that
-    // shares that byte count.
+    // Map byte counts to each path that shares that byte count.
     std::unordered_map<std::uint64_t, std::vector<std::string>>
         uniqueCapacities(historicalPaths_.size());
 
@@ -1921,20 +1861,18 @@ DatabaseShardImp::checkHistoricalPaths() const
 
     for (auto const& entry : uniqueCapacities)
     {
-        // Check to see if any paths have the
-        // same amount of available bytes.
+        // Check to see if any paths have the same amount of available bytes.
         if (entry.second.size() > 1)
         {
             // Two or more historical storage paths may
-            // correspond to the same device or
-            // filesystem.
+            // correspond to the same device or file system.
             JLOG(j_.warn())
                 << "Each of the following paths have " << entry.first
                 << " bytes free, and may be located on the same device"
-                   " or filesystem: "
+                   " or file system: "
                 << boost::algorithm::join(entry.second, ", ")
                 << ". Each configured historical storage path should"
-                   " be on a unique device or filesystem.";
+                   " be on a unique device or file system.";
         }
     }
 #endif
