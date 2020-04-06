@@ -56,7 +56,8 @@ enum class SizedItem : std::size_t {
     nodeCacheAge,
     hashNodeDBCache,
     txnDBCache,
-    lgrDBCache
+    lgrDBCache,
+    openFinalLimit
 };
 
 //  This entire derived class is deprecated.
@@ -113,7 +114,6 @@ private:
 public:
     bool doImport = false;
     bool nodeToShard = false;
-    bool validateShards = false;
     bool ELB_SUPPORT = false;
 
     std::vector<std::string> IPS;           // Peer IPs from rippled.cfg.

@@ -26,15 +26,19 @@
 namespace ripple {
 namespace NodeStore {
 
+enum class FetchType { synchronous, async };
+
 /** Contains information about a fetch operation. */
 struct FetchReport
 {
-    explicit FetchReport() = default;
+    explicit FetchReport(FetchType fetchType_) : fetchType(fetchType_)
+    {
+    }
 
     std::chrono::milliseconds elapsed;
-    bool isAsync;
-    bool wentToDisk;
-    bool wasFound;
+    FetchType const fetchType;
+    bool wentToDisk = false;
+    bool wasFound = false;
 };
 
 /** Contains information about a batch write operation. */

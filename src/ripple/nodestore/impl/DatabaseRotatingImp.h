@@ -45,8 +45,8 @@ public:
 
     ~DatabaseRotatingImp() override
     {
-        // Stop threads before data members are destroyed.
-        stopThreads();
+        // Stop read threads in base before data members are destroyed
+        stopReadThreads();
     }
 
     void
@@ -64,29 +64,19 @@ public:
     import(Database& source) override;
 
     void
-    store(
-        NodeObjectType type,
-        Blob&& data,
-        uint256 const& hash,
-        std::uint32_t seq) override;
-
-    std::shared_ptr<NodeObject>
-    fetch(uint256 const& hash, std::uint32_t seq) override
-    {
-        return doFetch(hash, seq, *pCache_, *nCache_, false);
-    }
+    store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
+        override;
 
     bool
     asyncFetch(
         uint256 const& hash,
-        std::uint32_t seq,
-        std::shared_ptr<NodeObject>& object) override;
+        std::uint32_t ledgerSeq,
+        std::shared_ptr<NodeObject>& nodeObject) override;
 
     bool
     storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override;
 
-    int
-    getDesiredAsyncReadCount(std::uint32_t seq) override
+    int getDesiredAsyncReadCount(std::uint32_t) override
     {
         // We prefer a client not fill our cache
         // We don't want to push data out of the cache
@@ -124,7 +114,10 @@ private:
     mutable std::mutex mutex_;
 
     std::shared_ptr<NodeObject>
-    fetchFrom(uint256 const& hash, std::uint32_t seq) override;
+    fetchNodeObject(
+        uint256 const& hash,
+        std::uint32_t,
+        FetchReport& fetchReport) override;
 
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override;

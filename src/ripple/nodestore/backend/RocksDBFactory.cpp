@@ -226,6 +226,12 @@ public:
         m_db.reset(db);
     }
 
+    bool
+    isOpen() override
+    {
+        return static_cast<bool>(m_db);
+    }
+
     void
     close() override
     {

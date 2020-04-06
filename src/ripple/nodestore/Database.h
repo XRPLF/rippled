@@ -103,7 +103,7 @@ public:
         @param data The payload of the object. The caller's
                     variable is overwritten.
         @param hash The 256-bit hash of the payload data.
-        @param seq The sequence of the ledger the object belongs to.
+        @param ledgerSeq The sequence of the ledger the object belongs to.
 
         @return `true` if the object was stored?
     */
@@ -112,20 +112,24 @@ public:
         NodeObjectType type,
         Blob&& data,
         uint256 const& hash,
-        std::uint32_t seq) = 0;
+        std::uint32_t ledgerSeq) = 0;
 
-    /** Fetch an object.
+    /** Fetch a node object.
         If the object is known to be not in the database, isn't found in the
         database during the fetch, or failed to load correctly during the fetch,
         `nullptr` is returned.
 
         @note This can be called concurrently.
         @param hash The key of the object to retrieve.
-        @param seq The sequence of the ledger where the object is stored.
+        @param ledgerSeq The sequence of the ledger where the object is stored.
+        @param fetchType the type of fetch, synchronous or asynchronous.
         @return The object, or nullptr if it couldn't be retrieved.
     */
-    virtual std::shared_ptr<NodeObject>
-    fetch(uint256 const& hash, std::uint32_t seq) = 0;
+    std::shared_ptr<NodeObject>
+    fetchNodeObject(
+        uint256 const& hash,
+        std::uint32_t ledgerSeq,
+        FetchType fetchType = FetchType::synchronous);
 
     /** Fetch an object without waiting.
         If I/O is required to determine whether or not the object is present,
@@ -135,19 +139,19 @@ public:
 
         @note This can be called concurrently.
         @param hash The key of the object to retrieve
-        @param seq The sequence of the ledger where the object is stored.
-        @param object The object retrieved
+        @param ledgerSeq The sequence of the ledger where the object is stored.
+        @param nodeObject The object retrieved
         @return Whether the operation completed
     */
     virtual bool
     asyncFetch(
         uint256 const& hash,
-        std::uint32_t seq,
-        std::shared_ptr<NodeObject>& object) = 0;
+        std::uint32_t ledgerSeq,
+        std::shared_ptr<NodeObject>& nodeObject) = 0;
 
-    /** Copies a ledger stored in a different database to this one.
+    /** Store a ledger from a different database.
 
-        @param ledger The ledger to copy.
+        @param srcLedger The ledger to store.
         @return true if the operation was successful
     */
     virtual bool
@@ -160,12 +164,12 @@ public:
 
     /** Get the maximum number of async reads the node store prefers.
 
-        @param seq A ledger sequence specifying a shard to query.
+        @param ledgerSeq A ledger sequence specifying a shard to query.
         @return The number of async reads preferred.
         @note The sequence is only used with the shard store.
     */
     virtual int
-    getDesiredAsyncReadCount(std::uint32_t seq) = 0;
+    getDesiredAsyncReadCount(std::uint32_t ledgerSeq) = 0;
 
     /** Get the positive cache hits to total attempts ratio. */
     virtual float
@@ -187,7 +191,7 @@ public:
 
         @return The total read and written bytes.
      */
-    std::uint32_t
+    std::uint64_t
     getStoreCount() const
     {
         return storeCount_;
@@ -205,7 +209,7 @@ public:
         return fetchHitCount_;
     }
 
-    std::uint32_t
+    std::uint64_t
     getStoreSize() const
     {
         return storeSz_;
@@ -243,39 +247,27 @@ protected:
     Scheduler& scheduler_;
     int fdRequired_{0};
 
-    void
-    stopThreads();
+    std::atomic<std::uint32_t> fetchHitCount_{0};
+    std::atomic<std::uint32_t> fetchSz_{0};
 
     void
-    storeStats(size_t sz)
+    stopReadThreads();
+
+    void
+    storeStats(std::uint64_t count, std::uint64_t sz)
     {
-        ++storeCount_;
+        assert(count <= sz);
+        storeCount_ += count;
         storeSz_ += sz;
     }
 
     // Called by the public asyncFetch function
     void
-    asyncFetch(
-        uint256 const& hash,
-        std::uint32_t seq,
-        std::shared_ptr<TaggedCache<uint256, NodeObject>> const& pCache,
-        std::shared_ptr<KeyCache<uint256>> const& nCache);
-
-    // Called by the public fetch function
-    std::shared_ptr<NodeObject>
-    fetchInternal(uint256 const& hash, std::shared_ptr<Backend> backend);
+    asyncFetch(uint256 const& hash, std::uint32_t ledgerSeq);
 
     // Called by the public import function
     void
     importInternal(Backend& dstBackend, Database& srcDB);
-
-    std::shared_ptr<NodeObject>
-    doFetch(
-        uint256 const& hash,
-        std::uint32_t seq,
-        TaggedCache<uint256, NodeObject>& pCache,
-        KeyCache<uint256>& nCache,
-        bool isAsync);
 
     // Called by the public storeLedger function
     bool
@@ -283,28 +275,19 @@ protected:
         Ledger const& srcLedger,
         std::shared_ptr<Backend> dstBackend,
         std::shared_ptr<TaggedCache<uint256, NodeObject>> dstPCache,
-        std::shared_ptr<KeyCache<uint256>> dstNCache,
-        std::shared_ptr<Ledger const> next);
+        std::shared_ptr<KeyCache<uint256>> dstNCache);
 
 private:
-    std::atomic<std::uint32_t> storeCount_{0};
-    std::atomic<std::uint32_t> fetchTotalCount_{0};
-    std::atomic<std::uint32_t> fetchHitCount_{0};
-    std::atomic<std::uint32_t> storeSz_{0};
-    std::atomic<std::uint32_t> fetchSz_{0};
+    std::atomic<std::uint64_t> storeCount_{0};
+    std::atomic<std::uint64_t> storeSz_{0};
+    std::atomic<std::uint64_t> fetchTotalCount_{0};
 
     std::mutex readLock_;
     std::condition_variable readCondVar_;
     std::condition_variable readGenCondVar_;
 
     // reads to do
-    std::map<
-        uint256,
-        std::tuple<
-            std::uint32_t,
-            std::weak_ptr<TaggedCache<uint256, NodeObject>>,
-            std::weak_ptr<KeyCache<uint256>>>>
-        read_;
+    std::map<uint256, std::uint32_t> read_;
 
     // last read
     uint256 readLastHash_;
@@ -320,7 +303,10 @@ private:
     std::uint32_t const earliestLedgerSeq_;
 
     virtual std::shared_ptr<NodeObject>
-    fetchFrom(uint256 const& hash, std::uint32_t seq) = 0;
+    fetchNodeObject(
+        uint256 const& hash,
+        std::uint32_t ledgerSeq,
+        FetchReport& fetchReport) = 0;
 
     /** Visit every object in the database
         This is usually called during import.

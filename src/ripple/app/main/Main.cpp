@@ -353,12 +353,6 @@ run(int argc, char** argv)
         importText += ConfigSection::nodeDatabase();
         importText += "] configuration file section).";
     }
-    std::string shardsText;
-    {
-        shardsText += "Validate an existing shard database (specified in the [";
-        shardsText += ConfigSection::shardDatabase();
-        shardsText += "] configuration file section).";
-    }
 
     // Set up option parsing.
     //
@@ -388,8 +382,7 @@ run(int argc, char** argv)
         "replay", "Replay a ledger close.")(
         "start", "Start from a fresh Ledger.")(
         "vacuum", "VACUUM the transaction db.")(
-        "valid", "Consider the initial ledger a valid network ledger.")(
-        "validateShards", shardsText.c_str());
+        "valid", "Consider the initial ledger a valid network ledger.");
 
     po::options_description rpc("RPC Client Options");
     rpc.add_options()(
@@ -610,9 +603,6 @@ run(int argc, char** argv)
 
     if (vm.count("nodetoshard"))
         config->nodeToShard = true;
-
-    if (vm.count("validateShards"))
-        config->validateShards = true;
 
     if (vm.count("ledger"))
     {
