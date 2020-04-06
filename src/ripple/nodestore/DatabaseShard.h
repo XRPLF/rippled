@@ -66,9 +66,9 @@ public:
 
     /** Prepare to store a new ledger in the shard being acquired
 
-        @param validLedgerSeq The index of the maximum valid ledgers
+        @param validLedgerSeq The sequence of the maximum valid ledgers
         @return If a ledger should be fetched and stored, then returns the
-       ledger index of the ledger to request. Otherwise returns boost::none.
+        ledger sequence of the ledger to request. Otherwise returns boost::none.
                 Some reasons this may return boost::none are: all shards are
                 stored and full, max allowed disk space would be exceeded, or a
                 ledger was recently requested and not enough time has passed
@@ -136,13 +136,6 @@ public:
     virtual std::string
     getCompleteShards() = 0;
 
-    /** Verifies shard store data is valid.
-
-        @param app The application object
-    */
-    virtual void
-    validate() = 0;
-
     /** @return The maximum number of ledgers stored in a shard
      */
     virtual std::uint32_t
@@ -188,10 +181,10 @@ public:
 
 constexpr std::uint32_t
 seqToShardIndex(
-    std::uint32_t seq,
+    std::uint32_t ledgerSeq,
     std::uint32_t ledgersPerShard = DatabaseShard::ledgersPerShardDefault)
 {
-    return (seq - 1) / ledgersPerShard;
+    return (ledgerSeq - 1) / ledgersPerShard;
 }
 
 extern std::unique_ptr<DatabaseShard>

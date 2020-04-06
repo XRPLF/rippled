@@ -272,7 +272,7 @@ class DatabaseShard_test : public TestBase
     {
         // Store header
         {
-            Serializer s(128);
+            Serializer s(sizeof(std::uint32_t) + sizeof(LedgerInfo));
             s.add32(HashPrefix::ledgerMaster);
             addRaw(ledger.info(), s);
             db.store(
@@ -369,8 +369,8 @@ class DatabaseShard_test : public TestBase
             if (!BEAST_EXPECT(nSrc))
                 return false;
 
-            auto nDst =
-                db.fetch(node.getNodeHash().as_uint256(), ledger.info().seq);
+            auto nDst = db.fetchNodeObject(
+                node.getNodeHash().as_uint256(), ledger.info().seq);
             if (!BEAST_EXPECT(nDst))
                 return false;
 
@@ -393,8 +393,8 @@ class DatabaseShard_test : public TestBase
             if (!BEAST_EXPECT(nSrc))
                 return false;
 
-            auto nDst =
-                db.fetch(node.getNodeHash().as_uint256(), ledger.info().seq);
+            auto nDst = db.fetchNodeObject(
+                node.getNodeHash().as_uint256(), ledger.info().seq);
             if (!BEAST_EXPECT(nDst))
                 return false;
 
@@ -432,22 +432,13 @@ class DatabaseShard_test : public TestBase
 
     std::unique_ptr<Config>
     testConfig(
-        std::string const& testName,
-        std::string const& backendType,
         std::string const& shardDir,
         std::string const& nodeDir = std::string())
     {
         using namespace test::jtx;
 
-        if (testName != "")
-        {
-            std::string caseName =
-                "DatabaseShard " + testName + " with backend " + backendType;
-            testcase(caseName);
-        }
-
         return envconfig([&](std::unique_ptr<Config> cfg) {
-            cfg->overwrite(ConfigSection::shardDatabase(), "type", backendType);
+            // Shard store configuration
             cfg->overwrite(ConfigSection::shardDatabase(), "path", shardDir);
             cfg->overwrite(
                 ConfigSection::shardDatabase(),
@@ -461,20 +452,16 @@ class DatabaseShard_test : public TestBase
                 ConfigSection::shardDatabase(),
                 "earliest_seq",
                 std::to_string(earliestSeq));
-            cfg->overwrite(ConfigSection::nodeDatabase(), "type", backendType);
-            cfg->overwrite(
-                ConfigSection::nodeDatabase(),
-                "max_size_gb",
-                std::to_string(maxSizeGb));
+
+            // Node store configuration
             cfg->overwrite(
                 ConfigSection::nodeDatabase(),
                 "earliest_seq",
                 std::to_string(earliestSeq));
-            if (nodeDir.empty())
-                cfg->overwrite(
-                    ConfigSection::nodeDatabase(), "path", defNodeDir.path());
-            else
-                cfg->overwrite(ConfigSection::nodeDatabase(), "path", nodeDir);
+            cfg->overwrite(
+                ConfigSection::nodeDatabase(),
+                "path",
+                nodeDir.empty() ? defNodeDir.path() : nodeDir);
             return cfg;
         });
     }
@@ -482,21 +469,21 @@ class DatabaseShard_test : public TestBase
     std::optional<int>
     waitShard(
         DatabaseShard& db,
-        int shardNumber,
+        int shardIndex,
         std::chrono::seconds timeout = shardStoreTimeout)
     {
         RangeSet<std::uint32_t> rs;
         auto start = std::chrono::system_clock::now();
         auto end = start + timeout;
         while (!from_string(rs, db.getCompleteShards()) ||
-               !boost::icl::contains(rs, shardNumber))
+               !boost::icl::contains(rs, shardIndex))
         {
             if (!BEAST_EXPECT(std::chrono::system_clock::now() < end))
                 return {};
             std::this_thread::yield();
         }
 
-        return shardNumber;
+        return shardIndex;
     }
 
     std::optional<int>
@@ -506,16 +493,19 @@ class DatabaseShard_test : public TestBase
         int maxShardNumber = 1,
         int ledgerOffset = 0)
     {
-        int shardNumber = -1;
+        int shardIndex{-1};
 
         for (std::uint32_t i = 0; i < ledgersPerShard; ++i)
         {
-            auto ind = db.prepareLedger((maxShardNumber + 1) * ledgersPerShard);
-            if (!BEAST_EXPECT(ind != boost::none))
+            auto const ledgerSeq{
+                db.prepareLedger((maxShardNumber + 1) * ledgersPerShard)};
+            if (!BEAST_EXPECT(ledgerSeq != boost::none))
                 return {};
-            shardNumber = db.seqToShardIndex(*ind);
-            int arrInd =
-                *ind - (ledgersPerShard * ledgerOffset) - ledgersPerShard - 1;
+
+            shardIndex = db.seqToShardIndex(*ledgerSeq);
+
+            int const arrInd = *ledgerSeq - (ledgersPerShard * ledgerOffset) -
+                ledgersPerShard - 1;
             BEAST_EXPECT(
                 arrInd >= 0 && arrInd < maxShardNumber * ledgersPerShard);
             BEAST_EXPECT(saveLedger(db, *data.ledgers_[arrInd]));
@@ -524,24 +514,27 @@ class DatabaseShard_test : public TestBase
                 uint256 const finalKey_{0};
                 Serializer s;
                 s.add32(Shard::version);
-                s.add32(db.firstLedgerSeq(shardNumber));
-                s.add32(db.lastLedgerSeq(shardNumber));
+                s.add32(db.firstLedgerSeq(shardIndex));
+                s.add32(db.lastLedgerSeq(shardIndex));
                 s.addRaw(data.ledgers_[arrInd]->info().hash.data(), 256 / 8);
-                db.store(hotUNKNOWN, std::move(s.modData()), finalKey_, *ind);
+                db.store(
+                    hotUNKNOWN, std::move(s.modData()), finalKey_, *ledgerSeq);
             }
             db.setStored(data.ledgers_[arrInd]);
         }
 
-        return waitShard(db, shardNumber);
+        return waitShard(db, shardIndex);
     }
 
     void
-    testStandalone(std::string const& backendType)
+    testStandalone()
     {
+        testcase("Standalone");
+
         using namespace test::jtx;
 
         beast::temp_dir shardDir;
-        Env env{*this, testConfig("standalone", backendType, shardDir.path())};
+        Env env{*this, testConfig(shardDir.path())};
         DummyScheduler scheduler;
         RootStoppable parent("TestRootStoppable");
 
@@ -563,14 +556,14 @@ class DatabaseShard_test : public TestBase
     }
 
     void
-    testCreateShard(
-        std::string const& backendType,
-        std::uint64_t const seedValue)
+    testCreateShard(std::uint64_t const seedValue)
     {
+        testcase("Create shard");
+
         using namespace test::jtx;
 
         beast::temp_dir shardDir;
-        Env env{*this, testConfig("createShard", backendType, shardDir.path())};
+        Env env{*this, testConfig(shardDir.path())};
         DatabaseShard* db = env.app().getShardStore();
         BEAST_EXPECT(db);
 
@@ -586,17 +579,15 @@ class DatabaseShard_test : public TestBase
     }
 
     void
-    testReopenDatabase(
-        std::string const& backendType,
-        std::uint64_t const seedValue)
+    testReopenDatabase(std::uint64_t const seedValue)
     {
+        testcase("Reopen shard store");
+
         using namespace test::jtx;
 
         beast::temp_dir shardDir;
         {
-            Env env{
-                *this,
-                testConfig("reopenDatabase", backendType, shardDir.path())};
+            Env env{*this, testConfig(shardDir.path())};
             DatabaseShard* db = env.app().getShardStore();
             BEAST_EXPECT(db);
 
@@ -609,7 +600,7 @@ class DatabaseShard_test : public TestBase
                     return;
         }
         {
-            Env env{*this, testConfig("", backendType, shardDir.path())};
+            Env env{*this, testConfig(shardDir.path())};
             DatabaseShard* db = env.app().getShardStore();
             BEAST_EXPECT(db);
 
@@ -626,16 +617,14 @@ class DatabaseShard_test : public TestBase
     }
 
     void
-    testGetCompleteShards(
-        std::string const& backendType,
-        std::uint64_t const seedValue)
+    testGetCompleteShards(std::uint64_t const seedValue)
     {
+        testcase("Get complete shards");
+
         using namespace test::jtx;
 
         beast::temp_dir shardDir;
-        Env env{
-            *this,
-            testConfig("getCompleteShards", backendType, shardDir.path())};
+        Env env{*this, testConfig(shardDir.path())};
         DatabaseShard* db = env.app().getShardStore();
         BEAST_EXPECT(db);
 
@@ -658,15 +647,14 @@ class DatabaseShard_test : public TestBase
     }
 
     void
-    testPrepareShard(
-        std::string const& backendType,
-        std::uint64_t const seedValue)
+    testPrepareShard(std::uint64_t const seedValue)
     {
+        testcase("Prepare shard");
+
         using namespace test::jtx;
 
         beast::temp_dir shardDir;
-        Env env{
-            *this, testConfig("prepareShard", backendType, shardDir.path())};
+        Env env{*this, testConfig(shardDir.path())};
         DatabaseShard* db = env.app().getShardStore();
         BEAST_EXPECT(db);
 
@@ -727,19 +715,17 @@ class DatabaseShard_test : public TestBase
     }
 
     void
-    testImportShard(
-        std::string const& backendType,
-        std::uint64_t const seedValue)
+    testImportShard(std::uint64_t const seedValue)
     {
+        testcase("Import shard");
+
         using namespace test::jtx;
 
         beast::temp_dir importDir;
         TestData data(seedValue, 2);
 
         {
-            Env env{
-                *this,
-                testConfig("importShard", backendType, importDir.path())};
+            Env env{*this, testConfig(importDir.path())};
             DatabaseShard* db = env.app().getShardStore();
             BEAST_EXPECT(db);
 
@@ -760,7 +746,7 @@ class DatabaseShard_test : public TestBase
 
         {
             beast::temp_dir shardDir;
-            Env env{*this, testConfig("", backendType, shardDir.path())};
+            Env env{*this, testConfig(shardDir.path())};
             DatabaseShard* db = env.app().getShardStore();
             BEAST_EXPECT(db);
 
@@ -769,8 +755,14 @@ class DatabaseShard_test : public TestBase
 
             db->prepareShard(1);
             BEAST_EXPECT(db->getPreShards() == bitmask2Rangeset(2));
+
+            using namespace boost::filesystem;
+            remove_all(importPath / LgrDBName);
+            remove_all(importPath / TxDBName);
+
             if (!BEAST_EXPECT(db->importShard(1, importPath)))
                 return;
+
             BEAST_EXPECT(db->getPreShards() == "");
 
             auto n = waitShard(*db, 1);
@@ -783,20 +775,17 @@ class DatabaseShard_test : public TestBase
     }
 
     void
-    testCorruptedDatabase(
-        std::string const& backendType,
-        std::uint64_t const seedValue)
+    testCorruptedDatabase(std::uint64_t const seedValue)
     {
+        testcase("Corrupted shard store");
+
         using namespace test::jtx;
 
         beast::temp_dir shardDir;
         {
             TestData data(seedValue, 4, 2);
             {
-                Env env{
-                    *this,
-                    testConfig(
-                        "corruptedDatabase", backendType, shardDir.path())};
+                Env env{*this, testConfig(shardDir.path())};
                 DatabaseShard* db = env.app().getShardStore();
                 BEAST_EXPECT(db);
 
@@ -810,7 +799,7 @@ class DatabaseShard_test : public TestBase
 
             boost::filesystem::path path = shardDir.path();
             path /= std::string("2");
-            path /= backendType + ".dat";
+            path /= "nudb.dat";
 
             FILE* f = fopen(path.string().c_str(), "r+b");
             if (!BEAST_EXPECT(f))
@@ -820,42 +809,36 @@ class DatabaseShard_test : public TestBase
             BEAST_EXPECT(fwrite(buf, 1, 256, f) == 256);
             fclose(f);
         }
-        {
-            Env env{*this, testConfig("", backendType, shardDir.path())};
-            DatabaseShard* db = env.app().getShardStore();
-            BEAST_EXPECT(db);
 
-            TestData data(seedValue, 4, 2);
-            if (!BEAST_EXPECT(data.makeLedgers(env)))
-                return;
+        Env env{*this, testConfig(shardDir.path())};
+        DatabaseShard* db = env.app().getShardStore();
+        BEAST_EXPECT(db);
 
-            for (std::uint32_t i = 1; i <= 1; ++i)
-                waitShard(*db, i);
+        TestData data(seedValue, 4, 2);
+        if (!BEAST_EXPECT(data.makeLedgers(env)))
+            return;
 
-            BEAST_EXPECT(db->getCompleteShards() == bitmask2Rangeset(0x2));
+        for (std::uint32_t i = 1; i <= 1; ++i)
+            waitShard(*db, i);
 
-            for (std::uint32_t i = 0; i < 1 * ledgersPerShard; ++i)
-                checkLedger(data, *db, *data.ledgers_[i]);
-        }
+        BEAST_EXPECT(db->getCompleteShards() == bitmask2Rangeset(0x2));
+
+        for (std::uint32_t i = 0; i < 1 * ledgersPerShard; ++i)
+            checkLedger(data, *db, *data.ledgers_[i]);
     }
 
     void
-    testIllegalFinalKey(
-        std::string const& backendType,
-        std::uint64_t const seedValue)
+    testIllegalFinalKey(std::uint64_t const seedValue)
     {
+        testcase("Illegal finalKey");
+
         using namespace test::jtx;
 
         for (int i = 0; i < 5; ++i)
         {
             beast::temp_dir shardDir;
             {
-                Env env{
-                    *this,
-                    testConfig(
-                        (i == 0 ? "illegalFinalKey" : ""),
-                        backendType,
-                        shardDir.path())};
+                Env env{*this, testConfig(shardDir.path())};
                 DatabaseShard* db = env.app().getShardStore();
                 BEAST_EXPECT(db);
 
@@ -863,14 +846,16 @@ class DatabaseShard_test : public TestBase
                 if (!BEAST_EXPECT(data.makeLedgers(env)))
                     return;
 
-                int shardNumber = -1;
+                int shardIndex{-1};
                 for (std::uint32_t j = 0; j < ledgersPerShard; ++j)
                 {
-                    auto ind = db->prepareLedger(2 * ledgersPerShard);
-                    if (!BEAST_EXPECT(ind != boost::none))
+                    auto const ledgerSeq{
+                        db->prepareLedger(2 * ledgersPerShard)};
+                    if (!BEAST_EXPECT(ledgerSeq != boost::none))
                         return;
-                    shardNumber = db->seqToShardIndex(*ind);
-                    int arrInd = *ind - ledgersPerShard - 1;
+
+                    shardIndex = db->seqToShardIndex(*ledgerSeq);
+                    int arrInd = *ledgerSeq - ledgersPerShard - 1;
                     BEAST_EXPECT(arrInd >= 0 && arrInd < ledgersPerShard);
                     BEAST_EXPECT(saveLedger(*db, *data.ledgers_[arrInd]));
                     if (arrInd % ledgersPerShard == (ledgersPerShard - 1))
@@ -878,8 +863,8 @@ class DatabaseShard_test : public TestBase
                         uint256 const finalKey_{0};
                         Serializer s;
                         s.add32(Shard::version + (i == 0));
-                        s.add32(db->firstLedgerSeq(shardNumber) + (i == 1));
-                        s.add32(db->lastLedgerSeq(shardNumber) - (i == 3));
+                        s.add32(db->firstLedgerSeq(shardIndex) + (i == 1));
+                        s.add32(db->lastLedgerSeq(shardIndex) - (i == 3));
                         s.addRaw(
                             data.ledgers_[arrInd - (i == 4)]
                                 ->info()
@@ -889,13 +874,13 @@ class DatabaseShard_test : public TestBase
                             hotUNKNOWN,
                             std::move(s.modData()),
                             finalKey_,
-                            *ind);
+                            *ledgerSeq);
                     }
                     db->setStored(data.ledgers_[arrInd]);
                 }
 
                 if (i == 2)
-                    waitShard(*db, shardNumber);
+                    waitShard(*db, shardIndex);
                 else
                 {
                     boost::filesystem::path path(shardDir.path());
@@ -916,7 +901,7 @@ class DatabaseShard_test : public TestBase
             }
 
             {
-                Env env{*this, testConfig("", backendType, shardDir.path())};
+                Env env{*this, testConfig(shardDir.path())};
                 DatabaseShard* db = env.app().getShardStore();
                 BEAST_EXPECT(db);
 
@@ -941,17 +926,16 @@ class DatabaseShard_test : public TestBase
     }
 
     void
-    testImport(std::string const& backendType, std::uint64_t const seedValue)
+    testImport(std::uint64_t const seedValue)
     {
+        testcase("Import node store");
+
         using namespace test::jtx;
 
         beast::temp_dir shardDir;
         {
             beast::temp_dir nodeDir;
-            Env env{
-                *this,
-                testConfig(
-                    "import", backendType, shardDir.path(), nodeDir.path())};
+            Env env{*this, testConfig(shardDir.path(), nodeDir.path())};
             DatabaseShard* db = env.app().getShardStore();
             Database& ndb = env.app().getNodeStore();
             BEAST_EXPECT(db);
@@ -970,7 +954,7 @@ class DatabaseShard_test : public TestBase
             BEAST_EXPECT(db->getCompleteShards() == bitmask2Rangeset(0x6));
         }
         {
-            Env env{*this, testConfig("", backendType, shardDir.path())};
+            Env env{*this, testConfig(shardDir.path())};
             DatabaseShard* db = env.app().getShardStore();
             BEAST_EXPECT(db);
 
@@ -989,10 +973,10 @@ class DatabaseShard_test : public TestBase
     }
 
     void
-    testImportWithHistoricalPaths(
-        std::string const& backendType,
-        std::uint64_t const seedValue)
+    testImportWithHistoricalPaths(std::uint64_t const seedValue)
     {
+        testcase("Import with historical paths");
+
         using namespace test::jtx;
 
         // Test importing with multiple historical
@@ -1009,11 +993,7 @@ class DatabaseShard_test : public TestBase
                 [](const beast::temp_dir& dir) { return dir.path(); });
 
             beast::temp_dir nodeDir;
-            auto c = testConfig(
-                "importWithHistoricalPaths",
-                backendType,
-                shardDir.path(),
-                nodeDir.path());
+            auto c = testConfig(shardDir.path(), nodeDir.path());
 
             auto& historyPaths = c->section(SECTION_HISTORICAL_SHARD_PATHS);
             historyPaths.append(
@@ -1075,11 +1055,7 @@ class DatabaseShard_test : public TestBase
             beast::temp_dir historicalDir;
             beast::temp_dir nodeDir;
 
-            auto c = testConfig(
-                "importWithSingleHistoricalPath",
-                backendType,
-                shardDir.path(),
-                nodeDir.path());
+            auto c = testConfig(shardDir.path(), nodeDir.path());
 
             auto& historyPaths = c->section(SECTION_HISTORICAL_SHARD_PATHS);
             historyPaths.append({historicalDir.path()});
@@ -1125,10 +1101,10 @@ class DatabaseShard_test : public TestBase
     }
 
     void
-    testPrepareWithHistoricalPaths(
-        std::string const& backendType,
-        std::uint64_t const seedValue)
+    testPrepareWithHistoricalPaths(std::uint64_t const seedValue)
     {
+        testcase("Prepare with historical paths");
+
         using namespace test::jtx;
 
         // Test importing with multiple historical
@@ -1145,8 +1121,7 @@ class DatabaseShard_test : public TestBase
                 [](const beast::temp_dir& dir) { return dir.path(); });
 
             beast::temp_dir nodeDir;
-            auto c = testConfig(
-                "prepareWithHistoricalPaths", backendType, shardDir.path());
+            auto c = testConfig(shardDir.path());
 
             auto& historyPaths = c->section(SECTION_HISTORICAL_SHARD_PATHS);
             historyPaths.append(
@@ -1300,20 +1275,53 @@ class DatabaseShard_test : public TestBase
     }
 
     void
-    testAll(std::string const& backendType)
+    testOpenShardManagement(std::uint64_t const seedValue)
     {
-        std::uint64_t const seedValue = 51;
-        testStandalone(backendType);
-        testCreateShard(backendType, seedValue);
-        testReopenDatabase(backendType, seedValue + 5);
-        testGetCompleteShards(backendType, seedValue + 10);
-        testPrepareShard(backendType, seedValue + 20);
-        testImportShard(backendType, seedValue + 30);
-        testCorruptedDatabase(backendType, seedValue + 40);
-        testIllegalFinalKey(backendType, seedValue + 50);
-        testImport(backendType, seedValue + 60);
-        testImportWithHistoricalPaths(backendType, seedValue + 80);
-        testPrepareWithHistoricalPaths(backendType, seedValue + 90);
+        testcase("Open shard management");
+
+        using namespace test::jtx;
+
+        beast::temp_dir shardDir;
+        Env env{*this, testConfig(shardDir.path())};
+
+        auto shardStore{env.app().getShardStore()};
+        BEAST_EXPECT(shardStore);
+
+        // Create one shard more than the open final limit
+        auto const openFinalLimit{env.app().config().getValueFor(
+            SizedItem::openFinalLimit, boost::none)};
+        auto const numShards{openFinalLimit + 1};
+
+        TestData data(seedValue, 2, numShards);
+        if (!BEAST_EXPECT(data.makeLedgers(env)))
+            return;
+
+        BEAST_EXPECT(shardStore->getCompleteShards().empty());
+
+        int oldestShardIndex{-1};
+        std::uint64_t bitMask{0};
+        for (auto i = 0; i < numShards; ++i)
+        {
+            auto shardIndex{createShard(data, *shardStore, numShards)};
+            if (!BEAST_EXPECT(
+                    shardIndex && *shardIndex >= 1 && *shardIndex <= numShards))
+                return;
+
+            bitMask |= (1ll << *shardIndex);
+
+            if (oldestShardIndex == -1)
+                oldestShardIndex = *shardIndex;
+        }
+
+        // The number of open shards exceeds the open limit by one.
+        // A sweep will close enough shards to be within the limit.
+        shardStore->sweep();
+
+        // Read from the closed shard and automatically open it
+        auto const ledgerSeq{shardStore->lastLedgerSeq(oldestShardIndex)};
+        auto const index{ledgerSeq - ledgersPerShard - 1};
+        BEAST_EXPECT(shardStore->fetchNodeObject(
+            data.ledgers_[index]->info().hash, ledgerSeq));
     }
 
 public:
@@ -1324,19 +1332,24 @@ public:
     void
     run() override
     {
-        testAll("nudb");
+        std::uint64_t const seedValue = 51;
 
-#if RIPPLE_ROCKSDB_AVAILABLE
-//      testAll ("rocksdb");
-#endif
-
-#if RIPPLE_ENABLE_SQLITE_BACKEND_TESTS
-        testAll("sqlite");
-#endif
+        testStandalone();
+        testCreateShard(seedValue);
+        testReopenDatabase(seedValue + 10);
+        testGetCompleteShards(seedValue + 20);
+        testPrepareShard(seedValue + 30);
+        testImportShard(seedValue + 40);
+        testCorruptedDatabase(seedValue + 50);
+        testIllegalFinalKey(seedValue + 60);
+        testImport(seedValue + 70);
+        testImportWithHistoricalPaths(seedValue + 80);
+        testPrepareWithHistoricalPaths(seedValue + 90);
+        testOpenShardManagement(seedValue + 100);
     }
 };
 
-BEAST_DEFINE_TESTSUITE(DatabaseShard, NodeStore, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(DatabaseShard, NodeStore, ripple);
 
 }  // namespace NodeStore
 }  // namespace ripple

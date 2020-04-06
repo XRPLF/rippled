@@ -151,12 +151,13 @@ SHAMap::fetchNodeFromDB(SHAMapHash const& hash) const
 
     if (backed_)
     {
-        if (auto obj = f_.db().fetch(hash.as_uint256(), ledgerSeq_))
+        if (auto nodeObject =
+                f_.db().fetchNodeObject(hash.as_uint256(), ledgerSeq_))
         {
             try
             {
                 node = SHAMapAbstractNode::makeFromPrefix(
-                    makeSlice(obj->getData()), hash);
+                    makeSlice(nodeObject->getData()), hash);
                 if (node)
                     canonicalize(hash, node);
             }

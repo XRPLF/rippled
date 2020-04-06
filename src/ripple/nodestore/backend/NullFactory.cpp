@@ -43,6 +43,12 @@ public:
     {
     }
 
+    bool
+    isOpen() override
+    {
+        return false;
+    }
+
     void
     close() override
     {

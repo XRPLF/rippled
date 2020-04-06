@@ -120,10 +120,11 @@ getCountsJson(Application& app, int minObjectCount)
     textTime(uptime, s, "second", 1s);
     ret[jss::uptime] = uptime;
 
-    ret[jss::node_writes] = app.getNodeStore().getStoreCount();
+    ret[jss::node_writes] = std::to_string(app.getNodeStore().getStoreCount());
     ret[jss::node_reads_total] = app.getNodeStore().getFetchTotalCount();
     ret[jss::node_reads_hit] = app.getNodeStore().getFetchHitCount();
-    ret[jss::node_written_bytes] = app.getNodeStore().getStoreSize();
+    ret[jss::node_written_bytes] =
+        std::to_string(app.getNodeStore().getStoreSize());
     ret[jss::node_read_bytes] = app.getNodeStore().getFetchSize();
 
     if (auto shardStore = app.getShardStore())
@@ -137,10 +138,11 @@ getCountsJson(Application& app, int minObjectCount)
         jv[jss::treenode_track_size] = trackSz;
         ret[jss::write_load] = shardStore->getWriteLoad();
         ret[jss::node_hit_rate] = shardStore->getCacheHitRate();
-        jv[jss::node_writes] = shardStore->getStoreCount();
+        jv[jss::node_writes] = std::to_string(shardStore->getStoreCount());
         jv[jss::node_reads_total] = shardStore->getFetchTotalCount();
         jv[jss::node_reads_hit] = shardStore->getFetchHitCount();
-        jv[jss::node_written_bytes] = shardStore->getStoreSize();
+        jv[jss::node_written_bytes] =
+            std::to_string(shardStore->getStoreSize());
         jv[jss::node_read_bytes] = shardStore->getFetchSize();
     }
 

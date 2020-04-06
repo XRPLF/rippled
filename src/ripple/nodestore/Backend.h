@@ -58,6 +58,11 @@ public:
     virtual void
     open(bool createIfMissing = true) = 0;
 
+    /** Returns true is the database is open.
+     */
+    virtual bool
+    isOpen() = 0;
+
     /** Close the backend.
         This allows the caller to catch exceptions.
     */

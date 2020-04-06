@@ -114,6 +114,12 @@ public:
         db_ = &memoryFactory.open(name_);
     }
 
+    bool
+    isOpen() override
+    {
+        return static_cast<bool>(db_);
+    }
+
     void
     close() override
     {

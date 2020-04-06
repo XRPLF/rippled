@@ -132,6 +132,12 @@ public:
             Throw<std::runtime_error>("nodestore: unknown appnum");
     }
 
+    bool
+    isOpen() override
+    {
+        return db_.is_open();
+    }
+
     void
     close() override
     {

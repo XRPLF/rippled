@@ -49,6 +49,7 @@ Shard::Shard(
     boost::filesystem::path const& dir,
     beast::Journal j)
     : app_(app)
+    , j_(j)
     , index_(index)
     , firstSeq_(db.firstLedgerSeq(index))
     , lastSeq_(std::max(firstSeq_, db.lastLedgerSeq(index)))
@@ -56,357 +57,529 @@ Shard::Shard(
           index == db.earliestShardIndex() ? lastSeq_ - firstSeq_ + 1
                                            : db.ledgersPerShard())
     , dir_((dir.empty() ? db.getRootDir() : dir) / std::to_string(index_))
-    , j_(j)
 {
-    if (index_ < db.earliestShardIndex())
-        Throw<std::runtime_error>("Shard: Invalid index");
 }
 
 Shard::~Shard()
 {
-    if (removeOnDestroy_)
+    if (!removeOnDestroy_)
+        return;
+
+    if (backend_)
     {
+        // Abort removal if the backend is in use
+        if (backendCount_ > 0)
+        {
+            JLOG(j_.error()) << "shard " << index_
+                             << " backend in use, unable to remove directory";
+            return;
+        }
+
+        // Release database files first otherwise remove_all may fail
         backend_.reset();
         lgrSQLiteDB_.reset();
         txSQLiteDB_.reset();
         acquireInfo_.reset();
+    }
 
-        try
-        {
-            boost::filesystem::remove_all(dir_);
-        }
-        catch (std::exception const& e)
-        {
-            JLOG(j_.error()) << "shard " << index_ << " exception " << e.what()
-                             << " in function " << __func__;
-        }
+    try
+    {
+        boost::filesystem::remove_all(dir_);
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(j_.fatal()) << "shard " << index_
+                         << ". Exception caught in function " << __func__
+                         << ". Error: " << e.what();
     }
 }
 
 bool
-Shard::open(Scheduler& scheduler, nudb::context& ctx)
+Shard::init(Scheduler& scheduler, nudb::context& context)
 {
-    std::lock_guard lock{mutex_};
-    assert(!backend_);
-
-    Config const& config{app_.config()};
+    Section section{app_.config().section(ConfigSection::shardDatabase())};
+    std::string const type{get<std::string>(section, "type", "nudb")};
+    auto const factory{Manager::instance().find(type)};
+    if (!factory)
     {
-        Section section{config.section(ConfigSection::shardDatabase())};
-        std::string const type{get<std::string>(section, "type", "nudb")};
-        auto factory{Manager::instance().find(type)};
-        if (!factory)
-        {
-            JLOG(j_.error()) << "shard " << index_
-                             << " failed to create backend type " << type;
-            return false;
-        }
+        JLOG(j_.error()) << "shard " << index_ << " failed to find factory for "
+                         << type;
+        return false;
+    }
+    section.set("path", dir_.string());
 
-        section.set("path", dir_.string());
-        backend_ = factory->createInstance(
-            NodeObject::keyBytes, section, scheduler, ctx, j_);
+    std::lock_guard lock{mutex_};
+    if (backend_)
+    {
+        JLOG(j_.error()) << "shard " << index_ << " already initialized";
+        return false;
+    }
+    backend_ = factory->createInstance(
+        NodeObject::keyBytes, section, scheduler, context, j_);
+
+    return open(lock);
+}
+
+bool
+Shard::isOpen() const
+{
+    std::lock_guard lock(mutex_);
+    if (!backend_)
+    {
+        JLOG(j_.error()) << "shard " << index_ << " not initialized";
+        return false;
     }
 
-    using namespace boost::filesystem;
-    auto preexist{false};
-    auto fail = [this, &preexist](std::string const& msg) {
-        pCache_.reset();
-        nCache_.reset();
-        backend_.reset();
-        lgrSQLiteDB_.reset();
-        txSQLiteDB_.reset();
-        acquireInfo_.reset();
+    return backend_->isOpen();
+}
 
-        if (!preexist)
-            remove_all(dir_);
-
-        if (!msg.empty())
-        {
-            JLOG(j_.fatal()) << "shard " << index_ << " " << msg;
-        }
+bool
+Shard::tryClose()
+{
+    // Keep database open if being acquired or finalized
+    if (state_ != final)
         return false;
-    };
 
-    auto createAcquireInfo = [this, &config]() {
-        acquireInfo_ = std::make_unique<AcquireInfo>();
+    std::lock_guard lock(mutex_);
 
-        DatabaseCon::Setup setup;
-        setup.startUp = config.START_UP;
-        setup.standAlone = config.standalone();
-        setup.dataDir = dir_;
-        setup.useGlobalPragma = true;
+    // Keep database open if in use
+    if (backendCount_ > 0)
+        return false;
 
-        acquireInfo_->SQLiteDB = std::make_unique<DatabaseCon>(
-            setup,
-            AcquireShardDBName,
-            AcquireShardDBPragma,
-            AcquireShardDBInit,
-            DatabaseCon::CheckpointerSetup{&app_.getJobQueue(), &app_.logs()});
-    };
+    if (!backend_)
+    {
+        JLOG(j_.error()) << "shard " << index_ << " not initialized";
+        return false;
+    }
+    if (!backend_->isOpen())
+        return false;
 
     try
     {
-        // Open or create the NuDB key/value store
-        preexist = exists(dir_);
-        backend_->open(!preexist);
-
-        if (!preexist)
-        {
-            // A new shard
-            createAcquireInfo();
-            acquireInfo_->SQLiteDB->getSession()
-                << "INSERT INTO Shard (ShardIndex) "
-                   "VALUES (:shardIndex);",
-                soci::use(index_);
-        }
-        else if (exists(dir_ / AcquireShardDBName))
-        {
-            // An incomplete shard, being acquired
-            createAcquireInfo();
-
-            auto& session{acquireInfo_->SQLiteDB->getSession()};
-            boost::optional<std::uint32_t> index;
-            soci::blob sociBlob(session);
-            soci::indicator blobPresent;
-
-            session << "SELECT ShardIndex, StoredLedgerSeqs "
-                       "FROM Shard "
-                       "WHERE ShardIndex = :index;",
-                soci::into(index), soci::into(sociBlob, blobPresent),
-                soci::use(index_);
-
-            if (!index || index != index_)
-                return fail("invalid acquire SQLite database");
-
-            if (blobPresent == soci::i_ok)
-            {
-                std::string s;
-                auto& storedSeqs{acquireInfo_->storedSeqs};
-                if (convert(sociBlob, s); !from_string(storedSeqs, s))
-                    return fail("invalid StoredLedgerSeqs");
-
-                if (boost::icl::first(storedSeqs) < firstSeq_ ||
-                    boost::icl::last(storedSeqs) > lastSeq_)
-                {
-                    return fail("invalid StoredLedgerSeqs");
-                }
-
-                if (boost::icl::length(storedSeqs) == maxLedgers_)
-                    // All ledgers have been acquired, shard backend is complete
-                    backendComplete_ = true;
-            }
-        }
-        else
-        {
-            // A finalized shard or has all ledgers stored in the backend
-            std::shared_ptr<NodeObject> nObj;
-            if (backend_->fetch(finalKey.data(), &nObj) != Status::ok)
-            {
-                legacy_ = true;
-                return fail("incompatible, missing backend final key");
-            }
-
-            // Check final key's value
-            SerialIter sIt(nObj->getData().data(), nObj->getData().size());
-            if (sIt.get32() != version)
-                return fail("invalid version");
-
-            if (sIt.get32() != firstSeq_ || sIt.get32() != lastSeq_)
-                return fail("out of range ledger sequences");
-
-            if (sIt.get256().isZero())
-                return fail("invalid last ledger hash");
-
-            if (exists(dir_ / LgrDBName) && exists(dir_ / TxDBName))
-                final_ = true;
-
-            backendComplete_ = true;
-        }
+        backend_->close();
     }
     catch (std::exception const& e)
     {
-        return fail(
-            std::string("exception ") + e.what() + " in function " + __func__);
+        JLOG(j_.fatal()) << "shard " << index_
+                         << ". Exception caught in function " << __func__
+                         << ". Error: " << e.what();
+        return false;
     }
 
-    // Set backend caches
-    {
-        auto const size{config.getValueFor(SizedItem::nodeCacheSize, 0)};
-        auto const age{std::chrono::seconds{
-            config.getValueFor(SizedItem::nodeCacheAge, 0)}};
-        auto const name{"shard " + std::to_string(index_)};
-
-        pCache_ = std::make_shared<PCache>(name, size, age, stopwatch(), j_);
-        nCache_ = std::make_shared<NCache>(name, stopwatch(), size, age);
-    }
-
-    if (!initSQLite(lock))
-        return fail({});
-
-    setFileStats(lock);
-    return true;
-}
-
-void
-Shard::closeAll()
-{
-    backend_.reset();
     lgrSQLiteDB_.reset();
     txSQLiteDB_.reset();
     acquireInfo_.reset();
+
+    // Reset caches to reduce memory use
+    pCache_->reset();
+    nCache_->reset();
+    app_.getShardFamily()->getFullBelowCache(lastSeq_)->reset();
+    app_.getShardFamily()->getTreeNodeCache(lastSeq_)->reset();
+
+    return true;
 }
 
 boost::optional<std::uint32_t>
 Shard::prepare()
 {
-    std::lock_guard lock(mutex_);
-    assert(backend_);
-
-    if (backendComplete_)
+    if (state_ != acquire)
     {
         JLOG(j_.warn()) << "shard " << index_
-                        << " prepare called when shard backend is complete";
-        return {};
+                        << " prepare called when not acquiring";
+        return boost::none;
     }
 
-    assert(acquireInfo_);
-    auto const& storedSeqs{acquireInfo_->storedSeqs};
-    if (storedSeqs.empty())
+    std::lock_guard lock(mutex_);
+    if (!acquireInfo_)
+    {
+        JLOG(j_.error()) << "shard " << index_
+                         << " missing acquire SQLite database";
+        return boost::none;
+    }
+
+    if (acquireInfo_->storedSeqs.empty())
         return lastSeq_;
-    return prevMissing(storedSeqs, 1 + lastSeq_, firstSeq_);
+    return prevMissing(acquireInfo_->storedSeqs, 1 + lastSeq_, firstSeq_);
 }
 
 bool
-Shard::store(std::shared_ptr<Ledger const> const& ledger)
+Shard::storeNodeObject(std::shared_ptr<NodeObject> const& nodeObject)
 {
-    auto const seq{ledger->info().seq};
-    if (seq < firstSeq_ || seq > lastSeq_)
+    if (state_ != acquire)
+    {
+        // The import node store case is an exception
+        if (nodeObject->getHash() != finalKey)
+        {
+            // Ignore residual calls from InboundLedgers
+            JLOG(j_.trace()) << "shard " << index_ << " not acquiring";
+            return false;
+        }
+    }
+
+    auto const scopedCount{makeBackendCount()};
+    if (!scopedCount)
+        return false;
+
+    pCache_->canonicalize_replace_cache(nodeObject->getHash(), nodeObject);
+
+    try
+    {
+        backend_->store(nodeObject);
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(j_.fatal()) << "shard " << index_
+                         << ". Exception caught in function " << __func__
+                         << ". Error: " << e.what();
+        return false;
+    }
+
+    nCache_->erase(nodeObject->getHash());
+    return true;
+}
+
+std::shared_ptr<NodeObject>
+Shard::fetchNodeObject(uint256 const& hash, FetchReport& fetchReport)
+{
+    auto const scopedCount{makeBackendCount()};
+    if (!scopedCount)
+        return nullptr;
+
+    // See if the node object exists in the cache
+    auto nodeObject{pCache_->fetch(hash)};
+    if (!nodeObject && !nCache_->touch_if_exists(hash))
+    {
+        // Try the backend
+        fetchReport.wentToDisk = true;
+
+        Status status;
+        try
+        {
+            status = backend_->fetch(hash.data(), &nodeObject);
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(j_.fatal())
+                << "shard " << index_ << ". Exception caught in function "
+                << __func__ << ". Error: " << e.what();
+            return nullptr;
+        }
+
+        switch (status)
+        {
+            case ok:
+            case notFound:
+                break;
+            case dataCorrupt: {
+                JLOG(j_.fatal())
+                    << "shard " << index_ << ". Corrupt node object at hash "
+                    << to_string(hash);
+                break;
+            }
+            default: {
+                JLOG(j_.warn())
+                    << "shard " << index_ << ". Unknown status=" << status
+                    << " fetching node object at hash " << to_string(hash);
+                break;
+            }
+        }
+
+        if (!nodeObject)
+        {
+            // Just in case a write occurred
+            nodeObject = pCache_->fetch(hash);
+            if (!nodeObject)
+                // We give up
+                nCache_->insert(hash);
+        }
+        else
+        {
+            // Ensure all threads get the same object
+            pCache_->canonicalize_replace_client(hash, nodeObject);
+            fetchReport.wasFound = true;
+
+            // Since this was a 'hard' fetch, we will log it
+            JLOG(j_.trace()) << "HOS: " << hash << " fetch: in shard db";
+        }
+    }
+
+    return nodeObject;
+}
+
+bool
+Shard::fetchNodeObjectFromCache(
+    uint256 const& hash,
+    std::shared_ptr<NodeObject>& nodeObject)
+{
+    auto const scopedCount{makeBackendCount()};
+    if (!scopedCount)
+        return false;
+
+    nodeObject = pCache_->fetch(hash);
+    if (nodeObject || nCache_->touch_if_exists(hash))
+        return true;
+    return false;
+}
+
+Shard::StoreLedgerResult
+Shard::storeLedger(
+    std::shared_ptr<Ledger const> const& srcLedger,
+    std::shared_ptr<Ledger const> const& next)
+{
+    StoreLedgerResult result;
+    if (state_ != acquire)
+    {
+        // Ignore residual calls from InboundLedgers
+        JLOG(j_.trace()) << "shard " << index_ << ". Not acquiring";
+        return result;
+    }
+    if (containsLedger(srcLedger->info().seq))
+    {
+        JLOG(j_.trace()) << "shard " << index_ << ". Ledger already stored";
+        return result;
+    }
+
+    auto fail = [&](std::string const& msg) {
+        JLOG(j_.error()) << "shard " << index_ << ". Source ledger sequence "
+                         << srcLedger->info().seq << ". " << msg;
+        result.error = true;
+        return result;
+    };
+
+    if (srcLedger->info().hash.isZero())
+        return fail("Invalid hash");
+    if (srcLedger->info().accountHash.isZero())
+        return fail("Invalid account hash");
+
+    auto& srcDB{const_cast<Database&>(srcLedger->stateMap().family().db())};
+    if (&srcDB == &(app_.getShardFamily()->db()))
+        return fail("Source and destination databases are the same");
+
+    auto const scopedCount{makeBackendCount()};
+    if (!scopedCount)
+        return fail("Failed to lock backend");
+
+    Batch batch;
+    batch.reserve(batchWritePreallocationSize);
+    auto storeBatch = [&]() {
+        std::uint64_t sz{0};
+        for (auto const& nodeObject : batch)
+        {
+            pCache_->canonicalize_replace_cache(
+                nodeObject->getHash(), nodeObject);
+            nCache_->erase(nodeObject->getHash());
+            sz += nodeObject->getData().size();
+        }
+
+        try
+        {
+            backend_->storeBatch(batch);
+        }
+        catch (std::exception const& e)
+        {
+            fail(
+                std::string(". Exception caught in function ") + __func__ +
+                ". Error: " + e.what());
+            return false;
+        }
+
+        result.count += batch.size();
+        result.size += sz;
+        batch.clear();
+        return true;
+    };
+
+    // Store ledger header
+    {
+        Serializer s(sizeof(std::uint32_t) + sizeof(LedgerInfo));
+        s.add32(HashPrefix::ledgerMaster);
+        addRaw(srcLedger->info(), s);
+        auto nodeObject = NodeObject::createObject(
+            hotLEDGER, std::move(s.modData()), srcLedger->info().hash);
+        batch.emplace_back(std::move(nodeObject));
+    }
+
+    bool error = false;
+    auto visit = [&](SHAMapAbstractNode& node) {
+        if (!stop_)
+        {
+            if (auto nodeObject = srcDB.fetchNodeObject(
+                    node.getNodeHash().as_uint256(), srcLedger->info().seq))
+            {
+                batch.emplace_back(std::move(nodeObject));
+                if (batch.size() < batchWritePreallocationSize || storeBatch())
+                    return true;
+            }
+        }
+
+        error = true;
+        return false;
+    };
+
+    // Store the state map
+    if (srcLedger->stateMap().getHash().isNonZero())
+    {
+        if (!srcLedger->stateMap().isValid())
+            return fail("Invalid state map");
+
+        if (next && next->info().parentHash == srcLedger->info().hash)
+        {
+            auto have = next->stateMap().snapShot(false);
+            srcLedger->stateMap().snapShot(false)->visitDifferences(
+                &(*have), visit);
+        }
+        else
+            srcLedger->stateMap().snapShot(false)->visitNodes(visit);
+        if (error)
+            return fail("Failed to store state map");
+    }
+
+    // Store the transaction map
+    if (srcLedger->info().txHash.isNonZero())
+    {
+        if (!srcLedger->txMap().isValid())
+            return fail("Invalid transaction map");
+
+        srcLedger->txMap().snapShot(false)->visitNodes(visit);
+        if (error)
+            return fail("Failed to store transaction map");
+    }
+
+    if (!batch.empty() && !storeBatch())
+        return fail("Failed to store");
+
+    return result;
+}
+
+bool
+Shard::setLedgerStored(std::shared_ptr<Ledger const> const& ledger)
+{
+    if (state_ != acquire)
+    {
+        // Ignore residual calls from InboundLedgers
+        JLOG(j_.trace()) << "shard " << index_ << " not acquiring";
+        return false;
+    }
+
+    auto const ledgerSeq{ledger->info().seq};
+    if (ledgerSeq < firstSeq_ || ledgerSeq > lastSeq_)
     {
         JLOG(j_.error()) << "shard " << index_ << " invalid ledger sequence "
-                         << seq;
+                         << ledgerSeq;
         return false;
     }
 
     std::lock_guard lock(mutex_);
-    assert(backend_);
-
-    if (backendComplete_)
+    if (!acquireInfo_)
     {
-        JLOG(j_.debug()) << "shard " << index_ << " ledger sequence " << seq
-                         << " already stored";
-        return true;
+        JLOG(j_.error()) << "shard " << index_
+                         << " missing acquire SQLite database";
+        return false;
     }
-
-    assert(acquireInfo_);
-    auto& storedSeqs{acquireInfo_->storedSeqs};
-    if (boost::icl::contains(storedSeqs, seq))
+    if (boost::icl::contains(acquireInfo_->storedSeqs, ledgerSeq))
     {
-        JLOG(j_.debug()) << "shard " << index_ << " ledger sequence " << seq
-                         << " already stored";
+        // Ignore redundant calls
+        JLOG(j_.debug()) << "shard " << index_ << " ledger sequence "
+                         << ledgerSeq << " already stored";
         return true;
     }
     // storeSQLite looks at storedSeqs so insert before the call
-    storedSeqs.insert(seq);
+    acquireInfo_->storedSeqs.insert(ledgerSeq);
 
     if (!storeSQLite(ledger, lock))
         return false;
 
-    if (boost::icl::length(storedSeqs) >= maxLedgers_)
+    if (boost::icl::length(acquireInfo_->storedSeqs) >= maxLedgers_)
     {
         if (!initSQLite(lock))
             return false;
 
-        backendComplete_ = true;
+        state_ = complete;
     }
 
-    JLOG(j_.debug()) << "shard " << index_ << " stored ledger sequence " << seq
-                     << (backendComplete_ ? " . All ledgers stored" : "");
+    JLOG(j_.debug()) << "shard " << index_ << " stored ledger sequence "
+                     << ledgerSeq;
 
     setFileStats(lock);
     return true;
 }
 
 bool
-Shard::containsLedger(std::uint32_t seq) const
+Shard::containsLedger(std::uint32_t ledgerSeq) const
 {
-    if (seq < firstSeq_ || seq > lastSeq_)
+    if (ledgerSeq < firstSeq_ || ledgerSeq > lastSeq_)
         return false;
-
-    std::lock_guard lock(mutex_);
-    if (backendComplete_)
+    if (state_ != acquire)
         return true;
 
-    assert(acquireInfo_);
-    return boost::icl::contains(acquireInfo_->storedSeqs, seq);
+    std::lock_guard lock(mutex_);
+    if (!acquireInfo_)
+    {
+        JLOG(j_.error()) << "shard " << index_
+                         << " missing acquire SQLite database";
+        return false;
+    }
+    return boost::icl::contains(acquireInfo_->storedSeqs, ledgerSeq);
 }
 
 void
 Shard::sweep()
 {
-    std::lock_guard lock(mutex_);
-    assert(pCache_ && nCache_);
+    boost::optional<Shard::Count> scopedCount;
+    {
+        std::lock_guard lock(mutex_);
+        if (!backend_ || !backend_->isOpen())
+        {
+            JLOG(j_.error()) << "shard " << index_ << " not initialized";
+            return;
+        }
+
+        scopedCount.emplace(&backendCount_);
+    }
 
     pCache_->sweep();
     nCache_->sweep();
 }
 
-std::tuple<
-    std::shared_ptr<Backend>,
-    std::shared_ptr<PCache>,
-    std::shared_ptr<NCache>>
-Shard::getBackendAll() const
+int
+Shard::getDesiredAsyncReadCount()
 {
-    std::lock_guard lock(mutex_);
-    assert(backend_);
-
-    return {backend_, pCache_, nCache_};
+    auto const scopedCount{makeBackendCount()};
+    if (!scopedCount)
+        return 0;
+    return pCache_->getTargetSize() / asyncDivider;
 }
 
-std::shared_ptr<Backend>
-Shard::getBackend() const
+float
+Shard::getCacheHitRate()
 {
-    std::lock_guard lock(mutex_);
-    assert(backend_);
-
-    return backend_;
+    auto const scopedCount{makeBackendCount()};
+    if (!scopedCount)
+        return 0;
+    return pCache_->getHitRate();
 }
 
-bool
-Shard::isBackendComplete() const
+std::chrono::steady_clock::time_point
+Shard::getLastUse() const
 {
     std::lock_guard lock(mutex_);
-    return backendComplete_;
-}
-
-std::shared_ptr<PCache>
-Shard::pCache() const
-{
-    std::lock_guard lock(mutex_);
-    assert(pCache_);
-
-    return pCache_;
-}
-
-std::shared_ptr<NCache>
-Shard::nCache() const
-{
-    std::lock_guard lock(mutex_);
-    assert(nCache_);
-
-    return nCache_;
+    return lastAccess_;
 }
 
 std::pair<std::uint64_t, std::uint32_t>
-Shard::fileInfo() const
+Shard::getFileInfo() const
 {
     std::lock_guard lock(mutex_);
     return {fileSz_, fdRequired_};
 }
 
-bool
-Shard::isFinal() const
+std::int32_t
+Shard::getWriteLoad()
 {
-    std::lock_guard lock(mutex_);
-    return final_;
+    auto const scopedCount{makeBackendCount()};
+    if (!scopedCount)
+        return 0;
+    return backend_->getWriteLoad();
 }
 
 bool
@@ -421,27 +594,26 @@ Shard::finalize(
     bool const writeSQLite,
     boost::optional<uint256> const& expectedHash)
 {
-    assert(backend_);
-
-    if (stop_)
-        return false;
-
     uint256 hash{0};
-    std::uint32_t seq{0};
+    std::uint32_t ledgerSeq{0};
     auto fail =
-        [j = j_, index = index_, &hash, &seq](std::string const& msg) {
+        [j = j_, index = index_, &hash, &ledgerSeq](std::string const& msg) {
             JLOG(j.fatal())
                 << "shard " << index << ". " << msg
                 << (hash.isZero() ? "" : ". Ledger hash " + to_string(hash))
-                << (seq == 0 ? "" : ". Ledger sequence " + std::to_string(seq));
+                << (ledgerSeq == 0
+                        ? ""
+                        : ". Ledger sequence " + std::to_string(ledgerSeq));
             return false;
         };
 
+    auto const scopedCount{makeBackendCount()};
+    if (!scopedCount)
+        return false;
+
     try
     {
-        std::unique_lock lock(mutex_);
-        if (!backendComplete_)
-            return fail("backend incomplete");
+        state_ = finalizing;
 
         /*
         TODO MP
@@ -455,12 +627,12 @@ Shard::finalize(
         */
 
         // Check if a final key has been stored
-        lock.unlock();
-        if (std::shared_ptr<NodeObject> nObj;
-            backend_->fetch(finalKey.data(), &nObj) == Status::ok)
+        if (std::shared_ptr<NodeObject> nodeObject;
+            backend_->fetch(finalKey.data(), &nodeObject) == Status::ok)
         {
             // Check final key's value
-            SerialIter sIt(nObj->getData().data(), nObj->getData().size());
+            SerialIter sIt(
+                nodeObject->getData().data(), nodeObject->getData().size());
             if (sIt.get32() != version)
                 return fail("invalid version");
 
@@ -474,7 +646,6 @@ Shard::finalize(
         {
             // In the absence of a final key, an acquire SQLite database
             // must be present in order to validate the shard
-            lock.lock();
             if (!acquireInfo_)
                 return fail("missing acquire SQLite database");
 
@@ -489,14 +660,13 @@ Shard::finalize(
                 soci::into(index), soci::into(sHash),
                 soci::into(sociBlob, blobPresent), soci::use(index_);
 
-            lock.unlock();
             if (!index || index != index_)
                 return fail("missing or invalid ShardIndex");
 
             if (!sHash)
                 return fail("missing LastLedgerHash");
 
-            if (hash.SetHexExact(*sHash); hash.isZero())
+            if (!hash.SetHexExact(*sHash) || hash.isZero())
                 return fail("invalid LastLedgerHash");
 
             if (blobPresent != soci::i_ok)
@@ -504,8 +674,6 @@ Shard::finalize(
 
             std::string s;
             convert(sociBlob, s);
-
-            lock.lock();
 
             auto& storedSeqs{acquireInfo_->storedSeqs};
             if (!from_string(storedSeqs, s) ||
@@ -520,7 +688,8 @@ Shard::finalize(
     catch (std::exception const& e)
     {
         return fail(
-            std::string("exception ") + e.what() + " in function " + __func__);
+            std::string(". Exception caught in function ") + __func__ +
+            ". Error: " + e.what());
     }
 
     // Validate the last ledger hash of a downloaded shard
@@ -529,6 +698,7 @@ Shard::finalize(
         return fail("invalid last ledger hash");
 
     // Validate every ledger stored in the backend
+    Config const& config{app_.config()};
     std::shared_ptr<Ledger> ledger;
     std::shared_ptr<Ledger const> next;
     auto const lastLedgerHash{hash};
@@ -544,28 +714,28 @@ Shard::finalize(
 
     // Start with the last ledger in the shard and walk backwards from
     // child to parent until we reach the first ledger
-    seq = lastSeq_;
-    while (seq >= firstSeq_)
+    ledgerSeq = lastSeq_;
+    while (ledgerSeq >= firstSeq_)
     {
         if (stop_)
             return false;
 
-        auto nObj = valFetch(hash);
-        if (!nObj)
+        auto nodeObject{verifyFetch(hash)};
+        if (!nodeObject)
             return fail("invalid ledger");
 
         ledger = std::make_shared<Ledger>(
-            deserializePrefixedHeader(makeSlice(nObj->getData())),
-            app_.config(),
+            deserializePrefixedHeader(makeSlice(nodeObject->getData())),
+            config,
             shardFamily);
-        if (ledger->info().seq != seq)
+        if (ledger->info().seq != ledgerSeq)
             return fail("invalid ledger sequence");
         if (ledger->info().hash != hash)
             return fail("invalid ledger hash");
 
-        ledger->stateMap().setLedgerSeq(seq);
-        ledger->txMap().setLedgerSeq(seq);
-        ledger->setImmutable(app_.config());
+        ledger->stateMap().setLedgerSeq(ledgerSeq);
+        ledger->txMap().setLedgerSeq(ledgerSeq);
+        ledger->setImmutable(config);
         if (!ledger->stateMap().fetchRoot(
                 SHAMapHash{ledger->info().accountHash}, nullptr))
         {
@@ -578,7 +748,7 @@ Shard::finalize(
             return fail("missing root TXN node");
         }
 
-        if (!valLedger(ledger, next))
+        if (!verifyLedger(ledger, next))
             return fail("failed to validate ledger");
 
         if (writeSQLite)
@@ -590,7 +760,7 @@ Shard::finalize(
 
         hash = ledger->info().parentHash;
         next = std::move(ledger);
-        --seq;
+        --ledgerSeq;
 
         pCache_->reset();
         nCache_->reset();
@@ -628,8 +798,9 @@ Shard::finalize(
     }
     catch (std::exception const& e)
     {
-        return fail(std::string("exception ") +
-            e.what() + " in function " + __func__);
+        return fail(
+            std::string(". Exception caught in function ") + __func__ +
+            ". Error: " + e.what());
     }
     */
 
@@ -639,44 +810,199 @@ Shard::finalize(
     s.add32(firstSeq_);
     s.add32(lastSeq_);
     s.addBitString(lastLedgerHash);
-    auto nObj{
+    auto nodeObject{
         NodeObject::createObject(hotUNKNOWN, std::move(s.modData()), finalKey)};
     try
     {
-        backend_->store(nObj);
+        backend_->store(nodeObject);
+
         std::lock_guard lock(mutex_);
 
-        // Remove the acquire SQLite database if present
+        // Remove the acquire SQLite database
         if (acquireInfo_)
+        {
             acquireInfo_.reset();
-        remove_all(dir_ / AcquireShardDBName);
+            remove_all(dir_ / AcquireShardDBName);
+        }
 
         if (!initSQLite(lock))
             return fail("failed to initialize SQLite databases");
 
         setFileStats(lock);
-        final_ = true;
+        lastAccess_ = std::chrono::steady_clock::now();
     }
     catch (std::exception const& e)
     {
         return fail(
-            std::string("exception ") + e.what() + " in function " + __func__);
+            std::string(". Exception caught in function ") + __func__ +
+            ". Error: " + e.what());
     }
 
+    state_ = final;
     return true;
 }
 
 bool
-Shard::initSQLite(std::lock_guard<std::recursive_mutex> const&)
+Shard::open(std::lock_guard<std::mutex> const& lock)
+{
+    using namespace boost::filesystem;
+    Config const& config{app_.config()};
+    auto preexist{false};
+    auto fail = [this, &preexist](std::string const& msg) {
+        backend_->close();
+        lgrSQLiteDB_.reset();
+        txSQLiteDB_.reset();
+        acquireInfo_.reset();
+
+        pCache_.reset();
+        nCache_.reset();
+
+        state_ = acquire;
+
+        if (!preexist)
+            remove_all(dir_);
+
+        if (!msg.empty())
+        {
+            JLOG(j_.fatal()) << "shard " << index_ << " " << msg;
+        }
+        return false;
+    };
+    auto createAcquireInfo = [this, &config]() {
+        acquireInfo_ = std::make_unique<AcquireInfo>();
+
+        DatabaseCon::Setup setup;
+        setup.startUp = config.standalone() ? config.LOAD : config.START_UP;
+        setup.standAlone = config.standalone();
+        setup.dataDir = dir_;
+        setup.useGlobalPragma = true;
+
+        acquireInfo_->SQLiteDB = std::make_unique<DatabaseCon>(
+            setup,
+            AcquireShardDBName,
+            AcquireShardDBPragma,
+            AcquireShardDBInit,
+            DatabaseCon::CheckpointerSetup{&app_.getJobQueue(), &app_.logs()});
+        state_ = acquire;
+    };
+
+    try
+    {
+        // Open or create the NuDB key/value store
+        preexist = exists(dir_);
+        backend_->open(!preexist);
+
+        if (!preexist)
+        {
+            // A new shard
+            createAcquireInfo();
+            acquireInfo_->SQLiteDB->getSession()
+                << "INSERT INTO Shard (ShardIndex) "
+                   "VALUES (:shardIndex);",
+                soci::use(index_);
+        }
+        else if (exists(dir_ / AcquireShardDBName))
+        {
+            // A shard being acquired, backend is likely incomplete
+            createAcquireInfo();
+
+            auto& session{acquireInfo_->SQLiteDB->getSession()};
+            boost::optional<std::uint32_t> index;
+            soci::blob sociBlob(session);
+            soci::indicator blobPresent;
+
+            session << "SELECT ShardIndex, StoredLedgerSeqs "
+                       "FROM Shard "
+                       "WHERE ShardIndex = :index;",
+                soci::into(index), soci::into(sociBlob, blobPresent),
+                soci::use(index_);
+
+            if (!index || index != index_)
+                return fail("invalid acquire SQLite database");
+
+            if (blobPresent == soci::i_ok)
+            {
+                std::string s;
+                auto& storedSeqs{acquireInfo_->storedSeqs};
+                if (convert(sociBlob, s); !from_string(storedSeqs, s))
+                    return fail("invalid StoredLedgerSeqs");
+
+                if (boost::icl::first(storedSeqs) < firstSeq_ ||
+                    boost::icl::last(storedSeqs) > lastSeq_)
+                {
+                    return fail("invalid StoredLedgerSeqs");
+                }
+
+                // Check if backend is complete
+                if (boost::icl::length(storedSeqs) == maxLedgers_)
+                    state_ = complete;
+            }
+        }
+        else
+        {
+            // A shard that is final or its backend is complete
+            // and ready to be finalized
+            std::shared_ptr<NodeObject> nodeObject;
+            if (backend_->fetch(finalKey.data(), &nodeObject) != Status::ok)
+            {
+                legacy_ = true;
+                return fail("incompatible, missing backend final key");
+            }
+
+            // Check final key's value
+            SerialIter sIt(
+                nodeObject->getData().data(), nodeObject->getData().size());
+            if (sIt.get32() != version)
+                return fail("invalid version");
+
+            if (sIt.get32() != firstSeq_ || sIt.get32() != lastSeq_)
+                return fail("out of range ledger sequences");
+
+            if (sIt.get256().isZero())
+                return fail("invalid last ledger hash");
+
+            if (exists(dir_ / LgrDBName) && exists(dir_ / TxDBName))
+            {
+                lastAccess_ = std::chrono::steady_clock::now();
+                state_ = final;
+            }
+            else
+                state_ = complete;
+        }
+    }
+    catch (std::exception const& e)
+    {
+        return fail(
+            std::string(". Exception caught in function ") + __func__ +
+            ". Error: " + e.what());
+    }
+
+    // Set backend caches
+    auto const size{config.getValueFor(SizedItem::nodeCacheSize, 0)};
+    auto const age{
+        std::chrono::seconds{config.getValueFor(SizedItem::nodeCacheAge, 0)}};
+    auto const name{"shard " + std::to_string(index_)};
+    pCache_ = std::make_unique<PCache>(name, size, age, stopwatch(), j_);
+    nCache_ = std::make_unique<NCache>(name, stopwatch(), size, age);
+
+    if (!initSQLite(lock))
+        return fail({});
+
+    setFileStats(lock);
+    return true;
+}
+
+bool
+Shard::initSQLite(std::lock_guard<std::mutex> const&)
 {
     Config const& config{app_.config()};
     DatabaseCon::Setup const setup = [&]() {
-        DatabaseCon::Setup result;
-        result.startUp = config.START_UP;
-        result.standAlone = config.standalone();
-        result.dataDir = dir_;
-        result.useGlobalPragma = !backendComplete_;
-        return result;
+        DatabaseCon::Setup setup;
+        setup.startUp = config.standalone() ? config.LOAD : config.START_UP;
+        setup.standAlone = config.standalone();
+        setup.dataDir = dir_;
+        setup.useGlobalPragma = (state_ != complete);
+        return setup;
     }();
 
     try
@@ -687,7 +1013,7 @@ Shard::initSQLite(std::lock_guard<std::recursive_mutex> const&)
         if (txSQLiteDB_)
             txSQLiteDB_.reset();
 
-        if (backendComplete_)
+        if (state_ != acquire)
         {
             lgrSQLiteDB_ = std::make_unique<DatabaseCon>(
                 setup, LgrDBName, CompleteShardDBPragma, LgrDBInit);
@@ -731,22 +1057,24 @@ Shard::initSQLite(std::lock_guard<std::recursive_mutex> const&)
     }
     catch (std::exception const& e)
     {
-        JLOG(j_.fatal()) << "shard " << index_ << " exception " << e.what()
-                         << " in function " << __func__;
+        JLOG(j_.fatal()) << "shard " << index_
+                         << ". Exception caught in function " << __func__
+                         << ". Error: " << e.what();
         return false;
     }
+
     return true;
 }
 
 bool
 Shard::storeSQLite(
     std::shared_ptr<Ledger const> const& ledger,
-    std::lock_guard<std::recursive_mutex> const&)
+    std::lock_guard<std::mutex> const&)
 {
     if (stop_)
         return false;
 
-    auto const seq{ledger->info().seq};
+    auto const ledgerSeq{ledger->info().seq};
 
     try
     {
@@ -757,14 +1085,14 @@ Shard::storeSQLite(
 
             session << "DELETE FROM Transactions "
                        "WHERE LedgerSeq = :seq;",
-                soci::use(seq);
+                soci::use(ledgerSeq);
             session << "DELETE FROM AccountTransactions "
                        "WHERE LedgerSeq = :seq;",
-                soci::use(seq);
+                soci::use(ledgerSeq);
 
             if (ledger->info().txHash.isNonZero())
             {
-                auto const sSeq{std::to_string(seq)};
+                auto const sSeq{std::to_string(ledgerSeq)};
                 if (!ledger->txMap().isValid())
                 {
                     JLOG(j_.error()) << "shard " << index_
@@ -826,7 +1154,7 @@ Shard::storeSQLite(
                     session
                         << (STTx::getMetaSQLInsertReplaceHeader() +
                             item.first->getMetaSQL(
-                                seq, sqlEscape(s.modData())) +
+                                ledgerSeq, sqlEscape(s.modData())) +
                             ';');
                 }
             }
@@ -848,7 +1176,7 @@ Shard::storeSQLite(
 
             session << "DELETE FROM Ledgers "
                        "WHERE LedgerSeq = :seq;",
-                soci::use(seq);
+                soci::use(ledgerSeq);
             session
                 << "INSERT OR REPLACE INTO Ledgers ("
                    "LedgerHash, LedgerSeq, PrevHash, TotalCoins, ClosingTime,"
@@ -858,7 +1186,7 @@ Shard::storeSQLite(
                    ":ledgerHash, :ledgerSeq, :prevHash, :totalCoins,"
                    ":closingTime, :prevClosingTime, :closeTimeRes,"
                    ":closeFlags, :accountSetHash, :transSetHash);",
-                soci::use(sHash), soci::use(seq), soci::use(sParentHash),
+                soci::use(sHash), soci::use(ledgerSeq), soci::use(sParentHash),
                 soci::use(sDrops),
                 soci::use(ledger->info().closeTime.time_since_epoch().count()),
                 soci::use(
@@ -899,15 +1227,17 @@ Shard::storeSQLite(
     }
     catch (std::exception const& e)
     {
-        JLOG(j_.fatal()) << "shard " << index_ << " exception " << e.what()
-                         << " in function " << __func__;
+        JLOG(j_.fatal()) << "shard " << index_
+                         << ". Exception caught in function " << __func__
+                         << ". Error: " << e.what();
         return false;
     }
+
     return true;
 }
 
 void
-Shard::setFileStats(std::lock_guard<std::recursive_mutex> const&)
+Shard::setFileStats(std::lock_guard<std::mutex> const&)
 {
     fileSz_ = 0;
     fdRequired_ = 0;
@@ -925,18 +1255,19 @@ Shard::setFileStats(std::lock_guard<std::recursive_mutex> const&)
     }
     catch (std::exception const& e)
     {
-        JLOG(j_.error()) << "shard " << index_ << " exception " << e.what()
-                         << " in function " << __func__;
+        JLOG(j_.fatal()) << "shard " << index_
+                         << ". Exception caught in function " << __func__
+                         << ". Error: " << e.what();
     }
 }
 
 bool
-Shard::valLedger(
+Shard::verifyLedger(
     std::shared_ptr<Ledger const> const& ledger,
     std::shared_ptr<Ledger const> const& next) const
 {
     auto fail = [j = j_, index = index_, &ledger](std::string const& msg) {
-        JLOG(j.fatal()) << "shard " << index << ". " << msg
+        JLOG(j.error()) << "shard " << index << ". " << msg
                         << (ledger->info().hash.isZero() ? ""
                                                          : ". Ledger hash " +
                                     to_string(ledger->info().hash))
@@ -955,7 +1286,7 @@ Shard::valLedger(
     auto visit = [this, &error](SHAMapAbstractNode& node) {
         if (stop_)
             return false;
-        if (!valFetch(node.getNodeHash().as_uint256()))
+        if (!verifyFetch(node.getNodeHash().as_uint256()))
             error = true;
         return !error;
     };
@@ -976,9 +1307,10 @@ Shard::valLedger(
         catch (std::exception const& e)
         {
             return fail(
-                std::string("exception ") + e.what() + " in function " +
-                __func__);
+                std::string(". Exception caught in function ") + __func__ +
+                ". Error: " + e.what());
         }
+
         if (stop_)
             return false;
         if (error)
@@ -998,8 +1330,8 @@ Shard::valLedger(
         catch (std::exception const& e)
         {
             return fail(
-                std::string("exception ") + e.what() + " in function " +
-                __func__);
+                std::string(". Exception caught in function ") + __func__ +
+                ". Error: " + e.what());
         }
         if (stop_)
             return false;
@@ -1011,26 +1343,27 @@ Shard::valLedger(
 }
 
 std::shared_ptr<NodeObject>
-Shard::valFetch(uint256 const& hash) const
+Shard::verifyFetch(uint256 const& hash) const
 {
-    std::shared_ptr<NodeObject> nObj;
-    auto fail = [j = j_, index = index_, &hash, &nObj](std::string const& msg) {
-        JLOG(j.fatal()) << "shard " << index << ". " << msg
-                        << ". Node object hash " << to_string(hash);
-        nObj.reset();
-        return nObj;
-    };
+    std::shared_ptr<NodeObject> nodeObject;
+    auto fail =
+        [j = j_, index = index_, &hash, &nodeObject](std::string const& msg) {
+            JLOG(j.error()) << "shard " << index << ". " << msg
+                            << ". Node object hash " << to_string(hash);
+            nodeObject.reset();
+            return nodeObject;
+        };
 
     try
     {
-        switch (backend_->fetch(hash.data(), &nObj))
+        switch (backend_->fetch(hash.data(), &nodeObject))
         {
             case ok:
-                // This verifies that the hash of node object matches the
-                // payload
-                if (nObj->getHash() != sha512Half(makeSlice(nObj->getData())))
+                // Verify that the hash of node object matches the payload
+                if (nodeObject->getHash() !=
+                    sha512Half(makeSlice(nodeObject->getData())))
                     return fail("Node object hash does not match payload");
-                return nObj;
+                return nodeObject;
             case notFound:
                 return fail("Missing node object");
             case dataCorrupt:
@@ -1042,8 +1375,32 @@ Shard::valFetch(uint256 const& hash) const
     catch (std::exception const& e)
     {
         return fail(
-            std::string("exception ") + e.what() + " in function " + __func__);
+            std::string(". Exception caught in function ") + __func__ +
+            ". Error: " + e.what());
     }
+}
+
+Shard::Count
+Shard::makeBackendCount()
+{
+    if (stop_)
+        return {nullptr};
+
+    std::lock_guard lock(mutex_);
+    if (!backend_)
+    {
+        JLOG(j_.error()) << "shard " << index_ << " not initialized";
+        return {nullptr};
+    }
+    if (!backend_->isOpen())
+    {
+        if (!open(lock))
+            return {nullptr};
+    }
+    else if (state_ == final)
+        lastAccess_ = std::chrono::steady_clock::now();
+
+    return Shard::Count(&backendCount_);
 }
 
 }  // namespace NodeStore
