@@ -19,7 +19,7 @@ variables:
   DPKG_CONTAINER_FULLNAME: "${DPKG_CONTAINER_NAME}:${DPKG_CONTAINER_TAG}"
   ARTIFACTORY_HOST: "artifactory.ops.ripple.com"
   ARTIFACTORY_HUB: "${ARTIFACTORY_HOST}:6555"
-  GIT_SIGN_PUBKEYS_URL: "https://gitlab.ops.ripple.com/snippets/11/raw"
+  GIT_SIGN_PUBKEYS_URL: "https://gitlab.ops.ripple.com/xrpledger/rippled-packages/snippets/49/raw"
   PUBLIC_REPO_ROOT: "https://repos.ripple.com/repos"
   # also need to define this variable ONLY for the primary
   # build/publish pipeline on the mainline repo:
