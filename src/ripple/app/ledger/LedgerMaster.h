@@ -39,6 +39,7 @@
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/RippleLedgerHash.h>
 #include <ripple/protocol/STValidation.h>
+#include <boost/optional.hpp>
 
 #include <mutex>
 
@@ -280,11 +281,6 @@ private:
     // Try to publish ledgers, acquire missing ledgers.  Always called with
     // m_mutex locked.  The passed lock is a reminder to callers.
     void doAdvance(std::unique_lock<std::recursive_mutex>&);
-    bool shouldAcquire(
-        std::uint32_t const currentLedger,
-        std::uint32_t const ledgerHistory,
-        std::uint32_t const ledgerHistoryIndex,
-        std::uint32_t const candidateLedger) const;
 
     std::vector<std::shared_ptr<Ledger const>>
     findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>&);
@@ -295,7 +291,6 @@ private:
     // The passed lock is a reminder to callers.
     bool newPFWork(const char *name, std::unique_lock<std::recursive_mutex>&);
 
-private:
     Application& app_;
     beast::Journal m_journal;
 

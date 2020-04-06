@@ -56,7 +56,9 @@ public:
     /** Whether advisory delete is enabled. */
     virtual bool advisoryDelete() const = 0;
 
-    /** Last ledger which was copied during rotation of backends. */
+    /** Maximum ledger that has been deleted, or will be deleted if
+     *  currently in the act of online deletion.
+     */
     virtual LedgerIndex getLastRotated() = 0;
 
     /** Highest ledger that may be deleted. */
