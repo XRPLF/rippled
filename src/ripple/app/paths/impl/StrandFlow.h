@@ -251,7 +251,7 @@ flow (
                     strand[i]->validFwd (checkSB, checkAfView, stepIn);
                 if (!valid)
                 {
-                    JLOG (j.error())
+                    JLOG (j.warn())
                         << "Strand re-execute check failed. Step: " << i;
                     break;
                 }
