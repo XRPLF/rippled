@@ -725,7 +725,7 @@ DirectStepI<TDerived>::validFwd (
 
     if (maxSrcToDst < cache_->srcToDst)
     {
-        JLOG (j_.error()) <<
+        JLOG (j_.warn()) <<
             "DirectStepI: Strand re-execute check failed." <<
             " Exceeded max src->dst limit" <<
             " max src->dst: " << to_string (maxSrcToDst) <<
@@ -736,7 +736,7 @@ DirectStepI<TDerived>::validFwd (
     if (!(checkNear (savCache.in, cache_->in) &&
           checkNear (savCache.out, cache_->out)))
     {
-        JLOG (j_.error()) <<
+        JLOG (j_.warn()) <<
             "DirectStepI: Strand re-execute check failed." <<
             " ExpectedIn: " << to_string (savCache.in) <<
             " CachedIn: " << to_string (cache_->in) <<

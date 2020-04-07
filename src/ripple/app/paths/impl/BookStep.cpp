@@ -964,7 +964,7 @@ BookStep<TIn, TOut, TDerived>::validFwd (
     if (!(checkNear (savCache.in, cache_->in) &&
             checkNear (savCache.out, cache_->out)))
     {
-        JLOG (j_.error()) <<
+        JLOG (j_.warn()) <<
             "Strand re-execute check failed." <<
             " ExpectedIn: " << to_string (savCache.in) <<
             " CachedIn: " << to_string (cache_->in) <<

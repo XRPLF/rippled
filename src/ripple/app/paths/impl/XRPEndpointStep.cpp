@@ -315,7 +315,7 @@ XRPEndpointStep<TDerived>::validFwd (
 
     if (!isLast_ && balance < xrpIn)
     {
-        JLOG (j_.error()) << "XRPEndpointStep: Strand re-execute check failed."
+        JLOG (j_.warn()) << "XRPEndpointStep: Strand re-execute check failed."
             << " Insufficient balance: " << to_string (balance)
             << " Requested: " << to_string (xrpIn);
         return {false, EitherAmount (balance)};
@@ -323,7 +323,7 @@ XRPEndpointStep<TDerived>::validFwd (
 
     if (xrpIn != *cache_)
     {
-        JLOG (j_.error()) << "XRPEndpointStep: Strand re-execute check failed."
+        JLOG (j_.warn()) << "XRPEndpointStep: Strand re-execute check failed."
             << " ExpectedIn: " << to_string (*cache_)
             << " CachedIn: " << to_string (xrpIn);
     }
