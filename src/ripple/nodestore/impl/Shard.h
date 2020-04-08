@@ -57,6 +57,8 @@ public:
         std::uint32_t index,
         beast::Journal j);
 
+    ~Shard();
+
     bool
     open(Scheduler& scheduler, nudb::context& ctx);
 
@@ -124,6 +126,12 @@ public:
 
     void
     stop() {stop_ = true;}
+
+    /** If called, the shard directory will be removed when
+        the shard is destroyed.
+    */
+    void
+    removeOnDestroy() {removeOnDestroy_ = true;}
 
     // Current shard version
     static constexpr std::uint32_t version {2};
@@ -201,6 +209,9 @@ private:
 
     // Determines if the shard needs to stop processing for shutdown
     std::atomic<bool> stop_ {false};
+
+    // Determines if the shard directory should be removed in the destructor
+    std::atomic<bool> removeOnDestroy_ {false};
 
     // Set the backend cache
     // Lock over mutex_ required

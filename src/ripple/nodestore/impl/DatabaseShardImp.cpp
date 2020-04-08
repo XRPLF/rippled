@@ -147,10 +147,10 @@ DatabaseShardImp::init()
                         return false;
 
                     // Remove legacy shard
+                    shard->removeOnDestroy();
                     JLOG(j_.warn()) <<
                         "shard " << shardIndex <<
-                        " incompatible legacy shard, removing";
-                    remove_all(shardDir);
+                        " removed, legacy shard";
                     continue;
                 }
 
@@ -740,12 +740,12 @@ DatabaseShardImp::import(Database& source)
 
             // Create the new shard
             app_.shardFamily()->reset();
-            auto const shardDir {dir_ / std::to_string(shardIndex)};
             auto shard {std::make_unique<Shard>(app_, *this, shardIndex, j_)};
             if (!shard->open(scheduler_, *ctx_))
                 continue;
 
             // Create a marker file to signify an import in progress
+            auto const shardDir {dir_ / std::to_string(shardIndex)};
             auto const markerFile {shardDir / importMarker_};
             {
                 std::ofstream ofs {markerFile.string()};
@@ -753,8 +753,8 @@ DatabaseShardImp::import(Database& source)
                 {
                     JLOG(j_.error()) <<
                         "shard " << shardIndex <<
-                        " is unable to create temp marker file";
-                    remove_all(shardDir);
+                        " failed to create temp marker file";
+                    shard->removeOnDestroy();
                     continue;
                 }
                 ofs.close();
@@ -825,14 +825,14 @@ DatabaseShardImp::import(Database& source)
                     JLOG(j_.error()) <<
                         "exception " << e.what() <<
                         " in function " << __func__;
-                    remove_all(shardDir);
+                    shard->removeOnDestroy();
                 }
             }
             else
             {
                 JLOG(j_.error()) <<
                     "shard " << shardIndex << " failed to import";
-                remove_all(shardDir);
+                shard->removeOnDestroy();
             }
         }
 
@@ -1239,26 +1239,15 @@ DatabaseShardImp::finalizeShard(
             if (isStopping())
                 return;
 
-            // Bad shard, remove it
+            // Invalid or corrupt shard, remove it
             {
                 std::lock_guard lock(mutex_);
                 shards_.erase(shardIndex);
                 updateStatus(lock);
-
-                using namespace boost::filesystem;
-                path const dir {shard->getDir()};
-                shard.reset();
-                try
-                {
-                    remove_all(dir);
-                }
-                catch (std::exception const& e)
-                {
-                    JLOG(j_.error()) <<
-                        "exception " << e.what() << " in function " << __func__;
-                }
             }
 
+            shard->removeOnDestroy();
+            shard.reset();
             setFileStats();
             return;
         }
@@ -1404,28 +1393,19 @@ DatabaseShardImp::storeLedgerInShard(
 
     if (!shard->store(ledger))
     {
-        // Shard may be corrupt, remove it
-        std::lock_guard lock(mutex_);
+        // Invalid or corrupt shard, remove it
+        {
+            std::lock_guard lock(mutex_);
+            shards_.erase(shard->index());
 
-        shards_.erase(shard->index());
-        if (shard->index() == acquireIndex_)
-            acquireIndex_ = 0;
+            if (shard->index() == acquireIndex_)
+                acquireIndex_ = 0;
 
-        updateStatus(lock);
+            updateStatus(lock);
+        }
 
-        using namespace boost::filesystem;
-        path const dir {shard->getDir()};
+        shard->removeOnDestroy();
         shard.reset();
-        try
-        {
-            remove_all(dir);
-        }
-        catch (std::exception const& e)
-        {
-            JLOG(j_.error()) <<
-                "exception " << e.what() << " in function " << __func__;
-        }
-
         result = false;
     }
     else if (shard->isBackendComplete())

@@ -52,6 +52,29 @@ Shard::Shard(
         Throw<std::runtime_error>("Shard: Invalid index");
 }
 
+Shard::~Shard()
+{
+    if (removeOnDestroy_)
+    {
+        backend_.reset();
+        lgrSQLiteDB_.reset();
+        txSQLiteDB_.reset();
+        acquireInfo_.reset();
+
+        try
+        {
+            boost::filesystem::remove_all(dir_);
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(j_.error()) <<
+                "shard " << index_ <<
+                " exception " << e.what() <<
+                " in function " << __func__;
+        }
+    }
+}
+
 bool
 Shard::open(Scheduler& scheduler, nudb::context& ctx)
 {
