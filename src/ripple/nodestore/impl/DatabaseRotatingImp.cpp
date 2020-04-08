@@ -55,15 +55,54 @@ DatabaseRotatingImp::DatabaseRotatingImp(
     setParent(parent);
 }
 
-std::shared_ptr<Backend>
-DatabaseRotatingImp::rotateBackends(
-    std::shared_ptr<Backend> newBackend,
-    std::lock_guard<std::mutex> const&)
+void
+DatabaseRotatingImp::rotateBackends(std::shared_ptr<Backend> newBackend)
 {
-    auto oldBackend{std::move(archiveBackend_)};
+    std::lock_guard lock(mutex_);
+    archiveBackend_->setDeletePath();
     archiveBackend_ = std::move(writableBackend_);
     writableBackend_ = std::move(newBackend);
-    return oldBackend;
+}
+
+std::string
+DatabaseRotatingImp::getName() const
+{
+    std::lock_guard lock(mutex_);
+    return writableBackend_->getName();
+}
+
+std::int32_t
+DatabaseRotatingImp::getWriteLoad() const
+{
+    std::lock_guard lock(mutex_);
+    return writableBackend_->getWriteLoad();
+}
+
+void
+DatabaseRotatingImp::import(Database& source)
+{
+    auto const backend = [&] {
+        std::lock_guard lock(mutex_);
+        return writableBackend_;
+    }();
+
+    importInternal(*backend, source);
+}
+
+bool
+DatabaseRotatingImp::storeLedger(std::shared_ptr<Ledger const> const& srcLedger)
+{
+    auto const backend = [&] {
+        std::lock_guard lock(mutex_);
+        return writableBackend_;
+    }();
+
+    return Database::storeLedger(
+        *srcLedger,
+        backend,
+        pCache_,
+        nCache_,
+        nullptr);
 }
 
 void
@@ -75,7 +114,13 @@ DatabaseRotatingImp::store(
 {
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
     pCache_->canonicalize_replace_cache(hash, nObj);
-    getWritableBackend()->store(nObj);
+
+    auto const backend = [&] {
+        std::lock_guard lock(mutex_);
+        return writableBackend_;
+    }();
+    backend->store(nObj);
+
     nCache_->erase(hash);
     storeStats(nObj->getData().size());
 }
@@ -90,6 +135,7 @@ DatabaseRotatingImp::asyncFetch(
     object = pCache_->fetch(hash);
     if (object || nCache_->touch_if_exists(hash))
         return true;
+
     // Otherwise post a read
     Database::asyncFetch(hash, seq, pCache_, nCache_);
     return false;
@@ -114,19 +160,49 @@ DatabaseRotatingImp::sweep()
 std::shared_ptr<NodeObject>
 DatabaseRotatingImp::fetchFrom(uint256 const& hash, std::uint32_t seq)
 {
-    Backends b = getBackends();
-    auto nObj = fetchInternal(hash, b.writableBackend);
-    if (!nObj)
+    auto backends = [&] {
+        std::lock_guard lock(mutex_);
+        return std::make_pair(writableBackend_, archiveBackend_);
+    }();
+
+    // Try to fetch from the writable backend
+    auto nObj = fetchInternal(hash, backends.first);
+    if (! nObj)
     {
-        nObj = fetchInternal(hash, b.archiveBackend);
+        // Otherwise try to fetch from the archive backend
+        nObj = fetchInternal(hash, backends.second);
         if (nObj)
         {
-            getWritableBackend()->store(nObj);
+            {
+                // Refresh the writable backend pointer
+                std::lock_guard lock(mutex_);
+                backends.first = writableBackend_;
+            }
+
+            // Update writable backend with data from the archive backend
+            backends.first->store(nObj);
             nCache_->erase(hash);
         }
     }
     return nObj;
 }
 
-}  // namespace NodeStore
-}  // namespace ripple
+void
+DatabaseRotatingImp::for_each(
+    std::function <void(std::shared_ptr<NodeObject>)> f)
+{
+    auto const backends = [&] {
+        std::lock_guard lock(mutex_);
+        return std::make_pair(writableBackend_, archiveBackend_);
+    }();
+
+    // Iterate the writable backend
+    backends.first->for_each(f);
+
+    // Iterate the archive backend
+    backends.second->for_each(f);
+}
+
+
+} // NodeStore
+} // ripple
