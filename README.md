@@ -56,6 +56,7 @@ git-subtree. See those directories' README files for more details.
 * [XRP Ledger Dev Portal](https://developers.ripple.com/)
 * [XRP News](https://ripple.com/category/xrp/)
 * [Setup and Installation](https://developers.ripple.com/install-rippled.html)
+* [Doxygen](https://ripple.github.io/rippled)
 
 To learn about how Ripple is transforming global payments, visit
 <https://ripple.com/contact/>.

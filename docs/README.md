@@ -1,75 +1,63 @@
 # Building documentation
 
-## Install Dependencies
-
-### Windows
+## Dependencies
 
 Install these dependencies:
 
-1. Install [Doxygen](http://www.stack.nl/~dimitri/doxygen/download.html)
+- [Doxygen](http://www.doxygen.nl): All major platforms have [official binary
+  distributions](http://www.doxygen.nl/download.html#srcbin), or you can
+  build from [source](http://www.doxygen.nl/download.html#srcbin).
 
-### MacOS
+  - MacOS: We recommend installing via Homebrew: `brew install doxygen`.
+    The executable will be installed in `/usr/local/bin` which is already
+    in the default `PATH`.
 
-1. Install doxygen:
-  * Use homebrew to install: `brew install doxygen`.  The executable will be
-    installed in `/usr/local/bin` which is already in your path.
-  * Alternatively, install from here: [doxygen](http://www.stack.nl/~dimitri/doxygen/download.html).
-    You'll then need to make doxygen available to your command line.  You can
-    do this by adding a symbolic link from `/usr/local/bin` to the doxygen
-    executable.  For example, `$ ln -s /Applications/Doxygen.app/Contents/Resources/doxygen /usr/local/bin/doxygen`
+    If you use the official binary distribution, then you'll need to make
+    Doxygen available to your command line. You can do this by adding
+    a symbolic link from `/usr/local/bin` to the `doxygen` executable. For
+    example,
 
-### Linux
+    ```
+    $ ln -s /Applications/Doxygen.app/Contents/Resources/doxygen /usr/local/bin/doxygen
+    ```
 
-1. Install doxygen using your package manager OR from source using the links above.
+- [PlantUML](http://plantuml.com): 
 
-### [Optional] Install Plantuml (all platforms)
+  1. Install a functioning Java runtime, if you don't already have one.
+  2. Download [`plantuml.jar`](http://sourceforge.net/projects/plantuml/files/plantuml.jar/download).
 
-Doxygen supports the optional use of [plantuml](http://plantuml.com) to
-generate diagrams from `@startuml` sections. We don't currently rely on this
-functionality for docs, so it's largely optional. Requirements:
+- [Graphviz](https://www.graphviz.org):
 
-1. Download/install a functioning java runtime, if you don't already have one.
-2. Download [plantuml](http://plantuml.com) from
-   [here](http://sourceforge.net/projects/plantuml/files/plantuml.jar/download).
-   Set a system environment variable named `DOXYGEN_PLANTUML_JAR_PATH` to
-   the absolute path of the `plantuml.jar` file you downloaded.
+  - Linux: Install from your package manager.
+  - Windows: Use an [official installer](https://graphviz.gitlab.io/_pages/Download/Download_windows.html).
+  - MacOS: Install via Homebrew: `brew install graphviz`.
 
-
-## Configure
-
-You should set these environment variables:
-
-- `DOXYGEN_OUTPUT_DIRECTORY`
-- `DOXYGEN_PLANTUML_JAR_PATH`
-
-## Build
-
-From the rippled root folder:
-
-```
-doxygen docs/Doxyfile
-```
-
-The output will be wherever you chose for `DOXYGEN_OUTPUT_DIRECTORY`.
 
 ## Docker
 
-(applicable to all platforms)
-
-Instead of installing the doxygen tools locally, you can use the provided `Dockerfile` to create
-an ubuntu based image for running the tools:
+Instead of installing the above dependencies locally, you can use the official
+build environment Docker image, which has all of them installed already.
 
 1. Install [Docker](https://docs.docker.com/engine/installation/)
-2. Build Docker image. From the rippled root folder:
+2. Pull the image:
+  ```
+  sudo docker pull rippleci/rippled-ci-builder:2944b78d22db
+  ```
+3. Run the image from the project folder:
+  ```
+  sudo docker run -v $PWD:/opt/rippled --rm rippleci/rippled-ci-builder:2944b78d22db
+  ```
+
+
+## Build
+
+There is a `docs` target in the CMake configuration.
 
 ```
-sudo docker build -t rippled-docs docs/
+mkdir build
+cd build
+cmake ..
+cmake --build . --target docs
 ```
 
-Then to run the image, from the rippled root folder:
-
-```
-sudo docker run -v $PWD:/opt/rippled --rm rippled-docs
-```
-
-The output will be in `html`.
+The output will be in `build/docs/html`.

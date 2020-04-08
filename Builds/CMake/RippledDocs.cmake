@@ -76,9 +76,3 @@ add_custom_command (
 add_custom_target (docs
   DEPENDS "${doxygen_index_file}"
   SOURCES "${dependencies}")
-if (is_multiconfig)
-  set_property (
-    SOURCE ${dependencies}
-    APPEND PROPERTY
-    HEADER_FILE_ONLY true)
-endif ()
