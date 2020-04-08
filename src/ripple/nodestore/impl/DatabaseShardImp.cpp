@@ -1315,7 +1315,7 @@ DatabaseShardImp::setFileStats()
     std::lock_guard lock(mutex_);
     fileSz_ = sumSz;
     fdRequired_ = sumFd;
-    avgShardFileSz_ = fileSz_ / numShards;
+    avgShardFileSz_ = (numShards == 0 ? fileSz_ : fileSz_ / numShards);
 
     if (fileSz_ >= maxFileSz_)
     {
