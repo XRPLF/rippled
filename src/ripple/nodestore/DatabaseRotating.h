@@ -47,16 +47,13 @@ public:
     virtual TaggedCache<uint256, NodeObject> const&
     getPositiveCache() = 0;
 
-    virtual std::mutex&
-    peekMutex() const = 0;
+    /** Rotates the backends.
 
-    virtual std::shared_ptr<Backend> const&
-    getWritableBackend() const = 0;
-
-    virtual std::shared_ptr<Backend>
-    rotateBackends(
-        std::shared_ptr<Backend> newBackend,
-        std::lock_guard<std::mutex> const&) = 0;
+        @param f A function executed before the rotation and under the same lock
+    */
+    virtual void
+    rotateWithLock(std::function<std::unique_ptr<NodeStore::Backend>(
+                       std::string const& writableBackendName)> const& f) = 0;
 };
 
 }  // namespace NodeStore

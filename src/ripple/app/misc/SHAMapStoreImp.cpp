@@ -426,22 +426,22 @@ SHAMapStoreImp::run()
                 default:;
             }
 
-            std::string nextArchiveDir =
-                dbRotating_->getWritableBackend()->getName();
             lastRotated_ = validatedSeq;
-            std::shared_ptr<NodeStore::Backend> oldBackend;
-            {
-                std::lock_guard lock(dbRotating_->peekMutex());
 
-                state_db_.setState(SavedState{
-                    newBackend->getName(), nextArchiveDir, lastRotated_});
-                clearCaches(validatedSeq);
-                oldBackend =
-                    dbRotating_->rotateBackends(std::move(newBackend), lock);
-            }
+            dbRotating_->rotateWithLock(
+                [&](std::string const& writableBackendName) {
+                    SavedState savedState;
+                    savedState.writableDb = newBackend->getName();
+                    savedState.archiveDb = writableBackendName;
+                    savedState.lastRotated = lastRotated_;
+                    state_db_.setState(savedState);
+
+                    clearCaches(validatedSeq);
+
+                    return std::move(newBackend);
+                });
+
             JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
-
-            oldBackend->setDeletePath();
         }
     }
 }

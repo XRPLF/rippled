@@ -49,41 +49,19 @@ public:
         stopThreads();
     }
 
-    std::shared_ptr<Backend> const&
-    getWritableBackend() const override
-    {
-        std::lock_guard lock(rotateMutex_);
-        return writableBackend_;
-    }
-
-    std::shared_ptr<Backend>
-    rotateBackends(
-        std::shared_ptr<Backend> newBackend,
-        std::lock_guard<std::mutex> const&) override;
-
-    std::mutex&
-    peekMutex() const override
-    {
-        return rotateMutex_;
-    }
+    void
+    rotateWithLock(
+        std::function<std::unique_ptr<NodeStore::Backend>(
+            std::string const& writableBackendName)> const& f) override;
 
     std::string
-    getName() const override
-    {
-        return getWritableBackend()->getName();
-    }
+    getName() const override;
 
     std::int32_t
-    getWriteLoad() const override
-    {
-        return getWritableBackend()->getWriteLoad();
-    }
+    getWriteLoad() const override;
 
     void
-    import(Database& source) override
-    {
-        importInternal(*getWritableBackend(), source);
-    }
+    import(Database& source) override;
 
     void
     store(
@@ -105,11 +83,7 @@ public:
         std::shared_ptr<NodeObject>& object) override;
 
     bool
-    storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override
-    {
-        return Database::storeLedger(
-            *srcLedger, getWritableBackend(), pCache_, nCache_, nullptr);
-    }
+    storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override;
 
     int
     getDesiredAsyncReadCount(std::uint32_t seq) override
@@ -147,31 +121,13 @@ private:
 
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
-    mutable std::mutex rotateMutex_;
-
-    struct Backends
-    {
-        std::shared_ptr<Backend> const& writableBackend;
-        std::shared_ptr<Backend> const& archiveBackend;
-    };
-
-    Backends
-    getBackends() const
-    {
-        std::lock_guard lock(rotateMutex_);
-        return Backends{writableBackend_, archiveBackend_};
-    }
+    mutable std::mutex mutex_;
 
     std::shared_ptr<NodeObject>
     fetchFrom(uint256 const& hash, std::uint32_t seq) override;
 
     void
-    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
-    {
-        Backends b = getBackends();
-        b.archiveBackend->for_each(f);
-        b.writableBackend->for_each(f);
-    }
+    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override;
 };
 
 }  // namespace NodeStore
