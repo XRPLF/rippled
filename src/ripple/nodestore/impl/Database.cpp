@@ -386,7 +386,7 @@ Database::threadEntry()
         }
 
         // Perform the read
-        if (lastPcache && lastPcache)
+        if (lastPcache && lastNcache)
             doFetch(lastHash, lastSeq, *lastPcache, *lastNcache, true);
     }
 }
