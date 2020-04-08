@@ -7,17 +7,19 @@ on:
 jobs:
   job:
     runs-on: ubuntu-18.04
+    container:
+      image: docker://thejohnfreeman/rippled-build-ubuntu:2944b78d22db
     steps:
       - name: checkout
         uses: actions/checkout@v2
-      - name: set OUTPUT_DIRECTORY
-        run: echo 'OUTPUT_DIRECTORY = html' >> docs/Doxyfile
       - name: build
-        uses: mattnotmitt/doxygen-action@v1
-        with:
-          doxyfile-path: 'docs/Doxyfile'
+        run: |
+          mkdir build
+          cd build
+          cmake -DBoost_NO_BOOST_CMAKE=ON ..
+          cmake --build . --target docs --parallel $(nproc)
       - name: publish
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./html
+          publish_dir: build/docs/html
