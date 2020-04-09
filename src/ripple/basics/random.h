@@ -71,12 +71,8 @@ default_prng ()
     static beast::xor_shift_engine seeder = []
     {
         std::random_device rng;
-        std::uniform_int_distribution<std::uint64_t> distribution;
-        std::uint64_t seed;
-        do
-            seed = distribution(rng);
-        while (seed == 0);
-        return beast::xor_shift_engine(seed);
+        std::uniform_int_distribution<std::uint64_t> distribution{1};
+        return beast::xor_shift_engine(distribution(rng));
     }();
 
     // This protects the seeder
@@ -88,11 +84,8 @@ default_prng ()
         std::uint64_t seed;
         {
             std::lock_guard lk(m);
-            std::uniform_int_distribution<std::uint64_t> distribution;
-            std::uint64_t seed;
-            do
-                seed = distribution(seeder);
-            while (seed == 0);
+            std::uniform_int_distribution<std::uint64_t> distribution{1};
+            seed = distribution(seeder);
         }
         return beast::xor_shift_engine{seed};
     }();
