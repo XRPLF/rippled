@@ -21,13 +21,13 @@
 #define RIPPLE_BASICS_RANDOM_H_INCLUDED
 
 #include <ripple/beast/xor_shift_engine.h>
-#include <boost/thread/tss.hpp>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <random>
 #include <limits>
+#include <mutex>
 #include <ripple/beast/cxx17/type_traits.h> // <type_traits>
 
 namespace ripple {
@@ -67,27 +67,37 @@ inline
 beast::xor_shift_engine&
 default_prng ()
 {
-    static
-    boost::thread_specific_ptr<beast::xor_shift_engine> engine;
-
-    if (!engine.get())
+    // This is used to seed the thread-specific PRNGs on demand
+    static beast::xor_shift_engine seeder = []
     {
         std::random_device rng;
+        std::uniform_int_distribution<std::uint64_t> distribution;
+        std::uint64_t seed;
+        do
+            seed = distribution(rng);
+        while (seed == 0);
+        return beast::xor_shift_engine(seed);
+    }();
 
-        std::uint64_t seed = rng();
+    // This protects the seeder
+    static std::mutex m;
 
-        for (int i = 0; i < 6; ++i)
+    // The thread-specific PRNGs:
+    thread_local beast::xor_shift_engine engine = []
+    {
+        std::uint64_t seed;
         {
-            if (seed == 0)
-                seed = rng();
-
-            seed ^= (seed << (7 - i)) * rng();
+            std::lock_guard lk(m);
+            std::uniform_int_distribution<std::uint64_t> distribution;
+            std::uint64_t seed;
+            do
+                seed = distribution(seeder);
+            while (seed == 0);
         }
+        return beast::xor_shift_engine{seed};
+    }();
 
-        engine.reset (new beast::xor_shift_engine (seed));
-    }
-
-    return *engine;
+    return engine;
 }
 
 /** Return a uniformly distributed random integer.
