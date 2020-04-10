@@ -71,8 +71,10 @@ prng(unsigned char *out, size_t bytes) {
 		}
 		if (fread(state, sizeof(state), 1, f) != 1) {
 			printf("read error on /dev/urandom\n");
+			fclose(f);
 			exit(1);
 		}
+		fclose(f);
 	#endif
 		init = 1;
 	}
