@@ -183,11 +183,13 @@ public:
         Serializer s;
         st.add(s);
 
-        std::string const m(static_cast<char const*>(s.data()), s.size());
+        // m is non-const so it can be moved from
+        std::string m(static_cast<char const*>(s.data()), s.size());
         if (auto r = deserializeManifest(std::move(m)))
             return std::move(*r);
         Throw<std::runtime_error>("Could not create a revocation manifest");
-        return *deserializeManifest(std::move(m));  // Silence compiler warning.
+        return *deserializeManifest(
+            std::string{});  // Silence compiler warning.
     }
 
     Manifest
@@ -223,11 +225,14 @@ public:
         Serializer s;
         st.add(s);
 
-        std::string const m(static_cast<char const*>(s.data()), s.size());
+        std::string m(
+            static_cast<char const*>(s.data()),
+            s.size());  // non-const so can be moved
         if (auto r = deserializeManifest(std::move(m)))
             return std::move(*r);
         Throw<std::runtime_error>("Could not create a manifest");
-        return *deserializeManifest(std::move(m));  // Silence compiler warning.
+        return *deserializeManifest(
+            std::string{});  // Silence compiler warning.
     }
 
     Manifest

@@ -183,7 +183,7 @@ ValidatorList::load(
         // Config listed keys never expire
         if (it.second)
             it.first->second.expiration = TimeKeeper::time_point::max();
-        it.first->second.list.emplace_back(std::move(*id));
+        it.first->second.list.emplace_back(*id);
         it.first->second.available = true;
         ++count;
     }

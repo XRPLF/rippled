@@ -47,11 +47,9 @@ accountTxPage(
     DatabaseCon& connection,
     AccountIDCache const& idCache,
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
-    std::function<void(
-        std::uint32_t,
-        std::string const&,
-        Blob const&,
-        Blob const&)> const& onTransaction,
+    std::function<
+        void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&
+        onTransaction,
     AccountID const& account,
     std::int32_t minLedger,
     std::int32_t maxLedger,

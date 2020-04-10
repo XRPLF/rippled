@@ -423,7 +423,7 @@ std::uint64_t const STAmount::uRateOne = getRate(STAmount(1), STAmount(1));
 void
 STAmount::setIssue(Issue const& issue)
 {
-    mIssue = std::move(issue);
+    mIssue = issue;
     mIsNative = isXRP(*this);
 }
 

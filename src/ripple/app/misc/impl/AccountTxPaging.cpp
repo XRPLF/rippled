@@ -65,11 +65,9 @@ accountTxPage(
     DatabaseCon& connection,
     AccountIDCache const& idCache,
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
-    std::function<void(
-        std::uint32_t,
-        std::string const&,
-        Blob const&,
-        Blob const&)> const& onTransaction,
+    std::function<
+        void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&
+        onTransaction,
     AccountID const& account,
     std::int32_t minLedger,
     std::int32_t maxLedger,
@@ -247,11 +245,21 @@ accountTxPage(
                 if (rawMeta.size() == 0)
                     onUnsavedLedger(ledgerSeq.value_or(0));
 
+                // `rawData` and `rawMeta` will be used after they are moved.
+                // That's OK.
                 onTransaction(
                     rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
                     *status,
-                    rawData,
-                    rawMeta);
+                    std::move(rawData),
+                    std::move(rawMeta));
+                // Note some callbacks will move the data, some will not. Clear
+                // them so code doesn't depend on if the data was actually moved
+                // or not. The code will be more efficient if `rawData` and
+                // `rawMeta` don't have to allocate in `convert`, so don't
+                // refactor my moving these variables into loop scope.
+                rawData.clear();
+                rawMeta.clear();
+
                 --numberOfResults;
             }
         }
