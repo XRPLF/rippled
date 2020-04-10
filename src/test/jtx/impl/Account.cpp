@@ -48,7 +48,7 @@ Account::Account(
 Account
 Account::fromCache(std::string name, KeyType type)
 {
-    auto const p = std::make_pair(name, type);
+    auto p = std::make_pair(name, type);  // non-const so it can be moved from
     auto const iter = cache_.find(p);
     if (iter != cache_.end())
         return iter->second;

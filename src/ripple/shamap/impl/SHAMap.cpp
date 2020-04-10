@@ -697,7 +697,7 @@ SHAMap::delItem(uint256 const& id)
 
 bool
 SHAMap::addGiveItem(
-    std::shared_ptr<SHAMapItem const> const& item,
+    std::shared_ptr<SHAMapItem const> item,
     bool isTransaction,
     bool hasMeta)
 {
@@ -732,7 +732,8 @@ SHAMap::addGiveItem(
         auto inner = std::static_pointer_cast<SHAMapInnerNode>(node);
         int branch = nodeID.selectBranch(tag);
         assert(inner->isEmptyBranch(branch));
-        auto newNode = std::make_shared<SHAMapTreeNode>(item, type, seq_);
+        auto newNode =
+            std::make_shared<SHAMapTreeNode>(std::move(item), type, seq_);
         inner->setChild(branch, newNode);
     }
     else
@@ -762,12 +763,13 @@ SHAMap::addGiveItem(
         assert(node->isInner());
 
         std::shared_ptr<SHAMapTreeNode> newNode =
-            std::make_shared<SHAMapTreeNode>(item, type, seq_);
+            std::make_shared<SHAMapTreeNode>(std::move(item), type, seq_);
         assert(newNode->isValid() && newNode->isLeaf());
         auto inner = std::static_pointer_cast<SHAMapInnerNode>(node);
         inner->setChild(b1, newNode);
 
-        newNode = std::make_shared<SHAMapTreeNode>(otherItem, type, seq_);
+        newNode =
+            std::make_shared<SHAMapTreeNode>(std::move(otherItem), type, seq_);
         assert(newNode->isValid() && newNode->isLeaf());
         inner->setChild(b2, newNode);
     }
@@ -799,7 +801,7 @@ SHAMap::getHash() const
 
 bool
 SHAMap::updateGiveItem(
-    std::shared_ptr<SHAMapItem const> const& item,
+    std::shared_ptr<SHAMapItem const> item,
     bool isTransaction,
     bool hasMeta)
 {
@@ -827,7 +829,7 @@ SHAMap::updateGiveItem(
     node = unshareNode(std::move(node), nodeID);
 
     if (!node->setItem(
-            item,
+            std::move(item),
             !isTransaction ? SHAMapTreeNode::tnACCOUNT_STATE
                            : (hasMeta ? SHAMapTreeNode::tnTRANSACTION_MD
                                       : SHAMapTreeNode::tnTRANSACTION_NM)))
@@ -1005,7 +1007,9 @@ SHAMap::walkSubTree(bool doWrite, NodeObjectType t, std::uint32_t seq)
                         // save our place and work on this node
 
                         stack.emplace(std::move(node), branch);
-
+                        // The semantics of this changes when we move to c++-20
+                        // Right now no move will occur; With c++-20 child will
+                        // be moved from.
                         node = std::static_pointer_cast<SHAMapInnerNode>(
                             std::move(child));
                         pos = 0;

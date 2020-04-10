@@ -809,7 +809,8 @@ OverlayImpl::crawlShards(bool pubKey, std::uint32_t hops)
     for_each([&](std::shared_ptr<PeerImp> const& peer) {
         if (auto psi = peer->getPeerShardInfo())
         {
-            for (auto const& e : *psi)
+            // e is non-const so it may be moved from
+            for (auto& e : *psi)
             {
                 auto it{peerShardInfo.find(e.first)};
                 if (it != peerShardInfo.end())
@@ -898,7 +899,8 @@ OverlayImpl::getOverlayInfo()
         {
             auto version{sp->getVersion()};
             if (!version.empty())
-                pv[jss::version] = std::move(version);
+                // Could move here if Json::value supported moving from strings
+                pv[jss::version] = version;
         }
 
         std::uint32_t minSeq, maxSeq;

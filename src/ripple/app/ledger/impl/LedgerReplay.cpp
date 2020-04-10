@@ -29,7 +29,7 @@ LedgerReplay::LedgerReplay(
 {
     for (auto const& item : replay_->txMap())
     {
-        auto const txPair = replay_->txRead(item.key());
+        auto txPair = replay_->txRead(item.key());  // non-const so can be moved
         auto const txIndex = (*txPair.second)[sfTransactionIndex];
         orderedTxns_.emplace(txIndex, std::move(txPair.first));
     }

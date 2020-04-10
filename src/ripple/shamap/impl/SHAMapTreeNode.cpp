@@ -56,23 +56,23 @@ SHAMapTreeNode::clone(std::uint32_t seq) const
 }
 
 SHAMapTreeNode::SHAMapTreeNode(
-    std::shared_ptr<SHAMapItem const> const& item,
+    std::shared_ptr<SHAMapItem const> item,
     TNType type,
     std::uint32_t seq)
-    : SHAMapAbstractNode(type, seq), mItem(item)
+    : SHAMapAbstractNode(type, seq), mItem(std::move(item))
 {
-    assert(item->peekData().size() >= 12);
+    assert(mItem->peekData().size() >= 12);
     updateHash();
 }
 
 SHAMapTreeNode::SHAMapTreeNode(
-    std::shared_ptr<SHAMapItem const> const& item,
+    std::shared_ptr<SHAMapItem const> item,
     TNType type,
     std::uint32_t seq,
     SHAMapHash const& hash)
-    : SHAMapAbstractNode(type, seq, hash), mItem(item)
+    : SHAMapAbstractNode(type, seq, hash), mItem(std::move(item))
 {
-    assert(item->peekData().size() >= 12);
+    assert(mItem->peekData().size() >= 12);
 }
 
 std::shared_ptr<SHAMapAbstractNode>
@@ -105,9 +105,9 @@ SHAMapAbstractNode::make(
                 s.peekData());
             if (hashValid)
                 return std::make_shared<SHAMapTreeNode>(
-                    item, tnTRANSACTION_NM, seq, hash);
+                    std::move(item), tnTRANSACTION_NM, seq, hash);
             return std::make_shared<SHAMapTreeNode>(
-                item, tnTRANSACTION_NM, seq);
+                std::move(item), tnTRANSACTION_NM, seq);
         }
         else if (type == 1)
         {
@@ -125,8 +125,9 @@ SHAMapAbstractNode::make(
             auto item = std::make_shared<SHAMapItem const>(u, s.peekData());
             if (hashValid)
                 return std::make_shared<SHAMapTreeNode>(
-                    item, tnACCOUNT_STATE, seq, hash);
-            return std::make_shared<SHAMapTreeNode>(item, tnACCOUNT_STATE, seq);
+                    std::move(item), tnACCOUNT_STATE, seq, hash);
+            return std::make_shared<SHAMapTreeNode>(
+                std::move(item), tnACCOUNT_STATE, seq);
         }
         else if (type == 2)
         {
@@ -185,9 +186,9 @@ SHAMapAbstractNode::make(
             auto item = std::make_shared<SHAMapItem const>(u, s.peekData());
             if (hashValid)
                 return std::make_shared<SHAMapTreeNode>(
-                    item, tnTRANSACTION_MD, seq, hash);
+                    std::move(item), tnTRANSACTION_MD, seq, hash);
             return std::make_shared<SHAMapTreeNode>(
-                item, tnTRANSACTION_MD, seq);
+                std::move(item), tnTRANSACTION_MD, seq);
         }
     }
 
@@ -214,9 +215,9 @@ SHAMapAbstractNode::make(
                 sha512Half(rawNode), s.peekData());
             if (hashValid)
                 return std::make_shared<SHAMapTreeNode>(
-                    item, tnTRANSACTION_NM, seq, hash);
+                    std::move(item), tnTRANSACTION_NM, seq, hash);
             return std::make_shared<SHAMapTreeNode>(
-                item, tnTRANSACTION_NM, seq);
+                std::move(item), tnTRANSACTION_NM, seq);
         }
         else if (safe_cast<HashPrefix>(prefix) == HashPrefix::leafNode)
         {
@@ -236,8 +237,9 @@ SHAMapAbstractNode::make(
             auto item = std::make_shared<SHAMapItem const>(u, s.peekData());
             if (hashValid)
                 return std::make_shared<SHAMapTreeNode>(
-                    item, tnACCOUNT_STATE, seq, hash);
-            return std::make_shared<SHAMapTreeNode>(item, tnACCOUNT_STATE, seq);
+                    std::move(item), tnACCOUNT_STATE, seq, hash);
+            return std::make_shared<SHAMapTreeNode>(
+                std::move(item), tnACCOUNT_STATE, seq);
         }
         else if (safe_cast<HashPrefix>(prefix) == HashPrefix::innerNode)
         {
@@ -274,9 +276,9 @@ SHAMapAbstractNode::make(
             auto item = std::make_shared<SHAMapItem const>(txID, s.peekData());
             if (hashValid)
                 return std::make_shared<SHAMapTreeNode>(
-                    item, tnTRANSACTION_MD, seq, hash);
+                    std::move(item), tnTRANSACTION_MD, seq, hash);
             return std::make_shared<SHAMapTreeNode>(
-                item, tnTRANSACTION_MD, seq);
+                std::move(item), tnTRANSACTION_MD, seq);
         }
         else
         {
@@ -459,10 +461,10 @@ SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format) const
 }
 
 bool
-SHAMapTreeNode::setItem(std::shared_ptr<SHAMapItem const> const& i, TNType type)
+SHAMapTreeNode::setItem(std::shared_ptr<SHAMapItem const> i, TNType type)
 {
     mType = type;
-    mItem = i;
+    mItem = std::move(i);
     assert(isLeaf());
     assert(mSeq != 0);
     return updateHash();

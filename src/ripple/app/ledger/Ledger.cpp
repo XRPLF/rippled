@@ -499,7 +499,7 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
     Serializer ss;
     sle->add(ss);
     auto item = std::make_shared<SHAMapItem const>(sle->key(), std::move(ss));
-    // VFALCO NOTE addGiveItem should take ownership
+    // addGiveItem should take ownership
     if (!stateMap_->addGiveItem(std::move(item), false, false))
         LogicError("Ledger::rawInsert: key already exists");
 }
@@ -510,7 +510,7 @@ Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
     Serializer ss;
     sle->add(ss);
     auto item = std::make_shared<SHAMapItem const>(sle->key(), std::move(ss));
-    // VFALCO NOTE updateGiveItem should take ownership
+    // updateGiveItem should take ownership
     if (!stateMap_->updateGiveItem(std::move(item), false, false))
         LogicError("Ledger::rawReplace: key not found");
 }
