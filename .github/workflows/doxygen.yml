@@ -8,7 +8,7 @@ jobs:
   job:
     runs-on: ubuntu-18.04
     container:
-      image: docker://thejohnfreeman/rippled-build-ubuntu:2944b78d22db
+      image: docker://rippleci/rippled-ci-builder:2944b78d22db
     steps:
       - name: checkout
         uses: actions/checkout@v2
