@@ -148,10 +148,7 @@ insertDeliveredAmount(
         auto const getCloseTime = [&info] { return info.closeTime; };
 
         auto amt = getDeliveredAmount(
-            getLedgerIndex,
-            getCloseTime,
-            std::move(serializedTx),
-            transactionMeta);
+            getLedgerIndex, getCloseTime, serializedTx, transactionMeta);
         if (amt)
         {
             meta[jss::delivered_amount] =
@@ -182,10 +179,7 @@ getDeliveredAmount(
             return context.ledgerMaster.getCloseTimeBySeq(getLedgerIndex());
         };
         return getDeliveredAmount(
-            getLedgerIndex,
-            getCloseTime,
-            std::move(serializedTx),
-            transactionMeta);
+            getLedgerIndex, getCloseTime, serializedTx, transactionMeta);
     }
 
     return {};

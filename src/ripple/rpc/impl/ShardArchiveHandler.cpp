@@ -371,10 +371,12 @@ ShardArchiveHandler::complete(path dstPath)
     }
 
     // Process in another thread to not hold up the IO service
+    // Make lambdas mutable so can move from the captured variables
     app_.getJobQueue().addJob(
         jtCLIENT,
         "ShardArchiveHandler",
-        [=, dstPath = std::move(dstPath), ptr = shared_from_this()](Job&) {
+        [=, dstPath = std::move(dstPath), ptr = shared_from_this()](
+            Job&) mutable {
             // If not synced then defer and retry
             auto const mode{ptr->app_.getOPs().getOperatingMode()};
             if (mode != OperatingMode::FULL)
@@ -386,7 +388,7 @@ ShardArchiveHandler::complete(path dstPath)
                     10));
                 timer_.async_wait(
                     [=, dstPath = std::move(dstPath), ptr = std::move(ptr)](
-                        boost::system::error_code const& ec) {
+                        boost::system::error_code const& ec) mutable {
                         if (ec != boost::asio::error::operation_aborted)
                             ptr->complete(std::move(dstPath));
                     });

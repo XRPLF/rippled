@@ -805,7 +805,7 @@ Shard::storeSQLite(
                     session
                         << (STTx::getMetaSQLInsertReplaceHeader() +
                             item.first->getMetaSQL(
-                                seq, sqlEscape(std::move(s.modData()))) +
+                                seq, sqlEscape(s.modData())) +
                             ';');
                 }
             }

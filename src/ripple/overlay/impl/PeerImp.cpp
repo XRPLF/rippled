@@ -322,7 +322,8 @@ PeerImp::json()
 
         std::string name{getName()};
         if (!name.empty())
-            ret[jss::name] = std::move(name);
+            // Could move here if Json::Value supported moving from a string
+            ret[jss::name] = name;
     }
 
     ret[jss::load] = usage_.balance();

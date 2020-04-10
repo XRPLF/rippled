@@ -263,11 +263,11 @@ public:
     operator=(const SHAMapTreeNode&) = delete;
 
     SHAMapTreeNode(
-        std::shared_ptr<SHAMapItem const> const& item,
+        std::shared_ptr<SHAMapItem const> item,
         TNType type,
         std::uint32_t seq);
     SHAMapTreeNode(
-        std::shared_ptr<SHAMapItem const> const& item,
+        std::shared_ptr<SHAMapItem const> item,
         TNType type,
         std::uint32_t seq,
         SHAMapHash const& hash);
@@ -292,7 +292,7 @@ public:  // public only to SHAMap
     std::shared_ptr<SHAMapItem const> const&
     peekItem() const;
     bool
-    setItem(std::shared_ptr<SHAMapItem const> const& i, TNType type);
+    setItem(std::shared_ptr<SHAMapItem const> i, TNType type);
 
     std::string
     getString(SHAMapNodeID const&) const override;

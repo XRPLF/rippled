@@ -151,7 +151,7 @@ class View_test : public beast::unit_test::suite
         BEAST_EXPECT(seq(v.read(k(3))) == 3);
         auto s = copy(v.read(k(2)));
         seq(s, 4);
-        ledger->rawReplace(std::move(s));
+        ledger->rawReplace(s);
         BEAST_EXPECT(seq(v.read(k(2))) == 4);
         ledger->rawErase(sle(2));
         BEAST_EXPECT(!v.exists(k(2)));

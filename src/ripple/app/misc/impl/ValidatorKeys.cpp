@@ -39,7 +39,8 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
 
     if (config.exists(SECTION_VALIDATOR_TOKEN))
     {
-        if (auto const token = loadValidatorToken(
+        // token is non-const so it can be moved from
+        if (auto token = loadValidatorToken(
                 config.section(SECTION_VALIDATOR_TOKEN).lines()))
         {
             auto const pk =

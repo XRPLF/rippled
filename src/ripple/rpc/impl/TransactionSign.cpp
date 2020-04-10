@@ -335,11 +335,7 @@ struct transactionPreProcessResult
 
     transactionPreProcessResult() = delete;
     transactionPreProcessResult(transactionPreProcessResult const&) = delete;
-    transactionPreProcessResult(transactionPreProcessResult&& rhs)
-        : first(std::move(rhs.first))  // VS2013 won't default this.
-        , second(std::move(rhs.second))
-    {
-    }
+    transactionPreProcessResult(transactionPreProcessResult&& rhs) = default;
 
     transactionPreProcessResult&
     operator=(transactionPreProcessResult const&) = delete;

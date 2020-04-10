@@ -485,11 +485,13 @@ SHAMap::getNodeFat(
         std::tie(node, nodeID, depth) = stack.top();
         stack.pop();
 
-        // Add this node to the reply
-        Serializer s;
-        node->addRaw(s, snfWIRE);
-        nodeIDs.push_back(nodeID);
-        rawNodes.push_back(std::move(s.peekData()));
+        {
+            // Add this node to the reply
+            Serializer s;
+            node->addRaw(s, snfWIRE);
+            nodeIDs.push_back(nodeID);
+            rawNodes.push_back(std::move(s.modData()));
+        }
 
         if (node->isInner())
         {
@@ -522,7 +524,7 @@ SHAMap::getNodeFat(
                             Serializer ns;
                             childNode->addRaw(ns, snfWIRE);
                             nodeIDs.push_back(childID);
-                            rawNodes.push_back(std::move(ns.peekData()));
+                            rawNodes.push_back(std::move(ns.modData()));
                         }
                     }
                 }
