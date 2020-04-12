@@ -100,6 +100,7 @@ PeerImp::~PeerImp()
 {
     const bool inCluster{cluster()};
 
+    overlay_.deletePeer(id_);
     if (state_ == State::active)
         overlay_.onPeerDeactivate(id_);
     overlay_.peerFinder().on_closed(slot_);
@@ -224,6 +225,10 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     if (gracefulClose_)
         return;
     if (detaching_)
+        return;
+
+    auto validator = m->getValidatorKey();
+    if (validator && squelch_.isSquelched(*validator))
         return;
 
     overlay_.reportTraffic(
@@ -1647,8 +1652,20 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         publicKey.slice(),
         sig);
 
-    if (!app_.getHashRouter().addSuppressionPeer(suppression, id_))
+    if (auto [added, relayed] =
+            app_.getHashRouter().addSuppressionPeerWithStatus(suppression, id_);
+        !added)
     {
+        // Count unique messages (Slots has it's own 'HashRouter'), which a peer
+        // receives within IDLED seconds since the message has been relayed.
+        // Wait WAIT_ON_BOOTUP time to let the server establish connections to
+        // peers.
+        if (app_.config().REDUCE_RELAY_ENABLE && relayed &&
+            (stopwatch().now() - *relayed) < squelch::IDLED &&
+            squelch::epoch<std::chrono::minutes>(UptimeClock::now()) >
+                squelch::WAIT_ON_BOOTUP)
+            overlay_.updateSlotAndSquelch(
+                suppression, publicKey, id_, protocol::mtPROPOSE_LEDGER);
         JLOG(p_journal_.trace()) << "Proposal: duplicate";
         return;
     }
@@ -2146,9 +2163,21 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             return;
         }
 
-        if (!app_.getHashRouter().addSuppressionPeer(
-                sha512Half(makeSlice(m->validation())), id_))
+        auto key = sha512Half(makeSlice(m->validation()));
+        if (auto [added, relayed] =
+                app_.getHashRouter().addSuppressionPeerWithStatus(key, id_);
+            !added)
         {
+            // Count unique messages (Slots has it's own 'HashRouter'), which a
+            // peer receives within IDLED seconds since the message has been
+            // relayed. Wait WAIT_ON_BOOTUP time to let the server establish
+            // connections to peers.
+            if (app_.config().REDUCE_RELAY_ENABLE && (bool)relayed &&
+                (stopwatch().now() - *relayed) < squelch::IDLED &&
+                squelch::epoch<std::chrono::minutes>(UptimeClock::now()) >
+                    squelch::WAIT_ON_BOOTUP)
+                overlay_.updateSlotAndSquelch(
+                    key, val->getSignerPublic(), id_, protocol::mtVALIDATION);
             JLOG(p_journal_.trace()) << "Validation: duplicate";
             return;
         }
@@ -2324,6 +2353,45 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
     }
 }
 
+void
+PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
+{
+    if (!m->has_validatorpubkey())
+    {
+        JLOG(p_journal_.debug()) << "onMessage: TMSquelch, missing public key";
+        return;
+    }
+    auto validator = m->validatorpubkey();
+    auto const slice{makeSlice(validator)};
+    if (!publicKeyType(slice))
+    {
+        JLOG(p_journal_.debug()) << "onMessage: TMSquelch, invalid public key";
+        return;
+    }
+    PublicKey key(slice);
+    auto squelch = m->squelch();
+    auto duration = m->has_squelchduration() ? m->squelchduration() : 0;
+    auto sp = shared_from_this();
+
+    // Ignore the squelch for validator's own messages.
+    if (key == app_.getValidationPublicKey())
+    {
+        JLOG(p_journal_.debug())
+            << "onMessage: TMSquelch discarding validator's squelch " << slice;
+        return;
+    }
+
+    if (!strand_.running_in_this_thread())
+        return post(strand_, [sp, key, squelch, duration]() {
+            sp->squelch_.squelch(key, squelch, duration);
+        });
+
+    JLOG(p_journal_.debug())
+        << "onMessage: TMSquelch " << slice << " " << id() << " " << duration;
+
+    squelch_.squelch(key, squelch, duration);
+}
+
 //--------------------------------------------------------------------------
 
 void
@@ -2478,7 +2546,22 @@ PeerImp::checkPropose(
         relay = app_.config().RELAY_UNTRUSTED_PROPOSALS || cluster();
 
     if (relay)
-        app_.overlay().relay(*packet, peerPos.suppressionID());
+    {
+        // haveMessage contains peers, which are suppressed; i.e. the peers
+        // are the source of the message, consequently the message should
+        // not be relayed to these peers. But the message must be counted
+        // as part of the squelch logic.
+        auto haveMessage = app_.overlay().relay(
+            *packet, peerPos.suppressionID(), peerPos.publicKey());
+        if (app_.config().REDUCE_RELAY_ENABLE && !haveMessage.empty() &&
+            squelch::epoch<std::chrono::minutes>(UptimeClock::now()) >
+                squelch::WAIT_ON_BOOTUP)
+            overlay_.updateSlotAndSquelch(
+                peerPos.suppressionID(),
+                peerPos.publicKey(),
+                std::move(haveMessage),
+                protocol::mtPROPOSE_LEDGER);
+    }
 }
 
 void
@@ -2501,7 +2584,22 @@ PeerImp::checkValidation(
         {
             auto const suppression =
                 sha512Half(makeSlice(val->getSerialized()));
-            overlay_.relay(*packet, suppression);
+            // haveMessage contains peers, which are suppressed; i.e. the peers
+            // are the source of the message, consequently the message should
+            // not be relayed to these peers. But the message must be counted
+            // as part of the squelch logic.
+            auto haveMessage =
+                overlay_.relay(*packet, suppression, val->getSignerPublic());
+            if (app_.config().REDUCE_RELAY_ENABLE && !haveMessage.empty() &&
+                squelch::epoch<std::chrono::minutes>(UptimeClock::now()) >
+                    squelch::WAIT_ON_BOOTUP)
+            {
+                overlay_.updateSlotAndSquelch(
+                    suppression,
+                    val->getSignerPublic(),
+                    std::move(haveMessage),
+                    protocol::mtVALIDATION);
+            }
         }
     }
     catch (std::exception const&)

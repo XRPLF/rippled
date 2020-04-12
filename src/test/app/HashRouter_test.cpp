@@ -191,7 +191,7 @@ class HashRouter_test : public beast::unit_test::suite
 
         uint256 const key1(1);
 
-        boost::optional<std::set<HashRouter::PeerShortID>> peers;
+        std::optional<std::set<HashRouter::PeerShortID>> peers;
 
         peers = router.shouldRelay(key1);
         BEAST_EXPECT(peers && peers->empty());

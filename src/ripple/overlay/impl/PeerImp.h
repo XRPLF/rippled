@@ -24,6 +24,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/RangeSet.h>
 #include <ripple/beast/utility/WrappedSink.h>
+#include <ripple/overlay/Squelch.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/ProtocolVersion.h>
@@ -141,6 +142,8 @@ private:
     boost::optional<std::uint32_t> lastPingSeq_;
     clock_type::time_point lastPingTime_;
     clock_type::time_point const creationTime_;
+
+    squelch::Squelch<UptimeClock> squelch_;
 
     // Notes on thread locking:
     //
@@ -549,6 +552,8 @@ public:
     onMessage(std::shared_ptr<protocol::TMValidation> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m);
+    void
+    onMessage(std::shared_ptr<protocol::TMSquelch> const& m);
 
 private:
     State

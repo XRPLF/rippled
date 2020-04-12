@@ -481,6 +481,13 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_COMPRESSION, strTemp, j_))
         COMPRESSION = beast::lexicalCastThrow<bool>(strTemp);
 
+    if (exists(SECTION_REDUCE_RELAY))
+    {
+        auto sec = section(SECTION_REDUCE_RELAY);
+        REDUCE_RELAY_ENABLE = sec.value_or("enable", false);
+        REDUCE_RELAY_SQUELCH = sec.value_or("squelch", false);
+    }
+
     if (getSingleSection(
             secConfig, SECTION_AMENDMENT_MAJORITY_TIME, strTemp, j_))
     {

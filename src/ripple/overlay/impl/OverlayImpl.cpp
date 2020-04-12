@@ -99,6 +99,7 @@ OverlayImpl::Timer::on_timer(error_code ec)
     overlay_.m_peerFinder->once_per_second();
     overlay_.sendEndpoints();
     overlay_.autoConnect();
+    overlay_.deleteIdlePeers();
 
     if ((++overlay_.timer_count_ % Tuning::checkSeconds) == 0)
         overlay_.check();
@@ -139,6 +140,7 @@ OverlayImpl::OverlayImpl(
     , m_resolver(resolver)
     , next_id_(1)
     , timer_count_(0)
+    , slots_(app, *this)
     , m_stats(
           std::bind(&OverlayImpl::collect_metrics, this),
           collector,
@@ -1216,7 +1218,7 @@ OverlayImpl::check()
 }
 
 std::shared_ptr<Peer>
-OverlayImpl::findPeerByShortID(Peer::id_t const& id)
+OverlayImpl::findPeerByShortID(Peer::id_t const& id) const
 {
     std::lock_guard lock(mutex_);
     auto const iter = ids_.find(id);
@@ -1249,18 +1251,23 @@ OverlayImpl::broadcast(protocol::TMProposeSet& m)
     for_each([&](std::shared_ptr<PeerImp>&& p) { p->send(sm); });
 }
 
-void
-OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid)
+std::set<Peer::id_t>
+OverlayImpl::relay(
+    protocol::TMProposeSet& m,
+    uint256 const& uid,
+    PublicKey const& validator)
 {
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
         auto const sm =
-            std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
+            std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER, validator);
         for_each([&](std::shared_ptr<PeerImp>&& p) {
             if (toSkip->find(p->id()) == toSkip->end())
                 p->send(sm);
         });
+        return *toSkip;
     }
+    return {};
 }
 
 void
@@ -1270,17 +1277,23 @@ OverlayImpl::broadcast(protocol::TMValidation& m)
     for_each([sm](std::shared_ptr<PeerImp>&& p) { p->send(sm); });
 }
 
-void
-OverlayImpl::relay(protocol::TMValidation& m, uint256 const& uid)
+std::set<Peer::id_t>
+OverlayImpl::relay(
+    protocol::TMValidation& m,
+    uint256 const& uid,
+    PublicKey const& validator)
 {
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
-        auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
+        auto const sm =
+            std::make_shared<Message>(m, protocol::mtVALIDATION, validator);
         for_each([&](std::shared_ptr<PeerImp>&& p) {
             if (toSkip->find(p->id()) == toSkip->end())
                 p->send(sm);
         });
+        return *toSkip;
     }
+    return {};
 }
 
 //------------------------------------------------------------------------------
@@ -1351,6 +1364,100 @@ OverlayImpl::sendEndpoints()
             peer->sendEndpoints(e.second.begin(), e.second.end());
     }
 }
+
+std::shared_ptr<Message>
+makeSquelchMessage(
+    PublicKey const& validator,
+    bool squelch,
+    uint64_t squelchDuration)
+{
+    protocol::TMSquelch m;
+    m.set_squelch(squelch);
+    m.set_validatorpubkey(validator.data(), validator.size());
+    if (squelch)
+        m.set_squelchduration(squelchDuration);
+    return std::make_shared<Message>(m, protocol::mtSQUELCH);
+}
+
+void
+OverlayImpl::unsquelch(PublicKey const& validator, Peer::id_t id) const
+{
+    if (auto peer = findPeerByShortID(id);
+        peer && app_.config().REDUCE_RELAY_SQUELCH)
+    {
+        // optimize - multiple message with different
+        // validator might be sent to the same peer
+        auto m = makeSquelchMessage(validator, false, 0);
+        peer->send(m);
+    }
+}
+
+void
+OverlayImpl::squelch(
+    PublicKey const& validator,
+    Peer::id_t id,
+    uint32_t squelchDuration) const
+{
+    if (auto peer = findPeerByShortID(id);
+        peer && app_.config().REDUCE_RELAY_SQUELCH)
+    {
+        auto m = makeSquelchMessage(validator, true, squelchDuration);
+        peer->send(m);
+    }
+}
+
+void
+OverlayImpl::updateSlotAndSquelch(
+    uint256 const& key,
+    PublicKey const& validator,
+    std::set<Peer::id_t>&& peers,
+    protocol::MessageType type)
+{
+    if (!strand_.running_in_this_thread())
+        return post(
+            strand_,
+            [this, key, validator, peers = std::move(peers), type]() mutable {
+                updateSlotAndSquelch(key, validator, std::move(peers), type);
+            });
+
+    for (auto id : peers)
+        slots_.updateSlotAndSquelch(key, validator, id, type);
+}
+
+void
+OverlayImpl::updateSlotAndSquelch(
+    uint256 const& key,
+    PublicKey const& validator,
+    Peer::id_t peer,
+    protocol::MessageType type)
+{
+    if (!strand_.running_in_this_thread())
+        return post(strand_, [this, key, validator, peer, type]() {
+            updateSlotAndSquelch(key, validator, peer, type);
+        });
+
+    slots_.updateSlotAndSquelch(key, validator, peer, type);
+}
+
+void
+OverlayImpl::deletePeer(Peer::id_t id)
+{
+    if (!strand_.running_in_this_thread())
+        return post(strand_, std::bind(&OverlayImpl::deletePeer, this, id));
+
+    slots_.deletePeer(id, true);
+}
+
+void
+OverlayImpl::deleteIdlePeers()
+{
+    if (!strand_.running_in_this_thread())
+        return post(strand_, std::bind(&OverlayImpl::deleteIdlePeers, this));
+
+    slots_.deleteIdlePeers();
+}
+
+//------------------------------------------------------------------------------
 
 Overlay::Setup
 setup_Overlay(BasicConfig const& config)

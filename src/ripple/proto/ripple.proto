@@ -23,6 +23,7 @@ enum MessageType
     mtGET_PEER_SHARD_INFO   = 52;
     mtPEER_SHARD_INFO       = 53;
     mtVALIDATORLIST         = 54;
+    mtSQUELCH               = 55;
 }
 
 // token, iterations, target, challenge = issue demand for proof of work
@@ -354,5 +355,12 @@ message TMPing
     optional uint32 seq         = 2; // detect stale replies, ensure other side is reading
     optional uint64 pingTime    = 3; // know when we think we sent the ping
     optional uint64 netTime     = 4;
+}
+
+message TMSquelch
+{
+    required bool squelch           = 1; // squelch if true, otherwise unsquelch
+    required bytes validatorPubKey  = 2; // validator's public key
+    optional uint32 squelchDuration = 3; // squelch duration in milliseconds
 }
 
