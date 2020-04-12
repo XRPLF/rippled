@@ -1421,10 +1421,10 @@ LedgerMaster::updatePaths (Job& job)
             app_.getPathRequests().updateAll(
                 lastLedger, job.getCancelCallback());
         }
-        catch (SHAMapMissingNode&)
+        catch (SHAMapMissingNode const& mn)
         {
             JLOG (m_journal.info())
-                << "Missing node detected during pathfinding";
+                << "During pathfinding: " << mn.what();
             if (lastLedger->open())
             {
                 // our parent is the problem
@@ -1617,7 +1617,7 @@ LedgerMaster::walkHashBySeq (
             {
                 ledgerHash = hashOfSeq(*ledger, index, m_journal);
             }
-            catch(SHAMapMissingNode&)
+            catch(SHAMapMissingNode const&)
             {
                 ledger.reset();
             }

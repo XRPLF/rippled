@@ -638,7 +638,6 @@ target_sources (rippled PRIVATE
   src/ripple/shamap/impl/SHAMap.cpp
   src/ripple/shamap/impl/SHAMapDelta.cpp
   src/ripple/shamap/impl/SHAMapItem.cpp
-  src/ripple/shamap/impl/SHAMapMissingNode.cpp
   src/ripple/shamap/impl/SHAMapNodeID.cpp
   src/ripple/shamap/impl/SHAMapSync.cpp
   src/ripple/shamap/impl/SHAMapTreeNode.cpp

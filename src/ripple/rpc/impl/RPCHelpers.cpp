@@ -448,11 +448,10 @@ isValidated(LedgerMaster& ledgerMaster, ReadView const& ledger,
             return false;
         }
     }
-    catch (SHAMapMissingNode const&)
+    catch (SHAMapMissingNode const& mn)
     {
         auto stream = app.journal ("RPCHandler").warn();
-        JLOG (stream)
-            << "Missing SHANode " << std::to_string (seq);
+        JLOG (stream) << "Ledger #" << seq << ": " << mn.what();
         return false;
     }
 

@@ -1806,10 +1806,10 @@ ApplicationImp::getLastFullLedger()
 
         return {};
     }
-    catch (SHAMapMissingNode& sn)
+    catch (SHAMapMissingNode const& mn)
     {
         JLOG (j.warn()) <<
-            "Ledger with missing nodes in database: " << sn;
+            "Ledger in database: " << mn.what();
         return {};
     }
 }
@@ -2117,10 +2117,10 @@ bool ApplicationImp::loadOldLedger (
             m_ledgerMaster->takeReplay (std::move (replayData));
         }
     }
-    catch (SHAMapMissingNode&)
+    catch (SHAMapMissingNode const& mn)
     {
         JLOG(m_journal.fatal()) <<
-            "Data is missing for selected ledger";
+            "While loading specified ledger: " << mn.what();
         return false;
     }
     catch (boost::bad_lexical_cast&)

@@ -277,10 +277,10 @@ private:
         {
             hash = hashOfSeq(*ledger, index, j_);
         }
-        catch (SHAMapMissingNode &)
+        catch (SHAMapMissingNode const& mn)
         {
             JLOG (j_.warn()) <<
-                "Node missing from ledger " << ledger->info().seq;
+                "Ledger #" << ledger->info().seq << ": " << mn.what();
             app_.getInboundLedgers().acquire (
                 ledger->info().hash, ledger->info().seq,
                 InboundLedger::Reason::GENERIC);

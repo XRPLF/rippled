@@ -24,6 +24,8 @@
 #include <ripple/shamap/SHAMapTreeNode.h>
 #include <iosfwd>
 #include <stdexcept>
+#include <string>
+#include <type_traits>
 
 namespace ripple {
 
@@ -34,31 +36,38 @@ enum class SHAMapType
     FREE         = 3,    // A tree not part of a ledger
 };
 
+inline
+std::string
+to_string(SHAMapType t)
+{
+    switch (t)
+    {
+    case SHAMapType::TRANSACTION:
+        return "Transaction Tree";
+    case SHAMapType::STATE:
+        return "State Tree";
+    case SHAMapType::FREE:
+        return "Free Tree";
+    default:
+        return std::to_string(safe_cast<std::underlying_type_t<SHAMapType>>(t));
+    }
+}
+
 class SHAMapMissingNode
     : public std::runtime_error
 {
-private:
-    SHAMapType mType;
-    SHAMapHash mNodeHash;
-    uint256    mNodeID;
 public:
-    SHAMapMissingNode (SHAMapType t,
-                       SHAMapHash const& nodeHash)
-        : std::runtime_error ("SHAMapMissingNode")
-        , mType (t)
-        , mNodeHash (nodeHash)
+    SHAMapMissingNode (SHAMapType t, SHAMapHash const& hash)
+        : std::runtime_error("Missing Node: " +
+            to_string(t) + ": hash " + to_string(hash))
     {
     }
 
-    SHAMapMissingNode (SHAMapType t,
-                       uint256 const& nodeID)
-        : std::runtime_error ("SHAMapMissingNode")
-        , mType (t)
-        , mNodeID (nodeID)
+    SHAMapMissingNode (SHAMapType t, uint256 const& id)
+        : std::runtime_error ("Missing Node: " +
+            to_string(t) + ": id " + to_string(id))
     {
     }
-
-    friend std::ostream& operator<< (std::ostream&, SHAMapMissingNode const&);
 };
 
 } // ripple

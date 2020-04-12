@@ -827,7 +827,7 @@ RCLConsensus::timerEntry(NetClock::time_point const& now)
     catch (SHAMapMissingNode const& mn)
     {
         // This should never happen
-        JLOG(j_.error()) << "Missing node during consensus process " << mn;
+        JLOG(j_.error()) << "During consensus timerEntry: " << mn.what();
         Rethrow();
     }
 }
@@ -843,7 +843,7 @@ RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
     catch (SHAMapMissingNode const& mn)
     {
         // This should never happen
-        JLOG(j_.error()) << "Missing node during consensus process " << mn;
+        JLOG(j_.error()) << "During consensus gotTxSet: " << mn.what();
         Rethrow();
     }
 }

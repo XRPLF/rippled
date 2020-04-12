@@ -132,10 +132,10 @@ void OrderBookDB::update(
             }
         }
     }
-    catch (const SHAMapMissingNode&)
+    catch (SHAMapMissingNode const& mn)
     {
         JLOG (j_.info())
-            << "OrderBookDB::update encountered a missing node";
+            << "OrderBookDB::update: " << mn.what();
         std::lock_guard sl (mLock);
         mSeq = 0;
         return;
