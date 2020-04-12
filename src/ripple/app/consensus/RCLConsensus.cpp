@@ -157,7 +157,7 @@ RCLConsensus::Adaptor::share(RCLCxPeerPos const& peerPos)
     auto const sig = peerPos.signature();
     prop.set_signature(sig.data(), sig.size());
 
-    app_.overlay().relay(prop, peerPos.suppressionID());
+    app_.overlay().relay(prop, peerPos.suppressionID(), peerPos.publicKey());
 }
 
 void

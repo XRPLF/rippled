@@ -136,6 +136,7 @@ else
     # ORDER matters here...sorted in approximately
     # descending execution time (longest running tests at top)
     declare -a manual_tests=(
+        'ripple.ripple_data.reduce_relay_simulate'
         'ripple.ripple_data.digest'
         'ripple.tx.Offer_manual'
         'ripple.app.PayStrandAllPairs'

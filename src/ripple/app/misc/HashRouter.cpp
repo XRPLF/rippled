@@ -50,11 +50,17 @@ HashRouter::addSuppression(uint256 const& key)
 bool
 HashRouter::addSuppressionPeer(uint256 const& key, PeerShortID peer)
 {
+    return addSuppressionPeerWithStatus(key, peer).first;
+}
+
+std::pair<bool, std::optional<Stopwatch::time_point>>
+HashRouter::addSuppressionPeerWithStatus(const uint256& key, PeerShortID peer)
+{
     std::lock_guard lock(mutex_);
 
     auto result = emplace(key);
     result.first.addPeer(peer);
-    return result.second;
+    return {result.second, result.first.relayed()};
 }
 
 bool
@@ -110,14 +116,14 @@ HashRouter::setFlags(uint256 const& key, int flags)
 
 auto
 HashRouter::shouldRelay(uint256 const& key)
-    -> boost::optional<std::set<PeerShortID>>
+    -> std::optional<std::set<PeerShortID>>
 {
     std::lock_guard lock(mutex_);
 
     auto& s = emplace(key).first;
 
     if (!s.shouldRelay(suppressionMap_.clock().now(), holdTime_))
-        return boost::none;
+        return {};
 
     return s.releasePeerSet();
 }

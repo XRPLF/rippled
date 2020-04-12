@@ -26,6 +26,7 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/core/Job.h>
 #include <ripple/overlay/Overlay.h>
+#include <ripple/overlay/Slot.h>
 #include <ripple/overlay/impl/Handshake.h>
 #include <ripple/overlay/impl/TrafficCount.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
@@ -52,7 +53,7 @@ namespace ripple {
 class PeerImp;
 class BasicConfig;
 
-class OverlayImpl : public Overlay
+class OverlayImpl : public Overlay, public squelch::SquelchHandler
 {
 public:
     class Child
@@ -123,6 +124,8 @@ private:
     std::set<std::uint32_t> csIDs_;
 
     boost::optional<std::uint32_t> networkID_;
+
+    squelch::Slots<UptimeClock> slots_;
 
     //--------------------------------------------------------------------------
 
@@ -195,7 +198,7 @@ public:
     void checkSanity(std::uint32_t) override;
 
     std::shared_ptr<Peer>
-    findPeerByShortID(Peer::id_t const& id) override;
+    findPeerByShortID(Peer::id_t const& id) const override;
 
     std::shared_ptr<Peer>
     findPeerByPublicKey(PublicKey const& pubKey) override;
@@ -206,11 +209,17 @@ public:
     void
     broadcast(protocol::TMValidation& m) override;
 
-    void
-    relay(protocol::TMProposeSet& m, uint256 const& uid) override;
+    std::set<Peer::id_t>
+    relay(
+        protocol::TMProposeSet& m,
+        uint256 const& uid,
+        PublicKey const& validator) override;
 
-    void
-    relay(protocol::TMValidation& m, uint256 const& uid) override;
+    std::set<Peer::id_t>
+    relay(
+        protocol::TMValidation& m,
+        uint256 const& uid,
+        PublicKey const& validator) override;
 
     //--------------------------------------------------------------------------
     //
@@ -364,7 +373,49 @@ public:
     void
     lastLink(std::uint32_t id);
 
+    /** Updates message count for validator/peer. Sends TMSquelch if the number
+     * of messages for N peers reaches threshold T. A message is counted
+     * if a peer receives the message for the first time and if
+     * the message has been  relayed.
+     * @param key Unique message's key
+     * @param validator Validator's public key
+     * @param peers Peers' id to update the slots for
+     * @param type Received protocol message type
+     */
+    void
+    updateSlotAndSquelch(
+        uint256 const& key,
+        PublicKey const& validator,
+        std::set<Peer::id_t>&& peers,
+        protocol::MessageType type);
+
+    /** Overload to reduce allocation in case of single peer
+     */
+    void
+    updateSlotAndSquelch(
+        uint256 const& key,
+        PublicKey const& validator,
+        Peer::id_t peer,
+        protocol::MessageType type);
+
+    /** Called when the peer is deleted. If the peer was selected to be the
+     * source of messages from the validator then squelched peers have to be
+     * unsquelched.
+     * @param id Peer's id
+     */
+    void
+    deletePeer(Peer::id_t id);
+
 private:
+    void
+    squelch(
+        PublicKey const& validator,
+        Peer::id_t const id,
+        std::uint32_t squelchDuration) const override;
+
+    void
+    unsquelch(PublicKey const& validator, Peer::id_t id) const override;
+
     std::shared_ptr<Writer>
     makeRedirectResponse(
         std::shared_ptr<PeerFinder::Slot> const& slot,
@@ -480,6 +531,11 @@ private:
 
     void
     sendEndpoints();
+
+    /** Check if peers stopped relaying messages
+     * and if slots stopped receiving messages from the validator */
+    void
+    deleteIdlePeers();
 
 private:
     struct TrafficGauges
