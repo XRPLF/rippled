@@ -109,22 +109,46 @@ Message::compress()
 }
 
 /** Set payload header
- * Uncompressed message header
- * 47-42    Set to 0
- * 41-16    Payload size
- * 15-0	    Message Type
- * Compressed message header
- * 79       Set to 0, indicates the message is compressed
- * 78-76    Compression algorithm, value 1-7. Set to 1 to indicate LZ4
- * compression 75-74    Set to 0 73-48    Payload size 47-32	Message Type
- * 31-0     Uncompressed message size
- */
+
+    The header is a variable-sized structure that contains information about
+    the type of the message and the length and encoding of the payload.
+
+    The first bit determines whether a message is compressed or uncompressed;
+    for compressed messages, the next three bits identify the compression
+    algorithm.
+
+    All multi-byte values are represented in big endian.
+
+    For uncompressed messages (6 bytes), numbering bits from left to right:
+
+        - The first 6 bits are set to 0.
+        - The next 26 bits represent the payload size.
+        - The remaining 16 bits represent the message type.
+
+    For compressed messages (10 bytes), numbering bits from left to right:
+
+        - The first 32 bits, together, represent the compression algorithm
+          and payload size:
+            - The first bit is set to 1 to indicate the message is compressed.
+            - The next 3 bits indicate the compression algorithm.
+            - The next 2 bits are reserved at this time and set to 0.
+            - The remaining 26 bits represent the payload size.
+        - The next 16 bits represent the message type.
+        - The remaining 32 bits are the uncompressed message size.
+
+    The maximum size of a message at this time is 64 MB. Messages larger than
+    this will be dropped and the recipient may, at its option, sever the link.
+
+    @note While nominally a part of the wire protocol, the framing is subject
+          to change; future versions of the code may negotiate the use of
+          substantially different framing.
+*/
 void
 Message::setHeader(
     std::uint8_t* in,
     std::uint32_t payloadBytes,
     int type,
-    Algorithm comprAlgorithm,
+    Algorithm compression,
     std::uint32_t uncompressedBytes)
 {
     auto h = in;
@@ -142,10 +166,10 @@ Message::setHeader(
     *in++ = static_cast<std::uint8_t>((type >> 8) & 0xFF);
     *in++ = static_cast<std::uint8_t>(type & 0xFF);
 
-    if (comprAlgorithm != Algorithm::None)
+    if (compression != Algorithm::None)
     {
         pack(in, uncompressedBytes);
-        *h |= 0x80 | (static_cast<uint8_t>(comprAlgorithm) << 4);
+        *h |= static_cast<std::uint8_t>(compression);
     }
 }
 

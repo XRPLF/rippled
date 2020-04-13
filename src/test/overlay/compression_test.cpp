@@ -84,20 +84,13 @@ public:
         std::shared_ptr<T> proto,
         protocol::MessageType mt,
         uint16_t nbuffers,
-        const char* msg,
-        bool log = false)
+        std::string msg)
     {
-        if (log)
-            printf("=== compress/decompress %s ===\n", msg);
+        testcase("Compress/Decompress: " + msg);
+
         Message m(*proto, mt);
 
         auto& buffer = m.getBuffer(Compressed::On);
-
-        if (log)
-            printf(
-                "==> compressed, original %d bytes, compressed %d bytes\n",
-                (int)m.getBuffer(Compressed::Off).size(),
-                (int)m.getBuffer(Compressed::On).size());
 
         boost::beast::multi_buffer buffers;
 
@@ -112,26 +105,15 @@ public:
             buffers.commit(boost::asio::buffer_copy(
                 buffers.prepare(slice.size()), boost::asio::buffer(slice)));
         }
-        auto header =
-            ripple::detail::parseMessageHeader(buffers.data(), buffer.size());
 
-        if (log)
-            printf(
-                "==> parsed header: buffers size %d, compressed %d, algorithm "
-                "%d, header size %d, payload size %d, buffer size %d\n",
-                (int)buffers.size(),
-                header->algorithm != Algorithm::None,
-                (int)header->algorithm,
-                (int)header->header_size,
-                (int)header->payload_wire_size,
-                (int)buffer.size());
+        boost::system::error_code ec;
+        auto header = ripple::detail::parseMessageHeader(
+            ec, buffers.data(), buffer.size());
+
+        BEAST_EXPECT(header);
 
         if (header->algorithm == Algorithm::None)
-        {
-            if (log)
-                printf("==> NOT COMPRESSED\n");
             return;
-        }
 
         std::vector<std::uint8_t> decompressed;
         decompressed.resize(header->uncompressed_size);
@@ -157,8 +139,6 @@ public:
             uncompressed.begin() + ripple::compression::headerBytes,
             uncompressed.end(),
             decompressed.begin()));
-        if (log)
-            printf("\n");
     }
 
     std::shared_ptr<protocol::TMManifests>

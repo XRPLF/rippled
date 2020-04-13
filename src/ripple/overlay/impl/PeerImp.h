@@ -428,6 +428,12 @@ public:
     boost::optional<hash_map<PublicKey, ShardInfo>>
     getPeerShardInfo() const;
 
+    bool
+    compressionEnabled() const override
+    {
+        return compressionEnabled_ == Compressed::On;
+    }
+
 private:
     void
     close();

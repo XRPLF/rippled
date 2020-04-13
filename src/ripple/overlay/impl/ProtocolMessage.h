@@ -120,51 +120,94 @@ buffersBegin(BufferSequence const& bufs)
         bufs);
 }
 
+/** Parse a message header
+ * @return a seated optional if the message header was successfully
+ *         parsed. An unseated optional otherwise, in which case
+ *         @param ec contains more information:
+ *         - set to `errc::success` if not enough bytes were present
+ *         - set to `errc::no_message` if a valid header was not present
+ */
 template <class BufferSequence>
 boost::optional<MessageHeader>
-parseMessageHeader(BufferSequence const& bufs, std::size_t size)
+parseMessageHeader(
+    boost::system::error_code& ec,
+    BufferSequence const& bufs,
+    std::size_t size)
 {
     using namespace ripple::compression;
-    auto iter = buffersBegin(bufs);
 
     MessageHeader hdr;
-    auto const compressed = (*iter & 0x80) == 0x80;
+    auto iter = buffersBegin(bufs);
 
     // Check valid header
-    if ((*iter & 0xFC) == 0 || compressed)
+    if (*iter & 0x80)
     {
-        hdr.header_size = compressed ? headerBytesCompressed : headerBytes;
+        hdr.header_size = headerBytesCompressed;
 
+        // not enough bytes to parse the header
         if (size < hdr.header_size)
-            return {};
-
-        if (compressed)
         {
-            uint8_t algorithm = (*iter & 0x70) >> 4;
-            if (algorithm !=
-                static_cast<std::uint8_t>(compression::Algorithm::LZ4))
-                return {};
-            hdr.algorithm = compression::Algorithm::LZ4;
+            ec = make_error_code(boost::system::errc::success);
+            return boost::none;
+        }
+
+        if (*iter & 0x0C)
+        {
+            ec = make_error_code(boost::system::errc::protocol_error);
+            return boost::none;
+        }
+
+        hdr.algorithm = static_cast<compression::Algorithm>(*iter);
+
+        if (hdr.algorithm != compression::Algorithm::LZ4)
+        {
+            ec = make_error_code(boost::system::errc::protocol_error);
+            return boost::none;
         }
 
         for (int i = 0; i != 4; ++i)
             hdr.payload_wire_size = (hdr.payload_wire_size << 8) + *iter++;
-        // clear the compression bits
-        hdr.payload_wire_size &= 0x03FFFFFF;
+
+        // clear the top four bits (the compression bits).
+        hdr.payload_wire_size &= 0x0FFFFFFF;
 
         hdr.total_wire_size = hdr.header_size + hdr.payload_wire_size;
 
         for (int i = 0; i != 2; ++i)
             hdr.message_type = (hdr.message_type << 8) + *iter++;
 
-        if (compressed)
-            for (int i = 0; i != 4; ++i)
-                hdr.uncompressed_size = (hdr.uncompressed_size << 8) + *iter++;
+        for (int i = 0; i != 4; ++i)
+            hdr.uncompressed_size = (hdr.uncompressed_size << 8) + *iter++;
 
         return hdr;
     }
 
-    return {};
+    if ((*iter & 0xFC) == 0)
+    {
+        hdr.header_size = headerBytes;
+
+        if (size < hdr.header_size)
+        {
+            ec = make_error_code(boost::system::errc::success);
+            return boost::none;
+        }
+
+        hdr.algorithm = Algorithm::None;
+
+        for (int i = 0; i != 4; ++i)
+            hdr.payload_wire_size = (hdr.payload_wire_size << 8) + *iter++;
+
+        hdr.uncompressed_size = hdr.payload_wire_size;
+        hdr.total_wire_size = hdr.header_size + hdr.payload_wire_size;
+
+        for (int i = 0; i != 2; ++i)
+            hdr.message_type = (hdr.message_type << 8) + *iter++;
+
+        return hdr;
+    }
+
+    ec = make_error_code(boost::system::errc::no_message);
+    return boost::none;
 }
 
 template <
@@ -186,7 +229,7 @@ invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
         std::vector<std::uint8_t> payload;
         payload.resize(header.uncompressed_size);
 
-        auto payloadSize = ripple::compression::decompress(
+        auto const payloadSize = ripple::compression::decompress(
             stream,
             header.payload_wire_size,
             payload.data(),
@@ -226,10 +269,13 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler)
     if (size == 0)
         return result;
 
-    auto header = detail::parseMessageHeader(buffers, size);
+    auto header = detail::parseMessageHeader(result.second, buffers, size);
 
     // If we can't parse the header then it may be that we don't have enough
-    // bytes yet, or because the message was cut off.
+    // bytes yet, or because the message was cut off (if error_code is success).
+    // Otherwise we failed to match the header's marker (error_code is set to
+    // no_message) or the compression algorithm is invalid (error_code is
+    // protocol_error) and signal an error.
     if (!header)
         return result;
 
@@ -237,9 +283,18 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler)
     // whose size exceeds this may result in the connection being dropped. A
     // larger message size may be supported in the future or negotiated as
     // part of a protocol upgrade.
-    if (header->payload_wire_size > megabytes(64))
+    if (header->payload_wire_size > megabytes(64) ||
+        header->uncompressed_size > megabytes(64))
     {
         result.second = make_error_code(boost::system::errc::message_size);
+        return result;
+    }
+
+    // We requested uncompressed messages from the peer but received compressed.
+    if (!handler.compressionEnabled() &&
+        header->algorithm != compression::Algorithm::None)
+    {
+        result.second = make_error_code(boost::system::errc::protocol_error);
         return result;
     }
 

@@ -31,7 +31,9 @@ namespace compression {
 std::size_t constexpr headerBytes = 6;
 std::size_t constexpr headerBytesCompressed = 10;
 
-enum class Algorithm : std::uint8_t { None = 0x00, LZ4 = 0x01 };
+// All values other than 'none' must have the high bit. The low order four bits
+// must be 0.
+enum class Algorithm : std::uint8_t { None = 0x00, LZ4 = 0x90 };
 
 enum class Compressed : std::uint8_t { On, Off };
 
