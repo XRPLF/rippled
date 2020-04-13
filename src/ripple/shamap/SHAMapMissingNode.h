@@ -40,13 +40,17 @@ inline
 std::string
 to_string(SHAMapType t)
 {
-    if (t == SHAMapType::TRANSACTION)
+    switch (t)
+    {
+    case SHAMapType::TRANSACTION:
         return "Transaction Tree";
-    if (t == SHAMapType::STATE)
+    case SHAMapType::STATE:
         return "State Tree";
-    if (t == SHAMapType::FREE)
+    case SHAMapType::FREE:
         return "Free Tree";
-    return std::to_string(safe_cast<std::underlying_type_t<SHAMapType>>(t));
+    default:
+        return std::to_string(safe_cast<std::underlying_type_t<SHAMapType>>(t));
+    }
 }
 
 class SHAMapMissingNode
