@@ -70,14 +70,6 @@ public:
     }
 };
 
-inline
-std::ostream&
-operator<< (std::ostream& out, SHAMapMissingNode const& mn)
-{
-    out << mn.what();
-    return out;
-}
-
 } // ripple
 
 #endif

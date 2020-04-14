@@ -596,7 +596,7 @@ Ledger::setup (Config const& config)
                 fees_.increment = sle->getFieldU32 (sfReserveIncrement);
         }
     }
-    catch (SHAMapMissingNode &)
+    catch (SHAMapMissingNode const&)
     {
         ret = false;
     }
@@ -609,7 +609,7 @@ Ledger::setup (Config const& config)
     {
         rules_ = Rules(*this, config.features);
     }
-    catch (SHAMapMissingNode &)
+    catch (SHAMapMissingNode const&)
     {
         ret = false;
     }
@@ -657,7 +657,7 @@ bool Ledger::walkLedger (beast::Journal j) const
         if (auto stream = j.info())
         {
             stream << missingNodes1.size () << " missing account node(s)";
-            stream << "First: " << missingNodes1[0];
+            stream << "First: " << missingNodes1[0].what();
         }
     }
 
@@ -677,7 +677,7 @@ bool Ledger::walkLedger (beast::Journal j) const
         if (auto stream = j.info())
         {
             stream << missingNodes2.size () << " missing transaction node(s)";
-            stream << "First: " << missingNodes2[0];
+            stream << "First: " << missingNodes2[0].what();
         }
     }
     return missingNodes1.empty () && missingNodes2.empty ();
