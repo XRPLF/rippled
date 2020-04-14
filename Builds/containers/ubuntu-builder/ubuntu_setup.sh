@@ -42,7 +42,8 @@ apt-get -y --fix-missing install \
     java-common javacc \
     dpkg-dev debhelper devscripts fakeroot \
     debmake git-buildpackage dh-make gitpkg debsums gnupg \
-    dh-buildinfo dh-make dh-systemd
+    dh-buildinfo dh-make dh-systemd \
+    apt-transport-https
 
 apt-get -y install gcc-7 g++-7
 update-alternatives --install \
