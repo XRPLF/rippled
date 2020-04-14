@@ -22,10 +22,6 @@ while read line ; do
     fi
   fi
 done <<EOL
-"C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvarsall.bat" x86_amd64 -vcvars_ver=14.24
-"C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Auxiliary/Build/vcvarsall.bat" x86_amd64 -vcvars_ver=14.24
-"C:/Program Files (x86)/Microsoft Visual Studio/2017/BuildTools/VC/Auxiliary/Build/vcvarsall.bat" x86_amd64 -vcvars_ver=14.24
-"C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Auxiliary/Build/vcvarsall.bat" x86_amd64 -vcvars_ver=14.24
 "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Auxiliary/Build/vcvarsall.bat" x86_amd64
 "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Auxiliary/Build/vcvarsall.bat" x86_amd64
 "C:/Program Files (x86)/Microsoft Visual Studio/2017/BuildTools/VC/Auxiliary/Build/vcvarsall.bat" x86_amd64
@@ -36,8 +32,6 @@ done <<EOL
 "C:/Program Files (x86)/Microsoft Visual Studio 12.0/VC/vcvarsall.bat" amd64
 EOL
 # TODO: update the list above as needed to support newer versions of msvc tools
-# MSVC 19.25.28610.4 causes the rocksdb's compilation to fail, for VS2019, we will choose 14.24 VCTools for now
-# TODO: Delete lines with -vcars_ver=14.24 once rocksdb becomes compatible with newer compiler version.
 
 rm -f getenv.bat
 
