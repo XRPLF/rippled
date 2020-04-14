@@ -1,0 +1,61 @@
+name: PR automation
+on:
+  pull_request:
+    types: [labeled, unlabeled]
+
+jobs:
+  job:
+    runs-on: ubuntu-latest
+    steps: 
+      - name: retrieve label
+        run: |
+          jq '.' $GITHUB_EVENT_PATH
+          LABEL_NAME1=$(jq --raw-output ".label.name" $GITHUB_EVENT_PATH)
+          echo "Label in action is $LABEL_NAME1"
+          echo ::set-env name=LABEL_NAME::$LABEL_NAME1
+      #inspect the PR to get the project name
+      - name: retrieve project name
+        uses: octokit/graphql-action@v2.x
+        id: get_project_name
+        with:
+          query: |
+            query  get_project_name($owner:String!, $repo:String!, $number:Int!) {
+              repository(owner:$owner,name:$repo) {
+                  pullRequest(number: $number) {
+                    projectCards(first: 1) {
+                      nodes {
+                        project {
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+          owner: ${{ github.event.repository.owner.login }}
+          repo: ${{ github.event.repository.name }}
+          number: ${{ github.event.number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - id: extract
+        uses: gr2m/get-json-paths-action@v1.x
+        with:
+          json: ${{ steps.get_project_name.outputs.data }}
+          name: "repository.pullRequest.projectCards.nodes[0].project.name"
+      - name: echo project name
+        run: "echo project name: ${{ steps.extract.outputs.name }}, action: ${{ github.event.action }}"           
+      - name: perform automation for label
+        if: env.LABEL_NAME == 'Passed' && steps.extract.outputs.name != '' && github.event.action == 'labeled'
+        uses: alex-page/github-project-automation-plus@v0.2.2
+        with:
+          project: ${{ steps.extract.outputs.name }}
+          #if we change the column name, this automation needs to be updated
+          column: 'Approved for Merging'
+          repo-token: ${{ secrets.PR_TOKEN }}
+      - name: perform automation for unlabel
+        if: env.LABEL_NAME == 'Passed' && steps.extract.outputs.name != '' &&  github.event.action == 'unlabeled'
+        uses: alex-page/github-project-automation-plus@v0.2.2
+        with:
+          project: ${{ steps.extract.outputs.name }}
+          column: 'In Review'
+          repo-token: ${{ secrets.PR_TOKEN }}
