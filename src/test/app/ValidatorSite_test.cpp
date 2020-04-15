@@ -202,7 +202,10 @@ private:
             trustedKeys.load(emptyLocalKey, emptyCfgKeys, cfgPublishers));
 
         using namespace std::chrono_literals;
-        auto sites = std::make_unique<ValidatorSite>(env.app(), journal, 2s);
+        // Normally, tests will only need a fraction of this time,
+        // but sometimes DNS resolution takes an inordinate amount
+        // of time, so the test will just wait.
+        auto sites = std::make_unique<ValidatorSite>(env.app(), journal, 12s);
 
         std::vector<std::string> uris;
         for (auto const& u : servers)
@@ -453,7 +456,7 @@ public:
                   true,
                   true}});
             // timeout
-            testFetchList({{"/sleep/3", "took too long", ssl, true, true}});
+            testFetchList({{"/sleep/13", "took too long", ssl, true, true}});
             // bad manifest version
             testFetchList(
                 {{"/validators", "Unsupported version", ssl, false, true, 4}});
