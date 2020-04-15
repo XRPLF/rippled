@@ -37,6 +37,20 @@ InnerObjectFormats::InnerObjectFormats()
             {sfSigningPubKey, soeREQUIRED},
             {sfTxnSignature, soeREQUIRED},
         });
+
+    add(sfMajority.jsonName.c_str(),
+        sfMajority.getCode(),
+        {
+            {sfAmendment, soeREQUIRED},
+            {sfCloseTime, soeREQUIRED},
+        });
+
+    add(sfDisabledValidator.jsonName.c_str(),
+        sfDisabledValidator.getCode(),
+        {
+            {sfPublicKey, soeREQUIRED},
+            {sfFirstLedgerSequence, soeREQUIRED},
+        });
 }
 
 InnerObjectFormats const&

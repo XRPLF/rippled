@@ -382,7 +382,8 @@ message ValidatorToReEnable
 }
 
 // *** Messages wrapping a Currency value ***
-
+//
+// TODO: if there's a V2 of the API, fix this misspelling.
 message TakerGetsCurreny
 {
     Currency value = 1;

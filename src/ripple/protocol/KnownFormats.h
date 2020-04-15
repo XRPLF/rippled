@@ -130,6 +130,19 @@ public:
         return itr->second;
     }
 
+    // begin() and end() are provided for testing purposes.
+    typename std::forward_list<Item>::const_iterator
+    begin() const
+    {
+        return formats_.begin();
+    }
+
+    typename std::forward_list<Item>::const_iterator
+    end() const
+    {
+        return formats_.end();
+    }
+
 protected:
     /** Retrieve a format based on its name.
      */

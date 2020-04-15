@@ -288,6 +288,7 @@ message PayChannel
 
     DestinationTag destination_tag = 14;
 
+    DestinationNode destination_node = 15;
 }
 
 // Next field: 13
