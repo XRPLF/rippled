@@ -1,0 +1,11 @@
+<map id="ripple::NodeStore::Database_test" name="ripple::NodeStore::Database_test">
+<area shape="rect" id="node1" title=" " alt="" coords="140,303,283,344"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1TestBase.html" title=" " alt="" coords="48,199,191,240"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,95,60,121"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="85,95,173,121"/>
+<area shape="rect" id="node5" href="$classripple_1_1test_1_1SuiteJournal.html" title=" " alt="" coords="215,206,394,233"/>
+<area shape="rect" id="node6" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="219,95,329,121"/>
+<area shape="rect" id="node7" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="231,5,378,32"/>
+<area shape="rect" id="node8" href="$classripple_1_1test_1_1SuiteJournalSink.html" title=" " alt="" coords="353,95,560,121"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="413,5,500,32"/>
+</map>

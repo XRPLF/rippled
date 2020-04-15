@@ -1,0 +1,6 @@
+<map id="ripple::detail::LedgerCleanerImp" name="ripple::detail::LedgerCleanerImp">
+<area shape="rect" id="node1" title=" " alt="" coords="43,169,273,196"/>
+<area shape="rect" id="node2" href="$classripple_1_1detail_1_1LedgerCleaner.html" title="Check the ledger/transaction databases to make sure they have continuity." alt="" coords="55,95,261,121"/>
+<area shape="rect" id="node3" href="$classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping." alt="" coords="5,13,137,39"/>
+<area shape="rect" id="node4" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="162,5,330,47"/>
+</map>

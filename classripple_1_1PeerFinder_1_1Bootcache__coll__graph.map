@@ -1,0 +1,7 @@
+<map id="ripple::PeerFinder::Bootcache" name="ripple::PeerFinder::Bootcache">
+<area shape="rect" id="node1" title="Stores IP addresses useful for gaining initial connections." alt="" coords="178,199,313,240"/>
+<area shape="rect" id="node2" href="$classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="5,95,165,136"/>
+<area shape="rect" id="node3" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="190,102,301,129"/>
+<area shape="rect" id="node4" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="172,5,319,32"/>
+<area shape="rect" id="node5" href="$classripple_1_1PeerFinder_1_1Store.html" title="Abstract persistence for PeerFinder data." alt="" coords="325,95,459,136"/>
+</map>

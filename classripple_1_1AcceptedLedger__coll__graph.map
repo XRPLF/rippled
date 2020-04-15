@@ -1,0 +1,12 @@
+<map id="ripple::AcceptedLedger" name="ripple::AcceptedLedger">
+<area shape="rect" id="node1" title="A ledger that has become irrevocable." alt="" coords="732,46,903,73"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="385,5,608,47"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title="STL class." alt="" coords="115,13,272,39"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,13,44,39"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="411,71,582,112"/>
+<area shape="rect" id="node6" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="128,203,259,230"/>
+<area shape="rect" id="node8" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="409,327,585,383"/>
+<area shape="rect" id="node10" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="409,136,585,177"/>
+<area shape="rect" id="node7" href="$structripple_1_1ReadView_1_1sles__type.html" title=" " alt="" coords="717,293,917,319"/>
+<area shape="rect" id="node9" href="$structripple_1_1ReadView_1_1txs__type.html" title=" " alt="" coords="720,181,915,207"/>
+</map>

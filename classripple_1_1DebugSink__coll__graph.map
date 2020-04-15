@@ -1,0 +1,7 @@
+<map id="ripple::DebugSink" name="ripple::DebugSink">
+<area shape="rect" id="node1" title=" " alt="" coords="501,64,639,91"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="265,5,357,32"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/reference_wrapper.html" title=" " alt="" coords="223,57,400,98"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="226,122,397,163"/>
+<area shape="rect" id="node5" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,129,152,156"/>
+</map>

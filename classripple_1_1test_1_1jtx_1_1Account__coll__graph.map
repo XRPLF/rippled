@@ -1,0 +1,13 @@
+<map id="ripple::test::jtx::Account" name="ripple::test::jtx::Account">
+<area shape="rect" id="node1" title="Immutable cryptographic account descriptor." alt="" coords="815,109,941,151"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="1071,49,1305,120"/>
+<area shape="rect" id="node2" href="$classripple_1_1SecretKey.html" title="A secret key." alt="" coords="524,17,656,43"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="258,30,353,57"/>
+<area shape="rect" id="node4" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="525,87,655,114"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,101,349,127"/>
+<area shape="rect" id="node9" href="$classripple_1_1base__uint.html" title=" " alt="" coords="487,139,693,180"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="547,205,633,231"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="799,5,957,47"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,185,389,227"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,193,108,219"/>
+</map>

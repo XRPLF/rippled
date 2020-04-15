@@ -1,0 +1,5 @@
+<map id="ripple::SNTPClientImp" name="ripple::SNTPClientImp">
+<area shape="rect" id="node1" title=" " alt="" coords="6,184,170,211"/>
+<area shape="rect" id="node2" href="$classripple_1_1SNTPClock.html" title="A clock based on system_clock and adjusted for SNTP." alt="" coords="19,109,157,136"/>
+<area shape="rect" id="node3" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="5,5,171,61"/>
+</map>

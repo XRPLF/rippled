@@ -1,0 +1,6 @@
+<map id="ripple::SHAMapStoreImp::SavedStateDB" name="ripple::SHAMapStoreImp::SavedStateDB">
+<area shape="rect" id="node1" title=" " alt="" coords="13,184,193,225"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="5,95,97,121"/>
+<area shape="rect" id="node3" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="121,95,232,121"/>
+<area shape="rect" id="node4" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="103,5,250,32"/>
+</map>

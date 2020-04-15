@@ -1,0 +1,6 @@
+<map id="ripple::Logs" name="ripple::Logs">
+<area shape="rect" id="node1" title="Manages partitions for logging." alt="" coords="5,78,103,105"/>
+<area shape="rect" id="node2" href="$classripple_1_1test_1_1jtx_1_1SuiteLogs.html" title=" " alt="" coords="183,5,309,47"/>
+<area shape="rect" id="node3" href="$classripple_1_1test_1_1LedgerHistory__test_1_1CheckMessageLogs.html" title="Log manager that searches for a specific message substring." alt="" coords="151,71,341,112"/>
+<area shape="rect" id="node4" href="$classripple_1_1test_1_1Server__test_1_1CaptureLogs.html" title="Log manager for CaptureSinks." alt="" coords="175,136,317,177"/>
+</map>

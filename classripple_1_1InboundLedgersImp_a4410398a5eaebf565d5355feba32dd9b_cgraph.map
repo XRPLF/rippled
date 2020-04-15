@@ -1,0 +1,13 @@
+<map id="ripple::InboundLedgersImp::acquire" name="ripple::InboundLedgersImp::acquire">
+<area shape="rect" id="node1" title=" " alt="" coords="5,272,200,313"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map/emplace.html#" title=" " alt="" coords="264,5,416,47"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map/end.html#" title=" " alt="" coords="248,71,432,98"/>
+<area shape="rect" id="node4" href="$classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe" title=" " alt="" coords="265,122,415,149"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map/find.html#" title=" " alt="" coords="264,173,416,215"/>
+<area shape="rect" id="node6" href="$classripple_1_1Application.html#a25c5851322f6cb3762563fd1278c6143" title=" " alt="" coords="270,239,410,280"/>
+<area shape="rect" id="node7" href="$classripple_1_1Application.html#a5ea4991eb9c4d29e8de734016293ba33" title=" " alt="" coords="270,304,410,345"/>
+<area shape="rect" id="node8" href="$classripple_1_1base__uint.html#ad2bffc75e554b89befbb9388e07392c0" title=" " alt="" coords="271,369,409,411"/>
+<area shape="rect" id="node9" href="$classripple_1_1Stoppable.html#a836b8737444ef1133c3596e61010fa80" title="Returns true if the stoppable should stop." alt="" coords="270,435,410,476"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/ref.html#" title=" " alt="" coords="306,501,374,527"/>
+<area shape="rect" id="node11" href="$classripple_1_1NodeStore_1_1Database.html#aad7aa12d0cc01006120761d23312d428" title="Copies a ledger stored in a different database to this one." alt="" coords="255,552,425,593"/>
+</map>

@@ -1,0 +1,4 @@
+<map id="ripple::Generator" name="ripple::Generator">
+<area shape="rect" id="node1" title="Produces a sequence of secp256k1 key pairs." alt="" coords="22,109,154,136"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="5,5,171,47"/>
+</map>

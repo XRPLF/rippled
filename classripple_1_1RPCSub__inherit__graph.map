@@ -1,0 +1,6 @@
+<map id="ripple::RPCSub" name="ripple::RPCSub">
+<area shape="rect" id="node1" title="Subscription object for JSON RPC." alt="" coords="28,169,145,196"/>
+<area shape="rect" id="node4" href="$classripple_1_1RPCSubImp.html" title=" " alt="" coords="15,244,158,271"/>
+<area shape="rect" id="node2" href="$classripple_1_1InfoSub.html" title="Manages a client&#39;s subscription to data feeds." alt="" coords="29,95,145,121"/>
+<area shape="rect" id="node3" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,5,168,47"/>
+</map>

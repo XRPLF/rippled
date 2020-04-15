@@ -1,0 +1,4 @@
+<map id="beast::BadLexicalCast" name="beast::BadLexicalCast">
+<area shape="rect" id="node1" title="Thrown when a conversion is not possible with LexicalCast." alt="" coords="5,80,172,107"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/bad_cast.html" title="STL class." alt="" coords="35,5,143,32"/>
+</map>

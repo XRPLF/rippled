@@ -1,0 +1,4 @@
+<map id="ripple::JsonPropertyStream" name="ripple::JsonPropertyStream">
+<area shape="rect" id="node1" title="A PropertyStream::Sink which produces a Json::Value of type objectValue." alt="" coords="5,80,201,107"/>
+<area shape="rect" id="node2" href="$classbeast_1_1PropertyStream.html" title="Abstract stream with RAII containers that produce a property tree." alt="" coords="19,5,187,32"/>
+</map>

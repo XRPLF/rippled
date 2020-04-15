@@ -1,0 +1,5 @@
+<map id="ripple::InboundTransactionsImp" name="ripple::InboundTransactionsImp">
+<area shape="rect" id="node1" title=" " alt="" coords="87,80,313,107"/>
+<area shape="rect" id="node2" href="$classripple_1_1InboundTransactions.html" title="Manages the acquisition and lifetime of transaction sets." alt="" coords="5,5,205,32"/>
+<area shape="rect" id="node3" href="$classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping." alt="" coords="230,5,362,32"/>
+</map>

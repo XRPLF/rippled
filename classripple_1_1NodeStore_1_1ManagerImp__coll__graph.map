@@ -1,0 +1,7 @@
+<map id="ripple::NodeStore::ManagerImp" name="ripple::NodeStore::ManagerImp">
+<area shape="rect" id="node1" title=" " alt="" coords="147,213,289,255"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1Manager.html" title="Singleton for managing NodeStore factories and back ends." alt="" coords="5,109,148,151"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="172,117,264,143"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="289,109,467,151"/>
+<area shape="rect" id="node5" href="$classripple_1_1NodeStore_1_1Factory.html" title="Base class for backend factories." alt="" coords="307,5,449,47"/>
+</map>

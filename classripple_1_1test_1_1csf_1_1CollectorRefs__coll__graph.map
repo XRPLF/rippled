@@ -1,0 +1,7 @@
+<map id="ripple::test::csf::CollectorRefs" name="ripple::test::csf::CollectorRefs">
+<area shape="rect" id="node1" title="A container of CollectorRefs." alt="" coords="34,436,161,477"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="5,332,189,373"/>
+<area shape="rect" id="node3" href="$classripple_1_1test_1_1csf_1_1CollectorRef.html" title="Holds a type&#45;erased reference to an arbitray collector." alt="" coords="34,228,161,269"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="12,109,183,165"/>
+<area shape="rect" id="node5" href="$structripple_1_1test_1_1csf_1_1CollectorRef_1_1ICollector.html" title=" " alt="" coords="12,5,183,47"/>
+</map>

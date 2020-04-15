@@ -1,0 +1,4 @@
+<map id="ripple::test::csf::StreamCollector" name="ripple::test::csf::StreamCollector">
+<area shape="rect" id="node1" title="Write out stream of ledger activity." alt="" coords="5,95,132,136"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title="STL class." alt="" coords="17,5,121,32"/>
+</map>

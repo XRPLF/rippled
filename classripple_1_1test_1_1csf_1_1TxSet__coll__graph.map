@@ -1,0 +1,4 @@
+<map id="ripple::test::csf::TxSet" name="ripple::test::csf::TxSet">
+<area shape="rect" id="node1" title="TxSet is a set of transactions to consider including in the ledger." alt="" coords="5,95,132,136"/>
+<area shape="rect" id="node2" href="$structbeast_1_1uhash.html" title=" " alt="" coords="5,5,132,32"/>
+</map>

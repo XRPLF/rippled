@@ -1,0 +1,9 @@
+<map id="ripple::detail::ApplyViewBase" name="ripple::detail::ApplyViewBase">
+<area shape="rect" id="node1" title=" " alt="" coords="179,155,392,181"/>
+<area shape="rect" id="node5" href="$classripple_1_1ApplyViewImpl.html" title="Editable, discardable view that can build metadata for one tx." alt="" coords="5,229,171,256"/>
+<area shape="rect" id="node6" href="$classripple_1_1PaymentSandbox.html" title="A wrapper which makes credits unavailable to balances." alt="" coords="195,229,375,256"/>
+<area shape="rect" id="node7" href="$classripple_1_1Sandbox.html" title="Discardable, editable view to a ledger." alt="" coords="400,229,523,256"/>
+<area shape="rect" id="node2" href="$classripple_1_1ApplyView.html" title="Writeable view to a ledger, for applying a transaction." alt="" coords="140,80,276,107"/>
+<area shape="rect" id="node3" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="143,5,273,32"/>
+<area shape="rect" id="node4" href="$classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="301,80,427,107"/>
+</map>

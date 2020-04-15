@@ -1,0 +1,5 @@
+<map id="ripple::Logs::File" name="ripple::Logs::File">
+<area shape="rect" id="node1" title="Manages a system file containing logged output." alt="" coords="19,199,146,225"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="5,95,160,136"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ofstream.html" title="STL class." alt="" coords="28,5,137,32"/>
+</map>

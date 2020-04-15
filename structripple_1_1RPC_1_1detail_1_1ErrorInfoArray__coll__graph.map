@@ -1,0 +1,5 @@
+<map id="ripple::RPC::detail::ErrorInfoArray&lt; N &gt;" name="ripple::RPC::detail::ErrorInfoArray&lt; N &gt;">
+<area shape="rect" id="node1" title=" " alt="" coords="5,199,167,240"/>
+<area shape="rect" id="node2" href="$structripple_1_1RPC_1_1ErrorInfo.html" title="Maps an rpc error code to its token and default message." alt="" coords="7,109,165,136"/>
+<area shape="rect" id="node3" href="$classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="20,5,152,32"/>
+</map>

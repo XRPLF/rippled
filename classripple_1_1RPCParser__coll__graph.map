@@ -1,0 +1,5 @@
+<map id="ripple::RPCParser" name="ripple::RPCParser">
+<area shape="rect" id="node1" title=" " alt="" coords="12,184,145,211"/>
+<area shape="rect" id="node2" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="23,95,134,121"/>
+<area shape="rect" id="node3" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,5,152,32"/>
+</map>

@@ -1,0 +1,7 @@
+<map id="ripple::perf::PerfLogImp::Counters::Jq" name="ripple::perf::PerfLogImp::Counters::Jq">
+<area shape="rect" id="node1" title="Job Queue task performance counters." alt="" coords="77,228,252,269"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="5,131,97,158"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="121,131,208,158"/>
+<area shape="rect" id="node4" href="$structripple_1_1perf_1_1PerfLogImp_1_1Counters_1_1Jq_1_1Sync.html" title=" " alt="" coords="232,124,407,165"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="268,5,371,32"/>
+</map>

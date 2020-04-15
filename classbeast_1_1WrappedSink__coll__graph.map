@@ -1,0 +1,5 @@
+<map id="beast::WrappedSink" name="beast::WrappedSink">
+<area shape="rect" id="node1" title="Wraps a Journal::Sink to prefix its output with a string." alt="" coords="47,95,198,121"/>
+<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,5,152,32"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="177,5,263,32"/>
+</map>

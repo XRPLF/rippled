@@ -1,0 +1,9 @@
+<map id="ripple::CollectorManagerImp" name="ripple::CollectorManagerImp">
+<area shape="rect" id="node1" title=" " alt="" coords="605,79,812,105"/>
+<area shape="rect" id="node2" href="$classripple_1_1CollectorManager.html" title="Provides the beast::insight::Collector service." alt="" coords="282,5,463,32"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="269,56,476,83"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="287,107,458,149"/>
+<area shape="rect" id="node5" href="$classbeast_1_1insight_1_1Groups.html" title="A container for managing a set of metric groups." alt="" coords="5,115,169,141"/>
+<area shape="rect" id="node6" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="317,173,428,200"/>
+<area shape="rect" id="node7" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="14,173,161,200"/>
+</map>

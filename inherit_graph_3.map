@@ -1,0 +1,6 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="5,35,165,76"/>
+<area shape="rect" id="node2" href="$classripple_1_1TimeKeeper.html" title="Manages various times used by the server." alt="" coords="213,42,359,69"/>
+<area shape="rect" id="node3" href="$classripple_1_1test_1_1ManualTimeKeeper.html" title=" " alt="" coords="407,5,587,47"/>
+<area shape="rect" id="node4" href="$classripple_1_1TimeKeeperImpl.html" title=" " alt="" coords="409,71,584,98"/>
+</map>

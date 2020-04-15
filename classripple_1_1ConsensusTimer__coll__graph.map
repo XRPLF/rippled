@@ -1,0 +1,4 @@
+<map id="ripple::ConsensusTimer" name="ripple::ConsensusTimer">
+<area shape="rect" id="node1" title="Measures the duration of phases of consensus." alt="" coords="10,95,185,121"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="5,5,189,32"/>
+</map>

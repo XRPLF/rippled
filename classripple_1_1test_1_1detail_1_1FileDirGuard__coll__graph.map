@@ -1,0 +1,10 @@
+<map id="ripple::test::detail::FileDirGuard" name="ripple::test::detail::FileDirGuard">
+<area shape="rect" id="node1" title="Write a file in a directory and remove when done." alt="" coords="27,467,164,508"/>
+<area shape="rect" id="node2" href="$classripple_1_1test_1_1detail_1_1DirGuard.html" title="Create a directory and remove it when it&#39;s done." alt="" coords="5,363,143,404"/>
+<area shape="rect" id="node3" href="$classripple_1_1test_1_1jtx_1_1path.html" title="Add a path." alt="" coords="167,370,322,397"/>
+<area shape="rect" id="node4" href="$classJson_1_1Value.html" title="Represents a JSON value." alt="" coords="198,273,291,300"/>
+<area shape="rect" id="node5" href="$unionJson_1_1Value_1_1ValueHolder.html" title=" " alt="" coords="155,184,335,211"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title="STL class." alt="" coords="177,95,312,121"/>
+<area shape="rect" id="node7" title=" " alt="" coords="192,5,231,32"/>
+<area shape="rect" id="node8" title=" " alt="" coords="259,5,297,32"/>
+</map>

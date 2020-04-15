@@ -1,0 +1,5 @@
+<map id="beast::LockFreeStack&lt; Element, Tag &gt;" name="beast::LockFreeStack&lt; Element, Tag &gt;">
+<area shape="rect" id="node1" title="Multiple Producer, Multiple Consumer (MPMC) intrusive stack." alt="" coords="581,11,740,53"/>
+<area shape="rect" id="node2" href="$classbeast_1_1LockFreeStack_1_1Node.html" title=" " alt="" coords="5,11,184,53"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="285,46,476,87"/>
+</map>

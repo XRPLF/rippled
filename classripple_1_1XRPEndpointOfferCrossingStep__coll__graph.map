@@ -1,0 +1,12 @@
+<map id="ripple::XRPEndpointOfferCrossingStep" name="ripple::XRPEndpointOfferCrossingStep">
+<area shape="rect" id="node1" title=" " alt="" coords="1263,119,1445,161"/>
+<area shape="rect" id="node2" href="$classripple_1_1XRPEndpointStep.html" title=" " alt="" coords="837,78,1089,119"/>
+<area shape="rect" id="node3" title=" " alt="" coords="489,5,756,61"/>
+<area shape="rect" id="node4" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="567,85,678,112"/>
+<area shape="rect" id="node5" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="232,85,379,112"/>
+<area shape="rect" id="node6" href="$classripple_1_1base__uint.html" title=" " alt="" coords="519,137,726,178"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,137,389,178"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,144,108,171"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,204,349,231"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="916,144,1011,171"/>
+</map>

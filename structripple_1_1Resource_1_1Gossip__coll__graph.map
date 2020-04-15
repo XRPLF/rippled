@@ -1,0 +1,7 @@
+<map id="ripple::Resource::Gossip" name="ripple::Resource::Gossip">
+<area shape="rect" id="node1" title="Data format for exchanging consumption information across peers." alt="" coords="5,407,184,433"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="20,288,169,344"/>
+<area shape="rect" id="node3" href="$structripple_1_1Resource_1_1Gossip_1_1Item.html" title="Describes a single consumer." alt="" coords="5,184,184,225"/>
+<area shape="rect" id="node4" href="$classbeast_1_1IP_1_1Endpoint.html" title="A version&#45;independent IP address and port combination." alt="" coords="23,95,166,121"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="43,5,146,32"/>
+</map>

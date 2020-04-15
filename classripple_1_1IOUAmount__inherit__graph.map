@@ -1,0 +1,5 @@
+<map id="ripple::IOUAmount" name="ripple::IOUAmount">
+<area shape="rect" id="node1" title="Floating point representation of amounts with high dynamic range." alt="" coords="126,95,269,121"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,171,47"/>
+<area shape="rect" id="node3" title=" " alt="" coords="195,13,419,39"/>
+</map>

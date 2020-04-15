@@ -1,0 +1,5 @@
+<map id="ripple::detail::ValidatorsTxtGuard" name="ripple::detail::ValidatorsTxtGuard">
+<area shape="rect" id="node1" title="Write a validators.txt file and remove when done." alt="" coords="5,184,183,225"/>
+<area shape="rect" id="node2" href="$classripple_1_1test_1_1detail_1_1FileDirGuard.html" title="Write a file in a directory and remove when done." alt="" coords="25,95,163,136"/>
+<area shape="rect" id="node3" href="$classripple_1_1test_1_1detail_1_1DirGuard.html" title="Create a directory and remove it when it&#39;s done." alt="" coords="25,5,163,47"/>
+</map>

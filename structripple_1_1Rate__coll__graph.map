@@ -1,0 +1,5 @@
+<map id="ripple::Rate" name="ripple::Rate">
+<area shape="rect" id="node1" title="Represents a transfer rate." alt="" coords="118,109,215,136"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,171,47"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="195,13,298,39"/>
+</map>

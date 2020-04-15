@@ -1,0 +1,6 @@
+<map id="beast::insight::Counter" name="beast::insight::Counter">
+<area shape="rect" id="node1" title="A metric for measuring an integral value." alt="" coords="21,289,191,316"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="17,185,195,227"/>
+<area shape="rect" id="node3" href="$classbeast_1_1insight_1_1CounterImpl.html" title=" " alt="" coords="7,96,205,123"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,207,47"/>
+</map>

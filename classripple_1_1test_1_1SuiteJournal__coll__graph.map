@@ -1,0 +1,7 @@
+<map id="ripple::test::SuiteJournal" name="ripple::test::SuiteJournal">
+<area shape="rect" id="node1" title=" " alt="" coords="62,184,241,211"/>
+<area shape="rect" id="node2" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="5,95,116,121"/>
+<area shape="rect" id="node3" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="18,5,165,32"/>
+<area shape="rect" id="node4" href="$classripple_1_1test_1_1SuiteJournalSink.html" title=" " alt="" coords="140,95,347,121"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="200,5,287,32"/>
+</map>

@@ -1,0 +1,4 @@
+<map id="ripple::NodeStore::Manager" name="ripple::NodeStore::Manager">
+<area shape="rect" id="node1" title="Singleton for managing NodeStore factories and back ends." alt="" coords="5,5,148,47"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1ManagerImp.html" title=" " alt="" coords="5,95,148,136"/>
+</map>

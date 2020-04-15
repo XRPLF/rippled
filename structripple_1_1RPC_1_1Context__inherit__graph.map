@@ -1,0 +1,5 @@
+<map id="ripple::RPC::Context" name="ripple::RPC::Context">
+<area shape="rect" id="node1" title="The context of information needed to call an RPC." alt="" coords="127,5,279,32"/>
+<area shape="rect" id="node2" href="$structripple_1_1RPC_1_1GRPCContext.html" title=" " alt="" coords="5,80,193,121"/>
+<area shape="rect" id="node3" href="$structripple_1_1RPC_1_1JsonContext.html" title=" " alt="" coords="218,87,397,114"/>
+</map>

@@ -1,0 +1,5 @@
+<map id="ripple::NodeStoreScheduler" name="ripple::NodeStoreScheduler">
+<area shape="rect" id="node1" title="A NodeStore::Scheduler which uses the JobQueue and implements the Stoppable API." alt="" coords="57,95,256,121"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1Scheduler.html" title="Scheduling for asynchronous backend activity." alt="" coords="5,5,148,47"/>
+<area shape="rect" id="node3" href="$classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping." alt="" coords="172,13,304,39"/>
+</map>

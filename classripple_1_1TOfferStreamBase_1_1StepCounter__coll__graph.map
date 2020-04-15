@@ -1,0 +1,6 @@
+<map id="ripple::TOfferStreamBase&lt; TIn, TOut &gt;::StepCounter" name="ripple::TOfferStreamBase&lt; TIn, TOut &gt;::StepCounter">
+<area shape="rect" id="node1" title=" " alt="" coords="9,199,208,240"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,95,108,121"/>
+<area shape="rect" id="node3" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="132,95,243,121"/>
+<area shape="rect" id="node4" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="114,5,261,32"/>
+</map>

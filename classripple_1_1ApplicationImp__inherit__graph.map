@@ -1,0 +1,8 @@
+<map id="ripple::ApplicationImp" name="ripple::ApplicationImp">
+<area shape="rect" id="node1" title=" " alt="" coords="181,169,347,196"/>
+<area shape="rect" id="node2" href="$classripple_1_1Application.html" title=" " alt="" coords="19,95,159,121"/>
+<area shape="rect" id="node3" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="5,5,173,47"/>
+<area shape="rect" id="node4" href="$classripple_1_1RootStoppable.html" title=" " alt="" coords="183,95,345,121"/>
+<area shape="rect" id="node5" href="$classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping." alt="" coords="198,13,330,39"/>
+<area shape="rect" id="node6" href="$classBasicApp.html" title=" " alt="" coords="369,95,452,121"/>
+</map>

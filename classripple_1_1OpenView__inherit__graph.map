@@ -1,0 +1,6 @@
+<map id="ripple::OpenView" name="ripple::OpenView">
+<area shape="rect" id="node1" title="Writable ledger view that accumulates state and tx changes." alt="" coords="87,155,220,181"/>
+<area shape="rect" id="node2" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="5,80,136,107"/>
+<area shape="rect" id="node3" href="$classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="161,80,311,107"/>
+<area shape="rect" id="node4" href="$classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="173,5,299,32"/>
+</map>

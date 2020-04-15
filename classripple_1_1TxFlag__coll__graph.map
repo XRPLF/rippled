@@ -1,0 +1,4 @@
+<map id="ripple::TxFlag" name="ripple::TxFlag">
+<area shape="rect" id="node1" title="Transaction flags." alt="" coords="5,95,116,121"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="9,5,112,32"/>
+</map>

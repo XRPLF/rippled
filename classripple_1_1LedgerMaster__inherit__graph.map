@@ -1,0 +1,5 @@
+<map id="ripple::LedgerMaster" name="ripple::LedgerMaster">
+<area shape="rect" id="node1" title=" " alt="" coords="85,95,239,121"/>
+<area shape="rect" id="node2" href="$classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping." alt="" coords="5,13,137,39"/>
+<area shape="rect" id="node3" href="$classripple_1_1AbstractFetchPackContainer.html" title="An interface facilitating retrieval of fetch packs without an application or ledgermaster object." alt="" coords="161,5,347,47"/>
+</map>

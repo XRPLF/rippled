@@ -1,0 +1,12 @@
+<map id="ripple::Logs::Sink" name="ripple::Logs::Sink">
+<area shape="rect" id="node1" title=" " alt="" coords="985,43,1119,69"/>
+<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,44,152,71"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="223,142,393,183"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="265,59,351,85"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="512,145,687,215"/>
+<area shape="rect" id="node4" href="$classripple_1_1Logs.html" title="Manages partitions for logging." alt="" coords="801,123,899,149"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="553,93,645,120"/>
+<area shape="rect" id="node8" href="$classripple_1_1Logs_1_1File.html" title="Manages a system file containing logged output." alt="" coords="536,240,663,267"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="231,233,385,274"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ofstream.html" title="STL class." alt="" coords="24,240,133,267"/>
+</map>

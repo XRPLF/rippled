@@ -1,0 +1,9 @@
+<map id="ripple::ClusterNode" name="ripple::ClusterNode">
+<area shape="rect" id="node1" title=" " alt="" coords="155,199,302,225"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,102,108,129"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="132,102,219,129"/>
+<area shape="rect" id="node4" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="243,102,374,129"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="203,5,297,32"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="322,5,410,32"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="399,95,571,136"/>
+</map>

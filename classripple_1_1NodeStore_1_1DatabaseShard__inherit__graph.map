@@ -1,0 +1,6 @@
+<map id="ripple::NodeStore::DatabaseShard" name="ripple::NodeStore::DatabaseShard">
+<area shape="rect" id="node1" title="A collection of historical shards." alt="" coords="7,169,150,211"/>
+<area shape="rect" id="node4" href="$classripple_1_1NodeStore_1_1DatabaseShardImp.html" title=" " alt="" coords="5,259,152,300"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1Database.html" title="Persistency layer for NodeObject." alt="" coords="7,80,150,121"/>
+<area shape="rect" id="node3" href="$classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping." alt="" coords="13,5,145,32"/>
+</map>

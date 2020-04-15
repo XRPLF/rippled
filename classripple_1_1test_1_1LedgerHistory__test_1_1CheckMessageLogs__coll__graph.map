@@ -1,0 +1,12 @@
+<map id="ripple::test::LedgerHistory_test::CheckMessageLogs" name="ripple::test::LedgerHistory_test::CheckMessageLogs">
+<area shape="rect" id="node1" title="Log manager that searches for a specific message substring." alt="" coords="935,168,1125,209"/>
+<area shape="rect" id="node2" href="$classripple_1_1Logs.html" title="Manages partitions for logging." alt="" coords="788,87,885,114"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="553,63,645,90"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="512,115,687,185"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="265,194,351,221"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="223,113,393,155"/>
+<area shape="rect" id="node7" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,121,152,147"/>
+<area shape="rect" id="node8" href="$classripple_1_1Logs_1_1File.html" title="Manages a system file containing logged output." alt="" coords="536,13,663,39"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="231,5,385,47"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ofstream.html" title="STL class." alt="" coords="24,13,133,39"/>
+</map>

@@ -1,0 +1,7 @@
+<map id="ripple::DigestAwareReadView" name="ripple::DigestAwareReadView">
+<area shape="rect" id="node1" title="ReadView that associates keys with digests." alt="" coords="104,80,317,107"/>
+<area shape="rect" id="node3" href="$classripple_1_1detail_1_1CachedViewImpl.html" title=" " alt="" coords="5,155,227,181"/>
+<area shape="rect" id="node5" href="$classripple_1_1Ledger.html" title="Holds a ledger." alt="" coords="251,155,362,181"/>
+<area shape="rect" id="node2" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="145,5,276,32"/>
+<area shape="rect" id="node4" href="$classripple_1_1CachedView.html" title="Wraps a DigestAwareReadView to provide caching." alt="" coords="43,229,189,271"/>
+</map>

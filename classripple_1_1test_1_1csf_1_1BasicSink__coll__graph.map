@@ -1,0 +1,6 @@
+<map id="ripple::test::csf::BasicSink" name="ripple::test::csf::BasicSink">
+<area shape="rect" id="node1" title="Sink that prepends simulation time to messages." alt="" coords="37,229,163,271"/>
+<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,125,152,152"/>
+<area shape="rect" id="node3" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="177,111,338,167"/>
+<area shape="rect" id="node4" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="177,5,338,61"/>
+</map>

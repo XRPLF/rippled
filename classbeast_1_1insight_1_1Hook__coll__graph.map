@@ -1,0 +1,6 @@
+<map id="beast::insight::Hook" name="beast::insight::Hook">
+<area shape="rect" id="node1" title="A reference to a handler for performing polled collection." alt="" coords="21,289,173,316"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="12,185,183,227"/>
+<area shape="rect" id="node3" href="$classbeast_1_1insight_1_1HookImpl.html" title=" " alt="" coords="7,96,188,123"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,189,47"/>
+</map>

@@ -1,0 +1,7 @@
+<map id="ripple::JobTypes" name="ripple::JobTypes">
+<area shape="rect" id="node1" title=" " alt="" coords="115,303,239,329"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="265,199,413,240"/>
+<area shape="rect" id="node3" href="$classripple_1_1JobTypeInfo.html" title="Holds all the &#39;static&#39; information about a job, which does not change." alt="" coords="106,109,249,136"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="5,5,189,32"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="214,5,301,32"/>
+</map>

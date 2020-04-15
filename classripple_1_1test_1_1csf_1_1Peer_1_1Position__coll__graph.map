@@ -1,0 +1,10 @@
+<map id="ripple::test::csf::Peer::Position" name="ripple::test::csf::Peer::Position">
+<area shape="rect" id="node1" title="Basic wrapper of a proposed position taken by a peer." alt="" coords="1137,123,1264,165"/>
+<area shape="rect" id="node2" href="$classripple_1_1ConsensusProposal.html" title=" " alt="" coords="785,123,1021,165"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="106,5,209,32"/>
+<area shape="rect" id="node4" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="419,95,625,137"/>
+<area shape="rect" id="node5" title=" " alt="" coords="5,56,309,229"/>
+<area shape="rect" id="node6" href="$classripple_1_1tagged__integer.html" title="A type&#45;safe wrap around standard integral types." alt="" coords="439,161,605,202"/>
+<area shape="rect" id="node7" title=" " alt="" coords="14,253,301,397"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="436,226,608,267"/>
+</map>
