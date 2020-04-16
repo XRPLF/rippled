@@ -218,7 +218,7 @@ ubuntu_19_smoketest:
     - dpkg_build
     - dpkg_sign
   image:
-    name: ubuntu:19.04
+    name: ubuntu:19.10
   <<: *run_local_smoketest
 
 ubuntu_18_smoketest:
@@ -378,10 +378,10 @@ fedora_27_verify_repo_test:
 ubuntu_19_verify_repo_test:
   stage: verify_from_test
   variables:
-    DISTRO: "disco"
+    DISTRO: "eoan"
     DEB_REPO: "rippled-deb-test-mirror"
   image:
-    name: ubuntu:19.04
+    name: ubuntu:19.10
   dependencies:
     - dpkg_sign
   <<: *only_primary
@@ -524,10 +524,10 @@ fedora_27_verify_repo_prod:
 ubuntu_19_verify_repo_prod:
   stage: verify_from_prod
   variables:
-    DISTRO: "disco"
+    DISTRO: "eoan"
     DEB_REPO: "rippled-deb"
   image:
-    name: ubuntu:19.04
+    name: ubuntu:19.10
   dependencies:
     - dpkg_sign
   <<: *only_primary
