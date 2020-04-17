@@ -97,6 +97,10 @@ public:
 
     void
     onResponse(error_code const& ec);
+
+private:
+    void
+    close();
 };
 
 //------------------------------------------------------------------------------
@@ -125,6 +129,7 @@ WorkBase<Impl>::~WorkBase()
     if (cb_)
         cb_(make_error_code(boost::system::errc::not_a_socket),
             std::move(res_));
+    close();
 }
 
 template <class Impl>
@@ -228,9 +233,24 @@ WorkBase<Impl>::onResponse(error_code const& ec)
     if (ec)
         return fail(ec);
 
+    close();
     assert(cb_);
     cb_(ec, std::move(res_));
     cb_ = nullptr;
+}
+
+template <class Impl>
+void
+WorkBase<Impl>::close()
+{
+    if (socket_.is_open())
+    {
+        error_code ec;
+        socket_.shutdown(boost::asio::socket_base::shutdown_send, ec);
+        if (ec)
+            return;
+        socket_.close(ec);
+    }
 }
 
 }  // namespace detail
