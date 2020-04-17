@@ -49,7 +49,7 @@ public:
         stopThreads();
     }
 
-    void
+    std::string
     rotateBackends(std::shared_ptr<Backend> newBackend) override;
 
     std::string

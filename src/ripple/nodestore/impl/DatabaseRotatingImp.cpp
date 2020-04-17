@@ -55,13 +55,14 @@ DatabaseRotatingImp::DatabaseRotatingImp(
     setParent(parent);
 }
 
-void
+std::string
 DatabaseRotatingImp::rotateBackends(std::shared_ptr<Backend> newBackend)
 {
     std::lock_guard lock(mutex_);
     archiveBackend_->setDeletePath();
     archiveBackend_ = std::move(writableBackend_);
     writableBackend_ = std::move(newBackend);
+    return archiveBackend_->getName();
 }
 
 std::string
@@ -160,27 +161,27 @@ DatabaseRotatingImp::sweep()
 std::shared_ptr<NodeObject>
 DatabaseRotatingImp::fetchFrom(uint256 const& hash, std::uint32_t seq)
 {
-    auto backends = [&] {
+    auto [writable, archive] = [&] {
         std::lock_guard lock(mutex_);
         return std::make_pair(writableBackend_, archiveBackend_);
     }();
 
     // Try to fetch from the writable backend
-    auto nObj = fetchInternal(hash, backends.first);
+    auto nObj = fetchInternal(hash, writable);
     if (! nObj)
     {
         // Otherwise try to fetch from the archive backend
-        nObj = fetchInternal(hash, backends.second);
+        nObj = fetchInternal(hash, archive);
         if (nObj)
         {
             {
                 // Refresh the writable backend pointer
                 std::lock_guard lock(mutex_);
-                backends.first = writableBackend_;
+                writable = writableBackend_;
             }
 
             // Update writable backend with data from the archive backend
-            backends.first->store(nObj);
+            writable->store(nObj);
             nCache_->erase(hash);
         }
     }
@@ -191,16 +192,16 @@ void
 DatabaseRotatingImp::for_each(
     std::function <void(std::shared_ptr<NodeObject>)> f)
 {
-    auto const backends = [&] {
+    auto [writable, archive] = [&] {
         std::lock_guard lock(mutex_);
         return std::make_pair(writableBackend_, archiveBackend_);
     }();
 
     // Iterate the writable backend
-    backends.first->for_each(f);
+    writable->for_each(f);
 
     // Iterate the archive backend
-    backends.second->for_each(f);
+    archive->for_each(f);
 }
 
 

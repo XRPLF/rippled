@@ -47,8 +47,10 @@ public:
     virtual TaggedCache<uint256, NodeObject> const&
     getPositiveCache() = 0;
 
+    /** Returns the name of the rotated backend.
+    */
     virtual
-    void
+    std::string
     rotateBackends(std::shared_ptr<Backend> newBackend) = 0;
 };
 
