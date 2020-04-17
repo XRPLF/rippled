@@ -154,58 +154,52 @@ bitsetIndexToFeature(size_t i)
     return featureCollections.bitsetIndexToFeature(i);
 }
 
-uint256 const featureTickets = *getRegisteredFeature("Tickets");
-uint256 const featureOwnerPaysFee = *getRegisteredFeature("OwnerPaysFee");
-uint256 const featureFlow = *getRegisteredFeature("Flow");
-uint256 const featureCompareTakerFlowCross =
-    *getRegisteredFeature("CompareTakerFlowCross");
-uint256 const featureFlowCross = *getRegisteredFeature("FlowCross");
-uint256 const featureCryptoConditionsSuite =
-    *getRegisteredFeature("CryptoConditionsSuite");
-uint256 const fix1513 = *getRegisteredFeature("fix1513");
-uint256 const featureDepositAuth = *getRegisteredFeature("DepositAuth");
-uint256 const featureChecks = *getRegisteredFeature("Checks");
-uint256 const fix1571 = *getRegisteredFeature("fix1571");
-uint256 const fix1543 = *getRegisteredFeature("fix1543");
-uint256 const fix1623 = *getRegisteredFeature("fix1623");
-uint256 const featureDepositPreauth = *getRegisteredFeature("DepositPreauth");
-uint256 const fix1515 = *getRegisteredFeature("fix1515");
-uint256 const fix1578 = *getRegisteredFeature("fix1578");
-uint256 const featureMultiSignReserve =
-    *getRegisteredFeature("MultiSignReserve");
-uint256 const fixTakerDryOfferRemoval =
-    *getRegisteredFeature("fixTakerDryOfferRemoval");
-uint256 const fixMasterKeyAsRegularKey =
-    *getRegisteredFeature("fixMasterKeyAsRegularKey");
-uint256 const fixCheckThreading = *getRegisteredFeature("fixCheckThreading");
-uint256 const fixPayChanRecipientOwnerDir =
-    *getRegisteredFeature("fixPayChanRecipientOwnerDir");
-uint256 const featureDeletableAccounts =
-    *getRegisteredFeature("DeletableAccounts");
-uint256 const fixQualityUpperBound =
-    *getRegisteredFeature("fixQualityUpperBound");
-uint256 const featureRequireFullyCanonicalSig =
-    *getRegisteredFeature("RequireFullyCanonicalSig");
-uint256 const fix1781 = *getRegisteredFeature("fix1781");
-uint256 const featureHardenedValidations =
-    *getRegisteredFeature("HardenedValidations");
+// clang-format off
 
-// The following amendments have been active for at least two years.
-// Their pre-amendment code has been removed.
-uint256 const retiredPayChan = *getRegisteredFeature("PayChan");
-uint256 const retiredCryptoConditions =
-    *getRegisteredFeature("CryptoConditions");
-uint256 const retiredTickSize = *getRegisteredFeature("TickSize");
-uint256 const retiredFix1368 = *getRegisteredFeature("fix1368");
-uint256 const retiredEscrow = *getRegisteredFeature("Escrow");
-uint256 const retiredFix1373 = *getRegisteredFeature("fix1373");
-uint256 const retiredEnforceInvariants =
-    *getRegisteredFeature("EnforceInvariants");
-uint256 const retiredSortedDirectories =
-    *getRegisteredFeature("SortedDirectories");
-uint256 const retiredFix1201 = *getRegisteredFeature("fix1201");
-uint256 const retiredFix1512 = *getRegisteredFeature("fix1512");
-uint256 const retiredFix1523 = *getRegisteredFeature("fix1523");
-uint256 const retiredFix1528 = *getRegisteredFeature("fix1528");
+uint256 const
+    featureTickets                  = *getRegisteredFeature("Tickets"),
+    featureOwnerPaysFee             = *getRegisteredFeature("OwnerPaysFee"),
+    featureFlow                     = *getRegisteredFeature("Flow"),
+    featureCompareTakerFlowCross    = *getRegisteredFeature("CompareTakerFlowCross"),
+    featureFlowCross                = *getRegisteredFeature("FlowCross"),
+    featureCryptoConditionsSuite    = *getRegisteredFeature("CryptoConditionsSuite"),
+    fix1513                         = *getRegisteredFeature("fix1513"),
+    featureDepositAuth              = *getRegisteredFeature("DepositAuth"),
+    featureChecks                   = *getRegisteredFeature("Checks"),
+    fix1571                         = *getRegisteredFeature("fix1571"),
+    fix1543                         = *getRegisteredFeature("fix1543"),
+    fix1623                         = *getRegisteredFeature("fix1623"),
+    featureDepositPreauth           = *getRegisteredFeature("DepositPreauth"),
+    fix1515                         = *getRegisteredFeature("fix1515"),
+    fix1578                         = *getRegisteredFeature("fix1578"),
+    featureMultiSignReserve         = *getRegisteredFeature("MultiSignReserve"),
+    fixTakerDryOfferRemoval         = *getRegisteredFeature("fixTakerDryOfferRemoval"),
+    fixMasterKeyAsRegularKey        = *getRegisteredFeature("fixMasterKeyAsRegularKey"),
+    fixCheckThreading               = *getRegisteredFeature("fixCheckThreading"),
+    fixPayChanRecipientOwnerDir     = *getRegisteredFeature("fixPayChanRecipientOwnerDir"),
+    featureDeletableAccounts        = *getRegisteredFeature("DeletableAccounts"),
+    fixQualityUpperBound            = *getRegisteredFeature("fixQualityUpperBound"),
+    featureRequireFullyCanonicalSig = *getRegisteredFeature("RequireFullyCanonicalSig"),
+    fix1781                         = *getRegisteredFeature("fix1781"),
+    featureHardenedValidations      = *getRegisteredFeature("HardenedValidations");
+
+// The following amendments have been active for at least two years. Their
+// pre-amendment code has been removed and the identifiers are deprecated.
+[[deprecated("The referenced amendment has been retired"), maybe_unused]]
+uint256 const
+    retiredPayChan           = *getRegisteredFeature("PayChan"),
+    retiredCryptoConditions  = *getRegisteredFeature("CryptoConditions"),
+    retiredTickSize          = *getRegisteredFeature("TickSize"),
+    retiredFix1368           = *getRegisteredFeature("fix1368"),
+    retiredEscrow            = *getRegisteredFeature("Escrow"),
+    retiredFix1373           = *getRegisteredFeature("fix1373"),
+    retiredEnforceInvariants = *getRegisteredFeature("EnforceInvariants"),
+    retiredSortedDirectories = *getRegisteredFeature("SortedDirectories"),
+    retiredFix1201           = *getRegisteredFeature("fix1201"),
+    retiredFix1512           = *getRegisteredFeature("fix1512"),
+    retiredFix1523           = *getRegisteredFeature("fix1523"),
+    retiredFix1528           = *getRegisteredFeature("fix1528");
+
+// clang-format on
 
 }  // namespace ripple

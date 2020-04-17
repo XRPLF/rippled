@@ -368,21 +368,6 @@ extern uint256 const featureRequireFullyCanonicalSig;
 extern uint256 const fix1781;
 extern uint256 const featureHardenedValidations;
 
-// The following amendments have been active for at least two years.
-// Their pre-amendment code has been removed.
-extern uint256 const retiredPayChan;
-extern uint256 const retiredCryptoConditions;
-extern uint256 const retiredTickSize;
-extern uint256 const retiredFix1368;
-extern uint256 const retiredEscrow;
-extern uint256 const retiredFix1373;
-extern uint256 const retiredEnforceInvariants;
-extern uint256 const retiredSortedDirectories;
-extern uint256 const retiredFix1201;
-extern uint256 const retiredFix1512;
-extern uint256 const retiredFix1523;
-extern uint256 const retiredFix1528;
-
 }  // namespace ripple
 
 #endif
