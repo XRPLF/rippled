@@ -44,41 +44,46 @@ namespace ripple {
 class AcceptedLedger
 {
 public:
-    using pointer        = std::shared_ptr<AcceptedLedger>;
-    using ret            = const pointer&;
-    using map_t          = std::map<int, AcceptedLedgerTx::pointer>;
+    using pointer = std::shared_ptr<AcceptedLedger>;
+    using ret = const pointer&;
+    using map_t = std::map<int, AcceptedLedgerTx::pointer>;
     // mapt_t must be an ordered map!
-    using value_type     = map_t::value_type;
+    using value_type = map_t::value_type;
     using const_iterator = map_t::const_iterator;
 
 public:
-    std::shared_ptr<ReadView const> const& getLedger () const
+    std::shared_ptr<ReadView const> const&
+    getLedger() const
     {
         return mLedger;
     }
-    const map_t& getMap () const
+    const map_t&
+    getMap() const
     {
         return mMap;
     }
 
-    int getTxnCount () const
+    int
+    getTxnCount() const
     {
-        return mMap.size ();
+        return mMap.size();
     }
 
-    AcceptedLedgerTx::pointer getTxn (int) const;
+    AcceptedLedgerTx::pointer
+    getTxn(int) const;
 
-    AcceptedLedger (
+    AcceptedLedger(
         std::shared_ptr<ReadView const> const& ledger,
-        AccountIDCache const& accountCache, Logs& logs);
+        AccountIDCache const& accountCache,
+        Logs& logs);
 
 private:
-    void insert (AcceptedLedgerTx::ref);
+    void insert(AcceptedLedgerTx::ref);
 
     std::shared_ptr<ReadView const> mLedger;
     map_t mMap;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

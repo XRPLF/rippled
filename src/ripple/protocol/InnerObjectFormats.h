@@ -25,21 +25,23 @@
 namespace ripple {
 
 /** Manages the list of known inner object formats.
-*/
-class InnerObjectFormats : public KnownFormats <int>
+ */
+class InnerObjectFormats : public KnownFormats<int>
 {
 private:
     /** Create the object.
         This will load the object with all the known inner object formats.
     */
-    InnerObjectFormats ();
+    InnerObjectFormats();
 
 public:
-    static InnerObjectFormats const& getInstance ();
+    static InnerObjectFormats const&
+    getInstance();
 
-    SOTemplate const* findSOTemplateBySField (SField const& sField) const;
+    SOTemplate const*
+    findSOTemplateBySField(SField const& sField) const;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

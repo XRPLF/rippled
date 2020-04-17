@@ -20,11 +20,11 @@
 #ifndef RIPPLE_TEST_JTX_UTILITY_H_INCLUDED
 #define RIPPLE_TEST_JTX_UTILITY_H_INCLUDED
 
-#include <test/jtx/Account.h>
-#include <ripple/json/json_value.h>
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/json/json_value.h>
 #include <ripple/protocol/STObject.h>
 #include <stdexcept>
+#include <test/jtx/Account.h>
 
 namespace ripple {
 namespace test {
@@ -34,9 +34,7 @@ namespace jtx {
 struct parse_error : std::logic_error
 {
     template <class String>
-    explicit
-    parse_error (String const& s)
-        : logic_error(s)
+    explicit parse_error(String const& s) : logic_error(s)
     {
     }
 };
@@ -47,27 +45,24 @@ struct parse_error : std::logic_error
           this set of unit test routines.
 */
 STObject
-parse (Json::Value const& jv);
+parse(Json::Value const& jv);
 
 /** Sign automatically.
     @note This only works on accounts with multi-signing off.
 */
 void
-sign (Json::Value& jv,
-    Account const& account);
+sign(Json::Value& jv, Account const& account);
 
 /** Set the fee automatically. */
 void
-fill_fee (Json::Value& jv,
-    ReadView const& view);
+fill_fee(Json::Value& jv, ReadView const& view);
 
 /** Set the sequence number automatically. */
 void
-fill_seq (Json::Value& jv,
-    ReadView const& view);
+fill_seq(Json::Value& jv, ReadView const& view);
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

@@ -20,9 +20,9 @@
 #define RIPPLE_TEST_CSF_PROPOSAL_H_INCLUDED
 
 #include <ripple/consensus/ConsensusProposal.h>
-#include <test/csf/ledgers.h>
 #include <test/csf/Tx.h>
 #include <test/csf/Validation.h>
+#include <test/csf/ledgers.h>
 
 namespace ripple {
 namespace test {

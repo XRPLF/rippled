@@ -26,10 +26,13 @@ namespace ripple {
 
 // "Sustain" is a system for a buddy process that monitors the main process
 // and relaunches it on a fault.
-bool HaveSustain ();
-std::string StopSustain ();
-std::string DoSustain ();
+bool
+HaveSustain();
+std::string
+StopSustain();
+std::string
+DoSustain();
 
-} // ripple
+}  // namespace ripple
 
 #endif

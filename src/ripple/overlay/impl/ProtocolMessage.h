@@ -21,10 +21,10 @@
 #define RIPPLE_OVERLAY_PROTOCOLMESSAGE_H_INCLUDED
 
 #include <ripple/basics/ByteUtilities.h>
-#include <ripple/protocol/messages.h>
 #include <ripple/overlay/Compression.h>
 #include <ripple/overlay/Message.h>
 #include <ripple/overlay/impl/ZeroCopyStream.h>
+#include <ripple/protocol/messages.h>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
 #include <boost/system/error_code.hpp>
@@ -39,29 +39,46 @@ namespace ripple {
 /** Returns the name of a protocol message given its type. */
 template <class = void>
 std::string
-protocolMessageName (int type)
+protocolMessageName(int type)
 {
     switch (type)
     {
-    case protocol::mtMANIFESTS:             return "manifests";
-    case protocol::mtPING:                  return "ping";
-    case protocol::mtCLUSTER:               return "cluster";
-    case protocol::mtGET_SHARD_INFO:        return "get_shard_info";
-    case protocol::mtSHARD_INFO:            return "shard_info";
-    case protocol::mtGET_PEER_SHARD_INFO:   return "get_peer_shard_info";
-    case protocol::mtPEER_SHARD_INFO:       return "peer_shard_info";
-    case protocol::mtENDPOINTS:             return "endpoints";
-    case protocol::mtTRANSACTION:           return "tx";
-    case protocol::mtGET_LEDGER:            return "get_ledger";
-    case protocol::mtLEDGER_DATA:           return "ledger_data";
-    case protocol::mtPROPOSE_LEDGER:        return "propose";
-    case protocol::mtSTATUS_CHANGE:         return "status";
-    case protocol::mtHAVE_SET:              return "have_set";
-    case protocol::mtVALIDATORLIST:         return "validator_list";
-    case protocol::mtVALIDATION:            return "validation";
-    case protocol::mtGET_OBJECTS:           return "get_objects";
-    default:
-        break;
+        case protocol::mtMANIFESTS:
+            return "manifests";
+        case protocol::mtPING:
+            return "ping";
+        case protocol::mtCLUSTER:
+            return "cluster";
+        case protocol::mtGET_SHARD_INFO:
+            return "get_shard_info";
+        case protocol::mtSHARD_INFO:
+            return "shard_info";
+        case protocol::mtGET_PEER_SHARD_INFO:
+            return "get_peer_shard_info";
+        case protocol::mtPEER_SHARD_INFO:
+            return "peer_shard_info";
+        case protocol::mtENDPOINTS:
+            return "endpoints";
+        case protocol::mtTRANSACTION:
+            return "tx";
+        case protocol::mtGET_LEDGER:
+            return "get_ledger";
+        case protocol::mtLEDGER_DATA:
+            return "ledger_data";
+        case protocol::mtPROPOSE_LEDGER:
+            return "propose";
+        case protocol::mtSTATUS_CHANGE:
+            return "status";
+        case protocol::mtHAVE_SET:
+            return "have_set";
+        case protocol::mtVALIDATORLIST:
+            return "validator_list";
+        case protocol::mtVALIDATION:
+            return "validation";
+        case protocol::mtGET_OBJECTS:
+            return "get_objects";
+        default:
+            break;
     }
     return "unknown";
 }
@@ -89,22 +106,23 @@ struct MessageHeader
     std::uint16_t message_type = 0;
 
     /** Indicates which compression algorithm the payload is compressed with.
-     * Currenly only lz4 is supported. If None then the message is not compressed.
+     * Currenly only lz4 is supported. If None then the message is not
+     * compressed.
      */
     compression::Algorithm algorithm = compression::Algorithm::None;
 };
 
-template<typename BufferSequence>
+template <typename BufferSequence>
 auto
-buffersBegin(BufferSequence const &bufs)
+buffersBegin(BufferSequence const& bufs)
 {
-    return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::begin(bufs);
+    return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::begin(
+        bufs);
 }
 
 template <class BufferSequence>
-boost::optional<MessageHeader> parseMessageHeader(
-    BufferSequence const& bufs,
-    std::size_t size)
+boost::optional<MessageHeader>
+parseMessageHeader(BufferSequence const& bufs, std::size_t size)
 {
     using namespace ripple::compression;
     auto iter = buffersBegin(bufs);
@@ -123,7 +141,8 @@ boost::optional<MessageHeader> parseMessageHeader(
         if (compressed)
         {
             uint8_t algorithm = (*iter & 0x70) >> 4;
-            if (algorithm != static_cast<std::uint8_t>(compression::Algorithm::LZ4))
+            if (algorithm !=
+                static_cast<std::uint8_t>(compression::Algorithm::LZ4))
                 return {};
             hdr.algorithm = compression::Algorithm::LZ4;
         }
@@ -148,13 +167,14 @@ boost::optional<MessageHeader> parseMessageHeader(
     return {};
 }
 
-template <class T, class Buffers, class Handler,
-    class = std::enable_if_t<std::is_base_of<::google::protobuf::Message, T>::value>>
+template <
+    class T,
+    class Buffers,
+    class Handler,
+    class = std::enable_if_t<
+        std::is_base_of<::google::protobuf::Message, T>::value>>
 bool
-invoke (
-    MessageHeader const& header,
-    Buffers const& buffers,
-    Handler& handler)
+invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
 {
     auto const m = std::make_shared<T>();
 
@@ -179,14 +199,14 @@ invoke (
     else if (!m->ParseFromZeroCopyStream(&stream))
         return false;
 
-    handler.onMessageBegin (header.message_type, m, header.payload_wire_size);
-    handler.onMessage (m);
-    handler.onMessageEnd (header.message_type, m);
+    handler.onMessageBegin(header.message_type, m, header.payload_wire_size);
+    handler.onMessage(m);
+    handler.onMessageEnd(header.message_type, m);
 
     return true;
 }
 
-}
+}  // namespace detail
 
 /** Calls the handler for up to one protocol message in the passed buffers.
 
@@ -196,10 +216,10 @@ invoke (
     @return The number of bytes consumed, or the error code if any.
 */
 template <class Buffers, class Handler>
-std::pair <std::size_t, boost::system::error_code>
-invokeProtocolMessage (Buffers const& buffers, Handler& handler)
+std::pair<std::size_t, boost::system::error_code>
+invokeProtocolMessage(Buffers const& buffers, Handler& handler)
 {
-    std::pair<std::size_t,boost::system::error_code> result = { 0, {} };
+    std::pair<std::size_t, boost::system::error_code> result = {0, {}};
 
     auto const size = boost::asio::buffer_size(buffers);
 
@@ -232,61 +252,78 @@ invokeProtocolMessage (Buffers const& buffers, Handler& handler)
 
     switch (header->message_type)
     {
-    case protocol::mtMANIFESTS:
-        success = detail::invoke<protocol::TMManifests>(*header, buffers, handler);
-        break;
-    case protocol::mtPING:
-        success = detail::invoke<protocol::TMPing>(*header, buffers, handler);
-        break;
-    case protocol::mtCLUSTER:
-        success = detail::invoke<protocol::TMCluster>(*header, buffers, handler);
-        break;
-    case protocol::mtGET_SHARD_INFO:
-        success = detail::invoke<protocol::TMGetShardInfo>(*header, buffers, handler);
-        break;
-    case protocol::mtSHARD_INFO:
-        success = detail::invoke<protocol::TMShardInfo>(*header, buffers, handler);
-        break;
-    case protocol::mtGET_PEER_SHARD_INFO:
-        success = detail::invoke<protocol::TMGetPeerShardInfo>(*header, buffers, handler);
-        break;
-    case protocol::mtPEER_SHARD_INFO:
-        success = detail::invoke<protocol::TMPeerShardInfo>(*header, buffers, handler);
-        break;
-    case protocol::mtENDPOINTS:
-        success = detail::invoke<protocol::TMEndpoints>(*header, buffers, handler);
-        break;
-    case protocol::mtTRANSACTION:
-        success = detail::invoke<protocol::TMTransaction>(*header, buffers, handler);
-        break;
-    case protocol::mtGET_LEDGER:
-        success = detail::invoke<protocol::TMGetLedger>(*header, buffers, handler);
-        break;
-    case protocol::mtLEDGER_DATA:
-        success = detail::invoke<protocol::TMLedgerData>(*header, buffers, handler);
-        break;
-    case protocol::mtPROPOSE_LEDGER:
-        success = detail::invoke<protocol::TMProposeSet>(*header, buffers, handler);
-        break;
-    case protocol::mtSTATUS_CHANGE:
-        success = detail::invoke<protocol::TMStatusChange>(*header, buffers, handler);
-        break;
-    case protocol::mtHAVE_SET:
-        success = detail::invoke<protocol::TMHaveTransactionSet>(*header, buffers, handler);
-        break;
-    case protocol::mtVALIDATION:
-        success = detail::invoke<protocol::TMValidation>(*header, buffers, handler);
-        break;
-    case protocol::mtVALIDATORLIST:
-        success = detail::invoke<protocol::TMValidatorList> (*header, buffers, handler);
-        break;
-    case protocol::mtGET_OBJECTS:
-        success = detail::invoke<protocol::TMGetObjectByHash>(*header, buffers, handler);
-        break;
-    default:
-        handler.onMessageUnknown (header->message_type);
-        success = true;
-        break;
+        case protocol::mtMANIFESTS:
+            success = detail::invoke<protocol::TMManifests>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtPING:
+            success =
+                detail::invoke<protocol::TMPing>(*header, buffers, handler);
+            break;
+        case protocol::mtCLUSTER:
+            success =
+                detail::invoke<protocol::TMCluster>(*header, buffers, handler);
+            break;
+        case protocol::mtGET_SHARD_INFO:
+            success = detail::invoke<protocol::TMGetShardInfo>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtSHARD_INFO:
+            success = detail::invoke<protocol::TMShardInfo>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtGET_PEER_SHARD_INFO:
+            success = detail::invoke<protocol::TMGetPeerShardInfo>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtPEER_SHARD_INFO:
+            success = detail::invoke<protocol::TMPeerShardInfo>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtENDPOINTS:
+            success = detail::invoke<protocol::TMEndpoints>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtTRANSACTION:
+            success = detail::invoke<protocol::TMTransaction>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtGET_LEDGER:
+            success = detail::invoke<protocol::TMGetLedger>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtLEDGER_DATA:
+            success = detail::invoke<protocol::TMLedgerData>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtPROPOSE_LEDGER:
+            success = detail::invoke<protocol::TMProposeSet>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtSTATUS_CHANGE:
+            success = detail::invoke<protocol::TMStatusChange>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtHAVE_SET:
+            success = detail::invoke<protocol::TMHaveTransactionSet>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtVALIDATION:
+            success = detail::invoke<protocol::TMValidation>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtVALIDATORLIST:
+            success = detail::invoke<protocol::TMValidatorList>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtGET_OBJECTS:
+            success = detail::invoke<protocol::TMGetObjectByHash>(
+                *header, buffers, handler);
+            break;
+        default:
+            handler.onMessageUnknown(header->message_type);
+            success = true;
+            break;
     }
 
     result.first = header->total_wire_size;
@@ -297,6 +334,6 @@ invokeProtocolMessage (Buffers const& buffers, Handler& handler)
     return result;
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

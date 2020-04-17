@@ -20,14 +20,14 @@
 #ifndef RIPPLE_RPC_SERVERHANDLERIMP_H_INCLUDED
 #define RIPPLE_RPC_SERVERHANDLERIMP_H_INCLUDED
 
+#include <ripple/app/main/CollectorManager.h>
 #include <ripple/core/JobQueue.h>
+#include <ripple/json/Output.h>
+#include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/impl/WSInfoSub.h>
 #include <ripple/server/Server.h>
 #include <ripple/server/Session.h>
 #include <ripple/server/WSSession.h>
-#include <ripple/rpc/RPCHandler.h>
-#include <ripple/app/main/CollectorManager.h>
-#include <ripple/json/Output.h>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 #include <boost/utility/string_view.hpp>
@@ -37,14 +37,13 @@
 
 namespace ripple {
 
-inline
-bool operator< (Port const& lhs, Port const& rhs)
+inline bool
+operator<(Port const& lhs, Port const& rhs)
 {
     return lhs.name < rhs.name;
 }
 
-class ServerHandlerImp
-    : public Stoppable
+class ServerHandlerImp : public Stoppable
 {
 public:
     struct Setup
@@ -87,7 +86,7 @@ public:
 
 private:
     using socket_type = boost::beast::tcp_stream;
-    using stream_type = boost::beast::ssl_stream <socket_type>;
+    using stream_type = boost::beast::ssl_stream<socket_type>;
 
     Application& app_;
     Resource::Manager& m_resourceManager;
@@ -103,17 +102,21 @@ private:
     std::map<std::reference_wrapper<Port const>, int> count_;
 
 public:
-    ServerHandlerImp (Application& app, Stoppable& parent,
-        boost::asio::io_service& io_service, JobQueue& jobQueue,
-            NetworkOPs& networkOPs, Resource::Manager& resourceManager,
-                CollectorManager& cm);
+    ServerHandlerImp(
+        Application& app,
+        Stoppable& parent,
+        boost::asio::io_service& io_service,
+        JobQueue& jobQueue,
+        NetworkOPs& networkOPs,
+        Resource::Manager& resourceManager,
+        CollectorManager& cm);
 
     ~ServerHandlerImp();
 
     using Output = Json::Output;
 
     void
-    setup (Setup const& setup, beast::Journal journal);
+    setup(Setup const& setup, beast::Journal journal);
 
     Setup const&
     setup() const
@@ -133,8 +136,7 @@ public:
     //
 
     bool
-    onAccept (Session& session,
-        boost::asio::ip::tcp::endpoint endpoint);
+    onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoint);
 
     Handoff
     onHandoff(
@@ -157,40 +159,45 @@ public:
     }
 
     void
-    onRequest (Session& session);
+    onRequest(Session& session);
 
     void
-    onWSMessage(std::shared_ptr<WSSession> session,
+    onWSMessage(
+        std::shared_ptr<WSSession> session,
         std::vector<boost::asio::const_buffer> const& buffers);
 
     void
-    onClose (Session& session,
-        boost::system::error_code const&);
+    onClose(Session& session, boost::system::error_code const&);
 
     void
-    onStopped (Server&);
+    onStopped(Server&);
 
 private:
     Json::Value
     processSession(
         std::shared_ptr<WSSession> const& session,
-            std::shared_ptr<JobQueue::Coro> const& coro,
-                Json::Value const& jv);
+        std::shared_ptr<JobQueue::Coro> const& coro,
+        Json::Value const& jv);
 
     void
-    processSession (std::shared_ptr<Session> const&,
+    processSession(
+        std::shared_ptr<Session> const&,
         std::shared_ptr<JobQueue::Coro> coro);
 
     void
-    processRequest (Port const& port, std::string const& request,
-        beast::IP::Endpoint const& remoteIPAddress, Output&&,
+    processRequest(
+        Port const& port,
+        std::string const& request,
+        beast::IP::Endpoint const& remoteIPAddress,
+        Output&&,
         std::shared_ptr<JobQueue::Coro> coro,
-        boost::string_view forwardedFor, boost::string_view user);
+        boost::string_view forwardedFor,
+        boost::string_view user);
 
     Handoff
     statusResponse(http_request_type const& request) const;
 };
 
-}
+}  // namespace ripple
 
 #endif

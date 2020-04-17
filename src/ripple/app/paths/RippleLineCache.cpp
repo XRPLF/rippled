@@ -22,8 +22,7 @@
 
 namespace ripple {
 
-RippleLineCache::RippleLineCache(
-    std::shared_ptr <ReadView const> const& ledger)
+RippleLineCache::RippleLineCache(std::shared_ptr<ReadView const> const& ledger)
 {
     // We want the caching that OpenView provides
     // And we need to own a shared_ptr to the input view
@@ -32,20 +31,19 @@ RippleLineCache::RippleLineCache(
 }
 
 std::vector<RippleState::pointer> const&
-RippleLineCache::getRippleLines (AccountID const& accountID)
+RippleLineCache::getRippleLines(AccountID const& accountID)
 {
-    AccountKey key (accountID, hasher_ (accountID));
+    AccountKey key(accountID, hasher_(accountID));
 
-    std::lock_guard sl (mLock);
+    std::lock_guard sl(mLock);
 
-    auto [it, inserted] = lines_.emplace (key,
-        std::vector<RippleState::pointer>());
+    auto [it, inserted] =
+        lines_.emplace(key, std::vector<RippleState::pointer>());
 
     if (inserted)
-        it->second = getRippleStateItems (
-            accountID, *mLedger);
+        it->second = getRippleStateItems(accountID, *mLedger);
 
     return it->second;
 }
 
-} // ripple
+}  // namespace ripple

@@ -19,53 +19,51 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/protocol/jss.h>
 #include <ripple/protocol/STVector256.h>
+#include <ripple/protocol/jss.h>
 
 namespace ripple {
 
-STVector256::STVector256(SerialIter& sit, SField const& name)
-    : STBase(name)
+STVector256::STVector256(SerialIter& sit, SField const& name) : STBase(name)
 {
-    Blob data = sit.getVL ();
-    auto const count = data.size () / (256 / 8);
-    mValue.reserve (count);
-    Blob::iterator begin = data.begin ();
-    unsigned int uStart  = 0;
+    Blob data = sit.getVL();
+    auto const count = data.size() / (256 / 8);
+    mValue.reserve(count);
+    Blob::iterator begin = data.begin();
+    unsigned int uStart = 0;
     for (unsigned int i = 0; i != count; i++)
     {
         unsigned int uEnd = uStart + (256 / 8);
         // This next line could be optimized to construct a default
         // uint256 in the vector and then copy into it
-        mValue.push_back (uint256 (Blob (begin + uStart, begin + uEnd)));
-        uStart  = uEnd;
+        mValue.push_back(uint256(Blob(begin + uStart, begin + uEnd)));
+        uStart = uEnd;
     }
 }
 
 void
-STVector256::add (Serializer& s) const
+STVector256::add(Serializer& s) const
 {
-    assert (fName->isBinary ());
-    assert (fName->fieldType == STI_VECTOR256);
-    s.addVL (mValue.begin(), mValue.end(), mValue.size () * (256 / 8));
+    assert(fName->isBinary());
+    assert(fName->fieldType == STI_VECTOR256);
+    s.addVL(mValue.begin(), mValue.end(), mValue.size() * (256 / 8));
 }
 
 bool
-STVector256::isEquivalent (const STBase& t) const
+STVector256::isEquivalent(const STBase& t) const
 {
-    const STVector256* v = dynamic_cast<const STVector256*> (&t);
+    const STVector256* v = dynamic_cast<const STVector256*>(&t);
     return v && (mValue == v->mValue);
 }
 
-Json::Value
-STVector256::getJson (JsonOptions) const
+Json::Value STVector256::getJson(JsonOptions) const
 {
-    Json::Value ret (Json::arrayValue);
+    Json::Value ret(Json::arrayValue);
 
     for (auto const& vEntry : mValue)
-        ret.append (to_string (vEntry));
+        ret.append(to_string(vEntry));
 
     return ret;
 }
 
-} // ripple
+}  // namespace ripple

@@ -20,19 +20,19 @@
 #ifndef RIPPLE_SERVER_DOOR_H_INCLUDED
 #define RIPPLE_SERVER_DOOR_H_INCLUDED
 
-#include <ripple/server/impl/io_list.h>
-#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/contract.h>
 #include <ripple/server/impl/PlainHTTPPeer.h>
 #include <ripple/server/impl/SSLHTTPPeer.h>
-#include <boost/beast/core/detect_ssl.hpp>
-#include <boost/beast/core/multi_buffer.hpp>
-#include <boost/beast/core/tcp_stream.hpp>
+#include <ripple/server/impl/io_list.h>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
+#include <boost/beast/core/detect_ssl.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
 #include <boost/container/flat_map.hpp>
 #include <chrono>
 #include <condition_variable>
@@ -43,10 +43,9 @@
 namespace ripple {
 
 /** A listening socket. */
-template<class Handler>
-class Door
-    : public io_list::work
-    , public std::enable_shared_from_this<Door<Handler>>
+template <class Handler>
+class Door : public io_list::work,
+             public std::enable_shared_from_this<Door<Handler>>
 {
 private:
     using clock_type = std::chrono::steady_clock;
@@ -60,16 +59,15 @@ private:
     using stream_type = boost::beast::tcp_stream;
 
     // Detects SSL on a socket
-    class Detector
-        : public io_list::work
-        , public std::enable_shared_from_this<Detector>
+    class Detector : public io_list::work,
+                     public std::enable_shared_from_this<Detector>
     {
     private:
         Port const& port_;
         Handler& handler_;
         boost::asio::io_context& ioc_;
         stream_type stream_;
-        socket_type &socket_;
+        socket_type& socket_;
         endpoint_type remote_address_;
         boost::asio::io_context::strand strand_;
         beast::Journal const j_;
@@ -82,11 +80,14 @@ private:
             stream_type&& stream,
             endpoint_type remote_address,
             beast::Journal j);
-        void run();
-        void close() override;
+        void
+        run();
+        void
+        close() override;
 
     private:
-        void do_detect (yield_context yield);
+        void
+        do_detect(yield_context yield);
     };
 
     beast::Journal const j_;
@@ -99,11 +100,15 @@ private:
     bool plain_;
 
 public:
-    Door(Handler& handler, boost::asio::io_context& io_context,
-        Port const& port, beast::Journal j);
+    Door(
+        Handler& handler,
+        boost::asio::io_context& io_context,
+        Port const& port,
+        beast::Journal j);
 
     // Work-around because we can't call shared_from_this in ctor
-    void run();
+    void
+    run();
 
     /** Close the Door listening socket and connections.
         The listening socket is closed, and all open connections
@@ -111,19 +116,26 @@ public:
         Thread Safety:
             May be called concurrently
     */
-    void close() override;
+    void
+    close() override;
 
-    endpoint_type get_endpoint() const
+    endpoint_type
+    get_endpoint() const
     {
         return acceptor_.local_endpoint();
     }
 
 private:
     template <class ConstBufferSequence>
-    void create (bool ssl, ConstBufferSequence const& buffers,
-        stream_type&& stream, endpoint_type remote_address);
+    void
+    create(
+        bool ssl,
+        ConstBufferSequence const& buffers,
+        stream_type&& stream,
+        endpoint_type remote_address);
 
-    void do_accept (yield_context yield);
+    void
+    do_accept(yield_context yield);
 };
 
 template <class Handler>
@@ -145,63 +157,75 @@ Door<Handler>::Detector::Detector(
 {
 }
 
-template<class Handler>
+template <class Handler>
 void
-Door<Handler>::Detector::
-run()
+Door<Handler>::Detector::run()
 {
-    boost::asio::spawn(strand_, std::bind (&Detector::do_detect,
-        this->shared_from_this(), std::placeholders::_1));
+    boost::asio::spawn(
+        strand_,
+        std::bind(
+            &Detector::do_detect,
+            this->shared_from_this(),
+            std::placeholders::_1));
 }
 
-template<class Handler>
+template <class Handler>
 void
-Door<Handler>::Detector::
-close()
+Door<Handler>::Detector::close()
 {
     stream_.close();
 }
 
-template<class Handler>
+template <class Handler>
 void
-Door<Handler>::Detector::
-do_detect(boost::asio::yield_context do_yield)
+Door<Handler>::Detector::do_detect(boost::asio::yield_context do_yield)
 {
     boost::beast::multi_buffer buf(16);
     stream_.expires_after(std::chrono::seconds(15));
     boost::system::error_code ec;
     bool const ssl = async_detect_ssl(stream_, buf, do_yield[ec]);
     stream_.expires_never();
-    if (! ec)
+    if (!ec)
     {
         if (ssl)
         {
             if (auto sp = ios().template emplace<SSLHTTPPeer<Handler>>(
-                 port_, handler_, ioc_, j_, remote_address_,
-                     buf.data(), std::move(stream_)))
+                    port_,
+                    handler_,
+                    ioc_,
+                    j_,
+                    remote_address_,
+                    buf.data(),
+                    std::move(stream_)))
                 sp->run();
             return;
         }
         if (auto sp = ios().template emplace<PlainHTTPPeer<Handler>>(
-             port_, handler_, ioc_, j_, remote_address_,
-                 buf.data(), std::move(stream_)))
+                port_,
+                handler_,
+                ioc_,
+                j_,
+                remote_address_,
+                buf.data(),
+                std::move(stream_)))
             sp->run();
         return;
     }
     if (ec != boost::asio::error::operation_aborted)
     {
-        JLOG(j_.trace()) <<
-            "Error detecting ssl: " << ec.message() <<
-                " from " << remote_address_;
+        JLOG(j_.trace()) << "Error detecting ssl: " << ec.message() << " from "
+                         << remote_address_;
     }
 }
 
 //------------------------------------------------------------------------------
 
-template<class Handler>
-Door<Handler>::
-Door(Handler& handler, boost::asio::io_context& io_context,
-        Port const& port, beast::Journal j)
+template <class Handler>
+Door<Handler>::Door(
+    Handler& handler,
+    boost::asio::io_context& io_context,
+    Port const& port,
+    beast::Journal j)
     : j_(j)
     , port_(port)
     , handler_(handler)
@@ -209,116 +233,124 @@ Door(Handler& handler, boost::asio::io_context& io_context,
     , acceptor_(io_context)
     , strand_(io_context)
     , ssl_(
-        port_.protocol.count("https") > 0 ||
-        port_.protocol.count("wss") > 0 ||
-        port_.protocol.count("wss2")  > 0 ||
-        port_.protocol.count("peer")  > 0)
+          port_.protocol.count("https") > 0 ||
+          port_.protocol.count("wss") > 0 || port_.protocol.count("wss2") > 0 ||
+          port_.protocol.count("peer") > 0)
     , plain_(
-        port_.protocol.count("http") > 0 ||
-        port_.protocol.count("ws") > 0 ||
-        port_.protocol.count("ws2"))
+          port_.protocol.count("http") > 0 || port_.protocol.count("ws") > 0 ||
+          port_.protocol.count("ws2"))
 {
     error_code ec;
-    endpoint_type const local_address =
-        endpoint_type(port.ip, port.port);
+    endpoint_type const local_address = endpoint_type(port.ip, port.port);
 
     acceptor_.open(local_address.protocol(), ec);
     if (ec)
     {
-        JLOG(j_.error()) <<
-            "Open port '" << port.name << "' failed:" << ec.message();
-        Throw<std::exception> ();
+        JLOG(j_.error()) << "Open port '" << port.name
+                         << "' failed:" << ec.message();
+        Throw<std::exception>();
     }
 
     acceptor_.set_option(
         boost::asio::ip::tcp::acceptor::reuse_address(true), ec);
     if (ec)
     {
-        JLOG(j_.error()) <<
-            "Option for port '" << port.name << "' failed:" << ec.message();
-        Throw<std::exception> ();
+        JLOG(j_.error()) << "Option for port '" << port.name
+                         << "' failed:" << ec.message();
+        Throw<std::exception>();
     }
 
     acceptor_.bind(local_address, ec);
     if (ec)
     {
-        JLOG(j_.error()) <<
-            "Bind port '" << port.name << "' failed:" << ec.message();
-        Throw<std::exception> ();
+        JLOG(j_.error()) << "Bind port '" << port.name
+                         << "' failed:" << ec.message();
+        Throw<std::exception>();
     }
 
     acceptor_.listen(boost::asio::socket_base::max_connections, ec);
     if (ec)
     {
-        JLOG(j_.error()) <<
-            "Listen on port '" << port.name << "' failed:" << ec.message();
-        Throw<std::exception> ();
+        JLOG(j_.error()) << "Listen on port '" << port.name
+                         << "' failed:" << ec.message();
+        Throw<std::exception>();
     }
 
-    JLOG(j_.info()) <<
-        "Opened " << port;
+    JLOG(j_.info()) << "Opened " << port;
 }
 
-template<class Handler>
+template <class Handler>
 void
-Door<Handler>::
-run()
+Door<Handler>::run()
 {
-    boost::asio::spawn(strand_, std::bind(&Door<Handler>::do_accept,
-        this->shared_from_this(), std::placeholders::_1));
+    boost::asio::spawn(
+        strand_,
+        std::bind(
+            &Door<Handler>::do_accept,
+            this->shared_from_this(),
+            std::placeholders::_1));
 }
 
-template<class Handler>
+template <class Handler>
 void
-Door<Handler>::
-close()
+Door<Handler>::close()
 {
-    if (! strand_.running_in_this_thread())
-        return strand_.post(std::bind(
-            &Door<Handler>::close, this->shared_from_this()));
+    if (!strand_.running_in_this_thread())
+        return strand_.post(
+            std::bind(&Door<Handler>::close, this->shared_from_this()));
     error_code ec;
     acceptor_.close(ec);
 }
 
 //------------------------------------------------------------------------------
 
-template<class Handler>
-template<class ConstBufferSequence>
+template <class Handler>
+template <class ConstBufferSequence>
 void
-Door<Handler>::
-create(bool ssl, ConstBufferSequence const& buffers,
-    stream_type&& stream, endpoint_type remote_address)
+Door<Handler>::create(
+    bool ssl,
+    ConstBufferSequence const& buffers,
+    stream_type&& stream,
+    endpoint_type remote_address)
 {
     if (ssl)
     {
         if (auto sp = ios().template emplace<SSLHTTPPeer<Handler>>(
-             port_, handler_, ioc_, j_, remote_address,
-                 buffers, std::move(stream)))
+                port_,
+                handler_,
+                ioc_,
+                j_,
+                remote_address,
+                buffers,
+                std::move(stream)))
             sp->run();
         return;
     }
     if (auto sp = ios().template emplace<PlainHTTPPeer<Handler>>(
-         port_, handler_, ioc_, j_, remote_address,
-             buffers, std::move(stream)))
+            port_,
+            handler_,
+            ioc_,
+            j_,
+            remote_address,
+            buffers,
+            std::move(stream)))
         sp->run();
 }
 
-template<class Handler>
+template <class Handler>
 void
-Door<Handler>::
-do_accept(boost::asio::yield_context do_yield)
+Door<Handler>::do_accept(boost::asio::yield_context do_yield)
 {
     while (acceptor_.is_open())
     {
         error_code ec;
         endpoint_type remote_address;
-        stream_type stream (ioc_);
-        socket_type &socket = stream.socket();
-        acceptor_.async_accept (socket, remote_address, do_yield[ec]);
+        stream_type stream(ioc_);
+        socket_type& socket = stream.socket();
+        acceptor_.async_accept(socket, remote_address, do_yield[ec]);
         if (ec && ec != boost::asio::error::operation_aborted)
         {
-            JLOG(j_.error()) <<
-                "accept: " << ec.message();
+            JLOG(j_.error()) << "accept: " << ec.message();
         }
         if (ec == boost::asio::error::operation_aborted)
             break;
@@ -328,18 +360,25 @@ do_accept(boost::asio::yield_context do_yield)
         if (ssl_ && plain_)
         {
             if (auto sp = ios().template emplace<Detector>(
-                 port_, handler_, ioc_, std::move(stream),
-                     remote_address, j_))
+                    port_,
+                    handler_,
+                    ioc_,
+                    std::move(stream),
+                    remote_address,
+                    j_))
                 sp->run();
         }
         else if (ssl_ || plain_)
         {
-            create(ssl_, boost::asio::null_buffers{},
-                std::move(stream), remote_address);
+            create(
+                ssl_,
+                boost::asio::null_buffers{},
+                std::move(stream),
+                remote_address);
         }
     }
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

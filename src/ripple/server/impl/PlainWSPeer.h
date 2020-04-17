@@ -26,10 +26,9 @@
 
 namespace ripple {
 
-template<class Handler>
-class PlainWSPeer
-    : public BaseWSPeer<Handler, PlainWSPeer<Handler>>
-    , public std::enable_shared_from_this<PlainWSPeer<Handler>>
+template <class Handler>
+class PlainWSPeer : public BaseWSPeer<Handler, PlainWSPeer<Handler>>,
+                    public std::enable_shared_from_this<PlainWSPeer<Handler>>
 {
     friend class BasePeer<Handler, PlainWSPeer>;
     friend class BaseWSPeer<Handler, PlainWSPeer>;
@@ -37,13 +36,13 @@ class PlainWSPeer
     using clock_type = std::chrono::system_clock;
     using error_code = boost::system::error_code;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using waitable_timer = boost::asio::basic_waitable_timer <clock_type>;
+    using waitable_timer = boost::asio::basic_waitable_timer<clock_type>;
     using socket_type = boost::beast::tcp_stream;
 
     boost::beast::websocket::stream<socket_type> ws_;
 
 public:
-    template<class Body, class Headers>
+    template <class Body, class Headers>
     PlainWSPeer(
         Port const& port,
         Handler& handler,
@@ -76,6 +75,6 @@ PlainWSPeer<Handler>::PlainWSPeer(
 {
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

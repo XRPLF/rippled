@@ -32,15 +32,13 @@ namespace ripple {
     Values should not be duplicated.
     @see getNextLedgerTimeResolution
 */
-std::chrono::seconds constexpr ledgerPossibleTimeResolutions[] =
-    {
-        std::chrono::seconds { 10},
-        std::chrono::seconds { 20},
-        std::chrono::seconds { 30},
-        std::chrono::seconds { 60},
-        std::chrono::seconds { 90},
-        std::chrono::seconds {120}
-    };
+std::chrono::seconds constexpr ledgerPossibleTimeResolutions[] = {
+    std::chrono::seconds{10},
+    std::chrono::seconds{20},
+    std::chrono::seconds{30},
+    std::chrono::seconds{60},
+    std::chrono::seconds{90},
+    std::chrono::seconds{120}};
 
 //! Initial resolution of ledger close time.
 auto constexpr ledgerDefaultTimeResolution = ledgerPossibleTimeResolutions[2];
@@ -163,5 +161,5 @@ effCloseTime(
         roundCloseTime(closeTime, resolution), (priorCloseTime + 1s));
 }
 
-}
+}  // namespace ripple
 #endif

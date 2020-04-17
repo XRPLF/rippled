@@ -20,7 +20,6 @@
 #ifndef RIPPLE_APP_CONSENSUS_IMPL_DISPUTEDTX_H_INCLUDED
 #define RIPPLE_APP_CONSENSUS_IMPL_DISPUTEDTX_H_INCLUDED
 
-#include <boost/container/flat_map.hpp>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/beast/utility/Journal.h>
@@ -28,6 +27,7 @@
 #include <ripple/json/json_writer.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/UintTypes.h>
+#include <boost/container/flat_map.hpp>
 #include <memory>
 
 namespace ripple {
@@ -51,6 +51,7 @@ class DisputedTx
 {
     using TxID_t = typename Tx_t::ID;
     using Map_t = boost::container::flat_map<NodeID_t, bool>;
+
 public:
     /** Constructor
 
@@ -59,7 +60,11 @@ public:
         @param numPeers Anticipated number of peer votes
         @param j Journal for debugging
     */
-    DisputedTx(Tx_t const& tx, bool ourVote, std::size_t numPeers, beast::Journal j)
+    DisputedTx(
+        Tx_t const& tx,
+        bool ourVote,
+        std::size_t numPeers,
+        beast::Journal j)
         : yays_(0), nays_(0), ourVote_(ourVote), tx_(tx), j_(j)
     {
         votes_.reserve(numPeers);
@@ -270,6 +275,6 @@ DisputedTx<Tx_t, NodeID_t>::getJson() const
     return ret;
 }
 
-}  // ripple
+}  // namespace ripple
 
 #endif

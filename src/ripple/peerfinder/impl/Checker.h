@@ -35,25 +35,23 @@ namespace ripple {
 namespace PeerFinder {
 
 /** Tests remote listening sockets to make sure they are connectible. */
-    template <class Protocol = boost::asio::ip::tcp>
+template <class Protocol = boost::asio::ip::tcp>
 class Checker
 {
 private:
     using error_code = boost::system::error_code;
 
-    struct basic_async_op : boost::intrusive::list_base_hook <
-        boost::intrusive::link_mode <boost::intrusive::normal_link>>
+    struct basic_async_op
+        : boost::intrusive::list_base_hook<
+              boost::intrusive::link_mode<boost::intrusive::normal_link>>
     {
-        virtual
-        ~basic_async_op() = default;
+        virtual ~basic_async_op() = default;
 
-        virtual
-        void
+        virtual void
         stop() = 0;
 
-        virtual
-        void
-        operator() (error_code const& ec) = 0;
+        virtual void
+        operator()(error_code const& ec) = 0;
     };
 
     template <class Handler>
@@ -66,7 +64,9 @@ private:
         socket_type socket_;
         Handler handler_;
 
-        async_op (Checker& owner, boost::asio::io_service& io_service,
+        async_op(
+            Checker& owner,
+            boost::asio::io_service& io_service,
             Handler&& handler);
 
         ~async_op();
@@ -75,13 +75,14 @@ private:
         stop() override;
 
         void
-        operator() (error_code const& ec) override;
+        operator()(error_code const& ec) override;
     };
 
     //--------------------------------------------------------------------------
 
-    using list_type = typename boost::intrusive::make_list <basic_async_op,
-        boost::intrusive::constant_time_size <true>>::type;
+    using list_type = typename boost::intrusive::make_list<
+        basic_async_op,
+        boost::intrusive::constant_time_size<true>>::type;
 
     std::mutex mutex_;
     std::condition_variable cond_;
@@ -90,8 +91,7 @@ private:
     bool stop_ = false;
 
 public:
-    explicit
-    Checker (boost::asio::io_service& io_service);
+    explicit Checker(boost::asio::io_service& io_service);
 
     /** Destroy the service.
         Any pending I/O operations will be canceled. This call blocks until
@@ -120,22 +120,24 @@ public:
     */
     template <class Handler>
     void
-    async_connect (beast::IP::Endpoint const& endpoint, Handler&& handler);
+    async_connect(beast::IP::Endpoint const& endpoint, Handler&& handler);
 
 private:
     void
-    remove (basic_async_op& op);
+    remove(basic_async_op& op);
 };
 
 //------------------------------------------------------------------------------
 
 template <class Protocol>
 template <class Handler>
-Checker<Protocol>::async_op<Handler>::async_op (Checker& owner,
-        boost::asio::io_service& io_service, Handler&& handler)
-    : checker_ (owner)
-    , socket_ (io_service)
-    , handler_ (std::forward<Handler>(handler))
+Checker<Protocol>::async_op<Handler>::async_op(
+    Checker& owner,
+    boost::asio::io_service& io_service,
+    Handler&& handler)
+    : checker_(owner)
+    , socket_(io_service)
+    , handler_(std::forward<Handler>(handler))
 {
 }
 
@@ -143,7 +145,7 @@ template <class Protocol>
 template <class Handler>
 Checker<Protocol>::async_op<Handler>::~async_op()
 {
-    checker_.remove (*this);
+    checker_.remove(*this);
 }
 
 template <class Protocol>
@@ -158,8 +160,7 @@ Checker<Protocol>::async_op<Handler>::stop()
 template <class Protocol>
 template <class Handler>
 void
-Checker<Protocol>::async_op<Handler>::operator() (
-    error_code const& ec)
+Checker<Protocol>::async_op<Handler>::operator()(error_code const& ec)
 {
     handler_(ec);
 }
@@ -167,7 +168,7 @@ Checker<Protocol>::async_op<Handler>::operator() (
 //------------------------------------------------------------------------------
 
 template <class Protocol>
-Checker<Protocol>::Checker (boost::asio::io_service& io_service)
+Checker<Protocol>::Checker(boost::asio::io_service& io_service)
     : io_service_(io_service)
 {
 }
@@ -182,8 +183,8 @@ template <class Protocol>
 void
 Checker<Protocol>::stop()
 {
-    std::lock_guard lock (mutex_);
-    if (! stop_)
+    std::lock_guard lock(mutex_);
+    if (!stop_)
     {
         stop_ = true;
         for (auto& c : list_)
@@ -195,39 +196,40 @@ template <class Protocol>
 void
 Checker<Protocol>::wait()
 {
-    std::unique_lock<std::mutex> lock (mutex_);
-    while (! list_.empty())
-        cond_.wait (lock);
+    std::unique_lock<std::mutex> lock(mutex_);
+    while (!list_.empty())
+        cond_.wait(lock);
 }
 
 template <class Protocol>
 template <class Handler>
 void
-Checker<Protocol>::async_connect (
-    beast::IP::Endpoint const& endpoint, Handler&& handler)
+Checker<Protocol>::async_connect(
+    beast::IP::Endpoint const& endpoint,
+    Handler&& handler)
 {
-    auto const op = std::make_shared<async_op<Handler>> (
+    auto const op = std::make_shared<async_op<Handler>>(
         *this, io_service_, std::forward<Handler>(handler));
     {
-        std::lock_guard lock (mutex_);
-        list_.push_back (*op);
+        std::lock_guard lock(mutex_);
+        list_.push_back(*op);
     }
-    op->socket_.async_connect (beast::IPAddressConversion::to_asio_endpoint (
-        endpoint), std::bind (&basic_async_op::operator(), op,
-            std::placeholders::_1));
+    op->socket_.async_connect(
+        beast::IPAddressConversion::to_asio_endpoint(endpoint),
+        std::bind(&basic_async_op::operator(), op, std::placeholders::_1));
 }
 
 template <class Protocol>
 void
-Checker<Protocol>::remove (basic_async_op& op)
+Checker<Protocol>::remove(basic_async_op& op)
 {
-    std::lock_guard lock (mutex_);
-    list_.erase (list_.iterator_to (op));
+    std::lock_guard lock(mutex_);
+    list_.erase(list_.iterator_to(op));
     if (list_.size() == 0)
         cond_.notify_all();
 }
 
-}
-}
+}  // namespace PeerFinder
+}  // namespace ripple
 
 #endif

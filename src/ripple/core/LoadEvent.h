@@ -37,15 +37,13 @@ class LoadEvent
 {
 public:
     // VFALCO TODO remove the dependency on LoadMonitor. Is that possible?
-    LoadEvent (LoadMonitor& monitor,
-               std::string const& name,
-               bool shouldStart);
+    LoadEvent(LoadMonitor& monitor, std::string const& name, bool shouldStart);
     LoadEvent(LoadEvent const&) = delete;
 
-    ~LoadEvent ();
+    ~LoadEvent();
 
     std::string const&
-    name () const;
+    name() const;
 
     // The time spent waiting.
     std::chrono::steady_clock::duration
@@ -55,17 +53,20 @@ public:
     std::chrono::steady_clock::duration
     runTime() const;
 
-    void setName (std::string const& name);
+    void
+    setName(std::string const& name);
 
     // Start the measurement. If already started, then
     // restart, assigning the elapsed time to the "waiting"
     // state.
-    void start ();
+    void
+    start();
 
     // Stop the measurement and report the results. The
     // time reported is measured from the last call to
     // start.
-    void stop ();
+    void
+    stop();
 
 private:
     LoadMonitor& monitor_;
@@ -84,6 +85,6 @@ private:
     std::chrono::steady_clock::duration timeRunning_;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <test/jtx/txflags.h>
 #include <ripple/protocol/jss.h>
+#include <test/jtx/txflags.h>
 
 namespace ripple {
 namespace test {
@@ -27,10 +27,9 @@ namespace jtx {
 void
 txflags::operator()(Env&, JTx& jt) const
 {
-    jt[jss::Flags] =
-        v_ /*| tfUniversal*/;
+    jt[jss::Flags] = v_ /*| tfUniversal*/;
 }
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

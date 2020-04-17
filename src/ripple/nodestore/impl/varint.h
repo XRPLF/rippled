@@ -20,8 +20,8 @@
 #ifndef BEAST_NUDB_VARINT_H_INCLUDED
 #define BEAST_NUDB_VARINT_H_INCLUDED
 
-#include <nudb/detail/stream.hpp>
 #include <cstdint>
+#include <nudb/detail/stream.hpp>
 #include <type_traits>
 
 namespace ripple {
@@ -37,8 +37,7 @@ struct varint;
 // Metafuncton to return largest
 // possible size of T represented as varint.
 // T must be unsigned
-template <class T,
-    bool = std::is_unsigned<T>::value>
+template <class T, bool = std::is_unsigned<T>::value>
 struct varint_traits;
 
 template <class T>
@@ -46,8 +45,7 @@ struct varint_traits<T, true>
 {
     explicit varint_traits() = default;
 
-    static std::size_t constexpr max =
-        (8 * sizeof(T) + 6) / 7;
+    static std::size_t constexpr max = (8 * sizeof(T) + 6) / 7;
 };
 
 // Returns: Number of bytes consumed or 0 on error,
@@ -55,13 +53,10 @@ struct varint_traits<T, true>
 //
 template <class = void>
 std::size_t
-read_varint (void const* buf,
-    std::size_t buflen, std::size_t& t)
+read_varint(void const* buf, std::size_t buflen, std::size_t& t)
 {
     t = 0;
-    std::uint8_t const* p =
-        reinterpret_cast<
-            std::uint8_t const*>(buf);
+    std::uint8_t const* p = reinterpret_cast<std::uint8_t const*>(buf);
     std::size_t n = 0;
     while (p[n] & 0x80)
         if (++n >= buflen)
@@ -82,53 +77,45 @@ read_varint (void const* buf,
         t *= 127;
         t += d & 0x7f;
         if (t <= t0)
-            return 0; // overflow
+            return 0;  // overflow
     }
     return used;
 }
 
-template <class T,
-    std::enable_if_t<std::is_unsigned<
-        T>::value>* = nullptr>
+template <class T, std::enable_if_t<std::is_unsigned<T>::value>* = nullptr>
 std::size_t
-size_varint (T v)
+size_varint(T v)
 {
     std::size_t n = 0;
     do
     {
         v /= 127;
         ++n;
-    }
-    while (v != 0);
+    } while (v != 0);
     return n;
 }
 
 template <class = void>
 std::size_t
-write_varint (void* p0, std::size_t v)
+write_varint(void* p0, std::size_t v)
 {
-    std::uint8_t* p = reinterpret_cast<
-        std::uint8_t*>(p0);
+    std::uint8_t* p = reinterpret_cast<std::uint8_t*>(p0);
     do
     {
-        std::uint8_t d =
-            v % 127;
+        std::uint8_t d = v % 127;
         v /= 127;
         if (v != 0)
             d |= 0x80;
         *p++ = d;
-    }
-    while (v != 0);
-    return p - reinterpret_cast<
-        std::uint8_t*>(p0);
+    } while (v != 0);
+    return p - reinterpret_cast<std::uint8_t*>(p0);
 }
 
 // input stream
 
-template <class T, std::enable_if_t<
-    std::is_same<T, varint>::value>* = nullptr>
+template <class T, std::enable_if_t<std::is_same<T, varint>::value>* = nullptr>
 void
-read (nudb::detail::istream& is, std::size_t& u)
+read(nudb::detail::istream& is, std::size_t& u)
 {
     auto p0 = is(1);
     auto p1 = p0;
@@ -139,16 +126,14 @@ read (nudb::detail::istream& is, std::size_t& u)
 
 // output stream
 
-template <class T, std::enable_if_t<
-    std::is_same<T, varint>::value>* = nullptr>
+template <class T, std::enable_if_t<std::is_same<T, varint>::value>* = nullptr>
 void
-write (nudb::detail::ostream& os, std::size_t t)
+write(nudb::detail::ostream& os, std::size_t t)
 {
-    write_varint(os.data(
-        size_varint(t)), t);
+    write_varint(os.data(size_varint(t)), t);
 }
 
-} // NodeStore
-} // ripple
+}  // namespace NodeStore
+}  // namespace ripple
 
 #endif

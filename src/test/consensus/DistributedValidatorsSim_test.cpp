@@ -21,37 +21,35 @@
 #include <test/csf.h>
 #include <utility>
 
-#include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include <algorithm>
-#include <sstream>
 #include <fstream>
+#include <sstream>
 #include <string>
 
 namespace ripple {
 namespace test {
 
 /** In progress simulations for diversifying and distributing validators
-*/
+ */
 class DistributedValidators_test : public beast::unit_test::suite
 {
-
     void
     completeTrustCompleteConnectFixedDelay(
-            std::size_t numPeers,
-            std::chrono::milliseconds delay = std::chrono::milliseconds(200),
-            bool printHeaders = false)
+        std::size_t numPeers,
+        std::chrono::milliseconds delay = std::chrono::milliseconds(200),
+        bool printHeaders = false)
     {
         using namespace csf;
         using namespace std::chrono;
 
         // Initialize persistent collector logs specific to this method
         std::string const prefix =
-                "DistributedValidators_"
-                "completeTrustCompleteConnectFixedDelay";
-        std::fstream
-                txLog(prefix + "_tx.csv", std::ofstream::app),
-                ledgerLog(prefix + "_ledger.csv", std::ofstream::app);
+            "DistributedValidators_"
+            "completeTrustCompleteConnectFixedDelay";
+        std::fstream txLog(prefix + "_tx.csv", std::ofstream::app),
+            ledgerLog(prefix + "_ledger.csv", std::ofstream::app);
 
         // title
         log << prefix << "(" << numPeers << "," << delay.count() << ")"
@@ -87,26 +85,28 @@ class DistributedValidators_test : public beast::unit_test::suite
         HeartbeatTimer heart(sim.scheduler);
 
         // txs, start/stop/step, target
-        auto peerSelector = makeSelector(peers.begin(),
-                                     peers.end(),
-                                     std::vector<double>(numPeers, 1.),
-                                     sim.rng);
-        auto txSubmitter = makeSubmitter(ConstantDistribution{rate.inv()},
-                                     sim.scheduler.now() + quiet,
-                                     sim.scheduler.now() + simDuration - quiet,
-                                     peerSelector,
-                                     sim.scheduler,
-                                     sim.rng);
+        auto peerSelector = makeSelector(
+            peers.begin(),
+            peers.end(),
+            std::vector<double>(numPeers, 1.),
+            sim.rng);
+        auto txSubmitter = makeSubmitter(
+            ConstantDistribution{rate.inv()},
+            sim.scheduler.now() + quiet,
+            sim.scheduler.now() + simDuration - quiet,
+            peerSelector,
+            sim.scheduler,
+            sim.rng);
 
         // run simulation for given duration
         heart.start();
         sim.run(simDuration);
 
-        //BEAST_EXPECT(sim.branches() == 1);
-        //BEAST_EXPECT(sim.synchronized());
+        // BEAST_EXPECT(sim.branches() == 1);
+        // BEAST_EXPECT(sim.synchronized());
 
         log << std::right;
-        log << "| Peers: "<< std::setw(2) << peers.size();
+        log << "| Peers: " << std::setw(2) << peers.size();
         log << " | Duration: " << std::setw(6)
             << duration_cast<milliseconds>(simDuration).count() << " ms";
         log << " | Branches: " << std::setw(1) << sim.branches();
@@ -126,34 +126,33 @@ class DistributedValidators_test : public beast::unit_test::suite
 
     void
     completeTrustScaleFreeConnectFixedDelay(
-            std::size_t numPeers,
-            std::chrono::milliseconds delay = std::chrono::milliseconds(200),
-            bool printHeaders = false)
+        std::size_t numPeers,
+        std::chrono::milliseconds delay = std::chrono::milliseconds(200),
+        bool printHeaders = false)
     {
         using namespace csf;
         using namespace std::chrono;
 
         // Initialize persistent collector logs specific to this method
         std::string const prefix =
-                "DistributedValidators__"
-                "completeTrustScaleFreeConnectFixedDelay";
-        std::fstream
-                txLog(prefix + "_tx.csv", std::ofstream::app),
-                ledgerLog(prefix + "_ledger.csv", std::ofstream::app);
+            "DistributedValidators__"
+            "completeTrustScaleFreeConnectFixedDelay";
+        std::fstream txLog(prefix + "_tx.csv", std::ofstream::app),
+            ledgerLog(prefix + "_ledger.csv", std::ofstream::app);
 
         // title
         log << prefix << "(" << numPeers << "," << delay.count() << ")"
             << std::endl;
 
         // number of peers, UNLs, connections
-        int const numCNLs    = std::max(int(1.00 * numPeers), 1);
-        int const minCNLSize = std::max(int(0.25 * numCNLs),  1);
-        int const maxCNLSize = std::max(int(0.50 * numCNLs),  1);
+        int const numCNLs = std::max(int(1.00 * numPeers), 1);
+        int const minCNLSize = std::max(int(0.25 * numCNLs), 1);
+        int const maxCNLSize = std::max(int(0.50 * numCNLs), 1);
         BEAST_EXPECT(numPeers >= 1);
         BEAST_EXPECT(numCNLs >= 1);
-        BEAST_EXPECT(1 <= minCNLSize
-                && minCNLSize <= maxCNLSize
-                && maxCNLSize <= numPeers);
+        BEAST_EXPECT(
+            1 <= minCNLSize && minCNLSize <= maxCNLSize &&
+            maxCNLSize <= numPeers);
 
         Sim sim;
         PeerGroup peers = sim.createGroup(numPeers);
@@ -163,10 +162,14 @@ class DistributedValidators_test : public beast::unit_test::suite
 
         // scale-free connect graph with fixed delay
         std::vector<double> const ranks =
-                sample(peers.size(), PowerLawDistribution{1, 3}, sim.rng);
-        randomRankedConnect(peers, ranks, numCNLs,
-                std::uniform_int_distribution<>{minCNLSize, maxCNLSize},
-                sim.rng, delay);
+            sample(peers.size(), PowerLawDistribution{1, 3}, sim.rng);
+        randomRankedConnect(
+            peers,
+            ranks,
+            numCNLs,
+            std::uniform_int_distribution<>{minCNLSize, maxCNLSize},
+            sim.rng,
+            delay);
 
         // Initialize collectors to track statistics to report
         TxCollector txCollector;
@@ -186,26 +189,28 @@ class DistributedValidators_test : public beast::unit_test::suite
         HeartbeatTimer heart(sim.scheduler);
 
         // txs, start/stop/step, target
-        auto peerSelector = makeSelector(peers.begin(),
-                                     peers.end(),
-                                     std::vector<double>(numPeers, 1.),
-                                     sim.rng);
-        auto txSubmitter = makeSubmitter(ConstantDistribution{rate.inv()},
-                                     sim.scheduler.now() + quiet,
-                                     sim.scheduler.now() + simDuration - quiet,
-                                     peerSelector,
-                                     sim.scheduler,
-                                     sim.rng);
+        auto peerSelector = makeSelector(
+            peers.begin(),
+            peers.end(),
+            std::vector<double>(numPeers, 1.),
+            sim.rng);
+        auto txSubmitter = makeSubmitter(
+            ConstantDistribution{rate.inv()},
+            sim.scheduler.now() + quiet,
+            sim.scheduler.now() + simDuration - quiet,
+            peerSelector,
+            sim.scheduler,
+            sim.rng);
 
         // run simulation for given duration
         heart.start();
         sim.run(simDuration);
 
-        //BEAST_EXPECT(sim.branches() == 1);
-        //BEAST_EXPECT(sim.synchronized());
+        // BEAST_EXPECT(sim.branches() == 1);
+        // BEAST_EXPECT(sim.synchronized());
 
         log << std::right;
-        log << "| Peers: "<< std::setw(2) << peers.size();
+        log << "| Peers: " << std::setw(2) << peers.size();
         log << " | Duration: " << std::setw(6)
             << duration_cast<milliseconds>(simDuration).count() << " ms";
         log << " | Branches: " << std::setw(1) << sim.branches();
@@ -247,7 +252,7 @@ class DistributedValidators_test : public beast::unit_test::suite
          * - fixed delay for network links
          */
         completeTrustCompleteConnectFixedDelay(1, delay, true);
-        for(int i = 2; i <= maxNumValidators; i++)
+        for (int i = 2; i <= maxNumValidators; i++)
         {
             completeTrustCompleteConnectFixedDelay(i, delay);
         }
@@ -259,7 +264,7 @@ class DistributedValidators_test : public beast::unit_test::suite
          * - fixed delay for network links
          */
         completeTrustScaleFreeConnectFixedDelay(1, delay, true);
-        for(int i = 2; i <= maxNumValidators; i++)
+        for (int i = 2; i <= maxNumValidators; i++)
         {
             completeTrustScaleFreeConnectFixedDelay(i, delay);
         }

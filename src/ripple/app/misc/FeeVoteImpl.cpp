@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/st.h>
-#include <ripple/app/misc/FeeVote.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/protocol/STValidation.h>
+#include <ripple/app/misc/FeeVote.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/protocol/STValidation.h>
+#include <ripple/protocol/st.h>
 
 namespace ripple {
 
@@ -32,14 +32,13 @@ class VotableValue
 {
 private:
     using value_type = XRPAmount;
-    value_type const mCurrent;   // The current setting
-    value_type const mTarget;    // The setting we want
-    std::map <value_type, int> mVoteMap;
+    value_type const mCurrent;  // The current setting
+    value_type const mTarget;   // The setting we want
+    std::map<value_type, int> mVoteMap;
 
 public:
-    VotableValue (value_type current, value_type target)
-        : mCurrent (current)
-        , mTarget (target)
+    VotableValue(value_type current, value_type target)
+        : mCurrent(current), mTarget(target)
     {
         // Add our vote
         ++mVoteMap[mTarget];
@@ -54,7 +53,7 @@ public:
     void
     noVote()
     {
-        addVote (mCurrent);
+        addVote(mCurrent);
     }
 
     value_type
@@ -62,17 +61,15 @@ public:
 };
 
 auto
-VotableValue::getVotes() const
-    -> value_type
+VotableValue::getVotes() const -> value_type
 {
     value_type ourVote = mCurrent;
     int weight = 0;
     for (auto const& [key, val] : mVoteMap)
     {
         // Take most voted value between current and target, inclusive
-        if ((key <= std::max (mTarget, mCurrent)) &&
-                (key >= std::min (mTarget, mCurrent)) &&
-                (val > weight))
+        if ((key <= std::max(mTarget, mCurrent)) &&
+            (key >= std::min(mTarget, mCurrent)) && (val > weight))
         {
             ourVote = key;
             weight = val;
@@ -82,7 +79,7 @@ VotableValue::getVotes() const
     return ourVote;
 }
 
-}
+}  // namespace detail
 
 //------------------------------------------------------------------------------
 
@@ -93,51 +90,52 @@ private:
     beast::Journal const journal_;
 
 public:
-    FeeVoteImpl (Setup const& setup, beast::Journal journal);
+    FeeVoteImpl(Setup const& setup, beast::Journal journal);
 
     void
-    doValidation (std::shared_ptr<ReadView const> const& lastClosedLedger,
+    doValidation(
+        std::shared_ptr<ReadView const> const& lastClosedLedger,
         STValidation::FeeSettings& fees) override;
 
     void
-    doVoting (std::shared_ptr<ReadView const> const& lastClosedLedger,
+    doVoting(
+        std::shared_ptr<ReadView const> const& lastClosedLedger,
         std::vector<STValidation::pointer> const& parentValidations,
         std::shared_ptr<SHAMap> const& initialPosition) override;
 };
 
 //--------------------------------------------------------------------------
 
-FeeVoteImpl::FeeVoteImpl (Setup const& setup, beast::Journal journal)
-    : target_ (setup)
-    , journal_ (journal)
+FeeVoteImpl::FeeVoteImpl(Setup const& setup, beast::Journal journal)
+    : target_(setup), journal_(journal)
 {
 }
 
 void
 FeeVoteImpl::doValidation(
     std::shared_ptr<ReadView const> const& lastClosedLedger,
-        STValidation::FeeSettings& fees)
+    STValidation::FeeSettings& fees)
 {
     if (lastClosedLedger->fees().base != target_.reference_fee)
     {
-        JLOG(journal_.info()) <<
-            "Voting for base fee of " << target_.reference_fee;
+        JLOG(journal_.info())
+            << "Voting for base fee of " << target_.reference_fee;
 
         fees.baseFee = target_.reference_fee;
     }
 
     if (lastClosedLedger->fees().accountReserve(0) != target_.account_reserve)
     {
-        JLOG(journal_.info()) <<
-            "Voting for base reserve of " << target_.account_reserve;
+        JLOG(journal_.info())
+            << "Voting for base reserve of " << target_.account_reserve;
 
         fees.reserveBase = target_.account_reserve;
     }
 
     if (lastClosedLedger->fees().increment != target_.owner_reserve)
     {
-        JLOG(journal_.info()) <<
-            "Voting for reserve increment of " << target_.owner_reserve;
+        JLOG(journal_.info())
+            << "Voting for reserve increment of " << target_.owner_reserve;
 
         fees.reserveIncrement = target_.owner_reserve;
     }
@@ -150,32 +148,29 @@ FeeVoteImpl::doVoting(
     std::shared_ptr<SHAMap> const& initialPosition)
 {
     // LCL must be flag ledger
-    assert ((lastClosedLedger->info().seq % 256) == 0);
+    assert((lastClosedLedger->info().seq % 256) == 0);
 
-    detail::VotableValue baseFeeVote (
-        lastClosedLedger->fees().base,
-        target_.reference_fee);
+    detail::VotableValue baseFeeVote(
+        lastClosedLedger->fees().base, target_.reference_fee);
 
     detail::VotableValue baseReserveVote(
-        lastClosedLedger->fees().accountReserve(0),
-        target_.account_reserve);
+        lastClosedLedger->fees().accountReserve(0), target_.account_reserve);
 
-    detail::VotableValue incReserveVote (
-        lastClosedLedger->fees().increment,
-        target_.owner_reserve);
+    detail::VotableValue incReserveVote(
+        lastClosedLedger->fees().increment, target_.owner_reserve);
 
     for (auto const& val : set)
     {
-        if (val->isTrusted ())
+        if (val->isTrusted())
         {
-            if (val->isFieldPresent (sfBaseFee))
+            if (val->isFieldPresent(sfBaseFee))
             {
                 using xrptype = XRPAmount::value_type;
-                auto const vote = val->getFieldU64 (sfBaseFee);
+                auto const vote = val->getFieldU64(sfBaseFee);
                 if (vote <= std::numeric_limits<xrptype>::max() &&
                     isLegalAmount(XRPAmount{unsafe_cast<xrptype>(vote)}))
-                    baseFeeVote.addVote(XRPAmount{
-                        unsafe_cast<XRPAmount::value_type>(vote)});
+                    baseFeeVote.addVote(
+                        XRPAmount{unsafe_cast<XRPAmount::value_type>(vote)});
                 else
                     // Invalid amounts will be treated as if they're
                     // not provided. Don't throw because this value is
@@ -184,38 +179,38 @@ FeeVoteImpl::doVoting(
             }
             else
             {
-                baseFeeVote.noVote ();
+                baseFeeVote.noVote();
             }
 
-            if (val->isFieldPresent (sfReserveBase))
+            if (val->isFieldPresent(sfReserveBase))
             {
-                baseReserveVote.addVote(XRPAmount{
-                    val->getFieldU32(sfReserveBase)});
+                baseReserveVote.addVote(
+                    XRPAmount{val->getFieldU32(sfReserveBase)});
             }
             else
             {
-                baseReserveVote.noVote ();
+                baseReserveVote.noVote();
             }
 
-            if (val->isFieldPresent (sfReserveIncrement))
+            if (val->isFieldPresent(sfReserveIncrement))
             {
-                incReserveVote.addVote (XRPAmount{
-                    val->getFieldU32 (sfReserveIncrement)});
+                incReserveVote.addVote(
+                    XRPAmount{val->getFieldU32(sfReserveIncrement)});
             }
             else
             {
-                incReserveVote.noVote ();
+                incReserveVote.noVote();
             }
         }
     }
 
     // choose our positions
     // If any of the values are invalid, send the current values.
-    auto const baseFee = baseFeeVote.getVotes ().dropsAs<std::uint64_t>(
+    auto const baseFee = baseFeeVote.getVotes().dropsAs<std::uint64_t>(
         lastClosedLedger->fees().base);
-    auto const baseReserve = baseReserveVote.getVotes ().dropsAs<std::uint32_t>(
+    auto const baseReserve = baseReserveVote.getVotes().dropsAs<std::uint32_t>(
         lastClosedLedger->fees().accountReserve(0));
-    auto const incReserve = incReserveVote.getVotes ().dropsAs<std::uint32_t>(
+    auto const incReserve = incReserveVote.getVotes().dropsAs<std::uint32_t>(
         lastClosedLedger->fees().increment);
     constexpr FeeUnit32 feeUnits = Setup::reference_fee_units;
     auto const seq = lastClosedLedger->info().seq + 1;
@@ -223,16 +218,14 @@ FeeVoteImpl::doVoting(
     // add transactions to our position
     if ((baseFee != lastClosedLedger->fees().base) ||
         (baseReserve != lastClosedLedger->fees().accountReserve(0)) ||
-            (incReserve != lastClosedLedger->fees().increment))
+        (incReserve != lastClosedLedger->fees().increment))
     {
-        JLOG(journal_.warn()) <<
-            "We are voting for a fee change: " << baseFee <<
-            "/" << baseReserve <<
-            "/" << incReserve;
+        JLOG(journal_.warn()) << "We are voting for a fee change: " << baseFee
+                              << "/" << baseReserve << "/" << incReserve;
 
-        STTx feeTx (ttFEE,
-            [seq,baseFee,baseReserve,incReserve,feeUnits](auto& obj)
-            {
+        STTx feeTx(
+            ttFEE,
+            [seq, baseFee, baseReserve, incReserve, feeUnits](auto& obj) {
                 obj[sfAccount] = AccountID();
                 obj[sfLedgerSequence] = seq;
                 obj[sfBaseFee] = baseFee;
@@ -241,20 +234,18 @@ FeeVoteImpl::doVoting(
                 obj[sfReferenceFeeUnits] = feeUnits.fee();
             });
 
-        uint256 txID = feeTx.getTransactionID ();
+        uint256 txID = feeTx.getTransactionID();
 
-        JLOG(journal_.warn()) <<
-            "Vote: " << txID;
+        JLOG(journal_.warn()) << "Vote: " << txID;
 
         Serializer s;
-        feeTx.add (s);
+        feeTx.add(s);
 
-        auto tItem = std::make_shared<SHAMapItem> (txID, s.peekData ());
+        auto tItem = std::make_shared<SHAMapItem>(txID, s.peekData());
 
-        if (!initialPosition->addGiveItem (tItem, true, false))
+        if (!initialPosition->addGiveItem(tItem, true, false))
         {
-            JLOG(journal_.warn()) <<
-                "Ledger already had fee change";
+            JLOG(journal_.warn()) << "Ledger already had fee change";
         }
     }
 }
@@ -262,7 +253,7 @@ FeeVoteImpl::doVoting(
 //------------------------------------------------------------------------------
 
 FeeVote::Setup
-setup_FeeVote (Section const& section)
+setup_FeeVote(Section const& section)
 {
     FeeVote::Setup setup;
     {
@@ -282,9 +273,9 @@ setup_FeeVote (Section const& section)
 }
 
 std::unique_ptr<FeeVote>
-make_FeeVote (FeeVote::Setup const& setup, beast::Journal journal)
+make_FeeVote(FeeVote::Setup const& setup, beast::Journal journal)
 {
-    return std::make_unique<FeeVoteImpl> (setup, journal);
+    return std::make_unique<FeeVoteImpl>(setup, journal);
 }
 
-} // ripple
+}  // namespace ripple

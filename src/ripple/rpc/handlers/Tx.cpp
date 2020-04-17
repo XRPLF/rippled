@@ -21,15 +21,15 @@
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
+#include <ripple/basics/ToString.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-#include <ripple/rpc/impl/GRPCHelpers.h>
 #include <ripple/rpc/GRPCHandlers.h>
-#include <ripple/basics/ToString.h>
+#include <ripple/rpc/impl/GRPCHelpers.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
 
@@ -37,42 +37,37 @@ namespace ripple {
 //   transaction: <hex>
 // }
 
-static
-bool
-isHexTxID (std::string const& txid)
+static bool
+isHexTxID(std::string const& txid)
 {
-    if (txid.size () != 64)
+    if (txid.size() != 64)
         return false;
 
-    auto const ret = std::find_if (txid.begin (), txid.end (),
-        [](std::string::value_type c)
-        {
-            return !std::isxdigit (static_cast<unsigned char>(c));
+    auto const ret =
+        std::find_if(txid.begin(), txid.end(), [](std::string::value_type c) {
+            return !std::isxdigit(static_cast<unsigned char>(c));
         });
 
-    return (ret == txid.end ());
+    return (ret == txid.end());
 }
 
-static
-bool
+static bool
 isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, uint256 const& hash)
 {
-    if (!ledgerMaster.haveLedger (seq))
+    if (!ledgerMaster.haveLedger(seq))
         return false;
 
-    if (seq > ledgerMaster.getValidatedLedger ()->info().seq)
+    if (seq > ledgerMaster.getValidatedLedger()->info().seq)
         return false;
 
-    return ledgerMaster.getHashBySeq (seq) == hash;
+    return ledgerMaster.getHashBySeq(seq) == hash;
 }
 
 bool
-getMetaHex (Ledger const& ledger,
-    uint256 const& transID, std::string& hex)
+getMetaHex(Ledger const& ledger, uint256 const& transID, std::string& hex)
 {
     SHAMapTreeNode::TNType type;
-    auto const item =
-        ledger.txMap().peekItem (transID, type);
+    auto const item = ledger.txMap().peekItem(transID, type);
 
     if (!item)
         return false;
@@ -80,9 +75,9 @@ getMetaHex (Ledger const& ledger,
     if (type != SHAMapTreeNode::tnTRANSACTION_MD)
         return false;
 
-    SerialIter it (item->slice());
-    it.getVL (); // skip transaction
-    hex = strHex (makeSlice(it.getVL ()));
+    SerialIter it(item->slice());
+    it.getVL();  // skip transaction
+    hex = strHex(makeSlice(it.getVL()));
     return true;
 }
 
@@ -100,7 +95,7 @@ struct TxArgs
 {
     uint256 hash;
     bool binary = false;
-    std::optional<std::pair<uint32_t,uint32_t>> ledgerRange;
+    std::optional<std::pair<uint32_t, uint32_t>> ledgerRange;
 };
 
 std::pair<TxResult, RPC::Status>
@@ -406,8 +401,8 @@ doTxGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetTransactionRequest>& context)
     args.hash = uint256::fromVoid(hashBytes.data());
     if (args.hash.size() != hashBytes.size())
     {
-        grpc::Status errorStatus{grpc::StatusCode::INVALID_ARGUMENT,
-                                 "ledger hash malformed"};
+        grpc::Status errorStatus{
+            grpc::StatusCode::INVALID_ARGUMENT, "ledger hash malformed"};
         return {response, errorStatus};
     }
 

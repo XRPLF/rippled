@@ -42,55 +42,61 @@ public:
     /** Create a null metric.
         A null metric reports no information.
     */
-    Meter ()
-        { }
+    Meter()
+    {
+    }
 
     /** Create the metric reference the specified implementation.
         Normally this won't be called directly. Instead, call the appropriate
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Meter (std::shared_ptr <MeterImpl> const& impl)
-        : m_impl (impl)
-        { }
+    explicit Meter(std::shared_ptr<MeterImpl> const& impl) : m_impl(impl)
+    {
+    }
 
     /** Increment the meter. */
     /** @{ */
-    void increment (value_type amount) const
+    void
+    increment(value_type amount) const
     {
         if (m_impl)
-            m_impl->increment (amount);
+            m_impl->increment(amount);
     }
 
-    Meter const& operator+= (value_type amount) const
+    Meter const&
+    operator+=(value_type amount) const
     {
-        increment (amount);
+        increment(amount);
         return *this;
     }
 
-    Meter const& operator++ () const
+    Meter const&
+    operator++() const
     {
-        increment (1);
+        increment(1);
         return *this;
     }
 
-    Meter const& operator++ (int) const
+    Meter const&
+    operator++(int) const
     {
-        increment (1);
+        increment(1);
         return *this;
     }
     /** @} */
 
-    std::shared_ptr <MeterImpl> const& impl () const
+    std::shared_ptr<MeterImpl> const&
+    impl() const
     {
         return m_impl;
     }
 
 private:
-    std::shared_ptr <MeterImpl> m_impl;
+    std::shared_ptr<MeterImpl> m_impl;
 };
 
-}
-}
+}  // namespace insight
+}  // namespace beast
 
 #endif

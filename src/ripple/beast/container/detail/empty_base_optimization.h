@@ -17,40 +17,43 @@
 namespace beast {
 namespace detail {
 
-template<class T>
+template <class T>
 struct is_empty_base_optimization_derived
-    : std::integral_constant<bool,
-        std::is_empty<T>::value &&
-        ! boost::is_final<T>::value>
+    : std::integral_constant<
+          bool,
+          std::is_empty<T>::value && !boost::is_final<T>::value>
 {
 };
 
-template<class T, int UniqueID = 0,
-    bool isDerived =
-        is_empty_base_optimization_derived<T>::value>
+template <
+    class T,
+    int UniqueID = 0,
+    bool isDerived = is_empty_base_optimization_derived<T>::value>
 class empty_base_optimization : private T
 {
 public:
     empty_base_optimization() = default;
     empty_base_optimization(empty_base_optimization&&) = default;
     empty_base_optimization(empty_base_optimization const&) = default;
-    empty_base_optimization& operator=(empty_base_optimization&&) = default;
-    empty_base_optimization& operator=(empty_base_optimization const&) = default;
+    empty_base_optimization&
+    operator=(empty_base_optimization&&) = default;
+    empty_base_optimization&
+    operator=(empty_base_optimization const&) = default;
 
-    template<class Arg1, class... ArgN>
-    explicit
-    empty_base_optimization(Arg1&& arg1, ArgN&&... argn)
-        : T(std::forward<Arg1>(arg1),
-            std::forward<ArgN>(argn)...)
+    template <class Arg1, class... ArgN>
+    explicit empty_base_optimization(Arg1&& arg1, ArgN&&... argn)
+        : T(std::forward<Arg1>(arg1), std::forward<ArgN>(argn)...)
     {
     }
 
-    T& member() noexcept
+    T&
+    member() noexcept
     {
         return *this;
     }
 
-    T const& member() const noexcept
+    T const&
+    member() const noexcept
     {
         return *this;
     }
@@ -58,11 +61,8 @@ public:
 
 //------------------------------------------------------------------------------
 
-template<
-    class T,
-    int UniqueID
->
-class empty_base_optimization <T, UniqueID, false>
+template <class T, int UniqueID>
+class empty_base_optimization<T, UniqueID, false>
 {
     T t_;
 
@@ -70,29 +70,31 @@ public:
     empty_base_optimization() = default;
     empty_base_optimization(empty_base_optimization&&) = default;
     empty_base_optimization(empty_base_optimization const&) = default;
-    empty_base_optimization& operator=(empty_base_optimization&&) = default;
-    empty_base_optimization& operator=(empty_base_optimization const&) = default;
+    empty_base_optimization&
+    operator=(empty_base_optimization&&) = default;
+    empty_base_optimization&
+    operator=(empty_base_optimization const&) = default;
 
-    template<class Arg1, class... ArgN>
-    explicit
-    empty_base_optimization(Arg1&& arg1, ArgN&&... argn)
-        : t_(std::forward<Arg1>(arg1),
-            std::forward<ArgN>(argn)...)
+    template <class Arg1, class... ArgN>
+    explicit empty_base_optimization(Arg1&& arg1, ArgN&&... argn)
+        : t_(std::forward<Arg1>(arg1), std::forward<ArgN>(argn)...)
     {
     }
 
-    T& member() noexcept
+    T&
+    member() noexcept
     {
         return t_;
     }
 
-    T const& member() const noexcept
+    T const&
+    member() const noexcept
     {
         return t_;
     }
 };
 
-} // detail
-} // beast
+}  // namespace detail
+}  // namespace beast
 
 #endif

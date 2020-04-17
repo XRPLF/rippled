@@ -29,15 +29,19 @@ namespace NodeStore {
 class DummyScheduler : public Scheduler
 {
 public:
-    DummyScheduler () = default;
-    ~DummyScheduler () = default;
-    void scheduleTask (Task& task) override;
-    void scheduledTasksStopped ();
-    void onFetch (FetchReport const& report) override;
-    void onBatchWrite (BatchWriteReport const& report) override;
+    DummyScheduler() = default;
+    ~DummyScheduler() = default;
+    void
+    scheduleTask(Task& task) override;
+    void
+    scheduledTasksStopped();
+    void
+    onFetch(FetchReport const& report) override;
+    void
+    onBatchWrite(BatchWriteReport const& report) override;
 };
 
-}
-}
+}  // namespace NodeStore
+}  // namespace ripple
 
 #endif

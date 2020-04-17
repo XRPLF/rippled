@@ -31,21 +31,22 @@ namespace RPC {
 class LegacyPathFind
 {
 public:
-    LegacyPathFind (bool isAdmin, Application& app);
-    ~LegacyPathFind ();
+    LegacyPathFind(bool isAdmin, Application& app);
+    ~LegacyPathFind();
 
-    bool isOk () const
+    bool
+    isOk() const
     {
         return m_isOk;
     }
 
 private:
-    static std::atomic <int> inProgress;
+    static std::atomic<int> inProgress;
 
     bool m_isOk;
 };
 
-} // RPC
-} // ripple
+}  // namespace RPC
+}  // namespace ripple
 
 #endif

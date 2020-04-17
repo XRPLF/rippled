@@ -18,10 +18,10 @@
 //==============================================================================
 
 #include <ripple/core/JobQueue.h>
-#include <test/jtx.h>
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
+#include <test/jtx.h>
 
 namespace ripple {
 namespace test {
@@ -44,7 +44,7 @@ public:
         wait_for(std::chrono::duration<Rep, Period> const& rel_time)
         {
             std::unique_lock<std::mutex> lk(mutex_);
-            auto b = cv_.wait_for(lk, rel_time, [=]{ return signaled_; });
+            auto b = cv_.wait_for(lk, rel_time, [=] { return signaled_; });
             signaled_ = false;
             return b;
         }
@@ -68,14 +68,12 @@ public:
         jq.setThreadCount(0, false);
         gate g1, g2;
         std::shared_ptr<JobQueue::Coro> c;
-        jq.postCoro(jtCLIENT, "Coroutine-Test",
-            [&](auto const& cr)
-            {
-                c = cr;
-                g1.signal();
-                c->yield();
-                g2.signal();
-            });
+        jq.postCoro(jtCLIENT, "Coroutine-Test", [&](auto const& cr) {
+            c = cr;
+            g1.signal();
+            c->yield();
+            g2.signal();
+        });
         BEAST_EXPECT(g1.wait_for(5s));
         c->join();
         c->post();
@@ -91,13 +89,11 @@ public:
         auto& jq = env.app().getJobQueue();
         jq.setThreadCount(0, false);
         gate g;
-        jq.postCoro(jtCLIENT, "Coroutine-Test",
-            [&](auto const& c)
-            {
-                c->post();
-                c->yield();
-                g.signal();
-            });
+        jq.postCoro(jtCLIENT, "Coroutine-Test", [&](auto const& c) {
+            c->post();
+            c->yield();
+            g.signal();
+        });
         BEAST_EXPECT(g.wait_for(5s));
     }
 
@@ -116,55 +112,49 @@ public:
         BEAST_EXPECT(*lv == -1);
 
         gate g;
-        jq.addJob(jtCLIENT, "LocalValue-Test",
-            [&](auto const& job)
-            {
-                this->BEAST_EXPECT(*lv == -1);
-                *lv = -2;
-                this->BEAST_EXPECT(*lv == -2);
-                g.signal();
-            });
+        jq.addJob(jtCLIENT, "LocalValue-Test", [&](auto const& job) {
+            this->BEAST_EXPECT(*lv == -1);
+            *lv = -2;
+            this->BEAST_EXPECT(*lv == -2);
+            g.signal();
+        });
         BEAST_EXPECT(g.wait_for(5s));
         BEAST_EXPECT(*lv == -1);
 
-        for(int i = 0; i < N; ++i)
+        for (int i = 0; i < N; ++i)
         {
-            jq.postCoro(jtCLIENT, "Coroutine-Test",
-                [&, id = i](auto const& c)
-                {
-                    a[id] = c;
-                    g.signal();
-                    c->yield();
+            jq.postCoro(jtCLIENT, "Coroutine-Test", [&, id = i](auto const& c) {
+                a[id] = c;
+                g.signal();
+                c->yield();
 
-                    this->BEAST_EXPECT(*lv == -1);
-                    *lv = id;
-                    this->BEAST_EXPECT(*lv == id);
-                    g.signal();
-                    c->yield();
+                this->BEAST_EXPECT(*lv == -1);
+                *lv = id;
+                this->BEAST_EXPECT(*lv == id);
+                g.signal();
+                c->yield();
 
-                    this->BEAST_EXPECT(*lv == id);
-                });
+                this->BEAST_EXPECT(*lv == id);
+            });
             BEAST_EXPECT(g.wait_for(5s));
             a[i]->join();
         }
-        for(auto const& c : a)
+        for (auto const& c : a)
         {
             c->post();
             BEAST_EXPECT(g.wait_for(5s));
             c->join();
         }
-        for(auto const& c : a)
+        for (auto const& c : a)
         {
             c->post();
             c->join();
         }
 
-        jq.addJob(jtCLIENT, "LocalValue-Test",
-            [&](auto const& job)
-            {
-                this->BEAST_EXPECT(*lv == -2);
-                g.signal();
-            });
+        jq.addJob(jtCLIENT, "LocalValue-Test", [&](auto const& job) {
+            this->BEAST_EXPECT(*lv == -2);
+            g.signal();
+        });
         BEAST_EXPECT(g.wait_for(5s));
         BEAST_EXPECT(*lv == -1);
     }
@@ -178,7 +168,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Coroutine,core,ripple);
+BEAST_DEFINE_TESTSUITE(Coroutine, core, ripple);
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple

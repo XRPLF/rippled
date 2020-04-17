@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <test/jtx/sendmax.h>
 #include <ripple/protocol/jss.h>
+#include <test/jtx/sendmax.h>
 
 namespace ripple {
 namespace test {
@@ -30,6 +30,6 @@ sendmax::operator()(Env& env, JTx& jt) const
     jt.jv[jss::SendMax] = amount_.getJson(JsonOptions::none);
 }
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

@@ -20,20 +20,18 @@
 #ifndef RIPPLE_PROTOCOL_KEYTYPE_H_INCLUDED
 #define RIPPLE_PROTOCOL_KEYTYPE_H_INCLUDED
 
-#include <string>
 #include <boost/optional.hpp>
+#include <string>
 
 namespace ripple {
 
-enum class KeyType
-{
+enum class KeyType {
     secp256k1 = 0,
-    ed25519   = 1,
+    ed25519 = 1,
 };
 
-inline
-boost::optional<KeyType>
-keyTypeFromString (std::string const& s)
+inline boost::optional<KeyType>
+keyTypeFromString(std::string const& s)
 {
     if (s == "secp256k1")
         return KeyType::secp256k1;
@@ -44,9 +42,8 @@ keyTypeFromString (std::string const& s)
     return {};
 }
 
-inline
-char const*
-to_string (KeyType type)
+inline char const*
+to_string(KeyType type)
 {
     if (type == KeyType::secp256k1)
         return "secp256k1";
@@ -58,12 +55,12 @@ to_string (KeyType type)
 }
 
 template <class Stream>
-inline
-Stream& operator<<(Stream& s, KeyType type)
+inline Stream&
+operator<<(Stream& s, KeyType type)
 {
     return s << to_string(type);
 }
 
-}
+}  // namespace ripple
 
 #endif

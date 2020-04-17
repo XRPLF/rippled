@@ -40,20 +40,16 @@ namespace ripple {
     For offers, "in" is always TakerPays and "out" is
     always TakerGets.
 */
-template<class In, class Out>
+template <class In, class Out>
 struct TAmounts
 {
     TAmounts() = default;
 
-    TAmounts (beast::Zero, beast::Zero)
-        : in (beast::zero)
-        , out (beast::zero)
+    TAmounts(beast::Zero, beast::Zero) : in(beast::zero), out(beast::zero)
     {
     }
 
-    TAmounts (In const& in_, Out const& out_)
-        : in (in_)
-        , out (out_)
+    TAmounts(In const& in_, Out const& out_) : in(in_), out(out_)
     {
     }
 
@@ -64,14 +60,16 @@ struct TAmounts
         return in <= beast::zero || out <= beast::zero;
     }
 
-    TAmounts& operator+=(TAmounts const& rhs)
+    TAmounts&
+    operator+=(TAmounts const& rhs)
     {
         in += rhs.in;
         out += rhs.out;
         return *this;
     }
 
-    TAmounts& operator-=(TAmounts const& rhs)
+    TAmounts&
+    operator-=(TAmounts const& rhs)
     {
         in -= rhs.in;
         out -= rhs.out;
@@ -84,22 +82,18 @@ struct TAmounts
 
 using Amounts = TAmounts<STAmount, STAmount>;
 
-template<class In, class Out>
+template <class In, class Out>
 bool
-operator== (
-    TAmounts<In, Out> const& lhs,
-    TAmounts<In, Out> const& rhs) noexcept
+operator==(TAmounts<In, Out> const& lhs, TAmounts<In, Out> const& rhs) noexcept
 {
     return lhs.in == rhs.in && lhs.out == rhs.out;
 }
 
-template<class In, class Out>
+template <class In, class Out>
 bool
-operator!= (
-    TAmounts<In, Out> const& lhs,
-    TAmounts<In, Out> const& rhs) noexcept
+operator!=(TAmounts<In, Out> const& lhs, TAmounts<In, Out> const& rhs) noexcept
 {
-    return ! (lhs == rhs);
+    return !(lhs == rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -123,28 +117,27 @@ public:
     static const int maxTickSize = 16;
 
 private:
-    // This has the same representation as STAmount, see the comment on the STAmount.
-    // However, this class does not alway use the canonical representation. In particular,
-    // the increment and decrement operators may cause a non-canonical representation.
+    // This has the same representation as STAmount, see the comment on the
+    // STAmount. However, this class does not alway use the canonical
+    // representation. In particular, the increment and decrement operators may
+    // cause a non-canonical representation.
     value_type m_value;
 
 public:
     Quality() = default;
 
     /** Create a quality from the integer encoding of an STAmount */
-    explicit
-    Quality (std::uint64_t value);
+    explicit Quality(std::uint64_t value);
 
     /** Create a quality from the ratio of two amounts. */
-    explicit
-    Quality (Amounts const& amount);
+    explicit Quality(Amounts const& amount);
 
     /** Create a quality from the ratio of two amounts. */
-    template<class In, class Out>
-    Quality (Out const& out, In const& in)
-        : Quality (Amounts (toSTAmount (in),
-                            toSTAmount (out)))
-    {}
+    template <class In, class Out>
+    Quality(Out const& out, In const& in)
+        : Quality(Amounts(toSTAmount(in), toSTAmount(out)))
+    {
+    }
 
     /** Advances to the next higher quality level. */
     /** @{ */
@@ -152,7 +145,7 @@ public:
     operator++();
 
     Quality
-    operator++ (int);
+    operator++(int);
     /** @} */
 
     /** Advances to the next lower quality level. */
@@ -161,42 +154,43 @@ public:
     operator--();
 
     Quality
-    operator-- (int);
+    operator--(int);
     /** @} */
 
     /** Returns the quality as STAmount. */
     STAmount
-    rate () const
+    rate() const
     {
-        return amountFromQuality (m_value);
+        return amountFromQuality(m_value);
     }
 
     /** Returns the quality rounded up to the specified number
         of decimal digits.
     */
     Quality
-    round (int tickSize) const;
+    round(int tickSize) const;
 
     /** Returns the scaled amount with in capped.
         Math is avoided if the result is exact. The output is clamped
         to prevent money creation.
     */
     Amounts
-    ceil_in (Amounts const& amount, STAmount const& limit) const;
+    ceil_in(Amounts const& amount, STAmount const& limit) const;
 
-    template<class In, class Out>
+    template <class In, class Out>
     TAmounts<In, Out>
-    ceil_in (TAmounts<In, Out> const& amount, In const& limit) const
+    ceil_in(TAmounts<In, Out> const& amount, In const& limit) const
     {
         if (amount.in <= limit)
             return amount;
 
         // Use the existing STAmount implementation for now, but consider
         // replacing with code specific to IOUAMount and XRPAmount
-        Amounts stAmt (toSTAmount (amount.in), toSTAmount (amount.out));
-        STAmount stLim (toSTAmount (limit));
-        auto const stRes = ceil_in (stAmt, stLim);
-        return TAmounts<In, Out> (toAmount<In> (stRes.in), toAmount<Out> (stRes.out));
+        Amounts stAmt(toSTAmount(amount.in), toSTAmount(amount.out));
+        STAmount stLim(toSTAmount(limit));
+        auto const stRes = ceil_in(stAmt, stLim);
+        return TAmounts<In, Out>(
+            toAmount<In>(stRes.in), toAmount<Out>(stRes.out));
     }
 
     /** Returns the scaled amount with out capped.
@@ -204,79 +198,73 @@ public:
         to prevent money creation.
     */
     Amounts
-    ceil_out (Amounts const& amount, STAmount const& limit) const;
+    ceil_out(Amounts const& amount, STAmount const& limit) const;
 
-    template<class In, class Out>
+    template <class In, class Out>
     TAmounts<In, Out>
-    ceil_out (TAmounts<In, Out> const& amount, Out const& limit) const
+    ceil_out(TAmounts<In, Out> const& amount, Out const& limit) const
     {
         if (amount.out <= limit)
             return amount;
 
         // Use the existing STAmount implementation for now, but consider
         // replacing with code specific to IOUAMount and XRPAmount
-        Amounts stAmt (toSTAmount (amount.in), toSTAmount (amount.out));
-        STAmount stLim (toSTAmount (limit));
-        auto const stRes = ceil_out (stAmt, stLim);
-        return TAmounts<In, Out> (toAmount<In> (stRes.in), toAmount<Out> (stRes.out));
+        Amounts stAmt(toSTAmount(amount.in), toSTAmount(amount.out));
+        STAmount stLim(toSTAmount(limit));
+        auto const stRes = ceil_out(stAmt, stLim);
+        return TAmounts<In, Out>(
+            toAmount<In>(stRes.in), toAmount<Out>(stRes.out));
     }
 
     /** Returns `true` if lhs is lower quality than `rhs`.
         Lower quality means the taker receives a worse deal.
         Higher quality is better for the taker.
     */
-    friend
-    bool
-    operator< (Quality const& lhs, Quality const& rhs) noexcept
+    friend bool
+    operator<(Quality const& lhs, Quality const& rhs) noexcept
     {
         return lhs.m_value > rhs.m_value;
     }
 
-    friend
-    bool
-    operator> (Quality const& lhs, Quality const& rhs) noexcept
+    friend bool
+    operator>(Quality const& lhs, Quality const& rhs) noexcept
     {
         return lhs.m_value < rhs.m_value;
     }
 
-    friend
-    bool
-    operator<= (Quality const& lhs, Quality const& rhs) noexcept
+    friend bool
+    operator<=(Quality const& lhs, Quality const& rhs) noexcept
     {
         return !(lhs > rhs);
     }
 
-    friend
-    bool
-    operator>= (Quality const& lhs, Quality const& rhs) noexcept
+    friend bool
+    operator>=(Quality const& lhs, Quality const& rhs) noexcept
     {
         return !(lhs < rhs);
     }
 
-    friend
-    bool
-    operator== (Quality const& lhs, Quality const& rhs) noexcept
+    friend bool
+    operator==(Quality const& lhs, Quality const& rhs) noexcept
     {
         return lhs.m_value == rhs.m_value;
     }
 
-    friend
-    bool
-    operator!= (Quality const& lhs, Quality const& rhs) noexcept
+    friend bool
+    operator!=(Quality const& lhs, Quality const& rhs) noexcept
     {
-        return ! (lhs == rhs);
+        return !(lhs == rhs);
     }
 
-    friend
-    std::ostream&
-    operator<< (std::ostream& os, Quality const& quality)
+    friend std::ostream&
+    operator<<(std::ostream& os, Quality const& quality)
     {
         os << quality.m_value;
         return os;
     }
 
-    // return the relative distance (relative error) between two qualities. This is used for testing only.
-    // relative distance is abs(a-b)/min(a,b)
+    // return the relative distance (relative error) between two qualities. This
+    // is used for testing only. relative distance is abs(a-b)/min(a,b)
     friend double
     relativeDistance(Quality const& q1, Quality const& q2)
     {
@@ -314,8 +302,8 @@ public:
     @param rhs  The second leg of the path: intermediate to output.
 */
 Quality
-composed_quality (Quality const& lhs, Quality const& rhs);
+composed_quality(Quality const& lhs, Quality const& rhs);
 
-}
+}  // namespace ripple
 
 #endif

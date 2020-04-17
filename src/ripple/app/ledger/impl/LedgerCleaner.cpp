@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerCleaner.h>
 #include <ripple/app/ledger/InboundLedgers.h>
+#include <ripple/app/ledger/LedgerCleaner.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/protocol/jss.h>
 #include <ripple/beast/core/CurrentThreadName.h>
+#include <ripple/protocol/jss.h>
 
 namespace ripple {
 namespace detail {
@@ -51,19 +51,15 @@ class LedgerCleanerImp : public LedgerCleaner
 
     std::thread thread_;
 
-    enum class State : char {
-        readyToClean = 0,
-        startCleaning,
-        cleaning
-    };
+    enum class State : char { readyToClean = 0, startCleaning, cleaning };
     State state_ = State::readyToClean;
     bool shouldExit_ = false;
 
     // The lowest ledger in the range we're checking.
-    LedgerIndex  minRange_ = 0;
+    LedgerIndex minRange_ = 0;
 
     // The highest ledger in the range we're checking
-    LedgerIndex  maxRange_ = 0;
+    LedgerIndex maxRange_ = 0;
 
     // Check all state/transaction nodes
     bool checkNodes_ = false;
@@ -76,20 +72,18 @@ class LedgerCleanerImp : public LedgerCleaner
 
     //--------------------------------------------------------------------------
 public:
-    LedgerCleanerImp (
+    LedgerCleanerImp(
         Application& app,
         Stoppable& stoppable,
         beast::Journal journal)
-        : LedgerCleaner (stoppable)
-        , app_ (app)
-        , j_ (journal)
+        : LedgerCleaner(stoppable), app_(app), j_(journal)
     {
     }
 
-    ~LedgerCleanerImp () override
+    ~LedgerCleanerImp() override
     {
         if (thread_.joinable())
-            LogicError ("LedgerCleanerImp::onStop not called.");
+            LogicError("LedgerCleanerImp::onStop not called.");
     }
 
     //--------------------------------------------------------------------------
@@ -98,20 +92,23 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void onPrepare () override
+    void
+    onPrepare() override
     {
     }
 
-    void onStart () override
+    void
+    onStart() override
     {
-        thread_ = std::thread {&LedgerCleanerImp::run, this};
+        thread_ = std::thread{&LedgerCleanerImp::run, this};
     }
 
-    void onStop () override
+    void
+    onStop() override
     {
-        JLOG (j_.info()) << "Stopping";
+        JLOG(j_.info()) << "Stopping";
         {
-            std::lock_guard lock (mutex_);
+            std::lock_guard lock(mutex_);
             shouldExit_ = true;
             wakeup_.notify_one();
         }
@@ -124,9 +121,10 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void onWrite (beast::PropertyStream::Map& map) override
+    void
+    onWrite(beast::PropertyStream::Map& map) override
     {
-        std::lock_guard lock (mutex_);
+        std::lock_guard lock(mutex_);
 
         if (maxRange_ == 0)
             map["status"] = "idle";
@@ -148,14 +146,15 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void doClean (Json::Value const& params) override
+    void
+    doClean(Json::Value const& params) override
     {
         LedgerIndex minRange = 0;
         LedgerIndex maxRange = 0;
-        app_.getLedgerMaster().getFullValidatedRange (minRange, maxRange);
+        app_.getLedgerMaster().getFullValidatedRange(minRange, maxRange);
 
         {
-            std::lock_guard lock (mutex_);
+            std::lock_guard lock(mutex_);
 
             maxRange_ = maxRange;
             minRange_ = minRange;
@@ -203,7 +202,7 @@ public:
             }
 
             if (params.isMember(jss::max_ledger))
-                 maxRange_ = params[jss::max_ledger].asUInt();
+                maxRange_ = params[jss::max_ledger].asUInt();
 
             if (params.isMember(jss::min_ledger))
                 minRange_ = params[jss::min_ledger].asUInt();
@@ -234,28 +233,27 @@ public:
     //
     //--------------------------------------------------------------------------
 private:
-    void init ()
+    void
+    init()
     {
-        JLOG (j_.debug()) << "Initializing";
+        JLOG(j_.debug()) << "Initializing";
     }
 
-    void run ()
+    void
+    run()
     {
-        beast::setCurrentThreadName ("LedgerCleaner");
-        JLOG (j_.debug()) << "Started";
+        beast::setCurrentThreadName("LedgerCleaner");
+        JLOG(j_.debug()) << "Started";
 
         init();
 
         while (true)
         {
             {
-                std::unique_lock<std::mutex> lock (mutex_);
-                wakeup_.wait(lock, [this]()
-                    {
-                        return (
-                            shouldExit_ ||
-                            state_ == State::startCleaning);
-                    });
+                std::unique_lock<std::mutex> lock(mutex_);
+                wakeup_.wait(lock, [this]() {
+                    return (shouldExit_ || state_ == State::startCleaning);
+                });
                 if (shouldExit_)
                     break;
 
@@ -268,9 +266,8 @@ private:
     }
 
     // VFALCO TODO This should return boost::optional<uint256>
-    LedgerHash getLedgerHash(
-        std::shared_ptr<ReadView const>& ledger,
-        LedgerIndex index)
+    LedgerHash
+    getLedgerHash(std::shared_ptr<ReadView const>& ledger, LedgerIndex index)
     {
         boost::optional<LedgerHash> hash;
         try
@@ -279,13 +276,14 @@ private:
         }
         catch (SHAMapMissingNode const& mn)
         {
-            JLOG (j_.warn()) <<
-                "Ledger #" << ledger->info().seq << ": " << mn.what();
-            app_.getInboundLedgers().acquire (
-                ledger->info().hash, ledger->info().seq,
+            JLOG(j_.warn())
+                << "Ledger #" << ledger->info().seq << ": " << mn.what();
+            app_.getInboundLedgers().acquire(
+                ledger->info().hash,
+                ledger->info().seq,
                 InboundLedger::Reason::GENERIC);
         }
-        return hash ? *hash : beast::zero; // kludge
+        return hash ? *hash : beast::zero;  // kludge
     }
 
     /** Process a single ledger
@@ -295,45 +293,45 @@ private:
         @param doTxns Reprocess (account) transactions to SQL databases.
         @return `true` if the ledger was cleaned.
     */
-    bool doLedger(
+    bool
+    doLedger(
         LedgerIndex const& ledgerIndex,
         LedgerHash const& ledgerHash,
         bool doNodes,
         bool doTxns)
     {
-        auto nodeLedger = app_.getInboundLedgers().acquire (
+        auto nodeLedger = app_.getInboundLedgers().acquire(
             ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
         if (!nodeLedger)
         {
-            JLOG (j_.debug()) << "Ledger " << ledgerIndex << " not available";
-            app_.getLedgerMaster().clearLedger (ledgerIndex);
+            JLOG(j_.debug()) << "Ledger " << ledgerIndex << " not available";
+            app_.getLedgerMaster().clearLedger(ledgerIndex);
             app_.getInboundLedgers().acquire(
                 ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
             return false;
         }
 
         auto dbLedger = loadByIndex(ledgerIndex, app_);
-        if (! dbLedger ||
-            (dbLedger->info().hash != ledgerHash) ||
+        if (!dbLedger || (dbLedger->info().hash != ledgerHash) ||
             (dbLedger->info().parentHash != nodeLedger->info().parentHash))
         {
             // Ideally we'd also check for more than one ledger with that index
-            JLOG (j_.debug()) <<
-                "Ledger " << ledgerIndex << " mismatches SQL DB";
+            JLOG(j_.debug())
+                << "Ledger " << ledgerIndex << " mismatches SQL DB";
             doTxns = true;
         }
 
-        if(! app_.getLedgerMaster().fixIndex(ledgerIndex, ledgerHash))
+        if (!app_.getLedgerMaster().fixIndex(ledgerIndex, ledgerHash))
         {
-            JLOG (j_.debug()) << "ledger " << ledgerIndex
-                            << " had wrong entry in history";
+            JLOG(j_.debug())
+                << "ledger " << ledgerIndex << " had wrong entry in history";
             doTxns = true;
         }
 
-        if (doNodes && !nodeLedger->walkLedger(app_.journal ("Ledger")))
+        if (doNodes && !nodeLedger->walkLedger(app_.journal("Ledger")))
         {
-            JLOG (j_.debug()) << "Ledger " << ledgerIndex << " is missing nodes";
-            app_.getLedgerMaster().clearLedger (ledgerIndex);
+            JLOG(j_.debug()) << "Ledger " << ledgerIndex << " is missing nodes";
+            app_.getLedgerMaster().clearLedger(ledgerIndex);
             app_.getInboundLedgers().acquire(
                 ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
             return false;
@@ -341,7 +339,7 @@ private:
 
         if (doTxns && !pendSaveValidated(app_, nodeLedger, true, false))
         {
-            JLOG (j_.debug()) << "Failed to save ledger " << ledgerIndex;
+            JLOG(j_.debug()) << "Failed to save ledger " << ledgerIndex;
             return false;
         }
 
@@ -353,7 +351,8 @@ private:
         @param referenceLedger [out] An optional known good subsequent ledger.
         @return The hash of the ledger. This will be all-bits-zero if not found.
     */
-    LedgerHash getHash(
+    LedgerHash
+    getHash(
         LedgerIndex const& ledgerIndex,
         std::shared_ptr<ReadView const>& referenceLedger)
     {
@@ -364,8 +363,8 @@ private:
             referenceLedger = app_.getLedgerMaster().getValidatedLedger();
             if (!referenceLedger)
             {
-                JLOG (j_.warn()) << "No validated ledger";
-                return ledgerHash; // Nothing we can do. No validated ledger.
+                JLOG(j_.warn()) << "No validated ledger";
+                return ledgerHash;  // Nothing we can do. No validated ledger.
             }
         }
 
@@ -378,42 +377,41 @@ private:
                 // No. Try to get another ledger that might have the hash we
                 // need: compute the index and hash of a ledger that will have
                 // the hash we need.
-                LedgerIndex refIndex = getCandidateLedger (ledgerIndex);
-                LedgerHash refHash = getLedgerHash (referenceLedger, refIndex);
+                LedgerIndex refIndex = getCandidateLedger(ledgerIndex);
+                LedgerHash refHash = getLedgerHash(referenceLedger, refIndex);
 
-                bool const nonzero (refHash.isNonZero ());
-                assert (nonzero);
+                bool const nonzero(refHash.isNonZero());
+                assert(nonzero);
                 if (nonzero)
                 {
                     // We found the hash and sequence of a better reference
                     // ledger.
-                    referenceLedger =
-                        app_.getInboundLedgers().acquire(
-                            refHash, refIndex, InboundLedger::Reason::GENERIC);
+                    referenceLedger = app_.getInboundLedgers().acquire(
+                        refHash, refIndex, InboundLedger::Reason::GENERIC);
                     if (referenceLedger)
-                        ledgerHash = getLedgerHash(
-                            referenceLedger, ledgerIndex);
+                        ledgerHash =
+                            getLedgerHash(referenceLedger, ledgerIndex);
                 }
             }
         }
         else
-            JLOG (j_.warn()) << "Validated ledger is prior to target ledger";
+            JLOG(j_.warn()) << "Validated ledger is prior to target ledger";
 
         return ledgerHash;
     }
 
     /** Run the ledger cleaner. */
-    void doLedgerCleaner()
+    void
+    doLedgerCleaner()
     {
-        auto shouldExit = [this]()
-        {
+        auto shouldExit = [this]() {
             std::lock_guard lock(mutex_);
             return shouldExit_;
         };
 
         std::shared_ptr<ReadView const> goodLedger;
 
-        while (! shouldExit())
+        while (!shouldExit())
         {
             LedgerIndex ledgerIndex;
             LedgerHash ledgerHash;
@@ -422,16 +420,16 @@ private:
 
             while (app_.getFeeTrack().isLoadedLocal())
             {
-                JLOG (j_.debug()) << "Waiting for load to subside";
+                JLOG(j_.debug()) << "Waiting for load to subside";
                 std::this_thread::sleep_for(std::chrono::seconds(5));
                 if (shouldExit())
                     return;
             }
 
             {
-                std::lock_guard lock (mutex_);
-                if ((minRange_ > maxRange_) ||
-                    (maxRange_ == 0) || (minRange_ == 0))
+                std::lock_guard lock(mutex_);
+                if ((minRange_ > maxRange_) || (maxRange_ == 0) ||
+                    (minRange_ == 0))
                 {
                     minRange_ = maxRange_ = 0;
                     state_ = State::readyToClean;
@@ -447,20 +445,20 @@ private:
             bool fail = false;
             if (ledgerHash.isZero())
             {
-                JLOG (j_.info()) << "Unable to get hash for ledger "
-                               << ledgerIndex;
+                JLOG(j_.info())
+                    << "Unable to get hash for ledger " << ledgerIndex;
                 fail = true;
             }
             else if (!doLedger(ledgerIndex, ledgerHash, doNodes, doTxns))
             {
-                JLOG (j_.info()) << "Failed to process ledger " << ledgerIndex;
+                JLOG(j_.info()) << "Failed to process ledger " << ledgerIndex;
                 fail = true;
             }
 
             if (fail)
             {
                 {
-                    std::lock_guard lock (mutex_);
+                    std::lock_guard lock(mutex_);
                     ++failures_;
                 }
                 // Wait for acquiring to catch up to us
@@ -469,7 +467,7 @@ private:
             else
             {
                 {
-                    std::lock_guard lock (mutex_);
+                    std::lock_guard lock(mutex_);
                     if (ledgerIndex == minRange_)
                         ++minRange_;
                     if (ledgerIndex == maxRange_)
@@ -479,27 +477,25 @@ private:
                 // Reduce I/O pressure and wait for acquiring to catch up to us
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
-
         }
     }
 };
 
 //------------------------------------------------------------------------------
 
-LedgerCleaner::LedgerCleaner (Stoppable& parent)
-    : Stoppable ("LedgerCleaner", parent)
-    , beast::PropertyStream::Source ("ledgercleaner")
+LedgerCleaner::LedgerCleaner(Stoppable& parent)
+    : Stoppable("LedgerCleaner", parent)
+    , beast::PropertyStream::Source("ledgercleaner")
 {
 }
 
 LedgerCleaner::~LedgerCleaner() = default;
 
 std::unique_ptr<LedgerCleaner>
-make_LedgerCleaner (Application& app,
-    Stoppable& parent, beast::Journal journal)
+make_LedgerCleaner(Application& app, Stoppable& parent, beast::Journal journal)
 {
     return std::make_unique<LedgerCleanerImp>(app, parent, journal);
 }
 
-} // detail
-} // ripple
+}  // namespace detail
+}  // namespace ripple

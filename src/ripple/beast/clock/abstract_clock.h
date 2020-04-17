@@ -70,7 +70,8 @@ public:
     abstract_clock(abstract_clock const&) = default;
 
     /** Returns the current time. */
-    virtual time_point now() const = 0;
+    virtual time_point
+    now() const = 0;
 };
 
 //------------------------------------------------------------------------------
@@ -78,8 +79,7 @@ public:
 namespace detail {
 
 template <class Facade, class Clock>
-struct abstract_clock_wrapper
-    : public abstract_clock<Facade>
+struct abstract_clock_wrapper : public abstract_clock<Facade>
 {
     explicit abstract_clock_wrapper() = default;
 
@@ -93,7 +93,7 @@ struct abstract_clock_wrapper
     }
 };
 
-}
+}  // namespace detail
 
 //------------------------------------------------------------------------------
 
@@ -102,7 +102,7 @@ struct abstract_clock_wrapper
         http://en.cppreference.com/w/cpp/concept/Clock
     @tparam Clock The actual concrete clock to use.
 */
-template<class Facade, class Clock = Facade>
+template <class Facade, class Clock = Facade>
 abstract_clock<Facade>&
 get_abstract_clock()
 {
@@ -110,6 +110,6 @@ get_abstract_clock()
     return clock;
 }
 
-}
+}  // namespace beast
 
 #endif

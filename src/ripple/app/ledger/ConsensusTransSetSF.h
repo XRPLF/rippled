@@ -21,8 +21,8 @@
 #define RIPPLE_APP_LEDGER_CONSENSUSTRANSSETSF_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
-#include <ripple/shamap/SHAMapSyncFilter.h>
 #include <ripple/basics/TaggedCache.h>
+#include <ripple/shamap/SHAMapSyncFilter.h>
 
 namespace ripple {
 
@@ -34,18 +34,21 @@ namespace ripple {
 class ConsensusTransSetSF : public SHAMapSyncFilter
 {
 public:
-    using NodeCache = TaggedCache <SHAMapHash, Blob>;
+    using NodeCache = TaggedCache<SHAMapHash, Blob>;
 
-    ConsensusTransSetSF (Application& app, NodeCache& nodeCache);
+    ConsensusTransSetSF(Application& app, NodeCache& nodeCache);
 
     // Note that the nodeData is overwritten by this call
     void
-    gotNode(bool fromFilter, SHAMapHash const& nodeHash,
-        std::uint32_t ledgerSeq, Blob&& nodeData,
-            SHAMapTreeNode::TNType type) const override;
+    gotNode(
+        bool fromFilter,
+        SHAMapHash const& nodeHash,
+        std::uint32_t ledgerSeq,
+        Blob&& nodeData,
+        SHAMapTreeNode::TNType type) const override;
 
     boost::optional<Blob>
-    getNode (SHAMapHash const& nodeHash) const override;
+    getNode(SHAMapHash const& nodeHash) const override;
 
 private:
     Application& app_;
@@ -53,6 +56,6 @@ private:
     beast::Journal const j_;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

@@ -21,18 +21,18 @@
 #define RIPPLE_SERVER_BASEHTTPPEER_H_INCLUDED
 
 #include <ripple/basics/Log.h>
+#include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/server/Session.h>
 #include <ripple/server/impl/io_list.h>
-#include <ripple/beast/net/IPAddressConversion.h>
-#include <boost/beast/core/stream_traits.hpp>
-#include <boost/beast/http/read.hpp>
-#include <boost/beast/http/message.hpp>
-#include <boost/beast/http/parser.hpp>
-#include <boost/beast/http/dynamic_body.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/spawn.hpp>
 #include <boost/asio/ssl/stream.hpp>
 #include <boost/asio/streambuf.hpp>
-#include <boost/asio/spawn.hpp>
+#include <boost/beast/core/stream_traits.hpp>
+#include <boost/beast/http/dynamic_body.hpp>
+#include <boost/beast/http/message.hpp>
+#include <boost/beast/http/parser.hpp>
+#include <boost/beast/http/read.hpp>
 #include <atomic>
 #include <cassert>
 #include <chrono>
@@ -45,10 +45,8 @@
 namespace ripple {
 
 /** Represents an active connection. */
-template<class Handler, class Impl>
-class BaseHTTPPeer
-    : public io_list::work
-    , public Session
+template <class Handler, class Impl>
+class BaseHTTPPeer : public io_list::work, public Session
 {
 protected:
     using clock_type = std::chrono::system_clock;
@@ -56,27 +54,24 @@ protected:
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using yield_context = boost::asio::yield_context;
 
-    enum
-    {
+    enum {
         // Size of our read/write buffer
         bufferSize = 4 * 1024,
 
         // Max seconds without completing a message
         timeoutSeconds = 30,
-        timeoutSecondsLocal = 3 //used for localhost clients
+        timeoutSecondsLocal = 3  // used for localhost clients
     };
 
     struct buffer
     {
         buffer(void const* ptr, std::size_t len)
-            : data(new char[len])
-            , bytes(len)
-            , used(0)
+            : data(new char[len]), bytes(len), used(0)
         {
             memcpy(data.get(), ptr, len);
         }
 
-        std::unique_ptr <char[]> data;
+        std::unique_ptr<char[]> data;
         std::size_t bytes;
         std::size_t used;
     };
@@ -116,8 +111,7 @@ public:
         endpoint_type remote_address,
         ConstBufferSequence const& buffers);
 
-    virtual
-    ~BaseHTTPPeer();
+    virtual ~BaseHTTPPeer();
 
     Session&
     session()
@@ -125,7 +119,8 @@ public:
         return *this;
     }
 
-    void close() override;
+    void
+    close() override;
 
 protected:
     Impl&
@@ -150,19 +145,18 @@ protected:
     do_read(yield_context do_yield);
 
     void
-    on_write(error_code const& ec,
-        std::size_t bytes_transferred);
+    on_write(error_code const& ec, std::size_t bytes_transferred);
 
     void
-    do_writer(std::shared_ptr <Writer> const& writer,
-        bool keep_alive, yield_context do_yield);
+    do_writer(
+        std::shared_ptr<Writer> const& writer,
+        bool keep_alive,
+        yield_context do_yield);
 
-    virtual
-    void
+    virtual void
     do_request() = 0;
 
-    virtual
-    void
+    virtual void
     do_close() = 0;
 
     // Session
@@ -195,8 +189,7 @@ protected:
     write(void const* buffer, std::size_t bytes) override;
 
     void
-    write(std::shared_ptr <Writer> const& writer,
-        bool keep_alive) override;
+    write(std::shared_ptr<Writer> const& writer, bool keep_alive) override;
 
     std::shared_ptr<Session>
     detach() override;
@@ -226,31 +219,28 @@ BaseHTTPPeer<Handler, Impl>::BaseHTTPPeer(
     , remote_address_(remote_address)
     , journal_(journal)
 {
-    read_buf_.commit(boost::asio::buffer_copy(read_buf_.prepare(
-        boost::asio::buffer_size(buffers)), buffers));
-    static std::atomic <int> sid;
+    read_buf_.commit(boost::asio::buffer_copy(
+        read_buf_.prepare(boost::asio::buffer_size(buffers)), buffers));
+    static std::atomic<int> sid;
     nid_ = ++sid;
     id_ = std::string("#") + std::to_string(nid_) + " ";
-    JLOG(journal_.trace()) << id_ <<
-        "accept:    " << remote_address_.address();
+    JLOG(journal_.trace()) << id_ << "accept:    " << remote_address_.address();
 }
 
-template<class Handler, class Impl>
-BaseHTTPPeer<Handler, Impl>::
-~BaseHTTPPeer()
+template <class Handler, class Impl>
+BaseHTTPPeer<Handler, Impl>::~BaseHTTPPeer()
 {
     handler_.onClose(session(), ec_);
-    JLOG(journal_.trace()) << id_ <<
-        "destroyed: " << request_count_ <<
-           ((request_count_ == 1) ? " request" : " requests");
+    JLOG(journal_.trace()) << id_ << "destroyed: " << request_count_
+                           << ((request_count_ == 1) ? " request"
+                                                     : " requests");
 }
 
-template<class Handler, class Impl>
+template <class Handler, class Impl>
 void
-BaseHTTPPeer<Handler, Impl>::
-close()
+BaseHTTPPeer<Handler, Impl>::close()
 {
-    if(! strand_.running_in_this_thread())
+    if (!strand_.running_in_this_thread())
         return post(
             strand_,
             std::bind(
@@ -261,87 +251,80 @@ close()
 
 //------------------------------------------------------------------------------
 
-template<class Handler, class Impl>
+template <class Handler, class Impl>
 void
-BaseHTTPPeer<Handler, Impl>::
-fail(error_code ec, char const* what)
+BaseHTTPPeer<Handler, Impl>::fail(error_code ec, char const* what)
 {
-    if(! ec_ && ec != boost::asio::error::operation_aborted)
+    if (!ec_ && ec != boost::asio::error::operation_aborted)
     {
         ec_ = ec;
-        JLOG(journal_.trace()) << id_ <<
-            std::string(what) << ": " << ec.message();
+        JLOG(journal_.trace())
+            << id_ << std::string(what) << ": " << ec.message();
         boost::beast::get_lowest_layer(impl().stream_).close();
     }
 }
 
-template<class Handler, class Impl>
+template <class Handler, class Impl>
 void
-BaseHTTPPeer<Handler, Impl>::
-start_timer()
+BaseHTTPPeer<Handler, Impl>::start_timer()
 {
-    boost::beast::get_lowest_layer(impl().stream_).expires_after(
-        std::chrono::seconds(
-            remote_address_.address().is_loopback() ?
-                timeoutSecondsLocal :
-                timeoutSeconds)
-        );
+    boost::beast::get_lowest_layer(impl().stream_)
+        .expires_after(std::chrono::seconds(
+            remote_address_.address().is_loopback() ? timeoutSecondsLocal
+                                                    : timeoutSeconds));
 }
 
 // Convenience for discarding the error code
-template<class Handler, class Impl>
+template <class Handler, class Impl>
 void
-BaseHTTPPeer<Handler, Impl>::
-cancel_timer()
+BaseHTTPPeer<Handler, Impl>::cancel_timer()
 {
     boost::beast::get_lowest_layer(impl().stream_).expires_never();
 }
 
 // Called when session times out
-template<class Handler, class Impl>
+template <class Handler, class Impl>
 void
-BaseHTTPPeer<Handler, Impl>::
-on_timer()
+BaseHTTPPeer<Handler, Impl>::on_timer()
 {
-    auto ec = boost::system::errc::make_error_code(
-            boost::system::errc::timed_out);
+    auto ec =
+        boost::system::errc::make_error_code(boost::system::errc::timed_out);
     fail(ec, "timer");
 }
 
 //------------------------------------------------------------------------------
 
-template<class Handler, class Impl>
+template <class Handler, class Impl>
 void
-BaseHTTPPeer<Handler, Impl>::
-do_read(yield_context do_yield)
+BaseHTTPPeer<Handler, Impl>::do_read(yield_context do_yield)
 {
     complete_ = false;
     error_code ec;
     start_timer();
-    boost::beast::http::async_read(impl().stream_,
-        read_buf_, message_, do_yield[ec]);
+    boost::beast::http::async_read(
+        impl().stream_, read_buf_, message_, do_yield[ec]);
     cancel_timer();
-    if(ec == boost::beast::http::error::end_of_stream)
+    if (ec == boost::beast::http::error::end_of_stream)
         return do_close();
-    if(ec == boost::beast::error::timeout)
+    if (ec == boost::beast::error::timeout)
         return on_timer();
-    if(ec)
+    if (ec)
         return fail(ec, "http::read");
     do_request();
 }
 
 // Send everything in the write queue.
 // The write queue must not be empty upon entry.
-template<class Handler, class Impl>
+template <class Handler, class Impl>
 void
-BaseHTTPPeer<Handler, Impl>::
-on_write(error_code const& ec,
+BaseHTTPPeer<Handler, Impl>::on_write(
+    error_code const& ec,
     std::size_t bytes_transferred)
 {
     cancel_timer();
-    if(ec == boost::beast::error::timeout)
+    if (ec == boost::beast::error::timeout)
         return on_timer();
-    if(ec)
+    if (ec)
         return fail(ec, "write");
     bytes_out_ += bytes_transferred;
     {
@@ -350,11 +333,11 @@ on_write(error_code const& ec,
         wq2_.reserve(wq_.size());
         std::swap(wq2_, wq_);
     }
-    if(! wq2_.empty())
+    if (!wq2_.empty())
     {
         std::vector<boost::asio::const_buffer> v;
         v.reserve(wq2_.size());
-        for(auto const& b : wq2_)
+        for (auto const& b : wq2_)
             v.emplace_back(b.data.get(), b.bytes);
         start_timer();
         return boost::asio::async_write(
@@ -368,74 +351,84 @@ on_write(error_code const& ec,
                     std::placeholders::_1,
                     std::placeholders::_2)));
     }
-    if(! complete_)
+    if (!complete_)
         return;
-    if(graceful_)
+    if (graceful_)
         return do_close();
-    boost::asio::spawn(strand_,
-        std::bind(&BaseHTTPPeer<Handler, Impl>::do_read,
-            impl().shared_from_this(), std::placeholders::_1));
+    boost::asio::spawn(
+        strand_,
+        std::bind(
+            &BaseHTTPPeer<Handler, Impl>::do_read,
+            impl().shared_from_this(),
+            std::placeholders::_1));
 }
 
-template<class Handler, class Impl>
+template <class Handler, class Impl>
 void
-BaseHTTPPeer<Handler, Impl>::
-do_writer(std::shared_ptr <Writer> const& writer,
-    bool keep_alive, yield_context do_yield)
+BaseHTTPPeer<Handler, Impl>::do_writer(
+    std::shared_ptr<Writer> const& writer,
+    bool keep_alive,
+    yield_context do_yield)
 {
-    std::function <void(void)> resume;
+    std::function<void(void)> resume;
     {
         auto const p = impl().shared_from_this();
-        resume = std::function <void(void)>(
-            [this, p, writer, keep_alive]()
-            {
-                boost::asio::spawn(strand_, std::bind(
-                    &BaseHTTPPeer<Handler, Impl>::do_writer, p, writer, keep_alive,
-                        std::placeholders::_1));
-            });
+        resume = std::function<void(void)>([this, p, writer, keep_alive]() {
+            boost::asio::spawn(
+                strand_,
+                std::bind(
+                    &BaseHTTPPeer<Handler, Impl>::do_writer,
+                    p,
+                    writer,
+                    keep_alive,
+                    std::placeholders::_1));
+        });
     }
 
-    for(;;)
+    for (;;)
     {
-        if(! writer->prepare(bufferSize, resume))
+        if (!writer->prepare(bufferSize, resume))
             return;
         error_code ec;
         auto const bytes_transferred = boost::asio::async_write(
-            impl().stream_, writer->data(), boost::asio::transfer_at_least(1),
-                do_yield[ec]);
-        if(ec)
+            impl().stream_,
+            writer->data(),
+            boost::asio::transfer_at_least(1),
+            do_yield[ec]);
+        if (ec)
             return fail(ec, "writer");
         writer->consume(bytes_transferred);
-        if(writer->complete())
+        if (writer->complete())
             break;
     }
 
-    if(! keep_alive)
+    if (!keep_alive)
         return do_close();
 
-    boost::asio::spawn(strand_, std::bind(&BaseHTTPPeer<Handler, Impl>::do_read,
-        impl().shared_from_this(), std::placeholders::_1));
+    boost::asio::spawn(
+        strand_,
+        std::bind(
+            &BaseHTTPPeer<Handler, Impl>::do_read,
+            impl().shared_from_this(),
+            std::placeholders::_1));
 }
 
 //------------------------------------------------------------------------------
 
 // Send a copy of the data.
-template<class Handler, class Impl>
+template <class Handler, class Impl>
 void
-BaseHTTPPeer<Handler, Impl>::
-write(
-    void const* buf, std::size_t bytes)
+BaseHTTPPeer<Handler, Impl>::write(void const* buf, std::size_t bytes)
 {
-    if(bytes == 0)
+    if (bytes == 0)
         return;
-    if([&]
-        {
+    if ([&] {
             std::lock_guard lock(mutex_);
             wq_.emplace_back(buf, bytes);
             return wq_.size() == 1 && wq2_.size() == 0;
         }())
     {
-        if(! strand_.running_in_this_thread())
+        if (!strand_.running_in_this_thread())
             return post(
                 strand_,
                 std::bind(
@@ -448,10 +441,10 @@ write(
     }
 }
 
-template<class Handler, class Impl>
+template <class Handler, class Impl>
 void
-BaseHTTPPeer<Handler, Impl>::
-write(std::shared_ptr <Writer> const& writer,
+BaseHTTPPeer<Handler, Impl>::write(
+    std::shared_ptr<Writer> const& writer,
     bool keep_alive)
 {
     boost::asio::spawn(bind_executor(
@@ -466,22 +459,20 @@ write(std::shared_ptr <Writer> const& writer,
 
 // DEPRECATED
 // Make the Session asynchronous
-template<class Handler, class Impl>
+template <class Handler, class Impl>
 std::shared_ptr<Session>
-BaseHTTPPeer<Handler, Impl>::
-detach()
+BaseHTTPPeer<Handler, Impl>::detach()
 {
     return impl().shared_from_this();
 }
 
 // DEPRECATED
 // Called to indicate the response has been written(but not sent)
-template<class Handler, class Impl>
+template <class Handler, class Impl>
 void
-BaseHTTPPeer<Handler, Impl>::
-complete()
+BaseHTTPPeer<Handler, Impl>::complete()
 {
-    if(! strand_.running_in_this_thread())
+    if (!strand_.running_in_this_thread())
         return post(
             strand_,
             std::bind(
@@ -493,7 +484,7 @@ complete()
 
     {
         std::lock_guard lock(mutex_);
-        if(! wq_.empty() && ! wq2_.empty())
+        if (!wq_.empty() && !wq2_.empty())
             return;
     }
 
@@ -508,12 +499,11 @@ complete()
 
 // DEPRECATED
 // Called from the Handler to close the session.
-template<class Handler, class Impl>
+template <class Handler, class Impl>
 void
-BaseHTTPPeer<Handler, Impl>::
-close(bool graceful)
+BaseHTTPPeer<Handler, Impl>::close(bool graceful)
 {
-    if(! strand_.running_in_this_thread())
+    if (!strand_.running_in_this_thread())
         return post(
             strand_,
             std::bind(
@@ -523,12 +513,12 @@ close(bool graceful)
                 graceful));
 
     complete_ = true;
-    if(graceful)
+    if (graceful)
     {
         graceful_ = true;
         {
             std::lock_guard lock(mutex_);
-            if(! wq_.empty() || ! wq2_.empty())
+            if (!wq_.empty() || !wq2_.empty())
                 return;
         }
         return do_close();
@@ -537,6 +527,6 @@ close(bool graceful)
     boost::beast::get_lowest_layer(impl().stream_).close();
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

@@ -25,7 +25,10 @@ class PropertyStream_test : public unit_test::suite
 public:
     using Source = PropertyStream::Source;
 
-    void test_peel_name(std::string s, std::string const& expected,
+    void
+    test_peel_name(
+        std::string s,
+        std::string const& expected,
         std::string const& expected_remainder)
     {
         try
@@ -36,11 +39,15 @@ public:
         }
         catch (...)
         {
-            fail("unhandled exception");;
+            fail("unhandled exception");
+            ;
         }
     }
 
-    void test_peel_leading_slash(std::string s, std::string const& expected,
+    void
+    test_peel_leading_slash(
+        std::string s,
+        std::string const& expected,
         bool should_be_found)
     {
         try
@@ -51,12 +58,16 @@ public:
         }
         catch (...)
         {
-            fail("unhandled exception");;
+            fail("unhandled exception");
+            ;
         }
     }
 
-    void test_peel_trailing_slashstar(std::string s,
-        std::string const& expected_remainder, bool should_be_found)
+    void
+    test_peel_trailing_slashstar(
+        std::string s,
+        std::string const& expected_remainder,
+        bool should_be_found)
     {
         try
         {
@@ -66,11 +77,13 @@ public:
         }
         catch (...)
         {
-            fail("unhandled exception");;
+            fail("unhandled exception");
+            ;
         }
     }
 
-    void test_find_one(Source& root, Source* expected, std::string const& name)
+    void
+    test_find_one(Source& root, Source* expected, std::string const& name)
     {
         try
         {
@@ -79,12 +92,13 @@ public:
         }
         catch (...)
         {
-            fail("unhandled exception");;
+            fail("unhandled exception");
+            ;
         }
     }
 
-    void test_find_path(Source& root, std::string const& path,
-        Source* expected)
+    void
+    test_find_path(Source& root, std::string const& path, Source* expected)
     {
         try
         {
@@ -93,12 +107,13 @@ public:
         }
         catch (...)
         {
-            fail("unhandled exception");;
+            fail("unhandled exception");
+            ;
         }
     }
 
-    void test_find_one_deep(Source& root, std::string const& name,
-        Source* expected)
+    void
+    test_find_one_deep(Source& root, std::string const& name, Source* expected)
     {
         try
         {
@@ -107,11 +122,16 @@ public:
         }
         catch (...)
         {
-            fail("unhandled exception");;
+            fail("unhandled exception");
+            ;
         }
     }
 
-    void test_find(Source& root, std::string path, Source* expected,
+    void
+    test_find(
+        Source& root,
+        std::string path,
+        Source* expected,
         bool expected_star)
     {
         try
@@ -122,11 +142,13 @@ public:
         }
         catch (...)
         {
-            fail("unhandled exception");;
+            fail("unhandled exception");
+            ;
         }
     }
 
-    void run() override
+    void
+    run() override
     {
         Source a("a");
         Source b("b");
@@ -215,4 +237,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(PropertyStream, utility, beast);
-}
+}  // namespace beast

@@ -23,7 +23,7 @@
 namespace ripple {
 
 // account id, issue.
-using AccountIssue = std::pair <AccountID, Issue>;
+using AccountIssue = std::pair<AccountID, Issue>;
 
 // Map of account, issue to node index.
 namespace path {
@@ -32,8 +32,8 @@ using NodeIndex = unsigned int;
 
 }
 
-using AccountIssueToNodeIndex = hash_map <AccountIssue, path::NodeIndex>;
+using AccountIssueToNodeIndex = hash_map<AccountIssue, path::NodeIndex>;
 
-} // ripple
+}  // namespace ripple
 
 #endif

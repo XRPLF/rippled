@@ -35,10 +35,12 @@
 
 namespace ripple {
 
-static
-void
-textTime(std::string& text, UptimeClock::time_point& seconds,
-         const char* unitName, std::chrono::seconds unitVal)
+static void
+textTime(
+    std::string& text,
+    UptimeClock::time_point& seconds,
+    const char* unitName,
+    std::chrono::seconds unitVal)
 {
     auto i = seconds.time_since_epoch() / unitVal;
 
@@ -47,7 +49,7 @@ textTime(std::string& text, UptimeClock::time_point& seconds,
 
     seconds -= unitVal * i;
 
-    if (!text.empty ())
+    if (!text.empty())
         text += ", ";
 
     text += std::to_string(i);
@@ -58,7 +60,8 @@ textTime(std::string& text, UptimeClock::time_point& seconds,
         text += "s";
 }
 
-Json::Value getCountsJson(Application& app, int minObjectCount)
+Json::Value
+getCountsJson(Application& app, int minObjectCount)
 {
     auto objectCounts = CountedObjects::getInstance().getCounts(minObjectCount);
 
@@ -66,51 +69,52 @@ Json::Value getCountsJson(Application& app, int minObjectCount)
 
     for (auto const& [k, v] : objectCounts)
     {
-        ret [k] = v;
+        ret[k] = v;
     }
 
-    int dbKB = getKBUsedAll (app.getLedgerDB ().getSession ());
+    int dbKB = getKBUsedAll(app.getLedgerDB().getSession());
 
     if (dbKB > 0)
         ret[jss::dbKBTotal] = dbKB;
 
-    dbKB = getKBUsedDB (app.getLedgerDB ().getSession ());
+    dbKB = getKBUsedDB(app.getLedgerDB().getSession());
 
     if (dbKB > 0)
         ret[jss::dbKBLedger] = dbKB;
 
-    dbKB = getKBUsedDB (app.getTxnDB ().getSession ());
+    dbKB = getKBUsedDB(app.getTxnDB().getSession());
 
     if (dbKB > 0)
         ret[jss::dbKBTransaction] = dbKB;
 
     {
-        std::size_t c = app.getOPs().getLocalTxCount ();
+        std::size_t c = app.getOPs().getLocalTxCount();
         if (c > 0)
-            ret[jss::local_txs] = static_cast<Json::UInt> (c);
+            ret[jss::local_txs] = static_cast<Json::UInt>(c);
     }
 
-    ret[jss::write_load] = app.getNodeStore ().getWriteLoad ();
+    ret[jss::write_load] = app.getNodeStore().getWriteLoad();
 
-    ret[jss::historical_perminute] = static_cast<int>(
-        app.getInboundLedgers().fetchRate());
+    ret[jss::historical_perminute] =
+        static_cast<int>(app.getInboundLedgers().fetchRate());
     ret[jss::SLE_hit_rate] = app.cachedSLEs().rate();
-    ret[jss::node_hit_rate] = app.getNodeStore ().getCacheHitRate ();
-    ret[jss::ledger_hit_rate] = app.getLedgerMaster ().getCacheHitRate ();
-    ret[jss::AL_hit_rate] = app.getAcceptedLedgerCache ().getHitRate ();
+    ret[jss::node_hit_rate] = app.getNodeStore().getCacheHitRate();
+    ret[jss::ledger_hit_rate] = app.getLedgerMaster().getCacheHitRate();
+    ret[jss::AL_hit_rate] = app.getAcceptedLedgerCache().getHitRate();
 
-    ret[jss::fullbelow_size] = static_cast<int>(app.family().fullbelow().size());
+    ret[jss::fullbelow_size] =
+        static_cast<int>(app.family().fullbelow().size());
     ret[jss::treenode_cache_size] = app.family().treecache().getCacheSize();
     ret[jss::treenode_track_size] = app.family().treecache().getTrackSize();
 
     std::string uptime;
     auto s = UptimeClock::now();
     using namespace std::chrono_literals;
-    textTime (uptime, s, "year", 365 * 24h);
-    textTime (uptime, s, "day", 24h);
-    textTime (uptime, s, "hour", 1h);
-    textTime (uptime, s, "minute", 1min);
-    textTime (uptime, s, "second", 1s);
+    textTime(uptime, s, "year", 365 * 24h);
+    textTime(uptime, s, "day", 24h);
+    textTime(uptime, s, "hour", 1h);
+    textTime(uptime, s, "minute", 1min);
+    textTime(uptime, s, "second", 1s);
     ret[jss::uptime] = uptime;
 
     ret[jss::node_writes] = app.getNodeStore().getStoreCount();
@@ -143,14 +147,15 @@ Json::Value getCountsJson(Application& app, int minObjectCount)
 // {
 //   min_count: <number>  // optional, defaults to 10
 // }
-Json::Value doGetCounts (RPC::JsonContext& context)
+Json::Value
+doGetCounts(RPC::JsonContext& context)
 {
     int minCount = 10;
 
-    if (context.params.isMember (jss::min_count))
-        minCount = context.params[jss::min_count].asUInt ();
+    if (context.params.isMember(jss::min_count))
+        minCount = context.params[jss::min_count].asUInt();
 
     return getCountsJson(context.app, minCount);
 }
 
-} // ripple
+}  // namespace ripple

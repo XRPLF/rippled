@@ -20,12 +20,12 @@
 #ifndef RIPPLE_TEST_CSF_UNL_H_INCLUDED
 #define RIPPLE_TEST_CSF_UNL_H_INCLUDED
 
-#include <test/csf/random.h>
 #include <boost/container/flat_set.hpp>
 #include <boost/optional.hpp>
 #include <chrono>
 #include <numeric>
 #include <random>
+#include <test/csf/random.h>
 #include <vector>
 
 namespace ripple {
@@ -36,8 +36,8 @@ namespace csf {
 
     Trust is a directed relationship from a node i to node j.
     If node i trusts node j, then node i has node j in its UNL.
-    This class wraps a digraph representing the trust relationships for all peers
-    in the simulation.
+    This class wraps a digraph representing the trust relationships for all
+   peers in the simulation.
 */
 template <class Peer>
 class TrustGraph
@@ -100,13 +100,13 @@ public:
                 in its UNL
     */
     auto
-    trustedPeers(Peer const & a) const
+    trustedPeers(Peer const& a) const
     {
         return graph_.outVertices(a);
     }
 
     /** An example of nodes that fail the whitepaper no-forking condition
-    */
+     */
     struct ForkInfo
     {
         std::set<Peer> unlA;
@@ -126,7 +126,7 @@ public:
 
         using UNL = std::set<Peer>;
         std::set<UNL> unique;
-        for (Peer const & peer : graph_.outVertices())
+        for (Peer const& peer : graph_.outVertices())
         {
             unique.emplace(
                 std::begin(trustedPeers(peer)), std::end(trustedPeers(peer)));
@@ -145,14 +145,15 @@ public:
                 double rhs =
                     2.0 * (1. - quorum) * std::max(unlA.size(), unlB.size());
 
-                int intersectionSize = std::count_if(
-                    unlA.begin(), unlA.end(), [&](Peer p) {
+                int intersectionSize =
+                    std::count_if(unlA.begin(), unlA.end(), [&](Peer p) {
                         return unlB.find(p) != unlB.end();
                     });
 
                 if (intersectionSize < rhs)
                 {
-                    res.emplace_back(ForkInfo{unlA, unlB, intersectionSize, rhs});
+                    res.emplace_back(
+                        ForkInfo{unlA, unlB, intersectionSize, rhs});
                 }
             }
         }
@@ -169,8 +170,8 @@ public:
     }
 };
 
-}  // csf
-}  // test
-}  // ripple
+}  // namespace csf
+}  // namespace test
+}  // namespace ripple
 
 #endif

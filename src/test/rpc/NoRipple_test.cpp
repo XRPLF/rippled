@@ -48,16 +48,19 @@ public:
         Json::Value account_alice;
         account_alice[jss::account] = alice.human();
 
-        for (auto SetOrClear : {true,false})
+        for (auto SetOrClear : {true, false})
         {
             // Create a trust line with no-ripple flag setting
-            env( trust(gw, USD(100), alice, SetOrClear ? tfSetNoRipple
-                                                       : tfClearNoRipple));
+            env(trust(
+                gw,
+                USD(100),
+                alice,
+                SetOrClear ? tfSetNoRipple : tfClearNoRipple));
             env.close();
 
             // Check no-ripple flag on sender 'gateway'
-            Json::Value lines {env.rpc(
-                "json", "account_lines", to_string(account_gw))};
+            Json::Value lines{
+                env.rpc("json", "account_lines", to_string(account_gw))};
             auto const& gline0 = lines[jss::result][jss::lines][0u];
             BEAST_EXPECT(gline0[jss::no_ripple].asBool() == SetOrClear);
 
@@ -68,7 +71,8 @@ public:
         }
     }
 
-    void testNegativeBalance(FeatureBitset features)
+    void
+    testNegativeBalance(FeatureBitset features)
     {
         testcase("Set noripple on a line with negative balance");
 
@@ -81,7 +85,7 @@ public:
         // fix1578 changes the return code.  Verify expected behavior
         // without and with fix1578.
         for (auto const tweakedFeatures :
-            {features - fix1578, features | fix1578})
+             {features - fix1578, features | fix1578})
         {
             Env env(*this, tweakedFeatures);
 
@@ -98,13 +102,13 @@ public:
             env(pay(alice, carol, carol["USD"](50)), path(bob));
             env.close();
 
-            TER const terNeg {tweakedFeatures[fix1578] ?
-                TER {tecNO_PERMISSION} : TER {tesSUCCESS}};
+            TER const terNeg{
+                tweakedFeatures[fix1578] ? TER{tecNO_PERMISSION}
+                                         : TER{tesSUCCESS}};
 
-            env(trust(
-                alice, bob["USD"](100), bob,   tfSetNoRipple), ter(terNeg));
-            env(trust(
-                bob, carol["USD"](100), carol, tfSetNoRipple), ter(terNeg));
+            env(trust(alice, bob["USD"](100), bob, tfSetNoRipple), ter(terNeg));
+            env(trust(bob, carol["USD"](100), carol, tfSetNoRipple),
+                ter(terNeg));
             env.close();
 
             Json::Value params;
@@ -118,24 +122,22 @@ public:
                 return dest_amt;
             }();
 
-            auto const resp = env.rpc(
-                "json", "ripple_path_find", to_string(params));
-            BEAST_EXPECT(resp[jss::result][jss::alternatives].size()==1);
+            auto const resp =
+                env.rpc("json", "ripple_path_find", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::alternatives].size() == 1);
 
-            auto getAccountLines = [&env] (Account const& acct)
-            {
+            auto getAccountLines = [&env](Account const& acct) {
                 Json::Value jv;
                 jv[jss::account] = acct.human();
-                auto const r =
-                    env.rpc("json", "account_lines", to_string(jv));
+                auto const r = env.rpc("json", "account_lines", to_string(jv));
                 return r[jss::result][jss::lines];
             };
             {
-                auto const aliceLines = getAccountLines (alice);
+                auto const aliceLines = getAccountLines(alice);
                 BEAST_EXPECT(aliceLines.size() == 1);
                 BEAST_EXPECT(!aliceLines[0u].isMember(jss::no_ripple));
 
-                auto const bobLines = getAccountLines (bob);
+                auto const bobLines = getAccountLines(bob);
                 BEAST_EXPECT(bobLines.size() == 2);
                 BEAST_EXPECT(!bobLines[0u].isMember(jss::no_ripple));
                 BEAST_EXPECT(!bobLines[1u].isMember(jss::no_ripple));
@@ -146,15 +148,15 @@ public:
             env(pay(carol, alice, alice["USD"](50)), path(bob));
             env.close();
 
-            env(trust(alice, bob["USD"](100), bob,   tfSetNoRipple));
+            env(trust(alice, bob["USD"](100), bob, tfSetNoRipple));
             env(trust(bob, carol["USD"](100), carol, tfSetNoRipple));
             env.close();
             {
-                auto const aliceLines = getAccountLines (alice);
+                auto const aliceLines = getAccountLines(alice);
                 BEAST_EXPECT(aliceLines.size() == 1);
                 BEAST_EXPECT(aliceLines[0u].isMember(jss::no_ripple));
 
-                auto const bobLines = getAccountLines (bob);
+                auto const bobLines = getAccountLines(bob);
                 BEAST_EXPECT(bobLines.size() == 2);
                 BEAST_EXPECT(bobLines[0u].isMember(jss::no_ripple_peer));
                 BEAST_EXPECT(bobLines[1u].isMember(jss::no_ripple));
@@ -162,7 +164,8 @@ public:
         }
     }
 
-    void testPairwise(FeatureBitset features)
+    void
+    testPairwise(FeatureBitset features)
     {
         testcase("pairwise NoRipple");
 
@@ -193,14 +196,15 @@ public:
             return dest_amt;
         }();
 
-        Json::Value const resp {
+        Json::Value const resp{
             env.rpc("json", "ripple_path_find", to_string(params))};
         BEAST_EXPECT(resp[jss::result][jss::alternatives].size() == 0);
 
         env(pay(alice, carol, bob["USD"](50)), ter(tecPATH_DRY));
     }
 
-    void testDefaultRipple(FeatureBitset features)
+    void
+    testDefaultRipple(FeatureBitset features)
     {
         testcase("Set default ripple on an account and check new trustlines");
 
@@ -209,7 +213,7 @@ public:
 
         auto const gw = Account("gateway");
         auto const alice = Account("alice");
-        auto const bob =   Account("bob");
+        auto const bob = Account("bob");
 
         env.fund(XRP(10000), gw, noripple(alice, bob));
 
@@ -258,7 +262,8 @@ public:
         }
     }
 
-    void run () override
+    void
+    run() override
     {
         testSetAndClear();
 
@@ -274,8 +279,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NoRipple,app,ripple);
+BEAST_DEFINE_TESTSUITE(NoRipple, app, ripple);
 
-} // RPC
-} // ripple
-
+}  // namespace test
+}  // namespace ripple

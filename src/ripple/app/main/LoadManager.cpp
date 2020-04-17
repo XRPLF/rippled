@@ -17,93 +17,101 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/LoadManager.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/main/LoadManager.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/UptimeClock.h>
-#include <ripple/json/to_string.h>
 #include <ripple/beast/core/CurrentThreadName.h>
+#include <ripple/json/to_string.h>
 #include <memory>
 #include <mutex>
 #include <thread>
 
 namespace ripple {
 
-LoadManager::LoadManager (
-    Application& app, Stoppable& parent, beast::Journal journal)
-    : Stoppable ("LoadManager", parent)
-    , app_ (app)
-    , journal_ (journal)
-    , deadLock_ ()
-    , armed_ (false)
-    , stop_ (false)
+LoadManager::LoadManager(
+    Application& app,
+    Stoppable& parent,
+    beast::Journal journal)
+    : Stoppable("LoadManager", parent)
+    , app_(app)
+    , journal_(journal)
+    , deadLock_()
+    , armed_(false)
+    , stop_(false)
 {
 }
 
-LoadManager::~LoadManager ()
+LoadManager::~LoadManager()
 {
     try
     {
-        onStop ();
+        onStop();
     }
     catch (std::exception const& ex)
     {
         // Swallow the exception in a destructor.
-        JLOG(journal_.warn()) << "std::exception in ~LoadManager.  "
-            << ex.what();
+        JLOG(journal_.warn())
+            << "std::exception in ~LoadManager.  " << ex.what();
     }
 }
 
 //------------------------------------------------------------------------------
 
-void LoadManager::activateDeadlockDetector ()
+void
+LoadManager::activateDeadlockDetector()
 {
-    std::lock_guard sl (mutex_);
+    std::lock_guard sl(mutex_);
     armed_ = true;
     deadLock_ = std::chrono::steady_clock::now();
 }
 
-void LoadManager::resetDeadlockDetector ()
+void
+LoadManager::resetDeadlockDetector()
 {
     auto const detector_start = std::chrono::steady_clock::now();
-    std::lock_guard sl (mutex_);
+    std::lock_guard sl(mutex_);
     deadLock_ = detector_start;
 }
 
 //------------------------------------------------------------------------------
 
-void LoadManager::onPrepare ()
+void
+LoadManager::onPrepare()
 {
 }
 
-void LoadManager::onStart ()
+void
+LoadManager::onStart()
 {
     JLOG(journal_.debug()) << "Starting";
-    assert (! thread_.joinable());
+    assert(!thread_.joinable());
 
-    thread_ = std::thread {&LoadManager::run, this};
+    thread_ = std::thread{&LoadManager::run, this};
 }
 
-void LoadManager::onStop ()
+void
+LoadManager::onStop()
 {
     if (thread_.joinable())
     {
         JLOG(journal_.debug()) << "Stopping";
         {
-            std::lock_guard sl (mutex_);
+            std::lock_guard sl(mutex_);
             stop_ = true;
         }
         thread_.join();
     }
-    stopped ();
+    stopped();
 }
 
 //------------------------------------------------------------------------------
 
-void LoadManager::run ()
+void
+LoadManager::run()
 {
-    beast::setCurrentThreadName ("LoadManager");
+    beast::setCurrentThreadName("LoadManager");
 
     using namespace std::chrono_literals;
     using clock_type = std::chrono::system_clock;
@@ -111,11 +119,11 @@ void LoadManager::run ()
     auto t = clock_type::now();
     bool stop = false;
 
-    while (! (stop || isStopping ()))
+    while (!(stop || isStopping()))
     {
         {
             // Copy out shared data under a lock.  Use copies outside lock.
-            std::unique_lock<std::mutex> sl (mutex_);
+            std::unique_lock<std::mutex> sl(mutex_);
             auto const deadLock = deadLock_;
             auto const armed = armed_;
             stop = stop_;
@@ -131,8 +139,8 @@ void LoadManager::run ()
             constexpr auto deadlockLogicErrorTimeLimit = 600s;
             if (armed && (timeSpentDeadlocked >= reportingIntervalSeconds))
             {
-
-                // Report the deadlocked condition every reportingIntervalSeconds
+                // Report the deadlocked condition every
+                // reportingIntervalSeconds
                 if ((timeSpentDeadlocked % reportingIntervalSeconds) == 0s)
                 {
                     if (timeSpentDeadlocked < deadlockFatalLogMessageTimeLimit)
@@ -154,9 +162,9 @@ void LoadManager::run ()
                     }
                 }
 
-                // If we go over the deadlockTimeLimit spent deadlocked, it means that
-                // the deadlock resolution code has failed, which qualifies
-                // as undefined behavior.
+                // If we go over the deadlockTimeLimit spent deadlocked, it
+                // means that the deadlock resolution code has failed, which
+                // qualifies as undefined behavior.
                 //
                 if (timeSpentDeadlocked >= deadlockLogicErrorTimeLimit)
                 {
@@ -173,21 +181,21 @@ void LoadManager::run ()
         }
 
         bool change = false;
-        if (app_.getJobQueue ().isOverloaded ())
+        if (app_.getJobQueue().isOverloaded())
         {
-            JLOG(journal_.info()) << app_.getJobQueue ().getJson (0);
-            change = app_.getFeeTrack ().raiseLocalFee ();
+            JLOG(journal_.info()) << app_.getJobQueue().getJson(0);
+            change = app_.getFeeTrack().raiseLocalFee();
         }
         else
         {
-            change = app_.getFeeTrack ().lowerLocalFee ();
+            change = app_.getFeeTrack().lowerLocalFee();
         }
 
         if (change)
         {
             // VFALCO TODO replace this with a Listener / observer and
             // subscribe in NetworkOPs or Application.
-            app_.getOPs ().reportFeeChange ();
+            app_.getOPs().reportFeeChange();
         }
 
         t += 1s;
@@ -204,16 +212,15 @@ void LoadManager::run ()
         }
     }
 
-    stopped ();
+    stopped();
 }
 
 //------------------------------------------------------------------------------
 
 std::unique_ptr<LoadManager>
-make_LoadManager (Application& app,
-    Stoppable& parent, beast::Journal journal)
+make_LoadManager(Application& app, Stoppable& parent, beast::Journal journal)
 {
     return std::unique_ptr<LoadManager>{new LoadManager{app, parent, journal}};
 }
 
-} // ripple
+}  // namespace ripple

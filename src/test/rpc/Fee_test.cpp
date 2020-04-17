@@ -25,11 +25,10 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
-#include <test/rpc/GRPCTestClientBase.h>
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
-
+#include <test/rpc/GRPCTestClientBase.h>
 
 namespace ripple {
 namespace test {

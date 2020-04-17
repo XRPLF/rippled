@@ -47,17 +47,14 @@ struct json_body
 
         using is_deferred = std::false_type;
 
-        template<bool isRequest, class Fields>
-        explicit
-        reader(boost::beast::http::message<
-            isRequest, json_body, Fields> const& m)
+        template <bool isRequest, class Fields>
+        explicit reader(
+            boost::beast::http::message<isRequest, json_body, Fields> const& m)
         {
-            stream(m.body,
-                [&](void const* data, std::size_t n)
-                {
-                    buffer_.commit(boost::asio::buffer_copy(
-                        buffer_.prepare(n), boost::asio::buffer(data, n)));
-                });
+            stream(m.body, [&](void const* data, std::size_t n) {
+                buffer_.commit(boost::asio::buffer_copy(
+                    buffer_.prepare(n), boost::asio::buffer(data, n)));
+            });
         }
 
         void
@@ -82,15 +79,13 @@ struct json_body
         std::string body_string_;
 
     public:
-        using const_buffers_type =
-            boost::asio::const_buffer;
+        using const_buffers_type = boost::asio::const_buffer;
 
         template <bool isRequest, class Fields>
-        explicit
-        writer(
+        explicit writer(
             boost::beast::http::header<isRequest, Fields> const& fields,
             value_type const& value)
-                : body_string_(to_string(value))
+            : body_string_(to_string(value))
         {
         }
 
@@ -104,12 +99,13 @@ struct json_body
         get(boost::beast::error_code& ec)
         {
             ec.assign(0, ec.category());
-            return {{const_buffers_type{
-                body_string_.data(), body_string_.size()}, false}};
+            return {
+                {const_buffers_type{body_string_.data(), body_string_.size()},
+                 false}};
         }
     };
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

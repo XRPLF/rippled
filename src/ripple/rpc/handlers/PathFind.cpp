@@ -29,54 +29,55 @@
 
 namespace ripple {
 
-Json::Value doPathFind (RPC::JsonContext& context)
+Json::Value
+doPathFind(RPC::JsonContext& context)
 {
     if (context.app.config().PATH_SEARCH_MAX == 0)
-        return rpcError (rpcNOT_SUPPORTED);
+        return rpcError(rpcNOT_SUPPORTED);
 
     auto lpLedger = context.ledgerMaster.getClosedLedger();
 
-    if (!context.params.isMember (jss::subcommand) ||
-        !context.params[jss::subcommand].isString ())
+    if (!context.params.isMember(jss::subcommand) ||
+        !context.params[jss::subcommand].isString())
     {
-        return rpcError (rpcINVALID_PARAMS);
+        return rpcError(rpcINVALID_PARAMS);
     }
 
     if (!context.infoSub)
-        return rpcError (rpcNO_EVENTS);
+        return rpcError(rpcNO_EVENTS);
 
-    auto sSubCommand = context.params[jss::subcommand].asString ();
+    auto sSubCommand = context.params[jss::subcommand].asString();
 
     if (sSubCommand == "create")
     {
         context.loadType = Resource::feeHighBurdenRPC;
-        context.infoSub->clearPathRequest ();
-        return context.app.getPathRequests().makePathRequest (
+        context.infoSub->clearPathRequest();
+        return context.app.getPathRequests().makePathRequest(
             context.infoSub, lpLedger, context.params);
     }
 
     if (sSubCommand == "close")
     {
-        PathRequest::pointer request = context.infoSub->getPathRequest ();
+        PathRequest::pointer request = context.infoSub->getPathRequest();
 
         if (!request)
-            return rpcError (rpcNO_PF_REQUEST);
+            return rpcError(rpcNO_PF_REQUEST);
 
-        context.infoSub->clearPathRequest ();
-        return request->doClose (context.params);
+        context.infoSub->clearPathRequest();
+        return request->doClose(context.params);
     }
 
     if (sSubCommand == "status")
     {
-        PathRequest::pointer request = context.infoSub->getPathRequest ();
+        PathRequest::pointer request = context.infoSub->getPathRequest();
 
         if (!request)
-            return rpcError (rpcNO_PF_REQUEST);
+            return rpcError(rpcNO_PF_REQUEST);
 
-        return request->doStatus (context.params);
+        return request->doStatus(context.params);
     }
 
-    return rpcError (rpcINVALID_PARAMS);
+    return rpcError(rpcINVALID_PARAMS);
 }
 
-} // ripple
+}  // namespace ripple

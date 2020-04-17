@@ -25,52 +25,50 @@
 namespace ripple {
 namespace Resource {
 
-Consumer::Consumer (Logic& logic, Entry& entry)
-    : m_logic (&logic)
-    , m_entry (&entry)
+Consumer::Consumer(Logic& logic, Entry& entry)
+    : m_logic(&logic), m_entry(&entry)
 {
 }
 
-Consumer::Consumer ()
-    : m_logic (nullptr)
-    , m_entry (nullptr)
+Consumer::Consumer() : m_logic(nullptr), m_entry(nullptr)
 {
 }
 
-Consumer::Consumer (Consumer const& other)
-    : m_logic (other.m_logic)
-    , m_entry (nullptr)
+Consumer::Consumer(Consumer const& other)
+    : m_logic(other.m_logic), m_entry(nullptr)
 {
     if (m_logic && other.m_entry)
     {
         m_entry = other.m_entry;
-        m_logic->acquire (*m_entry);
+        m_logic->acquire(*m_entry);
     }
 }
 
 Consumer::~Consumer()
 {
     if (m_logic && m_entry)
-        m_logic->release (*m_entry);
+        m_logic->release(*m_entry);
 }
 
-Consumer& Consumer::operator= (Consumer const& other)
+Consumer&
+Consumer::operator=(Consumer const& other)
 {
     // remove old ref
     if (m_logic && m_entry)
-        m_logic->release (*m_entry);
+        m_logic->release(*m_entry);
 
     m_logic = other.m_logic;
     m_entry = other.m_entry;
 
     // add new ref
     if (m_logic && m_entry)
-        m_logic->acquire (*m_entry);
+        m_logic->acquire(*m_entry);
 
     return *this;
 }
 
-std::string Consumer::to_string () const
+std::string
+Consumer::to_string() const
 {
     if (m_logic == nullptr)
         return "(none)";
@@ -78,7 +76,8 @@ std::string Consumer::to_string () const
     return m_entry->to_string();
 }
 
-bool Consumer::isUnlimited () const
+bool
+Consumer::isUnlimited() const
 {
     if (m_entry)
         return m_entry->isUnlimited();
@@ -86,54 +85,61 @@ bool Consumer::isUnlimited () const
     return false;
 }
 
-Disposition Consumer::disposition() const
+Disposition
+Consumer::disposition() const
 {
     Disposition d = ok;
     if (m_logic && m_entry)
-        d =  m_logic->charge(*m_entry, Charge(0));
+        d = m_logic->charge(*m_entry, Charge(0));
 
     return d;
 }
 
-Disposition Consumer::charge (Charge const& what)
+Disposition
+Consumer::charge(Charge const& what)
 {
     Disposition d = ok;
 
     if (m_logic && m_entry && !m_entry->isUnlimited())
-        d = m_logic->charge (*m_entry, what);
+        d = m_logic->charge(*m_entry, what);
 
     return d;
 }
 
-bool Consumer::warn ()
+bool
+Consumer::warn()
 {
-    assert (m_entry != nullptr);
-    return m_logic->warn (*m_entry);
+    assert(m_entry != nullptr);
+    return m_logic->warn(*m_entry);
 }
 
-bool Consumer::disconnect ()
+bool
+Consumer::disconnect()
 {
-    assert (m_entry != nullptr);
-    return m_logic->disconnect (*m_entry);
+    assert(m_entry != nullptr);
+    return m_logic->disconnect(*m_entry);
 }
 
-int Consumer::balance()
+int
+Consumer::balance()
 {
-    assert (m_entry != nullptr);
-    return m_logic->balance (*m_entry);
+    assert(m_entry != nullptr);
+    return m_logic->balance(*m_entry);
 }
 
-Entry& Consumer::entry()
+Entry&
+Consumer::entry()
 {
-    assert (m_entry != nullptr);
+    assert(m_entry != nullptr);
     return *m_entry;
 }
 
-std::ostream& operator<< (std::ostream& os, Consumer const& v)
+std::ostream&
+operator<<(std::ostream& os, Consumer const& v)
 {
     os << v.to_string();
     return os;
 }
 
-}
-}
+}  // namespace Resource
+}  // namespace ripple

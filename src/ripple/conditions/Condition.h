@@ -33,9 +33,7 @@
 namespace ripple {
 namespace cryptoconditions {
 
-enum class Type
-    : std::uint8_t
-{
+enum class Type : std::uint8_t {
     preimageSha256 = 0,
     prefixSha256 = 1,
     thresholdSha256 = 2,
@@ -65,8 +63,7 @@ public:
 
         https://tools.ietf.org/html/draft-thomas-crypto-conditions-02#section-7.2
     */
-    static
-    std::unique_ptr<Condition>
+    static std::unique_ptr<Condition>
     deserialize(Slice s, std::error_code& ec);
 
 public:
@@ -86,16 +83,12 @@ public:
     std::set<Type> subtypes;
 
     Condition(Type t, std::uint32_t c, Slice fp)
-        : type(t)
-        , fingerprint(fp)
-        , cost(c)
+        : type(t), fingerprint(fp), cost(c)
     {
     }
 
     Condition(Type t, std::uint32_t c, Buffer&& fp)
-        : type(t)
-        , fingerprint(std::move(fp))
-        , cost(c)
+        : type(t), fingerprint(std::move(fp)), cost(c)
     {
     }
 
@@ -107,26 +100,21 @@ public:
     Condition() = delete;
 };
 
-inline
-bool
-operator== (Condition const& lhs, Condition const& rhs)
+inline bool
+operator==(Condition const& lhs, Condition const& rhs)
 {
-    return
-        lhs.type == rhs.type &&
-            lhs.cost == rhs.cost &&
-                lhs.subtypes == rhs.subtypes &&
-                    lhs.fingerprint == rhs.fingerprint;
+    return lhs.type == rhs.type && lhs.cost == rhs.cost &&
+        lhs.subtypes == rhs.subtypes && lhs.fingerprint == rhs.fingerprint;
 }
 
-inline
-bool
-operator!= (Condition const& lhs, Condition const& rhs)
+inline bool
+operator!=(Condition const& lhs, Condition const& rhs)
 {
     return !(lhs == rhs);
 }
 
-}
+}  // namespace cryptoconditions
 
-}
+}  // namespace ripple
 
 #endif

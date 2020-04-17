@@ -25,12 +25,13 @@
 #include <ripple/rpc/Context.h>
 
 namespace ripple {
-Json::Value doManifest (RPC::JsonContext& context)
+Json::Value
+doManifest(RPC::JsonContext& context)
 {
     auto& params = context.params;
 
     if (!params.isMember(jss::public_key))
-        return RPC::missing_field_error (jss::public_key);
+        return RPC::missing_field_error(jss::public_key);
 
     auto const requested = params[jss::public_key].asString();
 
@@ -72,4 +73,4 @@ Json::Value doManifest (RPC::JsonContext& context)
     ret[jss::details] = details;
     return ret;
 }
-} // ripple
+}  // namespace ripple

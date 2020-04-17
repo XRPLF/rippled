@@ -24,4 +24,4 @@ namespace insight {
 
 HookImpl::~HookImpl() = default;
 }
-}
+}  // namespace beast

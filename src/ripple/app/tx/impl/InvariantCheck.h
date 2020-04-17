@@ -21,14 +21,14 @@
 #define RIPPLE_APP_TX_INVARIANTCHECK_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
+#include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
-#include <ripple/beast/utility/Journal.h>
+#include <cstdint>
 #include <map>
 #include <tuple>
 #include <utility>
-#include <cstdint>
 
 namespace ripple {
 
@@ -329,8 +329,7 @@ using InvariantChecks = std::tuple<
     NoXRPTrustLines,
     NoBadOffers,
     NoZeroEscrow,
-    ValidNewAccountRoot
->;
+    ValidNewAccountRoot>;
 
 /**
  * @brief get a tuple of all invariant checks
@@ -340,13 +339,12 @@ using InvariantChecks = std::tuple<
  *
  * @see ripple::InvariantChecker_PROTOTYPE
  */
-inline
-InvariantChecks
+inline InvariantChecks
 getInvariantChecks()
 {
     return InvariantChecks{};
 }
 
-} //ripple
+}  // namespace ripple
 
 #endif

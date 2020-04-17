@@ -33,95 +33,93 @@ private:
     int mDuplicate;
 
 public:
-    SHAMapAddNode ();
-    void incInvalid ();
-    void incUseful ();
-    void incDuplicate ();
-    void reset ();
-    int getGood () const;
-    bool isGood () const;
-    bool isInvalid () const;
-    bool isUseful () const;
-    std::string get () const;
+    SHAMapAddNode();
+    void
+    incInvalid();
+    void
+    incUseful();
+    void
+    incDuplicate();
+    void
+    reset();
+    int
+    getGood() const;
+    bool
+    isGood() const;
+    bool
+    isInvalid() const;
+    bool
+    isUseful() const;
+    std::string
+    get() const;
 
-    SHAMapAddNode& operator+= (SHAMapAddNode const& n);
+    SHAMapAddNode&
+    operator+=(SHAMapAddNode const& n);
 
-    static SHAMapAddNode duplicate ();
-    static SHAMapAddNode useful ();
-    static SHAMapAddNode invalid ();
+    static SHAMapAddNode
+    duplicate();
+    static SHAMapAddNode
+    useful();
+    static SHAMapAddNode
+    invalid();
 
 private:
-    SHAMapAddNode (int good, int bad, int duplicate);
+    SHAMapAddNode(int good, int bad, int duplicate);
 };
 
-inline
-SHAMapAddNode::SHAMapAddNode ()
-    : mGood (0)
-    , mBad (0)
-    , mDuplicate (0)
+inline SHAMapAddNode::SHAMapAddNode() : mGood(0), mBad(0), mDuplicate(0)
 {
 }
 
-inline
-SHAMapAddNode::SHAMapAddNode (int good, int bad, int duplicate)
-    : mGood (good)
-    , mBad (bad)
-    , mDuplicate (duplicate)
+inline SHAMapAddNode::SHAMapAddNode(int good, int bad, int duplicate)
+    : mGood(good), mBad(bad), mDuplicate(duplicate)
 {
 }
 
-inline
-void
-SHAMapAddNode::incInvalid ()
+inline void
+SHAMapAddNode::incInvalid()
 {
     ++mBad;
 }
 
-inline
-void
-SHAMapAddNode::incUseful ()
+inline void
+SHAMapAddNode::incUseful()
 {
     ++mGood;
 }
 
-inline
-void
-SHAMapAddNode::incDuplicate ()
+inline void
+SHAMapAddNode::incDuplicate()
 {
     ++mDuplicate;
 }
 
-inline
-void
-SHAMapAddNode::reset ()
+inline void
+SHAMapAddNode::reset()
 {
     mGood = mBad = mDuplicate = 0;
 }
 
-inline
-int
-SHAMapAddNode::getGood () const
+inline int
+SHAMapAddNode::getGood() const
 {
     return mGood;
 }
 
-inline
-bool
-SHAMapAddNode::isInvalid () const
+inline bool
+SHAMapAddNode::isInvalid() const
 {
     return mBad > 0;
 }
 
-inline
-bool
-SHAMapAddNode::isUseful () const
+inline bool
+SHAMapAddNode::isUseful() const
 {
     return mGood > 0;
 }
 
-inline
-SHAMapAddNode&
-SHAMapAddNode::operator+= (SHAMapAddNode const& n)
+inline SHAMapAddNode&
+SHAMapAddNode::operator+=(SHAMapAddNode const& n)
 {
     mGood += n.mGood;
     mBad += n.mBad;
@@ -130,37 +128,32 @@ SHAMapAddNode::operator+= (SHAMapAddNode const& n)
     return *this;
 }
 
-inline
-bool
-SHAMapAddNode::isGood () const
+inline bool
+SHAMapAddNode::isGood() const
 {
     return (mGood + mDuplicate) > mBad;
 }
 
-inline
-SHAMapAddNode
-SHAMapAddNode::duplicate ()
+inline SHAMapAddNode
+SHAMapAddNode::duplicate()
 {
-    return SHAMapAddNode (0, 0, 1);
+    return SHAMapAddNode(0, 0, 1);
 }
 
-inline
-SHAMapAddNode
-SHAMapAddNode::useful ()
+inline SHAMapAddNode
+SHAMapAddNode::useful()
 {
-    return SHAMapAddNode (1, 0, 0);
+    return SHAMapAddNode(1, 0, 0);
 }
 
-inline
-SHAMapAddNode
-SHAMapAddNode::invalid ()
+inline SHAMapAddNode
+SHAMapAddNode::invalid()
 {
-    return SHAMapAddNode (0, 1, 0);
+    return SHAMapAddNode(0, 1, 0);
 }
 
-inline
-std::string
-SHAMapAddNode::get () const
+inline std::string
+SHAMapAddNode::get() const
 {
     std::string ret;
     if (mGood > 0)
@@ -172,21 +165,21 @@ SHAMapAddNode::get () const
     {
         if (!ret.empty())
             ret.append(" ");
-         ret.append("bad:");
-         ret.append(std::to_string(mBad));
+        ret.append("bad:");
+        ret.append(std::to_string(mBad));
     }
     if (mDuplicate > 0)
     {
         if (!ret.empty())
             ret.append(" ");
-         ret.append("dupe:");
-         ret.append(std::to_string(mDuplicate));
+        ret.append("dupe:");
+        ret.append(std::to_string(mDuplicate));
     }
-    if (ret.empty ())
+    if (ret.empty())
         ret = "no nodes processed";
     return ret;
 }
 
-}
+}  // namespace ripple
 
 #endif

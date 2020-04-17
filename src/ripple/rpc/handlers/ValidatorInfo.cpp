@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/ValidatorKeys.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/ValidatorKeys.h>
 #include <ripple/basics/base64.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -26,11 +26,12 @@
 #include <ripple/rpc/Context.h>
 
 namespace ripple {
-Json::Value doValidatorInfo (RPC::JsonContext& context)
+Json::Value
+doValidatorInfo(RPC::JsonContext& context)
 {
     // return error if not configured as validator
     if (context.app.getValidationPublicKey().empty())
-      return RPC::not_validator_error ();
+        return RPC::not_validator_error();
 
     Json::Value ret;
 
@@ -59,4 +60,4 @@ Json::Value doValidatorInfo (RPC::JsonContext& context)
 
     return ret;
 }
-} // ripple
+}  // namespace ripple

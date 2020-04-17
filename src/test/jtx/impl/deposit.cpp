@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <test/jtx/deposit.h>
 #include <ripple/protocol/jss.h>
+#include <test/jtx/deposit.h>
 
 namespace ripple {
 namespace test {
@@ -28,7 +28,7 @@ namespace deposit {
 
 // Add DepositPreauth.
 Json::Value
-auth (jtx::Account const& account, jtx::Account const& auth)
+auth(jtx::Account const& account, jtx::Account const& auth)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
@@ -39,7 +39,7 @@ auth (jtx::Account const& account, jtx::Account const& auth)
 
 // Remove DepositPreauth.
 Json::Value
-unauth (jtx::Account const& account, jtx::Account const& unauth)
+unauth(jtx::Account const& account, jtx::Account const& unauth)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
@@ -48,8 +48,8 @@ unauth (jtx::Account const& account, jtx::Account const& unauth)
     return jv;
 }
 
-} // deposit
+}  // namespace deposit
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

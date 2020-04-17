@@ -38,7 +38,8 @@
 namespace ripple {
 namespace perf {
 
-PerfLogImp::Counters::Counters(std::vector<char const*> const& labels,
+PerfLogImp::Counters::Counters(
+    std::vector<char const*> const& labels,
     JobTypes const& jobTypes)
 {
     {
@@ -59,7 +60,8 @@ PerfLogImp::Counters::Counters(std::vector<char const*> const& labels,
         jq_.reserve(jobTypes.size());
         for (auto const& [jobType, jobTypeInfo] : jobTypes)
         {
-            auto const inserted = jq_.emplace(jobType, Jq(jobTypeInfo.name())).second;
+            auto const inserted =
+                jq_.emplace(jobType, Jq(jobTypeInfo.name())).second;
             if (!inserted)
             {
                 // Ensure that no other function populates this entry.
@@ -80,10 +82,9 @@ PerfLogImp::Counters::countersJson() const
         Json::Value p(Json::objectValue);
         {
             auto const sync =
-                [&proc]() ->boost::optional<Counters::Rpc::Sync> {
+                [&proc]() -> boost::optional<Counters::Rpc::Sync> {
                 std::lock_guard lock(proc.second.mut);
-                if (!proc.second.sync.started &&
-                    !proc.second.sync.finished &&
+                if (!proc.second.sync.started && !proc.second.sync.finished &&
                     !proc.second.sync.errored)
                 {
                     return boost::none;
@@ -111,8 +112,8 @@ PerfLogImp::Counters::countersJson() const
         totalRpcJson[jss::started] = std::to_string(totalRpc.sync.started);
         totalRpcJson[jss::finished] = std::to_string(totalRpc.sync.finished);
         totalRpcJson[jss::errored] = std::to_string(totalRpc.sync.errored);
-        totalRpcJson[jss::duration_us] = std::to_string(
-            totalRpc.sync.duration.count());
+        totalRpcJson[jss::duration_us] =
+            std::to_string(totalRpc.sync.duration.count());
         rpcobj[jss::total] = totalRpcJson;
     }
 
@@ -123,11 +124,9 @@ PerfLogImp::Counters::countersJson() const
     {
         Json::Value j(Json::objectValue);
         {
-            auto const sync =
-                [&proc]() ->boost::optional<Counters::Jq::Sync> {
+            auto const sync = [&proc]() -> boost::optional<Counters::Jq::Sync> {
                 std::lock_guard lock(proc.second.mut);
-                if (!proc.second.sync.queued &&
-                    !proc.second.sync.started &&
+                if (!proc.second.sync.queued && !proc.second.sync.started &&
                     !proc.second.sync.finished)
                 {
                     return boost::none;
@@ -143,11 +142,11 @@ PerfLogImp::Counters::countersJson() const
             totalJq.sync.started += sync->started;
             j[jss::finished] = std::to_string(sync->finished);
             totalJq.sync.finished += sync->finished;
-            j[jss::queued_duration_us] = std::to_string(
-                sync->queuedDuration.count());
+            j[jss::queued_duration_us] =
+                std::to_string(sync->queuedDuration.count());
             totalJq.sync.queuedDuration += sync->queuedDuration;
-            j[jss::running_duration_us] = std::to_string(
-                sync->runningDuration.count());
+            j[jss::running_duration_us] =
+                std::to_string(sync->runningDuration.count());
             totalJq.sync.runningDuration += sync->runningDuration;
         }
         jqobj[proc.second.label] = j;
@@ -159,10 +158,10 @@ PerfLogImp::Counters::countersJson() const
         totalJqJson[jss::queued] = std::to_string(totalJq.sync.queued);
         totalJqJson[jss::started] = std::to_string(totalJq.sync.started);
         totalJqJson[jss::finished] = std::to_string(totalJq.sync.finished);
-        totalJqJson[jss::queued_duration_us] = std::to_string(
-            totalJq.sync.queuedDuration.count());
-        totalJqJson[jss::running_duration_us] = std::to_string(
-            totalJq.sync.runningDuration.count());
+        totalJqJson[jss::queued_duration_us] =
+            std::to_string(totalJq.sync.queuedDuration.count());
+        totalJqJson[jss::running_duration_us] =
+            std::to_string(totalJq.sync.runningDuration.count());
         jqobj[jss::total] = totalJqJson;
     }
 
@@ -180,7 +179,7 @@ PerfLogImp::Counters::currentJson() const
     auto const present = steady_clock::now();
 
     Json::Value jobsArray(Json::arrayValue);
-    auto const jobs = [this]{
+    auto const jobs = [this] {
         std::lock_guard lock(jobsMutex_);
         return jobs_;
     }();
@@ -199,8 +198,8 @@ PerfLogImp::Counters::currentJson() const
         // label is const and created before multi-threading so needs no lock.
         jobj[jss::job] = e->second.label;
         jobj[jss::duration_us] = std::to_string(
-            std::chrono::duration_cast<microseconds>(
-                present - j.second).count());
+            std::chrono::duration_cast<microseconds>(present - j.second)
+                .count());
         jobsArray.append(jobj);
     }
 
@@ -217,8 +216,8 @@ PerfLogImp::Counters::currentJson() const
         Json::Value methodobj(Json::objectValue);
         methodobj[jss::method] = m.first;
         methodobj[jss::duration_us] = std::to_string(
-            std::chrono::duration_cast<microseconds>(
-                present - m.second).count());
+            std::chrono::duration_cast<microseconds>(present - m.second)
+                .count());
         methodsArray.append(methodobj);
     }
 
@@ -233,7 +232,7 @@ PerfLogImp::Counters::currentJson() const
 void
 PerfLogImp::openLog()
 {
-    if (! setup_.perfLog.empty())
+    if (!setup_.perfLog.empty())
     {
         if (logFile_.is_open())
             logFile_.close();
@@ -246,7 +245,8 @@ PerfLogImp::openLog()
             if (ec)
             {
                 JLOG(j_.fatal()) << "Unable to create performance log "
-                    "directory " << logDir << ": " << ec.message();
+                                    "directory "
+                                 << logDir << ": " << ec.message();
                 signalStop_();
                 return;
             }
@@ -254,10 +254,10 @@ PerfLogImp::openLog()
 
         logFile_.open(setup_.perfLog.c_str(), std::ios::out | std::ios::app);
 
-        if (! logFile_)
+        if (!logFile_)
         {
-            JLOG(j_.fatal()) << "Unable to open performance log " <<
-                setup_.perfLog << ".";
+            JLOG(j_.fatal())
+                << "Unable to open performance log " << setup_.perfLog << ".";
             signalStop_();
         }
     }
@@ -282,7 +282,7 @@ PerfLogImp::run()
                 openLog();
                 rotate_ = false;
             }
-            cond_.wait_until (lock, lastLog_ + setup_.logInterval);
+            cond_.wait_until(lock, lastLog_ + setup_.logInterval);
         }
         report();
     }
@@ -291,7 +291,7 @@ PerfLogImp::run()
 void
 PerfLogImp::report()
 {
-    if (! logFile_)
+    if (!logFile_)
         // If logFile_ is not writable do no further work.
         return;
 
@@ -311,14 +311,15 @@ PerfLogImp::report()
     logFile_ << Json::Compact{std::move(report)} << std::endl;
 }
 
-PerfLogImp::PerfLogImp(Setup const& setup,
+PerfLogImp::PerfLogImp(
+    Setup const& setup,
     Stoppable& parent,
     beast::Journal journal,
     std::function<void()>&& signalStop)
-        : Stoppable ("PerfLogImp", parent)
-        , setup_ (setup)
-        , j_ (journal)
-        , signalStop_ (std::move (signalStop))
+    : Stoppable("PerfLogImp", parent)
+    , setup_(setup)
+    , j_(journal)
+    , signalStop_(std::move(signalStop))
 {
     openLog();
 }
@@ -344,13 +345,12 @@ PerfLogImp::rpcStart(std::string const& method, std::uint64_t const requestId)
     }
     std::lock_guard lock(counters_.methodsMutex_);
     counters_.methods_[requestId] = {
-        counter->first.c_str(),
-        steady_clock::now()
-    };
+        counter->first.c_str(), steady_clock::now()};
 }
 
 void
-PerfLogImp::rpcEnd(std::string const& method,
+PerfLogImp::rpcEnd(
+    std::string const& method,
     std::uint64_t const requestId,
     bool finish)
 {
@@ -379,9 +379,8 @@ PerfLogImp::rpcEnd(std::string const& method,
         ++counter->second.sync.finished;
     else
         ++counter->second.sync.errored;
-    counter->second.sync.duration +=
-        std::chrono::duration_cast<microseconds>(
-            steady_clock::now() - startTime);
+    counter->second.sync.duration += std::chrono::duration_cast<microseconds>(
+        steady_clock::now() - startTime);
 }
 
 void
@@ -398,7 +397,8 @@ PerfLogImp::jobQueue(JobType const type)
 }
 
 void
-PerfLogImp::jobStart(JobType const type,
+PerfLogImp::jobStart(
+    JobType const type,
     microseconds dur,
     steady_time_point startTime,
     int instance)
@@ -420,8 +420,7 @@ PerfLogImp::jobStart(JobType const type,
 }
 
 void
-PerfLogImp::jobFinish(JobType const type, microseconds dur,
-    int instance)
+PerfLogImp::jobFinish(JobType const type, microseconds dur, int instance)
 {
     auto counter = counters_.jq_.find(type);
     if (counter == counters_.jq_.end())
@@ -447,7 +446,6 @@ PerfLogImp::resizeJobs(int const resize)
     if (resize > counters_.jobs_.size())
         counters_.jobs_.resize(resize, {jtINVALID, steady_time_point()});
 }
-
 
 void
 PerfLogImp::rotate()
@@ -502,8 +500,8 @@ setup_PerfLog(Section const& section, boost::filesystem::path const& configDir)
         setup.perfLog = boost::filesystem::path(perfLog);
         if (setup.perfLog.is_relative())
         {
-            setup.perfLog = boost::filesystem::absolute(
-                setup.perfLog, configDir);
+            setup.perfLog =
+                boost::filesystem::absolute(setup.perfLog, configDir);
         }
     }
 
@@ -524,5 +522,5 @@ make_PerfLog(
         setup, parent, journal, std::move(signalStop));
 }
 
-} // perf
-} // ripple
+}  // namespace perf
+}  // namespace ripple

@@ -30,8 +30,8 @@
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/range/adaptors.hpp>
 #include <mutex>
-#include <shared_mutex>
 #include <numeric>
+#include <shared_mutex>
 
 namespace ripple {
 
@@ -39,8 +39,7 @@ namespace ripple {
 class Overlay;
 class HashRouter;
 
-enum class ListDisposition
-{
+enum class ListDisposition {
     /// List is valid
     accepted = 0,
 
@@ -64,7 +63,7 @@ std::string
 to_string(ListDisposition disposition);
 
 /** Changes in trusted nodes after updating validator list
-*/
+ */
 struct TrustChanges
 {
     explicit TrustChanges() = default;
@@ -165,14 +164,14 @@ class ValidatorList
     static const std::string filePrefix_;
 
 public:
-    ValidatorList (
+    ValidatorList(
         ManifestCache& validatorManifests,
         ManifestCache& publisherManifests,
         TimeKeeper& timeKeeper,
         std::string const& databasePath,
         beast::Journal j,
         boost::optional<std::size_t> minimumQuorum = boost::none);
-    ~ValidatorList () = default;
+    ~ValidatorList() = default;
 
     /** Describes the result of processing a Validator List (UNL),
     including some of the information from the list which can
@@ -181,17 +180,16 @@ public:
     */
     struct PublisherListStats
     {
-        explicit PublisherListStats(ListDisposition d)
-            : disposition(d)
+        explicit PublisherListStats(ListDisposition d) : disposition(d)
         {
         }
 
-        PublisherListStats(ListDisposition d, PublicKey key,
-            bool avail, std::size_t seq)
-            : disposition(d)
-            , publisherKey(key)
-            , available(avail)
-            , sequence(seq)
+        PublisherListStats(
+            ListDisposition d,
+            PublicKey key,
+            bool avail,
+            std::size_t seq)
+            : disposition(d), publisherKey(key), available(avail), sequence(seq)
         {
         }
 
@@ -219,7 +217,7 @@ public:
         @return `false` if an entry is invalid or unparsable
     */
     bool
-    load (
+    load(
         PublicKey const& localSigningKey,
         std::vector<std::string> const& configKeys,
         std::vector<std::string> const& publisherKeys);
@@ -252,7 +250,7 @@ public:
         May be called concurrently
     */
     PublisherListStats
-    applyListAndBroadcast (
+    applyListAndBroadcast(
         std::string const& manifest,
         std::string const& blob,
         std::string const& signature,
@@ -285,7 +283,7 @@ public:
         May be called concurrently
     */
     PublisherListStats
-    applyList (
+    applyList(
         std::string const& manifest,
         std::string const& blob,
         std::string const& signature,
@@ -321,7 +319,7 @@ public:
         May be called concurrently
     */
     TrustChanges
-    updateTrusted (hash_set<NodeID> const& seenValidators);
+    updateTrusted(hash_set<NodeID> const& seenValidators);
 
     /** Get quorum value for current trusted key set
 
@@ -337,7 +335,7 @@ public:
         @return quorum value
     */
     std::size_t
-    quorum () const
+    quorum() const
     {
         return quorum_;
     }
@@ -351,8 +349,7 @@ public:
         May be called concurrently
     */
     bool
-    trusted (
-        PublicKey const& identity) const;
+    trusted(PublicKey const& identity) const;
 
     /** Returns `true` if public key is included on any lists
 
@@ -363,8 +360,7 @@ public:
         May be called concurrently
     */
     bool
-    listed (
-        PublicKey const& identity) const;
+    listed(PublicKey const& identity) const;
 
     /** Returns master public key if public key is trusted
 
@@ -377,8 +373,7 @@ public:
         May be called concurrently
     */
     boost::optional<PublicKey>
-    getTrustedKey (
-        PublicKey const& identity) const;
+    getTrustedKey(PublicKey const& identity) const;
 
     /** Returns listed master public if public key is included on any lists
 
@@ -391,8 +386,7 @@ public:
         May be called concurrently
     */
     boost::optional<PublicKey>
-    getListedKey (
-        PublicKey const& identity) const;
+    getListedKey(PublicKey const& identity) const;
 
     /** Returns `true` if public key is a trusted publisher
 
@@ -403,8 +397,7 @@ public:
         May be called concurrently
     */
     bool
-    trustedPublisher (
-        PublicKey const& identity) const;
+    trustedPublisher(PublicKey const& identity) const;
 
     /** Returns local validator public key
 
@@ -413,7 +406,7 @@ public:
         May be called concurrently
     */
     PublicKey
-    localPublicKey () const;
+    localPublicKey() const;
 
     /** Invokes the callback once for every listed validation public key.
 
@@ -431,8 +424,7 @@ public:
         May be called concurrently
     */
     void
-    for_each_listed (
-        std::function<void(PublicKey const&, bool)> func) const;
+    for_each_listed(std::function<void(PublicKey const&, bool)> func) const;
 
     /** Invokes the callback once for every available publisher list's raw
         data members
@@ -462,12 +454,14 @@ public:
         May be called concurrently
     */
     void
-    for_each_available (
-        std::function<void(std::string const& manifest,
-            std::string const& blob, std::string const& signature,
-            std::uint32_t version,
-            PublicKey const& pubKey, std::size_t sequence,
-            uint256 const& hash)> func) const;
+    for_each_available(std::function<void(
+                           std::string const& manifest,
+                           std::string const& blob,
+                           std::string const& signature,
+                           std::uint32_t version,
+                           PublicKey const& pubKey,
+                           std::size_t sequence,
+                           uint256 const& hash)> func) const;
 
     /** Returns the current valid list for the given publisher key,
         if available, as a Json object.
@@ -511,18 +505,16 @@ public:
         return {quorum_, trustedSigningKeys_};
     }
 
-
 private:
     /** Get the filename used for caching UNLs
-    */
+     */
     boost::filesystem::path
     GetCacheFileName(PublicKey const& pubKey);
 
     /** Write a JSON UNL to a cache file
-    */
+     */
     void
-    CacheValidatorFile(PublicKey const& pubKey,
-        PublisherList const& publisher);
+    CacheValidatorFile(PublicKey const& pubKey, PublisherList const& publisher);
 
     /** Check response for trusted valid published list
 
@@ -533,7 +525,7 @@ private:
         Calling public member function is expected to lock mutex
     */
     ListDisposition
-    verify (
+    verify(
         Json::Value& list,
         PublicKey& pubKey,
         std::string const& manifest,
@@ -551,7 +543,7 @@ private:
         Calling public member function is expected to lock mutex
     */
     bool
-    removePublisherList (PublicKey const& publisherKey);
+    removePublisherList(PublicKey const& publisherKey);
 
     /** Return quorum for trusted validator set
 
@@ -560,9 +552,8 @@ private:
         @param seen Number of trusted validators that have signed
         recently received validations */
     std::size_t
-    calculateQuorum (
-        std::size_t trusted, std::size_t seen);
+    calculateQuorum(std::size_t trusted, std::size_t seen);
 };
-} // ripple
+}  // namespace ripple
 
 #endif

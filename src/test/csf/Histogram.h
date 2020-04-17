@@ -19,9 +19,9 @@
 #ifndef RIPPLE_TEST_CSF_HISTOGRAM_H_INCLUDED
 #define RIPPLE_TEST_CSF_HISTOGRAM_H_INCLUDED
 
-#include <map>
-#include <chrono>
 #include <algorithm>
+#include <chrono>
+#include <map>
 
 namespace ripple {
 namespace test {
@@ -45,10 +45,11 @@ class Histogram
     // unscaleable
     std::map<T, std::size_t, Compare> counts_;
     std::size_t samples = 0;
+
 public:
     /** Insert an sample */
     void
-    insert(T const & s)
+    insert(T const& s)
     {
         ++counts_[s];
         ++samples;
@@ -87,7 +88,7 @@ public:
     avg() const
     {
         T tmp{};
-        if(samples == 0)
+        if (samples == 0)
             return tmp;
         // Since counts are sorted, shouldn't need to worry much about numerical
         // error
@@ -95,7 +96,7 @@ public:
         {
             tmp += bin * count;
         }
-        return tmp/samples;
+        return tmp / samples;
     }
 
     /** Calculate the given percentile of the distribution.
@@ -107,10 +108,10 @@ public:
     T
     percentile(float p) const
     {
-        assert(p >= 0 && p <=1);
+        assert(p >= 0 && p <= 1);
         std::size_t pos = std::round(p * samples);
 
-        if(counts_.empty())
+        if (counts_.empty())
             return T{};
 
         auto it = counts_.begin();

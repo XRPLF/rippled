@@ -40,13 +40,13 @@ namespace detail {
 
 #if BOOST_COMP_MSVC
 #pragma warning(push)
-#pragma warning(disable: 4800)
-#pragma warning(disable: 4804)
+#pragma warning(disable : 4800)
+#pragma warning(disable : 4804)
 #endif
 
 template <class Int, class FwdIt, class Accumulator>
 bool
-parse_integral (Int& num, FwdIt first, FwdIt last, Accumulator accumulator)
+parse_integral(Int& num, FwdIt first, FwdIt last, Accumulator accumulator)
 {
     num = 0;
 
@@ -67,19 +67,19 @@ parse_integral (Int& num, FwdIt first, FwdIt last, Accumulator accumulator)
 
 template <class Int, class FwdIt>
 bool
-parse_negative_integral (Int& num, FwdIt first, FwdIt last)
+parse_negative_integral(Int& num, FwdIt first, FwdIt last)
 {
-    Int limit_value = std::numeric_limits <Int>::min() / 10;
-    Int limit_digit = std::numeric_limits <Int>::min() % 10;
+    Int limit_value = std::numeric_limits<Int>::min() / 10;
+    Int limit_digit = std::numeric_limits<Int>::min() % 10;
 
     if (limit_digit < 0)
         limit_digit = -limit_digit;
 
-    return parse_integral<Int> (num, first, last,
-        [limit_value, limit_digit](Int& value, Int digit)
-        {
-            assert ((digit >= 0) && (digit <= 9));
-            if (value < limit_value || (value == limit_value && digit > limit_digit))
+    return parse_integral<Int>(
+        num, first, last, [limit_value, limit_digit](Int& value, Int digit) {
+            assert((digit >= 0) && (digit <= 9));
+            if (value < limit_value ||
+                (value == limit_value && digit > limit_digit))
                 return false;
             value = (value * 10) - digit;
             return true;
@@ -88,16 +88,16 @@ parse_negative_integral (Int& num, FwdIt first, FwdIt last)
 
 template <class Int, class FwdIt>
 bool
-parse_positive_integral (Int& num, FwdIt first, FwdIt last)
+parse_positive_integral(Int& num, FwdIt first, FwdIt last)
 {
-    Int limit_value = std::numeric_limits <Int>::max() / 10;
-    Int limit_digit = std::numeric_limits <Int>::max() % 10;
+    Int limit_value = std::numeric_limits<Int>::max() / 10;
+    Int limit_digit = std::numeric_limits<Int>::max() % 10;
 
-    return parse_integral<Int> (num, first, last,
-        [limit_value, limit_digit](Int& value, Int digit)
-        {
-            assert ((digit >= 0) && (digit <= 9));
-            if (value > limit_value || (value == limit_value && digit > limit_digit))
+    return parse_integral<Int>(
+        num, first, last, [limit_value, limit_digit](Int& value, Int digit) {
+            assert((digit >= 0) && (digit <= 9));
+            if (value > limit_value ||
+                (value == limit_value && digit > limit_digit))
                 return false;
             value = (value * 10) + digit;
             return true;
@@ -106,31 +106,33 @@ parse_positive_integral (Int& num, FwdIt first, FwdIt last)
 
 template <class IntType, class FwdIt>
 bool
-parseSigned (IntType& result, FwdIt first, FwdIt last)
+parseSigned(IntType& result, FwdIt first, FwdIt last)
 {
-    static_assert(std::is_signed<IntType>::value,
+    static_assert(
+        std::is_signed<IntType>::value,
         "You may only call parseSigned with a signed integral type.");
 
     if (first != last && *first == '-')
-        return parse_negative_integral (result, first + 1, last);
+        return parse_negative_integral(result, first + 1, last);
 
     if (first != last && *first == '+')
-        return parse_positive_integral (result, first + 1, last);
+        return parse_positive_integral(result, first + 1, last);
 
-    return parse_positive_integral (result, first, last);
+    return parse_positive_integral(result, first, last);
 }
 
 template <class UIntType, class FwdIt>
 bool
-parseUnsigned (UIntType& result, FwdIt first, FwdIt last)
+parseUnsigned(UIntType& result, FwdIt first, FwdIt last)
 {
-    static_assert(std::is_unsigned<UIntType>::value,
+    static_assert(
+        std::is_unsigned<UIntType>::value,
         "You may only call parseUnsigned with an unsigned integral type.");
 
     if (first != last && *first == '+')
-        return parse_positive_integral (result, first + 1, last);
+        return parse_positive_integral(result, first + 1, last);
 
-    return parse_positive_integral (result, first, last);
+    return parse_positive_integral(result, first, last);
 }
 
 //------------------------------------------------------------------------------
@@ -141,60 +143,59 @@ struct LexicalCast;
 
 // conversion to std::string
 template <class In>
-struct LexicalCast <std::string, In>
+struct LexicalCast<std::string, In>
 {
     explicit LexicalCast() = default;
 
     template <class Arithmetic = In>
-    std::enable_if_t <std::is_arithmetic <Arithmetic>::value, bool>
-    operator () (std::string& out, Arithmetic in)
+    std::enable_if_t<std::is_arithmetic<Arithmetic>::value, bool>
+    operator()(std::string& out, Arithmetic in)
     {
-        out = std::to_string (in);
+        out = std::to_string(in);
         return true;
     }
 
     template <class Enumeration = In>
-    std::enable_if_t <std::is_enum <Enumeration>::value, bool>
-    operator () (std::string& out, Enumeration in)
+    std::enable_if_t<std::is_enum<Enumeration>::value, bool>
+    operator()(std::string& out, Enumeration in)
     {
-        out = std::to_string (
-            static_cast <std::underlying_type_t <Enumeration>> (in));
+        out = std::to_string(
+            static_cast<std::underlying_type_t<Enumeration>>(in));
         return true;
     }
 };
 
 // Parse std::string to number
 template <class Out>
-struct LexicalCast <Out, std::string>
+struct LexicalCast<Out, std::string>
 {
     explicit LexicalCast() = default;
 
-    static_assert (std::is_integral <Out>::value,
+    static_assert(
+        std::is_integral<Out>::value,
         "beast::LexicalCast can only be used with integral types");
 
     template <class Integral = Out>
-    std::enable_if_t <std::is_unsigned <Integral>::value, bool>
-    operator () (Integral& out, std::string const& in) const
+    std::enable_if_t<std::is_unsigned<Integral>::value, bool>
+    operator()(Integral& out, std::string const& in) const
     {
-        return parseUnsigned (out, in.begin(), in.end());
+        return parseUnsigned(out, in.begin(), in.end());
     }
 
     template <class Integral = Out>
-    std::enable_if_t <std::is_signed <Integral>::value, bool>
-    operator () (Integral& out, std::string const& in) const
+    std::enable_if_t<std::is_signed<Integral>::value, bool>
+    operator()(Integral& out, std::string const& in) const
     {
-        return parseSigned (out, in.begin(), in.end());
+        return parseSigned(out, in.begin(), in.end());
     }
 
     bool
-    operator () (bool& out, std::string in) const
+    operator()(bool& out, std::string in) const
     {
         // Convert the input to lowercase
-        std::transform(in.begin (), in.end (), in.begin (),
-            [](auto c)
-            {
-                return std::tolower(static_cast<unsigned char>(c));
-            });
+        std::transform(in.begin(), in.end(), in.begin(), [](auto c) {
+            return std::tolower(static_cast<unsigned char>(c));
+        });
 
         if (in == "1" || in == "true")
         {
@@ -216,26 +217,28 @@ struct LexicalCast <Out, std::string>
 
 // Conversion from null terminated char const*
 template <class Out>
-struct LexicalCast <Out, char const*>
+struct LexicalCast<Out, char const*>
 {
     explicit LexicalCast() = default;
 
-    bool operator() (Out& out, char const* in) const
+    bool
+    operator()(Out& out, char const* in) const
     {
-        return LexicalCast <Out, std::string>()(out, in);
+        return LexicalCast<Out, std::string>()(out, in);
     }
 };
 
 // Conversion from null terminated char*
 // The string is not modified.
 template <class Out>
-struct LexicalCast <Out, char*>
+struct LexicalCast<Out, char*>
 {
     explicit LexicalCast() = default;
 
-    bool operator() (Out& out, char* in) const
+    bool
+    operator()(Out& out, char* in) const
     {
-        return LexicalCast <Out, std::string>()(out, in);
+        return LexicalCast<Out, std::string>()(out, in);
     }
 };
 
@@ -243,7 +246,7 @@ struct LexicalCast <Out, char*>
 #pragma warning(pop)
 #endif
 
-} // detail
+}  // namespace detail
 
 //------------------------------------------------------------------------------
 
@@ -259,9 +262,10 @@ struct BadLexicalCast : public std::bad_cast
     @return `false` if there was a parsing or range error
 */
 template <class Out, class In>
-bool lexicalCastChecked (Out& out, In in)
+bool
+lexicalCastChecked(Out& out, In in)
 {
-    return detail::LexicalCast <Out, In> () (out, in);
+    return detail::LexicalCast<Out, In>()(out, in);
 }
 
 /** Convert from one type to another, throw on error
@@ -271,14 +275,15 @@ bool lexicalCastChecked (Out& out, In in)
     @return The new type.
 */
 template <class Out, class In>
-Out lexicalCastThrow (In in)
+Out
+lexicalCastThrow(In in)
 {
     Out out;
 
-    if (lexicalCastChecked (out, in))
+    if (lexicalCastChecked(out, in))
         return out;
 
-    throw BadLexicalCast ();
+    throw BadLexicalCast();
 }
 
 /** Convert from one type to another.
@@ -287,16 +292,17 @@ Out lexicalCastThrow (In in)
     @return The new type.
 */
 template <class Out, class In>
-Out lexicalCast (In in, Out defaultValue = Out ())
+Out
+lexicalCast(In in, Out defaultValue = Out())
 {
     Out out;
 
-    if (lexicalCastChecked (out, in))
+    if (lexicalCastChecked(out, in))
         return out;
 
     return defaultValue;
 }
 
-} // beast
+}  // namespace beast
 
 #endif

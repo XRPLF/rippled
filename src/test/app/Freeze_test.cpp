@@ -16,18 +16,17 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <test/jtx.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/protocol/jss.h>
+#include <test/jtx.h>
 
 namespace ripple {
 
 class Freeze_test : public beast::unit_test::suite
 {
-
     static Json::Value
     getAccountLines(test::jtx::Env& env, test::jtx::Account const& account)
     {
@@ -48,21 +47,23 @@ class Freeze_test : public beast::unit_test::suite
         return env.rpc("json", "account_offers", to_string(jq))[jss::result];
     }
 
-    static bool checkArraySize(Json::Value const& val, unsigned int size)
+    static bool
+    checkArraySize(Json::Value const& val, unsigned int size)
     {
         return val.isArray() && val.size() == size;
     }
 
-    void testRippleState(FeatureBitset features)
+    void
+    testRippleState(FeatureBitset features)
     {
         testcase("RippleState Freeze");
 
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account G1 {"G1"};
-        Account alice {"alice"};
-        Account bob {"bob"};
+        Account G1{"G1"};
+        Account alice{"alice"};
+        Account bob{"bob"};
 
         env.fund(XRP(1000), G1, alice, bob);
         env.close();
@@ -80,7 +81,7 @@ class Freeze_test : public beast::unit_test::suite
 
         {
             auto lines = getAccountLines(env, bob);
-            if(! BEAST_EXPECT(checkArraySize(lines[jss::lines], 1u)))
+            if (!BEAST_EXPECT(checkArraySize(lines[jss::lines], 1u)))
                 return;
             BEAST_EXPECT(lines[jss::lines][0u][jss::account] == G1.human());
             BEAST_EXPECT(lines[jss::lines][0u][jss::limit] == "100");
@@ -89,7 +90,7 @@ class Freeze_test : public beast::unit_test::suite
 
         {
             auto lines = getAccountLines(env, alice);
-            if(! BEAST_EXPECT(checkArraySize(lines[jss::lines], 1u)))
+            if (!BEAST_EXPECT(checkArraySize(lines[jss::lines], 1u)))
                 return;
             BEAST_EXPECT(lines[jss::lines][0u][jss::account] == G1.human());
             BEAST_EXPECT(lines[jss::lines][0u][jss::limit] == "100");
@@ -110,9 +111,9 @@ class Freeze_test : public beast::unit_test::suite
             // Is created via a TrustSet with SetFreeze flag
             //   test: sets LowFreeze | HighFreeze flags
             env(trust(G1, bob["USD"](0), tfSetFreeze));
-            auto affected = env.meta()->
-                getJson(JsonOptions::none)[sfAffectedNodes.fieldName];
-            if(! BEAST_EXPECT(checkArraySize(affected, 2u)))
+            auto affected = env.meta()->getJson(
+                JsonOptions::none)[sfAffectedNodes.fieldName];
+            if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
                 return;
             auto ff =
                 affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
@@ -120,7 +121,7 @@ class Freeze_test : public beast::unit_test::suite
                 ff[sfLowLimit.fieldName] ==
                 G1["USD"](0).value().getJson(JsonOptions::none));
             BEAST_EXPECT(ff[jss::Flags].asUInt() & lsfLowFreeze);
-            BEAST_EXPECT(! (ff[jss::Flags].asUInt() & lsfHighFreeze));
+            BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighFreeze));
             env.close();
         }
 
@@ -128,26 +129,25 @@ class Freeze_test : public beast::unit_test::suite
             // Account with line frozen by issuer
             //    test: can buy more assets on that line
             env(offer(bob, G1["USD"](5), XRP(25)));
-            auto affected = env.meta()->
-                getJson(JsonOptions::none)[sfAffectedNodes.fieldName];
-            if(! BEAST_EXPECT(checkArraySize(affected, 5u)))
+            auto affected = env.meta()->getJson(
+                JsonOptions::none)[sfAffectedNodes.fieldName];
+            if (!BEAST_EXPECT(checkArraySize(affected, 5u)))
                 return;
             auto ff =
                 affected[3u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
             BEAST_EXPECT(
                 ff[sfHighLimit.fieldName] ==
                 bob["USD"](100).value().getJson(JsonOptions::none));
-            auto amt =
-                STAmount{Issue{to_currency("USD"), noAccount()}, -15}
-                    .value().getJson(JsonOptions::none);
+            auto amt = STAmount{Issue{to_currency("USD"), noAccount()}, -15}
+                           .value()
+                           .getJson(JsonOptions::none);
             BEAST_EXPECT(ff[sfBalance.fieldName] == amt);
             env.close();
         }
 
         {
             //    test: can not sell assets from that line
-            env(offer(bob, XRP(1), G1["USD"](5)),
-                ter(tecUNFUNDED_OFFER));
+            env(offer(bob, XRP(1), G1["USD"](5)), ter(tecUNFUNDED_OFFER));
 
             //    test: can receive Payment on that line
             env(pay(alice, bob, G1["USD"](1)));
@@ -163,13 +163,13 @@ class Freeze_test : public beast::unit_test::suite
             Json::Value bobLine;
             for (auto const& it : lines[jss::lines])
             {
-                if(it[jss::account] == bob.human())
+                if (it[jss::account] == bob.human())
                 {
                     bobLine = it;
                     break;
                 }
             }
-            if(! BEAST_EXPECT(bobLine))
+            if (!BEAST_EXPECT(bobLine))
                 return;
             BEAST_EXPECT(bobLine[jss::freeze] == true);
             BEAST_EXPECT(bobLine[jss::balance] == "-16");
@@ -181,33 +181,33 @@ class Freeze_test : public beast::unit_test::suite
             Json::Value g1Line;
             for (auto const& it : lines[jss::lines])
             {
-                if(it[jss::account] == G1.human())
+                if (it[jss::account] == G1.human())
                 {
                     g1Line = it;
                     break;
                 }
             }
-            if(! BEAST_EXPECT(g1Line))
+            if (!BEAST_EXPECT(g1Line))
                 return;
             BEAST_EXPECT(g1Line[jss::freeze_peer] == true);
             BEAST_EXPECT(g1Line[jss::balance] == "16");
         }
 
         {
-            //Is cleared via a TrustSet with ClearFreeze flag
+            // Is cleared via a TrustSet with ClearFreeze flag
             //    test: sets LowFreeze | HighFreeze flags
             env(trust(G1, bob["USD"](0), tfClearFreeze));
-            auto affected = env.meta()->
-                getJson(JsonOptions::none)[sfAffectedNodes.fieldName];
-            if(! BEAST_EXPECT(checkArraySize(affected, 2u)))
+            auto affected = env.meta()->getJson(
+                JsonOptions::none)[sfAffectedNodes.fieldName];
+            if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
                 return;
             auto ff =
                 affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
             BEAST_EXPECT(
                 ff[sfLowLimit.fieldName] ==
                 G1["USD"](0).value().getJson(JsonOptions::none));
-            BEAST_EXPECT(! (ff[jss::Flags].asUInt() & lsfLowFreeze));
-            BEAST_EXPECT(! (ff[jss::Flags].asUInt() & lsfHighFreeze));
+            BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfLowFreeze));
+            BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighFreeze));
             env.close();
         }
     }
@@ -220,11 +220,11 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account G1 {"G1"};
-        Account A1 {"A1"};
-        Account A2 {"A2"};
-        Account A3 {"A3"};
-        Account A4 {"A4"};
+        Account G1{"G1"};
+        Account A1{"A1"};
+        Account A2{"A2"};
+        Account A3{"A3"};
+        Account A4{"A4"};
 
         env.fund(XRP(12000), G1);
         env.fund(XRP(1000), A1);
@@ -250,7 +250,7 @@ class Freeze_test : public beast::unit_test::suite
         env.close();
 
         {
-            //Is toggled via AccountSet using SetFlag and ClearFlag
+            // Is toggled via AccountSet using SetFlag and ClearFlag
             //    test: SetFlag GlobalFreeze
             env.require(nflags(G1, asfGlobalFreeze));
             env(fset(G1, asfGlobalFreeze));
@@ -264,13 +264,13 @@ class Freeze_test : public beast::unit_test::suite
         }
 
         {
-            //Account without GlobalFreeze (proving operations normally work)
+            // Account without GlobalFreeze (proving operations normally work)
             //    test: visible offers where taker_pays is unfrozen issuer
-            auto offers =
-                env.rpc("book_offers",
-                    std::string("USD/")+G1.human(), "XRP")
-                [jss::result][jss::offers];
-            if(! BEAST_EXPECT(checkArraySize(offers, 2u)))
+            auto offers = env.rpc(
+                "book_offers",
+                std::string("USD/") + G1.human(),
+                "XRP")[jss::result][jss::offers];
+            if (!BEAST_EXPECT(checkArraySize(offers, 2u)))
                 return;
             std::set<std::string> accounts;
             for (auto const& offer : offers)
@@ -281,11 +281,11 @@ class Freeze_test : public beast::unit_test::suite
             BEAST_EXPECT(accounts.find(G1.human()) != std::end(accounts));
 
             //    test: visible offers where taker_gets is unfrozen issuer
-            offers =
-                env.rpc("book_offers",
-                    "XRP", std::string("USD/")+G1.human())
-                [jss::result][jss::offers];
-            if(! BEAST_EXPECT(checkArraySize(offers, 2u)))
+            offers = env.rpc(
+                "book_offers",
+                "XRP",
+                std::string("USD/") + G1.human())[jss::result][jss::offers];
+            if (!BEAST_EXPECT(checkArraySize(offers, 2u)))
                 return;
             accounts.clear();
             for (auto const& offer : offers)
@@ -337,23 +337,23 @@ class Freeze_test : public beast::unit_test::suite
             // offers are filtered (seems to be broken?)
             //    test: account_offers always shows own offers
             auto offers = getAccountOffers(env, G1)[jss::offers];
-            if(! BEAST_EXPECT(checkArraySize(offers, 2u)))
+            if (!BEAST_EXPECT(checkArraySize(offers, 2u)))
                 return;
 
             //    test: book_offers shows offers
             //    (should these actually be filtered?)
-            offers =
-                env.rpc("book_offers",
-                    "XRP", std::string("USD/")+G1.human())
-                [jss::result][jss::offers];
-            if(! BEAST_EXPECT(checkArraySize(offers, 2u)))
+            offers = env.rpc(
+                "book_offers",
+                "XRP",
+                std::string("USD/") + G1.human())[jss::result][jss::offers];
+            if (!BEAST_EXPECT(checkArraySize(offers, 2u)))
                 return;
 
-            offers =
-                env.rpc("book_offers",
-                    std::string("USD/")+G1.human(), "XRP")
-                [jss::result][jss::offers];
-            if(! BEAST_EXPECT(checkArraySize(offers, 2u)))
+            offers = env.rpc(
+                "book_offers",
+                std::string("USD/") + G1.human(),
+                "XRP")[jss::result][jss::offers];
+            if (!BEAST_EXPECT(checkArraySize(offers, 2u)))
                 return;
         }
 
@@ -378,8 +378,8 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account G1 {"G1"};
-        Account A1 {"A1"};
+        Account G1{"G1"};
+        Account A1{"A1"};
 
         env.fund(XRP(12000), G1);
         env.fund(XRP(1000), A1);
@@ -391,7 +391,7 @@ class Freeze_test : public beast::unit_test::suite
         env(pay(G1, A1, G1["USD"](1000)));
         env.close();
 
-        //TrustSet NoFreeze
+        // TrustSet NoFreeze
         //    test: should set NoFreeze in Flags
         env.require(nflags(G1, asfNoFreeze));
         env(fset(G1, asfNoFreeze));
@@ -417,7 +417,7 @@ class Freeze_test : public beast::unit_test::suite
         env(trust(G1, A1["USD"](0), tfSetFreeze));
         auto affected =
             env.meta()->getJson(JsonOptions::none)[sfAffectedNodes.fieldName];
-        if(! BEAST_EXPECT(checkArraySize(affected, 1u)))
+        if (!BEAST_EXPECT(checkArraySize(affected, 1u)))
             return;
 
         auto let =
@@ -433,10 +433,10 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account G1 {"G1"};
-        Account A2 {"A2"};
-        Account A3 {"A3"};
-        Account A4 {"A4"};
+        Account G1{"G1"};
+        Account A2{"A2"};
+        Account A3{"A3"};
+        Account A4{"A4"};
 
         env.fund(XRP(1000), G1, A3, A4);
         env.fund(XRP(2000), A2);
@@ -461,7 +461,7 @@ class Freeze_test : public beast::unit_test::suite
 
         //    test: offer was only partially consumed
         auto offers = getAccountOffers(env, A3)[jss::offers];
-        if(! BEAST_EXPECT(checkArraySize(offers, 1u)))
+        if (!BEAST_EXPECT(checkArraySize(offers, 1u)))
             return;
         BEAST_EXPECT(
             offers[0u][jss::taker_gets] ==
@@ -475,20 +475,20 @@ class Freeze_test : public beast::unit_test::suite
         env(trust(G1, A3["USD"](0), tfSetFreeze));
         auto affected =
             env.meta()->getJson(JsonOptions::none)[sfAffectedNodes.fieldName];
-        if(! BEAST_EXPECT(checkArraySize(affected, 2u)))
+        if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
             return;
         auto ff =
             affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
         BEAST_EXPECT(
             ff[sfHighLimit.fieldName] ==
             G1["USD"](0).value().getJson(JsonOptions::none));
-        BEAST_EXPECT(! (ff[jss::Flags].asUInt() & lsfLowFreeze));
+        BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfLowFreeze));
         BEAST_EXPECT(ff[jss::Flags].asUInt() & lsfHighFreeze);
         env.close();
 
         // verify offer on the books
         offers = getAccountOffers(env, A3)[jss::offers];
-        if(! BEAST_EXPECT(checkArraySize(offers, 1u)))
+        if (!BEAST_EXPECT(checkArraySize(offers, 1u)))
             return;
 
         //    test: Can make a payment via the new offer
@@ -497,7 +497,7 @@ class Freeze_test : public beast::unit_test::suite
 
         //    test: Partially consumed offer was removed by tes* payment
         offers = getAccountOffers(env, A3)[jss::offers];
-        if(! BEAST_EXPECT(checkArraySize(offers, 0u)))
+        if (!BEAST_EXPECT(checkArraySize(offers, 0u)))
             return;
 
         // removal buy successful OfferCreate
@@ -505,39 +505,38 @@ class Freeze_test : public beast::unit_test::suite
         env(trust(G1, A4["USD"](0), tfSetFreeze));
         affected =
             env.meta()->getJson(JsonOptions::none)[sfAffectedNodes.fieldName];
-        if(! BEAST_EXPECT(checkArraySize(affected, 2u)))
+        if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
             return;
-        ff =
-            affected[0u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
+        ff = affected[0u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
         BEAST_EXPECT(
             ff[sfLowLimit.fieldName] ==
             G1["USD"](0).value().getJson(JsonOptions::none));
         BEAST_EXPECT(ff[jss::Flags].asUInt() & lsfLowFreeze);
-        BEAST_EXPECT(! (ff[jss::Flags].asUInt() & lsfHighFreeze));
+        BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighFreeze));
         env.close();
 
         //    test: can no longer create a crossing offer
         env(offer(A2, G1["USD"](999), XRP(999)));
         affected =
             env.meta()->getJson(JsonOptions::none)[sfAffectedNodes.fieldName];
-        if(! BEAST_EXPECT(checkArraySize(affected, 8u)))
+        if (!BEAST_EXPECT(checkArraySize(affected, 8u)))
             return;
         auto created = affected[0u][sfCreatedNode.fieldName];
-        BEAST_EXPECT(created[sfNewFields.fieldName][jss::Account] == A2.human());
+        BEAST_EXPECT(
+            created[sfNewFields.fieldName][jss::Account] == A2.human());
         env.close();
 
         //    test: offer was removed by offer_create
         offers = getAccountOffers(env, A4)[jss::offers];
-        if(! BEAST_EXPECT(checkArraySize(offers, 0u)))
+        if (!BEAST_EXPECT(checkArraySize(offers, 0u)))
             return;
     }
 
 public:
-
-    void run() override
+    void
+    run() override
     {
-        auto testAll = [this](FeatureBitset features)
-        {
+        auto testAll = [this](FeatureBitset features) {
             testRippleState(features);
             testGlobalFreeze(features);
             testNoFreeze(features);
@@ -551,4 +550,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(Freeze, app, ripple);
-} // ripple
+}  // namespace ripple

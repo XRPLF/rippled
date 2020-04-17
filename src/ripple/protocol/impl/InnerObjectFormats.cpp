@@ -21,37 +21,39 @@
 
 namespace ripple {
 
-InnerObjectFormats::InnerObjectFormats ()
+InnerObjectFormats::InnerObjectFormats()
 {
-    add (sfSignerEntry.jsonName.c_str(), sfSignerEntry.getCode(),
+    add(sfSignerEntry.jsonName.c_str(),
+        sfSignerEntry.getCode(),
         {
-            {sfAccount,       soeREQUIRED},
-            {sfSignerWeight,  soeREQUIRED},
+            {sfAccount, soeREQUIRED},
+            {sfSignerWeight, soeREQUIRED},
         });
 
-    add (sfSigner.jsonName.c_str(), sfSigner.getCode(),
+    add(sfSigner.jsonName.c_str(),
+        sfSigner.getCode(),
         {
-            {sfAccount,       soeREQUIRED},
+            {sfAccount, soeREQUIRED},
             {sfSigningPubKey, soeREQUIRED},
-            {sfTxnSignature,  soeREQUIRED},
+            {sfTxnSignature, soeREQUIRED},
         });
 }
 
 InnerObjectFormats const&
-InnerObjectFormats::getInstance ()
+InnerObjectFormats::getInstance()
 {
     static InnerObjectFormats instance;
     return instance;
 }
 
 SOTemplate const*
-InnerObjectFormats::findSOTemplateBySField (SField const& sField) const
+InnerObjectFormats::findSOTemplateBySField(SField const& sField) const
 {
-    auto itemPtr = findByType (sField.getCode ());
+    auto itemPtr = findByType(sField.getCode());
     if (itemPtr)
         return &(itemPtr->getSOTemplate());
 
     return nullptr;
 }
 
-} // ripple
+}  // namespace ripple

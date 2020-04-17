@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <test/jtx/WSClient.h>
-#include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
+#include <test/jtx.h>
+#include <test/jtx/WSClient.h>
 
 namespace ripple {
 namespace test {
@@ -27,7 +27,8 @@ namespace test {
 class WSClient_test : public beast::unit_test::suite
 {
 public:
-    void run() override
+    void
+    run() override
     {
         using namespace jtx;
         Env env(*this);
@@ -44,7 +45,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(WSClient,test,ripple);
+BEAST_DEFINE_TESTSUITE(WSClient, test, ripple);
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple

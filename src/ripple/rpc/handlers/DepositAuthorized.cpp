@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Indexes.h>
@@ -34,37 +33,38 @@ namespace ripple {
 //   ledger_index : <ledger_index>
 // }
 
-Json::Value doDepositAuthorized (RPC::JsonContext& context)
+Json::Value
+doDepositAuthorized(RPC::JsonContext& context)
 {
     Json::Value const& params = context.params;
 
     // Validate source_account.
-    if (! params.isMember (jss::source_account))
-        return RPC::missing_field_error (jss::source_account);
-    if (! params[jss::source_account].isString())
-        return RPC::make_error (rpcINVALID_PARAMS,
-            RPC::expected_field_message (jss::source_account,
-                "a string"));
+    if (!params.isMember(jss::source_account))
+        return RPC::missing_field_error(jss::source_account);
+    if (!params[jss::source_account].isString())
+        return RPC::make_error(
+            rpcINVALID_PARAMS,
+            RPC::expected_field_message(jss::source_account, "a string"));
 
     AccountID srcAcct;
     {
-        Json::Value const jvAccepted = RPC::accountFromString (
+        Json::Value const jvAccepted = RPC::accountFromString(
             srcAcct, params[jss::source_account].asString(), true);
         if (jvAccepted)
             return jvAccepted;
     }
 
     // Validate destination_account.
-    if (! params.isMember (jss::destination_account))
-        return RPC::missing_field_error (jss::destination_account);
-    if (! params[jss::destination_account].isString())
-        return RPC::make_error (rpcINVALID_PARAMS,
-            RPC::expected_field_message (jss::destination_account,
-                "a string"));
+    if (!params.isMember(jss::destination_account))
+        return RPC::missing_field_error(jss::destination_account);
+    if (!params[jss::destination_account].isString())
+        return RPC::make_error(
+            rpcINVALID_PARAMS,
+            RPC::expected_field_message(jss::destination_account, "a string"));
 
     AccountID dstAcct;
     {
-        Json::Value const jvAccepted = RPC::accountFromString (
+        Json::Value const jvAccepted = RPC::accountFromString(
             dstAcct, params[jss::destination_account].asString(), true);
         if (jvAccepted)
             return jvAccepted;
@@ -72,28 +72,28 @@ Json::Value doDepositAuthorized (RPC::JsonContext& context)
 
     // Validate ledger.
     std::shared_ptr<ReadView const> ledger;
-    Json::Value result = RPC::lookupLedger (ledger, context);
+    Json::Value result = RPC::lookupLedger(ledger, context);
 
     if (!ledger)
         return result;
 
     // If source account is not in the ledger it can't be authorized.
-    if (! ledger->exists (keylet::account(srcAcct)))
+    if (!ledger->exists(keylet::account(srcAcct)))
     {
-        RPC::inject_error (rpcSRC_ACT_NOT_FOUND, result);
+        RPC::inject_error(rpcSRC_ACT_NOT_FOUND, result);
         return result;
     }
 
     // If destination account is not in the ledger you can't deposit to it, eh?
-    auto const sleDest = ledger->read (keylet::account(dstAcct));
-    if (! sleDest)
+    auto const sleDest = ledger->read(keylet::account(dstAcct));
+    if (!sleDest)
     {
-        RPC::inject_error (rpcDST_ACT_NOT_FOUND, result);
+        RPC::inject_error(rpcDST_ACT_NOT_FOUND, result);
         return result;
     }
 
     // If the two accounts are the same, then the deposit should be fine.
-    bool depositAuthorized {true};
+    bool depositAuthorized{true};
     if (srcAcct != dstAcct)
     {
         // Check destination for the DepositAuth flag.  If that flag is
@@ -102,7 +102,7 @@ Json::Value doDepositAuthorized (RPC::JsonContext& context)
         {
             // See if a preauthorization entry is in the ledger.
             auto const sleDepositAuth =
-                ledger->read(keylet::depositPreauth (dstAcct, srcAcct));
+                ledger->read(keylet::depositPreauth(dstAcct, srcAcct));
             depositAuthorized = static_cast<bool>(sleDepositAuth);
         }
     }
@@ -114,4 +114,4 @@ Json::Value doDepositAuthorized (RPC::JsonContext& context)
     return result;
 }
 
-} // ripple
+}  // namespace ripple

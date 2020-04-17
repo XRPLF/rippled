@@ -47,20 +47,16 @@ namespace ripple {
 struct openssl_ripemd160_hasher
 {
 public:
-    static beast::endian const endian =
-        beast::endian::native;
+    static beast::endian const endian = beast::endian::native;
 
-    using result_type =
-        std::array<std::uint8_t, 20>;
+    using result_type = std::array<std::uint8_t, 20>;
 
     openssl_ripemd160_hasher();
 
     void
-    operator()(void const* data,
-        std::size_t size) noexcept;
+    operator()(void const* data, std::size_t size) noexcept;
 
-    explicit
-    operator result_type() noexcept;
+    explicit operator result_type() noexcept;
 
 private:
     char ctx_[96];
@@ -73,20 +69,16 @@ private:
 struct openssl_sha512_hasher
 {
 public:
-    static beast::endian const endian =
-        beast::endian::native;
+    static beast::endian const endian = beast::endian::native;
 
-    using result_type =
-        std::array<std::uint8_t, 64>;
+    using result_type = std::array<std::uint8_t, 64>;
 
     openssl_sha512_hasher();
 
     void
-    operator()(void const* data,
-        std::size_t size) noexcept;
+    operator()(void const* data, std::size_t size) noexcept;
 
-    explicit
-    operator result_type() noexcept;
+    explicit operator result_type() noexcept;
 
 private:
     char ctx_[216];
@@ -99,20 +91,16 @@ private:
 struct openssl_sha256_hasher
 {
 public:
-    static beast::endian const endian =
-        beast::endian::native;
+    static beast::endian const endian = beast::endian::native;
 
-    using result_type =
-        std::array<std::uint8_t, 32>;
+    using result_type = std::array<std::uint8_t, 32>;
 
     openssl_sha256_hasher();
 
     void
-    operator()(void const* data,
-        std::size_t size) noexcept;
+    operator()(void const* data, std::size_t size) noexcept;
 
-    explicit
-    operator result_type() noexcept;
+    explicit operator result_type() noexcept;
 
 private:
     char ctx_[112];
@@ -155,24 +143,19 @@ private:
     sha256_hasher h_;
 
 public:
-    static beast::endian const endian =
-        beast::endian::native;
+    static beast::endian const endian = beast::endian::native;
 
-    using result_type =
-        std::array<std::uint8_t, 20>;
+    using result_type = std::array<std::uint8_t, 20>;
 
     void
-    operator()(void const* data,
-        std::size_t size) noexcept
+    operator()(void const* data, std::size_t size) noexcept
     {
         h_(data, size);
     }
 
-    explicit
-    operator result_type() noexcept
+    explicit operator result_type() noexcept
     {
-        auto const d0 =
-            sha256_hasher::result_type(h_);
+        auto const d0 = sha256_hasher::result_type(h_);
         ripemd160_hasher rh;
         rh(d0.data(), d0.size());
         return ripemd160_hasher::result_type(rh);
@@ -195,83 +178,68 @@ private:
     sha512_hasher h_;
 
 public:
-    static beast::endian const endian =
-        beast::endian::big;
+    static beast::endian const endian = beast::endian::big;
 
     using result_type = uint256;
 
     ~basic_sha512_half_hasher()
     {
-        erase(std::integral_constant<
-            bool, Secure>{});
+        erase(std::integral_constant<bool, Secure>{});
     }
 
     void
-    operator()(void const* data,
-        std::size_t size) noexcept
+    operator()(void const* data, std::size_t size) noexcept
     {
         h_(data, size);
     }
 
-    explicit
-    operator result_type() noexcept
+    explicit operator result_type() noexcept
     {
-        auto const digest =
-            sha512_hasher::result_type(h_);
+        auto const digest = sha512_hasher::result_type(h_);
         result_type result;
-        std::copy(digest.begin(),
-            digest.begin() + 32, result.begin());
+        std::copy(digest.begin(), digest.begin() + 32, result.begin());
         return result;
     }
 
 private:
-    inline
-    void
-    erase (std::false_type)
+    inline void erase(std::false_type)
     {
     }
 
-    inline
-    void
-    erase (std::true_type)
+    inline void erase(std::true_type)
     {
         beast::secure_erase(&h_, sizeof(h_));
     }
 };
 
-} // detail
+}  // namespace detail
 
-using sha512_half_hasher =
-    detail::basic_sha512_half_hasher<false>;
+using sha512_half_hasher = detail::basic_sha512_half_hasher<false>;
 
 // secure version
-using sha512_half_hasher_s =
-    detail::basic_sha512_half_hasher<true>;
+using sha512_half_hasher_s = detail::basic_sha512_half_hasher<true>;
 
 //------------------------------------------------------------------------------
 
 #ifdef _MSC_VER
 // Call from main to fix magic statics pre-VS2015
-inline
-void
+inline void
 sha512_deprecatedMSVCWorkaround()
 {
     beast::sha512_hasher h;
-    auto const digest = static_cast<
-        beast::sha512_hasher::result_type>(h);
+    auto const digest = static_cast<beast::sha512_hasher::result_type>(h);
 }
 #endif
 
 /** Returns the SHA512-Half of a series of objects. */
 template <class... Args>
 sha512_half_hasher::result_type
-sha512Half (Args const&... args)
+sha512Half(Args const&... args)
 {
     sha512_half_hasher h;
     using beast::hash_append;
     hash_append(h, args...);
-    return static_cast<typename
-        sha512_half_hasher::result_type>(h);
+    return static_cast<typename sha512_half_hasher::result_type>(h);
 }
 
 /** Returns the SHA512-Half of a series of objects.
@@ -282,15 +250,14 @@ sha512Half (Args const&... args)
 */
 template <class... Args>
 sha512_half_hasher_s::result_type
-sha512Half_s (Args const&... args)
+sha512Half_s(Args const&... args)
 {
     sha512_half_hasher_s h;
     using beast::hash_append;
     hash_append(h, args...);
-    return static_cast<typename
-        sha512_half_hasher_s::result_type>(h);
+    return static_cast<typename sha512_half_hasher_s::result_type>(h);
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

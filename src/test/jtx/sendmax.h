@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_SENDMAX_H_INCLUDED
 #define RIPPLE_TEST_JTX_SENDMAX_H_INCLUDED
 
-#include <test/jtx/Env.h>
 #include <ripple/protocol/STAmount.h>
+#include <test/jtx/Env.h>
 
 namespace ripple {
 namespace test {
@@ -34,8 +34,7 @@ private:
     STAmount amount_;
 
 public:
-    sendmax (STAmount const& amount)
-        : amount_(amount)
+    sendmax(STAmount const& amount) : amount_(amount)
     {
     }
 
@@ -43,8 +42,8 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

@@ -41,7 +41,6 @@ namespace csf {
 //  This file contains helper functions for composing different collectors
 //  and also defines several standard collectors available for simulations.
 
-
 /** Group of collectors.
 
     Presents a group of collectors as a single collector which process an event
@@ -128,7 +127,6 @@ struct CollectByNode
     {
         byNode[who].on(who, when, e);
     }
-
 };
 
 /** Collector which ignores all events */
@@ -206,7 +204,6 @@ struct TxCollector
     void
     on(PeerID who, SimTime when, SubmitTx const& e)
     {
-
         // save first time it was seen
         if (txs.emplace(e.tx.id(), Tracker{e.tx, when}).second)
         {
@@ -273,162 +270,172 @@ struct TxCollector
     report(SimDuration simDuration, T& log, bool printBreakline = false)
     {
         using namespace std::chrono;
-        auto perSec = [&simDuration](std::size_t count)
-        {
-            return double(count)/duration_cast<seconds>(simDuration).count();
+        auto perSec = [&simDuration](std::size_t count) {
+            return double(count) / duration_cast<seconds>(simDuration).count();
         };
 
-        auto fmtS = [](SimDuration dur)
-        {
+        auto fmtS = [](SimDuration dur) {
             return duration_cast<duration<float>>(dur).count();
         };
 
         if (printBreakline)
         {
-            log << std::setw(11) << std::setfill('-') << "-" <<  "-"
-                << std::setw(7) << std::setfill('-') << "-" <<  "-"
-                << std::setw(7) << std::setfill('-') << "-" <<  "-"
-                << std::setw(36) << std::setfill('-') << "-"
+            log << std::setw(11) << std::setfill('-') << "-"
+                << "-" << std::setw(7) << std::setfill('-') << "-"
+                << "-" << std::setw(7) << std::setfill('-') << "-"
+                << "-" << std::setw(36) << std::setfill('-') << "-"
                 << std::endl;
             log << std::setfill(' ');
         }
 
-        log << std::left
-            << std::setw(11) << "TxStats" <<  "|"
-            << std::setw(7) << "Count" <<  "|"
-            << std::setw(7) << "Per Sec" <<  "|"
-            << std::setw(15) << "Latency (sec)"
-            << std::right
-            << std::setw(7) << "10-ile"
-            << std::setw(7) << "50-ile"
-            << std::setw(7) << "90-ile"
-            << std::left
-            << std::endl;
+        log << std::left << std::setw(11) << "TxStats"
+            << "|" << std::setw(7) << "Count"
+            << "|" << std::setw(7) << "Per Sec"
+            << "|" << std::setw(15) << "Latency (sec)" << std::right
+            << std::setw(7) << "10-ile" << std::setw(7) << "50-ile"
+            << std::setw(7) << "90-ile" << std::left << std::endl;
 
-        log << std::setw(11) << std::setfill('-') << "-" <<  "|"
-            << std::setw(7) << std::setfill('-') << "-" <<  "|"
-            << std::setw(7) << std::setfill('-') << "-" <<  "|"
-            << std::setw(36) << std::setfill('-') << "-"
-            << std::endl;
+        log << std::setw(11) << std::setfill('-') << "-"
+            << "|" << std::setw(7) << std::setfill('-') << "-"
+            << "|" << std::setw(7) << std::setfill('-') << "-"
+            << "|" << std::setw(36) << std::setfill('-') << "-" << std::endl;
         log << std::setfill(' ');
 
-        log << std::left <<
-            std::setw(11) << "Submit " << "|"
-            << std::right
-            << std::setw(7) << submitted << "|"
+        log << std::left << std::setw(11) << "Submit "
+            << "|" << std::right << std::setw(7) << submitted << "|"
             << std::setw(7) << std::setprecision(2) << perSec(submitted) << "|"
             << std::setw(36) << "" << std::endl;
 
-        log << std::left
-            << std::setw(11) << "Accept " << "|"
-            << std::right
-            << std::setw(7) << accepted << "|"
+        log << std::left << std::setw(11) << "Accept "
+            << "|" << std::right << std::setw(7) << accepted << "|"
             << std::setw(7) << std::setprecision(2) << perSec(accepted) << "|"
             << std::setw(15) << std::left << "From Submit" << std::right
-            << std::setw(7) << std::setprecision(2) << fmtS(submitToAccept.percentile(0.1f))
-            << std::setw(7) << std::setprecision(2) << fmtS(submitToAccept.percentile(0.5f))
-            << std::setw(7) << std::setprecision(2) << fmtS(submitToAccept.percentile(0.9f))
-            << std::endl;
+            << std::setw(7) << std::setprecision(2)
+            << fmtS(submitToAccept.percentile(0.1f)) << std::setw(7)
+            << std::setprecision(2) << fmtS(submitToAccept.percentile(0.5f))
+            << std::setw(7) << std::setprecision(2)
+            << fmtS(submitToAccept.percentile(0.9f)) << std::endl;
 
-        log << std::left
-            << std::setw(11) << "Validate " << "|"
-            << std::right
-            << std::setw(7) << validated << "|"
+        log << std::left << std::setw(11) << "Validate "
+            << "|" << std::right << std::setw(7) << validated << "|"
             << std::setw(7) << std::setprecision(2) << perSec(validated) << "|"
             << std::setw(15) << std::left << "From Submit" << std::right
-            << std::setw(7) << std::setprecision(2) << fmtS(submitToValidate.percentile(0.1f))
-            << std::setw(7) << std::setprecision(2) << fmtS(submitToValidate.percentile(0.5f))
-            << std::setw(7) << std::setprecision(2) << fmtS(submitToValidate.percentile(0.9f))
-            << std::endl;
+            << std::setw(7) << std::setprecision(2)
+            << fmtS(submitToValidate.percentile(0.1f)) << std::setw(7)
+            << std::setprecision(2) << fmtS(submitToValidate.percentile(0.5f))
+            << std::setw(7) << std::setprecision(2)
+            << fmtS(submitToValidate.percentile(0.9f)) << std::endl;
 
-        log << std::left
-            << std::setw(11) << "Orphan" << "|"
-            << std::right
-            << std::setw(7) << orphaned() << "|"
-            << std::setw(7) << "" << "|"
-            << std::setw(36) << std::endl;
+        log << std::left << std::setw(11) << "Orphan"
+            << "|" << std::right << std::setw(7) << orphaned() << "|"
+            << std::setw(7) << ""
+            << "|" << std::setw(36) << std::endl;
 
-        log << std::left
-            << std::setw(11) << "Unvalidated" << "|"
-            << std::right
-            << std::setw(7) << unvalidated() << "|"
-            << std::setw(7) << "" << "|"
-            << std::setw(43) << std::endl;
+        log << std::left << std::setw(11) << "Unvalidated"
+            << "|" << std::right << std::setw(7) << unvalidated() << "|"
+            << std::setw(7) << ""
+            << "|" << std::setw(43) << std::endl;
 
-        log << std::setw(11) << std::setfill('-') << "-" <<  "-"
-            << std::setw(7) << std::setfill('-') << "-" <<  "-"
-            << std::setw(7) << std::setfill('-') << "-" <<  "-"
-            << std::setw(36) << std::setfill('-') << "-"
-            << std::endl;
+        log << std::setw(11) << std::setfill('-') << "-"
+            << "-" << std::setw(7) << std::setfill('-') << "-"
+            << "-" << std::setw(7) << std::setfill('-') << "-"
+            << "-" << std::setw(36) << std::setfill('-') << "-" << std::endl;
         log << std::setfill(' ');
     }
 
     template <class T, class Tag>
     void
-    csv(SimDuration simDuration, T& log, Tag const& tag, bool printHeaders = false)
+    csv(SimDuration simDuration,
+        T& log,
+        Tag const& tag,
+        bool printHeaders = false)
     {
         using namespace std::chrono;
-        auto perSec = [&simDuration](std::size_t count)
-        {
-            return double(count)/duration_cast<seconds>(simDuration).count();
+        auto perSec = [&simDuration](std::size_t count) {
+            return double(count) / duration_cast<seconds>(simDuration).count();
         };
 
-        auto fmtS = [](SimDuration dur)
-        {
+        auto fmtS = [](SimDuration dur) {
             return duration_cast<duration<float>>(dur).count();
         };
 
-        if(printHeaders)
+        if (printHeaders)
         {
-            log << "tag" << ","
-                << "txNumSubmitted" << ","
-                << "txNumAccepted" << ","
-                << "txNumValidated" << ","
-                << "txNumOrphaned" << ","
-                << "txUnvalidated" << ","
-                << "txRateSumbitted" << ","
-                << "txRateAccepted" << ","
-                << "txRateValidated" << ","
-                << "txLatencySubmitToAccept10Pctl" << ","
-                << "txLatencySubmitToAccept50Pctl" << ","
-                << "txLatencySubmitToAccept90Pctl" << ","
-                << "txLatencySubmitToValidatet10Pctl" << ","
-                << "txLatencySubmitToValidatet50Pctl" << ","
-                << "txLatencySubmitToValidatet90Pctl"
-                << std::endl;
+            log << "tag"
+                << ","
+                << "txNumSubmitted"
+                << ","
+                << "txNumAccepted"
+                << ","
+                << "txNumValidated"
+                << ","
+                << "txNumOrphaned"
+                << ","
+                << "txUnvalidated"
+                << ","
+                << "txRateSumbitted"
+                << ","
+                << "txRateAccepted"
+                << ","
+                << "txRateValidated"
+                << ","
+                << "txLatencySubmitToAccept10Pctl"
+                << ","
+                << "txLatencySubmitToAccept50Pctl"
+                << ","
+                << "txLatencySubmitToAccept90Pctl"
+                << ","
+                << "txLatencySubmitToValidatet10Pctl"
+                << ","
+                << "txLatencySubmitToValidatet50Pctl"
+                << ","
+                << "txLatencySubmitToValidatet90Pctl" << std::endl;
         }
 
-
-        log << tag << ","
+        log << tag
+            << ","
             // txNumSubmitted
-            << submitted << ","
+            << submitted
+            << ","
             // txNumAccepted
-            << accepted << ","
+            << accepted
+            << ","
             // txNumValidated
-            << validated << ","
+            << validated
+            << ","
             // txNumOrphaned
-            << orphaned() << ","
+            << orphaned()
+            << ","
             // txNumUnvalidated
-            << unvalidated() << ","
+            << unvalidated()
+            << ","
             // txRateSubmitted
-            << std::setprecision(2) << perSec(submitted) << ","
+            << std::setprecision(2) << perSec(submitted)
+            << ","
             // txRateAccepted
-            << std::setprecision(2) << perSec(accepted) << ","
+            << std::setprecision(2) << perSec(accepted)
+            << ","
             // txRateValidated
-            << std::setprecision(2) << perSec(validated) << ","
+            << std::setprecision(2) << perSec(validated)
+            << ","
             // txLatencySubmitToAccept10Pctl
-            << std::setprecision(2) << fmtS(submitToAccept.percentile(0.1f)) << ","
+            << std::setprecision(2) << fmtS(submitToAccept.percentile(0.1f))
+            << ","
             // txLatencySubmitToAccept50Pctl
-            << std::setprecision(2) << fmtS(submitToAccept.percentile(0.5f)) << ","
+            << std::setprecision(2) << fmtS(submitToAccept.percentile(0.5f))
+            << ","
             // txLatencySubmitToAccept90Pctl
-            << std::setprecision(2) << fmtS(submitToAccept.percentile(0.9f)) << ","
+            << std::setprecision(2) << fmtS(submitToAccept.percentile(0.9f))
+            << ","
             // txLatencySubmitToValidate10Pctl
-            << std::setprecision(2) << fmtS(submitToValidate.percentile(0.1f)) << ","
+            << std::setprecision(2) << fmtS(submitToValidate.percentile(0.1f))
+            << ","
             // txLatencySubmitToValidate50Pctl
-            << std::setprecision(2) << fmtS(submitToValidate.percentile(0.5f)) << ","
+            << std::setprecision(2) << fmtS(submitToValidate.percentile(0.5f))
+            << ","
             // txLatencySubmitToValidate90Pctl
-            << std::setprecision(2) << fmtS(submitToValidate.percentile(0.9f)) << ","
-            << std::endl;
+            << std::setprecision(2) << fmtS(submitToValidate.percentile(0.9f))
+            << "," << std::endl;
     }
 };
 
@@ -530,128 +537,140 @@ struct LedgerCollector
     report(SimDuration simDuration, T& log, bool printBreakline = false)
     {
         using namespace std::chrono;
-        auto perSec = [&simDuration](std::size_t count)
-        {
-            return double(count)/duration_cast<seconds>(simDuration).count();
+        auto perSec = [&simDuration](std::size_t count) {
+            return double(count) / duration_cast<seconds>(simDuration).count();
         };
 
-        auto fmtS = [](SimDuration dur)
-        {
+        auto fmtS = [](SimDuration dur) {
             return duration_cast<duration<float>>(dur).count();
         };
 
         if (printBreakline)
         {
-            log << std::setw(11) << std::setfill('-') << "-" <<  "-"
-                << std::setw(7) << std::setfill('-') << "-" <<  "-"
-                << std::setw(7) << std::setfill('-') << "-" <<  "-"
-                << std::setw(36) << std::setfill('-') << "-"
+            log << std::setw(11) << std::setfill('-') << "-"
+                << "-" << std::setw(7) << std::setfill('-') << "-"
+                << "-" << std::setw(7) << std::setfill('-') << "-"
+                << "-" << std::setw(36) << std::setfill('-') << "-"
                 << std::endl;
             log << std::setfill(' ');
         }
 
-        log << std::left
-            << std::setw(11) << "LedgerStats" <<  "|"
-            << std::setw(7)  << "Count" <<  "|"
-            << std::setw(7)  << "Per Sec" <<  "|"
-            << std::setw(15) << "Latency (sec)"
-            << std::right
-            << std::setw(7) << "10-ile"
-            << std::setw(7) << "50-ile"
-            << std::setw(7) << "90-ile"
-            << std::left
-            << std::endl;
+        log << std::left << std::setw(11) << "LedgerStats"
+            << "|" << std::setw(7) << "Count"
+            << "|" << std::setw(7) << "Per Sec"
+            << "|" << std::setw(15) << "Latency (sec)" << std::right
+            << std::setw(7) << "10-ile" << std::setw(7) << "50-ile"
+            << std::setw(7) << "90-ile" << std::left << std::endl;
 
-        log << std::setw(11) << std::setfill('-') << "-" <<  "|"
-            << std::setw(7) << std::setfill('-') << "-" <<  "|"
-            << std::setw(7) << std::setfill('-') << "-" <<  "|"
-            << std::setw(36) << std::setfill('-') << "-"
-            << std::endl;
+        log << std::setw(11) << std::setfill('-') << "-"
+            << "|" << std::setw(7) << std::setfill('-') << "-"
+            << "|" << std::setw(7) << std::setfill('-') << "-"
+            << "|" << std::setw(36) << std::setfill('-') << "-" << std::endl;
         log << std::setfill(' ');
 
-         log << std::left
-            << std::setw(11) << "Accept " << "|"
-            << std::right
-            << std::setw(7) << accepted << "|"
+        log << std::left << std::setw(11) << "Accept "
+            << "|" << std::right << std::setw(7) << accepted << "|"
             << std::setw(7) << std::setprecision(2) << perSec(accepted) << "|"
             << std::setw(15) << std::left << "From Accept" << std::right
-            << std::setw(7) << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.1f))
-            << std::setw(7) << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.5f))
-            << std::setw(7) << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.9f))
-            << std::endl;
+            << std::setw(7) << std::setprecision(2)
+            << fmtS(acceptToAccept.percentile(0.1f)) << std::setw(7)
+            << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.5f))
+            << std::setw(7) << std::setprecision(2)
+            << fmtS(acceptToAccept.percentile(0.9f)) << std::endl;
 
-        log << std::left
-            << std::setw(11) << "Validate " << "|"
-            << std::right
-            << std::setw(7) << fullyValidated << "|"
-            << std::setw(7) << std::setprecision(2) << perSec(fullyValidated) << "|"
-            << std::setw(15) << std::left << "From Validate " << std::right
-            << std::setw(7) << std::setprecision(2) << fmtS(fullyValidToFullyValid.percentile(0.1f))
-            << std::setw(7) << std::setprecision(2) << fmtS(fullyValidToFullyValid.percentile(0.5f))
-            << std::setw(7) << std::setprecision(2) << fmtS(fullyValidToFullyValid.percentile(0.9f))
-            << std::endl;
+        log << std::left << std::setw(11) << "Validate "
+            << "|" << std::right << std::setw(7) << fullyValidated << "|"
+            << std::setw(7) << std::setprecision(2) << perSec(fullyValidated)
+            << "|" << std::setw(15) << std::left << "From Validate "
+            << std::right << std::setw(7) << std::setprecision(2)
+            << fmtS(fullyValidToFullyValid.percentile(0.1f)) << std::setw(7)
+            << std::setprecision(2)
+            << fmtS(fullyValidToFullyValid.percentile(0.5f)) << std::setw(7)
+            << std::setprecision(2)
+            << fmtS(fullyValidToFullyValid.percentile(0.9f)) << std::endl;
 
-        log << std::setw(11) << std::setfill('-') << "-" <<  "-"
-            << std::setw(7) << std::setfill('-') << "-" <<  "-"
-            << std::setw(7) << std::setfill('-') << "-" <<  "-"
-            << std::setw(36) << std::setfill('-') << "-"
-            << std::endl;
+        log << std::setw(11) << std::setfill('-') << "-"
+            << "-" << std::setw(7) << std::setfill('-') << "-"
+            << "-" << std::setw(7) << std::setfill('-') << "-"
+            << "-" << std::setw(36) << std::setfill('-') << "-" << std::endl;
         log << std::setfill(' ');
     }
 
     template <class T, class Tag>
     void
-    csv(SimDuration simDuration, T& log, Tag const& tag, bool printHeaders = false)
+    csv(SimDuration simDuration,
+        T& log,
+        Tag const& tag,
+        bool printHeaders = false)
     {
         using namespace std::chrono;
-        auto perSec = [&simDuration](std::size_t count)
-        {
-            return double(count)/duration_cast<seconds>(simDuration).count();
+        auto perSec = [&simDuration](std::size_t count) {
+            return double(count) / duration_cast<seconds>(simDuration).count();
         };
 
-        auto fmtS = [](SimDuration dur)
-        {
+        auto fmtS = [](SimDuration dur) {
             return duration_cast<duration<float>>(dur).count();
         };
 
-        if(printHeaders)
+        if (printHeaders)
         {
-            log << "tag" << ","
-                << "ledgerNumAccepted" << ","
-                << "ledgerNumFullyValidated" << ","
-                << "ledgerRateAccepted" << ","
-                << "ledgerRateFullyValidated" << ","
-                << "ledgerLatencyAcceptToAccept10Pctl" << ","
-                << "ledgerLatencyAcceptToAccept50Pctl" << ","
-                << "ledgerLatencyAcceptToAccept90Pctl" << ","
-                << "ledgerLatencyFullyValidToFullyValid10Pctl" << ","
-                << "ledgerLatencyFullyValidToFullyValid50Pctl" << ","
-                << "ledgerLatencyFullyValidToFullyValid90Pctl"
-                << std::endl;
+            log << "tag"
+                << ","
+                << "ledgerNumAccepted"
+                << ","
+                << "ledgerNumFullyValidated"
+                << ","
+                << "ledgerRateAccepted"
+                << ","
+                << "ledgerRateFullyValidated"
+                << ","
+                << "ledgerLatencyAcceptToAccept10Pctl"
+                << ","
+                << "ledgerLatencyAcceptToAccept50Pctl"
+                << ","
+                << "ledgerLatencyAcceptToAccept90Pctl"
+                << ","
+                << "ledgerLatencyFullyValidToFullyValid10Pctl"
+                << ","
+                << "ledgerLatencyFullyValidToFullyValid50Pctl"
+                << ","
+                << "ledgerLatencyFullyValidToFullyValid90Pctl" << std::endl;
         }
 
-        log << tag << ","
+        log << tag
+            << ","
             // ledgerNumAccepted
-            << accepted << ","
+            << accepted
+            << ","
             // ledgerNumFullyValidated
-            << fullyValidated << ","
+            << fullyValidated
+            << ","
             // ledgerRateAccepted
-            << std::setprecision(2) << perSec(accepted) << ","
+            << std::setprecision(2) << perSec(accepted)
+            << ","
             // ledgerRateFullyValidated
-            << std::setprecision(2) << perSec(fullyValidated) << ","
+            << std::setprecision(2) << perSec(fullyValidated)
+            << ","
             // ledgerLatencyAcceptToAccept10Pctl
-            << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.1f)) << ","
+            << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.1f))
+            << ","
             // ledgerLatencyAcceptToAccept50Pctl
-            << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.5f)) << ","
+            << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.5f))
+            << ","
             // ledgerLatencyAcceptToAccept90Pctl
-            << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.9f)) << ","
+            << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.9f))
+            << ","
             // ledgerLatencyFullyValidToFullyValid10Pctl
-            << std::setprecision(2) << fmtS(fullyValidToFullyValid.percentile(0.1f)) << ","
+            << std::setprecision(2)
+            << fmtS(fullyValidToFullyValid.percentile(0.1f))
+            << ","
             // ledgerLatencyFullyValidToFullyValid50Pctl
-            << std::setprecision(2) << fmtS(fullyValidToFullyValid.percentile(0.5f)) << ","
+            << std::setprecision(2)
+            << fmtS(fullyValidToFullyValid.percentile(0.5f))
+            << ","
             // ledgerLatencyFullyValidToFullyValid90Pctl
-            << std::setprecision(2) << fmtS(fullyValidToFullyValid.percentile(0.9f))
-            << std::endl;
+            << std::setprecision(2)
+            << fmtS(fullyValidToFullyValid.percentile(0.9f)) << std::endl;
     }
 };
 
@@ -674,7 +693,8 @@ struct StreamCollector
     void
     on(PeerID who, SimTime when, AcceptLedger const& e)
     {
-        out << when.time_since_epoch().count() << ": Node " << who << " accepted "
+        out << when.time_since_epoch().count() << ": Node " << who
+            << " accepted "
             << "L" << e.ledger.id() << " " << e.ledger.txs() << "\n";
     }
 
@@ -682,8 +702,8 @@ struct StreamCollector
     on(PeerID who, SimTime when, FullyValidateLedger const& e)
     {
         out << when.time_since_epoch().count() << ": Node " << who
-            << " fully-validated " << "L"<< e.ledger.id() << " " << e.ledger.txs()
-            << "\n";
+            << " fully-validated "
+            << "L" << e.ledger.id() << " " << e.ledger.txs() << "\n";
     }
 };
 
@@ -716,7 +736,7 @@ struct JumpCollector
     on(PeerID who, SimTime when, AcceptLedger const& e)
     {
         // Not a direct child -> parent switch
-        if(e.ledger.parentID() != e.prior.id())
+        if (e.ledger.parentID() != e.prior.id())
             closeJumps.emplace_back(Jump{who, when, e.prior, e.ledger});
     }
 

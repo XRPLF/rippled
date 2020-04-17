@@ -25,18 +25,33 @@ namespace test {
 
 namespace jtx {
 
-struct none_t { none_t() { } };
+struct none_t
+{
+    none_t()
+    {
+    }
+};
 static none_t const none;
 
-struct autofill_t { autofill_t() { } };
+struct autofill_t
+{
+    autofill_t()
+    {
+    }
+};
 static autofill_t const autofill;
 
-struct disabled_t { disabled_t() { } };
+struct disabled_t
+{
+    disabled_t()
+    {
+    }
+};
 static disabled_t const disabled;
 
-} // jtx
+}  // namespace jtx
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple
 
 #endif

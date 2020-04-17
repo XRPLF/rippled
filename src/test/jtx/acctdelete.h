@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_ACCTDELETE_H_INCLUDED
 #define RIPPLE_TEST_JTX_ACCTDELETE_H_INCLUDED
 
-#include <test/jtx/Env.h>
 #include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 
 namespace ripple {
 namespace test {
@@ -29,11 +29,11 @@ namespace jtx {
 
 /** Delete account.  If successful transfer remaining XRP to dest. */
 Json::Value
-acctdelete (Account const& account, Account const& dest);
+acctdelete(Account const& account, Account const& dest);
 
-} // jtx
+}  // namespace jtx
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple
 
 #endif

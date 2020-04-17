@@ -21,11 +21,11 @@
 #define RIPPLE_BASICS_BASICCONFIG_H_INCLUDED
 
 #include <ripple/basics/contract.h>
-#include <beast/unit_test/detail/const_container.hpp>
 #include <boost/beast/core/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
 #include <algorithm>
+#include <beast/unit_test/detail/const_container.hpp>
 #include <map>
 #include <ostream>
 #include <string>
@@ -40,20 +40,18 @@ using IniFileSections = std::map<std::string, std::vector<std::string>>;
 /** Holds a collection of configuration values.
     A configuration file contains zero or more sections.
 */
-class Section
-    : public beast::unit_test::detail::const_container <
-        std::map <std::string, std::string, boost::beast::iless>>
+class Section : public beast::unit_test::detail::const_container<
+                    std::map<std::string, std::string, boost::beast::iless>>
 {
 private:
     std::string name_;
-    std::vector <std::string> lines_;
-    std::vector <std::string> values_;
+    std::vector<std::string> lines_;
+    std::vector<std::string> values_;
     bool had_trailing_comments_ = false;
 
 public:
     /** Create an empty section. */
-    explicit
-    Section (std::string const& name = "");
+    explicit Section(std::string const& name = "");
 
     /** Returns the name of this section. */
     std::string const&
@@ -65,7 +63,7 @@ public:
     /** Returns all the lines in the section.
         This includes everything.
     */
-    std::vector <std::string> const&
+    std::vector<std::string> const&
     lines() const
     {
         return lines_;
@@ -74,7 +72,7 @@ public:
     /** Returns all the values in the section.
         Values are non-empty lines which are not key/value pairs.
     */
-    std::vector <std::string> const&
+    std::vector<std::string> const&
     values() const
     {
         return values_;
@@ -84,12 +82,12 @@ public:
      * Set the legacy value for this section.
      */
     void
-    legacy (std::string value)
+    legacy(std::string value)
     {
-        if (lines_.empty ())
-            lines_.emplace_back (std::move (value));
+        if (lines_.empty())
+            lines_.emplace_back(std::move(value));
         else
-            lines_[0] = std::move (value);
+            lines_[0] = std::move(value);
     }
 
     /**
@@ -99,12 +97,12 @@ public:
                an empty string.
      */
     std::string
-    legacy () const
+    legacy() const
     {
-        if (lines_.empty ())
+        if (lines_.empty())
             return "";
-        if (lines_.size () > 1)
-            Throw<std::runtime_error> (
+        if (lines_.size() > 1)
+            Throw<std::runtime_error>(
                 "A legacy value must have exactly one line. Section: " + name_);
         return lines_[0];
     }
@@ -113,7 +111,7 @@ public:
         The previous value is discarded.
     */
     void
-    set (std::string const& key, std::string const& value);
+    set(std::string const& key, std::string const& value);
 
     /** Append a set of lines to this section.
         Lines containing key/value pairs are added to the map,
@@ -121,28 +119,28 @@ public:
         added to the lines list.
     */
     void
-    append (std::vector <std::string> const& lines);
+    append(std::vector<std::string> const& lines);
 
     /** Append a line to this section. */
     void
-    append (std::string const& line)
+    append(std::string const& line)
     {
-        append (std::vector<std::string>{ line });
+        append(std::vector<std::string>{line});
     }
 
     /** Returns `true` if a key with the given name exists. */
     bool
-    exists (std::string const& name) const;
+    exists(std::string const& name) const;
 
     /** Retrieve a key/value pair.
         @return A pair with bool `true` if the string was found.
     */
-    std::pair <std::string, bool>
-    find (std::string const& name) const;
+    std::pair<std::string, bool>
+    find(std::string const& name) const;
 
     template <class T>
     boost::optional<T>
-    get (std::string const& name) const
+    get(std::string const& name) const
     {
         auto const iter = cont().find(name);
         if (iter == cont().end())
@@ -151,7 +149,7 @@ public:
     }
 
     /// Returns a value if present, else another value.
-    template<class T>
+    template <class T>
     T
     value_or(std::string const& name, T const& other) const
     {
@@ -161,11 +159,14 @@ public:
 
     // indicates if trailing comments were seen
     // during the appending of any lines/values
-    bool had_trailing_comments() const { return had_trailing_comments_; }
+    bool
+    had_trailing_comments() const
+    {
+        return had_trailing_comments_;
+    }
 
-    friend
-    std::ostream&
-    operator<< (std::ostream&, Section const& section);
+    friend std::ostream&
+    operator<<(std::ostream&, Section const& section);
 };
 
 //------------------------------------------------------------------------------
@@ -177,31 +178,31 @@ public:
 class BasicConfig
 {
 private:
-    std::map <std::string, Section, boost::beast::iless> map_;
+    std::map<std::string, Section, boost::beast::iless> map_;
 
 public:
     /** Returns `true` if a section with the given name exists. */
     bool
-    exists (std::string const& name) const;
+    exists(std::string const& name) const;
 
     /** Returns the section with the given name.
         If the section does not exist, an empty section is returned.
     */
     /** @{ */
     Section&
-    section (std::string const& name);
+    section(std::string const& name);
 
     Section const&
-    section (std::string const& name) const;
+    section(std::string const& name) const;
 
     Section const&
-    operator[] (std::string const& name) const
+    operator[](std::string const& name) const
     {
         return section(name);
     }
 
     Section&
-    operator[] (std::string const& name)
+    operator[](std::string const& name)
     {
         return section(name);
     }
@@ -212,13 +213,15 @@ public:
         The previous value, if any, is overwritten.
     */
     void
-    overwrite (std::string const& section, std::string const& key,
+    overwrite(
+        std::string const& section,
+        std::string const& key,
         std::string const& value);
 
     /** Remove all the key/value pairs from the section.
      */
     void
-    deprecatedClearSection (std::string const& section);
+    deprecatedClearSection(std::string const& section);
 
     /**
      *  Set a value that is not a key/value pair.
@@ -243,20 +246,22 @@ public:
     std::string
     legacy(std::string const& sectionName) const;
 
-    friend
-    std::ostream&
-    operator<< (std::ostream& ss, BasicConfig const& c);
+    friend std::ostream&
+    operator<<(std::ostream& ss, BasicConfig const& c);
 
     // indicates if trailing comments were seen
     // in any loaded Sections
-    bool had_trailing_comments() const {
-        return std::any_of(map_.cbegin(), map_.cend(),
-            [](auto s){ return s.second.had_trailing_comments(); });
+    bool
+    had_trailing_comments() const
+    {
+        return std::any_of(map_.cbegin(), map_.cend(), [](auto s) {
+            return s.second.had_trailing_comments();
+        });
     }
 
 protected:
     void
-    build (IniFileSections const& ifs);
+    build(IniFileSections const& ifs);
 };
 
 //------------------------------------------------------------------------------
@@ -268,12 +273,12 @@ protected:
 */
 template <class T>
 bool
-set (T& target, std::string const& name, Section const& section)
+set(T& target, std::string const& name, Section const& section)
 {
     bool found_and_valid = false;
     try
     {
-        auto const val = section.get<T> (name);
+        auto const val = section.get<T>(name);
         if ((found_and_valid = val.is_initialized()))
             target = *val;
     }
@@ -290,8 +295,10 @@ set (T& target, std::string const& name, Section const& section)
 */
 template <class T>
 bool
-set (T& target, T const& defaultValue,
-    std::string const& name, Section const& section)
+set(T& target,
+    T const& defaultValue,
+    std::string const& name,
+    Section const& section)
 {
     bool found_and_valid = set<T>(target, name, section);
     if (!found_and_valid)
@@ -306,12 +313,13 @@ set (T& target, T const& defaultValue,
 // NOTE This routine might be more clumsy than the previous two
 template <class T>
 T
-get (Section const& section,
-    std::string const& name, T const& defaultValue = T{})
+get(Section const& section,
+    std::string const& name,
+    T const& defaultValue = T{})
 {
     try
     {
-        return section.value_or<T> (name, defaultValue);
+        return section.value_or<T>(name, defaultValue);
     }
     catch (boost::bad_lexical_cast&)
     {
@@ -319,15 +327,13 @@ get (Section const& section,
     return defaultValue;
 }
 
-inline
-std::string
-get (Section const& section,
-    std::string const& name, const char* defaultValue)
+inline std::string
+get(Section const& section, std::string const& name, const char* defaultValue)
 {
     bool found_and_valid = false;
     try
     {
-        auto const val = section.get<std::string> (name);
+        auto const val = section.get<std::string>(name);
         if ((found_and_valid = val.is_initialized()))
             return *val;
     }
@@ -339,25 +345,22 @@ get (Section const& section,
 
 template <class T>
 bool
-get_if_exists (Section const& section,
-    std::string const& name, T& v)
+get_if_exists(Section const& section, std::string const& name, T& v)
 {
     return set<T>(v, name, section);
 }
 
 template <>
-inline
-bool
-get_if_exists<bool> (Section const& section,
-    std::string const& name, bool& v)
+inline bool
+get_if_exists<bool>(Section const& section, std::string const& name, bool& v)
 {
     int intVal = 0;
     auto stat = get_if_exists(section, name, intVal);
     if (stat)
-        v = bool (intVal);
+        v = bool(intVal);
     return stat;
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

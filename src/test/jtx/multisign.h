@@ -20,11 +20,11 @@
 #ifndef RIPPLE_TEST_JTX_MULTISIGN_H_INCLUDED
 #define RIPPLE_TEST_JTX_MULTISIGN_H_INCLUDED
 
+#include <cstdint>
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/owners.h>
 #include <test/jtx/tags.h>
-#include <cstdint>
 
 namespace ripple {
 namespace test {
@@ -36,22 +36,21 @@ struct signer
     std::uint32_t weight;
     Account account;
 
-    signer (Account account_,
-            std::uint32_t weight_ = 1)
-        : weight(weight_)
-        , account(std::move(account_))
+    signer(Account account_, std::uint32_t weight_ = 1)
+        : weight(weight_), account(std::move(account_))
     {
     }
 };
 
 Json::Value
-signers (Account const& account,
+signers(
+    Account const& account,
     std::uint32_t quorum,
-        std::vector<signer> const& v);
+    std::vector<signer> const& v);
 
 /** Remove a signer list. */
 Json::Value
-signers (Account const& account, none_t);
+signers(Account const& account, none_t);
 
 //------------------------------------------------------------------------------
 
@@ -64,27 +63,26 @@ public:
         Account acct;
         Account sig;
 
-        Reg (Account const& masterSig)
-        : acct (masterSig)
-        , sig (masterSig)
-        { }
+        Reg(Account const& masterSig) : acct(masterSig), sig(masterSig)
+        {
+        }
 
-        Reg (Account const& acct_, Account const& regularSig)
-        : acct (acct_)
-        , sig (regularSig)
-        { }
+        Reg(Account const& acct_, Account const& regularSig)
+            : acct(acct_), sig(regularSig)
+        {
+        }
 
-        Reg (char const* masterSig)
-        : acct (masterSig)
-        , sig (masterSig)
-        { }
+        Reg(char const* masterSig) : acct(masterSig), sig(masterSig)
+        {
+        }
 
-        Reg (char const* acct_, char const* regularSig)
-        : acct (acct_)
-        , sig (regularSig)
-        { }
+        Reg(char const* acct_, char const* regularSig)
+            : acct(acct_), sig(regularSig)
+        {
+        }
 
-        bool operator< (Reg const& rhs) const
+        bool
+        operator<(Reg const& rhs) const
         {
             return acct < rhs.acct;
         }
@@ -93,12 +91,13 @@ public:
     std::vector<Reg> signers;
 
 public:
-    msig (std::vector<Reg> signers_);
+    msig(std::vector<Reg> signers_);
 
     template <class AccountType, class... Accounts>
     explicit msig(AccountType&& a0, Accounts&&... aN)
-        : msig{std::vector<Reg>{std::forward<AccountType>(a0),
-                                std::forward<Accounts>(aN)...}}
+        : msig{std::vector<Reg>{
+              std::forward<AccountType>(a0),
+              std::forward<Accounts>(aN)...}}
     {
     }
 
@@ -111,8 +110,8 @@ public:
 /** The number of signer lists matches. */
 using siglists = owner_count<ltSIGNER_LIST>;
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

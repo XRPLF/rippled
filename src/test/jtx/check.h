@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_CHECK_H_INCLUDED
 #define RIPPLE_TEST_JTX_CHECK_H_INCLUDED
 
-#include <test/jtx/Env.h>
 #include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/owners.h>
 
 namespace ripple {
@@ -33,39 +33,43 @@ namespace check {
 
 /** Create a check. */
 Json::Value
-create (jtx::Account const& account,
-    jtx::Account const& dest, STAmount const& sendMax);
+create(
+    jtx::Account const& account,
+    jtx::Account const& dest,
+    STAmount const& sendMax);
 
 /** Cash a check requiring that a specific amount be delivered. */
 Json::Value
-cash (jtx::Account const& dest,
-    uint256 const& checkId, STAmount const& amount);
+cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount);
 
 /** Type used to specify DeliverMin for cashing a check. */
 struct DeliverMin
 {
     STAmount value;
-    explicit DeliverMin (STAmount const& deliverMin)
-    : value (deliverMin) { }
+    explicit DeliverMin(STAmount const& deliverMin) : value(deliverMin)
+    {
+    }
 };
 
 /** Cash a check requiring that at least a minimum amount be delivered. */
 Json::Value
-cash (jtx::Account const& dest,
-    uint256 const& checkId, DeliverMin const& atLeast);
+cash(
+    jtx::Account const& dest,
+    uint256 const& checkId,
+    DeliverMin const& atLeast);
 
 /** Cancel a check. */
 Json::Value
-cancel (jtx::Account const& dest, uint256 const& checkId);
+cancel(jtx::Account const& dest, uint256 const& checkId);
 
-} // check
+}  // namespace check
 
 /** Match the number of checks on the account. */
 using checks = owner_count<ltCHECK>;
 
-} // jtx
+}  // namespace jtx
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple
 
 #endif

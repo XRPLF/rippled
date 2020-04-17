@@ -17,29 +17,30 @@
 */
 //==============================================================================
 
-#include <test/jtx/multisign.h>
-#include <test/jtx/utility.h>
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/jss.h>
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/UintTypes.h>
-#include <ripple/basics/contract.h>
+#include <ripple/protocol/jss.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/utility.h>
 
 namespace ripple {
 namespace test {
 namespace jtx {
 
 Json::Value
-signers (Account const& account,
+signers(
+    Account const& account,
     std::uint32_t quorum,
-        std::vector<signer> const& v)
+    std::vector<signer> const& v)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::TransactionType] = jss::SignerListSet;
     jv[sfSignerQuorum.getJsonName()] = quorum;
     auto& ja = jv[sfSignerEntries.getJsonName()];
-    for(std::size_t i = 0; i < v.size(); ++i)
+    for (std::size_t i = 0; i < v.size(); ++i)
     {
         auto const& e = v[i];
         auto& je = ja[i][sfSignerEntry.getJsonName()];
@@ -50,7 +51,7 @@ signers (Account const& account,
 }
 
 Json::Value
-signers (Account const& account, none_t)
+signers(Account const& account, none_t)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
@@ -61,13 +62,13 @@ signers (Account const& account, none_t)
 
 //------------------------------------------------------------------------------
 
-msig::msig (std::vector<msig::Reg> signers_)
-        : signers(std::move(signers_))
+msig::msig(std::vector<msig::Reg> signers_) : signers(std::move(signers_))
 {
     // Signatures must be applied in sorted order.
-    std::sort(signers.begin(), signers.end(),
-        [](msig::Reg const& lhs, msig::Reg const& rhs)
-        {
+    std::sort(
+        signers.begin(),
+        signers.end(),
+        [](msig::Reg const& lhs, msig::Reg const& rhs) {
             return lhs.acct.id() < rhs.acct.id();
         });
 }
@@ -76,36 +77,35 @@ void
 msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
-    jt.signer = [mySigners, &env](Env&, JTx& jtx)
-    {
+    jt.signer = [mySigners, &env](Env&, JTx& jtx) {
         jtx[sfSigningPubKey.getJsonName()] = "";
         boost::optional<STObject> st;
         try
         {
             st = parse(jtx.jv);
         }
-        catch(parse_error const&)
+        catch (parse_error const&)
         {
             env.test.log << pretty(jtx.jv) << std::endl;
             Rethrow();
         }
         auto& js = jtx[sfSigners.getJsonName()];
-        for(std::size_t i = 0; i < mySigners.size(); ++i)
+        for (std::size_t i = 0; i < mySigners.size(); ++i)
         {
             auto const& e = mySigners[i];
             auto& jo = js[i][sfSigner.getJsonName()];
             jo[jss::Account] = e.acct.human();
             jo[jss::SigningPubKey] = strHex(e.sig.pk().slice());
 
-            Serializer ss {buildMultiSigningData (*st, e.acct.id())};
-            auto const sig = ripple::sign (
+            Serializer ss{buildMultiSigningData(*st, e.acct.id())};
+            auto const sig = ripple::sign(
                 *publicKeyType(e.sig.pk().slice()), e.sig.sk(), ss.slice());
             jo[sfTxnSignature.getJsonName()] =
-                strHex(Slice{ sig.data(), sig.size() });
+                strHex(Slice{sig.data(), sig.size()});
         }
     };
 }
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

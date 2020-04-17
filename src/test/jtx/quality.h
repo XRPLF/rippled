@@ -33,8 +33,7 @@ private:
     std::uint32_t qIn_;
 
 public:
-    explicit qualityIn (std::uint32_t qIn)
-    : qIn_ (qIn)
+    explicit qualityIn(std::uint32_t qIn) : qIn_(qIn)
     {
     }
 
@@ -49,7 +48,7 @@ private:
     std::uint32_t qIn_;
 
 public:
-    explicit qualityInPercent (double percent);
+    explicit qualityInPercent(double percent);
 
     void
     operator()(Env&, JTx& jtx) const;
@@ -62,8 +61,7 @@ private:
     std::uint32_t qOut_;
 
 public:
-    explicit qualityOut (std::uint32_t qOut)
-    : qOut_ (qOut)
+    explicit qualityOut(std::uint32_t qOut) : qOut_(qOut)
     {
     }
 
@@ -78,14 +76,14 @@ private:
     std::uint32_t qOut_;
 
 public:
-    explicit qualityOutPercent (double percent);
+    explicit qualityOutPercent(double percent);
 
     void
     operator()(Env&, JTx& jtx) const;
 };
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

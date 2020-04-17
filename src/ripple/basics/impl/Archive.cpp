@@ -34,12 +34,9 @@ extractTarLz4(
         Throw<std::runtime_error>("Invalid source file");
 
     using archive_ptr =
-        std::unique_ptr<struct archive, void(*)(struct archive*)>;
-    archive_ptr ar {archive_read_new(),
-        [](struct archive* a)
-        {
-            archive_read_free(a);
-        }};
+        std::unique_ptr<struct archive, void (*)(struct archive*)>;
+    archive_ptr ar{
+        archive_read_new(), [](struct archive* a) { archive_read_free(a); }};
     if (!ar)
         Throw<std::runtime_error>("Failed to allocate archive");
 
@@ -50,34 +47,32 @@ extractTarLz4(
         Throw<std::runtime_error>(archive_error_string(ar.get()));
 
     // Examples suggest this block size
-    if (archive_read_open_filename(
-        ar.get(), src.string().c_str(), 10240) < ARCHIVE_OK)
+    if (archive_read_open_filename(ar.get(), src.string().c_str(), 10240) <
+        ARCHIVE_OK)
     {
         Throw<std::runtime_error>(archive_error_string(ar.get()));
     }
 
-    archive_ptr aw {archive_write_disk_new(),
-        [](struct archive* a)
-        {
-            archive_write_free(a);
-        }};
+    archive_ptr aw{archive_write_disk_new(), [](struct archive* a) {
+                       archive_write_free(a);
+                   }};
     if (!aw)
         Throw<std::runtime_error>("Failed to allocate archive");
 
     if (archive_write_disk_set_options(
-        aw.get(),
-        ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM |
-        ARCHIVE_EXTRACT_ACL | ARCHIVE_EXTRACT_FFLAGS) < ARCHIVE_OK)
+            aw.get(),
+            ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM | ARCHIVE_EXTRACT_ACL |
+                ARCHIVE_EXTRACT_FFLAGS) < ARCHIVE_OK)
     {
         Throw<std::runtime_error>(archive_error_string(aw.get()));
     }
 
-    if(archive_write_disk_set_standard_lookup(aw.get()) < ARCHIVE_OK)
+    if (archive_write_disk_set_standard_lookup(aw.get()) < ARCHIVE_OK)
         Throw<std::runtime_error>(archive_error_string(aw.get()));
 
     int result;
     struct archive_entry* entry;
-    while(true)
+    while (true)
     {
         result = archive_read_next_header(ar.get(), &entry);
         if (result == ARCHIVE_EOF)
@@ -92,7 +87,7 @@ extractTarLz4(
 
         if (archive_entry_size(entry) > 0)
         {
-            const void *buf;
+            const void* buf;
             size_t sz;
             la_int64_t offset;
             while (true)
@@ -103,8 +98,8 @@ extractTarLz4(
                 if (result < ARCHIVE_OK)
                     Throw<std::runtime_error>(archive_error_string(ar.get()));
 
-                if (archive_write_data_block(
-                    aw.get(), buf, sz, offset) < ARCHIVE_OK)
+                if (archive_write_data_block(aw.get(), buf, sz, offset) <
+                    ARCHIVE_OK)
                 {
                     Throw<std::runtime_error>(archive_error_string(aw.get()));
                 }
@@ -116,4 +111,4 @@ extractTarLz4(
     }
 }
 
-} // ripple
+}  // namespace ripple

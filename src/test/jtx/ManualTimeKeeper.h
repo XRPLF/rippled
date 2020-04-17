@@ -32,16 +32,16 @@ public:
     ManualTimeKeeper();
 
     void
-    run (std::vector<std::string> const& servers) override;
+    run(std::vector<std::string> const& servers) override;
 
     time_point
     now() const override;
-    
+
     time_point
     closeTime() const override;
 
     void
-    adjustCloseTime (std::chrono::duration<std::int32_t> amount) override;
+    adjustCloseTime(std::chrono::duration<std::int32_t> amount) override;
 
     std::chrono::duration<std::int32_t>
     nowOffset() const override;
@@ -50,20 +50,19 @@ public:
     closeOffset() const override;
 
     void
-    set (time_point now);
+    set(time_point now);
 
 private:
     // Adjust system_clock::time_point for NetClock epoch
-    static
-    time_point
-    adjust (std::chrono::system_clock::time_point when);
+    static time_point
+    adjust(std::chrono::system_clock::time_point when);
 
     std::mutex mutable mutex_;
     std::chrono::duration<std::int32_t> closeOffset_;
     time_point now_;
 };
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple
 
 #endif

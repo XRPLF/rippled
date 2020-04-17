@@ -31,6 +31,6 @@ int const PATHFINDER_MAX_PATHS = 50;
 int const PATHFINDER_MAX_COMPLETE_PATHS = 1000;
 int const PATHFINDER_MAX_PATHS_FROM_SOURCE = 10;
 
-} // ripple
+}  // namespace ripple
 
 #endif

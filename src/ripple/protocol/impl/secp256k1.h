@@ -32,9 +32,8 @@ secp256k1Context()
     {
         secp256k1_context* impl;
         holder()
-            : impl (secp256k1_context_create(
-                SECP256K1_CONTEXT_VERIFY |
-                SECP256K1_CONTEXT_SIGN))
+            : impl(secp256k1_context_create(
+                  SECP256K1_CONTEXT_VERIFY | SECP256K1_CONTEXT_SIGN))
         {
         }
 
@@ -47,6 +46,6 @@ secp256k1Context()
     return h.impl;
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

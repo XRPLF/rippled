@@ -20,22 +20,22 @@
 #ifndef RIPPLE_OVERLAY_MAKE_OVERLAY_H_INCLUDED
 #define RIPPLE_OVERLAY_MAKE_OVERLAY_H_INCLUDED
 
-#include <ripple/rpc/ServerHandler.h>
-#include <ripple/overlay/Overlay.h>
-#include <ripple/resource/ResourceManager.h>
 #include <ripple/basics/Resolver.h>
 #include <ripple/core/Stoppable.h>
+#include <ripple/overlay/Overlay.h>
+#include <ripple/resource/ResourceManager.h>
+#include <ripple/rpc/ServerHandler.h>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ssl/context.hpp>
 
 namespace ripple {
 
 Overlay::Setup
-setup_Overlay (BasicConfig const& config);
+setup_Overlay(BasicConfig const& config);
 
 /** Creates the implementation of Overlay. */
-std::unique_ptr <Overlay>
-make_Overlay (
+std::unique_ptr<Overlay>
+make_Overlay(
     Application& app,
     Overlay::Setup const& setup,
     Stoppable& parent,
@@ -46,6 +46,6 @@ make_Overlay (
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector);
 
-} // ripple
+}  // namespace ripple
 
 #endif

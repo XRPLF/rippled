@@ -26,11 +26,11 @@
 #include <cstdint>
 #include <functional>
 #include <mutex>
-#include <utility>
 #include <random>
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 namespace ripple {
 
@@ -47,9 +47,11 @@ make_seed_pair() noexcept
         std::mutex mutex;
         std::random_device rng;
         std::mt19937_64 gen;
-        std::uniform_int_distribution <std::uint64_t> dist;
+        std::uniform_int_distribution<std::uint64_t> dist;
 
-        state_t() : gen(rng()) {}
+        state_t() : gen(rng())
+        {
+        }
         // state_t(state_t const&) = delete;
         // state_t& operator=(state_t const&) = delete;
     };
@@ -58,7 +60,7 @@ make_seed_pair() noexcept
     return {state.dist(state.gen), state.dist(state.gen)};
 }
 
-}
+}  // namespace detail
 
 /**
  * Seed functor once per construction
@@ -99,9 +101,9 @@ private:
 public:
     using result_type = typename HashAlgorithm::result_type;
 
-    hardened_hash()
-        : m_seeds (detail::make_seed_pair<>())
-    {}
+    hardened_hash() : m_seeds(detail::make_seed_pair<>())
+    {
+    }
 
     template <class T>
     result_type
@@ -113,6 +115,6 @@ public:
     }
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

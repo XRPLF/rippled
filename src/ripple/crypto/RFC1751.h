@@ -28,9 +28,11 @@ namespace ripple {
 class RFC1751
 {
 public:
-    static int getKeyFromEnglish (std::string& strKey, std::string const& strHuman);
+    static int
+    getKeyFromEnglish(std::string& strKey, std::string const& strHuman);
 
-    static void getEnglishFromKey (std::string& strHuman, std::string const& strKey);
+    static void
+    getEnglishFromKey(std::string& strHuman, std::string const& strKey);
 
     /** Chooses a single dictionary word from the data.
 
@@ -39,19 +41,26 @@ public:
         it to turn the pubkey_node into an easily remembered and identified
         4 character string.
     */
-    static std::string getWordFromBlob (void const* blob, size_t bytes);
+    static std::string
+    getWordFromBlob(void const* blob, size_t bytes);
 
 private:
-    static unsigned long extract (char const* s, int start, int length);
-    static void btoe (std::string& strHuman, std::string const& strData);
-    static void insert (char* s, int x, int start, int length);
-    static void standard (std::string& strWord);
-    static int wsrch (std::string const& strWord, int iMin, int iMax);
-    static int etob (std::string& strData, std::vector<std::string> vsHuman);
+    static unsigned long
+    extract(char const* s, int start, int length);
+    static void
+    btoe(std::string& strHuman, std::string const& strData);
+    static void
+    insert(char* s, int x, int start, int length);
+    static void
+    standard(std::string& strWord);
+    static int
+    wsrch(std::string const& strWord, int iMin, int iMax);
+    static int
+    etob(std::string& strData, std::vector<std::string> vsHuman);
 
-    static char const* s_dictionary [];
+    static char const* s_dictionary[];
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

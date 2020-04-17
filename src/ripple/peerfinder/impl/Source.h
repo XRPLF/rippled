@@ -49,13 +49,20 @@ public:
         IPAddresses addresses;
     };
 
-    virtual ~Source () { }
-    virtual std::string const& name () = 0;
-    virtual void cancel () { }
-    virtual void fetch (Results& results, beast::Journal journal) = 0;
+    virtual ~Source()
+    {
+    }
+    virtual std::string const&
+    name() = 0;
+    virtual void
+    cancel()
+    {
+    }
+    virtual void
+    fetch(Results& results, beast::Journal journal) = 0;
 };
 
-}
-}
+}  // namespace PeerFinder
+}  // namespace ripple
 
 #endif

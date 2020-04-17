@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <test/jtx/memo.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/jss.h>
+#include <test/jtx/memo.h>
 
 namespace ripple {
 namespace test {
@@ -100,7 +100,6 @@ memontype::operator()(Env&, JTx& jt) const
     m["MemoFormat"] = strHex(format_);
 }
 
-
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

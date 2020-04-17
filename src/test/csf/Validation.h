@@ -19,16 +19,15 @@
 #ifndef RIPPLE_TEST_CSF_VALIDATION_H_INCLUDED
 #define RIPPLE_TEST_CSF_VALIDATION_H_INCLUDED
 
+#include <ripple/basics/tagged_integer.h>
 #include <boost/optional.hpp>
 #include <memory>
-#include <ripple/basics/tagged_integer.h>
 #include <test/csf/ledgers.h>
 #include <utility>
 
 namespace ripple {
 namespace test {
 namespace csf {
-
 
 struct PeerIDTag;
 //< Uniquely identifies a peer
@@ -40,10 +39,10 @@ using PeerID = tagged_integer<std::uint32_t, PeerIDTag>;
     keys. Right now, the convention is to have the second entry 0 as the
     master key.
 */
-using PeerKey =  std::pair<PeerID, std::uint32_t>;
+using PeerKey = std::pair<PeerID, std::uint32_t>;
 
 /** Validation of a specific ledger by a specific Peer.
-*/
+ */
 class Validation
 {
     Ledger::ID ledgerID_{0};
@@ -61,7 +60,8 @@ public:
     using NodeKey = PeerKey;
     using NodeID = PeerID;
 
-    Validation(Ledger::ID id,
+    Validation(
+        Ledger::ID id,
         Ledger::Seq seq,
         NetClock::time_point sign,
         NetClock::time_point seen,
@@ -128,7 +128,6 @@ public:
         return full_;
     }
 
-
     boost::optional<std::uint32_t>
     loadFee() const
     {
@@ -189,7 +188,7 @@ public:
     }
 };
 
-}  // ripple
-}  // test
-}  // csf
+}  // namespace csf
+}  // namespace test
+}  // namespace ripple
 #endif

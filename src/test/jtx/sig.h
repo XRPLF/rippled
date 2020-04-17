@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_SIG_H_INCLUDED
 #define RIPPLE_TEST_JTX_SIG_H_INCLUDED
 
-#include <test/jtx/Env.h>
 #include <boost/optional.hpp>
+#include <test/jtx/Env.h>
 
 namespace ripple {
 namespace test {
@@ -37,20 +37,15 @@ private:
     boost::optional<Account> account_;
 
 public:
-    explicit
-    sig (autofill_t)
-        : manual_(false)
+    explicit sig(autofill_t) : manual_(false)
     {
     }
 
-    explicit
-    sig (none_t)
+    explicit sig(none_t)
     {
     }
 
-    explicit
-    sig (Account const& account)
-        : account_(account)
+    explicit sig(Account const& account) : account_(account)
     {
     }
 
@@ -58,8 +53,8 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

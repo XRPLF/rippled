@@ -39,6 +39,7 @@ class Application;
 class RCLValidation
 {
     STValidation::pointer val_;
+
 public:
     using NodeKey = ripple::PublicKey;
     using NodeID = ripple::NodeID;
@@ -132,7 +133,6 @@ public:
     {
         return val_;
     }
-
 };
 
 /** Wraps a ledger instance for use in generic Validations LedgerTrie.
@@ -174,7 +174,8 @@ public:
         @return The ID of this ledger's ancestor with that sequence number or
                 ID{0} if one was not determined
     */
-    ID operator[](Seq const& s) const;
+    ID
+    operator[](Seq const& s) const;
 
     /// Find the sequence number of the earliest mismatching ancestor
     friend Seq
@@ -212,7 +213,7 @@ public:
 
     /** Attempt to acquire the ledger with given id from the network */
     boost::optional<RCLValidatedLedger>
-    acquire(LedgerHash const & id);
+    acquire(LedgerHash const& id);
 
     beast::Journal
     journal() const
@@ -227,7 +228,6 @@ private:
 
 /// Alias for RCL-specific instantiation of generic Validations
 using RCLValidations = Validations<RCLValidationsAdaptor>;
-
 
 /** Handle a new validation
 

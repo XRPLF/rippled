@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <test/jtx/acctdelete.h>
 #include <ripple/protocol/jss.h>
+#include <test/jtx/acctdelete.h>
 
 namespace ripple {
 namespace test {
@@ -26,7 +26,7 @@ namespace jtx {
 
 // Delete account.  If successful transfer remaining XRP to dest.
 Json::Value
-acctdelete (jtx::Account const& account, jtx::Account const& dest)
+acctdelete(jtx::Account const& account, jtx::Account const& dest)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
@@ -35,6 +35,6 @@ acctdelete (jtx::Account const& account, jtx::Account const& dest)
     return jv;
 }
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

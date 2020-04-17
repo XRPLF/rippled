@@ -20,9 +20,9 @@
 #ifndef RIPPLE_NODESTORE_DATABASESHARD_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASESHARD_H_INCLUDED
 
-#include <ripple/nodestore/Database.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/basics/RangeSet.h>
+#include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/Types.h>
 
 #include <boost/optional.hpp>
@@ -33,7 +33,7 @@ namespace ripple {
 namespace NodeStore {
 
 /** A collection of historical shards
-*/
+ */
 class DatabaseShard : public Database
 {
 public:
@@ -61,23 +61,21 @@ public:
 
         @return `true` if the database initialized without error
     */
-    virtual
-    bool
+    virtual bool
     init() = 0;
 
     /** Prepare to store a new ledger in the shard being acquired
 
         @param validLedgerSeq The index of the maximum valid ledgers
-        @return If a ledger should be fetched and stored, then returns the ledger
-                index of the ledger to request. Otherwise returns boost::none.
+        @return If a ledger should be fetched and stored, then returns the
+       ledger index of the ledger to request. Otherwise returns boost::none.
                 Some reasons this may return boost::none are: all shards are
                 stored and full, max allowed disk space would be exceeded, or a
                 ledger was recently requested and not enough time has passed
                 between requests.
         @implNote adds a new writable shard if necessary
     */
-    virtual
-    boost::optional<std::uint32_t>
+    virtual boost::optional<std::uint32_t>
     prepareLedger(std::uint32_t validLedgerSeq) = 0;
 
     /** Prepare a shard index to be imported into the database
@@ -85,24 +83,21 @@ public:
         @param shardIndex Shard index to be prepared for import
         @return true if shard index successfully prepared for import
     */
-    virtual
-    bool
+    virtual bool
     prepareShard(std::uint32_t shardIndex) = 0;
 
     /** Remove a previously prepared shard index for import
 
         @param shardIndex Shard index to be removed from import
     */
-    virtual
-    void
+    virtual void
     removePreShard(std::uint32_t shardIndex) = 0;
 
     /** Get shard indexes being imported
 
         @return a string representing the shards prepared for import
     */
-    virtual
-    std::string
+    virtual std::string
     getPreShards() = 0;
 
     /** Import a shard into the shard database
@@ -112,8 +107,7 @@ public:
         @return true If the shard was successfully imported
         @implNote if successful, srcDir is moved to the database directory
     */
-    virtual
-    bool
+    virtual bool
     importShard(
         std::uint32_t shardIndex,
         boost::filesystem::path const& srcDir) = 0;
@@ -124,8 +118,7 @@ public:
         @param seq The sequence of the ledger
         @return The ledger if found, nullptr otherwise
     */
-    virtual
-    std::shared_ptr<Ledger>
+    virtual std::shared_ptr<Ledger>
     fetchLedger(uint256 const& hash, std::uint32_t seq) = 0;
 
     /** Notifies the database that the given ledger has been
@@ -133,36 +126,31 @@ public:
 
         @param ledger The stored ledger to be marked as complete
     */
-    virtual
-    void
+    virtual void
     setStored(std::shared_ptr<Ledger const> const& ledger) = 0;
 
     /** Query which complete shards are stored
 
         @return the indexes of complete shards
     */
-    virtual
-    std::string
+    virtual std::string
     getCompleteShards() = 0;
 
     /** Verifies shard store data is valid.
 
         @param app The application object
     */
-    virtual
-    void
+    virtual void
     validate() = 0;
 
     /** @return The maximum number of ledgers stored in a shard
-    */
-    virtual
-    std::uint32_t
+     */
+    virtual std::uint32_t
     ledgersPerShard() const = 0;
 
     /** @return The earliest shard index
-    */
-    virtual
-    std::uint32_t
+     */
+    virtual std::uint32_t
     earliestShardIndex() const = 0;
 
     /** Calculates the shard index for a given ledger sequence
@@ -170,8 +158,7 @@ public:
         @param seq ledger sequence
         @return The shard index of the ledger sequence
     */
-    virtual
-    std::uint32_t
+    virtual std::uint32_t
     seqToShardIndex(std::uint32_t seq) const = 0;
 
     /** Calculates the first ledger sequence for a given shard index
@@ -179,8 +166,7 @@ public:
         @param shardIndex The shard index considered
         @return The first ledger sequence pertaining to the shard index
     */
-    virtual
-    std::uint32_t
+    virtual std::uint32_t
     firstLedgerSeq(std::uint32_t shardIndex) const = 0;
 
     /** Calculates the last ledger sequence for a given shard index
@@ -188,30 +174,27 @@ public:
         @param shardIndex The shard index considered
         @return The last ledger sequence pertaining to the shard index
     */
-    virtual
-    std::uint32_t
+    virtual std::uint32_t
     lastLedgerSeq(std::uint32_t shardIndex) const = 0;
 
     /** Returns the root database directory
-    */
-    virtual
-    boost::filesystem::path const&
+     */
+    virtual boost::filesystem::path const&
     getRootDir() const = 0;
 
     /** The number of ledgers in a shard */
-    static constexpr std::uint32_t ledgersPerShardDefault {16384u};
+    static constexpr std::uint32_t ledgersPerShardDefault{16384u};
 };
 
-constexpr
-std::uint32_t
-seqToShardIndex(std::uint32_t seq,
+constexpr std::uint32_t
+seqToShardIndex(
+    std::uint32_t seq,
     std::uint32_t ledgersPerShard = DatabaseShard::ledgersPerShardDefault)
 {
     return (seq - 1) / ledgersPerShard;
 }
 
-extern
-std::unique_ptr<DatabaseShard>
+extern std::unique_ptr<DatabaseShard>
 make_ShardStore(
     Application& app,
     Stoppable& parent,
@@ -219,7 +202,7 @@ make_ShardStore(
     int readThreads,
     beast::Journal j);
 
-}
-}
+}  // namespace NodeStore
+}  // namespace ripple
 
 #endif

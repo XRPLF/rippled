@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Feature.h>
 #include <ripple/basics/contract.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/digest.h>
 
 #include <cstring>
@@ -39,7 +39,7 @@ detail::FeatureCollections::FeatureCollections()
     {
         auto const name = featureNames[i];
         sha512_half_hasher h;
-        h (name, std::strlen (name));
+        h(name, std::strlen(name));
         auto const f = static_cast<uint256>(h);
 
         features.push_back(f);
@@ -78,7 +78,7 @@ static detail::FeatureCollections const featureCollections;
 
 /** Amendments that this server supports, but doesn't enable by default */
 std::vector<std::string> const&
-detail::supportedAmendments ()
+detail::supportedAmendments()
 {
     // Commented out amendments will be supported in a future release (and
     // uncommented at that time).
@@ -90,13 +90,12 @@ detail::supportedAmendments ()
     // ** WARNING **
     // Unconditionally supported amendments need to remain in the list.
     // Removing them will cause servers to become amendment blocked.
-    static std::vector<std::string> const supported
-    {
-        "MultiSign",                   // Unconditionally supported.
-//        "Tickets",
-        "TrustSetAuth",                // Unconditionally supported.
-        "FeeEscalation",               // Unconditionally supported.
-//        "OwnerPaysFee",
+    static std::vector<std::string> const supported{
+        "MultiSign",      // Unconditionally supported.
+                          //        "Tickets",
+        "TrustSetAuth",   // Unconditionally supported.
+        "FeeEscalation",  // Unconditionally supported.
+                          //        "OwnerPaysFee",
         "PayChan",
         "Flow",
         "CryptoConditions",
@@ -138,28 +137,31 @@ detail::supportedAmendments ()
 //------------------------------------------------------------------------------
 
 boost::optional<uint256>
-getRegisteredFeature (std::string const& name)
+getRegisteredFeature(std::string const& name)
 {
     return featureCollections.getRegisteredFeature(name);
 }
 
-size_t featureToBitsetIndex(uint256 const& f)
+size_t
+featureToBitsetIndex(uint256 const& f)
 {
     return featureCollections.featureToBitsetIndex(f);
 }
 
-uint256 bitsetIndexToFeature(size_t i)
+uint256
+bitsetIndexToFeature(size_t i)
 {
     return featureCollections.bitsetIndexToFeature(i);
 }
 
-
 uint256 const featureTickets = *getRegisteredFeature("Tickets");
 uint256 const featureOwnerPaysFee = *getRegisteredFeature("OwnerPaysFee");
 uint256 const featureFlow = *getRegisteredFeature("Flow");
-uint256 const featureCompareTakerFlowCross = *getRegisteredFeature("CompareTakerFlowCross");
+uint256 const featureCompareTakerFlowCross =
+    *getRegisteredFeature("CompareTakerFlowCross");
 uint256 const featureFlowCross = *getRegisteredFeature("FlowCross");
-uint256 const featureCryptoConditionsSuite = *getRegisteredFeature("CryptoConditionsSuite");
+uint256 const featureCryptoConditionsSuite =
+    *getRegisteredFeature("CryptoConditionsSuite");
 uint256 const fix1513 = *getRegisteredFeature("fix1513");
 uint256 const featureDepositAuth = *getRegisteredFeature("DepositAuth");
 uint256 const featureChecks = *getRegisteredFeature("Checks");
@@ -169,29 +171,39 @@ uint256 const fix1623 = *getRegisteredFeature("fix1623");
 uint256 const featureDepositPreauth = *getRegisteredFeature("DepositPreauth");
 uint256 const fix1515 = *getRegisteredFeature("fix1515");
 uint256 const fix1578 = *getRegisteredFeature("fix1578");
-uint256 const featureMultiSignReserve = *getRegisteredFeature("MultiSignReserve");
-uint256 const fixTakerDryOfferRemoval = *getRegisteredFeature("fixTakerDryOfferRemoval");
-uint256 const fixMasterKeyAsRegularKey = *getRegisteredFeature("fixMasterKeyAsRegularKey");
+uint256 const featureMultiSignReserve =
+    *getRegisteredFeature("MultiSignReserve");
+uint256 const fixTakerDryOfferRemoval =
+    *getRegisteredFeature("fixTakerDryOfferRemoval");
+uint256 const fixMasterKeyAsRegularKey =
+    *getRegisteredFeature("fixMasterKeyAsRegularKey");
 uint256 const fixCheckThreading = *getRegisteredFeature("fixCheckThreading");
-uint256 const fixPayChanRecipientOwnerDir = *getRegisteredFeature("fixPayChanRecipientOwnerDir");
-uint256 const featureDeletableAccounts = *getRegisteredFeature("DeletableAccounts");
-uint256 const fixQualityUpperBound = *getRegisteredFeature("fixQualityUpperBound");
-uint256 const featureRequireFullyCanonicalSig = *getRegisteredFeature("RequireFullyCanonicalSig");
+uint256 const fixPayChanRecipientOwnerDir =
+    *getRegisteredFeature("fixPayChanRecipientOwnerDir");
+uint256 const featureDeletableAccounts =
+    *getRegisteredFeature("DeletableAccounts");
+uint256 const fixQualityUpperBound =
+    *getRegisteredFeature("fixQualityUpperBound");
+uint256 const featureRequireFullyCanonicalSig =
+    *getRegisteredFeature("RequireFullyCanonicalSig");
 uint256 const fix1781 = *getRegisteredFeature("fix1781");
 
 // The following amendments have been active for at least two years.
 // Their pre-amendment code has been removed.
 uint256 const retiredPayChan = *getRegisteredFeature("PayChan");
-uint256 const retiredCryptoConditions = *getRegisteredFeature("CryptoConditions");
+uint256 const retiredCryptoConditions =
+    *getRegisteredFeature("CryptoConditions");
 uint256 const retiredTickSize = *getRegisteredFeature("TickSize");
 uint256 const retiredFix1368 = *getRegisteredFeature("fix1368");
 uint256 const retiredEscrow = *getRegisteredFeature("Escrow");
 uint256 const retiredFix1373 = *getRegisteredFeature("fix1373");
-uint256 const retiredEnforceInvariants = *getRegisteredFeature("EnforceInvariants");
-uint256 const retiredSortedDirectories = *getRegisteredFeature("SortedDirectories");
+uint256 const retiredEnforceInvariants =
+    *getRegisteredFeature("EnforceInvariants");
+uint256 const retiredSortedDirectories =
+    *getRegisteredFeature("SortedDirectories");
 uint256 const retiredFix1201 = *getRegisteredFeature("fix1201");
 uint256 const retiredFix1512 = *getRegisteredFeature("fix1512");
 uint256 const retiredFix1523 = *getRegisteredFeature("fix1523");
 uint256 const retiredFix1528 = *getRegisteredFeature("fix1528");
 
-} // ripple
+}  // namespace ripple

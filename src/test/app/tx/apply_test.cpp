@@ -27,13 +27,15 @@ namespace ripple {
 class Apply_test : public beast::unit_test::suite
 {
 public:
-    void run() override
+    void
+    run() override
     {
-        testcase ("Require Fully Canonicial Signature");
+        testcase("Require Fully Canonicial Signature");
         testFullyCanonicalSigs();
     }
 
-    void testFullyCanonicalSigs()
+    void
+    testFullyCanonicalSigs()
     {
         // Construct a payments w/out a fully-canonical tx
         const std::string non_fully_canonical_tx =
@@ -44,33 +46,38 @@ public:
             "2C2DC3AFEDBED37BBCCD97BC8C40E08F8114E25A26437D923EEF4D6D815DF9336"
             "8B62E6440848314BB85996936E4F595287774684DC2AC6266024BEF";
 
-        auto ret = strUnHex (non_fully_canonical_tx);
-        SerialIter sitTrans (makeSlice(*ret));
-        STTx const tx = *std::make_shared<STTx const> (std::ref (sitTrans));
+        auto ret = strUnHex(non_fully_canonical_tx);
+        SerialIter sitTrans(makeSlice(*ret));
+        STTx const tx = *std::make_shared<STTx const>(std::ref(sitTrans));
 
         {
-            test::jtx::Env no_fully_canonical (*this,
+            test::jtx::Env no_fully_canonical(
+                *this,
                 test::jtx::supported_amendments() -
-                featureRequireFullyCanonicalSig);
+                    featureRequireFullyCanonicalSig);
 
-            Validity valid = checkValidity(no_fully_canonical.app().getHashRouter(),
-                                           tx,
-                                           no_fully_canonical.current()->rules(),
-                                           no_fully_canonical.app().config()).first;
+            Validity valid = checkValidity(
+                                 no_fully_canonical.app().getHashRouter(),
+                                 tx,
+                                 no_fully_canonical.current()->rules(),
+                                 no_fully_canonical.app().config())
+                                 .first;
 
-            if(valid != Validity::Valid)
+            if (valid != Validity::Valid)
                 fail("Non-Fully canoncial signature was not permitted");
         }
 
         {
-            test::jtx::Env fully_canonical (*this,
-                test::jtx::supported_amendments());
+            test::jtx::Env fully_canonical(
+                *this, test::jtx::supported_amendments());
 
-            Validity valid = checkValidity(fully_canonical.app().getHashRouter(),
-                                           tx,
-                                           fully_canonical.current()->rules(),
-                                           fully_canonical.app().config()).first;
-            if(valid == Validity::Valid)
+            Validity valid = checkValidity(
+                                 fully_canonical.app().getHashRouter(),
+                                 tx,
+                                 fully_canonical.current()->rules(),
+                                 fully_canonical.app().config())
+                                 .first;
+            if (valid == Validity::Valid)
                 fail("Non-Fully canoncial signature was permitted");
         }
 
@@ -78,6 +85,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Apply,app,ripple);
+BEAST_DEFINE_TESTSUITE(Apply, app, ripple);
 
-} // ripple
+}  // namespace ripple

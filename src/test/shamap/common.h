@@ -42,23 +42,22 @@ private:
     beast::Journal j_;
 
 public:
-    TestFamily (beast::Journal j)
-        : treecache_ ("TreeNodeCache", 65536, std::chrono::minutes{1},
-                      clock_, j)
-        , fullbelow_ ("full_below", clock_)
-        , parent_ ("TestRootStoppable")
-        , j_ (j)
+    TestFamily(beast::Journal j)
+        : treecache_("TreeNodeCache", 65536, std::chrono::minutes{1}, clock_, j)
+        , fullbelow_("full_below", clock_)
+        , parent_("TestRootStoppable")
+        , j_(j)
     {
         Section testSection;
         testSection.set("type", "memory");
         testSection.set("Path", "SHAMap_test");
-        db_ = NodeStore::Manager::instance ().make_Database (
+        db_ = NodeStore::Manager::instance().make_Database(
             "test", scheduler_, 1, parent_, testSection, j);
         shardBacked_ =
             dynamic_cast<NodeStore::DatabaseShard*>(db_.get()) != nullptr;
     }
 
-    beast::manual_clock <std::chrono::steady_clock>
+    beast::manual_clock<std::chrono::steady_clock>
     clock()
     {
         return clock_;
@@ -113,15 +112,15 @@ public:
     }
 
     void
-    missing_node (std::uint32_t refNum) override
+    missing_node(std::uint32_t refNum) override
     {
-        Throw<std::runtime_error> ("missing node");
+        Throw<std::runtime_error>("missing node");
     }
 
     void
-    missing_node (uint256 const& refHash, std::uint32_t refNum) override
+    missing_node(uint256 const& refHash, std::uint32_t refNum) override
     {
-        Throw<std::runtime_error> ("missing node");
+        Throw<std::runtime_error>("missing node");
     }
 
     void
@@ -132,7 +131,7 @@ public:
     }
 };
 
-} // tests
-} // ripple
+}  // namespace tests
+}  // namespace ripple
 
 #endif

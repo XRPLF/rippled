@@ -31,8 +31,7 @@
 namespace ripple {
 namespace cryptoconditions {
 
-class PreimageSha256 final
-    : public Fulfillment
+class PreimageSha256 final : public Fulfillment
 {
 public:
     /** The maximum allowed length of a preimage.
@@ -52,11 +51,8 @@ public:
         @param ec indicates success or failure of the operation
         @return the preimage, if successful; empty pointer otherwise.
     */
-    static
-    std::unique_ptr<Fulfillment>
-    deserialize(
-        Slice s,
-        std::error_code& ec)
+    static std::unique_ptr<Fulfillment>
+    deserialize(Slice s, std::error_code& ec)
     {
         // Per the RFC, a preimage fulfulliment is defined as
         // follows:
@@ -106,13 +102,11 @@ private:
     Buffer payload_;
 
 public:
-    PreimageSha256(Buffer&& b) noexcept
-        : payload_(std::move(b))
+    PreimageSha256(Buffer&& b) noexcept : payload_(std::move(b))
     {
     }
 
-    PreimageSha256(Slice s) noexcept
-        : payload_(s)
+    PreimageSha256(Slice s) noexcept : payload_(s)
     {
     }
 
@@ -128,7 +122,7 @@ public:
         sha256_hasher h;
         h(payload_.data(), payload_.size());
         auto const d = static_cast<sha256_hasher::result_type>(h);
-        return{ d.data(), d.size() };
+        return {d.data(), d.size()};
     }
 
     std::uint32_t
@@ -140,11 +134,10 @@ public:
     Condition
     condition() const override
     {
-        return { type(), cost(), fingerprint() };
+        return {type(), cost(), fingerprint()};
     }
 
-    bool
-    validate(Slice) const override
+    bool validate(Slice) const override
     {
         // Perhaps counterintuitively, the message isn't
         // relevant.
@@ -152,7 +145,7 @@ public:
     }
 };
 
-}
-}
+}  // namespace cryptoconditions
+}  // namespace ripple
 
 #endif

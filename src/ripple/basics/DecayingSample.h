@@ -35,23 +35,22 @@ public:
     using value_type = typename Clock::duration::rep;
     using time_point = typename Clock::time_point;
 
-    DecayingSample () = delete;
+    DecayingSample() = delete;
 
     /**
         @param now Start time of DecayingSample.
     */
-    explicit DecayingSample (time_point now)
-        : m_value (value_type())
-        , m_when (now)
+    explicit DecayingSample(time_point now) : m_value(value_type()), m_when(now)
     {
     }
 
     /** Add a new sample.
         The value is first aged according to the specified time.
     */
-    value_type add (value_type value, time_point now)
+    value_type
+    add(value_type value, time_point now)
     {
-        decay (now);
+        decay(now);
         m_value += value;
         return m_value / Window;
     }
@@ -59,23 +58,26 @@ public:
     /** Retrieve the current value in normalized units.
         The samples are first aged according to the specified time.
     */
-    value_type value (time_point now)
+    value_type
+    value(time_point now)
     {
-        decay (now);
+        decay(now);
         return m_value / Window;
     }
 
 private:
     // Apply exponential decay based on the specified time.
-    void decay (time_point now)
+    void
+    decay(time_point now)
     {
         if (now == m_when)
             return;
 
         if (m_value != value_type())
         {
-            std::size_t elapsed = std::chrono::duration_cast<
-                std::chrono::seconds>(now - m_when).count();
+            std::size_t elapsed =
+                std::chrono::duration_cast<std::chrono::seconds>(now - m_when)
+                    .count();
 
             // A span larger than four times the window decays the
             // value to an insignificant amount so just reset it.
@@ -112,40 +114,35 @@ class DecayWindow
 public:
     using time_point = typename Clock::time_point;
 
-    explicit
-    DecayWindow (time_point now)
-        : value_(0)
-        , when_(now)
+    explicit DecayWindow(time_point now) : value_(0), when_(now)
     {
     }
 
     void
-    add (double value, time_point now)
+    add(double value, time_point now)
     {
         decay(now);
         value_ += value;
     }
 
     double
-    value (time_point now)
+    value(time_point now)
     {
         decay(now);
         return value_ / HalfLife;
     }
 
 private:
-    static_assert(HalfLife > 0,
-        "half life must be positive");
+    static_assert(HalfLife > 0, "half life must be positive");
 
     void
-    decay (time_point now)
+    decay(time_point now)
     {
         if (now <= when_)
             return;
         using namespace std::chrono;
-        auto const elapsed =
-            duration<double>(now - when_).count();
-        value_ *= std::pow(2.0, - elapsed / HalfLife);
+        auto const elapsed = duration<double>(now - when_).count();
+        value_ *= std::pow(2.0, -elapsed / HalfLife);
         when_ = now;
     }
 
@@ -153,6 +150,6 @@ private:
     time_point when_;
 };
 
-}
+}  // namespace ripple
 
 #endif

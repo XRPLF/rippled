@@ -38,6 +38,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(OfferStream,tx,ripple);
+BEAST_DEFINE_TESTSUITE(OfferStream, tx, ripple);
 
-}
+}  // namespace ripple

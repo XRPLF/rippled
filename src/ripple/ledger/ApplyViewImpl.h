@@ -34,18 +34,18 @@ namespace ripple {
 
     @note Presented as ApplyView to clients.
 */
-class ApplyViewImpl final
-    : public detail::ApplyViewBase
+class ApplyViewImpl final : public detail::ApplyViewBase
 {
 public:
     ApplyViewImpl() = delete;
-    ApplyViewImpl (ApplyViewImpl const&) = delete;
-    ApplyViewImpl& operator= (ApplyViewImpl&&) = delete;
-    ApplyViewImpl& operator= (ApplyViewImpl const&) = delete;
+    ApplyViewImpl(ApplyViewImpl const&) = delete;
+    ApplyViewImpl&
+    operator=(ApplyViewImpl&&) = delete;
+    ApplyViewImpl&
+    operator=(ApplyViewImpl const&) = delete;
 
-    ApplyViewImpl (ApplyViewImpl&&) = default;
-    ApplyViewImpl(
-        ReadView const* base, ApplyFlags flags);
+    ApplyViewImpl(ApplyViewImpl&&) = default;
+    ApplyViewImpl(ReadView const* base, ApplyFlags flags);
 
     /** Apply the transaction.
 
@@ -54,9 +54,7 @@ public:
         destructor.
     */
     void
-    apply (OpenView& to,
-        STTx const& tx, TER ter,
-            beast::Journal j);
+    apply(OpenView& to, STTx const& tx, TER ter, beast::Journal j);
 
     /** Set the amount of currency delivered.
 
@@ -66,30 +64,31 @@ public:
         excluded from the resulting metadata.
     */
     void
-    deliver (STAmount const& amount)
+    deliver(STAmount const& amount)
     {
         deliver_ = amount;
     }
 
     /** Get the number of modified entries
-    */
+     */
     std::size_t
-    size ();
+    size();
 
     /** Visit modified entries
-    */
+     */
     void
-    visit (
+    visit(
         OpenView& target,
-        std::function <void (
+        std::function<void(
             uint256 const& key,
             bool isDelete,
-            std::shared_ptr <SLE const> const& before,
-            std::shared_ptr <SLE const> const& after)> const& func);
+            std::shared_ptr<SLE const> const& before,
+            std::shared_ptr<SLE const> const& after)> const& func);
+
 private:
     boost::optional<STAmount> deliver_;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

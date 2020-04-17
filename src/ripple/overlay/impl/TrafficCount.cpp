@@ -21,9 +21,11 @@
 
 namespace ripple {
 
-TrafficCount::category TrafficCount::categorize (
+TrafficCount::category
+TrafficCount::categorize(
     ::google::protobuf::Message const& message,
-    int type, bool inbound)
+    int type,
+    bool inbound)
 {
     if ((type == protocol::mtPING) || (type == protocol::mtSTATUS_CHANGE))
         return TrafficCount::category::base;
@@ -38,9 +40,9 @@ TrafficCount::category TrafficCount::categorize (
         return TrafficCount::category::overlay;
 
     if ((type == protocol::mtGET_SHARD_INFO) ||
-            (type == protocol::mtSHARD_INFO) ||
-            (type == protocol::mtGET_PEER_SHARD_INFO) ||
-            (type == protocol::mtPEER_SHARD_INFO))
+        (type == protocol::mtSHARD_INFO) ||
+        (type == protocol::mtGET_PEER_SHARD_INFO) ||
+        (type == protocol::mtPEER_SHARD_INFO))
         return TrafficCount::category::shards;
 
     if (type == protocol::mtTRANSACTION)
@@ -56,92 +58,90 @@ TrafficCount::category TrafficCount::categorize (
         return TrafficCount::category::proposal;
 
     if (type == protocol::mtHAVE_SET)
-        return inbound ?
-            TrafficCount::category::get_set:
-            TrafficCount::category::share_set;
+        return inbound ? TrafficCount::category::get_set
+                       : TrafficCount::category::share_set;
 
     if (auto msg = dynamic_cast<protocol::TMLedgerData const*>(&message))
     {
         if (msg->type() == protocol::liTS_CANDIDATE)
-            return (inbound && !msg->has_requestcookie()) ?
-                TrafficCount::category::ld_tsc_get:
-                TrafficCount::category::ld_tsc_share;
+            return (inbound && !msg->has_requestcookie())
+                ? TrafficCount::category::ld_tsc_get
+                : TrafficCount::category::ld_tsc_share;
 
         if (msg->type() == protocol::liTX_NODE)
-            return (inbound && !msg->has_requestcookie()) ?
-                TrafficCount::category::ld_txn_get :
-                TrafficCount::category::ld_txn_share;
+            return (inbound && !msg->has_requestcookie())
+                ? TrafficCount::category::ld_txn_get
+                : TrafficCount::category::ld_txn_share;
 
         if (msg->type() == protocol::liAS_NODE)
-            return (inbound && !msg->has_requestcookie()) ?
-                TrafficCount::category::ld_asn_get :
-                TrafficCount::category::ld_asn_share;
+            return (inbound && !msg->has_requestcookie())
+                ? TrafficCount::category::ld_asn_get
+                : TrafficCount::category::ld_asn_share;
 
-        return (inbound && !msg->has_requestcookie()) ?
-               TrafficCount::category::ld_get :
-               TrafficCount::category::ld_share;
+        return (inbound && !msg->has_requestcookie())
+            ? TrafficCount::category::ld_get
+            : TrafficCount::category::ld_share;
     }
 
     if (auto msg = dynamic_cast<protocol::TMGetLedger const*>(&message))
     {
         if (msg->itype() == protocol::liTS_CANDIDATE)
-            return (inbound || msg->has_requestcookie()) ?
-                TrafficCount::category::gl_tsc_share :
-                TrafficCount::category::gl_tsc_get;
+            return (inbound || msg->has_requestcookie())
+                ? TrafficCount::category::gl_tsc_share
+                : TrafficCount::category::gl_tsc_get;
 
         if (msg->itype() == protocol::liTX_NODE)
-            return (inbound || msg->has_requestcookie()) ?
-                TrafficCount::category::gl_txn_share :
-                TrafficCount::category::gl_txn_get;
+            return (inbound || msg->has_requestcookie())
+                ? TrafficCount::category::gl_txn_share
+                : TrafficCount::category::gl_txn_get;
 
         if (msg->itype() == protocol::liAS_NODE)
-            return (inbound || msg->has_requestcookie()) ?
-                TrafficCount::category::gl_asn_share :
-                TrafficCount::category::gl_asn_get;
+            return (inbound || msg->has_requestcookie())
+                ? TrafficCount::category::gl_asn_share
+                : TrafficCount::category::gl_asn_get;
 
-        return (inbound || msg->has_requestcookie()) ?
-            TrafficCount::category::gl_share :
-            TrafficCount::category::gl_get;
+        return (inbound || msg->has_requestcookie())
+            ? TrafficCount::category::gl_share
+            : TrafficCount::category::gl_get;
     }
 
     if (auto msg = dynamic_cast<protocol::TMGetObjectByHash const*>(&message))
     {
         if (msg->type() == protocol::TMGetObjectByHash::otLEDGER)
-            return (msg->query() == inbound) ?
-                TrafficCount::category::share_hash_ledger :
-                TrafficCount::category::get_hash_ledger;
+            return (msg->query() == inbound)
+                ? TrafficCount::category::share_hash_ledger
+                : TrafficCount::category::get_hash_ledger;
 
         if (msg->type() == protocol::TMGetObjectByHash::otTRANSACTION)
-            return (msg->query() == inbound) ?
-                TrafficCount::category::share_hash_tx :
-                TrafficCount::category::get_hash_tx;
+            return (msg->query() == inbound)
+                ? TrafficCount::category::share_hash_tx
+                : TrafficCount::category::get_hash_tx;
 
         if (msg->type() == protocol::TMGetObjectByHash::otTRANSACTION_NODE)
-            return (msg->query() == inbound) ?
-                TrafficCount::category::share_hash_txnode :
-                TrafficCount::category::get_hash_txnode;
+            return (msg->query() == inbound)
+                ? TrafficCount::category::share_hash_txnode
+                : TrafficCount::category::get_hash_txnode;
 
         if (msg->type() == protocol::TMGetObjectByHash::otSTATE_NODE)
-            return (msg->query() == inbound) ?
-                TrafficCount::category::share_hash_asnode :
-                TrafficCount::category::get_hash_asnode;
+            return (msg->query() == inbound)
+                ? TrafficCount::category::share_hash_asnode
+                : TrafficCount::category::get_hash_asnode;
 
         if (msg->type() == protocol::TMGetObjectByHash::otCAS_OBJECT)
-            return (msg->query() == inbound) ?
-                TrafficCount::category::share_cas_object :
-                TrafficCount::category::get_cas_object;
+            return (msg->query() == inbound)
+                ? TrafficCount::category::share_cas_object
+                : TrafficCount::category::get_cas_object;
 
         if (msg->type() == protocol::TMGetObjectByHash::otFETCH_PACK)
-            return (msg->query() == inbound) ?
-                TrafficCount::category::share_fetch_pack :
-                TrafficCount::category::get_fetch_pack;
+            return (msg->query() == inbound)
+                ? TrafficCount::category::share_fetch_pack
+                : TrafficCount::category::get_fetch_pack;
 
-        return (msg->query() == inbound) ?
-            TrafficCount::category::share_hash :
-            TrafficCount::category::get_hash;
+        return (msg->query() == inbound) ? TrafficCount::category::share_hash
+                                         : TrafficCount::category::get_hash;
     }
 
     return TrafficCount::category::unknown;
 }
 
-} // ripple
+}  // namespace ripple

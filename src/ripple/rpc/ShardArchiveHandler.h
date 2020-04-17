@@ -29,37 +29,33 @@
 #include <boost/filesystem.hpp>
 
 namespace ripple {
-namespace test { class ShardArchiveHandler_test; }
+namespace test {
+class ShardArchiveHandler_test;
+}
 namespace RPC {
 
 /** Handles the download and import one or more shard archives. */
 class ShardArchiveHandler
-    : public Stoppable
-    , public std::enable_shared_from_this <ShardArchiveHandler>
+    : public Stoppable,
+      public std::enable_shared_from_this<ShardArchiveHandler>
 {
 public:
-
     using pointer = std::shared_ptr<ShardArchiveHandler>;
     friend class test::ShardArchiveHandler_test;
 
-    static
-    boost::filesystem::path
+    static boost::filesystem::path
     getDownloadDirectory(Config const& config);
 
-    static
-    pointer
+    static pointer
     getInstance();
 
-    static
-    pointer
+    static pointer
     getInstance(Application& app, Stoppable& parent);
 
-    static
-    pointer
+    static pointer
     recoverInstance(Application& app, Stoppable& parent);
 
-    static
-    bool
+    static bool
     hasInstance();
 
     bool
@@ -81,18 +77,20 @@ public:
     release();
 
 private:
-
     ShardArchiveHandler() = delete;
     ShardArchiveHandler(ShardArchiveHandler const&) = delete;
-    ShardArchiveHandler& operator= (ShardArchiveHandler&&) = delete;
-    ShardArchiveHandler& operator= (ShardArchiveHandler const&) = delete;
+    ShardArchiveHandler&
+    operator=(ShardArchiveHandler&&) = delete;
+    ShardArchiveHandler&
+    operator=(ShardArchiveHandler const&) = delete;
 
     ShardArchiveHandler(
         Application& app,
         Stoppable& parent,
         bool recovery = false);
 
-    void onStop () override;
+    void
+    onStop() override;
 
     /** Add an archive to be downloaded and imported.
         @param shardIndex the index of the shard to be imported.
@@ -101,7 +99,8 @@ private:
         @note Returns false if called while downloading.
     */
     bool
-    add(std::uint32_t shardIndex, parsedURL&& url,
+    add(std::uint32_t shardIndex,
+        parsedURL&& url,
         std::lock_guard<std::mutex> const&);
 
     // Begins the download and import of the next archive.
@@ -137,7 +136,7 @@ private:
     std::map<std::uint32_t, parsedURL> archives_;
 };
 
-} // RPC
-} // ripple
+}  // namespace RPC
+}  // namespace ripple
 
 #endif

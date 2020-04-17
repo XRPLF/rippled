@@ -20,38 +20,36 @@
 #ifndef RIPPLE_BASICS_RANDOM_H_INCLUDED
 #define RIPPLE_BASICS_RANDOM_H_INCLUDED
 
+#include <ripple/beast/cxx17/type_traits.h>  // <type_traits>
 #include <ripple/beast/xor_shift_engine.h>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <random>
 #include <limits>
 #include <mutex>
-#include <ripple/beast/cxx17/type_traits.h> // <type_traits>
+#include <random>
 
 namespace ripple {
 
 #ifndef __INTELLISENSE__
-static_assert (
-    std::is_integral <beast::xor_shift_engine::result_type>::value &&
-    std::is_unsigned <beast::xor_shift_engine::result_type>::value,
-        "The Ripple default PRNG engine must return an unsigned integral type.");
+static_assert(
+    std::is_integral<beast::xor_shift_engine::result_type>::value &&
+        std::is_unsigned<beast::xor_shift_engine::result_type>::value,
+    "The Ripple default PRNG engine must return an unsigned integral type.");
 
-static_assert (
+static_assert(
     std::numeric_limits<beast::xor_shift_engine::result_type>::max() >=
-    std::numeric_limits<std::uint64_t>::max(),
-        "The Ripple default PRNG engine return must be at least 64 bits wide.");
+        std::numeric_limits<std::uint64_t>::max(),
+    "The Ripple default PRNG engine return must be at least 64 bits wide.");
 #endif
 
 namespace detail {
 
-
 // Determines if a type can be called like an Engine
 template <class Engine, class Result = typename Engine::result_type>
-using is_engine =
-    std::is_invocable_r<Result, Engine>;
-}
+using is_engine = std::is_invocable_r<Result, Engine>;
+}  // namespace detail
 
 /** Return the default random engine.
 
@@ -63,13 +61,11 @@ using is_engine =
     Each thread gets its own instance of the engine which
     will be randomly seeded.
 */
-inline
-beast::xor_shift_engine&
-default_prng ()
+inline beast::xor_shift_engine&
+default_prng()
 {
     // This is used to seed the thread-specific PRNGs on demand
-    static beast::xor_shift_engine seeder = []
-    {
+    static beast::xor_shift_engine seeder = [] {
         std::random_device rng;
         std::uniform_int_distribution<std::uint64_t> distribution{1};
         return beast::xor_shift_engine(distribution(rng));
@@ -79,8 +75,7 @@ default_prng ()
     static std::mutex m;
 
     // The thread-specific PRNGs:
-    thread_local beast::xor_shift_engine engine = []
-    {
+    thread_local beast::xor_shift_engine engine = [] {
         std::uint64_t seed;
         {
             std::lock_guard lk(m);
@@ -115,15 +110,11 @@ default_prng ()
 /** @{ */
 template <class Engine, class Integral>
 std::enable_if_t<
-    std::is_integral<Integral>::value &&
-    detail::is_engine<Engine>::value,
-Integral>
-rand_int (
-    Engine& engine,
-    Integral min,
-    Integral max)
+    std::is_integral<Integral>::value && detail::is_engine<Engine>::value,
+    Integral>
+rand_int(Engine& engine, Integral min, Integral max)
 {
-    assert (max > min);
+    assert(max > min);
 
     // This should have no state and constructing it should
     // be very cheap. If that turns out not to be the case
@@ -133,73 +124,60 @@ rand_int (
 
 template <class Integral>
 std::enable_if_t<std::is_integral<Integral>::value, Integral>
-rand_int (
-    Integral min,
-    Integral max)
+rand_int(Integral min, Integral max)
 {
-    return rand_int (default_prng(), min, max);
+    return rand_int(default_prng(), min, max);
 }
 
 template <class Engine, class Integral>
 std::enable_if_t<
-    std::is_integral<Integral>::value &&
-    detail::is_engine<Engine>::value,
-Integral>
-rand_int (
-    Engine& engine,
-    Integral max)
+    std::is_integral<Integral>::value && detail::is_engine<Engine>::value,
+    Integral>
+rand_int(Engine& engine, Integral max)
 {
-    return rand_int (engine, Integral(0), max);
+    return rand_int(engine, Integral(0), max);
 }
 
 template <class Integral>
 std::enable_if_t<std::is_integral<Integral>::value, Integral>
-rand_int (Integral max)
+rand_int(Integral max)
 {
-    return rand_int (default_prng(), max);
+    return rand_int(default_prng(), max);
 }
 
 template <class Integral, class Engine>
 std::enable_if_t<
-    std::is_integral<Integral>::value &&
-    detail::is_engine<Engine>::value,
-Integral>
-rand_int (
-    Engine& engine)
+    std::is_integral<Integral>::value && detail::is_engine<Engine>::value,
+    Integral>
+rand_int(Engine& engine)
 {
-    return rand_int (
-        engine,
-        std::numeric_limits<Integral>::max());
+    return rand_int(engine, std::numeric_limits<Integral>::max());
 }
 
 template <class Integral = int>
 std::enable_if_t<std::is_integral<Integral>::value, Integral>
-rand_int ()
+rand_int()
 {
-    return rand_int (
-        default_prng(),
-        std::numeric_limits<Integral>::max());
+    return rand_int(default_prng(), std::numeric_limits<Integral>::max());
 }
 /** @} */
 
 /** Return a random boolean value */
 /** @{ */
 template <class Engine>
-inline
-bool
-rand_bool (Engine& engine)
+inline bool
+rand_bool(Engine& engine)
 {
-    return rand_int (engine, 1) == 1;
+    return rand_int(engine, 1) == 1;
 }
 
-inline
-bool
-rand_bool ()
+inline bool
+rand_bool()
 {
-    return rand_bool (default_prng());
+    return rand_bool(default_prng());
 }
 /** @} */
 
-} // ripple
+}  // namespace ripple
 
-#endif // RIPPLE_BASICS_RANDOM_H_INCLUDED
+#endif  // RIPPLE_BASICS_RANDOM_H_INCLUDED

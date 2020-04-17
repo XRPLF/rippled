@@ -18,46 +18,51 @@
 //==============================================================================
 
 #include <ripple/app/ledger/TransactionMaster.h>
-#include <ripple/app/misc/Transaction.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/protocol/STTx.h>
+#include <ripple/app/misc/Transaction.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/protocol/STTx.h>
 
 namespace ripple {
 
-TransactionMaster::TransactionMaster (Application& app)
-    : mApp (app)
-    , mCache ("TransactionCache", 65536, std::chrono::minutes {30}, stopwatch(),
-        mApp.journal("TaggedCache"))
+TransactionMaster::TransactionMaster(Application& app)
+    : mApp(app)
+    , mCache(
+          "TransactionCache",
+          65536,
+          std::chrono::minutes{30},
+          stopwatch(),
+          mApp.journal("TaggedCache"))
 {
 }
 
-bool TransactionMaster::inLedger (uint256 const& hash, std::uint32_t ledger)
+bool
+TransactionMaster::inLedger(uint256 const& hash, std::uint32_t ledger)
 {
-    auto txn = mCache.fetch (hash);
+    auto txn = mCache.fetch(hash);
 
     if (!txn)
         return false;
 
-    txn->setStatus (COMMITTED, ledger);
+    txn->setStatus(COMMITTED, ledger);
     return true;
 }
 
 std::shared_ptr<Transaction>
-TransactionMaster::fetch_from_cache (uint256 const& txnID)
+TransactionMaster::fetch_from_cache(uint256 const& txnID)
 {
-    return mCache.fetch (txnID);
+    return mCache.fetch(txnID);
 }
 
 std::shared_ptr<Transaction>
-TransactionMaster::fetch (uint256 const& txnID, error_code_i& ec)
+TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)
 {
-    auto txn = fetch_from_cache (txnID);
+    auto txn = fetch_from_cache(txnID);
 
     if (txn)
         return txn;
 
-    txn = Transaction::load (txnID, mApp, ec);
+    txn = Transaction::load(txnID, mApp, ec);
 
     if (!txn)
         return txn;
@@ -68,52 +73,56 @@ TransactionMaster::fetch (uint256 const& txnID, error_code_i& ec)
 }
 
 boost::variant<Transaction::pointer, bool>
-TransactionMaster::fetch (uint256 const& txnID, ClosedInterval<uint32_t> const& range,
+TransactionMaster::fetch(
+    uint256 const& txnID,
+    ClosedInterval<uint32_t> const& range,
     error_code_i& ec)
 {
     using pointer = Transaction::pointer;
 
-    auto txn = mCache.fetch (txnID);
+    auto txn = mCache.fetch(txnID);
 
     if (txn)
         return txn;
 
-    boost::variant<Transaction::pointer, bool> v = Transaction::load (
-        txnID, mApp, range, ec);
+    boost::variant<Transaction::pointer, bool> v =
+        Transaction::load(txnID, mApp, range, ec);
 
-    if (v.which () == 0 && boost::get<pointer> (v))
-        mCache.canonicalize_replace_client(txnID, boost::get<pointer> (v));
+    if (v.which() == 0 && boost::get<pointer>(v))
+        mCache.canonicalize_replace_client(txnID, boost::get<pointer>(v));
 
     return v;
 }
 
 std::shared_ptr<STTx const>
-TransactionMaster::fetch (std::shared_ptr<SHAMapItem> const& item,
-    SHAMapTreeNode::TNType type, std::uint32_t uCommitLedger)
+TransactionMaster::fetch(
+    std::shared_ptr<SHAMapItem> const& item,
+    SHAMapTreeNode::TNType type,
+    std::uint32_t uCommitLedger)
 {
-    std::shared_ptr<STTx const>  txn;
-    auto iTx = fetch_from_cache (item->key());
+    std::shared_ptr<STTx const> txn;
+    auto iTx = fetch_from_cache(item->key());
 
     if (!iTx)
     {
-
         if (type == SHAMapTreeNode::tnTRANSACTION_NM)
         {
-            SerialIter sit (item->slice());
-            txn = std::make_shared<STTx const> (std::ref (sit));
+            SerialIter sit(item->slice());
+            txn = std::make_shared<STTx const>(std::ref(sit));
         }
         else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
         {
             auto blob = SerialIter{item->data(), item->size()}.getVL();
-            txn = std::make_shared<STTx const>(SerialIter{blob.data(), blob.size()});
+            txn = std::make_shared<STTx const>(
+                SerialIter{blob.data(), blob.size()});
         }
     }
     else
     {
         if (uCommitLedger)
-            iTx->setStatus (COMMITTED, uCommitLedger);
+            iTx->setStatus(COMMITTED, uCommitLedger);
 
-        txn = iTx->getSTransaction ();
+        txn = iTx->getSTransaction();
     }
 
     return txn;
@@ -132,14 +141,16 @@ TransactionMaster::canonicalize(std::shared_ptr<Transaction>* pTransaction)
     }
 }
 
-void TransactionMaster::sweep (void)
+void
+TransactionMaster::sweep(void)
 {
-    mCache.sweep ();
+    mCache.sweep();
 }
 
-TaggedCache <uint256, Transaction>& TransactionMaster::getCache()
+TaggedCache<uint256, Transaction>&
+TransactionMaster::getCache()
 {
     return mCache;
 }
 
-} // ripple
+}  // namespace ripple

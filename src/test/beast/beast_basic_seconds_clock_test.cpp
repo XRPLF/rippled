@@ -29,12 +29,11 @@ public:
     void
     run() override
     {
-        basic_seconds_clock <
-            std::chrono::steady_clock>::now ();
-        pass ();
+        basic_seconds_clock<std::chrono::steady_clock>::now();
+        pass();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(basic_seconds_clock,chrono,beast);
+BEAST_DEFINE_TESTSUITE(basic_seconds_clock, chrono, beast);
 
-}
+}  // namespace beast

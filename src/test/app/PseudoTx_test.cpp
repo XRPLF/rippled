@@ -54,9 +54,8 @@ struct PseudoTx_test : public beast::unit_test::suite
     {
         std::vector<STTx> res;
 
-        res.emplace_back(STTx(ttACCOUNT_SET, [&](auto& obj) {
-            obj[sfAccount] = AccountID(1);
-        }));
+        res.emplace_back(STTx(
+            ttACCOUNT_SET, [&](auto& obj) { obj[sfAccount] = AccountID(1); }));
 
         res.emplace_back(STTx(ttPAYMENT, [&](auto& obj) {
             obj.setAccountID(sfAccount, AccountID(2));
@@ -109,5 +108,5 @@ struct PseudoTx_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(PseudoTx, app, ripple);
 
-}  // test
-}  // ripple
+}  // namespace test
+}  // namespace ripple

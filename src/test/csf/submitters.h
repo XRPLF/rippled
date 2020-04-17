@@ -19,16 +19,17 @@
 #ifndef RIPPLE_TEST_CSF_SUBMITTERS_H_INCLUDED
 #define RIPPLE_TEST_CSF_SUBMITTERS_H_INCLUDED
 
-#include <test/csf/SimTime.h>
-#include <test/csf/Scheduler.h>
 #include <test/csf/Peer.h>
+#include <test/csf/Scheduler.h>
+#include <test/csf/SimTime.h>
 #include <test/csf/Tx.h>
 #include <type_traits>
 namespace ripple {
 namespace test {
 namespace csf {
 
-// Submitters are classes for simulating submission of transactions to the network
+// Submitters are classes for simulating submission of transactions to the
+// network
 
 /** Represents rate as a count/duration */
 struct Rate
@@ -39,7 +40,7 @@ struct Rate
     double
     inv() const
     {
-        return duration.count()/double(count);
+        return duration.count() / double(count);
     }
 };
 
@@ -67,8 +68,8 @@ class Submitter
     SimTime stop_;
     std::uint32_t nextID_ = 0;
     Selector selector_;
-    Scheduler & scheduler_;
-    Generator & g_;
+    Scheduler& scheduler_;
+    Generator& g_;
 
     // Convert generated durations to SimDuration
     static SimDuration
@@ -78,8 +79,7 @@ class Submitter
     }
 
     template <class T>
-    static
-    std::enable_if_t<std::is_arithmetic<T>::value, SimDuration>
+    static std::enable_if_t<std::is_arithmetic<T>::value, SimDuration>
     asDuration(T t)
     {
         return SimDuration{static_cast<SimDuration::rep>(t)};
@@ -100,9 +100,9 @@ public:
         Distribution dist,
         SimTime start,
         SimTime end,
-        Selector & selector,
-        Scheduler & s,
-        Generator & g)
+        Selector& selector,
+        Scheduler& s,
+        Generator& g)
         : dist_{dist}, stop_{end}, selector_{selector}, scheduler_{s}, g_{g}
     {
         scheduler_.at(start, [&]() { submit(); });
@@ -120,7 +120,7 @@ makeSubmitter(
     Generator& g)
 {
     return Submitter<Distribution, Generator, Selector>(
-            dist, start ,end, sel, s, g);
+        dist, start, end, sel, s, g);
 }
 
 }  // namespace csf

@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <test/jtx.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/envconfig.h>
 #include <ripple/protocol/jss.h>
 #include <boost/container/static_vector.hpp>
 #include <algorithm>
+#include <test/jtx.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
 
 namespace ripple {
 
@@ -33,46 +33,47 @@ class TransactionHistory_test : public beast::unit_test::suite
     {
         testcase("Invalid request params");
         using namespace test::jtx;
-        Env env {*this, envconfig(no_admin)};
+        Env env{*this, envconfig(no_admin)};
 
         {
-            //no params
-            auto const result = env.client()
-                .invoke("tx_history", {})[jss::result];
+            // no params
+            auto const result =
+                env.client().invoke("tx_history", {})[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::status] == "error");
         }
 
         {
             // test at 1 greater than the allowed non-admin limit
-            Json::Value params {Json::objectValue};
-            params[jss::start] = 10001; //limited to <= 10000 for non admin
-            auto const result = env.client()
-                .invoke("tx_history", params)[jss::result];
+            Json::Value params{Json::objectValue};
+            params[jss::start] = 10001;  // limited to <= 10000 for non admin
+            auto const result =
+                env.client().invoke("tx_history", params)[jss::result];
             BEAST_EXPECT(result[jss::error] == "noPermission");
             BEAST_EXPECT(result[jss::status] == "error");
         }
     }
 
-    void testRequest()
+    void
+    testRequest()
     {
         testcase("Basic request");
         using namespace test::jtx;
-        Env env {*this};
+        Env env{*this};
 
         // create enough transactions to provide some
         // history...
         size_t const numAccounts = 20;
         boost::container::static_vector<Account, numAccounts> accounts;
-        for(size_t i = 0; i<numAccounts; ++i)
+        for (size_t i = 0; i < numAccounts; ++i)
         {
             accounts.emplace_back("A" + std::to_string(i));
-            auto const& acct=accounts.back();
+            auto const& acct = accounts.back();
             env.fund(XRP(10000), acct);
             env.close();
-            if(i > 0)
+            if (i > 0)
             {
-                auto const& prev=accounts[i-1];
+                auto const& prev = accounts[i - 1];
                 env.trust(acct["USD"](1000), prev);
                 env(pay(acct, prev, acct["USD"](5)));
             }
@@ -81,12 +82,12 @@ class TransactionHistory_test : public beast::unit_test::suite
 
             // verify the latest transaction in env (offer)
             // is available in tx_history.
-            Json::Value params {Json::objectValue};
+            Json::Value params{Json::objectValue};
             params[jss::start] = 0;
             auto result =
                 env.client().invoke("tx_history", params)[jss::result];
-            if(! BEAST_EXPECT(result[jss::txs].isArray() &&
-                    result[jss::txs].size() > 0))
+            if (!BEAST_EXPECT(
+                    result[jss::txs].isArray() && result[jss::txs].size() > 0))
                 return;
 
             // search for a tx in history matching the last offer
@@ -108,14 +109,14 @@ class TransactionHistory_test : public beast::unit_test::suite
         unsigned int total = 0;
         // also summarize the transaction types in this map
         std::unordered_map<std::string, unsigned> typeCounts;
-        while(start < 120)
+        while (start < 120)
         {
-            Json::Value params {Json::objectValue};
+            Json::Value params{Json::objectValue};
             params[jss::start] = start;
             auto result =
                 env.client().invoke("tx_history", params)[jss::result];
-            if(! BEAST_EXPECT(result[jss::txs].isArray() &&
-                    result[jss::txs].size() > 0))
+            if (!BEAST_EXPECT(
+                    result[jss::txs].isArray() && result[jss::txs].size() > 0))
                 break;
             total += result[jss::txs].size();
             start += 20;
@@ -132,23 +133,24 @@ class TransactionHistory_test : public beast::unit_test::suite
 
         // also, try a request with max non-admin start value
         {
-            Json::Value params {Json::objectValue};
-            params[jss::start] = 10000; //limited to <= 10000 for non admin
-            auto const result = env.client()
-                .invoke("tx_history", params)[jss::result];
+            Json::Value params{Json::objectValue};
+            params[jss::start] = 10000;  // limited to <= 10000 for non admin
+            auto const result =
+                env.client().invoke("tx_history", params)[jss::result];
             BEAST_EXPECT(result[jss::status] == "success");
             BEAST_EXPECT(result[jss::index] == 10000);
         }
     }
 
 public:
-    void run () override
+    void
+    run() override
     {
         testBadInput();
         testRequest();
     }
 };
 
-BEAST_DEFINE_TESTSUITE (TransactionHistory, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(TransactionHistory, rpc, ripple);
 
-}  // ripple
+}  // namespace ripple

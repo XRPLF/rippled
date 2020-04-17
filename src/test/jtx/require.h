@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_REQUIRE_H_INCLUDED
 #define RIPPLE_TEST_JTX_REQUIRE_H_INCLUDED
 
-#include <test/jtx/requires.h>
 #include <functional>
+#include <test/jtx/requires.h>
 #include <vector>
 
 namespace ripple {
@@ -31,28 +31,25 @@ namespace jtx {
 namespace detail {
 
 template <class Cond, class... Args>
-inline
-void
-require_args (requires_t& vec,
-    Cond const& cond, Args const&... args)
+inline void
+require_args(requires_t& vec, Cond const& cond, Args const&... args)
 {
     vec.push_back(cond);
     if constexpr (sizeof...(args) > 0)
         require_args(vec, args...);
 }
 
-} // detail
+}  // namespace detail
 
 /** Compose many condition functors into one */
-template <class...Args>
+template <class... Args>
 require_t
-required (Args const&... args)
+required(Args const&... args)
 {
     requires_t vec;
     detail::require_args(vec, args...);
-    return [vec](Env& env)
-    {
-        for(auto const& f : vec)
+    return [vec](Env& env) {
+        for (auto const& f : vec)
             f(env);
     };
 }
@@ -69,9 +66,8 @@ private:
     require_t cond_;
 
 public:
-    template<class... Args>
-    require(Args const&... args)
-        : cond_(required(args...))
+    template <class... Args>
+    require(Args const&... args) : cond_(required(args...))
     {
     }
 
@@ -82,8 +78,8 @@ public:
     }
 };
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

@@ -18,11 +18,11 @@
 //==============================================================================
 
 #include <ripple/basics/safe_cast.h>
-#include <test/jtx/Account.h>
-#include <test/jtx/amount.h>
 #include <cassert>
 #include <cmath>
 #include <iomanip>
+#include <test/jtx/Account.h>
+#include <test/jtx/amount.h>
 
 namespace ripple {
 namespace test {
@@ -49,12 +49,11 @@ operator<<(std::ostream&& os,
 
 PrettyAmount::operator AnyAmount() const
 {
-    return { amount_ };
+    return {amount_};
 }
 
 template <typename T>
-static
-std::string
+static std::string
 to_places(const T d, std::uint8_t places)
 {
     assert(places <= std::numeric_limits<T>::digits10);
@@ -71,15 +70,14 @@ to_places(const T d, std::uint8_t places)
 }
 
 std::ostream&
-operator<< (std::ostream& os,
-    PrettyAmount const& amount)
+operator<<(std::ostream& os, PrettyAmount const& amount)
 {
     if (amount.value().native())
     {
         // measure in hundredths
         auto const c = dropsPerXRP.drops() / 100;
         auto const n = amount.value().mantissa();
-        if(n < c)
+        if (n < c)
         {
             if (amount.value().negative())
                 os << "-" << n << " drops";
@@ -87,8 +85,7 @@ operator<< (std::ostream& os,
                 os << n << " drops";
             return os;
         }
-        auto const d = double(n) /
-            dropsPerXRP.drops();
+        auto const d = double(n) / dropsPerXRP.drops();
         if (amount.value().negative())
             os << "-";
 
@@ -96,45 +93,38 @@ operator<< (std::ostream& os,
     }
     else
     {
-        os <<
-            amount.value().getText() << "/" <<
-                to_string(amount.value().issue().currency) <<
-                    "(" << amount.name() << ")";
+        os << amount.value().getText() << "/"
+           << to_string(amount.value().issue().currency) << "(" << amount.name()
+           << ")";
     }
     return os;
 }
 
 //------------------------------------------------------------------------------
 
-XRP_t const XRP {};
+XRP_t const XRP{};
 
-PrettyAmount
-IOU::operator()(epsilon_t) const
+PrettyAmount IOU::operator()(epsilon_t) const
 {
-    return { STAmount(issue(), 1, -81),
-        account.name() };
+    return {STAmount(issue(), 1, -81), account.name()};
 }
 
 PrettyAmount
 IOU::operator()(detail::epsilon_multiple m) const
 {
-    return { STAmount(issue(),
-        safe_cast<std::uint64_t>(m.n), -81),
-            account.name() };
+    return {
+        STAmount(issue(), safe_cast<std::uint64_t>(m.n), -81), account.name()};
 }
 
 std::ostream&
-operator<<(std::ostream& os,
-    IOU const& iou)
+operator<<(std::ostream& os, IOU const& iou)
 {
-    os <<
-        to_string(iou.issue().currency) <<
-            "(" << iou.account.name() << ")";
+    os << to_string(iou.issue().currency) << "(" << iou.account.name() << ")";
     return os;
 }
 
-any_t const any { };
+any_t const any{};
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

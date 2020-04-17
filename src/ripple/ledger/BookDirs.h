@@ -51,16 +51,11 @@ public:
 class BookDirs::const_iterator
 {
 public:
-    using value_type =
-        BookDirs::value_type;
-    using pointer =
-        value_type const*;
-    using reference =
-        value_type const&;
-    using difference_type =
-        std::ptrdiff_t;
-    using iterator_category =
-        std::forward_iterator_tag;
+    using value_type = BookDirs::value_type;
+    using pointer = value_type const*;
+    using reference = value_type const&;
+    using difference_type = std::ptrdiff_t;
+    using iterator_category = std::forward_iterator_tag;
 
     const_iterator() = default;
 
@@ -70,7 +65,7 @@ public:
     bool
     operator!=(const_iterator const& other) const
     {
-        return ! (*this == other);
+        return !(*this == other);
     }
 
     reference
@@ -91,12 +86,11 @@ public:
 private:
     friend class BookDirs;
 
-    const_iterator(ReadView const& view,
-        uint256 const& root, uint256 const& dir_key)
-        : view_(&view)
-        , root_(root)
-        , key_(dir_key)
-        , cur_key_(dir_key)
+    const_iterator(
+        ReadView const& view,
+        uint256 const& root,
+        uint256 const& dir_key)
+        : view_(&view), root_(root), key_(dir_key), cur_key_(dir_key)
     {
     }
 
@@ -113,6 +107,6 @@ private:
     static beast::Journal j_;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

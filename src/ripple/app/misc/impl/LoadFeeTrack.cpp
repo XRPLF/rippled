@@ -18,14 +18,14 @@
 //==============================================================================
 
 #include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/basics/contract.h>
 #include <ripple/basics/FeeUnits.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/core/Config.h>
 #include <ripple/ledger/ReadView.h>
-#include <ripple/protocol/jss.h>
 #include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/jss.h>
 
 #include <cstdint>
 #include <numeric>
@@ -34,9 +34,9 @@
 namespace ripple {
 
 bool
-LoadFeeTrack::raiseLocalFee ()
+LoadFeeTrack::raiseLocalFee()
 {
-    std::lock_guard sl (lock_);
+    std::lock_guard sl(lock_);
 
     if (++raiseCount_ < 2)
         return false;
@@ -56,20 +56,20 @@ LoadFeeTrack::raiseLocalFee ()
     if (origFee == localTxnLoadFee_)
         return false;
 
-    JLOG(j_.debug()) << "Local load fee raised from " <<
-        origFee << " to " << localTxnLoadFee_;
+    JLOG(j_.debug()) << "Local load fee raised from " << origFee << " to "
+                     << localTxnLoadFee_;
     return true;
 }
 
 bool
-LoadFeeTrack::lowerLocalFee ()
+LoadFeeTrack::lowerLocalFee()
 {
-    std::lock_guard sl (lock_);
+    std::lock_guard sl(lock_);
     std::uint32_t origFee = localTxnLoadFee_;
     raiseCount_ = 0;
 
     // Reduce slowly
-    localTxnLoadFee_ -= (localTxnLoadFee_ / lftFeeDecFraction );
+    localTxnLoadFee_ -= (localTxnLoadFee_ / lftFeeDecFraction);
 
     if (localTxnLoadFee_ < lftNormalFee)
         localTxnLoadFee_ = lftNormalFee;
@@ -77,8 +77,8 @@ LoadFeeTrack::lowerLocalFee ()
     if (origFee == localTxnLoadFee_)
         return false;
 
-    JLOG(j_.debug()) << "Local load fee lowered from " <<
-        origFee << " to " << localTxnLoadFee_;
+    JLOG(j_.debug()) << "Local load fee lowered from " << origFee << " to "
+                     << localTxnLoadFee_;
     return true;
 }
 
@@ -86,19 +86,20 @@ LoadFeeTrack::lowerLocalFee ()
 
 // Scale using load as well as base rate
 XRPAmount
-scaleFeeLoad(FeeUnit64 fee, LoadFeeTrack const& feeTrack,
-    Fees const& fees, bool bUnlimited)
+scaleFeeLoad(
+    FeeUnit64 fee,
+    LoadFeeTrack const& feeTrack,
+    Fees const& fees,
+    bool bUnlimited)
 {
     if (fee == 0)
         return XRPAmount{0};
 
     // Normally, types with different units wouldn't be mathematically
     // compatible. This function is an exception.
-    auto lowestTerms = [](auto& a, auto& b)
-    {
-        auto value = [](auto val)
-        {
-            if constexpr(std::is_arithmetic_v<decltype(val)>)
+    auto lowestTerms = [](auto& a, auto& b) {
+        auto value = [](auto val) {
+            if constexpr (std::is_arithmetic_v<decltype(val)>)
                 return val;
             else
                 return val.value();
@@ -127,8 +128,8 @@ scaleFeeLoad(FeeUnit64 fee, LoadFeeTrack const& feeTrack,
     // The denominator of the fraction we're trying to compute.
     // fees.units and lftNormalFee are both 32 bit,
     //  so the multiplication can't overflow.
-    auto den = FeeUnit64{ fees.units }
-        * safe_cast<std::uint64_t>(feeTrack.getLoadBase());
+    auto den = FeeUnit64{fees.units} *
+        safe_cast<std::uint64_t>(feeTrack.getLoadBase());
     // Reduce fee * baseFee * feeFactor / (fees.units * lftNormalFee)
     // to lowest terms.
     lowestTerms(fee, den);
@@ -159,8 +160,8 @@ scaleFeeLoad(FeeUnit64 fee, LoadFeeTrack const& feeTrack,
 
     auto const result = mulDiv(fee, baseFee, den);
     if (!result.first)
-        Throw<std::overflow_error> ("scaleFeeLoad");
+        Throw<std::overflow_error>("scaleFeeLoad");
     return result.second;
 }
 
-} // ripple
+}  // namespace ripple

@@ -90,7 +90,7 @@ public:
         return data_->suppression_;
     }
 
-    Proposal const &
+    Proposal const&
     proposal() const
     {
         return data_->proposal_;
@@ -101,7 +101,6 @@ public:
     getJson() const;
 
 private:
-
     struct Data : public CountedObject<Data>
     {
         PublicKey publicKey_;
@@ -135,7 +134,6 @@ private:
         hash_append(h, proposal().prevLedger());
         hash_append(h, proposal().position());
     }
-
 };
 
 /** Calculate a unique identifier for a signed proposal.
@@ -163,6 +161,6 @@ proposalUniqueId(
     Slice const& publicKey,
     Slice const& signature);
 
-}  // ripple
+}  // namespace ripple
 
 #endif

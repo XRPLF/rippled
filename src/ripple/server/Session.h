@@ -20,11 +20,11 @@
 #ifndef RIPPLE_SERVER_SESSION_H_INCLUDED
 #define RIPPLE_SERVER_SESSION_H_INCLUDED
 
-#include <ripple/server/Writer.h>
-#include <ripple/server/WSSession.h>
-#include <boost/beast/http/message.hpp>
 #include <ripple/beast/net/IPEndpoint.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/server/WSSession.h>
+#include <ripple/server/Writer.h>
+#include <boost/beast/http/message.hpp>
 #include <functional>
 #include <memory>
 #include <ostream>
@@ -41,9 +41,10 @@ class Session
 {
 public:
     Session() = default;
-    Session (Session const&) = delete;
-    Session& operator=(Session const&) = delete;
-    virtual ~Session () = default;
+    Session(Session const&) = delete;
+    Session&
+    operator=(Session const&) = delete;
+    virtual ~Session() = default;
 
     /** A user-definable pointer.
         The initial value is always zero.
@@ -52,56 +53,50 @@ public:
     void* tag = nullptr;
 
     /** Returns the Journal to use for logging. */
-    virtual
-    beast::Journal
+    virtual beast::Journal
     journal() = 0;
 
     /** Returns the Port settings for this connection. */
-    virtual
-    Port const&
+    virtual Port const&
     port() = 0;
 
     /** Returns the remote address of the connection. */
-    virtual
-    beast::IP::Endpoint
+    virtual beast::IP::Endpoint
     remoteAddress() = 0;
 
     /** Returns the current HTTP request. */
-    virtual
-    http_request_type&
+    virtual http_request_type&
     request() = 0;
 
     /** Send a copy of data asynchronously. */
     /** @{ */
     void
-    write (std::string const& s)
+    write(std::string const& s)
     {
-        if (! s.empty())
-            write (&s[0],
-                std::distance (s.begin(), s.end()));
+        if (!s.empty())
+            write(&s[0], std::distance(s.begin(), s.end()));
     }
 
     template <typename BufferSequence>
     void
-    write (BufferSequence const& buffers)
+    write(BufferSequence const& buffers)
     {
-        for (typename BufferSequence::const_iterator iter (buffers.begin());
-            iter != buffers.end(); ++iter)
+        for (typename BufferSequence::const_iterator iter(buffers.begin());
+             iter != buffers.end();
+             ++iter)
         {
-            typename BufferSequence::value_type const& buffer (*iter);
-            write (boost::asio::buffer_cast <void const*> (buffer),
-                boost::asio::buffer_size (buffer));
+            typename BufferSequence::value_type const& buffer(*iter);
+            write(
+                boost::asio::buffer_cast<void const*>(buffer),
+                boost::asio::buffer_size(buffer));
         }
     }
 
-    virtual
-    void
-    write (void const* buffer, std::size_t bytes) = 0;
+    virtual void
+    write(void const* buffer, std::size_t bytes) = 0;
 
-    virtual
-    void
-    write (std::shared_ptr <Writer> const& writer,
-        bool keep_alive) = 0;
+    virtual void
+    write(std::shared_ptr<Writer> const& writer, bool keep_alive) = 0;
 
     /** @} */
 
@@ -110,8 +105,7 @@ public:
         asynchronously. Calls to io_service::run made by the server
         will not return until all detached sessions are closed.
     */
-    virtual
-    std::shared_ptr<Session>
+    virtual std::shared_ptr<Session>
     detach() = 0;
 
     /** Indicate that the response is complete.
@@ -120,8 +114,7 @@ public:
         this will trigger a read for the next request; else, the
         connection will be closed when all remaining data has been sent.
     */
-    virtual
-    void
+    virtual void
     complete() = 0;
 
     /** Close the session.
@@ -129,16 +122,14 @@ public:
         closed gracefully after all pending writes have completed.
         @param graceful `true` to wait until all data has finished sending.
     */
-    virtual
-    void
-    close (bool graceful) = 0;
+    virtual void
+    close(bool graceful) = 0;
 
     /** Convert the connection to WebSocket. */
-    virtual
-    std::shared_ptr<WSSession>
+    virtual std::shared_ptr<WSSession>
     websocketUpgrade() = 0;
 };
 
-}  // ripple
+}  // namespace ripple
 
 #endif

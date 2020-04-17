@@ -38,9 +38,8 @@ namespace ripple {
     if the amount exceeds the largest representable amount, but underflows
     will silently trunctate to zero.
 */
-class IOUAmount
-    : private boost::totally_ordered<IOUAmount>
-    , private boost::additive <IOUAmount>
+class IOUAmount : private boost::totally_ordered<IOUAmount>,
+                  private boost::additive<IOUAmount>
 {
 private:
     std::int64_t mantissa_;
@@ -53,27 +52,26 @@ private:
         that are too small to be represented normalize to 0.
     */
     void
-    normalize ();
+    normalize();
 
 public:
-    IOUAmount () = default;
-    IOUAmount (IOUAmount const& other) = default;
-    IOUAmount&operator= (IOUAmount const& other) = default;
+    IOUAmount() = default;
+    IOUAmount(IOUAmount const& other) = default;
+    IOUAmount&
+    operator=(IOUAmount const& other) = default;
 
-    IOUAmount (beast::Zero)
+    IOUAmount(beast::Zero)
     {
         *this = beast::zero;
     }
 
-    IOUAmount (std::int64_t mantissa, int exponent)
-        : mantissa_ (mantissa)
-        , exponent_ (exponent)
+    IOUAmount(std::int64_t mantissa, int exponent)
+        : mantissa_(mantissa), exponent_(exponent)
     {
-        normalize ();
+        normalize();
     }
 
-    IOUAmount&
-    operator= (beast::Zero)
+    IOUAmount& operator=(beast::Zero)
     {
         // The -100 is used to allow 0 to sort less than small positive values
         // which will have a large negative exponent.
@@ -83,34 +81,32 @@ public:
     }
 
     IOUAmount&
-    operator+= (IOUAmount const& other);
+    operator+=(IOUAmount const& other);
 
     IOUAmount&
-    operator-= (IOUAmount const& other)
+    operator-=(IOUAmount const& other)
     {
         *this += -other;
         return *this;
     }
 
     IOUAmount
-    operator- () const
+    operator-() const
     {
-        return { -mantissa_, exponent_ };
+        return {-mantissa_, exponent_};
     }
 
     bool
     operator==(IOUAmount const& other) const
     {
-        return exponent_ == other.exponent_ &&
-            mantissa_ == other.mantissa_;
+        return exponent_ == other.exponent_ && mantissa_ == other.mantissa_;
     }
 
     bool
     operator<(IOUAmount const& other) const;
 
     /** Returns true if the amount is not zero */
-    explicit
-    operator bool() const noexcept
+    explicit operator bool() const noexcept
     {
         return mantissa_ != 0;
     }
@@ -136,7 +132,7 @@ public:
 };
 
 std::string
-to_string (IOUAmount const& amount);
+to_string(IOUAmount const& amount);
 
 /* Return num*amt/den
    This function keeps more precision than computing
@@ -144,12 +140,12 @@ to_string (IOUAmount const& amount);
    dividing by den.
 */
 IOUAmount
-mulRatio (
+mulRatio(
     IOUAmount const& amt,
     std::uint32_t num,
     std::uint32_t den,
     bool roundUp);
 
-}
+}  // namespace ripple
 
 #endif

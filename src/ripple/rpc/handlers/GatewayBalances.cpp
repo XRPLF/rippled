@@ -22,8 +22,8 @@
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/jss.h>
 #include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
@@ -49,51 +49,49 @@ namespace ripple {
 
 // gateway_balances [<ledger>] <account> [<howallet> [<hotwallet [...
 
-Json::Value doGatewayBalances (RPC::JsonContext& context)
+Json::Value
+doGatewayBalances(RPC::JsonContext& context)
 {
     auto& params = context.params;
 
     // Get the current ledger
     std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger (ledger, context);
+    auto result = RPC::lookupLedger(ledger, context);
 
     if (!ledger)
         return result;
 
-    if (!(params.isMember (jss::account) || params.isMember (jss::ident)))
-        return RPC::missing_field_error (jss::account);
+    if (!(params.isMember(jss::account) || params.isMember(jss::ident)))
+        return RPC::missing_field_error(jss::account);
 
-    std::string const strIdent (params.isMember (jss::account)
-        ? params[jss::account].asString ()
-        : params[jss::ident].asString ());
+    std::string const strIdent(
+        params.isMember(jss::account) ? params[jss::account].asString()
+                                      : params[jss::ident].asString());
 
-    bool const bStrict = params.isMember (jss::strict) &&
-            params[jss::strict].asBool ();
+    bool const bStrict =
+        params.isMember(jss::strict) && params[jss::strict].asBool();
 
     // Get info on account.
     AccountID accountID;
-    auto jvAccepted = RPC::accountFromString (accountID, strIdent, bStrict);
+    auto jvAccepted = RPC::accountFromString(accountID, strIdent, bStrict);
 
     if (jvAccepted)
         return jvAccepted;
 
     context.loadType = Resource::feeHighBurdenRPC;
 
-    result[jss::account] = context.app.accountIDCache().toBase58 (accountID);
+    result[jss::account] = context.app.accountIDCache().toBase58(accountID);
 
     // Parse the specified hotwallet(s), if any
-    std::set <AccountID> hotWallets;
+    std::set<AccountID> hotWallets;
 
-    if (params.isMember (jss::hotwallet))
+    if (params.isMember(jss::hotwallet))
     {
-
-        auto addHotWallet = [&hotWallets](Json::Value const& j)
-        {
+        auto addHotWallet = [&hotWallets](Json::Value const& j) {
             if (j.isString())
             {
                 auto const pk = parseBase58<PublicKey>(
-                    TokenType::AccountPublic,
-                    j.asString ());
+                    TokenType::AccountPublic, j.asString());
                 if (pk)
                 {
                     hotWallets.insert(calcAccountID(*pk));
@@ -119,36 +117,34 @@ Json::Value doGatewayBalances (RPC::JsonContext& context)
         if (hw.isArrayOrNull())
         {
             for (unsigned i = 0; i < hw.size(); ++i)
-                valid &= addHotWallet (hw[i]);
+                valid &= addHotWallet(hw[i]);
         }
         else if (hw.isString())
         {
-            valid &= addHotWallet (hw);
+            valid &= addHotWallet(hw);
         }
         else
         {
             valid = false;
         }
 
-        if (! valid)
+        if (!valid)
         {
-            result[jss::error]   = "invalidHotWallet";
+            result[jss::error] = "invalidHotWallet";
             return result;
         }
-
     }
 
-    std::map <Currency, STAmount> sums;
-    std::map <AccountID, std::vector <STAmount>> hotBalances;
-    std::map <AccountID, std::vector <STAmount>> assets;
-    std::map <AccountID, std::vector <STAmount>> frozenBalances;
+    std::map<Currency, STAmount> sums;
+    std::map<AccountID, std::vector<STAmount>> hotBalances;
+    std::map<AccountID, std::vector<STAmount>> assets;
+    std::map<AccountID, std::vector<STAmount>> frozenBalances;
 
     // Traverse the cold wallet's trust lines
     {
-        forEachItem(*ledger, accountID,
-            [&](std::shared_ptr<SLE const> const& sle)
-            {
-                auto rs = RippleState::makeItem (accountID, sle);
+        forEachItem(
+            *ledger, accountID, [&](std::shared_ptr<SLE const> const& sle) {
+                auto rs = RippleState::makeItem(accountID, sle);
 
                 if (!rs)
                     return;
@@ -160,22 +156,23 @@ Json::Value doGatewayBalances (RPC::JsonContext& context)
                 auto const& peer = rs->getAccountIDPeer();
 
                 // Here, a negative balance means the cold wallet owes (normal)
-                // A positive balance means the cold wallet has an asset (unusual)
+                // A positive balance means the cold wallet has an asset
+                // (unusual)
 
-                if (hotWallets.count (peer) > 0)
+                if (hotWallets.count(peer) > 0)
                 {
                     // This is a specified hot wallet
-                    hotBalances[peer].push_back (-rs->getBalance ());
+                    hotBalances[peer].push_back(-rs->getBalance());
                 }
                 else if (balSign > 0)
                 {
                     // This is a gateway asset
-                    assets[peer].push_back (rs->getBalance ());
+                    assets[peer].push_back(rs->getBalance());
                 }
                 else if (rs->getFreeze())
                 {
                     // An obligation the gateway has frozen
-                    frozenBalances[peer].push_back (-rs->getBalance ());
+                    frozenBalances[peer].push_back(-rs->getBalance());
                 }
                 else
                 {
@@ -192,20 +189,20 @@ Json::Value doGatewayBalances (RPC::JsonContext& context)
             });
     }
 
-    if (! sums.empty())
+    if (!sums.empty())
     {
         Json::Value j;
         for (auto const& [k, v] : sums)
         {
-            j[to_string (k)] = v.getText ();
+            j[to_string(k)] = v.getText();
         }
-        result [jss::obligations] = std::move (j);
+        result[jss::obligations] = std::move(j);
     }
 
-    auto populateResult = [&result](
-        std::map <AccountID, std::vector <STAmount>> const& array,
-        Json::StaticString const& name)
-        {
+    auto populateResult =
+        [&result](
+            std::map<AccountID, std::vector<STAmount>> const& array,
+            Json::StaticString const& name) {
             if (!array.empty())
             {
                 Json::Value j;
@@ -215,21 +212,22 @@ Json::Value doGatewayBalances (RPC::JsonContext& context)
                     for (auto const& balance : accBalances)
                     {
                         Json::Value entry;
-                        entry[jss::currency] = to_string (balance.issue ().currency);
+                        entry[jss::currency] =
+                            to_string(balance.issue().currency);
                         entry[jss::value] = balance.getText();
-                        balanceArray.append (std::move (entry));
+                        balanceArray.append(std::move(entry));
                     }
-                    j [to_string (accId)] = std::move (balanceArray);
+                    j[to_string(accId)] = std::move(balanceArray);
                 }
-                result [name] = std::move (j);
+                result[name] = std::move(j);
             }
         };
 
-    populateResult (hotBalances, jss::balances);
-    populateResult (frozenBalances, jss::frozen_balances);
-    populateResult (assets, jss::assets);
+    populateResult(hotBalances, jss::balances);
+    populateResult(frozenBalances, jss::frozen_balances);
+    populateResult(assets, jss::assets);
 
     return result;
 }
 
-} // ripple
+}  // namespace ripple

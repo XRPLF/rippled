@@ -63,7 +63,7 @@ random_weighted_shuffle(std::vector<T> v, std::vector<double> w, G& g)
 */
 template <class RandomNumberDistribution, class Generator>
 std::vector<typename RandomNumberDistribution::result_type>
-sample( std::size_t size, RandomNumberDistribution dist, Generator& g)
+sample(std::size_t size, RandomNumberDistribution dist, Generator& g)
 {
     std::vector<typename RandomNumberDistribution::result_type> res(size);
     std::generate(res.begin(), res.end(), [&dist, &g]() { return dist(g); });
@@ -91,14 +91,17 @@ public:
         @param w Vector of weights of size list-first
         @param g the pseudo-random number generator
     */
-    Selector(RAIter first, RAIter last, std::vector<double> const& w,
-            Generator& g)
-      : first_{first}, last_{last}, dd_{w.begin(), w.end()}, g_{g}
+    Selector(
+        RAIter first,
+        RAIter last,
+        std::vector<double> const& w,
+        Generator& g)
+        : first_{first}, last_{last}, dd_{w.begin(), w.end()}, g_{g}
     {
         using tag = typename std::iterator_traits<RAIter>::iterator_category;
         static_assert(
-                std::is_same<tag, std::random_access_iterator_tag>::value,
-                "Selector only supports random access iterators.");
+            std::is_same<tag, std::random_access_iterator_tag>::value,
+            "Selector only supports random access iterators.");
         // TODO: Allow for forward iterators
     }
 
@@ -111,7 +114,7 @@ public:
 };
 
 template <typename Iter, typename Generator>
-Selector<Iter,Generator>
+Selector<Iter, Generator>
 makeSelector(Iter first, Iter last, std::vector<double> const& w, Generator& g)
 {
     return Selector<Iter, Generator>(first, last, w, g);
@@ -121,7 +124,7 @@ makeSelector(Iter first, Iter last, std::vector<double> const& w, Generator& g)
 // Additional distributions of interest not defined in in <random>
 
 /** Constant "distribution" that always returns the same value
-*/
+ */
 class ConstantDistribution
 {
     double t_;
@@ -133,7 +136,7 @@ public:
 
     template <class Generator>
     inline double
-    operator()(Generator& )
+    operator()(Generator&)
     {
         return t_;
     }
@@ -153,7 +156,6 @@ class PowerLawDistribution
     std::uniform_real_distribution<double> uf_{0, 1};
 
 public:
-
     using result_type = double;
 
     PowerLawDistribution(double xmin, double a) : xmin_{xmin}, a_{a}
@@ -171,8 +173,8 @@ public:
     }
 };
 
-}  // csf
-}  // test
-}  // ripple
+}  // namespace csf
+}  // namespace test
+}  // namespace ripple
 
 #endif

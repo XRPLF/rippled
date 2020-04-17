@@ -23,107 +23,125 @@
 #include <ripple/basics/FeeUnits.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/mulDiv.h>
+#include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/st.h>
 #include <ripple/protocol/TxFlags.h>
-#include <ripple/ledger/View.h>
+#include <ripple/protocol/st.h>
 
 namespace ripple {
 
 NotTEC
-DeleteAccount::preflight (PreflightContext const& ctx)
+DeleteAccount::preflight(PreflightContext const& ctx)
 {
-    if (! ctx.rules.enabled(featureDeletableAccounts))
+    if (!ctx.rules.enabled(featureDeletableAccounts))
         return temDISABLED;
 
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
-    auto const ret = preflight1 (ctx);
+    auto const ret = preflight1(ctx);
 
-    if (!isTesSuccess (ret))
+    if (!isTesSuccess(ret))
         return ret;
 
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
         // An account cannot be deleted and give itself the resulting XRP.
         return temDST_IS_SRC;
 
-    return preflight2 (ctx);
+    return preflight2(ctx);
 }
 
 FeeUnit64
-DeleteAccount::calculateBaseFee (
-    ReadView const& view,
-    STTx const& tx)
+DeleteAccount::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // The fee required for AccountDelete is one owner reserve.  But the
     // owner reserve is stored in drops.  We need to convert it to fee units.
-    Fees const& fees {view.fees()};
-    std::pair<bool, FeeUnit64> const mulDivResult {
-        mulDiv (fees.increment, safe_cast<FeeUnit64>(fees.units), fees.base)};
+    Fees const& fees{view.fees()};
+    std::pair<bool, FeeUnit64> const mulDivResult{
+        mulDiv(fees.increment, safe_cast<FeeUnit64>(fees.units), fees.base)};
     if (mulDivResult.first)
         return mulDivResult.second;
 
     // If mulDiv returns false then overflow happened.  Punt by using the
     // standard calculation.
-    return Transactor::calculateBaseFee (view, tx);
+    return Transactor::calculateBaseFee(view, tx);
 }
 
-namespace
-{
+namespace {
 // Define a function pointer type that can be used to delete ledger node types.
-using DeleterFuncPtr = TER(*)(Application& app, ApplyView& view,
-    AccountID const& account, uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel, beast::Journal j);
+using DeleterFuncPtr = TER (*)(
+    Application& app,
+    ApplyView& view,
+    AccountID const& account,
+    uint256 const& delIndex,
+    std::shared_ptr<SLE> const& sleDel,
+    beast::Journal j);
 
 // Local function definitions that provides signature compatibility.
 TER
-offerDelete (Application& app, ApplyView& view,
-    AccountID const& account, uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel, beast::Journal j)
+offerDelete(
+    Application& app,
+    ApplyView& view,
+    AccountID const& account,
+    uint256 const& delIndex,
+    std::shared_ptr<SLE> const& sleDel,
+    beast::Journal j)
 {
-    return offerDelete (view, sleDel, j);
+    return offerDelete(view, sleDel, j);
 }
 
 TER
-removeSignersFromLedger (Application& app, ApplyView& view,
-    AccountID const& account, uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel, beast::Journal j)
+removeSignersFromLedger(
+    Application& app,
+    ApplyView& view,
+    AccountID const& account,
+    uint256 const& delIndex,
+    std::shared_ptr<SLE> const& sleDel,
+    beast::Journal j)
 {
-    return SetSignerList::removeFromLedger (app, view, account);
+    return SetSignerList::removeFromLedger(app, view, account);
 }
 
 TER
-removeDepositPreauthFromLedger (Application& app, ApplyView& view,
-    AccountID const& account, uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel, beast::Journal j)
+removeDepositPreauthFromLedger(
+    Application& app,
+    ApplyView& view,
+    AccountID const& account,
+    uint256 const& delIndex,
+    std::shared_ptr<SLE> const& sleDel,
+    beast::Journal j)
 {
-    return DepositPreauth::removeFromLedger (
-        app, view, delIndex, j);
+    return DepositPreauth::removeFromLedger(app, view, delIndex, j);
 }
 
-// Return nullptr if the LedgerEntryType represents an obligation that can't be deleted
-// Otherwise return the pointer to the function that can delete the non-obligation
-DeleterFuncPtr nonObligationDeleter(LedgerEntryType t)
+// Return nullptr if the LedgerEntryType represents an obligation that can't be
+// deleted Otherwise return the pointer to the function that can delete the
+// non-obligation
+DeleterFuncPtr
+nonObligationDeleter(LedgerEntryType t)
 {
-    switch (t){
-        case ltOFFER: return offerDelete;
-        case ltSIGNER_LIST: return removeSignersFromLedger;
+    switch (t)
+    {
+        case ltOFFER:
+            return offerDelete;
+        case ltSIGNER_LIST:
+            return removeSignersFromLedger;
         // case ltTICKET: return ???;
-        case ltDEPOSIT_PREAUTH: return removeDepositPreauthFromLedger;
+        case ltDEPOSIT_PREAUTH:
+            return removeDepositPreauthFromLedger;
         default:
             return nullptr;
     }
 }
 
-} // namespace
+}  // namespace
 
 TER
-DeleteAccount::preclaim (PreclaimContext const& ctx)
+DeleteAccount::preclaim(PreclaimContext const& ctx)
 {
-    AccountID const account {ctx.tx[sfAccount]};
-    AccountID const dst {ctx.tx[sfDestination]};
+    AccountID const account{ctx.tx[sfAccount]};
+    AccountID const dst{ctx.tx[sfDestination]};
 
     auto sleDst = ctx.view.read(keylet::account(dst));
 
@@ -137,13 +155,13 @@ DeleteAccount::preclaim (PreclaimContext const& ctx)
     if (ctx.view.rules().enabled(featureDepositAuth) &&
         (sleDst->getFlags() & lsfDepositAuth))
     {
-        if (! ctx.view.exists (keylet::depositPreauth (dst, account)))
+        if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
             return tecNO_PERMISSION;
     }
 
-    auto sleAccount = ctx.view.read (keylet::account(account));
+    auto sleAccount = ctx.view.read(keylet::account(account));
     assert(sleAccount);
-    if (! sleAccount)
+    if (!sleAccount)
         return terNO_ACCOUNT;
 
     // We don't allow an account to be deleted if its sequence number
@@ -152,42 +170,48 @@ DeleteAccount::preclaim (PreclaimContext const& ctx)
     //
     // We look at the account's Sequence rather than the transaction's
     // Sequence in preparation for Tickets.
-    constexpr std::uint32_t seqDelta {255};
+    constexpr std::uint32_t seqDelta{255};
     if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
         return tecTOO_SOON;
 
     // Verify that the account does not own any objects that would prevent
     // the account from being deleted.
-    Keylet const ownerDirKeylet {keylet::ownerDir (account)};
+    Keylet const ownerDirKeylet{keylet::ownerDir(account)};
     if (dirIsEmpty(ctx.view, ownerDirKeylet))
         return tesSUCCESS;
 
-    std::shared_ptr<SLE const> sleDirNode {};
-    unsigned int uDirEntry {0};
-    uint256 dirEntry {beast::zero};
+    std::shared_ptr<SLE const> sleDirNode{};
+    unsigned int uDirEntry{0};
+    uint256 dirEntry{beast::zero};
 
-    if (! cdirFirst (
-        ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry, ctx.j))
-            // Account has no directory at all.  Looks good.
-            return tesSUCCESS;
+    if (!cdirFirst(
+            ctx.view,
+            ownerDirKeylet.key,
+            sleDirNode,
+            uDirEntry,
+            dirEntry,
+            ctx.j))
+        // Account has no directory at all.  Looks good.
+        return tesSUCCESS;
 
-    std::int32_t deletableDirEntryCount {0};
+    std::int32_t deletableDirEntryCount{0};
     do
     {
         // Make sure any directory node types that we find are the kind
         // we can delete.
-        Keylet const itemKeylet {ltCHILD, dirEntry};
-        auto sleItem = ctx.view.read (itemKeylet);
-        if (! sleItem)
+        Keylet const itemKeylet{ltCHILD, dirEntry};
+        auto sleItem = ctx.view.read(itemKeylet);
+        if (!sleItem)
         {
             // Directory node has an invalid index.  Bail out.
-            JLOG (ctx.j.fatal()) << "DeleteAccount: directory node in ledger "
-                << ctx.view.seq() << " has index to object that is missing: "
-                << to_string (dirEntry);
+            JLOG(ctx.j.fatal())
+                << "DeleteAccount: directory node in ledger " << ctx.view.seq()
+                << " has index to object that is missing: "
+                << to_string(dirEntry);
             return tefBAD_LEDGER;
         }
 
-        LedgerEntryType const nodeType {
+        LedgerEntryType const nodeType{
             safe_cast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
 
         if (!nonObligationDeleter(nodeType))
@@ -198,14 +222,14 @@ DeleteAccount::preclaim (PreclaimContext const& ctx)
         if (++deletableDirEntryCount > maxDeletableDirEntries)
             return tefTOO_BIG;
 
-    } while (cdirNext (
+    } while (cdirNext(
         ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry, ctx.j));
 
     return tesSUCCESS;
 }
 
 TER
-DeleteAccount::doApply ()
+DeleteAccount::doApply()
 {
     auto src = view().peek(keylet::account(account_));
     assert(src);
@@ -217,45 +241,46 @@ DeleteAccount::doApply ()
         return tefBAD_LEDGER;
 
     // Delete all of the entries in the account directory.
-    Keylet const ownerDirKeylet {keylet::ownerDir (account_)};
-    std::shared_ptr<SLE> sleDirNode {};
-    unsigned int uDirEntry {0};
-    uint256 dirEntry {beast::zero};
+    Keylet const ownerDirKeylet{keylet::ownerDir(account_)};
+    std::shared_ptr<SLE> sleDirNode{};
+    unsigned int uDirEntry{0};
+    uint256 dirEntry{beast::zero};
 
-    if (view().exists(ownerDirKeylet) && dirFirst (
-        view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry, j_))
+    if (view().exists(ownerDirKeylet) &&
+        dirFirst(
+            view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry, j_))
     {
         do
         {
             // Choose the right way to delete each directory node.
-            Keylet const itemKeylet {ltCHILD, dirEntry};
-            auto sleItem = view().peek (itemKeylet);
-            if (! sleItem)
+            Keylet const itemKeylet{ltCHILD, dirEntry};
+            auto sleItem = view().peek(itemKeylet);
+            if (!sleItem)
             {
                 // Directory node has an invalid index.  Bail out.
-                JLOG (j_.fatal()) << "DeleteAccount: Directory node in ledger "
+                JLOG(j_.fatal())
+                    << "DeleteAccount: Directory node in ledger "
                     << view().seq() << " has index to object that is missing: "
-                    << to_string (dirEntry);
+                    << to_string(dirEntry);
                 return tefBAD_LEDGER;
             }
 
-            LedgerEntryType const nodeType {
-                safe_cast<LedgerEntryType>(
-                    sleItem->getFieldU16(sfLedgerEntryType))};
+            LedgerEntryType const nodeType{safe_cast<LedgerEntryType>(
+                sleItem->getFieldU16(sfLedgerEntryType))};
 
             if (auto deleter = nonObligationDeleter(nodeType))
             {
-                TER const result {
+                TER const result{
                     deleter(ctx_.app, view(), account_, dirEntry, sleItem, j_)};
 
-                if (! isTesSuccess (result))
+                if (!isTesSuccess(result))
                     return result;
             }
             else
             {
-                assert (! "Undeletable entry should be found in preclaim.");
-                JLOG (j_.error())
-                        << "DeleteAccount undeletable item not found in preclaim.";
+                assert(!"Undeletable entry should be found in preclaim.");
+                JLOG(j_.error())
+                    << "DeleteAccount undeletable item not found in preclaim.";
                 return tecHAS_OBLIGATIONS;
             }
 
@@ -275,32 +300,32 @@ DeleteAccount::doApply ()
             //
             //  3. So we verify that uDirEntry is indeed 1.  Then we jam it
             //     back to zero to "un-invalidate" the iterator.
-            assert (uDirEntry == 1);
+            assert(uDirEntry == 1);
             if (uDirEntry != 1)
             {
-                JLOG (j_.error())
+                JLOG(j_.error())
                     << "DeleteAccount iterator re-validation failed.";
                 return tefBAD_LEDGER;
             }
             uDirEntry = 0;
 
-        } while (dirNext (
+        } while (dirNext(
             view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry, j_));
     }
 
     // Transfer any XRP remaining after the fee is paid to the destination:
     (*dst)[sfBalance] = (*dst)[sfBalance] + mSourceBalance;
     (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
-    ctx_.deliver (mSourceBalance);
+    ctx_.deliver(mSourceBalance);
 
-    assert ((*src)[sfBalance] == XRPAmount(0));
+    assert((*src)[sfBalance] == XRPAmount(0));
 
     // If there's still an owner directory associated with the source account
     // delete it.
     if (view().exists(ownerDirKeylet) && !view().emptyDirDelete(ownerDirKeylet))
     {
         JLOG(j_.error()) << "DeleteAccount cannot delete root dir node of "
-            << toBase58 (account_);
+                         << toBase58(account_);
         return tecHAS_OBLIGATIONS;
     }
 
@@ -314,4 +339,4 @@ DeleteAccount::doApply ()
     return tesSUCCESS;
 }
 
-}
+}  // namespace ripple

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_BASICS_KEYCACHE_H_INCLUDED
 #define RIPPLE_BASICS_KEYCACHE_H_INCLUDED
 
-#include <ripple/basics/hardened_hash.h>
 #include <ripple/basics/UnorderedContainers.h>
+#include <ripple/basics/hardened_hash.h>
 #include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/insight/Insight.h>
 #include <mutex>
@@ -36,29 +36,31 @@ namespace ripple {
 */
 template <
     class Key,
-    class Hash = hardened_hash <>,
-    class KeyEqual = std::equal_to <Key>,
-    //class Allocator = std::allocator <std::pair <Key const, Entry>>,
-    class Mutex = std::mutex
->
+    class Hash = hardened_hash<>,
+    class KeyEqual = std::equal_to<Key>,
+    // class Allocator = std::allocator <std::pair <Key const, Entry>>,
+    class Mutex = std::mutex>
 class KeyCache
 {
 public:
     using key_type = Key;
-    using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
+    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
 
 private:
     struct Stats
     {
         template <class Handler>
-        Stats (std::string const& prefix, Handler const& handler,
+        Stats(
+            std::string const& prefix,
+            Handler const& handler,
             beast::insight::Collector::ptr const& collector)
-            : hook (collector->make_hook (handler))
-            , size (collector->make_gauge (prefix, "size"))
-            , hit_rate (collector->make_gauge (prefix, "hit_rate"))
-            , hits (0)
-            , misses (0)
-            { }
+            : hook(collector->make_hook(handler))
+            , size(collector->make_gauge(prefix, "size"))
+            , hit_rate(collector->make_gauge(prefix, "hit_rate"))
+            , hits(0)
+            , misses(0)
+        {
+        }
 
         beast::insight::Hook hook;
         beast::insight::Gauge size;
@@ -70,15 +72,15 @@ private:
 
     struct Entry
     {
-        explicit Entry (clock_type::time_point const& last_access_)
-            : last_access (last_access_)
+        explicit Entry(clock_type::time_point const& last_access_)
+            : last_access(last_access_)
         {
         }
 
         clock_type::time_point last_access;
     };
 
-    using map_type = hardened_hash_map <key_type, Entry, Hash, KeyEqual>;
+    using map_type = hardened_hash_map<key_type, Entry, Hash, KeyEqual>;
     using iterator = typename map_type::iterator;
 
 public:
@@ -99,62 +101,71 @@ public:
         @param size The initial target size.
         @param age  The initial expiration time.
     */
-    KeyCache (std::string const& name, clock_type& clock,
-        beast::insight::Collector::ptr const& collector, size_type target_size = 0,
-            std::chrono::seconds expiration = std::chrono::minutes{2})
-        : m_stats (name,
-            std::bind (&KeyCache::collect_metrics, this),
-                collector)
-        , m_clock (clock)
-        , m_name (name)
-        , m_target_size (target_size)
-        , m_target_age (expiration)
+    KeyCache(
+        std::string const& name,
+        clock_type& clock,
+        beast::insight::Collector::ptr const& collector,
+        size_type target_size = 0,
+        std::chrono::seconds expiration = std::chrono::minutes{2})
+        : m_stats(name, std::bind(&KeyCache::collect_metrics, this), collector)
+        , m_clock(clock)
+        , m_name(name)
+        , m_target_size(target_size)
+        , m_target_age(expiration)
     {
     }
 
     // VFALCO TODO Use a forwarding constructor call here
-    KeyCache (std::string const& name, clock_type& clock,
+    KeyCache(
+        std::string const& name,
+        clock_type& clock,
         size_type target_size = 0,
         std::chrono::seconds expiration = std::chrono::minutes{2})
-        : m_stats (name,
-            std::bind (&KeyCache::collect_metrics, this),
-                beast::insight::NullCollector::New ())
-        , m_clock (clock)
-        , m_name (name)
-        , m_target_size (target_size)
-        , m_target_age (expiration)
+        : m_stats(
+              name,
+              std::bind(&KeyCache::collect_metrics, this),
+              beast::insight::NullCollector::New())
+        , m_clock(clock)
+        , m_name(name)
+        , m_target_size(target_size)
+        , m_target_age(expiration)
     {
     }
 
     //--------------------------------------------------------------------------
 
     /** Retrieve the name of this object. */
-    std::string const& name () const
+    std::string const&
+    name() const
     {
         return m_name;
     }
 
     /** Return the clock associated with the cache. */
-    clock_type& clock ()
+    clock_type&
+    clock()
     {
         return m_clock;
     }
 
     /** Returns the number of items in the container. */
-    size_type size () const
+    size_type
+    size() const
     {
-        std::lock_guard lock (m_mutex);
-        return m_map.size ();
+        std::lock_guard lock(m_mutex);
+        return m_map.size();
     }
 
     /** Empty the cache */
-    void clear ()
+    void
+    clear()
     {
-        std::lock_guard lock (m_mutex);
-        m_map.clear ();
+        std::lock_guard lock(m_mutex);
+        m_map.clear();
     }
 
-    void reset ()
+    void
+    reset()
     {
         std::lock_guard lock(m_mutex);
         m_map.clear();
@@ -162,15 +173,17 @@ public:
         m_stats.misses = 0;
     }
 
-    void setTargetSize (size_type s)
+    void
+    setTargetSize(size_type s)
     {
-        std::lock_guard lock (m_mutex);
+        std::lock_guard lock(m_mutex);
         m_target_size = s;
     }
 
-    void setTargetAge (std::chrono::seconds s)
+    void
+    setTargetAge(std::chrono::seconds s)
     {
-        std::lock_guard lock (m_mutex);
+        std::lock_guard lock(m_mutex);
         m_target_age = s;
     }
 
@@ -178,11 +191,12 @@ public:
         Does not update the last access time.
     */
     template <class KeyComparable>
-    bool exists (KeyComparable const& key) const
+    bool
+    exists(KeyComparable const& key) const
     {
-        std::lock_guard lock (m_mutex);
-        typename map_type::const_iterator const iter (m_map.find (key));
-        if (iter != m_map.end ())
+        std::lock_guard lock(m_mutex);
+        typename map_type::const_iterator const iter(m_map.find(key));
+        if (iter != m_map.end())
         {
             ++m_stats.hits;
             return true;
@@ -195,13 +209,15 @@ public:
         The last access time is refreshed in all cases.
         @return `true` If the key was newly inserted.
     */
-    bool insert (Key const& key)
+    bool
+    insert(Key const& key)
     {
-        std::lock_guard lock (m_mutex);
-        clock_type::time_point const now (m_clock.now ());
-        auto [it, inserted] = m_map.emplace (
-            std::piecewise_construct, std::forward_as_tuple (key),
-                std::forward_as_tuple (now));
+        std::lock_guard lock(m_mutex);
+        clock_type::time_point const now(m_clock.now());
+        auto [it, inserted] = m_map.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(key),
+            std::forward_as_tuple(now));
         if (!inserted)
         {
             it->second.last_access = now;
@@ -214,16 +230,17 @@ public:
         @return `true` If the key was found.
     */
     template <class KeyComparable>
-    bool touch_if_exists (KeyComparable const& key)
+    bool
+    touch_if_exists(KeyComparable const& key)
     {
-        std::lock_guard lock (m_mutex);
-        iterator const iter (m_map.find (key));
-        if (iter == m_map.end ())
+        std::lock_guard lock(m_mutex);
+        iterator const iter(m_map.find(key));
+        if (iter == m_map.end())
         {
             ++m_stats.misses;
             return false;
         }
-        iter->second.last_access = m_clock.now ();
+        iter->second.last_access = m_clock.now();
         ++m_stats.hits;
         return true;
     }
@@ -232,10 +249,11 @@ public:
         @param key The key to remove.
         @return `false` If the key was not found.
     */
-    bool erase (key_type const& key)
+    bool
+    erase(key_type const& key)
     {
-        std::lock_guard lock (m_mutex);
-        if (m_map.erase (key) > 0)
+        std::lock_guard lock(m_mutex);
+        if (m_map.erase(key) > 0)
         {
             ++m_stats.hits;
             return true;
@@ -245,32 +263,30 @@ public:
     }
 
     /** Remove stale entries from the cache. */
-    void sweep ()
+    void
+    sweep()
     {
-        clock_type::time_point const now (m_clock.now ());
+        clock_type::time_point const now(m_clock.now());
         clock_type::time_point when_expire;
 
-        std::lock_guard lock (m_mutex);
+        std::lock_guard lock(m_mutex);
 
-        if (m_target_size == 0 ||
-            (m_map.size () <= m_target_size))
+        if (m_target_size == 0 || (m_map.size() <= m_target_size))
         {
             when_expire = now - m_target_age;
         }
         else
         {
-            when_expire = now -
-                m_target_age * m_target_size / m_map.size();
+            when_expire = now - m_target_age * m_target_size / m_map.size();
 
-            clock_type::duration const minimumAge (
-                std::chrono::seconds (1));
+            clock_type::duration const minimumAge(std::chrono::seconds(1));
             if (when_expire > (now - minimumAge))
                 when_expire = now - minimumAge;
         }
 
-        iterator it = m_map.begin ();
+        iterator it = m_map.begin();
 
-        while (it != m_map.end ())
+        while (it != m_map.end())
         {
             if (it->second.last_access > now)
             {
@@ -279,7 +295,7 @@ public:
             }
             else if (it->second.last_access <= when_expire)
             {
-                it = m_map.erase (it);
+                it = m_map.erase(it);
             }
             else
             {
@@ -289,23 +305,24 @@ public:
     }
 
 private:
-    void collect_metrics ()
+    void
+    collect_metrics()
     {
-        m_stats.size.set (size ());
+        m_stats.size.set(size());
 
         {
-            beast::insight::Gauge::value_type hit_rate (0);
+            beast::insight::Gauge::value_type hit_rate(0);
             {
-                std::lock_guard lock (m_mutex);
-                auto const total (m_stats.hits + m_stats.misses);
+                std::lock_guard lock(m_mutex);
+                auto const total(m_stats.hits + m_stats.misses);
                 if (total != 0)
                     hit_rate = (m_stats.hits * 100) / total;
             }
-            m_stats.hit_rate.set (hit_rate);
+            m_stats.hit_rate.set(hit_rate);
         }
     }
 };
 
-}
+}  // namespace ripple
 
 #endif

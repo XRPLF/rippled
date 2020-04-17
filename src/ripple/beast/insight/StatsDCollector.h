@@ -22,8 +22,8 @@
 
 #include <ripple/beast/insight/Collector.h>
 
-#include <ripple/beast/utility/Journal.h>
 #include <ripple/beast/net/IPEndpoint.h>
+#include <ripple/beast/utility/Journal.h>
 
 namespace beast {
 namespace insight {
@@ -42,13 +42,13 @@ public:
         @param prefix A string pre-pended before each metric name.
         @param journal Destination for logging output.
     */
-    static
-    std::shared_ptr <StatsDCollector>
-    New (IP::Endpoint const& address,
-        std::string const& prefix, Journal journal);
+    static std::shared_ptr<StatsDCollector>
+    New(IP::Endpoint const& address,
+        std::string const& prefix,
+        Journal journal);
 };
 
-}
-}
+}  // namespace insight
+}  // namespace beast
 
 #endif

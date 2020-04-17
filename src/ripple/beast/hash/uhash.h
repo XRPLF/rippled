@@ -39,11 +39,11 @@ struct uhash
     operator()(T const& t) const noexcept
     {
         Hasher h;
-        hash_append (h, t);
+        hash_append(h, t);
         return static_cast<result_type>(h);
     }
 };
 
-} // beast
+}  // namespace beast
 
 #endif

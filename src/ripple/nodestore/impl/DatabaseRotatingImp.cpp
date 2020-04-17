@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/nodestore/impl/DatabaseRotatingImp.h>
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/nodestore/impl/DatabaseRotatingImp.h>
 #include <ripple/protocol/HashPrefix.h>
 
 namespace ripple {
@@ -35,9 +35,16 @@ DatabaseRotatingImp::DatabaseRotatingImp(
     beast::Journal j)
     : DatabaseRotating(name, parent, scheduler, readThreads, config, j)
     , pCache_(std::make_shared<TaggedCache<uint256, NodeObject>>(
-        name, cacheTargetSize, cacheTargetAge, stopwatch(), j))
+          name,
+          cacheTargetSize,
+          cacheTargetAge,
+          stopwatch(),
+          j))
     , nCache_(std::make_shared<KeyCache<uint256>>(
-        name, stopwatch(), cacheTargetSize, cacheTargetAge))
+          name,
+          stopwatch(),
+          cacheTargetSize,
+          cacheTargetAge))
     , writableBackend_(std::move(writableBackend))
     , archiveBackend_(std::move(archiveBackend))
 {
@@ -53,15 +60,18 @@ DatabaseRotatingImp::rotateBackends(
     std::shared_ptr<Backend> newBackend,
     std::lock_guard<std::mutex> const&)
 {
-    auto oldBackend {std::move(archiveBackend_)};
+    auto oldBackend{std::move(archiveBackend_)};
     archiveBackend_ = std::move(writableBackend_);
     writableBackend_ = std::move(newBackend);
     return oldBackend;
 }
 
 void
-DatabaseRotatingImp::store(NodeObjectType type, Blob&& data,
-    uint256 const& hash, std::uint32_t seq)
+DatabaseRotatingImp::store(
+    NodeObjectType type,
+    Blob&& data,
+    uint256 const& hash,
+    std::uint32_t seq)
 {
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
     pCache_->canonicalize_replace_cache(hash, nObj);
@@ -71,8 +81,10 @@ DatabaseRotatingImp::store(NodeObjectType type, Blob&& data,
 }
 
 bool
-DatabaseRotatingImp::asyncFetch(uint256 const& hash,
-    std::uint32_t seq, std::shared_ptr<NodeObject>& object)
+DatabaseRotatingImp::asyncFetch(
+    uint256 const& hash,
+    std::uint32_t seq,
+    std::shared_ptr<NodeObject>& object)
 {
     // See if the object is in cache
     object = pCache_->fetch(hash);
@@ -104,7 +116,7 @@ DatabaseRotatingImp::fetchFrom(uint256 const& hash, std::uint32_t seq)
 {
     Backends b = getBackends();
     auto nObj = fetchInternal(hash, b.writableBackend);
-    if (! nObj)
+    if (!nObj)
     {
         nObj = fetchInternal(hash, b.archiveBackend);
         if (nObj)
@@ -116,5 +128,5 @@ DatabaseRotatingImp::fetchFrom(uint256 const& hash, std::uint32_t seq)
     return nObj;
 }
 
-} // NodeStore
-} // ripple
+}  // namespace NodeStore
+}  // namespace ripple

@@ -36,6 +36,6 @@ extractTarLz4(
     boost::filesystem::path const& src,
     boost::filesystem::path const& dst);
 
-} // ripple
+}  // namespace ripple
 
 #endif

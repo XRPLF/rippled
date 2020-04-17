@@ -19,71 +19,66 @@
 
 #include <ripple/app/tx/impl/SetTrust.h>
 #include <ripple/basics/Log.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/st.h>
 #include <ripple/ledger/View.h>
+#include <ripple/protocol/Feature.h>
+#include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/Quality.h>
+#include <ripple/protocol/st.h>
 
 namespace ripple {
 
 NotTEC
-SetTrust::preflight (PreflightContext const& ctx)
+SetTrust::preflight(PreflightContext const& ctx)
 {
-    auto const ret = preflight1 (ctx);
-    if (!isTesSuccess (ret))
+    auto const ret = preflight1(ctx);
+    if (!isTesSuccess(ret))
         return ret;
 
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
-    std::uint32_t const uTxFlags = tx.getFlags ();
+    std::uint32_t const uTxFlags = tx.getFlags();
 
     if (uTxFlags & tfTrustSetMask)
     {
-        JLOG(j.trace()) <<
-            "Malformed transaction: Invalid flags set.";
+        JLOG(j.trace()) << "Malformed transaction: Invalid flags set.";
         return temINVALID_FLAG;
     }
 
-    STAmount const saLimitAmount (tx.getFieldAmount (sfLimitAmount));
+    STAmount const saLimitAmount(tx.getFieldAmount(sfLimitAmount));
 
-    if (!isLegalNet (saLimitAmount))
+    if (!isLegalNet(saLimitAmount))
         return temBAD_AMOUNT;
 
-    if (saLimitAmount.native ())
+    if (saLimitAmount.native())
     {
-        JLOG(j.trace()) <<
-            "Malformed transaction: specifies native limit " <<
-            saLimitAmount.getFullText ();
+        JLOG(j.trace()) << "Malformed transaction: specifies native limit "
+                        << saLimitAmount.getFullText();
         return temBAD_LIMIT;
     }
 
-    if (badCurrency() == saLimitAmount.getCurrency ())
+    if (badCurrency() == saLimitAmount.getCurrency())
     {
-        JLOG(j.trace()) <<
-            "Malformed transaction: specifies XRP as IOU";
+        JLOG(j.trace()) << "Malformed transaction: specifies XRP as IOU";
         return temBAD_CURRENCY;
     }
 
     if (saLimitAmount < beast::zero)
     {
-        JLOG(j.trace()) <<
-            "Malformed transaction: Negative credit limit.";
+        JLOG(j.trace()) << "Malformed transaction: Negative credit limit.";
         return temBAD_LIMIT;
     }
 
     // Check if destination makes sense.
-    auto const& issuer = saLimitAmount.getIssuer ();
+    auto const& issuer = saLimitAmount.getIssuer();
 
     if (!issuer || issuer == noAccount())
     {
-        JLOG(j.trace()) <<
-            "Malformed transaction: no destination account.";
+        JLOG(j.trace()) << "Malformed transaction: no destination account.";
         return temDST_NEEDED;
     }
 
-    return preflight2 (ctx);
+    return preflight2(ctx);
 }
 
 TER
@@ -91,9 +86,8 @@ SetTrust::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
 
-    auto const sle = ctx.view.read(
-        keylet::account(id));
-    if (! sle)
+    auto const sle = ctx.view.read(keylet::account(id));
+    if (!sle)
         return terNO_ACCOUNT;
 
     std::uint32_t const uTxFlags = ctx.tx.getFlags();
@@ -102,8 +96,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
 
     if (bSetAuth && !(sle->getFieldU32(sfFlags) & lsfRequireAuth))
     {
-        JLOG(ctx.j.trace()) <<
-            "Retry: Auth not required.";
+        JLOG(ctx.j.trace()) << "Retry: Auth not required.";
         return tefNO_AUTH_REQUIRED;
     }
 
@@ -117,13 +110,13 @@ SetTrust::preclaim(PreclaimContext const& ctx)
         // Prevent trustline to self from being created,
         // unless one has somehow already been created
         // (in which case doApply will clean it up).
-        auto const sleDelete = ctx.view.read(
-            keylet::line(id, uDstAccountID, currency));
+        auto const sleDelete =
+            ctx.view.read(keylet::line(id, uDstAccountID, currency));
 
         if (!sleDelete)
         {
-            JLOG(ctx.j.trace()) <<
-                "Malformed transaction: Can not extend credit to self.";
+            JLOG(ctx.j.trace())
+                << "Malformed transaction: Can not extend credit to self.";
             return temDST_IS_SRC;
         }
     }
@@ -132,26 +125,25 @@ SetTrust::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-SetTrust::doApply ()
+SetTrust::doApply()
 {
     TER terResult = tesSUCCESS;
 
-    STAmount const saLimitAmount (ctx_.tx.getFieldAmount (sfLimitAmount));
-    bool const bQualityIn (ctx_.tx.isFieldPresent (sfQualityIn));
-    bool const bQualityOut (ctx_.tx.isFieldPresent (sfQualityOut));
+    STAmount const saLimitAmount(ctx_.tx.getFieldAmount(sfLimitAmount));
+    bool const bQualityIn(ctx_.tx.isFieldPresent(sfQualityIn));
+    bool const bQualityOut(ctx_.tx.isFieldPresent(sfQualityOut));
 
-    Currency const currency (saLimitAmount.getCurrency ());
-    AccountID uDstAccountID (saLimitAmount.getIssuer ());
+    Currency const currency(saLimitAmount.getCurrency());
+    AccountID uDstAccountID(saLimitAmount.getIssuer());
 
     // true, iff current is high account.
     bool const bHigh = account_ > uDstAccountID;
 
-    auto const sle = view().peek(
-        keylet::account(account_));
-    if (! sle)
+    auto const sle = view().peek(keylet::account(account_));
+    if (!sle)
         return tefINTERNAL;
 
-    std::uint32_t const uOwnerCount = sle->getFieldU32 (sfOwnerCount);
+    std::uint32_t const uOwnerCount = sle->getFieldU32(sfOwnerCount);
 
     // The reserve that is required to create the line. Note
     // that although the reserve increases with every item
@@ -171,25 +163,26 @@ SetTrust::doApply ()
     // well. A person with no intention of using the gateway
     // could use the extra XRP for their own purposes.
 
-    XRPAmount const reserveCreate ((uOwnerCount < 2)
-        ? XRPAmount (beast::zero)
-        : view().fees().accountReserve(uOwnerCount + 1));
+    XRPAmount const reserveCreate(
+        (uOwnerCount < 2) ? XRPAmount(beast::zero)
+                          : view().fees().accountReserve(uOwnerCount + 1));
 
-    std::uint32_t uQualityIn (bQualityIn ? ctx_.tx.getFieldU32 (sfQualityIn) : 0);
-    std::uint32_t uQualityOut (bQualityOut ? ctx_.tx.getFieldU32 (sfQualityOut) : 0);
+    std::uint32_t uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
+    std::uint32_t uQualityOut(
+        bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0);
 
     if (bQualityOut && QUALITY_ONE == uQualityOut)
         uQualityOut = 0;
 
-    std::uint32_t const uTxFlags = ctx_.tx.getFlags ();
+    std::uint32_t const uTxFlags = ctx_.tx.getFlags();
 
     bool const bSetAuth = (uTxFlags & tfSetfAuth);
     bool const bSetNoRipple = (uTxFlags & tfSetNoRipple);
-    bool const bClearNoRipple  = (uTxFlags & tfClearNoRipple);
+    bool const bClearNoRipple = (uTxFlags & tfClearNoRipple);
     bool const bSetFreeze = (uTxFlags & tfSetFreeze);
     bool const bClearFreeze = (uTxFlags & tfClearFreeze);
 
-    auto viewJ = ctx_.app.journal ("View");
+    auto viewJ = ctx_.app.journal("View");
 
     if (account_ == uDstAccountID)
     {
@@ -197,62 +190,62 @@ SetTrust::doApply ()
         // trust line to oneself to be deleted. If no such trust
         // lines exist now, why not remove this code and simply
         // return an error?
-        SLE::pointer sleDelete = view().peek (
-            keylet::line(account_, uDstAccountID, currency));
+        SLE::pointer sleDelete =
+            view().peek(keylet::line(account_, uDstAccountID, currency));
 
-        JLOG(j_.warn()) <<
-            "Clearing redundant line.";
+        JLOG(j_.warn()) << "Clearing redundant line.";
 
-        return trustDelete (view(),
-            sleDelete, account_, uDstAccountID, viewJ);
+        return trustDelete(view(), sleDelete, account_, uDstAccountID, viewJ);
     }
 
-    SLE::pointer sleDst =
-        view().peek (keylet::account(uDstAccountID));
+    SLE::pointer sleDst = view().peek(keylet::account(uDstAccountID));
 
     if (!sleDst)
     {
-        JLOG(j_.trace()) <<
-            "Delay transaction: Destination account does not exist.";
+        JLOG(j_.trace())
+            << "Delay transaction: Destination account does not exist.";
         return tecNO_DST;
     }
 
     STAmount saLimitAllow = saLimitAmount;
-    saLimitAllow.setIssuer (account_);
+    saLimitAllow.setIssuer(account_);
 
-    SLE::pointer sleRippleState = view().peek (
-        keylet::line(account_, uDstAccountID, currency));
+    SLE::pointer sleRippleState =
+        view().peek(keylet::line(account_, uDstAccountID, currency));
 
     if (sleRippleState)
     {
-        STAmount        saLowBalance;
-        STAmount        saLowLimit;
-        STAmount        saHighBalance;
-        STAmount        saHighLimit;
-        std::uint32_t   uLowQualityIn;
-        std::uint32_t   uLowQualityOut;
-        std::uint32_t   uHighQualityIn;
-        std::uint32_t   uHighQualityOut;
-        auto const& uLowAccountID   = !bHigh ? account_ : uDstAccountID;
-        auto const& uHighAccountID  =  bHigh ? account_ : uDstAccountID;
-        SLE::ref        sleLowAccount   = !bHigh ? sle : sleDst;
-        SLE::ref        sleHighAccount  =  bHigh ? sle : sleDst;
+        STAmount saLowBalance;
+        STAmount saLowLimit;
+        STAmount saHighBalance;
+        STAmount saHighLimit;
+        std::uint32_t uLowQualityIn;
+        std::uint32_t uLowQualityOut;
+        std::uint32_t uHighQualityIn;
+        std::uint32_t uHighQualityOut;
+        auto const& uLowAccountID = !bHigh ? account_ : uDstAccountID;
+        auto const& uHighAccountID = bHigh ? account_ : uDstAccountID;
+        SLE::ref sleLowAccount = !bHigh ? sle : sleDst;
+        SLE::ref sleHighAccount = bHigh ? sle : sleDst;
 
         //
         // Balances
         //
 
-        saLowBalance    = sleRippleState->getFieldAmount (sfBalance);
-        saHighBalance   = -saLowBalance;
+        saLowBalance = sleRippleState->getFieldAmount(sfBalance);
+        saHighBalance = -saLowBalance;
 
         //
         // Limits
         //
 
-        sleRippleState->setFieldAmount (!bHigh ? sfLowLimit : sfHighLimit, saLimitAllow);
+        sleRippleState->setFieldAmount(
+            !bHigh ? sfLowLimit : sfHighLimit, saLimitAllow);
 
-        saLowLimit  = !bHigh ? saLimitAllow : sleRippleState->getFieldAmount (sfLowLimit);
-        saHighLimit =  bHigh ? saLimitAllow : sleRippleState->getFieldAmount (sfHighLimit);
+        saLowLimit =
+            !bHigh ? saLimitAllow : sleRippleState->getFieldAmount(sfLowLimit);
+        saHighLimit =
+            bHigh ? saLimitAllow : sleRippleState->getFieldAmount(sfHighLimit);
 
         //
         // Quality in
@@ -262,31 +255,41 @@ SetTrust::doApply ()
         {
             // Not setting. Just get it.
 
-            uLowQualityIn   = sleRippleState->getFieldU32 (sfLowQualityIn);
-            uHighQualityIn  = sleRippleState->getFieldU32 (sfHighQualityIn);
+            uLowQualityIn = sleRippleState->getFieldU32(sfLowQualityIn);
+            uHighQualityIn = sleRippleState->getFieldU32(sfHighQualityIn);
         }
         else if (uQualityIn)
         {
             // Setting.
 
-            sleRippleState->setFieldU32 (!bHigh ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
+            sleRippleState->setFieldU32(
+                !bHigh ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
 
-            uLowQualityIn   = !bHigh ? uQualityIn : sleRippleState->getFieldU32 (sfLowQualityIn);
-            uHighQualityIn  =  bHigh ? uQualityIn : sleRippleState->getFieldU32 (sfHighQualityIn);
+            uLowQualityIn = !bHigh
+                ? uQualityIn
+                : sleRippleState->getFieldU32(sfLowQualityIn);
+            uHighQualityIn = bHigh
+                ? uQualityIn
+                : sleRippleState->getFieldU32(sfHighQualityIn);
         }
         else
         {
             // Clearing.
 
-            sleRippleState->makeFieldAbsent (!bHigh ? sfLowQualityIn : sfHighQualityIn);
+            sleRippleState->makeFieldAbsent(
+                !bHigh ? sfLowQualityIn : sfHighQualityIn);
 
-            uLowQualityIn   = !bHigh ? 0 : sleRippleState->getFieldU32 (sfLowQualityIn);
-            uHighQualityIn  =  bHigh ? 0 : sleRippleState->getFieldU32 (sfHighQualityIn);
+            uLowQualityIn =
+                !bHigh ? 0 : sleRippleState->getFieldU32(sfLowQualityIn);
+            uHighQualityIn =
+                bHigh ? 0 : sleRippleState->getFieldU32(sfHighQualityIn);
         }
 
-        if (QUALITY_ONE == uLowQualityIn)   uLowQualityIn   = 0;
+        if (QUALITY_ONE == uLowQualityIn)
+            uLowQualityIn = 0;
 
-        if (QUALITY_ONE == uHighQualityIn)  uHighQualityIn  = 0;
+        if (QUALITY_ONE == uHighQualityIn)
+            uHighQualityIn = 0;
 
         //
         // Quality out
@@ -296,30 +299,38 @@ SetTrust::doApply ()
         {
             // Not setting. Just get it.
 
-            uLowQualityOut  = sleRippleState->getFieldU32 (sfLowQualityOut);
-            uHighQualityOut = sleRippleState->getFieldU32 (sfHighQualityOut);
+            uLowQualityOut = sleRippleState->getFieldU32(sfLowQualityOut);
+            uHighQualityOut = sleRippleState->getFieldU32(sfHighQualityOut);
         }
         else if (uQualityOut)
         {
             // Setting.
 
-            sleRippleState->setFieldU32 (!bHigh ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
+            sleRippleState->setFieldU32(
+                !bHigh ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
 
-            uLowQualityOut  = !bHigh ? uQualityOut : sleRippleState->getFieldU32 (sfLowQualityOut);
-            uHighQualityOut =  bHigh ? uQualityOut : sleRippleState->getFieldU32 (sfHighQualityOut);
+            uLowQualityOut = !bHigh
+                ? uQualityOut
+                : sleRippleState->getFieldU32(sfLowQualityOut);
+            uHighQualityOut = bHigh
+                ? uQualityOut
+                : sleRippleState->getFieldU32(sfHighQualityOut);
         }
         else
         {
             // Clearing.
 
-            sleRippleState->makeFieldAbsent (!bHigh ? sfLowQualityOut : sfHighQualityOut);
+            sleRippleState->makeFieldAbsent(
+                !bHigh ? sfLowQualityOut : sfHighQualityOut);
 
-            uLowQualityOut  = !bHigh ? 0 : sleRippleState->getFieldU32 (sfLowQualityOut);
-            uHighQualityOut =  bHigh ? 0 : sleRippleState->getFieldU32 (sfHighQualityOut);
+            uLowQualityOut =
+                !bHigh ? 0 : sleRippleState->getFieldU32(sfLowQualityOut);
+            uHighQualityOut =
+                bHigh ? 0 : sleRippleState->getFieldU32(sfHighQualityOut);
         }
 
-        std::uint32_t const uFlagsIn (sleRippleState->getFieldU32 (sfFlags));
-        std::uint32_t uFlagsOut (uFlagsIn);
+        std::uint32_t const uFlagsIn(sleRippleState->getFieldU32(sfFlags));
+        std::uint32_t uFlagsOut(uFlagsIn);
 
         if (bSetNoRipple && !bClearNoRipple)
         {
@@ -335,40 +346,43 @@ SetTrust::doApply ()
             uFlagsOut &= ~(bHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
 
-        if (bSetFreeze && !bClearFreeze && !sle->isFlag  (lsfNoFreeze))
+        if (bSetFreeze && !bClearFreeze && !sle->isFlag(lsfNoFreeze))
         {
-            uFlagsOut           |= (bHigh ? lsfHighFreeze : lsfLowFreeze);
+            uFlagsOut |= (bHigh ? lsfHighFreeze : lsfLowFreeze);
         }
         else if (bClearFreeze && !bSetFreeze)
         {
-            uFlagsOut           &= ~(bHigh ? lsfHighFreeze : lsfLowFreeze);
+            uFlagsOut &= ~(bHigh ? lsfHighFreeze : lsfLowFreeze);
         }
 
-        if (QUALITY_ONE == uLowQualityOut)  uLowQualityOut  = 0;
+        if (QUALITY_ONE == uLowQualityOut)
+            uLowQualityOut = 0;
 
-        if (QUALITY_ONE == uHighQualityOut) uHighQualityOut = 0;
+        if (QUALITY_ONE == uHighQualityOut)
+            uHighQualityOut = 0;
 
-        bool const bLowDefRipple        = sleLowAccount->getFlags() & lsfDefaultRipple;
-        bool const bHighDefRipple       = sleHighAccount->getFlags() & lsfDefaultRipple;
+        bool const bLowDefRipple = sleLowAccount->getFlags() & lsfDefaultRipple;
+        bool const bHighDefRipple =
+            sleHighAccount->getFlags() & lsfDefaultRipple;
 
-        bool const  bLowReserveSet      = uLowQualityIn || uLowQualityOut ||
-                                            ((uFlagsOut & lsfLowNoRipple) == 0) != bLowDefRipple ||
-                                            (uFlagsOut & lsfLowFreeze) ||
-                                            saLowLimit || saLowBalance > beast::zero;
-        bool const  bLowReserveClear    = !bLowReserveSet;
+        bool const bLowReserveSet = uLowQualityIn || uLowQualityOut ||
+            ((uFlagsOut & lsfLowNoRipple) == 0) != bLowDefRipple ||
+            (uFlagsOut & lsfLowFreeze) || saLowLimit ||
+            saLowBalance > beast::zero;
+        bool const bLowReserveClear = !bLowReserveSet;
 
-        bool const  bHighReserveSet     = uHighQualityIn || uHighQualityOut ||
-                                            ((uFlagsOut & lsfHighNoRipple) == 0) != bHighDefRipple ||
-                                            (uFlagsOut & lsfHighFreeze) ||
-                                            saHighLimit || saHighBalance > beast::zero;
-        bool const  bHighReserveClear   = !bHighReserveSet;
+        bool const bHighReserveSet = uHighQualityIn || uHighQualityOut ||
+            ((uFlagsOut & lsfHighNoRipple) == 0) != bHighDefRipple ||
+            (uFlagsOut & lsfHighFreeze) || saHighLimit ||
+            saHighBalance > beast::zero;
+        bool const bHighReserveClear = !bHighReserveSet;
 
-        bool const  bDefault            = bLowReserveClear && bHighReserveClear;
+        bool const bDefault = bLowReserveClear && bHighReserveClear;
 
-        bool const  bLowReserved = (uFlagsIn & lsfLowReserve);
-        bool const  bHighReserved = (uFlagsIn & lsfHighReserve);
+        bool const bLowReserved = (uFlagsIn & lsfLowReserve);
+        bool const bHighReserved = (uFlagsIn & lsfHighReserve);
 
-        bool        bReserveIncrease    = false;
+        bool bReserveIncrease = false;
 
         if (bSetAuth)
         {
@@ -378,8 +392,7 @@ SetTrust::doApply ()
         if (bLowReserveSet && !bLowReserved)
         {
             // Set reserve for low account.
-            adjustOwnerCount(view(),
-                sleLowAccount, 1, viewJ);
+            adjustOwnerCount(view(), sleLowAccount, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
             if (!bHigh)
@@ -389,45 +402,42 @@ SetTrust::doApply ()
         if (bLowReserveClear && bLowReserved)
         {
             // Clear reserve for low account.
-            adjustOwnerCount(view(),
-                sleLowAccount, -1, viewJ);
+            adjustOwnerCount(view(), sleLowAccount, -1, viewJ);
             uFlagsOut &= ~lsfLowReserve;
         }
 
         if (bHighReserveSet && !bHighReserved)
         {
             // Set reserve for high account.
-            adjustOwnerCount(view(),
-                sleHighAccount, 1, viewJ);
+            adjustOwnerCount(view(), sleHighAccount, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
             if (bHigh)
-                bReserveIncrease    = true;
+                bReserveIncrease = true;
         }
 
         if (bHighReserveClear && bHighReserved)
         {
             // Clear reserve for high account.
-            adjustOwnerCount(view(),
-                sleHighAccount, -1, viewJ);
+            adjustOwnerCount(view(), sleHighAccount, -1, viewJ);
             uFlagsOut &= ~lsfHighReserve;
         }
 
         if (uFlagsIn != uFlagsOut)
-            sleRippleState->setFieldU32 (sfFlags, uFlagsOut);
+            sleRippleState->setFieldU32(sfFlags, uFlagsOut);
 
         if (bDefault || badCurrency() == currency)
         {
             // Delete.
 
-            terResult = trustDelete (view(),
-                sleRippleState, uLowAccountID, uHighAccountID, viewJ);
+            terResult = trustDelete(
+                view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
         }
         // Reserve is not scaled by load.
         else if (bReserveIncrease && mPriorBalance < reserveCreate)
         {
-            JLOG(j_.trace()) <<
-                "Delay transaction: Insufficent reserve to add trust line.";
+            JLOG(j_.trace())
+                << "Delay transaction: Insufficent reserve to add trust line.";
 
             // Another transaction could provide XRP to the account and then
             // this transaction would succeed.
@@ -435,43 +445,46 @@ SetTrust::doApply ()
         }
         else
         {
-            view().update (sleRippleState);
+            view().update(sleRippleState);
 
             JLOG(j_.trace()) << "Modify ripple line";
         }
     }
     // Line does not exist.
-    else if (! saLimitAmount &&                          // Setting default limit.
-        (! bQualityIn || ! uQualityIn) &&           // Not setting quality in or setting default quality in.
-        (! bQualityOut || ! uQualityOut) &&         // Not setting quality out or setting default quality out.
-        (! bSetAuth))
+    else if (
+        !saLimitAmount &&                  // Setting default limit.
+        (!bQualityIn || !uQualityIn) &&    // Not setting quality in or setting
+                                           // default quality in.
+        (!bQualityOut || !uQualityOut) &&  // Not setting quality out or setting
+                                           // default quality out.
+        (!bSetAuth))
     {
-        JLOG(j_.trace()) <<
-            "Redundant: Setting non-existent ripple line to defaults.";
+        JLOG(j_.trace())
+            << "Redundant: Setting non-existent ripple line to defaults.";
         return tecNO_LINE_REDUNDANT;
     }
-    else if (mPriorBalance < reserveCreate) // Reserve is not scaled by load.
+    else if (mPriorBalance < reserveCreate)  // Reserve is not scaled by load.
     {
-        JLOG(j_.trace()) <<
-            "Delay transaction: Line does not exist. Insufficent reserve to create line.";
+        JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
+                            "Insufficent reserve to create line.";
 
-        // Another transaction could create the account and then this transaction would succeed.
+        // Another transaction could create the account and then this
+        // transaction would succeed.
         terResult = tecNO_LINE_INSUF_RESERVE;
     }
     else
     {
         // Zero balance in currency.
-        STAmount saBalance ({currency, noAccount()});
+        STAmount saBalance({currency, noAccount()});
 
-        uint256 index (getRippleStateIndex (
-            account_, uDstAccountID, currency));
+        uint256 index(getRippleStateIndex(account_, uDstAccountID, currency));
 
-        JLOG(j_.trace()) <<
-            "doTrustSet: Creating ripple line: " <<
-            to_string (index);
+        JLOG(j_.trace()) << "doTrustSet: Creating ripple line: "
+                         << to_string(index);
 
         // Create a new ripple line.
-        terResult = trustCreate (view(),
+        terResult = trustCreate(
+            view(),
             bHigh,
             account_,
             uDstAccountID,
@@ -481,12 +494,13 @@ SetTrust::doApply ()
             bSetNoRipple && !bClearNoRipple,
             bSetFreeze && !bClearFreeze,
             saBalance,
-            saLimitAllow,       // Limit for who is being charged.
+            saLimitAllow,  // Limit for who is being charged.
             uQualityIn,
-            uQualityOut, viewJ);
+            uQualityOut,
+            viewJ);
     }
 
     return terResult;
 }
 
-}
+}  // namespace ripple

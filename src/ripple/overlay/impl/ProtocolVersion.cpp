@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/overlay/impl/ProtocolVersion.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/rfc2616.h>
+#include <ripple/overlay/impl/ProtocolVersion.h>
 #include <boost/function_output_iterator.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
@@ -32,23 +32,15 @@ namespace ripple {
     @note The list must be sorted in strictly ascending order (and so
           it may not contain any duplicates!)
 */
-constexpr
-ProtocolVersion const supportedProtocolList[]
-{
-    { 1, 2 },
-    { 2, 0 },
-    { 2, 1 }
-};
+constexpr ProtocolVersion const supportedProtocolList[]{{1, 2}, {2, 0}, {2, 1}};
 
 // This ugly construct ensures that supportedProtocolList is sorted in strictly
 // ascending order and doesn't contain any duplicates.
 // FIXME: With C++20 we can use std::is_sorted with an appropriate comparator
 static_assert(
-    []() constexpr -> bool
-    {
+    []() constexpr->bool {
         auto const len = std::distance(
-            std::begin(supportedProtocolList),
-            std::end(supportedProtocolList));
+            std::begin(supportedProtocolList), std::end(supportedProtocolList));
 
         // There should be at least one protocol we're willing to speak.
         if (len == 0)
@@ -60,21 +52,21 @@ static_assert(
         {
             for (auto i = 0; i != len - 1; ++i)
             {
-                if (supportedProtocolList[i] >= supportedProtocolList[i+1])
+                if (supportedProtocolList[i] >= supportedProtocolList[i + 1])
                     return false;
             }
         }
 
         return true;
-    }(), "The list of supported protocols isn't properly sorted.");
-
+    }(),
+    "The list of supported protocols isn't properly sorted.");
 
 std::string
 to_string(ProtocolVersion const& p)
 {
     // The legacy protocol uses a different name. This can be removed when we
     // migrate away from it and require 2.0 or later.
-    if (p == ProtocolVersion{ 1, 2 })
+    if (p == ProtocolVersion{1, 2})
         return "RTXP/1.2";
 
     return "XRPL/" + std::to_string(p.first) + "." + std::to_string(p.second);
@@ -86,11 +78,14 @@ parseProtocolVersions(boost::beast::string_view const& value)
     static boost::regex re(
         "^"                        // start of line
         "XRPL/"                    // The string "XRPL/"
-        "([2-9]|(?:[1-9][0-9]+))"  // a number (greater than 2 with no leading zeroes)
+        "([2-9]|(?:[1-9][0-9]+))"  // a number (greater than 2 with no leading
+                                   // zeroes)
         "\\."                      // a period
-        "(0|(?:[1-9][0-9]*))"      // a number (no leading zeroes unless exactly zero)
+        "(0|(?:[1-9][0-9]*))"      // a number (no leading zeroes unless exactly
+                                   // zero)
         "$"                        // The end of the string
-        , boost::regex_constants::optimize);
+        ,
+        boost::regex_constants::optimize);
 
     std::vector<ProtocolVersion> result;
 
@@ -141,14 +136,13 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
     // to be the last one. So we get a little clever and avoid the need for
     // a container:
     std::function<void(ProtocolVersion const&)> pickVersion =
-        [&result](ProtocolVersion const& v)
-        {
-            result = v;
-        };
+        [&result](ProtocolVersion const& v) { result = v; };
 
     std::set_intersection(
-        std::begin(versions), std::end(versions),
-        std::begin(supportedProtocolList), std::end(supportedProtocolList),
+        std::begin(versions),
+        std::end(versions),
+        std::begin(supportedProtocolList),
+        std::end(supportedProtocolList),
         boost::make_function_output_iterator(pickVersion));
 
     return result;
@@ -165,8 +159,7 @@ negotiateProtocolVersion(boost::beast::string_view const& versions)
 std::string const&
 supportedProtocolVersions()
 {
-    static std::string const supported = []()
-    {
+    static std::string const supported = []() {
         std::string ret;
         for (auto const& v : supportedProtocolList)
         {
@@ -184,8 +177,11 @@ supportedProtocolVersions()
 bool
 isProtocolSupported(ProtocolVersion const& v)
 {
-    return std::end(supportedProtocolList) != std::find(
-        std::begin(supportedProtocolList), std::end(supportedProtocolList), v);
+    return std::end(supportedProtocolList) !=
+        std::find(
+               std::begin(supportedProtocolList),
+               std::end(supportedProtocolList),
+               v);
 }
 
-}
+}  // namespace ripple

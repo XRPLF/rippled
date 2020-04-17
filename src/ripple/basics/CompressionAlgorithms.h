@@ -21,8 +21,8 @@
 #define RIPPLED_COMPRESSIONALGORITHMS_H_INCLUDED
 
 #include <ripple/basics/contract.h>
-#include <lz4.h>
 #include <algorithm>
+#include <lz4.h>
 
 namespace ripple {
 
@@ -31,7 +31,8 @@ namespace compression_algorithms {
 /** Convenience wrapper for Throw
  * @param message Message to log/throw
  */
-inline void doThrow(const char *message)
+inline void
+doThrow(const char* message)
 {
     Throw<std::runtime_error>(message);
 }
@@ -44,24 +45,24 @@ inline void doThrow(const char *message)
  * @param bf Compressed buffer allocator
  * @return Size of compressed data, or zero if failed to compress
  */
-template<typename BufferFactory>
+template <typename BufferFactory>
 std::size_t
-lz4Compress(void const* in,
-            std::size_t inSize, BufferFactory&& bf)
+lz4Compress(void const* in, std::size_t inSize, BufferFactory&& bf)
 {
     if (inSize > UINT32_MAX)
         doThrow("lz4 compress: invalid size");
 
     auto const outCapacity = LZ4_compressBound(inSize);
 
-    // Request the caller to allocate and return the buffer to hold compressed data
+    // Request the caller to allocate and return the buffer to hold compressed
+    // data
     auto compressed = bf(outCapacity);
 
     auto compressedSize = LZ4_compress_default(
-            reinterpret_cast<const char*>(in),
-            reinterpret_cast<char*>(compressed),
-            inSize,
-            outCapacity);
+        reinterpret_cast<const char*>(in),
+        reinterpret_cast<char*>(compressed),
+        inSize,
+        outCapacity);
     if (compressedSize == 0)
         doThrow("lz4 compress: failed");
 
@@ -75,13 +76,18 @@ lz4Compress(void const* in,
  * @param decompressedSize Size of the decompressed buffer
  * @return size of the decompressed data
  */
-inline
-std::size_t
-lz4Decompress(std::uint8_t const* in, std::size_t inSize,
-              std::uint8_t* decompressed, std::size_t decompressedSize)
+inline std::size_t
+lz4Decompress(
+    std::uint8_t const* in,
+    std::size_t inSize,
+    std::uint8_t* decompressed,
+    std::size_t decompressedSize)
 {
-    auto ret = LZ4_decompress_safe(reinterpret_cast<const char*>(in),
-                               reinterpret_cast<char*>(decompressed), inSize, decompressedSize);
+    auto ret = LZ4_decompress_safe(
+        reinterpret_cast<const char*>(in),
+        reinterpret_cast<char*>(decompressed),
+        inSize,
+        decompressedSize);
 
     if (ret <= 0 || ret != decompressedSize)
         doThrow("lz4 decompress: failed");
@@ -97,10 +103,13 @@ lz4Decompress(std::uint8_t const* in, std::size_t inSize,
  * @param decompressedSize Size of the decompressed buffer
  * @return size of the decompressed data
  */
-template<typename InputStream>
+template <typename InputStream>
 std::size_t
-lz4Decompress(InputStream& in, std::size_t inSize,
-              std::uint8_t* decompressed, std::size_t decompressedSize)
+lz4Decompress(
+    InputStream& in,
+    std::size_t inSize,
+    std::uint8_t* decompressed,
+    std::size_t decompressedSize)
 {
     std::vector<std::uint8_t> compressed;
     std::uint8_t const* chunk = nullptr;
@@ -123,7 +132,9 @@ lz4Decompress(InputStream& in, std::size_t inSize,
             compressed.resize(inSize);
         }
 
-        chunkSize = chunkSize < (inSize - copiedInSize) ? chunkSize : (inSize - copiedInSize);
+        chunkSize = chunkSize < (inSize - copiedInSize)
+            ? chunkSize
+            : (inSize - copiedInSize);
 
         std::copy(chunk, chunk + chunkSize, compressed.data() + copiedInSize);
 
@@ -140,14 +151,15 @@ lz4Decompress(InputStream& in, std::size_t inSize,
     if (in.ByteCount() > (currentBytes + copiedInSize))
         in.BackUp(in.ByteCount() - currentBytes - copiedInSize);
 
-    if ((copiedInSize == 0 && chunkSize < inSize) || (copiedInSize > 0 && copiedInSize != inSize))
+    if ((copiedInSize == 0 && chunkSize < inSize) ||
+        (copiedInSize > 0 && copiedInSize != inSize))
         doThrow("lz4 decompress: insufficient input size");
 
     return lz4Decompress(chunk, inSize, decompressed, decompressedSize);
 }
 
-} // compression
+}  // namespace compression_algorithms
 
-} // ripple
+}  // namespace ripple
 
-#endif //RIPPLED_COMPRESSIONALGORITHMS_H_INCLUDED
+#endif  // RIPPLED_COMPRESSIONALGORITHMS_H_INCLUDED

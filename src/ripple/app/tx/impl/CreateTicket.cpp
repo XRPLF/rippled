@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/CreateTicket.h>
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/tx/impl/CreateTicket.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
@@ -27,44 +27,43 @@
 namespace ripple {
 
 NotTEC
-CreateTicket::preflight (PreflightContext const& ctx)
+CreateTicket::preflight(PreflightContext const& ctx)
 {
-    if (! ctx.rules.enabled(featureTickets))
+    if (!ctx.rules.enabled(featureTickets))
         return temDISABLED;
 
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
-    auto const ret = preflight1 (ctx);
-    if (!isTesSuccess (ret))
+    auto const ret = preflight1(ctx);
+    if (!isTesSuccess(ret))
         return ret;
 
-    if (ctx.tx.isFieldPresent (sfExpiration))
+    if (ctx.tx.isFieldPresent(sfExpiration))
     {
-        if (ctx.tx.getFieldU32 (sfExpiration) == 0)
+        if (ctx.tx.getFieldU32(sfExpiration) == 0)
         {
-            JLOG(ctx.j.warn()) <<
-                "Malformed transaction: bad expiration";
+            JLOG(ctx.j.warn()) << "Malformed transaction: bad expiration";
             return temBAD_EXPIRATION;
         }
     }
 
-    return preflight2 (ctx);
+    return preflight2(ctx);
 }
 
 TER
-CreateTicket::doApply ()
+CreateTicket::doApply()
 {
     auto const sle = view().peek(keylet::account(account_));
-    if (! sle)
+    if (!sle)
         return tefINTERNAL;
 
     // A ticket counts against the reserve of the issuing account, but we
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
     {
-        auto const reserve = view().fees().accountReserve(
-            sle->getFieldU32(sfOwnerCount) + 1);
+        auto const reserve =
+            view().fees().accountReserve(sle->getFieldU32(sfOwnerCount) + 1);
 
         if (mPriorBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -72,27 +71,29 @@ CreateTicket::doApply ()
 
     NetClock::time_point expiration{};
 
-    if (ctx_.tx.isFieldPresent (sfExpiration))
+    if (ctx_.tx.isFieldPresent(sfExpiration))
     {
-        expiration = NetClock::time_point(NetClock::duration(ctx_.tx[sfExpiration]));
+        expiration =
+            NetClock::time_point(NetClock::duration(ctx_.tx[sfExpiration]));
 
         if (view().parentCloseTime() >= expiration)
             return tesSUCCESS;
     }
 
-    SLE::pointer sleTicket = std::make_shared<SLE>(ltTICKET,
-        getTicketIndex (account_, ctx_.tx.getSequence ()));
-    sleTicket->setAccountID (sfAccount, account_);
-    sleTicket->setFieldU32 (sfSequence, ctx_.tx.getSequence ());
+    SLE::pointer sleTicket = std::make_shared<SLE>(
+        ltTICKET, getTicketIndex(account_, ctx_.tx.getSequence()));
+    sleTicket->setAccountID(sfAccount, account_);
+    sleTicket->setFieldU32(sfSequence, ctx_.tx.getSequence());
     if (expiration != NetClock::time_point{})
-        sleTicket->setFieldU32 (sfExpiration, expiration.time_since_epoch().count());
-    view().insert (sleTicket);
+        sleTicket->setFieldU32(
+            sfExpiration, expiration.time_since_epoch().count());
+    view().insert(sleTicket);
 
-    if (ctx_.tx.isFieldPresent (sfTarget))
+    if (ctx_.tx.isFieldPresent(sfTarget))
     {
-        AccountID const target_account (ctx_.tx.getAccountID (sfTarget));
+        AccountID const target_account(ctx_.tx.getAccountID(sfTarget));
 
-        SLE::pointer sleTarget = view().peek (keylet::account(target_account));
+        SLE::pointer sleTarget = view().peek(keylet::account(target_account));
 
         // Destination account does not exist.
         if (!sleTarget)
@@ -101,17 +102,21 @@ CreateTicket::doApply ()
         // The issuing account is the default account to which the ticket
         // applies so don't bother saving it if that's what's specified.
         if (target_account != account_)
-            sleTicket->setAccountID (sfTarget, target_account);
+            sleTicket->setAccountID(sfTarget, target_account);
     }
 
-    auto viewJ = ctx_.app.journal ("View");
+    auto viewJ = ctx_.app.journal("View");
 
-    auto const page = dirAdd(view(), keylet::ownerDir (account_),
-        sleTicket->key(), false, describeOwnerDir (account_), viewJ);
+    auto const page = dirAdd(
+        view(),
+        keylet::ownerDir(account_),
+        sleTicket->key(),
+        false,
+        describeOwnerDir(account_),
+        viewJ);
 
-    JLOG(j_.trace()) <<
-        "Creating ticket " << to_string (sleTicket->key()) <<
-        ": " << (page ? "success" : "failure");
+    JLOG(j_.trace()) << "Creating ticket " << to_string(sleTicket->key())
+                     << ": " << (page ? "success" : "failure");
 
     if (!page)
         return tecDIR_FULL;
@@ -124,4 +129,4 @@ CreateTicket::doApply ()
     return tesSUCCESS;
 }
 
-}
+}  // namespace ripple

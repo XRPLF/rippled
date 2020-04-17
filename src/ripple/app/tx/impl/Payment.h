@@ -29,8 +29,7 @@ namespace ripple {
 
 // See https://ripple.com/wiki/Transaction_Format#Payment_.280.29
 
-class Payment
-    : public Transactor
+class Payment : public Transactor
 {
     /* The largest number of paths we allow */
     static std::size_t const MaxPathSize = 6;
@@ -39,26 +38,23 @@ class Payment
     static std::size_t const MaxPathLength = 8;
 
 public:
-    explicit Payment (ApplyContext& ctx)
-        : Transactor(ctx)
+    explicit Payment(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    static
-    XRPAmount
+    static XRPAmount
     calculateMaxSpend(STTx const& tx);
 
-    static
-    NotTEC
-    preflight (PreflightContext const& ctx);
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-    static
-    TER
+    static TER
     preclaim(PreclaimContext const& ctx);
 
-    TER doApply () override;
+    TER
+    doApply() override;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

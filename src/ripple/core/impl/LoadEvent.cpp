@@ -24,26 +24,27 @@
 
 namespace ripple {
 
-LoadEvent::LoadEvent (
-        LoadMonitor& monitor,
-        std::string const& name,
-        bool shouldStart)
-    : monitor_ (monitor)
-    , running_ (shouldStart)
-    , name_ (name)
-    , mark_ { std::chrono::steady_clock::now() }
-    , timeWaiting_ {}
-    , timeRunning_ {}
+LoadEvent::LoadEvent(
+    LoadMonitor& monitor,
+    std::string const& name,
+    bool shouldStart)
+    : monitor_(monitor)
+    , running_(shouldStart)
+    , name_(name)
+    , mark_{std::chrono::steady_clock::now()}
+    , timeWaiting_{}
+    , timeRunning_{}
 {
 }
 
-LoadEvent::~LoadEvent ()
+LoadEvent::~LoadEvent()
 {
     if (running_)
-        stop ();
+        stop();
 }
 
-std::string const& LoadEvent::name () const
+std::string const&
+LoadEvent::name() const
 {
     return name_;
 }
@@ -60,12 +61,14 @@ LoadEvent::runTime() const
     return timeRunning_;
 }
 
-void LoadEvent::setName (std::string const& name)
+void
+LoadEvent::setName(std::string const& name)
 {
     name_ = name;
 }
 
-void LoadEvent::start ()
+void
+LoadEvent::start()
 {
     auto const now = std::chrono::steady_clock::now();
 
@@ -77,9 +80,10 @@ void LoadEvent::start ()
     running_ = true;
 }
 
-void LoadEvent::stop ()
+void
+LoadEvent::stop()
 {
-    assert (running_);
+    assert(running_);
 
     auto const now = std::chrono::steady_clock::now();
 
@@ -87,7 +91,7 @@ void LoadEvent::stop ()
     mark_ = now;
     running_ = false;
 
-    monitor_.addLoadSample (*this);
+    monitor_.addLoadSample(*this);
 }
 
-} // ripple
+}  // namespace ripple

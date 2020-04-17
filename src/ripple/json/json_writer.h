@@ -25,8 +25,7 @@
 #include <ostream>
 #include <vector>
 
-namespace Json
-{
+namespace Json {
 
 class Value;
 
@@ -35,70 +34,91 @@ class Value;
 class WriterBase
 {
 public:
-    virtual ~WriterBase () {}
-    virtual std::string write ( const Value& root ) = 0;
+    virtual ~WriterBase()
+    {
+    }
+    virtual std::string
+    write(const Value& root) = 0;
 };
 
-/** \brief Outputs a Value in <a HREF="http://www.json.org">JSON</a> format without formatting (not human friendly).
+/** \brief Outputs a Value in <a HREF="http://www.json.org">JSON</a> format
+ * without formatting (not human friendly).
  *
- * The JSON document is written in a single line. It is not intended for 'human' consumption,
- * but may be useful to support feature such as RPC where bandwith is limited.
- * \sa Reader, Value
+ * The JSON document is written in a single line. It is not intended for 'human'
+ * consumption, but may be useful to support feature such as RPC where bandwith
+ * is limited. \sa Reader, Value
  */
 
 class FastWriter : public WriterBase
 {
 public:
-    FastWriter () = default;
-    virtual ~FastWriter () {}
+    FastWriter() = default;
+    virtual ~FastWriter()
+    {
+    }
 
-public: // overridden from Writer
-    std::string write ( const Value& root ) override;
+public:  // overridden from Writer
+    std::string
+    write(const Value& root) override;
 
 private:
-    void writeValue ( const Value& value );
+    void
+    writeValue(const Value& value);
 
     std::string document_;
 };
 
-/** \brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a human friendly way.
+/** \brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a
+ * human friendly way.
  *
  * The rules for line break and indent are as follow:
  * - Object value:
  *     - if empty then print {} without indent and line break
- *     - if not empty the print '{', line break & indent, print one value per line
- *       and then unindent and line break and print '}'.
+ *     - if not empty the print '{', line break & indent, print one value per
+ * line and then unindent and line break and print '}'.
  * - Array value:
  *     - if empty then print [] without indent and line break
- *     - if the array contains no object value, empty array or some other value types,
- *       and all the values fit on one lines, then print the array on a single line.
+ *     - if the array contains no object value, empty array or some other value
+ * types, and all the values fit on one lines, then print the array on a single
+ * line.
  *     - otherwise, it the values do not fit on one line, or the array contains
  *       object or non empty array, then print one value per line.
  *
  * \sa Reader, Value
  */
-class StyledWriter: public WriterBase
+class StyledWriter : public WriterBase
 {
 public:
-    StyledWriter ();
-    virtual ~StyledWriter () {}
+    StyledWriter();
+    virtual ~StyledWriter()
+    {
+    }
 
-public: // overridden from Writer
-    /** \brief Serialize a Value in <a HREF="http://www.json.org">JSON</a> format.
-     * \param root Value to serialize.
-     * \return String containing the JSON document that represents the root value.
+public:  // overridden from Writer
+    /** \brief Serialize a Value in <a HREF="http://www.json.org">JSON</a>
+     * format. \param root Value to serialize. \return String containing the
+     * JSON document that represents the root value.
      */
-    std::string write ( const Value& root ) override;
+    std::string
+    write(const Value& root) override;
 
 private:
-    void writeValue ( const Value& value );
-    void writeArrayValue ( const Value& value );
-    bool isMultineArray ( const Value& value );
-    void pushValue ( std::string const& value );
-    void writeIndent ();
-    void writeWithIndent ( std::string const& value );
-    void indent ();
-    void unindent ();
+    void
+    writeValue(const Value& value);
+    void
+    writeArrayValue(const Value& value);
+    bool
+    isMultineArray(const Value& value);
+    void
+    pushValue(std::string const& value);
+    void
+    writeIndent();
+    void
+    writeWithIndent(std::string const& value);
+    void
+    indent();
+    void
+    unindent();
 
     using ChildValues = std::vector<std::string>;
 
@@ -110,18 +130,21 @@ private:
     bool addChildValues_;
 };
 
-/** \brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a human friendly way,
-     to a stream rather than to a string.
+/** \brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a
+ human friendly way, to a stream rather than to a string.
  *
  * The rules for line break and indent are as follow:
  * - Object value:
  *     - if empty then print {} without indent and line break
- *     - if not empty the print '{', line break & indent, print one value per line
+ *     - if not empty the print '{', line break & indent, print one value per
+ line
  *       and then unindent and line break and print '}'.
  * - Array value:
  *     - if empty then print [] without indent and line break
- *     - if the array contains no object value, empty array or some other value types,
- *       and all the values fit on one lines, then print the array on a single line.
+ *     - if the array contains no object value, empty array or some other value
+ types,
+ *       and all the values fit on one lines, then print the array on a single
+ line.
  *     - otherwise, it the values do not fit on one line, or the array contains
  *       object or non empty array, then print one value per line.
  *
@@ -131,26 +154,38 @@ private:
 class StyledStreamWriter
 {
 public:
-    StyledStreamWriter ( std::string indentation = "\t" );
-    ~StyledStreamWriter () {}
+    StyledStreamWriter(std::string indentation = "\t");
+    ~StyledStreamWriter()
+    {
+    }
 
 public:
-    /** \brief Serialize a Value in <a HREF="http://www.json.org">JSON</a> format.
-     * \param out Stream to write to. (Can be ostringstream, e.g.)
+    /** \brief Serialize a Value in <a HREF="http://www.json.org">JSON</a>
+     * format. \param out Stream to write to. (Can be ostringstream, e.g.)
      * \param root Value to serialize.
-     * \note There is no point in deriving from Writer, since write() should not return a value.
+     * \note There is no point in deriving from Writer, since write() should not
+     * return a value.
      */
-    void write ( std::ostream& out, const Value& root );
+    void
+    write(std::ostream& out, const Value& root);
 
 private:
-    void writeValue ( const Value& value );
-    void writeArrayValue ( const Value& value );
-    bool isMultineArray ( const Value& value );
-    void pushValue ( std::string const& value );
-    void writeIndent ();
-    void writeWithIndent ( std::string const& value );
-    void indent ();
-    void unindent ();
+    void
+    writeValue(const Value& value);
+    void
+    writeArrayValue(const Value& value);
+    bool
+    isMultineArray(const Value& value);
+    void
+    pushValue(std::string const& value);
+    void
+    writeIndent();
+    void
+    writeWithIndent(std::string const& value);
+    void
+    indent();
+    void
+    unindent();
 
     using ChildValues = std::vector<std::string>;
 
@@ -162,15 +197,21 @@ private:
     bool addChildValues_;
 };
 
-std::string valueToString ( Int value );
-std::string valueToString ( UInt value );
-std::string valueToString ( double value );
-std::string valueToString ( bool value );
-std::string valueToQuotedString ( const char* value );
+std::string
+valueToString(Int value);
+std::string
+valueToString(UInt value);
+std::string
+valueToString(double value);
+std::string
+valueToString(bool value);
+std::string
+valueToQuotedString(const char* value);
 
 /// \brief Output using the StyledStreamWriter.
 /// \see Json::operator>>()
-std::ostream& operator<< ( std::ostream&, const Value& root );
+std::ostream&
+operator<<(std::ostream&, const Value& root);
 
 //------------------------------------------------------------------------------
 
@@ -214,8 +255,7 @@ write_value(Write const& write, Value const& value)
             write_string(write, valueToString(value.asBool()));
             break;
 
-        case arrayValue:
-        {
+        case arrayValue: {
             write("[", 1);
             int const size = value.size();
             for (int index = 0; index < size; ++index)
@@ -228,8 +268,7 @@ write_value(Write const& write, Value const& value)
             break;
         }
 
-        case objectValue:
-        {
+        case objectValue: {
             Value::Members const members = value.getMemberNames();
             write("{", 1);
             for (auto it = members.begin(); it != members.end(); ++it)
@@ -305,4 +344,4 @@ public:
 
 }  // namespace Json
 
-#endif // JSON_WRITER_H_INCLUDED
+#endif  // JSON_WRITER_H_INCLUDED

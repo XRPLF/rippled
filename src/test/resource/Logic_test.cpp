@@ -28,34 +28,33 @@
 #include <boost/utility/base_from_member.hpp>
 #include <functional>
 
-
 namespace ripple {
 namespace Resource {
 
 class ResourceManager_test : public beast::unit_test::suite
 {
 public:
-    class TestLogic
-        : private boost::base_from_member<TestStopwatch>
-        , public Logic
+    class TestLogic : private boost::base_from_member<TestStopwatch>,
+                      public Logic
 
     {
     private:
-        using clock_type =
-            boost::base_from_member<TestStopwatch>;
+        using clock_type = boost::base_from_member<TestStopwatch>;
 
     public:
-        explicit TestLogic (beast::Journal journal)
-            : Logic (beast::insight::NullCollector::New(), member, journal)
+        explicit TestLogic(beast::Journal journal)
+            : Logic(beast::insight::NullCollector::New(), member, journal)
         {
         }
 
-        void advance ()
+        void
+        advance()
         {
             ++member;
         }
 
-        TestStopwatch& clock ()
+        TestStopwatch&
+        clock()
         {
             return member;
         }
@@ -63,45 +62,49 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void createGossip (Gossip& gossip)
+    void
+    createGossip(Gossip& gossip)
     {
-        std::uint8_t const v (10 + rand_int(9));
-        std::uint8_t const n (10 + rand_int(9));
-        gossip.items.reserve (n);
+        std::uint8_t const v(10 + rand_int(9));
+        std::uint8_t const n(10 + rand_int(9));
+        gossip.items.reserve(n);
         for (std::uint8_t i = 0; i < n; ++i)
         {
             Gossip::Item item;
             item.balance = 100 + rand_int(499);
-            beast::IP::AddressV4::bytes_type d =
-                {{192,0,2,static_cast<std::uint8_t>(v + i)}};
-            item.address = beast::IP::Endpoint { beast::IP::AddressV4 {d} };
-            gossip.items.push_back (item);
+            beast::IP::AddressV4::bytes_type d = {
+                {192, 0, 2, static_cast<std::uint8_t>(v + i)}};
+            item.address = beast::IP::Endpoint{beast::IP::AddressV4{d}};
+            gossip.items.push_back(item);
         }
     }
 
     //--------------------------------------------------------------------------
 
-    void testDrop (beast::Journal j, bool limited)
+    void
+    testDrop(beast::Journal j, bool limited)
     {
         if (limited)
             testcase("Limited warn/drop");
         else
             testcase("Unlimited warn/drop");
 
-        TestLogic logic (j);
+        TestLogic logic(j);
 
-        Charge const fee (dropThreshold + 1);
-        beast::IP::Endpoint const addr (
-            beast::IP::Endpoint::from_string ("192.0.2.2"));
+        Charge const fee(dropThreshold + 1);
+        beast::IP::Endpoint const addr(
+            beast::IP::Endpoint::from_string("192.0.2.2"));
 
-        std::function<Consumer(beast::IP::Endpoint)> ep = limited ?
-            std::bind(
-                &TestLogic::newInboundEndpoint, &logic, std::placeholders::_1) :
-            std::bind(
-                &TestLogic::newUnlimitedEndpoint, &logic, std::placeholders::_1);
+        std::function<Consumer(beast::IP::Endpoint)> ep = limited
+            ? std::bind(
+                  &TestLogic::newInboundEndpoint, &logic, std::placeholders::_1)
+            : std::bind(
+                  &TestLogic::newUnlimitedEndpoint,
+                  &logic,
+                  std::placeholders::_1);
 
         {
-            Consumer c (ep(addr));
+            Consumer c(ep(addr));
 
             // Create load until we get a warning
             int n = 10000;
@@ -111,21 +114,21 @@ public:
                 if (n == 0)
                 {
                     if (limited)
-                        fail ("Loop count exceeded without warning");
+                        fail("Loop count exceeded without warning");
                     else
                         pass();
                     return;
                 }
 
-                if (c.charge (fee) == warn)
+                if (c.charge(fee) == warn)
                 {
                     if (limited)
-                       pass();
+                        pass();
                     else
-                        fail ("Should loop forever with no warning");
+                        fail("Should loop forever with no warning");
                     break;
                 }
-                ++logic.clock ();
+                ++logic.clock();
             }
 
             // Create load until we get dropped
@@ -134,30 +137,30 @@ public:
                 if (n == 0)
                 {
                     if (limited)
-                        fail ("Loop count exceeded without dropping");
+                        fail("Loop count exceeded without dropping");
                     else
                         pass();
                     return;
                 }
 
-                if (c.charge (fee) == drop)
+                if (c.charge(fee) == drop)
                 {
                     // Disconnect abusive Consumer
-                    BEAST_EXPECT(c.disconnect () == limited);
+                    BEAST_EXPECT(c.disconnect() == limited);
                     break;
                 }
-                ++logic.clock ();
+                ++logic.clock();
             }
         }
 
         // Make sure the consumer is on the blacklist for a while.
         {
-            Consumer c (logic.newInboundEndpoint (addr));
+            Consumer c(logic.newInboundEndpoint(addr));
             logic.periodicActivity();
-            if (c.disposition () != drop)
+            if (c.disposition() != drop)
             {
                 if (limited)
-                    fail ("Dropped consumer not put on blacklist");
+                    fail("Dropped consumer not put on blacklist");
                 else
                     pass();
                 return;
@@ -173,10 +176,10 @@ public:
             auto n = secondsUntilExpiration + 1s;
             while (--n > 0s)
             {
-                ++logic.clock ();
+                ++logic.clock();
                 logic.periodicActivity();
-                Consumer c (logic.newInboundEndpoint (addr));
-                if (c.disposition () != drop)
+                Consumer c(logic.newInboundEndpoint(addr));
+                if (c.disposition() != drop)
                 {
                     readmitted = true;
                     break;
@@ -185,81 +188,86 @@ public:
         }
         if (readmitted == false)
         {
-            fail ("Dropped Consumer left on blacklist too long");
+            fail("Dropped Consumer left on blacklist too long");
             return;
         }
         pass();
     }
 
-    void testImports (beast::Journal j)
+    void
+    testImports(beast::Journal j)
     {
-        testcase ("Imports");
+        testcase("Imports");
 
-        TestLogic logic (j);
+        TestLogic logic(j);
 
         Gossip g[5];
 
         for (int i = 0; i < 5; ++i)
-            createGossip (g[i]);
+            createGossip(g[i]);
 
         for (int i = 0; i < 5; ++i)
-            logic.importConsumers (std::to_string (i), g[i]);
+            logic.importConsumers(std::to_string(i), g[i]);
 
         pass();
     }
 
-    void testImport (beast::Journal j)
+    void
+    testImport(beast::Journal j)
     {
-        testcase ("Import");
+        testcase("Import");
 
-        TestLogic logic (j);
+        TestLogic logic(j);
 
         Gossip g;
         Gossip::Item item;
         item.balance = 100;
         beast::IP::AddressV4::bytes_type d = {{192, 0, 2, 1}};
-        item.address = beast::IP::Endpoint { beast::IP::AddressV4 {d} };
-        g.items.push_back (item);
+        item.address = beast::IP::Endpoint{beast::IP::AddressV4{d}};
+        g.items.push_back(item);
 
-        logic.importConsumers ("g", g);
+        logic.importConsumers("g", g);
 
         pass();
     }
 
-    void testCharges (beast::Journal j)
+    void
+    testCharges(beast::Journal j)
     {
-        testcase ("Charge");
+        testcase("Charge");
 
-        TestLogic logic (j);
+        TestLogic logic(j);
 
         {
-            beast::IP::Endpoint address (beast::IP::Endpoint::from_string ("192.0.2.1"));
-            Consumer c (logic.newInboundEndpoint (address));
-            Charge fee (1000);
-            JLOG(j.info()) <<
-                "Charging " << c.to_string() << " " << fee << " per second";
-            c.charge (fee);
+            beast::IP::Endpoint address(
+                beast::IP::Endpoint::from_string("192.0.2.1"));
+            Consumer c(logic.newInboundEndpoint(address));
+            Charge fee(1000);
+            JLOG(j.info()) << "Charging " << c.to_string() << " " << fee
+                           << " per second";
+            c.charge(fee);
             for (int i = 0; i < 128; ++i)
             {
-                JLOG(j.info()) <<
-                    "Time= " << logic.clock().now().time_since_epoch().count() <<
-                    ", Balance = " << c.balance();
+                JLOG(j.info()) << "Time= "
+                               << logic.clock().now().time_since_epoch().count()
+                               << ", Balance = " << c.balance();
                 logic.advance();
             }
         }
 
         {
-            beast::IP::Endpoint address (beast::IP::Endpoint::from_string ("192.0.2.2"));
-            Consumer c (logic.newInboundEndpoint (address));
-            Charge fee (1000);
-            JLOG(j.info()) <<
-                "Charging " << c.to_string() << " " << fee << " per second";
+            beast::IP::Endpoint address(
+                beast::IP::Endpoint::from_string("192.0.2.2"));
+            Consumer c(logic.newInboundEndpoint(address));
+            Charge fee(1000);
+            JLOG(j.info()) << "Charging " << c.to_string() << " " << fee
+                           << " per second";
             for (int i = 0; i < 128; ++i)
             {
-                c.charge (fee);
-                JLOG(j.info()) <<
-                    "Time= " << logic.clock().now().time_since_epoch().count() <<
-                    ", Balance = " << c.balance();
+                c.charge(fee);
+                JLOG(j.info()) << "Time= "
+                               << logic.clock().now().time_since_epoch().count()
+                               << ", Balance = " << c.balance();
                 logic.advance();
             }
         }
@@ -267,20 +275,21 @@ public:
         pass();
     }
 
-    void run() override
+    void
+    run() override
     {
         using namespace beast::severities;
-        test::SuiteJournal journal ("ResourceManager_test", *this);
+        test::SuiteJournal journal("ResourceManager_test", *this);
 
-        testDrop (journal, true);
-        testDrop (journal, false);
-        testCharges (journal);
-        testImports (journal);
-        testImport (journal);
+        testDrop(journal, true);
+        testDrop(journal, false);
+        testCharges(journal);
+        testImports(journal);
+        testImport(journal);
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ResourceManager,resource,ripple);
+BEAST_DEFINE_TESTSUITE(ResourceManager, resource, ripple);
 
-}
-}
+}  // namespace Resource
+}  // namespace ripple

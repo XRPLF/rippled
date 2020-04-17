@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/core/Config.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -31,7 +31,8 @@
 
 namespace ripple {
 
-Json::Value doLedgerAccept (RPC::JsonContext& context)
+Json::Value
+doLedgerAccept(RPC::JsonContext& context)
 {
     std::unique_lock lock{context.app.getMasterMutex()};
     Json::Value jvResult;
@@ -42,13 +43,13 @@ Json::Value doLedgerAccept (RPC::JsonContext& context)
     }
     else
     {
-        context.netOps.acceptLedger ();
+        context.netOps.acceptLedger();
 
         jvResult[jss::ledger_current_index] =
-            context.ledgerMaster.getCurrentLedgerIndex ();
+            context.ledgerMaster.getCurrentLedgerIndex();
     }
 
     return jvResult;
 }
 
-} // ripple
+}  // namespace ripple

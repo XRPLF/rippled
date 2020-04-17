@@ -31,12 +31,18 @@ namespace beast {
 template <
     class Key,
     class Clock = std::chrono::steady_clock,
-    class Hash = std::hash <Key>,
-    class KeyEqual = std::equal_to <Key>,
-    class Allocator = std::allocator <Key>
->
-using aged_unordered_multiset = detail::aged_unordered_container <
-    true, false, Key, void, Clock, Hash, KeyEqual, Allocator>;
+    class Hash = std::hash<Key>,
+    class KeyEqual = std::equal_to<Key>,
+    class Allocator = std::allocator<Key>>
+using aged_unordered_multiset = detail::aged_unordered_container<
+    true,
+    false,
+    Key,
+    void,
+    Clock,
+    Hash,
+    KeyEqual,
+    Allocator>;
 
 }
 

@@ -23,20 +23,20 @@
 
 namespace ripple {
 
-Message::Message (::google::protobuf::Message const& message, int type)
+Message::Message(::google::protobuf::Message const& message, int type)
     : category_(TrafficCount::categorize(message, type, false))
 {
     using namespace ripple::compression;
 
 #if defined(GOOGLE_PROTOBUF_VERSION) && (GOOGLE_PROTOBUF_VERSION >= 3011000)
-    auto const messageBytes = message.ByteSizeLong ();
+    auto const messageBytes = message.ByteSizeLong();
 #else
-    unsigned const messageBytes = message.ByteSize ();
+    unsigned const messageBytes = message.ByteSize();
 #endif
 
-    assert (messageBytes != 0);
+    assert(messageBytes != 0);
 
-    buffer_.resize (headerBytes + messageBytes);
+    buffer_.resize(headerBytes + messageBytes);
 
     setHeader(buffer_.data(), messageBytes, type, Algorithm::None, 0);
 
@@ -48,14 +48,14 @@ void
 Message::compress()
 {
     using namespace ripple::compression;
-    auto const messageBytes = buffer_.size () - headerBytes;
+    auto const messageBytes = buffer_.size() - headerBytes;
 
     auto type = getType(buffer_.data());
 
-    bool const compressible = [&]{
+    bool const compressible = [&] {
         if (messageBytes <= 70)
             return false;
-        switch(type)
+        switch (type)
         {
             case protocol::mtMANIFESTS:
             case protocol::mtENDPOINTS:
@@ -85,17 +85,23 @@ Message::compress()
         auto payload = static_cast<void const*>(buffer_.data() + headerBytes);
 
         auto compressedSize = ripple::compression::compress(
-                payload,
-                messageBytes,
-                [&](std::size_t inSize) { // size of required compressed buffer
-                    bufferCompressed_.resize(inSize + headerBytesCompressed);
-                    return (bufferCompressed_.data() + headerBytesCompressed);
-                });
+            payload,
+            messageBytes,
+            [&](std::size_t inSize) {  // size of required compressed buffer
+                bufferCompressed_.resize(inSize + headerBytesCompressed);
+                return (bufferCompressed_.data() + headerBytesCompressed);
+            });
 
-        if (compressedSize < (messageBytes - (headerBytesCompressed - headerBytes)))
+        if (compressedSize <
+            (messageBytes - (headerBytesCompressed - headerBytes)))
         {
             bufferCompressed_.resize(headerBytesCompressed + compressedSize);
-            setHeader(bufferCompressed_.data(), compressedSize, type, Algorithm::LZ4, messageBytes);
+            setHeader(
+                bufferCompressed_.data(),
+                compressedSize,
+                type,
+                Algorithm::LZ4,
+                messageBytes);
         }
         else
             bufferCompressed_.resize(0);
@@ -109,20 +115,23 @@ Message::compress()
  * 15-0	    Message Type
  * Compressed message header
  * 79       Set to 0, indicates the message is compressed
- * 78-76    Compression algorithm, value 1-7. Set to 1 to indicate LZ4 compression
- * 75-74    Set to 0
- * 73-48    Payload size
- * 47-32	Message Type
+ * 78-76    Compression algorithm, value 1-7. Set to 1 to indicate LZ4
+ * compression 75-74    Set to 0 73-48    Payload size 47-32	Message Type
  * 31-0     Uncompressed message size
-*/
+ */
 void
-Message::setHeader(std::uint8_t* in, std::uint32_t payloadBytes, int type,
-                   Algorithm comprAlgorithm, std::uint32_t uncompressedBytes)
+Message::setHeader(
+    std::uint8_t* in,
+    std::uint32_t payloadBytes,
+    int type,
+    Algorithm comprAlgorithm,
+    std::uint32_t uncompressedBytes)
 {
     auto h = in;
 
     auto pack = [](std::uint8_t*& in, std::uint32_t size) {
-        *in++ = static_cast<std::uint8_t>((size >> 24) & 0x0F); // leftmost 4 are compression bits
+        *in++ = static_cast<std::uint8_t>(
+            (size >> 24) & 0x0F);  // leftmost 4 are compression bits
         *in++ = static_cast<std::uint8_t>((size >> 16) & 0xFF);
         *in++ = static_cast<std::uint8_t>((size >> 8) & 0xFF);
         *in++ = static_cast<std::uint8_t>(size & 0xFF);
@@ -131,7 +140,7 @@ Message::setHeader(std::uint8_t* in, std::uint32_t payloadBytes, int type,
     pack(in, payloadBytes);
 
     *in++ = static_cast<std::uint8_t>((type >> 8) & 0xFF);
-    *in++ = static_cast<std::uint8_t> (type & 0xFF);
+    *in++ = static_cast<std::uint8_t>(type & 0xFF);
 
     if (comprAlgorithm != Algorithm::None)
     {
@@ -140,8 +149,8 @@ Message::setHeader(std::uint8_t* in, std::uint32_t payloadBytes, int type,
     }
 }
 
-std::vector <uint8_t> const&
-Message::getBuffer (Compressed tryCompressed)
+std::vector<uint8_t> const&
+Message::getBuffer(Compressed tryCompressed)
 {
     if (tryCompressed == Compressed::Off)
         return buffer_;
@@ -161,4 +170,4 @@ Message::getType(std::uint8_t const* in) const
     return type;
 }
 
-}
+}  // namespace ripple

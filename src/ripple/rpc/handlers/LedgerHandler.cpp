@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/rpc/handlers/LedgerHandler.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
@@ -25,26 +24,27 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/Role.h>
+#include <ripple/rpc/handlers/LedgerHandler.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
 namespace RPC {
 
-LedgerHandler::LedgerHandler (JsonContext& context) : context_ (context)
+LedgerHandler::LedgerHandler(JsonContext& context) : context_(context)
 {
 }
 
-Status LedgerHandler::check()
+Status
+LedgerHandler::check()
 {
     auto const& params = context_.params;
-    bool needsLedger = params.isMember (jss::ledger) ||
-            params.isMember (jss::ledger_hash) ||
-            params.isMember (jss::ledger_index);
-    if (! needsLedger)
+    bool needsLedger = params.isMember(jss::ledger) ||
+        params.isMember(jss::ledger_hash) || params.isMember(jss::ledger_index);
+    if (!needsLedger)
         return Status::OK;
 
-    if (auto s = lookupLedger (ledger_, context_, result_))
+    if (auto s = lookupLedger(ledger_, context_, result_))
         return s;
 
     bool const full = params[jss::full].asBool();
@@ -59,32 +59,32 @@ Status LedgerHandler::check()
         return type.first;
     type_ = type.second;
 
-    options_ = (full ? LedgerFill::full : 0)
-            | (expand ? LedgerFill::expand : 0)
-            | (transactions ? LedgerFill::dumpTxrp : 0)
-            | (accounts ? LedgerFill::dumpState : 0)
-            | (binary ? LedgerFill::binary : 0)
-            | (owner_funds ? LedgerFill::ownerFunds : 0)
-            | (queue ? LedgerFill::dumpQueue : 0);
+    options_ = (full ? LedgerFill::full : 0) |
+        (expand ? LedgerFill::expand : 0) |
+        (transactions ? LedgerFill::dumpTxrp : 0) |
+        (accounts ? LedgerFill::dumpState : 0) |
+        (binary ? LedgerFill::binary : 0) |
+        (owner_funds ? LedgerFill::ownerFunds : 0) |
+        (queue ? LedgerFill::dumpQueue : 0);
 
     if (full || accounts)
     {
         // Until some sane way to get full ledgers has been implemented,
         // disallow retrieving all state nodes.
-        if (! isUnlimited (context_.role))
+        if (!isUnlimited(context_.role))
             return rpcNO_PERMISSION;
 
         if (context_.app.getFeeTrack().isLoadedLocal() &&
-            ! isUnlimited (context_.role))
+            !isUnlimited(context_.role))
         {
             return rpcTOO_BUSY;
         }
-        context_.loadType = binary ? Resource::feeMediumBurdenRPC :
-            Resource::feeHighBurdenRPC;
+        context_.loadType =
+            binary ? Resource::feeMediumBurdenRPC : Resource::feeHighBurdenRPC;
     }
     if (queue)
     {
-        if (! ledger_ || ! ledger_->open())
+        if (!ledger_ || !ledger_->open())
         {
             // It doesn't make sense to request the queue
             // with a non-existant or closed/validated ledger.
@@ -97,5 +97,5 @@ Status LedgerHandler::check()
     return Status::OK;
 }
 
-} // RPC
-} // ripple
+}  // namespace RPC
+}  // namespace ripple

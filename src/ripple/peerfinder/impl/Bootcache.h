@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PEERFINDER_BOOTCACHE_H_INCLUDED
 #define RIPPLE_PEERFINDER_BOOTCACHE_H_INCLUDED
 
-#include <ripple/peerfinder/PeerfinderManager.h>
-#include <ripple/peerfinder/impl/Store.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/beast/utility/PropertyStream.h>
+#include <ripple/peerfinder/PeerfinderManager.h>
+#include <ripple/peerfinder/impl/Store.h>
 #include <boost/bimap.hpp>
 #include <boost/bimap/multiset_of.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
@@ -53,22 +53,24 @@ private:
     class Entry
     {
     public:
-        Entry (int valence)
-            : m_valence (valence)
+        Entry(int valence) : m_valence(valence)
         {
         }
 
-        int& valence ()
-        {
-            return m_valence;
-        }
-
-        int valence () const
+        int&
+        valence()
         {
             return m_valence;
         }
 
-        friend bool operator< (Entry const& lhs, Entry const& rhs)
+        int
+        valence() const
+        {
+            return m_valence;
+        }
+
+        friend bool
+        operator<(Entry const& lhs, Entry const& rhs)
         {
             if (lhs.valence() > rhs.valence())
                 return true;
@@ -79,9 +81,9 @@ private:
         int m_valence;
     };
 
-    using left_t = boost::bimaps::unordered_set_of <beast::IP::Endpoint>;
-    using right_t = boost::bimaps::multiset_of <Entry>;
-    using map_type = boost::bimap <left_t, right_t>;
+    using left_t = boost::bimaps::unordered_set_of<beast::IP::Endpoint>;
+    using right_t = boost::bimaps::multiset_of<Entry>;
+    using map_type = boost::bimap<left_t, right_t>;
     using value_type = map_type::value_type;
 
     struct Transform
@@ -92,15 +94,16 @@ private:
 #endif
     {
 #ifndef _LIBCPP_VERSION
-        using first_argument_type = map_type::right_map::const_iterator::value_type const&;
+        using first_argument_type =
+            map_type::right_map::const_iterator::value_type const&;
         using result_type = beast::IP::Endpoint const&;
 #endif
 
         explicit Transform() = default;
 
-        beast::IP::Endpoint const& operator() (
-            map_type::right_map::
-                const_iterator::value_type const& v) const
+        beast::IP::Endpoint const&
+        operator()(
+            map_type::right_map::const_iterator::value_type const& v) const
         {
             return v.get_left();
         }
@@ -122,62 +125,77 @@ private:
 public:
     static constexpr int staticValence = 32;
 
-    using iterator = boost::transform_iterator <Transform,
-        map_type::right_map::const_iterator>;
+    using iterator = boost::
+        transform_iterator<Transform, map_type::right_map::const_iterator>;
 
     using const_iterator = iterator;
 
-    Bootcache (
-        Store& store,
-        clock_type& clock,
-        beast::Journal journal);
+    Bootcache(Store& store, clock_type& clock, beast::Journal journal);
 
-    ~Bootcache ();
+    ~Bootcache();
 
     /** Returns `true` if the cache is empty. */
-    bool empty() const;
+    bool
+    empty() const;
 
     /** Returns the number of entries in the cache. */
-    map_type::size_type size() const;
+    map_type::size_type
+    size() const;
 
     /** IP::Endpoint iterators that traverse in decreasing valence. */
     /** @{ */
-    const_iterator begin() const;
-    const_iterator cbegin() const;
-    const_iterator end() const;
-    const_iterator cend() const;
-    void clear();
+    const_iterator
+    begin() const;
+    const_iterator
+    cbegin() const;
+    const_iterator
+    end() const;
+    const_iterator
+    cend() const;
+    void
+    clear();
     /** @} */
 
     /** Load the persisted data from the Store into the container. */
-    void load ();
+    void
+    load();
 
     /** Add a newly-learned address to the cache. */
-    bool insert (beast::IP::Endpoint const& endpoint);
+    bool
+    insert(beast::IP::Endpoint const& endpoint);
 
     /** Add a staticallyconfigured address to the cache. */
-    bool insertStatic (beast::IP::Endpoint const& endpoint);
+    bool
+    insertStatic(beast::IP::Endpoint const& endpoint);
 
     /** Called when an outbound connection handshake completes. */
-    void on_success (beast::IP::Endpoint const& endpoint);
+    void
+    on_success(beast::IP::Endpoint const& endpoint);
 
     /** Called when an outbound connection attempt fails to handshake. */
-    void on_failure (beast::IP::Endpoint const& endpoint);
+    void
+    on_failure(beast::IP::Endpoint const& endpoint);
 
     /** Stores the cache in the persistent database on a timer. */
-    void periodicActivity ();
+    void
+    periodicActivity();
 
     /** Write the cache state to the property stream. */
-    void onWrite (beast::PropertyStream::Map& map);
+    void
+    onWrite(beast::PropertyStream::Map& map);
 
 private:
-    void prune ();
-    void update ();
-    void checkUpdate ();
-    void flagForUpdate ();
+    void
+    prune();
+    void
+    update();
+    void
+    checkUpdate();
+    void
+    flagForUpdate();
 };
 
-}
-}
+}  // namespace PeerFinder
+}  // namespace ripple
 
 #endif

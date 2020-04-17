@@ -22,15 +22,13 @@
 
 #include <stdexcept>
 
-namespace Json
-{
+namespace Json {
 
 struct error : std::runtime_error
 {
     using std::runtime_error::runtime_error;
 };
 
-} // namespace Json
+}  // namespace Json
 
-
-#endif // JSON_FORWARDS_H_INCLUDED
+#endif  // JSON_FORWARDS_H_INCLUDED

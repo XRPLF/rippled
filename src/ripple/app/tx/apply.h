@@ -20,11 +20,11 @@
 #ifndef RIPPLE_TX_APPLY_H_INCLUDED
 #define RIPPLE_TX_APPLY_H_INCLUDED
 
+#include <ripple/beast/utility/Journal.h>
 #include <ripple/core/Config.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
-#include <ripple/beast/utility/Journal.h>
 #include <memory>
 #include <utility>
 
@@ -37,8 +37,7 @@ class HashRouter;
 
     @see checkValidity, forceValidity
 */
-enum class Validity
-{
+enum class Validity {
     /// Signature is bad. Didn't do local checks.
     SigBad,
     /// Signature is good, but local checks fail.
@@ -61,10 +60,11 @@ enum class Validity
     @see Validity
 */
 std::pair<Validity, std::string>
-checkValidity(HashRouter& router,
-    STTx const& tx, Rules const& rules,
-        Config const& config);
-
+checkValidity(
+    HashRouter& router,
+    STTx const& tx,
+    Rules const& rules,
+    Config const& config);
 
 /** Sets the validity of a given transaction in the cache.
 
@@ -76,8 +76,7 @@ checkValidity(HashRouter& router,
     @see checkValidity, Validity
 */
 void
-forceValidity(HashRouter& router, uint256 const& txid,
-    Validity validity);
+forceValidity(HashRouter& router, uint256 const& txid, Validity validity);
 
 /** Apply a transaction to an `OpenView`.
 
@@ -121,17 +120,18 @@ forceValidity(HashRouter& router, uint256 const& txid,
             whether or not the transaction was applied.
 */
 std::pair<TER, bool>
-apply (Application& app, OpenView& view,
-    STTx const& tx, ApplyFlags flags,
-        beast::Journal journal);
-
+apply(
+    Application& app,
+    OpenView& view,
+    STTx const& tx,
+    ApplyFlags flags,
+    beast::Journal journal);
 
 /** Enum class for return value from `applyTransaction`
 
     @see applyTransaction
 */
-enum class ApplyResult
-{
+enum class ApplyResult {
     /// Applied to this ledger
     Success,
     /// Should not be retried in this ledger
@@ -148,10 +148,14 @@ enum class ApplyResult
     @see ApplyResult
 */
 ApplyResult
-applyTransaction(Application& app, OpenView& view,
-    STTx const& tx, bool retryAssured, ApplyFlags flags,
+applyTransaction(
+    Application& app,
+    OpenView& view,
+    STTx const& tx,
+    bool retryAssured,
+    ApplyFlags flags,
     beast::Journal journal);
 
-} // ripple
+}  // namespace ripple
 
 #endif

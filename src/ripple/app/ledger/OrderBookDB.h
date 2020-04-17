@@ -28,40 +28,51 @@
 
 namespace ripple {
 
-class OrderBookDB
-    : public Stoppable
+class OrderBookDB : public Stoppable
 {
 public:
-    OrderBookDB (Application& app, Stoppable& parent);
+    OrderBookDB(Application& app, Stoppable& parent);
 
-    void setup (std::shared_ptr<ReadView const> const& ledger);
-    void update (std::shared_ptr<ReadView const> const& ledger);
-    void invalidate ();
+    void
+    setup(std::shared_ptr<ReadView const> const& ledger);
+    void
+    update(std::shared_ptr<ReadView const> const& ledger);
+    void
+    invalidate();
 
-    void addOrderBook(Book const&);
+    void
+    addOrderBook(Book const&);
 
     /** @return a list of all orderbooks that want this issuerID and currencyID.
      */
-    OrderBook::List getBooksByTakerPays (Issue const&);
+    OrderBook::List
+    getBooksByTakerPays(Issue const&);
 
     /** @return a count of all orderbooks that want this issuerID and
         currencyID. */
-    int getBookSize(Issue const&);
+    int
+    getBookSize(Issue const&);
 
-    bool isBookToXRP (Issue const&);
+    bool
+    isBookToXRP(Issue const&);
 
-    BookListeners::pointer getBookListeners (Book const&);
-    BookListeners::pointer makeBookListeners (Book const&);
+    BookListeners::pointer
+    getBookListeners(Book const&);
+    BookListeners::pointer
+    makeBookListeners(Book const&);
 
     // see if this txn effects any orderbook
-    void processTxn (
+    void
+    processTxn(
         std::shared_ptr<ReadView const> const& ledger,
-        const AcceptedLedgerTx& alTx, Json::Value const& jvObj);
+        const AcceptedLedgerTx& alTx,
+        Json::Value const& jvObj);
 
-    using IssueToOrderBook = hash_map <Issue, OrderBook::List>;
+    using IssueToOrderBook = hash_map<Issue, OrderBook::List>;
 
 private:
-    void rawAddBook(Book const&);
+    void
+    rawAddBook(Book const&);
 
     Application& app_;
 
@@ -72,11 +83,11 @@ private:
     IssueToOrderBook mDestMap;
 
     // does an order book to XRP exist
-    hash_set <Issue> mXRPBooks;
+    hash_set<Issue> mXRPBooks;
 
     std::recursive_mutex mLock;
 
-    using BookToListenersMap = hash_map <Book, BookListeners::pointer>;
+    using BookToListenersMap = hash_map<Book, BookListeners::pointer>;
 
     BookToListenersMap mListeners;
 
@@ -85,6 +96,6 @@ private:
     beast::Journal const j_;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

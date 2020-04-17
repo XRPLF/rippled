@@ -30,19 +30,20 @@ namespace ripple {
 //   SigningAccounts <array>,
 //   tx_json: <object>,
 // }
-Json::Value doSubmitMultiSigned (RPC::JsonContext& context)
+Json::Value
+doSubmitMultiSigned(RPC::JsonContext& context)
 {
     context.loadType = Resource::feeHighBurdenRPC;
     auto const failHard = context.params[jss::fail_hard].asBool();
-    auto const failType = NetworkOPs::doFailHard (failHard);
+    auto const failType = NetworkOPs::doFailHard(failHard);
 
-    return RPC::transactionSubmitMultiSigned (
+    return RPC::transactionSubmitMultiSigned(
         context.params,
         failType,
         context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app,
-        RPC::getProcessTxnFn (context.netOps));
+        RPC::getProcessTxnFn(context.netOps));
 }
 
-} // ripple
+}  // namespace ripple

@@ -30,26 +30,32 @@ template <typename Node>
 class is_remote_node_pred
 {
 public:
-    is_remote_node_pred (Node const& n)
-        : node (n)
-        { }
+    is_remote_node_pred(Node const& n) : node(n)
+    {
+    }
     template <typename Link>
-    bool operator() (Link const& l) const
-        { return &node == &l.remote_node(); }
+    bool
+    operator()(Link const& l) const
+    {
+        return &node == &l.remote_node();
+    }
+
 private:
     Node const& node;
 };
 
 template <typename Node>
-is_remote_node_pred <Node> is_remote_node (Node const& node)
+is_remote_node_pred<Node>
+is_remote_node(Node const& node)
 {
-    return is_remote_node_pred <Node> (node);
+    return is_remote_node_pred<Node>(node);
 }
 
 template <typename Node>
-is_remote_node_pred <Node> is_remote_node (Node const* node)
+is_remote_node_pred<Node>
+is_remote_node(Node const* node)
 {
-    return is_remote_node_pred <Node> (*node);
+    return is_remote_node_pred<Node>(*node);
 }
 /** @} */
 
@@ -59,20 +65,23 @@ is_remote_node_pred <Node> is_remote_node (Node const* node)
 class is_remote_endpoint
 {
 public:
-    explicit is_remote_endpoint (beast::IP::Endpoint const& address)
-        : m_endpoint (address)
-        { }
+    explicit is_remote_endpoint(beast::IP::Endpoint const& address)
+        : m_endpoint(address)
+    {
+    }
     template <typename Link>
-    bool operator() (Link const& link) const
+    bool
+    operator()(Link const& link) const
     {
         return link.remote_endpoint() == m_endpoint;
     }
+
 private:
     beast::IP::Endpoint const m_endpoint;
 };
 
-}
-}
-}
+}  // namespace Sim
+}  // namespace PeerFinder
+}  // namespace ripple
 
 #endif

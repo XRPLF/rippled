@@ -17,16 +17,15 @@
 */
 //==============================================================================
 
-#include <test/jtx/regkey.h>
 #include <ripple/protocol/jss.h>
+#include <test/jtx/regkey.h>
 
 namespace ripple {
 namespace test {
 namespace jtx {
 
 Json::Value
-regkey (Account const& account,
-    disabled_t)
+regkey(Account const& account, disabled_t)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
@@ -35,8 +34,7 @@ regkey (Account const& account,
 }
 
 Json::Value
-regkey (Account const& account,
-    Account const& signer)
+regkey(Account const& account, Account const& signer)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
@@ -45,6 +43,6 @@ regkey (Account const& account,
     return jv;
 }
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

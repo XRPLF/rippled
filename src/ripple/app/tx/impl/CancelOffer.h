@@ -27,26 +27,23 @@
 
 namespace ripple {
 
-class CancelOffer
-    : public Transactor
+class CancelOffer : public Transactor
 {
 public:
-    explicit CancelOffer (ApplyContext& ctx)
-        : Transactor(ctx)
+    explicit CancelOffer(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    static
-    NotTEC
-    preflight (PreflightContext const& ctx);
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-    static
-    TER
+    static TER
     preclaim(PreclaimContext const& ctx);
 
-    TER doApply () override;
+    TER
+    doApply() override;
 };
 
-}
+}  // namespace ripple
 
 #endif

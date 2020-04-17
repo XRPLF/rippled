@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_BALANCE_H_INCLUDED
 #define RIPPLE_TEST_JTX_BALANCE_H_INCLUDED
 
-#include <test/jtx/tags.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/tags.h>
 
 namespace ripple {
 namespace test {
@@ -43,27 +43,18 @@ private:
     STAmount value_;
 
 public:
-    balance (Account const& account,
-            none_t)
-        : none_(true)
-        , account_(account)
-        , value_(XRP)
+    balance(Account const& account, none_t)
+        : none_(true), account_(account), value_(XRP)
     {
     }
 
-    balance (Account const& account,
-            None const& value)
-        : none_(true)
-        , account_(account)
-        , value_(value.issue)
+    balance(Account const& account, None const& value)
+        : none_(true), account_(account), value_(value.issue)
     {
     }
 
-    balance (Account const& account,
-            STAmount const& value)
-        : none_(false)
-        , account_(account)
-        , value_(value)
+    balance(Account const& account, STAmount const& value)
+        : none_(false), account_(account), value_(value)
     {
     }
 
@@ -71,8 +62,8 @@ public:
     operator()(Env&) const;
 };
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

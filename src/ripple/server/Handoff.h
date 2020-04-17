@@ -21,8 +21,8 @@
 #define RIPPLE_SERVER_HANDOFF_H_INCLUDED
 
 #include <ripple/server/Writer.h>
-#include <boost/beast/http/message.hpp>
 #include <boost/beast/http/dynamic_body.hpp>
+#include <boost/beast/http/message.hpp>
 #include <memory>
 
 namespace ripple {
@@ -46,12 +46,13 @@ struct Handoff
     // When set, this will be sent back
     std::shared_ptr<Writer> response;
 
-    bool handled() const
+    bool
+    handled() const
     {
         return moved || response;
     }
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

@@ -21,37 +21,37 @@
 #define RIPPLE_RESOURCE_ENTRY_H_INCLUDED
 
 #include <ripple/basics/DecayingSample.h>
-#include <ripple/resource/impl/Key.h>
-#include <ripple/resource/impl/Tuning.h>
 #include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/core/List.h>
+#include <ripple/resource/impl/Key.h>
+#include <ripple/resource/impl/Tuning.h>
 #include <cassert>
 
 namespace ripple {
 namespace Resource {
 
-using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
+using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
 
 // An entry in the table
 // VFALCO DEPRECATED using boost::intrusive list
-struct Entry
-    : public beast::List <Entry>::Node
+struct Entry : public beast::List<Entry>::Node
 {
-    Entry () = delete;
+    Entry() = delete;
 
     /**
        @param now Construction time of Entry.
     */
     explicit Entry(clock_type::time_point const now)
-        : refcount (0)
-        , local_balance (now)
-        , remote_balance (0)
-        , lastWarningTime ()
-        , whenExpires ()
+        : refcount(0)
+        , local_balance(now)
+        , remote_balance(0)
+        , lastWarningTime()
+        , whenExpires()
     {
     }
 
-    std::string to_string() const
+    std::string
+    to_string() const
     {
         return key->address.to_string();
     }
@@ -61,22 +61,25 @@ struct Entry
      * resource limits applied--it is still possible for certain RPC commands
      * to be forbidden, but that depends on Role.
      */
-    bool isUnlimited () const
+    bool
+    isUnlimited() const
     {
         return key->kind == kindUnlimited;
     }
 
     // Balance including remote contributions
-    int balance (clock_type::time_point const now)
+    int
+    balance(clock_type::time_point const now)
     {
-        return local_balance.value (now) + remote_balance;
+        return local_balance.value(now) + remote_balance;
     }
 
     // Add a charge and return normalized balance
     // including contributions from imports.
-    int add (int charge, clock_type::time_point const now)
+    int
+    add(int charge, clock_type::time_point const now)
     {
-        return local_balance.add (charge, now) + remote_balance;
+        return local_balance.add(charge, now) + remote_balance;
     }
 
     // Back pointer to the map key (bit of a hack here)
@@ -86,7 +89,7 @@ struct Entry
     int refcount;
 
     // Exponentially decaying balance of resource consumption
-    DecayingSample <decayWindowSeconds, clock_type> local_balance;
+    DecayingSample<decayWindowSeconds, clock_type> local_balance;
 
     // Normalized balance contribution from imports
     int remote_balance;
@@ -98,13 +101,14 @@ struct Entry
     clock_type::time_point whenExpires;
 };
 
-inline std::ostream& operator<< (std::ostream& os, Entry const& v)
+inline std::ostream&
+operator<<(std::ostream& os, Entry const& v)
 {
     os << v.to_string();
     return os;
 }
 
-}
-}
+}  // namespace Resource
+}  // namespace ripple
 
 #endif

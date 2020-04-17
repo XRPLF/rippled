@@ -75,7 +75,8 @@ RCLValidatedLedger::id() const -> ID
     return ledgerID_;
 }
 
-auto RCLValidatedLedger::operator[](Seq const& s) const -> ID
+auto
+RCLValidatedLedger::operator[](Seq const& s) const -> ID
 {
     if (s >= minSeq() && s <= seq())
     {
@@ -112,7 +113,7 @@ mismatch(RCLValidatedLedger const& a, RCLValidatedLedger const& b)
 }
 
 RCLValidationsAdaptor::RCLValidationsAdaptor(Application& app, beast::Journal j)
-    : app_(app),  j_(j)
+    : app_(app), j_(j)
 {
 }
 
@@ -123,7 +124,7 @@ RCLValidationsAdaptor::now() const
 }
 
 boost::optional<RCLValidatedLedger>
-RCLValidationsAdaptor::acquire(LedgerHash const & hash)
+RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 {
     auto ledger = app_.getLedgerMaster().getLedgerByHash(hash);
     if (!ledger)
@@ -131,11 +132,11 @@ RCLValidationsAdaptor::acquire(LedgerHash const & hash)
         JLOG(j_.debug())
             << "Need validated ledger for preferred ledger analysis " << hash;
 
-        Application * pApp = &app_;
+        Application* pApp = &app_;
 
         app_.getJobQueue().addJob(
             jtADVANCE, "getConsensusLedger", [pApp, hash](Job&) {
-                pApp ->getInboundLedgers().acquire(
+                pApp->getInboundLedgers().acquire(
                     hash, 0, InboundLedger::Reason::CONSENSUS);
             });
         return boost::none;
@@ -148,7 +149,8 @@ RCLValidationsAdaptor::acquire(LedgerHash const & hash)
 }
 
 bool
-handleNewValidation(Application& app,
+handleNewValidation(
+    Application& app,
     STValidation::ref val,
     std::string const& source)
 {
@@ -175,14 +177,13 @@ handleNewValidation(Application& app,
           << (val->isFull() ? "full" : "partial") << " from "
           << (masterKey ? toBase58(TokenType::NodePublic, *masterKey)
                         : "unknown")
-          << " signing key "
-          << toBase58(TokenType::NodePublic, signingKey) << " " << msg
-          << " src=" << source;
+          << " signing key " << toBase58(TokenType::NodePublic, signingKey)
+          << " " << msg << " src=" << source;
     };
 
-    if(!val->isFieldPresent(sfLedgerSequence))
+    if (!val->isFieldPresent(sfLedgerSequence))
     {
-        if(j.error())
+        if (j.error())
             dmp(j.error(), "missing ledger sequence field");
         return false;
     }
@@ -191,7 +192,7 @@ handleNewValidation(Application& app,
     if (masterKey)
     {
         ValStatus const outcome = validations.add(calcNodeID(*masterKey), val);
-        if(j.debug())
+        if (j.debug())
             dmp(j.debug(), to_string(outcome));
 
         if (outcome == ValStatus::badSeq && j.warn())
@@ -211,8 +212,8 @@ handleNewValidation(Application& app,
     else
     {
         JLOG(j.debug()) << "Val for " << hash << " from "
-                    << toBase58(TokenType::NodePublic, signingKey)
-                    << " not added UNlisted";
+                        << toBase58(TokenType::NodePublic, signingKey)
+                        << " not added UNlisted";
     }
 
     // This currently never forwards untrusted validations, though we may
@@ -225,6 +226,5 @@ handleNewValidation(Application& app,
     // ability/bandwidth to. None of that was implemented.
     return shouldRelay;
 }
-
 
 }  // namespace ripple

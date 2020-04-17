@@ -33,30 +33,29 @@ namespace ripple {
 class STPathElement
 {
 public:
-    enum Type
-    {
-        typeNone        = 0x00,
-        typeAccount     = 0x01, // Rippling through an account (vs taking an offer).
-        typeCurrency    = 0x10, // Currency follows.
-        typeIssuer      = 0x20, // Issuer follows.
-        typeBoundary    = 0xFF, // Boundary between alternate paths.
+    enum Type {
+        typeNone = 0x00,
+        typeAccount =
+            0x01,  // Rippling through an account (vs taking an offer).
+        typeCurrency = 0x10,  // Currency follows.
+        typeIssuer = 0x20,    // Issuer follows.
+        typeBoundary = 0xFF,  // Boundary between alternate paths.
         typeAll = typeAccount | typeCurrency | typeIssuer,
-                                // Combination of all types.
+        // Combination of all types.
     };
 
 private:
-    static
-    std::size_t
-    get_hash (STPathElement const& element);
+    static std::size_t
+    get_hash(STPathElement const& element);
 
 public:
     STPathElement(
         boost::optional<AccountID> const& account,
         boost::optional<Currency> const& currency,
         boost::optional<AccountID> const& issuer)
-        : mType (typeNone)
+        : mType(typeNone)
     {
-        if (! account)
+        if (!account)
         {
             is_offer_ = true;
         }
@@ -81,14 +80,19 @@ public:
             assert(mIssuerID != noAccount());
         }
 
-        hash_value_ = get_hash (*this);
+        hash_value_ = get_hash(*this);
     }
 
-    STPathElement (
-        AccountID const& account, Currency const& currency,
-        AccountID const& issuer, bool forceCurrency = false)
-        : mType (typeNone), mAccountID (account), mCurrencyID (currency)
-        , mIssuerID (issuer), is_offer_ (isXRP(mAccountID))
+    STPathElement(
+        AccountID const& account,
+        Currency const& currency,
+        AccountID const& issuer,
+        bool forceCurrency = false)
+        : mType(typeNone)
+        , mAccountID(account)
+        , mCurrencyID(currency)
+        , mIssuerID(issuer)
+        , is_offer_(isXRP(mAccountID))
     {
         if (!is_offer_)
             mType |= typeAccount;
@@ -99,95 +103,98 @@ public:
         if (!isXRP(issuer))
             mType |= typeIssuer;
 
-        hash_value_ = get_hash (*this);
+        hash_value_ = get_hash(*this);
     }
 
-    STPathElement (
-        unsigned int uType, AccountID const& account, Currency const& currency,
+    STPathElement(
+        unsigned int uType,
+        AccountID const& account,
+        Currency const& currency,
         AccountID const& issuer)
-        : mType (uType), mAccountID (account), mCurrencyID (currency)
-        , mIssuerID (issuer), is_offer_ (isXRP(mAccountID))
+        : mType(uType)
+        , mAccountID(account)
+        , mCurrencyID(currency)
+        , mIssuerID(issuer)
+        , is_offer_(isXRP(mAccountID))
     {
-        hash_value_ = get_hash (*this);
+        hash_value_ = get_hash(*this);
     }
 
-    STPathElement ()
-        : mType (typeNone), is_offer_ (true)
+    STPathElement() : mType(typeNone), is_offer_(true)
     {
-        hash_value_ = get_hash (*this);
+        hash_value_ = get_hash(*this);
     }
 
     STPathElement(STPathElement const&) = default;
-    STPathElement& operator=(STPathElement const&) = default;
+    STPathElement&
+    operator=(STPathElement const&) = default;
 
     auto
-    getNodeType () const
+    getNodeType() const
     {
         return mType;
     }
 
     bool
-    isOffer () const
+    isOffer() const
     {
         return is_offer_;
     }
 
     bool
-    isAccount () const
+    isAccount() const
     {
-        return !isOffer ();
+        return !isOffer();
     }
 
     bool
-    hasIssuer () const
+    hasIssuer() const
     {
-        return getNodeType () & STPathElement::typeIssuer;
+        return getNodeType() & STPathElement::typeIssuer;
     }
 
     bool
-    hasCurrency () const
+    hasCurrency() const
     {
-        return getNodeType () & STPathElement::typeCurrency;
+        return getNodeType() & STPathElement::typeCurrency;
     }
 
     bool
-    isNone () const
+    isNone() const
     {
-        return getNodeType () == STPathElement::typeNone;
+        return getNodeType() == STPathElement::typeNone;
     }
 
     // Nodes are either an account ID or a offer prefix. Offer prefixs denote a
     // class of offers.
     AccountID const&
-    getAccountID () const
+    getAccountID() const
     {
         return mAccountID;
     }
 
     Currency const&
-    getCurrency () const
+    getCurrency() const
     {
         return mCurrencyID;
     }
 
     AccountID const&
-    getIssuerID () const
+    getIssuerID() const
     {
         return mIssuerID;
     }
 
     bool
-    operator== (const STPathElement& t) const
+    operator==(const STPathElement& t) const
     {
         return (mType & typeAccount) == (t.mType & typeAccount) &&
-            hash_value_ == t.hash_value_ &&
-            mAccountID == t.mAccountID &&
-            mCurrencyID == t.mCurrencyID &&
-            mIssuerID == t.mIssuerID;
+            hash_value_ == t.hash_value_ && mAccountID == t.mAccountID &&
+            mCurrencyID == t.mCurrencyID && mIssuerID == t.mIssuerID;
     }
 
     bool
-    operator!= (const STPathElement& t) const
+    operator!=(const STPathElement& t) const
     {
         return !operator==(t);
     }
@@ -205,88 +212,93 @@ private:
 class STPath
 {
 public:
-    STPath () = default;
+    STPath() = default;
 
-    STPath (std::vector<STPathElement> p)
-        : mPath (std::move(p))
-    { }
+    STPath(std::vector<STPathElement> p) : mPath(std::move(p))
+    {
+    }
 
     std::vector<STPathElement>::size_type
-    size () const
+    size() const
     {
-        return mPath.size ();
-    }
-
-    bool empty() const
-    {
-        return mPath.empty ();
-    }
-
-    void
-    push_back (STPathElement const& e)
-    {
-        mPath.push_back (e);
-    }
-
-    template <typename ...Args>
-    void
-    emplace_back (Args&&... args)
-    {
-        mPath.emplace_back (std::forward<Args> (args)...);
+        return mPath.size();
     }
 
     bool
-    hasSeen (
-        AccountID const& account, Currency const& currency,
+    empty() const
+    {
+        return mPath.empty();
+    }
+
+    void
+    push_back(STPathElement const& e)
+    {
+        mPath.push_back(e);
+    }
+
+    template <typename... Args>
+    void
+    emplace_back(Args&&... args)
+    {
+        mPath.emplace_back(std::forward<Args>(args)...);
+    }
+
+    bool
+    hasSeen(
+        AccountID const& account,
+        Currency const& currency,
         AccountID const& issuer) const;
 
-    Json::Value
-    getJson (JsonOptions) const;
+    Json::Value getJson(JsonOptions) const;
 
     std::vector<STPathElement>::const_iterator
-    begin () const
+    begin() const
     {
-        return mPath.begin ();
+        return mPath.begin();
     }
 
     std::vector<STPathElement>::const_iterator
-    end () const
+    end() const
     {
-        return mPath.end ();
+        return mPath.end();
     }
 
     bool
-    operator== (STPath const& t) const
+    operator==(STPath const& t) const
     {
         return mPath == t.mPath;
     }
 
     std::vector<STPathElement>::const_reference
-    back () const
+    back() const
     {
-        return mPath.back ();
+        return mPath.back();
     }
 
     std::vector<STPathElement>::const_reference
-    front () const
+    front() const
     {
-        return mPath.front ();
+        return mPath.front();
     }
 
-    STPathElement& operator[](int i)
-    {
-        return mPath[i];
-    }
-
-    const STPathElement& operator[](int i) const
+    STPathElement&
+    operator[](int i)
     {
         return mPath[i];
     }
 
-    void reserve(size_t s)
+    const STPathElement&
+    operator[](int i) const
+    {
+        return mPath[i];
+    }
+
+    void
+    reserve(size_t s)
     {
         mPath.reserve(s);
     }
+
 private:
     std::vector<STPathElement> mPath;
 };
@@ -294,38 +306,36 @@ private:
 //------------------------------------------------------------------------------
 
 // A set of zero or more payment paths
-class STPathSet final
-    : public STBase
+class STPathSet final : public STBase
 {
 public:
-    STPathSet () = default;
+    STPathSet() = default;
 
-    STPathSet (SField const& n)
-        : STBase (n)
-    { }
+    STPathSet(SField const& n) : STBase(n)
+    {
+    }
 
-    STPathSet (SerialIter& sit, SField const& name);
+    STPathSet(SerialIter& sit, SField const& name);
 
     STBase*
-    copy (std::size_t n, void* buf) const override
+    copy(std::size_t n, void* buf) const override
     {
         return emplace(n, buf, *this);
     }
 
     STBase*
-    move (std::size_t n, void* buf) override
+    move(std::size_t n, void* buf) override
     {
         return emplace(n, buf, std::move(*this));
     }
 
     void
-    add (Serializer& s) const override;
+    add(Serializer& s) const override;
 
-    Json::Value
-    getJson (JsonOptions) const override;
+    Json::Value getJson(JsonOptions) const override;
 
     SerializedTypeID
-    getSType () const override
+    getSType() const override
     {
         return STI_PATHSET;
     }
@@ -334,67 +344,68 @@ public:
     assembleAdd(STPath const& base, STPathElement const& tail);
 
     bool
-    isEquivalent (const STBase& t) const override;
+    isEquivalent(const STBase& t) const override;
 
     bool
-    isDefault () const override
+    isDefault() const override
     {
-        return value.empty ();
+        return value.empty();
     }
 
     // std::vector like interface:
     std::vector<STPath>::const_reference
-    operator[] (std::vector<STPath>::size_type n) const
+    operator[](std::vector<STPath>::size_type n) const
     {
         return value[n];
     }
 
     std::vector<STPath>::reference
-    operator[] (std::vector<STPath>::size_type n)
+    operator[](std::vector<STPath>::size_type n)
     {
         return value[n];
     }
 
     std::vector<STPath>::const_iterator
-    begin () const
+    begin() const
     {
-        return value.begin ();
+        return value.begin();
     }
 
     std::vector<STPath>::const_iterator
-    end () const
+    end() const
     {
-        return value.end ();
+        return value.end();
     }
 
     std::vector<STPath>::size_type
-    size () const
+    size() const
     {
-        return value.size ();
+        return value.size();
     }
 
     bool
-    empty () const
+    empty() const
     {
-        return value.empty ();
+        return value.empty();
     }
 
     void
-    push_back (STPath const& e)
+    push_back(STPath const& e)
     {
-        value.push_back (e);
+        value.push_back(e);
     }
 
     template <typename... Args>
-    void emplace_back (Args&&... args)
+    void
+    emplace_back(Args&&... args)
     {
-        value.emplace_back (std::forward<Args> (args)...);
+        value.emplace_back(std::forward<Args>(args)...);
     }
 
 private:
     std::vector<STPath> value;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <test/jtx/ticket.h>
 #include <ripple/protocol/jss.h>
+#include <test/jtx/ticket.h>
 
 namespace ripple {
 namespace test {
@@ -29,9 +29,10 @@ namespace ticket {
 namespace detail {
 
 Json::Value
-create (Account const& account,
+create(
+    Account const& account,
     boost::optional<Account> const& target,
-        boost::optional<std::uint32_t> const& expire)
+    boost::optional<std::uint32_t> const& expire)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
@@ -43,10 +44,10 @@ create (Account const& account,
     return jv;
 }
 
-} // detail
+}  // namespace detail
 
 Json::Value
-cancel(Account const& account, std::string const & ticketId)
+cancel(Account const& account, std::string const& ticketId)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::TicketCancel;
@@ -55,8 +56,8 @@ cancel(Account const& account, std::string const & ticketId)
     return jv;
 }
 
-} // ticket
+}  // namespace ticket
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

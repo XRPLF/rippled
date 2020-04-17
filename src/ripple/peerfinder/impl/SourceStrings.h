@@ -32,13 +32,13 @@ class SourceStrings : public Source
 public:
     explicit SourceStrings() = default;
 
-    using Strings = std::vector <std::string>;
+    using Strings = std::vector<std::string>;
 
     static std::shared_ptr<Source>
-    New (std::string const& name, Strings const& strings);
+    New(std::string const& name, Strings const& strings);
 };
 
-}
-}
+}  // namespace PeerFinder
+}  // namespace ripple
 
 #endif

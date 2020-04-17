@@ -35,95 +35,97 @@ namespace ripple {
 
 //------------------------------------------------------------------------------
 
-InfoSub::Source::Source (char const* name, Stoppable& parent)
-    : Stoppable (name, parent)
+InfoSub::Source::Source(char const* name, Stoppable& parent)
+    : Stoppable(name, parent)
 {
 }
 
 //------------------------------------------------------------------------------
 
-InfoSub::InfoSub(Source& source)
-    : m_source(source)
-    , mSeq(assign_id())
+InfoSub::InfoSub(Source& source) : m_source(source), mSeq(assign_id())
 {
 }
 
 InfoSub::InfoSub(Source& source, Consumer consumer)
-    : m_consumer(consumer)
-    , m_source(source)
-    , mSeq(assign_id())
+    : m_consumer(consumer), m_source(source), mSeq(assign_id())
 {
 }
 
-InfoSub::~InfoSub ()
+InfoSub::~InfoSub()
 {
-    m_source.unsubTransactions (mSeq);
-    m_source.unsubRTTransactions (mSeq);
-    m_source.unsubLedger (mSeq);
-    m_source.unsubManifests (mSeq);
-    m_source.unsubServer (mSeq);
-    m_source.unsubValidations (mSeq);
-    m_source.unsubPeerStatus (mSeq);
-    m_source.unsubConsensus (mSeq);
+    m_source.unsubTransactions(mSeq);
+    m_source.unsubRTTransactions(mSeq);
+    m_source.unsubLedger(mSeq);
+    m_source.unsubManifests(mSeq);
+    m_source.unsubServer(mSeq);
+    m_source.unsubValidations(mSeq);
+    m_source.unsubPeerStatus(mSeq);
+    m_source.unsubConsensus(mSeq);
 
     // Use the internal unsubscribe so that it won't call
     // back to us and modify its own parameter
-    if (! realTimeSubscriptions_.empty ())
-        m_source.unsubAccountInternal
-            (mSeq, realTimeSubscriptions_, true);
+    if (!realTimeSubscriptions_.empty())
+        m_source.unsubAccountInternal(mSeq, realTimeSubscriptions_, true);
 
-    if (! normalSubscriptions_.empty ())
-        m_source.unsubAccountInternal
-            (mSeq, normalSubscriptions_, false);
+    if (!normalSubscriptions_.empty())
+        m_source.unsubAccountInternal(mSeq, normalSubscriptions_, false);
 }
 
-Resource::Consumer& InfoSub::getConsumer()
+Resource::Consumer&
+InfoSub::getConsumer()
 {
     return m_consumer;
 }
 
-std::uint64_t InfoSub::getSeq ()
+std::uint64_t
+InfoSub::getSeq()
 {
     return mSeq;
 }
 
-void InfoSub::onSendEmpty ()
+void
+InfoSub::onSendEmpty()
 {
 }
 
-void InfoSub::insertSubAccountInfo (AccountID const& account, bool rt)
+void
+InfoSub::insertSubAccountInfo(AccountID const& account, bool rt)
 {
-    std::lock_guard sl (mLock);
+    std::lock_guard sl(mLock);
 
     if (rt)
-        realTimeSubscriptions_.insert (account);
+        realTimeSubscriptions_.insert(account);
     else
-        normalSubscriptions_.insert (account);
+        normalSubscriptions_.insert(account);
 }
 
-void InfoSub::deleteSubAccountInfo (AccountID const& account, bool rt)
+void
+InfoSub::deleteSubAccountInfo(AccountID const& account, bool rt)
 {
-    std::lock_guard sl (mLock);
+    std::lock_guard sl(mLock);
 
     if (rt)
-        realTimeSubscriptions_.erase (account);
+        realTimeSubscriptions_.erase(account);
     else
-        normalSubscriptions_.erase (account);
+        normalSubscriptions_.erase(account);
 }
 
-void InfoSub::clearPathRequest ()
+void
+InfoSub::clearPathRequest()
 {
-    mPathRequest.reset ();
+    mPathRequest.reset();
 }
 
-void InfoSub::setPathRequest (const std::shared_ptr<PathRequest>& req)
+void
+InfoSub::setPathRequest(const std::shared_ptr<PathRequest>& req)
 {
     mPathRequest = req;
 }
 
-const std::shared_ptr<PathRequest>& InfoSub::getPathRequest ()
+const std::shared_ptr<PathRequest>&
+InfoSub::getPathRequest()
 {
     return mPathRequest;
 }
 
-} // ripple
+}  // namespace ripple

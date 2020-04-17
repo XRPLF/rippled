@@ -20,17 +20,16 @@
 #ifndef RIPPLE_CORE_TIMEKEEPER_H_INCLUDED
 #define RIPPLE_CORE_TIMEKEEPER_H_INCLUDED
 
+#include <ripple/basics/chrono.h>
 #include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/utility/Journal.h>
-#include <ripple/basics/chrono.h>
 #include <string>
 #include <vector>
 
 namespace ripple {
 
 /** Manages various times used by the server. */
-class TimeKeeper
-    : public beast::abstract_clock<NetClock>
+class TimeKeeper : public beast::abstract_clock<NetClock>
 {
 public:
     virtual ~TimeKeeper() = default;
@@ -40,9 +39,8 @@ public:
         The internal thread synchronizes local network time
         using the provided list of SNTP servers.
     */
-    virtual
-    void
-    run (std::vector<std::string> const& servers) = 0;
+    virtual void
+    run(std::vector<std::string> const& servers) = 0;
 
     /** Returns the estimate of wall time, in network time.
 
@@ -56,8 +54,7 @@ public:
         Servers compute network time by adjusting a local wall
         clock using SNTP and then adjusting for the epoch.
     */
-    virtual
-    time_point
+    virtual time_point
     now() const override = 0;
 
     /** Returns the close time, in network time.
@@ -70,33 +67,28 @@ public:
         is correct, and tries to pull the close time towards
         its measure of network time.
     */
-    virtual
-    time_point
+    virtual time_point
     closeTime() const = 0;
 
     /** Adjust the close time.
 
         This is called in response to received validations.
     */
-    virtual
-    void
-    adjustCloseTime (std::chrono::duration<std::int32_t> amount) = 0;
+    virtual void
+    adjustCloseTime(std::chrono::duration<std::int32_t> amount) = 0;
 
     // This may return a negative value
-    virtual
-    std::chrono::duration<std::int32_t>
+    virtual std::chrono::duration<std::int32_t>
     nowOffset() const = 0;
 
     // This may return a negative value
-    virtual
-    std::chrono::duration<std::int32_t>
+    virtual std::chrono::duration<std::int32_t>
     closeOffset() const = 0;
 };
 
-extern
-std::unique_ptr<TimeKeeper>
+extern std::unique_ptr<TimeKeeper>
 make_TimeKeeper(beast::Journal j);
 
-} // ripple
+}  // namespace ripple
 
 #endif

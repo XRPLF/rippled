@@ -20,12 +20,12 @@
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/jss.h>
 #include <ripple/protocol/LedgerFormats.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-#include <ripple/rpc/impl/Tuning.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/Role.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
+#include <ripple/rpc/impl/Tuning.h>
 
 namespace ripple {
 
@@ -40,7 +40,8 @@ namespace ripple {
 //     ledger_index: chosen ledger's index
 //     state:        array of state nodes
 //     marker:       resume point, if any
-Json::Value doLedgerData (RPC::JsonContext& context)
+Json::Value
+doLedgerData(RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
     auto const& params = context.params;
@@ -49,40 +50,39 @@ Json::Value doLedgerData (RPC::JsonContext& context)
     if (!lpLedger)
         return jvResult;
 
-    bool const isMarker = params.isMember (jss::marker);
+    bool const isMarker = params.isMember(jss::marker);
     ReadView::key_type key = ReadView::key_type();
     if (isMarker)
     {
         Json::Value const& jMarker = params[jss::marker];
-        if (! (jMarker.isString () && key.SetHex (jMarker.asString ())))
-            return RPC::expected_field_error (jss::marker, "valid");
+        if (!(jMarker.isString() && key.SetHex(jMarker.asString())))
+            return RPC::expected_field_error(jss::marker, "valid");
     }
 
     bool const isBinary = params[jss::binary].asBool();
 
     int limit = -1;
-    if (params.isMember (jss::limit))
+    if (params.isMember(jss::limit))
     {
         Json::Value const& jLimit = params[jss::limit];
-        if (!jLimit.isIntegral ())
-            return RPC::expected_field_error (jss::limit, "integer");
+        if (!jLimit.isIntegral())
+            return RPC::expected_field_error(jss::limit, "integer");
 
-        limit = jLimit.asInt ();
+        limit = jLimit.asInt();
     }
 
     auto maxLimit = RPC::Tuning::pageLength(isBinary);
-    if ((limit < 0) || ((limit > maxLimit) && (! isUnlimited (context.role))))
+    if ((limit < 0) || ((limit > maxLimit) && (!isUnlimited(context.role))))
         limit = maxLimit;
 
-    jvResult[jss::ledger_hash] = to_string (lpLedger->info().hash);
+    jvResult[jss::ledger_hash] = to_string(lpLedger->info().hash);
     jvResult[jss::ledger_index] = lpLedger->info().seq;
 
-    if (! isMarker)
+    if (!isMarker)
     {
         // Return base ledger data on first query
-        jvResult[jss::ledger] = getJson (
-            LedgerFill (*lpLedger, isBinary ?
-                LedgerFill::Options::binary : 0));
+        jvResult[jss::ledger] = getJson(
+            LedgerFill(*lpLedger, isBinary ? LedgerFill::Options::binary : 0));
     }
 
     auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
@@ -106,17 +106,18 @@ Json::Value doLedgerData (RPC::JsonContext& context)
             break;
         }
 
-        if (type == ltINVALID || sle->getType () == type)
+        if (type == ltINVALID || sle->getType() == type)
         {
             if (isBinary)
             {
-                Json::Value& entry = nodes.append (Json::objectValue);
+                Json::Value& entry = nodes.append(Json::objectValue);
                 entry[jss::data] = serializeHex(*sle);
                 entry[jss::index] = to_string(sle->key());
             }
             else
             {
-                Json::Value& entry = nodes.append (sle->getJson (JsonOptions::none));
+                Json::Value& entry =
+                    nodes.append(sle->getJson(JsonOptions::none));
                 entry[jss::index] = to_string(sle->key());
             }
         }
@@ -125,4 +126,4 @@ Json::Value doLedgerData (RPC::JsonContext& context)
     return jvResult;
 }
 
-} // ripple
+}  // namespace ripple

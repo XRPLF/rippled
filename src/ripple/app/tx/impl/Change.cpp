@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/Change.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/tx/impl/Change.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/TxFlags.h>
@@ -28,7 +28,7 @@
 namespace ripple {
 
 NotTEC
-Change::preflight (PreflightContext const& ctx)
+Change::preflight(PreflightContext const& ctx)
 {
     auto const ret = preflight0(ctx);
     if (!isTesSuccess(ret))
@@ -42,22 +42,21 @@ Change::preflight (PreflightContext const& ctx)
     }
 
     // No point in going any further if the transaction fee is malformed.
-    auto const fee = ctx.tx.getFieldAmount (sfFee);
-    if (!fee.native () || fee != beast::zero)
+    auto const fee = ctx.tx.getFieldAmount(sfFee);
+    if (!fee.native() || fee != beast::zero)
     {
         JLOG(ctx.j.warn()) << "Change: invalid fee";
         return temBAD_FEE;
     }
 
-    if (!ctx.tx.getSigningPubKey ().empty () ||
-        !ctx.tx.getSignature ().empty () ||
-        ctx.tx.isFieldPresent (sfSigners))
+    if (!ctx.tx.getSigningPubKey().empty() || !ctx.tx.getSignature().empty() ||
+        ctx.tx.isFieldPresent(sfSigners))
     {
         JLOG(ctx.j.warn()) << "Change: Bad signature";
         return temBAD_SIGNATURE;
     }
 
-    if (ctx.tx.getSequence () != 0 || ctx.tx.isFieldPresent (sfPreviousTxnID))
+    if (ctx.tx.getSequence() != 0 || ctx.tx.isFieldPresent(sfPreviousTxnID))
     {
         JLOG(ctx.j.warn()) << "Change: Bad sequence";
         return temBAD_SEQUENCE;
@@ -67,7 +66,7 @@ Change::preflight (PreflightContext const& ctx)
 }
 
 TER
-Change::preclaim(PreclaimContext const &ctx)
+Change::preclaim(PreclaimContext const& ctx)
 {
     // If tapOPEN_LEDGER is resurrected into ApplyFlags,
     // this block can be moved to preflight.
@@ -77,22 +76,20 @@ Change::preclaim(PreclaimContext const &ctx)
         return temINVALID;
     }
 
-    if (ctx.tx.getTxnType() != ttAMENDMENT
-        && ctx.tx.getTxnType() != ttFEE)
+    if (ctx.tx.getTxnType() != ttAMENDMENT && ctx.tx.getTxnType() != ttFEE)
         return temUNKNOWN;
 
     return tesSUCCESS;
 }
 
-
 TER
 Change::doApply()
 {
-    if (ctx_.tx.getTxnType () == ttAMENDMENT)
-        return applyAmendment ();
+    if (ctx_.tx.getTxnType() == ttAMENDMENT)
+        return applyAmendment();
 
     assert(ctx_.tx.getTxnType() == ttFEE);
-    return applyFee ();
+    return applyFee();
 }
 
 void
@@ -105,12 +102,11 @@ Change::preCompute()
 TER
 Change::applyAmendment()
 {
-    uint256 amendment (ctx_.tx.getFieldH256 (sfAmendment));
+    uint256 amendment(ctx_.tx.getFieldH256(sfAmendment));
 
     auto const k = keylet::amendments();
 
-    SLE::pointer amendmentObject =
-        view().peek (k);
+    SLE::pointer amendmentObject = view().peek(k);
 
     if (!amendmentObject)
     {
@@ -118,14 +114,13 @@ Change::applyAmendment()
         view().insert(amendmentObject);
     }
 
-    STVector256 amendments =
-        amendmentObject->getFieldV256(sfAmendments);
+    STVector256 amendments = amendmentObject->getFieldV256(sfAmendments);
 
-    if (std::find (amendments.begin(), amendments.end(),
-            amendment) != amendments.end ())
+    if (std::find(amendments.begin(), amendments.end(), amendment) !=
+        amendments.end())
         return tefALREADY;
 
-    auto flags = ctx_.tx.getFlags ();
+    auto flags = ctx_.tx.getFlags();
 
     const bool gotMajority = (flags & tfGotMajority) != 0;
     const bool lostMajority = (flags & tfLostMajority) != 0;
@@ -133,15 +128,16 @@ Change::applyAmendment()
     if (gotMajority && lostMajority)
         return temINVALID_FLAG;
 
-    STArray newMajorities (sfMajorities);
+    STArray newMajorities(sfMajorities);
 
     bool found = false;
-    if (amendmentObject->isFieldPresent (sfMajorities))
+    if (amendmentObject->isFieldPresent(sfMajorities))
     {
-        const STArray &oldMajorities = amendmentObject->getFieldArray (sfMajorities);
+        const STArray& oldMajorities =
+            amendmentObject->getFieldArray(sfMajorities);
         for (auto const& majority : oldMajorities)
         {
-            if (majority.getFieldH256 (sfAmendment) == amendment)
+            if (majority.getFieldH256(sfAmendment) == amendment)
             {
                 if (gotMajority)
                     return tefALREADY;
@@ -150,53 +146,51 @@ Change::applyAmendment()
             else
             {
                 // pass through
-                newMajorities.push_back (majority);
+                newMajorities.push_back(majority);
             }
         }
     }
 
-    if (! found && lostMajority)
+    if (!found && lostMajority)
         return tefALREADY;
 
     if (gotMajority)
     {
         // This amendment now has a majority
-        newMajorities.push_back (STObject (sfMajority));
-        auto& entry = newMajorities.back ();
-        entry.emplace_back (STHash256 (sfAmendment, amendment));
-        entry.emplace_back (STUInt32 (sfCloseTime,
-            view().parentCloseTime().time_since_epoch().count()));
+        newMajorities.push_back(STObject(sfMajority));
+        auto& entry = newMajorities.back();
+        entry.emplace_back(STHash256(sfAmendment, amendment));
+        entry.emplace_back(STUInt32(
+            sfCloseTime, view().parentCloseTime().time_since_epoch().count()));
 
-        if (!ctx_.app.getAmendmentTable ().isSupported (amendment))
+        if (!ctx_.app.getAmendmentTable().isSupported(amendment))
         {
-            JLOG (j_.warn()) <<
-                "Unsupported amendment " << amendment <<
-                " received a majority.";
+            JLOG(j_.warn()) << "Unsupported amendment " << amendment
+                            << " received a majority.";
         }
     }
     else if (!lostMajority)
     {
         // No flags, enable amendment
-        amendments.push_back (amendment);
-        amendmentObject->setFieldV256 (sfAmendments, amendments);
+        amendments.push_back(amendment);
+        amendmentObject->setFieldV256(sfAmendments, amendments);
 
-        ctx_.app.getAmendmentTable ().enable (amendment);
+        ctx_.app.getAmendmentTable().enable(amendment);
 
-        if (!ctx_.app.getAmendmentTable ().isSupported (amendment))
+        if (!ctx_.app.getAmendmentTable().isSupported(amendment))
         {
-            JLOG (j_.error()) <<
-                "Unsupported amendment " << amendment <<
-                " activated: server blocked.";
-            ctx_.app.getOPs ().setAmendmentBlocked ();
+            JLOG(j_.error()) << "Unsupported amendment " << amendment
+                             << " activated: server blocked.";
+            ctx_.app.getOPs().setAmendmentBlocked();
         }
     }
 
-    if (newMajorities.empty ())
-        amendmentObject->makeFieldAbsent (sfMajorities);
+    if (newMajorities.empty())
+        amendmentObject->makeFieldAbsent(sfMajorities);
     else
-        amendmentObject->setFieldArray (sfMajorities, newMajorities);
+        amendmentObject->setFieldArray(sfMajorities, newMajorities);
 
-    view().update (amendmentObject);
+    view().update(amendmentObject);
 
     return tesSUCCESS;
 }
@@ -206,7 +200,7 @@ Change::applyFee()
 {
     auto const k = keylet::fees();
 
-    SLE::pointer feeObject = view().peek (k);
+    SLE::pointer feeObject = view().peek(k);
 
     if (!feeObject)
     {
@@ -214,19 +208,17 @@ Change::applyFee()
         view().insert(feeObject);
     }
 
-    feeObject->setFieldU64 (
-        sfBaseFee, ctx_.tx.getFieldU64 (sfBaseFee));
-    feeObject->setFieldU32 (
-        sfReferenceFeeUnits, ctx_.tx.getFieldU32 (sfReferenceFeeUnits));
-    feeObject->setFieldU32 (
-        sfReserveBase, ctx_.tx.getFieldU32 (sfReserveBase));
-    feeObject->setFieldU32 (
-        sfReserveIncrement, ctx_.tx.getFieldU32 (sfReserveIncrement));
+    feeObject->setFieldU64(sfBaseFee, ctx_.tx.getFieldU64(sfBaseFee));
+    feeObject->setFieldU32(
+        sfReferenceFeeUnits, ctx_.tx.getFieldU32(sfReferenceFeeUnits));
+    feeObject->setFieldU32(sfReserveBase, ctx_.tx.getFieldU32(sfReserveBase));
+    feeObject->setFieldU32(
+        sfReserveIncrement, ctx_.tx.getFieldU32(sfReserveIncrement));
 
-    view().update (feeObject);
+    view().update(feeObject);
 
     JLOG(j_.warn()) << "Fees have been changed";
     return tesSUCCESS;
 }
 
-}
+}  // namespace ripple

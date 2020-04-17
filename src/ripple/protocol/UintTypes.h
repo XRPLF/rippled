@@ -22,8 +22,8 @@
 
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/basics/base_uint.h>
-#include <ripple/protocol/AccountID.h>
 #include <ripple/beast/utility/Zero.h>
+#include <ripple/protocol/AccountID.h>
 
 namespace ripple {
 namespace detail {
@@ -46,7 +46,7 @@ public:
     explicit NodeIDTag() = default;
 };
 
-} // detail
+}  // namespace detail
 
 /** Directory is an index into the directory of offer books.
     The last 64 bits of this are the quality. */
@@ -59,57 +59,65 @@ using Currency = base_uint<160, detail::CurrencyTag>;
 using NodeID = base_uint<160, detail::NodeIDTag>;
 
 /** XRP currency. */
-Currency const& xrpCurrency();
+Currency const&
+xrpCurrency();
 
 /** A placeholder for empty currencies. */
-Currency const& noCurrency();
+Currency const&
+noCurrency();
 
 /** We deliberately disallow the currency that looks like "XRP" because too
     many people were using it instead of the correct XRP currency. */
-Currency const& badCurrency();
+Currency const&
+badCurrency();
 
-inline bool isXRP(Currency const& c)
+inline bool
+isXRP(Currency const& c)
 {
     return c == beast::zero;
 }
 
 /** Returns "", "XRP", or three letter ISO code. */
-std::string to_string(Currency const& c);
+std::string
+to_string(Currency const& c);
 
 /** Tries to convert a string to a Currency, returns true on success. */
-bool to_currency(Currency&, std::string const&);
+bool
+to_currency(Currency&, std::string const&);
 
 /** Tries to convert a string to a Currency, returns noCurrency() on failure. */
-Currency to_currency(std::string const&);
+Currency
+to_currency(std::string const&);
 
-inline std::ostream& operator<< (std::ostream& os, Currency const& x)
+inline std::ostream&
+operator<<(std::ostream& os, Currency const& x)
 {
-    os << to_string (x);
+    os << to_string(x);
     return os;
 }
 
-} // ripple
+}  // namespace ripple
 
 namespace std {
 
 template <>
-struct hash <ripple::Currency> : ripple::Currency::hasher
+struct hash<ripple::Currency> : ripple::Currency::hasher
 {
     explicit hash() = default;
 };
 
 template <>
-struct hash <ripple::NodeID> : ripple::NodeID::hasher
+struct hash<ripple::NodeID> : ripple::NodeID::hasher
 {
     explicit hash() = default;
 };
 
 template <>
-struct hash <ripple::Directory> : ripple::Directory::hasher
+struct hash<ripple::Directory> : ripple::Directory::hasher
 {
     explicit hash() = default;
 };
 
-} // std
+}  // namespace std
 
 #endif

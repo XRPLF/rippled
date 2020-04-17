@@ -24,7 +24,8 @@
 
 namespace ripple {
 
-Json::Value doBlackList (RPC::JsonContext& context)
+Json::Value
+doBlackList(RPC::JsonContext& context)
 {
     auto& rm = context.app.getResourceManager();
     if (context.params.isMember(jss::threshold))
@@ -33,4 +34,4 @@ Json::Value doBlackList (RPC::JsonContext& context)
         return rm.getJson();
 }
 
-} // ripple
+}  // namespace ripple

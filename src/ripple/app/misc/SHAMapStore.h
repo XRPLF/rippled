@@ -21,9 +21,9 @@
 #define RIPPLE_APP_MISC_SHAMAPSTORE_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/core/Stoppable.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/protocol/ErrorCodes.h>
-#include <ripple/core/Stoppable.h>
 
 namespace ripple {
 
@@ -33,39 +33,47 @@ class TransactionMaster;
  * class to create database, launch online delete thread, and
  * related SQLite database
  */
-class SHAMapStore
-    : public Stoppable
+class SHAMapStore : public Stoppable
 {
 public:
-    SHAMapStore (Stoppable& parent) : Stoppable ("SHAMapStore", parent) {}
+    SHAMapStore(Stoppable& parent) : Stoppable("SHAMapStore", parent)
+    {
+    }
 
     /** Called by LedgerMaster every time a ledger validates. */
-    virtual void onLedgerClosed(std::shared_ptr<Ledger const> const& ledger) = 0;
+    virtual void
+    onLedgerClosed(std::shared_ptr<Ledger const> const& ledger) = 0;
 
-    virtual void rendezvous() const = 0;
+    virtual void
+    rendezvous() const = 0;
 
-    virtual std::uint32_t clampFetchDepth (std::uint32_t fetch_depth) const = 0;
+    virtual std::uint32_t
+    clampFetchDepth(std::uint32_t fetch_depth) const = 0;
 
-    virtual
-    std::unique_ptr <NodeStore::Database>
+    virtual std::unique_ptr<NodeStore::Database>
     makeNodeStore(std::string const& name, std::int32_t readThreads) = 0;
 
     /** Highest ledger that may be deleted. */
-    virtual LedgerIndex setCanDelete (LedgerIndex canDelete) = 0;
+    virtual LedgerIndex
+    setCanDelete(LedgerIndex canDelete) = 0;
 
     /** Whether advisory delete is enabled. */
-    virtual bool advisoryDelete() const = 0;
+    virtual bool
+    advisoryDelete() const = 0;
 
     /** Maximum ledger that has been deleted, or will be deleted if
      *  currently in the act of online deletion.
      */
-    virtual LedgerIndex getLastRotated() = 0;
+    virtual LedgerIndex
+    getLastRotated() = 0;
 
     /** Highest ledger that may be deleted. */
-    virtual LedgerIndex getCanDelete() = 0;
+    virtual LedgerIndex
+    getCanDelete() = 0;
 
     /** Returns the number of file descriptors that are needed. */
-    virtual int fdRequired() const = 0;
+    virtual int
+    fdRequired() const = 0;
 };
 
 //------------------------------------------------------------------------------
@@ -76,6 +84,6 @@ make_SHAMapStore(
     Stoppable& parent,
     NodeStore::Scheduler& scheduler,
     beast::Journal journal);
-}
+}  // namespace ripple
 
 #endif

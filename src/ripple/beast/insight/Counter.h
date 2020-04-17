@@ -43,7 +43,7 @@ public:
     /** Create a null metric.
         A null metric reports no information.
     */
-    Counter ()
+    Counter()
     {
     }
 
@@ -52,67 +52,66 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Counter (std::shared_ptr <CounterImpl> const& impl)
-        : m_impl (impl)
+    explicit Counter(std::shared_ptr<CounterImpl> const& impl) : m_impl(impl)
     {
     }
 
     /** Increment the counter. */
     /** @{ */
     void
-    increment (value_type amount) const
+    increment(value_type amount) const
     {
         if (m_impl)
-            m_impl->increment (amount);
+            m_impl->increment(amount);
     }
 
     Counter const&
-    operator+= (value_type amount) const
+    operator+=(value_type amount) const
     {
-        increment (amount);
+        increment(amount);
         return *this;
     }
 
     Counter const&
-    operator-= (value_type amount) const
+    operator-=(value_type amount) const
     {
-        increment (-amount);
+        increment(-amount);
         return *this;
     }
 
     Counter const&
-    operator++ () const
+    operator++() const
     {
-        increment (1);
+        increment(1);
         return *this;
     }
 
     Counter const&
-    operator++ (int) const
+    operator++(int) const
     {
-        increment (1);
+        increment(1);
         return *this;
     }
 
     Counter const&
-    operator-- () const
+    operator--() const
     {
-        increment (-1);
+        increment(-1);
         return *this;
     }
 
     Counter const&
-    operator-- (int) const
+    operator--(int) const
     {
-        increment (-1);
+        increment(-1);
         return *this;
     }
 
 private:
-    std::shared_ptr <CounterImpl> m_impl;
+    std::shared_ptr<CounterImpl> m_impl;
 };
 
-}
-}
+}  // namespace insight
+}  // namespace beast
 
 #endif

@@ -20,13 +20,13 @@
 #ifndef RIPPLE_NODESTORE_DATABASE_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASE_H_INCLUDED
 
-#include <ripple/basics/TaggedCache.h>
 #include <ripple/basics/KeyCache.h>
+#include <ripple/basics/TaggedCache.h>
 #include <ripple/core/Stoppable.h>
 #include <ripple/nodestore/Backend.h>
-#include <ripple/nodestore/impl/Tuning.h>
-#include <ripple/nodestore/Scheduler.h>
 #include <ripple/nodestore/NodeObject.h>
+#include <ripple/nodestore/Scheduler.h>
+#include <ripple/nodestore/impl/Tuning.h>
 #include <ripple/protocol/SystemParameters.h>
 
 #include <thread>
@@ -64,34 +64,35 @@ public:
         @param config The configuration settings
         @param journal Destination for logging output.
     */
-    Database(std::string name, Stoppable& parent, Scheduler& scheduler,
-        int readThreads, Section const& config, beast::Journal j);
+    Database(
+        std::string name,
+        Stoppable& parent,
+        Scheduler& scheduler,
+        int readThreads,
+        Section const& config,
+        beast::Journal j);
 
     /** Destroy the node store.
         All pending operations are completed, pending writes flushed,
         and files closed before this returns.
     */
-    virtual
-    ~Database();
+    virtual ~Database();
 
     /** Retrieve the name associated with this backend.
         This is used for diagnostics and may not reflect the actual path
         or paths used by the underlying backend.
     */
-    virtual
-    std::string
+    virtual std::string
     getName() const = 0;
 
     /** Import objects from another database. */
-    virtual
-    void
+    virtual void
     import(Database& source) = 0;
 
     /** Retrieve the estimated number of pending write operations.
         This is used for diagnostics.
     */
-    virtual
-    std::int32_t
+    virtual std::int32_t
     getWriteLoad() const = 0;
 
     /** Store the object.
@@ -106,10 +107,12 @@ public:
 
         @return `true` if the object was stored?
     */
-    virtual
-    void
-    store(NodeObjectType type, Blob&& data,
-        uint256 const& hash, std::uint32_t seq) = 0;
+    virtual void
+    store(
+        NodeObjectType type,
+        Blob&& data,
+        uint256 const& hash,
+        std::uint32_t seq) = 0;
 
     /** Fetch an object.
         If the object is known to be not in the database, isn't found in the
@@ -121,8 +124,7 @@ public:
         @param seq The sequence of the ledger where the object is stored.
         @return The object, or nullptr if it couldn't be retrieved.
     */
-    virtual
-    std::shared_ptr<NodeObject>
+    virtual std::shared_ptr<NodeObject>
     fetch(uint256 const& hash, std::uint32_t seq) = 0;
 
     /** Fetch an object without waiting.
@@ -137,9 +139,10 @@ public:
         @param object The object retrieved
         @return Whether the operation completed
     */
-    virtual
-    bool
-    asyncFetch(uint256 const& hash, std::uint32_t seq,
+    virtual bool
+    asyncFetch(
+        uint256 const& hash,
+        std::uint32_t seq,
         std::shared_ptr<NodeObject>& object) = 0;
 
     /** Copies a ledger stored in a different database to this one.
@@ -147,12 +150,11 @@ public:
         @param ledger The ledger to copy.
         @return true if the operation was successful
     */
-    virtual
-    bool
+    virtual bool
     storeLedger(std::shared_ptr<Ledger const> const& srcLedger) = 0;
 
     /** Wait for all currently pending async reads to complete.
-    */
+     */
     void
     waitReads();
 
@@ -162,13 +164,11 @@ public:
         @return The number of async reads preferred.
         @note The sequence is only used with the shard store.
     */
-    virtual
-    int
+    virtual int
     getDesiredAsyncReadCount(std::uint32_t seq) = 0;
 
     /** Get the positive cache hits to total attempts ratio. */
-    virtual
-    float
+    virtual float
     getCacheHitRate() = 0;
 
     /** Set the maximum number of entries and maximum cache age for both caches.
@@ -176,13 +176,11 @@ public:
         @param size Number of cache entries (0 = ignore)
         @param age Maximum cache age in seconds
     */
-    virtual
-    void
+    virtual void
     tune(int size, std::chrono::seconds age) = 0;
 
     /** Remove expired entries from the positive and negative caches. */
-    virtual
-    void
+    virtual void
     sweep() = 0;
 
     /** Gather statistics pertaining to read and write activities.
@@ -190,23 +188,41 @@ public:
         @return The total read and written bytes.
      */
     std::uint32_t
-    getStoreCount() const { return storeCount_; }
+    getStoreCount() const
+    {
+        return storeCount_;
+    }
 
     std::uint32_t
-    getFetchTotalCount() const { return fetchTotalCount_; }
+    getFetchTotalCount() const
+    {
+        return fetchTotalCount_;
+    }
 
     std::uint32_t
-    getFetchHitCount() const { return fetchHitCount_; }
+    getFetchHitCount() const
+    {
+        return fetchHitCount_;
+    }
 
     std::uint32_t
-    getStoreSize() const { return storeSz_; }
+    getStoreSize() const
+    {
+        return storeSz_;
+    }
 
     std::uint32_t
-    getFetchSize() const { return fetchSz_; }
+    getFetchSize() const
+    {
+        return fetchSz_;
+    }
 
     /** Returns the number of file descriptors the database expects to need */
     int
-    fdRequired() const { return fdRequired_; }
+    fdRequired() const
+    {
+        return fdRequired_;
+    }
 
     void
     onStop() override;
@@ -215,7 +231,7 @@ public:
     onChildrenStopped() override;
 
     /** @return The earliest ledger sequence allowed
-    */
+     */
     std::uint32_t
     earliestLedgerSeq() const
     {
@@ -225,7 +241,7 @@ public:
 protected:
     beast::Journal const j_;
     Scheduler& scheduler_;
-    int fdRequired_ {0};
+    int fdRequired_{0};
 
     void
     stopThreads();
@@ -239,9 +255,11 @@ protected:
 
     // Called by the public asyncFetch function
     void
-    asyncFetch(uint256 const& hash, std::uint32_t seq,
+    asyncFetch(
+        uint256 const& hash,
+        std::uint32_t seq,
         std::shared_ptr<TaggedCache<uint256, NodeObject>> const& pCache,
-            std::shared_ptr<KeyCache<uint256>> const& nCache);
+        std::shared_ptr<KeyCache<uint256>> const& nCache);
 
     // Called by the public fetch function
     std::shared_ptr<NodeObject>
@@ -252,9 +270,12 @@ protected:
     importInternal(Backend& dstBackend, Database& srcDB);
 
     std::shared_ptr<NodeObject>
-    doFetch(uint256 const& hash, std::uint32_t seq,
+    doFetch(
+        uint256 const& hash,
+        std::uint32_t seq,
         TaggedCache<uint256, NodeObject>& pCache,
-            KeyCache<uint256>& nCache, bool isAsync);
+        KeyCache<uint256>& nCache,
+        bool isAsync);
 
     // Called by the public storeLedger function
     bool
@@ -266,36 +287,39 @@ protected:
         std::shared_ptr<Ledger const> next);
 
 private:
-    std::atomic<std::uint32_t> storeCount_ {0};
-    std::atomic<std::uint32_t> fetchTotalCount_ {0};
-    std::atomic<std::uint32_t> fetchHitCount_ {0};
-    std::atomic<std::uint32_t> storeSz_ {0};
-    std::atomic<std::uint32_t> fetchSz_ {0};
+    std::atomic<std::uint32_t> storeCount_{0};
+    std::atomic<std::uint32_t> fetchTotalCount_{0};
+    std::atomic<std::uint32_t> fetchHitCount_{0};
+    std::atomic<std::uint32_t> storeSz_{0};
+    std::atomic<std::uint32_t> fetchSz_{0};
 
     std::mutex readLock_;
     std::condition_variable readCondVar_;
     std::condition_variable readGenCondVar_;
 
     // reads to do
-    std::map<uint256, std::tuple<std::uint32_t,
-        std::weak_ptr<TaggedCache<uint256, NodeObject>>,
-            std::weak_ptr<KeyCache<uint256>>>> read_;
+    std::map<
+        uint256,
+        std::tuple<
+            std::uint32_t,
+            std::weak_ptr<TaggedCache<uint256, NodeObject>>,
+            std::weak_ptr<KeyCache<uint256>>>>
+        read_;
 
     // last read
     uint256 readLastHash_;
 
     std::vector<std::thread> readThreads_;
-    bool readShut_ {false};
+    bool readShut_{false};
 
     // current read generation
-    uint64_t readGen_ {0};
+    uint64_t readGen_{0};
 
     // The default is 32570 to match the XRP ledger network's earliest
     // allowed sequence. Alternate networks may set this value.
     std::uint32_t const earliestLedgerSeq_;
 
-    virtual
-    std::shared_ptr<NodeObject>
+    virtual std::shared_ptr<NodeObject>
     fetchFrom(uint256 const& hash, std::uint32_t seq) = 0;
 
     /** Visit every object in the database
@@ -305,15 +329,14 @@ private:
                 or other methods.
         @see import
     */
-    virtual
-    void
-    for_each(std::function <void(std::shared_ptr<NodeObject>)> f) = 0;
+    virtual void
+    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) = 0;
 
     void
     threadEntry();
 };
 
-}
-}
+}  // namespace NodeStore
+}  // namespace ripple
 
 #endif

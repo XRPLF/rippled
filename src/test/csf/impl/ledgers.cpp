@@ -16,8 +16,8 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <test/csf/ledgers.h>
 #include <algorithm>
+#include <test/csf/ledgers.h>
 
 #include <sstream>
 
@@ -47,12 +47,11 @@ Ledger::isAncestor(Ledger const& ancestor) const
 Ledger::ID
 Ledger::operator[](Seq s) const
 {
-    if(s > seq())
+    if (s > seq())
         return {};
-    if(s== seq())
+    if (s == seq())
         return id();
     return instance_->ancestors[static_cast<Seq::value_type>(s)];
-
 }
 
 Ledger::Seq
@@ -67,11 +66,11 @@ mismatch(Ledger const& a, Ledger const& b)
     // Find mismatch in [start,end)
     // Binary search
     Seq count = end - start;
-    while(count > Seq{0})
+    while (count > Seq{0})
     {
-        Seq step = count/Seq{2};
+        Seq step = count / Seq{2};
         Seq curr = start + step;
-        if(a[curr] == b[curr])
+        if (a[curr] == b[curr])
         {
             // go to second half
             start = ++curr;
@@ -107,7 +106,7 @@ LedgerOracle::accept(
     next.seq = parent.seq() + Ledger::Seq{1};
     next.closeTimeResolution = closeTimeResolution;
     next.closeTimeAgree = consensusCloseTime != NetClock::time_point{};
-    if(next.closeTimeAgree)
+    if (next.closeTimeAgree)
         next.closeTime = effCloseTime(
             consensusCloseTime, closeTimeResolution, parent.closeTime());
     else
@@ -127,26 +126,25 @@ LedgerOracle::accept(
 }
 
 boost::optional<Ledger>
-LedgerOracle::lookup(Ledger::ID const & id) const
+LedgerOracle::lookup(Ledger::ID const& id) const
 {
     auto const it = instances_.right.find(id);
-    if(it != instances_.right.end())
+    if (it != instances_.right.end())
     {
         return Ledger(it->first, &(it->second));
     }
     return boost::none;
 }
 
-
 std::size_t
-LedgerOracle::branches(std::set<Ledger> const & ledgers) const
+LedgerOracle::branches(std::set<Ledger> const& ledgers) const
 {
     // Tips always maintains the Ledgers with largest sequence number
     // along all known chains.
     std::vector<Ledger> tips;
     tips.reserve(ledgers.size());
 
-    for (Ledger const & ledger : ledgers)
+    for (Ledger const& ledger : ledgers)
     {
         // Three options,
         //  1. ledger is on a new branch
@@ -156,8 +154,8 @@ LedgerOracle::branches(std::set<Ledger> const & ledgers) const
         for (auto idx = 0; idx < tips.size() && !found; ++idx)
         {
             bool const idxEarlier = tips[idx].seq() < ledger.seq();
-            Ledger const & earlier = idxEarlier ? tips[idx] : ledger;
-            Ledger const & later = idxEarlier ? ledger : tips[idx] ;
+            Ledger const& earlier = idxEarlier ? tips[idx] : ledger;
+            Ledger const& later = idxEarlier ? ledger : tips[idx];
             if (later.isAncestor(earlier))
             {
                 tips[idx] = later;
@@ -165,9 +163,8 @@ LedgerOracle::branches(std::set<Ledger> const & ledgers) const
             }
         }
 
-        if(!found)
+        if (!found)
             tips.push_back(ledger);
-
     }
     // The size of tips is the number of branches
     return tips.size();

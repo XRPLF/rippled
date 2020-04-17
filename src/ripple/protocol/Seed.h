@@ -20,8 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_SEED_H_INCLUDED
 #define RIPPLE_PROTOCOL_SEED_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
 #include <ripple/basics/Slice.h>
+#include <ripple/basics/base_uint.h>
 #include <ripple/protocol/tokens.h>
 #include <boost/optional.hpp>
 #include <array>
@@ -39,8 +39,9 @@ public:
 
     Seed() = delete;
 
-    Seed (Seed const&) = default;
-    Seed& operator= (Seed const&) = default;
+    Seed(Seed const&) = default;
+    Seed&
+    operator=(Seed const&) = default;
 
     /** Destroy the seed.
         The buffer will first be securely erased.
@@ -49,8 +50,8 @@ public:
 
     /** Construct a seed */
     /** @{ */
-    explicit Seed (Slice const& slice);
-    explicit Seed (uint128 const& seed);
+    explicit Seed(Slice const& slice);
+    explicit Seed(uint128 const& seed);
     /** @} */
 
     std::uint8_t const*
@@ -108,29 +109,28 @@ randomSeed();
           the string (e.g. hex or base58).
 */
 Seed
-generateSeed (std::string const& passPhrase);
+generateSeed(std::string const& passPhrase);
 
 /** Parse a Base58 encoded string into a seed */
 template <>
 boost::optional<Seed>
-parseBase58 (std::string const& s);
+parseBase58(std::string const& s);
 
 /** Attempt to parse a string as a seed */
 boost::optional<Seed>
-parseGenericSeed (std::string const& str);
+parseGenericSeed(std::string const& str);
 
 /** Encode a Seed in RFC1751 format */
 std::string
-seedAs1751 (Seed const& seed);
+seedAs1751(Seed const& seed);
 
 /** Format a seed as a Base58 string */
-inline
-std::string
-toBase58 (Seed const& seed)
+inline std::string
+toBase58(Seed const& seed)
 {
     return base58EncodeToken(TokenType::FamilySeed, seed.data(), seed.size());
 }
 
-}
+}  // namespace ripple
 
 #endif

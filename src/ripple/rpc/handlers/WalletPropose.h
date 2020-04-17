@@ -24,8 +24,9 @@
 
 namespace ripple {
 
-Json::Value walletPropose (Json::Value const& params);
+Json::Value
+walletPropose(Json::Value const& params);
 
-} // ripple
+}  // namespace ripple
 
 #endif

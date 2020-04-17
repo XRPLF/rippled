@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/beast/utility/Journal.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/beast/utility/Journal.h>
 
 namespace beast {
 
@@ -31,9 +31,7 @@ public:
         int m_count;
 
     public:
-        TestSink()
-            : Sink (severities::kWarning, false)
-            , m_count(0)
+        TestSink() : Sink(severities::kWarning, false), m_count(0)
         {
         }
 
@@ -50,14 +48,15 @@ public:
         }
 
         void
-        write (severities::Severity level, std::string const&) override
+        write(severities::Severity level, std::string const&) override
         {
             if (level >= threshold())
                 ++m_count;
         }
     };
 
-    void run () override
+    void
+    run() override
     {
         TestSink sink;
 
@@ -98,6 +97,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Journal,utility,beast);
+BEAST_DEFINE_TESTSUITE(Journal, utility, beast);
 
-} // beast
+}  // namespace beast

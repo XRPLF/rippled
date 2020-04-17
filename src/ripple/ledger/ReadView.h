@@ -20,17 +20,17 @@
 #ifndef RIPPLE_LEDGER_READVIEW_H_INCLUDED
 #define RIPPLE_LEDGER_READVIEW_H_INCLUDED
 
-#include <ripple/ledger/detail/ReadViewFwdRange.h>
-#include <ripple/basics/chrono.h>
 #include <ripple/basics/FeeUnits.h>
 #include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/XRPAmount.h>
+#include <ripple/basics/chrono.h>
+#include <ripple/beast/hash/uhash.h>
+#include <ripple/beast/utility/Journal.h>
+#include <ripple/ledger/detail/ReadViewFwdRange.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/STTx.h>
-#include <ripple/beast/hash/uhash.h>
-#include <ripple/beast/utility/Journal.h>
 #include <boost/optional.hpp>
 #include <cassert>
 #include <cstdint>
@@ -46,14 +46,15 @@ namespace ripple {
 */
 struct Fees
 {
-    XRPAmount base{ 0 };         // Reference tx cost (drops)
-    FeeUnit32 units{ 0 };        // Reference fee units
-    XRPAmount reserve{ 0 };      // Reserve base (drops)
-    XRPAmount increment{ 0 };    // Reserve increment (drops)
+    XRPAmount base{0};       // Reference tx cost (drops)
+    FeeUnit32 units{0};      // Reference fee units
+    XRPAmount reserve{0};    // Reserve base (drops)
+    XRPAmount increment{0};  // Reserve increment (drops)
 
     explicit Fees() = default;
-    Fees (Fees const&) = default;
-    Fees& operator= (Fees const&) = default;
+    Fees(Fees const&) = default;
+    Fees&
+    operator=(Fees const&) = default;
 
     /** Returns the account reserve given the owner count, in drops.
 
@@ -61,7 +62,7 @@ struct Fees
         the reserve increment times the number of increments.
     */
     XRPAmount
-    accountReserve (std::size_t ownerCount) const
+    accountReserve(std::size_t ownerCount) const
     {
         return reserve + ownerCount * increment;
     }
@@ -131,8 +132,9 @@ private:
     std::shared_ptr<Impl const> impl_;
 
 public:
-    Rules (Rules const&) = default;
-    Rules& operator= (Rules const&) = default;
+    Rules(Rules const&) = default;
+    Rules&
+    operator=(Rules const&) = default;
 
     Rules() = delete;
 
@@ -150,15 +152,15 @@ public:
     */
     explicit Rules(
         DigestAwareReadView const& ledger,
-            std::unordered_set<uint256, beast::uhash<>> const& presets);
+        std::unordered_set<uint256, beast::uhash<>> const& presets);
 
     /** Returns `true` if a feature is enabled. */
     bool
-    enabled (uint256 const& id) const;
+    enabled(uint256 const& id) const;
 
     /** Returns `true` if these rules don't match the ledger. */
     bool
-    changed (DigestAwareReadView const& ledger) const;
+    changed(DigestAwareReadView const& ledger) const;
 
     /** Returns `true` if two rule sets are identical.
 
@@ -166,12 +168,12 @@ public:
         rules should be constructed, call changed() first instead.
     */
     bool
-    operator== (Rules const&) const;
+    operator==(Rules const&) const;
 
     bool
-    operator!= (Rules const& other) const
+    operator!=(Rules const& other) const
     {
-        return ! (*this == other);
+        return !(*this == other);
     }
 };
 
@@ -187,63 +189,59 @@ class ReadView
 {
 public:
     using tx_type =
-        std::pair<std::shared_ptr<STTx const>,
-            std::shared_ptr<STObject const>>;
+        std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>;
 
     using key_type = uint256;
 
-    using mapped_type =
-        std::shared_ptr<SLE const>;
+    using mapped_type = std::shared_ptr<SLE const>;
 
-    struct sles_type : detail::ReadViewFwdRange<
-        std::shared_ptr<SLE const>>
+    struct sles_type : detail::ReadViewFwdRange<std::shared_ptr<SLE const>>
     {
-        explicit sles_type (ReadView const& view);
-        iterator begin() const;
-        iterator const& end() const;
-        iterator upper_bound(key_type const& key) const;
+        explicit sles_type(ReadView const& view);
+        iterator
+        begin() const;
+        iterator const&
+        end() const;
+        iterator
+        upper_bound(key_type const& key) const;
     };
 
-    struct txs_type
-        : detail::ReadViewFwdRange<tx_type>
+    struct txs_type : detail::ReadViewFwdRange<tx_type>
     {
-        explicit txs_type (ReadView const& view);
-        bool empty() const;
-        iterator begin() const;
-        iterator const& end() const;
+        explicit txs_type(ReadView const& view);
+        bool
+        empty() const;
+        iterator
+        begin() const;
+        iterator const&
+        end() const;
     };
 
     virtual ~ReadView() = default;
 
-    ReadView& operator= (ReadView&& other) = delete;
-    ReadView& operator= (ReadView const& other) = delete;
+    ReadView&
+    operator=(ReadView&& other) = delete;
+    ReadView&
+    operator=(ReadView const& other) = delete;
 
-    ReadView ()
-        : sles(*this)
-        , txs(*this)
+    ReadView() : sles(*this), txs(*this)
     {
     }
 
-    ReadView (ReadView const& other)
-        : sles(*this)
-        , txs(*this)
+    ReadView(ReadView const& other) : sles(*this), txs(*this)
     {
     }
 
-    ReadView (ReadView&& other)
-        : sles(*this)
-        , txs(*this)
+    ReadView(ReadView&& other) : sles(*this), txs(*this)
     {
     }
 
     /** Returns information about the ledger. */
-    virtual
-    LedgerInfo const&
+    virtual LedgerInfo const&
     info() const = 0;
 
     /** Returns true if this reflects an open ledger. */
-    virtual
-    bool
+    virtual bool
     open() const = 0;
 
     /** Returns the close time of the previous ledger. */
@@ -261,13 +259,11 @@ public:
     }
 
     /** Returns the fees for the base ledger. */
-    virtual
-    Fees const&
+    virtual Fees const&
     fees() const = 0;
 
     /** Returns the tx processing rules. */
-    virtual
-    Rules const&
+    virtual Rules const&
     rules() const = 0;
 
     /** Determine if a state item exists.
@@ -277,9 +273,8 @@ public:
         @return `true` if a SLE is associated with the
                 specified key.
     */
-    virtual
-    bool
-    exists (Keylet const& k) const = 0;
+    virtual bool
+    exists(Keylet const& k) const = 0;
 
     /** Return the key of the next state item.
 
@@ -291,10 +286,10 @@ public:
         the key returned would be outside the open
         interval (key, last).
     */
-    virtual
-    boost::optional<key_type>
-    succ (key_type const& key, boost::optional<
-        key_type> const& last = boost::none) const = 0;
+    virtual boost::optional<key_type>
+    succ(
+        key_type const& key,
+        boost::optional<key_type> const& last = boost::none) const = 0;
 
     /** Return the state item associated with a key.
 
@@ -309,20 +304,19 @@ public:
         @return `nullptr` if the key is not present or
                 if the type does not match.
     */
-    virtual
-    std::shared_ptr<SLE const>
-    read (Keylet const& k) const = 0;
+    virtual std::shared_ptr<SLE const>
+    read(Keylet const& k) const = 0;
 
     // Accounts in a payment are not allowed to use assets acquired during that
     // payment. The PaymentSandbox tracks the debits, credits, and owner count
-    // changes that accounts make during a payment. `balanceHook` adjusts balances
-    // so newly acquired assets are not counted toward the balance.
+    // changes that accounts make during a payment. `balanceHook` adjusts
+    // balances so newly acquired assets are not counted toward the balance.
     // This is required to support PaymentSandbox.
-    virtual
-    STAmount
-    balanceHook (AccountID const& account,
+    virtual STAmount
+    balanceHook(
+        AccountID const& account,
         AccountID const& issuer,
-            STAmount const& amount) const
+        STAmount const& amount) const
     {
         return amount;
     }
@@ -332,37 +326,30 @@ public:
     // changes that accounts make during a payment. `ownerCountHook` adjusts the
     // ownerCount so it returns the max value of the ownerCount so far.
     // This is required to support PaymentSandbox.
-    virtual
-    std::uint32_t
-    ownerCountHook (AccountID const& account,
-        std::uint32_t count) const
+    virtual std::uint32_t
+    ownerCountHook(AccountID const& account, std::uint32_t count) const
     {
         return count;
     }
 
     // used by the implementation
-    virtual
-    std::unique_ptr<sles_type::iter_base>
+    virtual std::unique_ptr<sles_type::iter_base>
     slesBegin() const = 0;
 
     // used by the implementation
-    virtual
-    std::unique_ptr<sles_type::iter_base>
+    virtual std::unique_ptr<sles_type::iter_base>
     slesEnd() const = 0;
 
     // used by the implementation
-    virtual
-    std::unique_ptr<sles_type::iter_base>
+    virtual std::unique_ptr<sles_type::iter_base>
     slesUpperBound(key_type const& key) const = 0;
 
     // used by the implementation
-    virtual
-    std::unique_ptr<txs_type::iter_base>
+    virtual std::unique_ptr<txs_type::iter_base>
     txsBegin() const = 0;
 
     // used by the implementation
-    virtual
-    std::unique_ptr<txs_type::iter_base>
+    virtual std::unique_ptr<txs_type::iter_base>
     txsEnd() const = 0;
 
     /** Returns `true` if a tx exists in the tx map.
@@ -370,9 +357,8 @@ public:
         A tx exists in the map if it is part of the
         base ledger, or if it is a newly inserted tx.
     */
-    virtual
-    bool
-    txExists (key_type const& key) const = 0;
+    virtual bool
+    txExists(key_type const& key) const = 0;
 
     /** Read a transaction from the tx map.
 
@@ -382,9 +368,8 @@ public:
         @return A pair of nullptr if the
                 key is not found in the tx map.
     */
-    virtual
-    tx_type
-    txRead (key_type const& key) const = 0;
+    virtual tx_type
+    txRead(key_type const& key) const = 0;
 
     //
     // Memberspaces
@@ -404,39 +389,37 @@ public:
 //------------------------------------------------------------------------------
 
 /** ReadView that associates keys with digests. */
-class DigestAwareReadView
-    : public ReadView
+class DigestAwareReadView : public ReadView
 {
 public:
     using digest_type = uint256;
 
-    DigestAwareReadView () = default;
-    DigestAwareReadView (const DigestAwareReadView&) = default;
+    DigestAwareReadView() = default;
+    DigestAwareReadView(const DigestAwareReadView&) = default;
 
     /** Return the digest associated with the key.
 
         @return boost::none if the item does not exist.
     */
-    virtual
-    boost::optional<digest_type>
-    digest (key_type const& key) const = 0;
+    virtual boost::optional<digest_type>
+    digest(key_type const& key) const = 0;
 };
 
 //------------------------------------------------------------------------------
 
 // ledger close flags
-static
-std::uint32_t const sLCF_NoConsensusTime = 0x01;
+static std::uint32_t const sLCF_NoConsensusTime = 0x01;
 
-inline
-bool getCloseAgree (LedgerInfo const& info)
+inline bool
+getCloseAgree(LedgerInfo const& info)
 {
     return (info.closeFlags & sLCF_NoConsensusTime) == 0;
 }
 
-void addRaw (LedgerInfo const&, Serializer&);
+void
+addRaw(LedgerInfo const&, Serializer&);
 
-} // ripple
+}  // namespace ripple
 
 #include <ripple/ledger/detail/ReadViewFwdRange.ipp>
 

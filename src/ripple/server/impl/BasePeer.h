@@ -20,10 +20,10 @@
 #ifndef RIPPLE_SERVER_BASEPEER_H_INCLUDED
 #define RIPPLE_SERVER_BASEPEER_H_INCLUDED
 
-#include <ripple/server/Port.h>
-#include <ripple/server/impl/io_list.h>
-#include <ripple/server/impl/LowestLayer.h>
 #include <ripple/beast/utility/WrappedSink.h>
+#include <ripple/server/Port.h>
+#include <ripple/server/impl/LowestLayer.h>
+#include <ripple/server/impl/io_list.h>
 #include <boost/asio.hpp>
 #include <atomic>
 #include <cassert>
@@ -33,15 +33,14 @@
 namespace ripple {
 
 // Common part of all peers
-template<class Handler, class Impl>
-class BasePeer
-    : public io_list::work
+template <class Handler, class Impl>
+class BasePeer : public io_list::work
 {
 protected:
     using clock_type = std::chrono::system_clock;
     using error_code = boost::system::error_code;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using waitable_timer = boost::asio::basic_waitable_timer <clock_type>;
+    using waitable_timer = boost::asio::basic_waitable_timer<clock_type>;
 
     Port const& port_;
     Handler& handler_;
@@ -51,6 +50,7 @@ protected:
 
     boost::asio::executor_work_guard<boost::asio::executor> work_;
     boost::asio::strand<boost::asio::executor> strand_;
+
 public:
     BasePeer(
         Port const& port,
@@ -94,18 +94,17 @@ BasePeer<Handler, Impl>::BasePeer(
 {
 }
 
-template<class Handler, class Impl>
+template <class Handler, class Impl>
 void
-BasePeer<Handler, Impl>::
-close()
+BasePeer<Handler, Impl>::close()
 {
-    if (! strand_.running_in_this_thread())
+    if (!strand_.running_in_this_thread())
         return post(
             strand_, std::bind(&BasePeer::close, impl().shared_from_this()));
     error_code ec;
     ripple::get_lowest_layer(impl().ws_).socket().close(ec);
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

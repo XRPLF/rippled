@@ -20,12 +20,12 @@
 #include <ripple/app/tx/impl/SetAccount.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
+#include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/st.h>
-#include <ripple/ledger/View.h>
 
 namespace ripple {
 
@@ -33,32 +33,32 @@ bool
 SetAccount::affectsSubsequentTransactionAuth(STTx const& tx)
 {
     auto const uTxFlags = tx.getFlags();
-    if(uTxFlags & (tfRequireAuth | tfOptionalAuth))
+    if (uTxFlags & (tfRequireAuth | tfOptionalAuth))
         return true;
 
     auto const uSetFlag = tx[~sfSetFlag];
-    if(uSetFlag && (*uSetFlag == asfRequireAuth ||
-        *uSetFlag == asfDisableMaster ||
-            *uSetFlag == asfAccountTxnID))
-                return true;
+    if (uSetFlag &&
+        (*uSetFlag == asfRequireAuth || *uSetFlag == asfDisableMaster ||
+         *uSetFlag == asfAccountTxnID))
+        return true;
 
     auto const uClearFlag = tx[~sfClearFlag];
-    return uClearFlag && (*uClearFlag == asfRequireAuth ||
-        *uClearFlag == asfDisableMaster ||
-            *uClearFlag == asfAccountTxnID);
+    return uClearFlag &&
+        (*uClearFlag == asfRequireAuth || *uClearFlag == asfDisableMaster ||
+         *uClearFlag == asfAccountTxnID);
 }
 
 NotTEC
-SetAccount::preflight (PreflightContext const& ctx)
+SetAccount::preflight(PreflightContext const& ctx)
 {
-    auto const ret = preflight1 (ctx);
-    if (!isTesSuccess (ret))
+    auto const ret = preflight1(ctx);
+    if (!isTesSuccess(ret))
         return ret;
 
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
-    std::uint32_t const uTxFlags = tx.getFlags ();
+    std::uint32_t const uTxFlags = tx.getFlags();
 
     if (uTxFlags & tfAccountSetMask)
     {
@@ -66,8 +66,8 @@ SetAccount::preflight (PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    std::uint32_t const uSetFlag = tx.getFieldU32 (sfSetFlag);
-    std::uint32_t const uClearFlag = tx.getFieldU32 (sfClearFlag);
+    std::uint32_t const uSetFlag = tx.getFieldU32(sfSetFlag);
+    std::uint32_t const uClearFlag = tx.getFieldU32(sfClearFlag);
 
     if ((uSetFlag != 0) && (uSetFlag == uClearFlag))
     {
@@ -78,8 +78,10 @@ SetAccount::preflight (PreflightContext const& ctx)
     //
     // RequireAuth
     //
-    bool bSetRequireAuth   = (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth);
-    bool bClearRequireAuth = (uTxFlags & tfOptionalAuth) || (uClearFlag == asfRequireAuth);
+    bool bSetRequireAuth =
+        (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth);
+    bool bClearRequireAuth =
+        (uTxFlags & tfOptionalAuth) || (uClearFlag == asfRequireAuth);
 
     if (bSetRequireAuth && bClearRequireAuth)
     {
@@ -90,8 +92,10 @@ SetAccount::preflight (PreflightContext const& ctx)
     //
     // RequireDestTag
     //
-    bool bSetRequireDest   = (uTxFlags & TxFlag::requireDestTag) || (uSetFlag == asfRequireDest);
-    bool bClearRequireDest = (uTxFlags & tfOptionalDestTag) || (uClearFlag == asfRequireDest);
+    bool bSetRequireDest =
+        (uTxFlags & TxFlag::requireDestTag) || (uSetFlag == asfRequireDest);
+    bool bClearRequireDest =
+        (uTxFlags & tfOptionalDestTag) || (uClearFlag == asfRequireDest);
 
     if (bSetRequireDest && bClearRequireDest)
     {
@@ -102,8 +106,10 @@ SetAccount::preflight (PreflightContext const& ctx)
     //
     // DisallowXRP
     //
-    bool bSetDisallowXRP   = (uTxFlags & tfDisallowXRP) || (uSetFlag == asfDisallowXRP);
-    bool bClearDisallowXRP = (uTxFlags & tfAllowXRP) || (uClearFlag == asfDisallowXRP);
+    bool bSetDisallowXRP =
+        (uTxFlags & tfDisallowXRP) || (uSetFlag == asfDisallowXRP);
+    bool bClearDisallowXRP =
+        (uTxFlags & tfAllowXRP) || (uClearFlag == asfDisallowXRP);
 
     if (bSetDisallowXRP && bClearDisallowXRP)
     {
@@ -112,30 +118,32 @@ SetAccount::preflight (PreflightContext const& ctx)
     }
 
     // TransferRate
-    if (tx.isFieldPresent (sfTransferRate))
+    if (tx.isFieldPresent(sfTransferRate))
     {
-        std::uint32_t uRate = tx.getFieldU32 (sfTransferRate);
+        std::uint32_t uRate = tx.getFieldU32(sfTransferRate);
 
         if (uRate && (uRate < QUALITY_ONE))
         {
-            JLOG(j.trace()) << "Malformed transaction: Transfer rate too small.";
+            JLOG(j.trace())
+                << "Malformed transaction: Transfer rate too small.";
             return temBAD_TRANSFER_RATE;
         }
 
         if (uRate > 2 * QUALITY_ONE)
         {
-            JLOG(j.trace()) << "Malformed transaction: Transfer rate too large.";
+            JLOG(j.trace())
+                << "Malformed transaction: Transfer rate too large.";
             return temBAD_TRANSFER_RATE;
         }
     }
 
     // TickSize
-    if (tx.isFieldPresent (sfTickSize))
+    if (tx.isFieldPresent(sfTickSize))
     {
         auto uTickSize = tx[sfTickSize];
         if (uTickSize &&
             ((uTickSize < Quality::minTickSize) ||
-            (uTickSize > Quality::maxTickSize)))
+             (uTickSize > Quality::maxTickSize)))
         {
             JLOG(j.trace()) << "Malformed transaction: Bad tick size.";
             return temBAD_TICK_SIZE;
@@ -144,7 +152,7 @@ SetAccount::preflight (PreflightContext const& ctx)
 
     if (auto const mk = tx[~sfMessageKey])
     {
-        if (mk->size() && ! publicKeyType ({mk->data(), mk->size()}))
+        if (mk->size() && !publicKeyType({mk->data(), mk->size()}))
         {
             JLOG(j.trace()) << "Invalid message key specified.";
             return telBAD_PUBLIC_KEY;
@@ -169,7 +177,7 @@ SetAccount::preclaim(PreclaimContext const& ctx)
     std::uint32_t const uTxFlags = ctx.tx.getFlags();
 
     auto const sle = ctx.view.read(keylet::account(id));
-    if (! sle)
+    if (!sle)
         return terNO_ACCOUNT;
 
     std::uint32_t const uFlagsIn = sle->getFieldU32(sfFlags);
@@ -177,18 +185,18 @@ SetAccount::preclaim(PreclaimContext const& ctx)
     std::uint32_t const uSetFlag = ctx.tx.getFieldU32(sfSetFlag);
 
     // legacy AccountSet flags
-    bool bSetRequireAuth = (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth);
+    bool bSetRequireAuth =
+        (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth);
 
     //
     // RequireAuth
     //
     if (bSetRequireAuth && !(uFlagsIn & lsfRequireAuth))
     {
-        if (!dirIsEmpty(ctx.view,
-            keylet::ownerDir(id)))
+        if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
         {
             JLOG(ctx.j.trace()) << "Retry: Owner directory not empty.";
-            return (ctx.flags & tapRETRY) ? TER {terOWNERS} : TER {tecOWNERS};
+            return (ctx.flags & tapRETRY) ? TER{terOWNERS} : TER{tecOWNERS};
         }
     }
 
@@ -196,35 +204,40 @@ SetAccount::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-SetAccount::doApply ()
+SetAccount::doApply()
 {
     auto const sle = view().peek(keylet::account(account_));
-    if (! sle)
+    if (!sle)
         return tefINTERNAL;
 
-    std::uint32_t const uFlagsIn = sle->getFieldU32 (sfFlags);
+    std::uint32_t const uFlagsIn = sle->getFieldU32(sfFlags);
     std::uint32_t uFlagsOut = uFlagsIn;
 
-    STTx const& tx {ctx_.tx};
-    std::uint32_t const uSetFlag {tx.getFieldU32 (sfSetFlag)};
-    std::uint32_t const uClearFlag {tx.getFieldU32 (sfClearFlag)};
+    STTx const& tx{ctx_.tx};
+    std::uint32_t const uSetFlag{tx.getFieldU32(sfSetFlag)};
+    std::uint32_t const uClearFlag{tx.getFieldU32(sfClearFlag)};
 
     // legacy AccountSet flags
-    std::uint32_t const uTxFlags {tx.getFlags ()};
-    bool const bSetRequireDest   {(uTxFlags & TxFlag::requireDestTag) || (uSetFlag == asfRequireDest)};
-    bool const bClearRequireDest {(uTxFlags & tfOptionalDestTag) || (uClearFlag == asfRequireDest)};
-    bool const bSetRequireAuth   {(uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth)};
-    bool const bClearRequireAuth {(uTxFlags & tfOptionalAuth) || (uClearFlag == asfRequireAuth)};
-    bool const bSetDisallowXRP   {(uTxFlags & tfDisallowXRP) || (uSetFlag == asfDisallowXRP)};
-    bool const bClearDisallowXRP {(uTxFlags & tfAllowXRP) || (uClearFlag == asfDisallowXRP)};
+    std::uint32_t const uTxFlags{tx.getFlags()};
+    bool const bSetRequireDest{
+        (uTxFlags & TxFlag::requireDestTag) || (uSetFlag == asfRequireDest)};
+    bool const bClearRequireDest{
+        (uTxFlags & tfOptionalDestTag) || (uClearFlag == asfRequireDest)};
+    bool const bSetRequireAuth{
+        (uTxFlags & tfRequireAuth) || (uSetFlag == asfRequireAuth)};
+    bool const bClearRequireAuth{
+        (uTxFlags & tfOptionalAuth) || (uClearFlag == asfRequireAuth)};
+    bool const bSetDisallowXRP{
+        (uTxFlags & tfDisallowXRP) || (uSetFlag == asfDisallowXRP)};
+    bool const bClearDisallowXRP{
+        (uTxFlags & tfAllowXRP) || (uClearFlag == asfDisallowXRP)};
 
-    bool const sigWithMaster {[&tx, &acct = account_] ()
-    {
+    bool const sigWithMaster{[&tx, &acct = account_]() {
         auto const spk = tx.getSigningPubKey();
 
-        if (publicKeyType (makeSlice (spk)))
+        if (publicKeyType(makeSlice(spk)))
         {
-            PublicKey const signingPubKey (makeSlice (spk));
+            PublicKey const signingPubKey(makeSlice(spk));
 
             if (calcAccountID(signingPubKey) == acct)
                 return true;
@@ -288,8 +301,8 @@ SetAccount::doApply ()
             return tecNEED_MASTER_KEY;
         }
 
-        if ((!sle->isFieldPresent (sfRegularKey)) &&
-            (!view().peek (keylet::signers (account_))))
+        if ((!sle->isFieldPresent(sfRegularKey)) &&
+            (!view().peek(keylet::signers(account_))))
         {
             // Account has no regular key or multi-signer signer list.
             return tecNO_ALTERNATIVE_KEY;
@@ -354,16 +367,16 @@ SetAccount::doApply ()
     //
     // Track transaction IDs signed by this account in its root
     //
-    if ((uSetFlag == asfAccountTxnID) && !sle->isFieldPresent (sfAccountTxnID))
+    if ((uSetFlag == asfAccountTxnID) && !sle->isFieldPresent(sfAccountTxnID))
     {
         JLOG(j_.trace()) << "Set AccountTxnID.";
-        sle->makeFieldPresent (sfAccountTxnID);
-        }
+        sle->makeFieldPresent(sfAccountTxnID);
+    }
 
-    if ((uClearFlag == asfAccountTxnID) && sle->isFieldPresent (sfAccountTxnID))
+    if ((uClearFlag == asfAccountTxnID) && sle->isFieldPresent(sfAccountTxnID))
     {
         JLOG(j_.trace()) << "Clear AccountTxnID.";
-        sle->makeFieldAbsent (sfAccountTxnID);
+        sle->makeFieldAbsent(sfAccountTxnID);
     }
 
     //
@@ -386,120 +399,120 @@ SetAccount::doApply ()
     //
     // EmailHash
     //
-    if (tx.isFieldPresent (sfEmailHash))
+    if (tx.isFieldPresent(sfEmailHash))
     {
-        uint128 const uHash = tx.getFieldH128 (sfEmailHash);
+        uint128 const uHash = tx.getFieldH128(sfEmailHash);
 
         if (!uHash)
         {
             JLOG(j_.trace()) << "unset email hash";
-            sle->makeFieldAbsent (sfEmailHash);
+            sle->makeFieldAbsent(sfEmailHash);
         }
         else
         {
             JLOG(j_.trace()) << "set email hash";
-            sle->setFieldH128 (sfEmailHash, uHash);
+            sle->setFieldH128(sfEmailHash, uHash);
         }
     }
 
     //
     // WalletLocator
     //
-    if (tx.isFieldPresent (sfWalletLocator))
+    if (tx.isFieldPresent(sfWalletLocator))
     {
-        uint256 const uHash = tx.getFieldH256 (sfWalletLocator);
+        uint256 const uHash = tx.getFieldH256(sfWalletLocator);
 
         if (!uHash)
         {
             JLOG(j_.trace()) << "unset wallet locator";
-            sle->makeFieldAbsent (sfWalletLocator);
+            sle->makeFieldAbsent(sfWalletLocator);
         }
         else
         {
             JLOG(j_.trace()) << "set wallet locator";
-            sle->setFieldH256 (sfWalletLocator, uHash);
+            sle->setFieldH256(sfWalletLocator, uHash);
         }
     }
 
     //
     // MessageKey
     //
-    if (tx.isFieldPresent (sfMessageKey))
+    if (tx.isFieldPresent(sfMessageKey))
     {
-        Blob const messageKey = tx.getFieldVL (sfMessageKey);
+        Blob const messageKey = tx.getFieldVL(sfMessageKey);
 
-        if (messageKey.empty ())
+        if (messageKey.empty())
         {
             JLOG(j_.debug()) << "set message key";
-            sle->makeFieldAbsent (sfMessageKey);
+            sle->makeFieldAbsent(sfMessageKey);
         }
         else
         {
             JLOG(j_.debug()) << "set message key";
-            sle->setFieldVL (sfMessageKey, messageKey);
+            sle->setFieldVL(sfMessageKey, messageKey);
         }
     }
 
     //
     // Domain
     //
-    if (tx.isFieldPresent (sfDomain))
+    if (tx.isFieldPresent(sfDomain))
     {
-        Blob const domain = tx.getFieldVL (sfDomain);
+        Blob const domain = tx.getFieldVL(sfDomain);
 
-        if (domain.empty ())
+        if (domain.empty())
         {
             JLOG(j_.trace()) << "unset domain";
-            sle->makeFieldAbsent (sfDomain);
+            sle->makeFieldAbsent(sfDomain);
         }
         else
         {
             JLOG(j_.trace()) << "set domain";
-            sle->setFieldVL (sfDomain, domain);
+            sle->setFieldVL(sfDomain, domain);
         }
     }
 
     //
     // TransferRate
     //
-    if (tx.isFieldPresent (sfTransferRate))
+    if (tx.isFieldPresent(sfTransferRate))
     {
-        std::uint32_t uRate = tx.getFieldU32 (sfTransferRate);
+        std::uint32_t uRate = tx.getFieldU32(sfTransferRate);
 
         if (uRate == 0 || uRate == QUALITY_ONE)
         {
             JLOG(j_.trace()) << "unset transfer rate";
-            sle->makeFieldAbsent (sfTransferRate);
+            sle->makeFieldAbsent(sfTransferRate);
         }
         else
         {
             JLOG(j_.trace()) << "set transfer rate";
-            sle->setFieldU32 (sfTransferRate, uRate);
+            sle->setFieldU32(sfTransferRate, uRate);
         }
     }
 
     //
     // TickSize
     //
-    if (tx.isFieldPresent (sfTickSize))
+    if (tx.isFieldPresent(sfTickSize))
     {
         auto uTickSize = tx[sfTickSize];
         if ((uTickSize == 0) || (uTickSize == Quality::maxTickSize))
         {
             JLOG(j_.trace()) << "unset tick size";
-            sle->makeFieldAbsent (sfTickSize);
+            sle->makeFieldAbsent(sfTickSize);
         }
         else
         {
             JLOG(j_.trace()) << "set tick size";
-            sle->setFieldU8 (sfTickSize, uTickSize);
+            sle->setFieldU8(sfTickSize, uTickSize);
         }
     }
 
     if (uFlagsIn != uFlagsOut)
-        sle->setFieldU32 (sfFlags, uFlagsOut);
+        sle->setFieldU32(sfFlags, uFlagsOut);
 
     return tesSUCCESS;
 }
 
-}
+}  // namespace ripple

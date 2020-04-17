@@ -27,17 +27,21 @@ namespace Sim {
 class Message
 {
 public:
-    explicit Message (Endpoints const& endpoints)
-        : m_payload (endpoints)
-        { }
-    Endpoints const& payload () const
-        { return m_payload; }
+    explicit Message(Endpoints const& endpoints) : m_payload(endpoints)
+    {
+    }
+    Endpoints const&
+    payload() const
+    {
+        return m_payload;
+    }
+
 private:
     Endpoints m_payload;
 };
 
-}
-}
-}
+}  // namespace Sim
+}  // namespace PeerFinder
+}  // namespace ripple
 
 #endif
