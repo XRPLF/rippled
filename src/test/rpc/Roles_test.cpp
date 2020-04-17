@@ -20,9 +20,9 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
+#include <string>
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
-#include <string>
 #include <unordered_map>
 
 namespace ripple {
@@ -40,25 +40,25 @@ class Roles_test : public beast::unit_test::suite
             Env env(*this);
 
             BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "admin");
-            BEAST_EXPECT(makeWSClient(
-                env.app().config())->invoke(
-                "ping")["result"]["unlimited"].asBool());
+            BEAST_EXPECT(makeWSClient(env.app().config())
+                             ->invoke("ping")["result"]["unlimited"]
+                             .asBool());
         }
         {
-            Env env { *this, envconfig(no_admin) };
+            Env env{*this, envconfig(no_admin)};
 
-            BEAST_EXPECT(! env.rpc("ping")["result"].isMember("role"));
-            auto wsRes = makeWSClient(
-                env.app().config())->invoke("ping")["result"];
+            BEAST_EXPECT(!env.rpc("ping")["result"].isMember("role"));
+            auto wsRes =
+                makeWSClient(env.app().config())->invoke("ping")["result"];
             BEAST_EXPECT(
                 !wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
         }
         {
-            Env env { *this, envconfig(secure_gateway) };
+            Env env{*this, envconfig(secure_gateway)};
 
             BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "proxied");
-            auto wsRes = makeWSClient(
-                env.app().config())->invoke("ping")["result"];
+            auto wsRes =
+                makeWSClient(env.app().config())->invoke("ping")["result"];
             BEAST_EXPECT(
                 !wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
 
@@ -77,18 +77,20 @@ class Roles_test : public beast::unit_test::suite
             rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["ip"] == "88.77.66.55");
 
-            headers["Forwarded"] = "what=where;for=55.66.77.88;for=nobody;"
+            headers["Forwarded"] =
+                "what=where;for=55.66.77.88;for=nobody;"
                 "who=3";
             rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["ip"] == "55.66.77.88");
 
-            headers["Forwarded"] = "what=where;for=55.66.77.88, 99.00.11.22;"
-                                   "who=3";
+            headers["Forwarded"] =
+                "what=where;for=55.66.77.88, 99.00.11.22;"
+                "who=3";
             rpcRes = env.rpc(headers, "ping")["result"];
             BEAST_EXPECT(rpcRes["ip"] == "55.66.77.88");
 
-            wsRes = makeWSClient(
-                env.app().config(), true, 2, headers)->invoke("ping")["result"];
+            wsRes = makeWSClient(env.app().config(), true, 2, headers)
+                        ->invoke("ping")["result"];
             BEAST_EXPECT(
                 !wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
 
@@ -98,8 +100,8 @@ class Roles_test : public beast::unit_test::suite
             BEAST_EXPECT(rpcRes["role"] == "identified");
             BEAST_EXPECT(rpcRes["username"] == name);
             BEAST_EXPECT(rpcRes["ip"] == "55.66.77.88");
-            wsRes = makeWSClient(
-                env.app().config(), true, 2, headers)->invoke("ping")["result"];
+            wsRes = makeWSClient(env.app().config(), true, 2, headers)
+                        ->invoke("ping")["result"];
             BEAST_EXPECT(wsRes["unlimited"].asBool());
         }
     }

@@ -45,7 +45,7 @@ public:
     /** Create a null metric.
         A null metric reports no information.
     */
-    Gauge ()
+    Gauge()
     {
     }
 
@@ -54,8 +54,7 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Gauge (std::shared_ptr <GaugeImpl> const& impl)
-        : m_impl (impl)
+    explicit Gauge(std::shared_ptr<GaugeImpl> const& impl) : m_impl(impl)
     {
     }
 
@@ -65,78 +64,84 @@ public:
         collection interval.
     */
     /** @{ */
-    void set (value_type value) const
+    void
+    set(value_type value) const
     {
         if (m_impl)
-            m_impl->set (value);
+            m_impl->set(value);
     }
 
-    Gauge const& operator= (value_type value) const
-        { set (value); return *this; }
+    Gauge const&
+    operator=(value_type value) const
+    {
+        set(value);
+        return *this;
+    }
     /** @} */
 
     /** Adjust the value of the gauge. */
     /** @{ */
-    void increment (difference_type amount) const
+    void
+    increment(difference_type amount) const
     {
         if (m_impl)
-            m_impl->increment (amount);
+            m_impl->increment(amount);
     }
 
     Gauge const&
-    operator+= (difference_type amount) const
+    operator+=(difference_type amount) const
     {
-        increment (amount);
+        increment(amount);
         return *this;
     }
 
     Gauge const&
-    operator-= (difference_type amount) const
+    operator-=(difference_type amount) const
     {
-        increment (-amount);
+        increment(-amount);
         return *this;
     }
 
     Gauge const&
-    operator++ () const
+    operator++() const
     {
-        increment (1);
+        increment(1);
         return *this;
     }
 
     Gauge const&
-    operator++ (int) const
+    operator++(int) const
     {
-        increment (1);
+        increment(1);
         return *this;
     }
 
     Gauge const&
-    operator-- () const
+    operator--() const
     {
-        increment (-1);
+        increment(-1);
         return *this;
     }
 
     Gauge const&
-    operator-- (int) const
+    operator--(int) const
     {
-        increment (-1);
+        increment(-1);
         return *this;
     }
     /** @} */
 
-    std::shared_ptr <GaugeImpl> const&
-    impl () const
+    std::shared_ptr<GaugeImpl> const&
+    impl() const
     {
         return m_impl;
     }
 
 private:
-    std::shared_ptr <GaugeImpl> m_impl;
+    std::shared_ptr<GaugeImpl> m_impl;
 };
 
-}
-}
+}  // namespace insight
+}  // namespace beast
 
 #endif

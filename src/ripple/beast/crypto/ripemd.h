@@ -25,13 +25,11 @@
 
 namespace beast {
 
-using ripemd160_hasher = detail::mac_facade<
-    detail::ripemd160_context, false>;
+using ripemd160_hasher = detail::mac_facade<detail::ripemd160_context, false>;
 
 // secure version
-using ripemd160_hasher_s = detail::mac_facade<
-    detail::ripemd160_context, true>;
+using ripemd160_hasher_s = detail::mac_facade<detail::ripemd160_context, true>;
 
-}
+}  // namespace beast
 
 #endif

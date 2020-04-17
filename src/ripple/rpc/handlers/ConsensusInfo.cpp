@@ -25,13 +25,14 @@
 
 namespace ripple {
 
-Json::Value doConsensusInfo (RPC::JsonContext& context)
+Json::Value
+doConsensusInfo(RPC::JsonContext& context)
 {
-    Json::Value ret (Json::objectValue);
+    Json::Value ret(Json::objectValue);
 
-    ret[jss::info] = context.netOps.getConsensusInfo ();
+    ret[jss::info] = context.netOps.getConsensusInfo();
 
     return ret;
 }
 
-} // ripple
+}  // namespace ripple

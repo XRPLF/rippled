@@ -26,14 +26,14 @@
 namespace ripple {
 
 std::string
-toBase58 (AccountID const& v)
+toBase58(AccountID const& v)
 {
     return base58EncodeToken(TokenType::AccountID, v.data(), v.size());
 }
 
-template<>
+template <>
 boost::optional<AccountID>
-parseBase58 (std::string const& s)
+parseBase58(std::string const& s)
 {
     auto const result = decodeBase58Token(s, TokenType::AccountID);
     if (result.empty())
@@ -41,13 +41,12 @@ parseBase58 (std::string const& s)
     AccountID id;
     if (result.size() != id.size())
         return boost::none;
-    std::memcpy(id.data(),
-        result.data(), result.size());
+    std::memcpy(id.data(), result.data(), result.size());
     return id;
 }
 
 boost::optional<AccountID>
-deprecatedParseBitcoinAccountID (std::string const& s)
+deprecatedParseBitcoinAccountID(std::string const& s)
 {
     auto const result = decodeBase58TokenBitcoin(s, TokenType::AccountID);
     if (result.empty())
@@ -55,44 +54,40 @@ deprecatedParseBitcoinAccountID (std::string const& s)
     AccountID id;
     if (result.size() != id.size())
         return boost::none;
-    std::memcpy(id.data(),
-        result.data(), result.size());
+    std::memcpy(id.data(), result.data(), result.size());
     return id;
 }
 
 bool
-deprecatedParseBase58 (AccountID& account,
-    Json::Value const& jv)
+deprecatedParseBase58(AccountID& account, Json::Value const& jv)
 {
-    if (! jv.isString())
+    if (!jv.isString())
         return false;
-    auto const result =
-        parseBase58<AccountID>(jv.asString());
-    if (! result)
+    auto const result = parseBase58<AccountID>(jv.asString());
+    if (!result)
         return false;
     account = *result;
     return true;
 }
 
-template<>
+template <>
 boost::optional<AccountID>
-parseHex (std::string const& s)
+parseHex(std::string const& s)
 {
     if (s.size() != 40)
         return boost::none;
     AccountID id;
-    if (! id.SetHex(s, true))
+    if (!id.SetHex(s, true))
         return boost::none;
     return id;
 }
 
-template<>
+template <>
 boost::optional<AccountID>
-parseHexOrBase58 (std::string const& s)
+parseHexOrBase58(std::string const& s)
 {
-    auto result =
-        parseHex<AccountID>(s);
-    if (! result)
+    auto result = parseHex<AccountID>(s);
+    if (!result)
         result = parseBase58<AccountID>(s);
     return result;
 }
@@ -133,12 +128,11 @@ parseHexOrBase58 (std::string const& s)
         to change something, it was not changed."
 */
 AccountID
-calcAccountID (PublicKey const& pk)
+calcAccountID(PublicKey const& pk)
 {
     ripesha_hasher rsh;
     rsh(pk.data(), pk.size());
-    auto const d = static_cast<
-        ripesha_hasher::result_type>(rsh);
+    auto const d = static_cast<ripesha_hasher::result_type>(rsh);
     AccountID id;
     static_assert(sizeof(d) == id.size(), "");
     std::memcpy(id.data(), d.data(), d.size());
@@ -160,16 +154,15 @@ noAccount()
 }
 
 bool
-to_issuer (AccountID& issuer, std::string const& s)
+to_issuer(AccountID& issuer, std::string const& s)
 {
-    if (s.size () == (160 / 4))
+    if (s.size() == (160 / 4))
     {
-        issuer.SetHex (s);
+        issuer.SetHex(s);
         return true;
     }
-    auto const account =
-        parseBase58<AccountID>(s);
-    if (! account)
+    auto const account = parseBase58<AccountID>(s);
+    if (!account)
         return false;
     issuer = *account;
     return true;
@@ -188,16 +181,13 @@ to_issuer (AccountID& issuer, std::string const& s)
     the map.
 */
 
-AccountIDCache::AccountIDCache(
-        std::size_t capacity)
-    : capacity_(capacity)
+AccountIDCache::AccountIDCache(std::size_t capacity) : capacity_(capacity)
 {
     m1_.reserve(capacity_);
 }
 
 std::string
-AccountIDCache::toBase58(
-    AccountID const& id) const
+AccountIDCache::toBase58(AccountID const& id) const
 {
     std::lock_guard lock(mutex_);
     auto iter = m1_.find(id);
@@ -214,8 +204,7 @@ AccountIDCache::toBase58(
     }
     else
     {
-        result =
-            ripple::toBase58(id);
+        result = ripple::toBase58(id);
     }
     if (m1_.size() >= capacity_)
     {
@@ -227,4 +216,4 @@ AccountIDCache::toBase58(
     return result;
 }
 
-} // ripple
+}  // namespace ripple

@@ -20,9 +20,9 @@
 #ifndef RIPPLE_NODESTORE_FACTORY_H_INCLUDED
 #define RIPPLE_NODESTORE_FACTORY_H_INCLUDED
 
+#include <ripple/beast/utility/Journal.h>
 #include <ripple/nodestore/Backend.h>
 #include <ripple/nodestore/Scheduler.h>
-#include <ripple/beast/utility/Journal.h>
 #include <nudb/store.hpp>
 
 namespace ripple {
@@ -32,12 +32,10 @@ namespace NodeStore {
 class Factory
 {
 public:
-    virtual
-    ~Factory() = default;
+    virtual ~Factory() = default;
 
     /** Retrieve the name of this factory. */
-    virtual
-    std::string
+    virtual std::string
     getName() const = 0;
 
     /** Create an instance of this factory's backend.
@@ -47,9 +45,8 @@ public:
         @param scheduler The scheduler to use for running tasks.
         @return A pointer to the Backend object.
     */
-    virtual
-    std::unique_ptr <Backend>
-    createInstance (
+    virtual std::unique_ptr<Backend>
+    createInstance(
         size_t keyBytes,
         Section const& parameters,
         Scheduler& scheduler,
@@ -63,9 +60,8 @@ public:
         @param context The context used by database.
         @return A pointer to the Backend object.
     */
-    virtual
-    std::unique_ptr <Backend>
-    createInstance (
+    virtual std::unique_ptr<Backend>
+    createInstance(
         size_t keyBytes,
         Section const& parameters,
         Scheduler& scheduler,
@@ -76,7 +72,7 @@ public:
     }
 };
 
-}
-}
+}  // namespace NodeStore
+}  // namespace ripple
 
 #endif

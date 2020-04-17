@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/STValidation.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/contract.h>
 #include <ripple/json/to_string.h>
+#include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/STValidation.h>
 
 namespace ripple {
 
@@ -88,93 +88,103 @@ STValidation::STValidation(
     setTrusted();
 }
 
-uint256 STValidation::getSigningHash () const
+uint256
+STValidation::getSigningHash() const
 {
-    return STObject::getSigningHash (HashPrefix::validation);
+    return STObject::getSigningHash(HashPrefix::validation);
 }
 
-uint256 STValidation::getLedgerHash () const
+uint256
+STValidation::getLedgerHash() const
 {
-    return getFieldH256 (sfLedgerHash);
+    return getFieldH256(sfLedgerHash);
 }
 
-uint256 STValidation::getConsensusHash () const
+uint256
+STValidation::getConsensusHash() const
 {
-    return getFieldH256 (sfConsensusHash);
+    return getFieldH256(sfConsensusHash);
 }
 
 NetClock::time_point
-STValidation::getSignTime () const
+STValidation::getSignTime() const
 {
     return NetClock::time_point{NetClock::duration{getFieldU32(sfSigningTime)}};
 }
 
-NetClock::time_point STValidation::getSeenTime () const
+NetClock::time_point
+STValidation::getSeenTime() const
 {
     return mSeen;
 }
 
-bool STValidation::isValid () const
+bool
+STValidation::isValid() const
 {
     try
     {
         if (publicKeyType(getSignerPublic()) != KeyType::secp256k1)
             return false;
 
-        return verifyDigest (getSignerPublic(), getSigningHash(),
-            makeSlice(getFieldVL (sfSignature)),
-            getFlags () & vfFullyCanonicalSig);
+        return verifyDigest(
+            getSignerPublic(),
+            getSigningHash(),
+            makeSlice(getFieldVL(sfSignature)),
+            getFlags() & vfFullyCanonicalSig);
     }
     catch (std::exception const&)
     {
-        JLOG (debugLog().error())
-            << "Exception validating validation";
+        JLOG(debugLog().error()) << "Exception validating validation";
         return false;
     }
 }
 
-PublicKey STValidation::getSignerPublic () const
+PublicKey
+STValidation::getSignerPublic() const
 {
-    return PublicKey(makeSlice (getFieldVL (sfSigningPubKey)));
+    return PublicKey(makeSlice(getFieldVL(sfSigningPubKey)));
 }
 
-bool STValidation::isFull () const
+bool
+STValidation::isFull() const
 {
-    return (getFlags () & kFullFlag) != 0;
+    return (getFlags() & kFullFlag) != 0;
 }
 
-Blob STValidation::getSignature () const
+Blob
+STValidation::getSignature() const
 {
-    return getFieldVL (sfSignature);
+    return getFieldVL(sfSignature);
 }
 
-Blob STValidation::getSerialized () const
+Blob
+STValidation::getSerialized() const
 {
     Serializer s;
-    add (s);
-    return s.peekData ();
+    add(s);
+    return s.peekData();
 }
 
-SOTemplate const& STValidation::getFormat ()
+SOTemplate const&
+STValidation::getFormat()
 {
     struct FormatHolder
     {
-        SOTemplate format
-        {
-            { sfFlags,            soeREQUIRED },
-            { sfLedgerHash,       soeREQUIRED },
-            { sfLedgerSequence,   soeOPTIONAL },
-            { sfCloseTime,        soeOPTIONAL },
-            { sfLoadFee,          soeOPTIONAL },
-            { sfAmendments,       soeOPTIONAL },
-            { sfBaseFee,          soeOPTIONAL },
-            { sfReserveBase,      soeOPTIONAL },
-            { sfReserveIncrement, soeOPTIONAL },
-            { sfSigningTime,      soeREQUIRED },
-            { sfSigningPubKey,    soeREQUIRED },
-            { sfSignature,        soeOPTIONAL },
-            { sfConsensusHash,    soeOPTIONAL },
-            { sfCookie,           soeOPTIONAL },
+        SOTemplate format{
+            {sfFlags, soeREQUIRED},
+            {sfLedgerHash, soeREQUIRED},
+            {sfLedgerSequence, soeOPTIONAL},
+            {sfCloseTime, soeOPTIONAL},
+            {sfLoadFee, soeOPTIONAL},
+            {sfAmendments, soeOPTIONAL},
+            {sfBaseFee, soeOPTIONAL},
+            {sfReserveBase, soeOPTIONAL},
+            {sfReserveIncrement, soeOPTIONAL},
+            {sfSigningTime, soeREQUIRED},
+            {sfSigningPubKey, soeREQUIRED},
+            {sfSignature, soeOPTIONAL},
+            {sfConsensusHash, soeOPTIONAL},
+            {sfCookie, soeOPTIONAL},
         };
     };
 
@@ -183,4 +193,4 @@ SOTemplate const& STValidation::getFormat ()
     return holder.format;
 }
 
-} // ripple
+}  // namespace ripple

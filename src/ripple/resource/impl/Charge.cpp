@@ -23,44 +23,49 @@
 namespace ripple {
 namespace Resource {
 
-Charge::Charge (value_type cost, std::string const& label)
-    : m_cost (cost)
-    , m_label (label)
+Charge::Charge(value_type cost, std::string const& label)
+    : m_cost(cost), m_label(label)
 {
 }
 
-std::string const& Charge::label () const
+std::string const&
+Charge::label() const
 {
     return m_label;
 }
 
-Charge::value_type Charge::cost() const
+Charge::value_type
+Charge::cost() const
 {
     return m_cost;
 }
 
-std::string Charge::to_string () const
+std::string
+Charge::to_string() const
 {
     std::stringstream ss;
     ss << m_label << " ($" << m_cost << ")";
     return ss.str();
 }
 
-std::ostream& operator<< (std::ostream& os, Charge const& v)
+std::ostream&
+operator<<(std::ostream& os, Charge const& v)
 {
     os << v.to_string();
     return os;
 }
 
-bool Charge::operator== (Charge const& c) const
+bool
+Charge::operator==(Charge const& c) const
 {
     return c.m_cost == m_cost;
 }
 
-bool Charge::operator!= (Charge const& c) const
+bool
+Charge::operator!=(Charge const& c) const
 {
     return c.m_cost != m_cost;
 }
 
-}
-}
+}  // namespace Resource
+}  // namespace ripple

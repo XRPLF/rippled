@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
+#include <ripple/beast/core/LexicalCast.h>
+#include <ripple/beast/unit_test.h>
+#include <ripple/protocol/Feature.h>
+#include <ripple/protocol/SField.h>
+#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/beast/core/LexicalCast.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/protocol/SField.h>
 
 namespace ripple {
 
@@ -36,19 +36,19 @@ class Discrepancy_test : public beast::unit_test::suite
     // A payment with path and sendmax is made and the transaction is queried
     // to verify that the net of balance changes match the fee charged.
     void
-    testXRPDiscrepancy (FeatureBitset features)
+    testXRPDiscrepancy(FeatureBitset features)
     {
-        testcase ("Discrepancy test : XRP Discrepancy");
+        testcase("Discrepancy test : XRP Discrepancy");
         using namespace test::jtx;
-        Env env {*this, features};
+        Env env{*this, features};
 
-        Account A1 {"A1"};
-        Account A2 {"A2"};
-        Account A3 {"A3"};
-        Account A4 {"A4"};
-        Account A5 {"A5"};
-        Account A6 {"A6"};
-        Account A7 {"A7"};
+        Account A1{"A1"};
+        Account A2{"A2"};
+        Account A3{"A3"};
+        Account A4{"A4"};
+        Account A5{"A5"};
+        Account A6{"A6"};
+        Account A7{"A7"};
 
         env.fund(XRP(2000), A1);
         env.fund(XRP(1000), A2, A6, A7);
@@ -86,10 +86,10 @@ class Discrepancy_test : public beast::unit_test::suite
         env(offer(A7, XRP(1233), A6["CNY"](25)));
         env.close();
 
-        test::PathSet payPaths {
-            test::Path {A2["JPY"], A2},
-            test::Path {XRP, A2["JPY"], A2},
-            test::Path {A6, XRP, A2["JPY"], A2} };
+        test::PathSet payPaths{
+            test::Path{A2["JPY"], A2},
+            test::Path{XRP, A2["JPY"], A2},
+            test::Path{A6, XRP, A2["JPY"], A2}};
 
         env(pay(A1, A1, A2["JPY"](1000)),
             json(payPaths.json()),
@@ -102,55 +102,55 @@ class Discrepancy_test : public beast::unit_test::suite
         jrq2[jss::transaction] =
             env.tx()->getJson(JsonOptions::none)[jss::hash];
         jrq2[jss::id] = 3;
-        auto jrr = env.rpc ("json", "tx", to_string(jrq2))[jss::result];
-        uint64_t fee { jrr[jss::Fee].asUInt() };
+        auto jrr = env.rpc("json", "tx", to_string(jrq2))[jss::result];
+        uint64_t fee{jrr[jss::Fee].asUInt()};
         auto meta = jrr[jss::meta];
-        uint64_t sumPrev {0};
-        uint64_t sumFinal {0};
+        uint64_t sumPrev{0};
+        uint64_t sumFinal{0};
         BEAST_EXPECT(meta[sfAffectedNodes.fieldName].size() == 9);
-        for(auto const& an : meta[sfAffectedNodes.fieldName])
+        for (auto const& an : meta[sfAffectedNodes.fieldName])
         {
             Json::Value node;
-            if(an.isMember(sfCreatedNode.fieldName))
+            if (an.isMember(sfCreatedNode.fieldName))
                 node = an[sfCreatedNode.fieldName];
-            else if(an.isMember(sfModifiedNode.fieldName))
+            else if (an.isMember(sfModifiedNode.fieldName))
                 node = an[sfModifiedNode.fieldName];
-            else if(an.isMember(sfDeletedNode.fieldName))
+            else if (an.isMember(sfDeletedNode.fieldName))
                 node = an[sfDeletedNode.fieldName];
 
-            if(node && node[sfLedgerEntryType.fieldName] == jss::AccountRoot)
+            if (node && node[sfLedgerEntryType.fieldName] == jss::AccountRoot)
             {
                 Json::Value prevFields =
-                    node.isMember(sfPreviousFields.fieldName) ?
-                    node[sfPreviousFields.fieldName] :
-                    node[sfNewFields.fieldName];
-                Json::Value finalFields =
-                    node.isMember(sfFinalFields.fieldName) ?
-                    node[sfFinalFields.fieldName] :
-                    node[sfNewFields.fieldName];
-                if(prevFields)
+                    node.isMember(sfPreviousFields.fieldName)
+                    ? node[sfPreviousFields.fieldName]
+                    : node[sfNewFields.fieldName];
+                Json::Value finalFields = node.isMember(sfFinalFields.fieldName)
+                    ? node[sfFinalFields.fieldName]
+                    : node[sfNewFields.fieldName];
+                if (prevFields)
                     sumPrev += beast::lexicalCastThrow<std::uint64_t>(
                         prevFields[sfBalance.fieldName].asString());
-                if(finalFields)
+                if (finalFields)
                     sumFinal += beast::lexicalCastThrow<std::uint64_t>(
                         finalFields[sfBalance.fieldName].asString());
             }
         }
         // the difference in balances (final and prev) should be the
         // fee charged
-        BEAST_EXPECT(sumPrev-sumFinal == fee);
+        BEAST_EXPECT(sumPrev - sumFinal == fee);
     }
 
 public:
-    void run () override
+    void
+    run() override
     {
         using namespace test::jtx;
         auto const sa = supported_amendments();
-        testXRPDiscrepancy (sa - featureFlowCross);
-        testXRPDiscrepancy (sa);
+        testXRPDiscrepancy(sa - featureFlowCross);
+        testXRPDiscrepancy(sa);
     }
 };
 
-BEAST_DEFINE_TESTSUITE (Discrepancy, app, ripple);
+BEAST_DEFINE_TESTSUITE(Discrepancy, app, ripple);
 
-} // ripple
+}  // namespace ripple

@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
-#include <ripple/basics/strHex.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/basics/strHex.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -35,99 +35,104 @@ namespace ripple {
 //   ledger_index : <ledger_index>
 //   ...
 // }
-Json::Value doLedgerEntry (RPC::JsonContext& context)
+Json::Value
+doLedgerEntry(RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
-    auto jvResult = RPC::lookupLedger (lpLedger, context);
+    auto jvResult = RPC::lookupLedger(lpLedger, context);
 
     if (!lpLedger)
         return jvResult;
 
-    uint256         uNodeIndex;
-    bool            bNodeBinary = false;
+    uint256 uNodeIndex;
+    bool bNodeBinary = false;
     LedgerEntryType expectedType = ltANY;
 
-    if (context.params.isMember (jss::index))
+    if (context.params.isMember(jss::index))
     {
-        uNodeIndex.SetHex (context.params[jss::index].asString());
+        uNodeIndex.SetHex(context.params[jss::index].asString());
     }
-    else if (context.params.isMember (jss::account_root))
+    else if (context.params.isMember(jss::account_root))
     {
         expectedType = ltACCOUNT_ROOT;
         auto const account = parseBase58<AccountID>(
             context.params[jss::account_root].asString());
-        if (! account || account->isZero())
+        if (!account || account->isZero())
             jvResult[jss::error] = "malformedAddress";
         else
             uNodeIndex = keylet::account(*account).key;
     }
-    else if (context.params.isMember (jss::check))
+    else if (context.params.isMember(jss::check))
     {
         expectedType = ltCHECK;
-        uNodeIndex.SetHex (context.params[jss::check].asString());
+        uNodeIndex.SetHex(context.params[jss::check].asString());
     }
-    else if (context.params.isMember (jss::deposit_preauth))
+    else if (context.params.isMember(jss::deposit_preauth))
     {
         expectedType = ltDEPOSIT_PREAUTH;
 
         if (!context.params[jss::deposit_preauth].isObject())
         {
-            if (! context.params[jss::deposit_preauth].isString() ||
-                ! uNodeIndex.SetHex (
+            if (!context.params[jss::deposit_preauth].isString() ||
+                !uNodeIndex.SetHex(
                     context.params[jss::deposit_preauth].asString()))
             {
                 uNodeIndex = beast::zero;
                 jvResult[jss::error] = "malformedRequest";
             }
         }
-        else if (!context.params[jss::deposit_preauth].isMember (jss::owner)
-            || !context.params[jss::deposit_preauth][jss::owner].isString()
-            || !context.params[jss::deposit_preauth].isMember (jss::authorized)
-            || !context.params[jss::deposit_preauth][jss::authorized].isString())
+        else if (
+            !context.params[jss::deposit_preauth].isMember(jss::owner) ||
+            !context.params[jss::deposit_preauth][jss::owner].isString() ||
+            !context.params[jss::deposit_preauth].isMember(jss::authorized) ||
+            !context.params[jss::deposit_preauth][jss::authorized].isString())
         {
             jvResult[jss::error] = "malformedRequest";
         }
         else
         {
-            auto const owner = parseBase58<AccountID>(context.params[
-                jss::deposit_preauth][jss::owner].asString());
+            auto const owner = parseBase58<AccountID>(
+                context.params[jss::deposit_preauth][jss::owner].asString());
 
-            auto const authorized = parseBase58<AccountID>(context.params[
-                jss::deposit_preauth][jss::authorized].asString());
+            auto const authorized = parseBase58<AccountID>(
+                context.params[jss::deposit_preauth][jss::authorized]
+                    .asString());
 
-            if (! owner)
+            if (!owner)
                 jvResult[jss::error] = "malformedOwner";
-            else if (! authorized)
+            else if (!authorized)
                 jvResult[jss::error] = "malformedAuthorized";
             else
-                uNodeIndex = keylet::depositPreauth (*owner, *authorized).key;
+                uNodeIndex = keylet::depositPreauth(*owner, *authorized).key;
         }
     }
-    else if (context.params.isMember (jss::directory))
+    else if (context.params.isMember(jss::directory))
     {
         expectedType = ltDIR_NODE;
         if (context.params[jss::directory].isNull())
         {
-            jvResult[jss::error]   = "malformedRequest";
+            jvResult[jss::error] = "malformedRequest";
         }
         else if (!context.params[jss::directory].isObject())
         {
-            uNodeIndex.SetHex (context.params[jss::directory].asString ());
+            uNodeIndex.SetHex(context.params[jss::directory].asString());
         }
-        else if (context.params[jss::directory].isMember (jss::sub_index)
-            && !context.params[jss::directory][jss::sub_index].isIntegral ())
+        else if (
+            context.params[jss::directory].isMember(jss::sub_index) &&
+            !context.params[jss::directory][jss::sub_index].isIntegral())
         {
             jvResult[jss::error] = "malformedRequest";
         }
         else
         {
-            std::uint64_t  uSubIndex
-                = context.params[jss::directory].isMember (jss::sub_index)
-                ? context.params[jss::directory][jss::sub_index].asUInt () : 0;
+            std::uint64_t uSubIndex =
+                context.params[jss::directory].isMember(jss::sub_index)
+                ? context.params[jss::directory][jss::sub_index].asUInt()
+                : 0;
 
-            if (context.params[jss::directory].isMember (jss::dir_root))
+            if (context.params[jss::directory].isMember(jss::dir_root))
             {
-                if (context.params[jss::directory].isMember (jss::owner))
+                if (context.params[jss::directory].isMember(jss::owner))
                 {
                     // May not specify both dir_root and owner.
                     jvResult[jss::error] = "malformedRequest";
@@ -135,25 +140,26 @@ Json::Value doLedgerEntry (RPC::JsonContext& context)
                 else
                 {
                     uint256 uDirRoot;
-                    uDirRoot.SetHex (
-                        context.params[jss::directory][jss::dir_root].asString());
+                    uDirRoot.SetHex(
+                        context.params[jss::directory][jss::dir_root]
+                            .asString());
 
-                    uNodeIndex = getDirNodeIndex (uDirRoot, uSubIndex);
+                    uNodeIndex = getDirNodeIndex(uDirRoot, uSubIndex);
                 }
             }
-            else if (context.params[jss::directory].isMember (jss::owner))
+            else if (context.params[jss::directory].isMember(jss::owner))
             {
                 auto const ownerID = parseBase58<AccountID>(
                     context.params[jss::directory][jss::owner].asString());
 
-                if (! ownerID)
+                if (!ownerID)
                 {
                     jvResult[jss::error] = "malformedAddress";
                 }
                 else
                 {
-                    uint256 uDirRoot = getOwnerDirIndex (*ownerID);
-                    uNodeIndex = getDirNodeIndex (uDirRoot, uSubIndex);
+                    uint256 uDirRoot = getOwnerDirIndex(*ownerID);
+                    uNodeIndex = getDirNodeIndex(uDirRoot, uSubIndex);
                 }
             }
             else
@@ -162,16 +168,17 @@ Json::Value doLedgerEntry (RPC::JsonContext& context)
             }
         }
     }
-    else if (context.params.isMember (jss::escrow))
+    else if (context.params.isMember(jss::escrow))
     {
         expectedType = ltESCROW;
-        if (!context.params[jss::escrow].isObject ())
+        if (!context.params[jss::escrow].isObject())
         {
-            uNodeIndex.SetHex (context.params[jss::escrow].asString ());
+            uNodeIndex.SetHex(context.params[jss::escrow].asString());
         }
-        else if (!context.params[jss::escrow].isMember (jss::owner)
-            || !context.params[jss::escrow].isMember (jss::seq)
-            || !context.params[jss::escrow][jss::seq].isIntegral ())
+        else if (
+            !context.params[jss::escrow].isMember(jss::owner) ||
+            !context.params[jss::escrow].isMember(jss::seq) ||
+            !context.params[jss::escrow][jss::seq].isIntegral())
         {
             jvResult[jss::error] = "malformedRequest";
         }
@@ -179,23 +186,26 @@ Json::Value doLedgerEntry (RPC::JsonContext& context)
         {
             auto const id = parseBase58<AccountID>(
                 context.params[jss::escrow][jss::owner].asString());
-            if (! id)
+            if (!id)
                 jvResult[jss::error] = "malformedOwner";
             else
-                uNodeIndex = keylet::escrow (*id,
-                    context.params[jss::escrow][jss::seq].asUInt()).key;
+                uNodeIndex =
+                    keylet::escrow(
+                        *id, context.params[jss::escrow][jss::seq].asUInt())
+                        .key;
         }
     }
-    else if (context.params.isMember (jss::offer))
+    else if (context.params.isMember(jss::offer))
     {
         expectedType = ltOFFER;
         if (!context.params[jss::offer].isObject())
         {
-            uNodeIndex.SetHex (context.params[jss::offer].asString ());
+            uNodeIndex.SetHex(context.params[jss::offer].asString());
         }
-        else if (!context.params[jss::offer].isMember (jss::account)
-            || !context.params[jss::offer].isMember (jss::seq)
-            || !context.params[jss::offer][jss::seq].isIntegral ())
+        else if (
+            !context.params[jss::offer].isMember(jss::account) ||
+            !context.params[jss::offer].isMember(jss::seq) ||
+            !context.params[jss::offer][jss::seq].isIntegral())
         {
             jvResult[jss::error] = "malformedRequest";
         }
@@ -203,34 +213,33 @@ Json::Value doLedgerEntry (RPC::JsonContext& context)
         {
             auto const id = parseBase58<AccountID>(
                 context.params[jss::offer][jss::account].asString());
-            if (! id)
+            if (!id)
                 jvResult[jss::error] = "malformedAddress";
             else
-                uNodeIndex = getOfferIndex (*id,
-                    context.params[jss::offer][jss::seq].asUInt ());
+                uNodeIndex = getOfferIndex(
+                    *id, context.params[jss::offer][jss::seq].asUInt());
         }
     }
-    else if (context.params.isMember (jss::payment_channel))
+    else if (context.params.isMember(jss::payment_channel))
     {
         expectedType = ltPAYCHAN;
-        uNodeIndex.SetHex (context.params[jss::payment_channel].asString ());
+        uNodeIndex.SetHex(context.params[jss::payment_channel].asString());
     }
-    else if (context.params.isMember (jss::ripple_state))
+    else if (context.params.isMember(jss::ripple_state))
     {
         expectedType = ltRIPPLE_STATE;
-        Currency         uCurrency;
-        Json::Value     jvRippleState   = context.params[jss::ripple_state];
+        Currency uCurrency;
+        Json::Value jvRippleState = context.params[jss::ripple_state];
 
-        if (!jvRippleState.isObject()
-            || !jvRippleState.isMember (jss::currency)
-            || !jvRippleState.isMember (jss::accounts)
-            || !jvRippleState[jss::accounts].isArray()
-            || 2 != jvRippleState[jss::accounts].size ()
-            || !jvRippleState[jss::accounts][0u].isString ()
-            || !jvRippleState[jss::accounts][1u].isString ()
-            || (jvRippleState[jss::accounts][0u].asString ()
-                == jvRippleState[jss::accounts][1u].asString ())
-           )
+        if (!jvRippleState.isObject() ||
+            !jvRippleState.isMember(jss::currency) ||
+            !jvRippleState.isMember(jss::accounts) ||
+            !jvRippleState[jss::accounts].isArray() ||
+            2 != jvRippleState[jss::accounts].size() ||
+            !jvRippleState[jss::accounts][0u].isString() ||
+            !jvRippleState[jss::accounts][1u].isString() ||
+            (jvRippleState[jss::accounts][0u].asString() ==
+             jvRippleState[jss::accounts][1u].asString()))
         {
             jvResult[jss::error] = "malformedRequest";
         }
@@ -240,19 +249,18 @@ Json::Value doLedgerEntry (RPC::JsonContext& context)
                 jvRippleState[jss::accounts][0u].asString());
             auto const id2 = parseBase58<AccountID>(
                 jvRippleState[jss::accounts][1u].asString());
-            if (! id1 || ! id2)
+            if (!id1 || !id2)
             {
                 jvResult[jss::error] = "malformedAddress";
             }
-            else if (!to_currency (uCurrency,
-                jvRippleState[jss::currency].asString()))
+            else if (!to_currency(
+                         uCurrency, jvRippleState[jss::currency].asString()))
             {
                 jvResult[jss::error] = "malformedCurrency";
             }
             else
             {
-                uNodeIndex = getRippleStateIndex(
-                    *id1, *id2, uCurrency);
+                uNodeIndex = getRippleStateIndex(*id1, *id2, uCurrency);
             }
         }
     }
@@ -261,7 +269,7 @@ Json::Value doLedgerEntry (RPC::JsonContext& context)
         jvResult[jss::error] = "unknownOption";
     }
 
-    if (uNodeIndex.isNonZero ())
+    if (uNodeIndex.isNonZero())
     {
         auto const sleNode = lpLedger->read(keylet::unchecked(uNodeIndex));
         if (context.params.isMember(jss::binary))
@@ -272,8 +280,8 @@ Json::Value doLedgerEntry (RPC::JsonContext& context)
             // Not found.
             jvResult[jss::error] = "entryNotFound";
         }
-        else if ((expectedType != ltANY) &&
-            (expectedType != sleNode->getType()))
+        else if (
+            (expectedType != ltANY) && (expectedType != sleNode->getType()))
         {
             jvResult[jss::error] = "malformedRequest";
         }
@@ -281,19 +289,19 @@ Json::Value doLedgerEntry (RPC::JsonContext& context)
         {
             Serializer s;
 
-            sleNode->add (s);
+            sleNode->add(s);
 
-            jvResult[jss::node_binary] = strHex (s.peekData ());
-            jvResult[jss::index]       = to_string (uNodeIndex);
+            jvResult[jss::node_binary] = strHex(s.peekData());
+            jvResult[jss::index] = to_string(uNodeIndex);
         }
         else
         {
-            jvResult[jss::node]        = sleNode->getJson (JsonOptions::none);
-            jvResult[jss::index]       = to_string (uNodeIndex);
+            jvResult[jss::node] = sleNode->getJson(JsonOptions::none);
+            jvResult[jss::index] = to_string(uNodeIndex);
         }
     }
 
     return jvResult;
 }
 
-} // ripple
+}  // namespace ripple

@@ -20,16 +20,16 @@
 #ifndef RIPPLE_PROTOCOL_STOBJECT_H_INCLUDED
 #define RIPPLE_PROTOCOL_STOBJECT_H_INCLUDED
 
-#include <ripple/basics/chrono.h>
-#include <ripple/basics/contract.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/FeeUnits.h>
 #include <ripple/basics/Slice.h>
+#include <ripple/basics/chrono.h>
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/SOTemplate.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/STVector256.h>
-#include <ripple/protocol/SOTemplate.h>
 #include <ripple/protocol/impl/STVar.h>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/optional.hpp>
@@ -48,9 +48,7 @@ throwFieldNotFound(SField const& field)
     Throw<std::runtime_error>("Field not found: " + field.getName());
 }
 
-class STObject
-    : public STBase
-    , public CountedObject <STObject>
+class STObject : public STBase, public CountedObject<STObject>
 {
 private:
     // Proxy value for a STBase derived class
@@ -58,60 +56,60 @@ private:
     class Proxy
     {
     protected:
-        using value_type =
-            typename T::value_type;
+        using value_type = typename T::value_type;
 
         STObject* st_;
         SOEStyle style_;
         TypedField<T> const* f_;
 
-        Proxy (Proxy const&) = default;
-        Proxy (STObject* st, TypedField<T> const* f);
-        value_type value() const;
-        T const* find() const;
+        Proxy(Proxy const&) = default;
+        Proxy(STObject* st, TypedField<T> const* f);
+        value_type
+        value() const;
+        T const*
+        find() const;
 
         template <class U>
-        void assign (U&& u);
+        void
+        assign(U&& u);
     };
 
     template <class T>
     class ValueProxy : private Proxy<T>
     {
     private:
-        using value_type =
-            typename T::value_type;
+        using value_type = typename T::value_type;
 
     public:
         ValueProxy(ValueProxy const&) = default;
-        ValueProxy& operator= (ValueProxy const&) = delete;
+        ValueProxy&
+        operator=(ValueProxy const&) = delete;
 
         template <class U>
-        std::enable_if_t<
-            std::is_assignable_v<T, U>,
-                ValueProxy&>
-        operator= (U&& u);
+        std::enable_if_t<std::is_assignable_v<T, U>, ValueProxy&>
+        operator=(U&& u);
 
         operator value_type() const;
 
     private:
         friend class STObject;
 
-        ValueProxy (STObject* st, TypedField<T> const* f);
+        ValueProxy(STObject* st, TypedField<T> const* f);
     };
 
     template <class T>
     class OptionalProxy : private Proxy<T>
     {
     private:
-        using value_type =
-            typename T::value_type;
+        using value_type = typename T::value_type;
 
-        using optional_type = boost::optional<
-            typename std::decay<value_type>::type>;
+        using optional_type =
+            boost::optional<typename std::decay<value_type>::type>;
 
     public:
         OptionalProxy(OptionalProxy const&) = default;
-        OptionalProxy& operator= (OptionalProxy const&) = delete;
+        OptionalProxy&
+        operator=(OptionalProxy const&) = delete;
 
         /** Returns `true` if the field is set.
 
@@ -126,7 +124,8 @@ private:
 
                 STObject::FieldErr if !engaged()
         */
-        value_type operator*() const;
+        value_type
+        operator*() const;
 
         operator optional_type() const;
 
@@ -134,100 +133,93 @@ private:
         optional_type
         operator~() const;
 
-        friend bool operator==(
-            OptionalProxy const& lhs,
-                boost::none_t) noexcept
+        friend bool
+        operator==(OptionalProxy const& lhs, boost::none_t) noexcept
         {
-            return ! lhs.engaged();
+            return !lhs.engaged();
         }
 
-        friend bool operator==(
-            boost::none_t,
-                OptionalProxy const& rhs) noexcept
+        friend bool
+        operator==(boost::none_t, OptionalProxy const& rhs) noexcept
         {
             return rhs == boost::none;
         }
 
-        friend bool operator==(
-            OptionalProxy const& lhs,
-                optional_type const& rhs) noexcept
+        friend bool
+        operator==(OptionalProxy const& lhs, optional_type const& rhs) noexcept
         {
-            if (! lhs.engaged())
-                return ! rhs;
-            if (! rhs)
+            if (!lhs.engaged())
+                return !rhs;
+            if (!rhs)
                 return false;
             return *lhs == *rhs;
         }
 
-        friend bool operator==(
-            optional_type const& lhs,
-                OptionalProxy const& rhs) noexcept
+        friend bool
+        operator==(optional_type const& lhs, OptionalProxy const& rhs) noexcept
         {
             return rhs == lhs;
         }
 
-        friend bool operator==(
-            OptionalProxy const& lhs,
-                OptionalProxy const& rhs) noexcept
+        friend bool
+        operator==(OptionalProxy const& lhs, OptionalProxy const& rhs) noexcept
         {
             if (lhs.engaged() != rhs.engaged())
                 return false;
-            return ! lhs.engaged() || *lhs == *rhs;
+            return !lhs.engaged() || *lhs == *rhs;
         }
 
-        friend bool operator!=(
-            OptionalProxy const& lhs,
-                boost::none_t) noexcept
+        friend bool
+        operator!=(OptionalProxy const& lhs, boost::none_t) noexcept
         {
-            return ! (lhs == boost::none);
+            return !(lhs == boost::none);
         }
 
-        friend bool operator!=(boost::none_t,
-            OptionalProxy const& rhs) noexcept
+        friend bool
+        operator!=(boost::none_t, OptionalProxy const& rhs) noexcept
         {
-            return ! (rhs == boost::none);
+            return !(rhs == boost::none);
         }
 
-        friend bool operator!=(
-            OptionalProxy const& lhs,
-                optional_type const& rhs) noexcept
+        friend bool
+        operator!=(OptionalProxy const& lhs, optional_type const& rhs) noexcept
         {
-            return ! (lhs == rhs);
+            return !(lhs == rhs);
         }
 
-        friend bool operator!=(
-            optional_type const& lhs,
-                OptionalProxy const& rhs) noexcept
+        friend bool
+        operator!=(optional_type const& lhs, OptionalProxy const& rhs) noexcept
         {
-            return ! (lhs == rhs);
+            return !(lhs == rhs);
         }
 
-        friend bool operator!=(
-            OptionalProxy const& lhs,
-                OptionalProxy const& rhs) noexcept
+        friend bool
+        operator!=(OptionalProxy const& lhs, OptionalProxy const& rhs) noexcept
         {
-            return ! (lhs == rhs);
+            return !(lhs == rhs);
         }
 
-        OptionalProxy& operator= (boost::none_t const&);
-        OptionalProxy& operator= (optional_type&& v);
-        OptionalProxy& operator= (optional_type const& v);
+        OptionalProxy&
+        operator=(boost::none_t const&);
+        OptionalProxy&
+        operator=(optional_type&& v);
+        OptionalProxy&
+        operator=(optional_type const& v);
 
         template <class U>
-        std::enable_if_t<
-            std::is_assignable_v<T, U>,
-                OptionalProxy&>
-        operator= (U&& u);
+        std::enable_if_t<std::is_assignable_v<T, U>, OptionalProxy&>
+        operator=(U&& u);
 
     private:
         friend class STObject;
 
-        OptionalProxy (STObject* st,
-            TypedField<T> const* f);
+        OptionalProxy(STObject* st, TypedField<T> const* f);
 
-        bool engaged() const noexcept;
+        bool
+        engaged() const noexcept;
 
-        void disengage();
+        void
+        disengage();
 
         optional_type
         optional_value() const;
@@ -241,16 +233,13 @@ private:
         using result_type = STBase;
 
         STBase const&
-        operator() (detail::STVar const& e) const
+        operator()(detail::STVar const& e) const
         {
             return e.get();
         }
     };
 
-    enum
-    {
-        reserveSize = 20
-    };
+    enum { reserveSize = 20 };
 
     using list_type = std::vector<detail::STVar>;
 
@@ -258,113 +247,139 @@ private:
     SOTemplate const* mType;
 
 public:
-    using iterator = boost::transform_iterator<
-        Transform, STObject::list_type::const_iterator>;
+    using iterator = boost::
+        transform_iterator<Transform, STObject::list_type::const_iterator>;
 
     class FieldErr : public std::runtime_error
     {
         using std::runtime_error::runtime_error;
     };
 
-    static char const* getCountedObjectName () { return "STObject"; }
+    static char const*
+    getCountedObjectName()
+    {
+        return "STObject";
+    }
 
     STObject(STObject&&);
     STObject(STObject const&) = default;
-    STObject (const SOTemplate & type, SField const& name);
-    STObject (const SOTemplate& type,
-        SerialIter& sit, SField const& name) noexcept (false);
-    STObject (SerialIter& sit,
-        SField const& name, int depth = 0) noexcept (false);
-    STObject (SerialIter&& sit, SField const& name) noexcept (false)
+    STObject(const SOTemplate& type, SField const& name);
+    STObject(
+        const SOTemplate& type,
+        SerialIter& sit,
+        SField const& name) noexcept(false);
+    STObject(SerialIter& sit, SField const& name, int depth = 0) noexcept(
+        false);
+    STObject(SerialIter&& sit, SField const& name) noexcept(false)
         : STObject(sit, name)
     {
     }
-    STObject& operator= (STObject const&) = default;
-    STObject& operator= (STObject&& other);
+    STObject&
+    operator=(STObject const&) = default;
+    STObject&
+    operator=(STObject&& other);
 
-    explicit STObject (SField const& name);
+    explicit STObject(SField const& name);
 
     virtual ~STObject();
 
     STBase*
-    copy (std::size_t n, void* buf) const override
+    copy(std::size_t n, void* buf) const override
     {
         return emplace(n, buf, *this);
     }
 
     STBase*
-    move (std::size_t n, void* buf) override
+    move(std::size_t n, void* buf) override
     {
         return emplace(n, buf, std::move(*this));
     }
 
-    iterator begin() const
+    iterator
+    begin() const
     {
         return iterator(v_.begin());
     }
 
-    iterator end() const
+    iterator
+    end() const
     {
         return iterator(v_.end());
     }
 
-    bool empty() const
+    bool
+    empty() const
     {
         return v_.empty();
     }
 
-    void reserve (std::size_t n)
+    void
+    reserve(std::size_t n)
     {
-        v_.reserve (n);
+        v_.reserve(n);
     }
 
-    void applyTemplate (const SOTemplate & type) noexcept (false);
+    void
+    applyTemplate(const SOTemplate& type) noexcept(false);
 
-    void applyTemplateFromSField (SField const&) noexcept (false);
+    void
+    applyTemplateFromSField(SField const&) noexcept(false);
 
-    bool isFree () const
+    bool
+    isFree() const
     {
         return mType == nullptr;
     }
 
-    void set (const SOTemplate&);
-    bool set (SerialIter& u, int depth = 0);
+    void
+    set(const SOTemplate&);
+    bool
+    set(SerialIter& u, int depth = 0);
 
-    virtual SerializedTypeID getSType () const override
+    virtual SerializedTypeID
+    getSType() const override
     {
         return STI_OBJECT;
     }
-    virtual bool isEquivalent (const STBase & t) const override;
-    virtual bool isDefault () const override
+    virtual bool
+    isEquivalent(const STBase& t) const override;
+    virtual bool
+    isDefault() const override
     {
         return v_.empty();
     }
 
-    virtual void add (Serializer & s) const override
+    virtual void
+    add(Serializer& s) const override
     {
-        add (s, withAllFields);    // just inner elements
+        add(s, withAllFields);  // just inner elements
     }
 
-    void addWithoutSigningFields (Serializer & s) const
+    void
+    addWithoutSigningFields(Serializer& s) const
     {
-        add (s, omitSigningFields);
+        add(s, omitSigningFields);
     }
 
     // VFALCO NOTE does this return an expensive copy of an object with a
     //             dynamic buffer?
     // VFALCO TODO Remove this function and fix the few callers.
-    Serializer getSerializer () const
+    Serializer
+    getSerializer() const
     {
         Serializer s;
-        add (s, withAllFields);
+        add(s, withAllFields);
         return s;
     }
 
-    virtual std::string getFullText () const override;
-    virtual std::string getText () const override;
+    virtual std::string
+    getFullText() const override;
+    virtual std::string
+    getText() const override;
 
     // TODO(tom): options should be an enum.
-    virtual Json::Value getJson (JsonOptions options) const override;
+    virtual Json::Value
+    getJson(JsonOptions options) const override;
 
     template <class... Args>
     std::size_t
@@ -374,61 +389,88 @@ public:
         return v_.size() - 1;
     }
 
-    int getCount () const
+    int
+    getCount() const
     {
-        return v_.size ();
+        return v_.size();
     }
 
-    bool setFlag (std::uint32_t);
-    bool clearFlag (std::uint32_t);
+    bool setFlag(std::uint32_t);
+    bool clearFlag(std::uint32_t);
     bool isFlag(std::uint32_t) const;
-    std::uint32_t getFlags () const;
+    std::uint32_t
+    getFlags() const;
 
-    uint256 getHash (HashPrefix prefix) const;
-    uint256 getSigningHash (HashPrefix prefix) const;
+    uint256
+    getHash(HashPrefix prefix) const;
+    uint256
+    getSigningHash(HashPrefix prefix) const;
 
-    const STBase& peekAtIndex (int offset) const
+    const STBase&
+    peekAtIndex(int offset) const
     {
         return v_[offset].get();
     }
-    STBase& getIndex(int offset)
+    STBase&
+    getIndex(int offset)
     {
         return v_[offset].get();
     }
-    const STBase* peekAtPIndex (int offset) const
+    const STBase*
+    peekAtPIndex(int offset) const
     {
         return &v_[offset].get();
     }
-    STBase* getPIndex (int offset)
+    STBase*
+    getPIndex(int offset)
     {
         return &v_[offset].get();
     }
 
-    int getFieldIndex (SField const& field) const;
-    SField const& getFieldSType (int index) const;
+    int
+    getFieldIndex(SField const& field) const;
+    SField const&
+    getFieldSType(int index) const;
 
-    const STBase& peekAtField (SField const& field) const;
-    STBase& getField (SField const& field);
-    const STBase* peekAtPField (SField const& field) const;
-    STBase* getPField (SField const& field, bool createOkay = false);
+    const STBase&
+    peekAtField(SField const& field) const;
+    STBase&
+    getField(SField const& field);
+    const STBase*
+    peekAtPField(SField const& field) const;
+    STBase*
+    getPField(SField const& field, bool createOkay = false);
 
     // these throw if the field type doesn't match, or return default values
     // if the field is optional but not present
-    unsigned char getFieldU8 (SField const& field) const;
-    std::uint16_t getFieldU16 (SField const& field) const;
-    std::uint32_t getFieldU32 (SField const& field) const;
-    std::uint64_t getFieldU64 (SField const& field) const;
-    uint128 getFieldH128 (SField const& field) const;
+    unsigned char
+    getFieldU8(SField const& field) const;
+    std::uint16_t
+    getFieldU16(SField const& field) const;
+    std::uint32_t
+    getFieldU32(SField const& field) const;
+    std::uint64_t
+    getFieldU64(SField const& field) const;
+    uint128
+    getFieldH128(SField const& field) const;
 
-    uint160 getFieldH160 (SField const& field) const;
-    uint256 getFieldH256 (SField const& field) const;
-    AccountID getAccountID (SField const& field) const;
+    uint160
+    getFieldH160(SField const& field) const;
+    uint256
+    getFieldH256(SField const& field) const;
+    AccountID
+    getAccountID(SField const& field) const;
 
-    Blob getFieldVL (SField const& field) const;
-    STAmount const& getFieldAmount (SField const& field) const;
-    STPathSet const& getFieldPathSet (SField const& field) const;
-    const STVector256& getFieldV256 (SField const& field) const;
-    const STArray& getFieldArray (SField const& field) const;
+    Blob
+    getFieldVL(SField const& field) const;
+    STAmount const&
+    getFieldAmount(SField const& field) const;
+    STPathSet const&
+    getFieldPathSet(SField const& field) const;
+    const STVector256&
+    getFieldV256(SField const& field) const;
+    const STArray&
+    getFieldArray(SField const& field) const;
 
     /** Return the value of a field.
 
@@ -437,7 +479,7 @@ public:
             STObject::FieldErr if the field is
             not present.
     */
-    template<class T>
+    template <class T>
     typename T::value_type
     operator[](TypedField<T> const& f) const;
 
@@ -445,7 +487,7 @@ public:
 
         @return boost::none if the field is not present.
     */
-    template<class T>
+    template <class T>
     boost::optional<std::decay_t<typename T::value_type>>
     operator[](OptionaledField<T> const& of) const;
 
@@ -456,7 +498,7 @@ public:
             STObject::FieldErr if the field is
             not present.
     */
-    template<class T>
+    template <class T>
     ValueProxy<T>
     operator[](TypedField<T> const& f);
 
@@ -465,7 +507,7 @@ public:
         The return value equals boost::none if the
         field is not present.
     */
-    template<class T>
+    template <class T>
     OptionalProxy<T>
     operator[](OptionaledField<T> const& of);
 
@@ -473,103 +515,128 @@ public:
         if the field already exists, it is replaced.
     */
     void
-    set (std::unique_ptr<STBase> v);
+    set(std::unique_ptr<STBase> v);
 
-    void setFieldU8 (SField const& field, unsigned char);
-    void setFieldU16 (SField const& field, std::uint16_t);
-    void setFieldU32 (SField const& field, std::uint32_t);
-    void setFieldU64 (SField const& field, std::uint64_t);
-    void setFieldH128 (SField const& field, uint128 const&);
-    void setFieldH256 (SField const& field, uint256 const& );
-    void setFieldVL (SField const& field, Blob const&);
-    void setFieldVL (SField const& field, Slice const&);
+    void
+    setFieldU8(SField const& field, unsigned char);
+    void
+    setFieldU16(SField const& field, std::uint16_t);
+    void
+    setFieldU32(SField const& field, std::uint32_t);
+    void
+    setFieldU64(SField const& field, std::uint64_t);
+    void
+    setFieldH128(SField const& field, uint128 const&);
+    void
+    setFieldH256(SField const& field, uint256 const&);
+    void
+    setFieldVL(SField const& field, Blob const&);
+    void
+    setFieldVL(SField const& field, Slice const&);
 
-    void setAccountID (SField const& field, AccountID const&);
+    void
+    setAccountID(SField const& field, AccountID const&);
 
-    void setFieldAmount (SField const& field, STAmount const&);
-    void setFieldPathSet (SField const& field, STPathSet const&);
-    void setFieldV256 (SField const& field, STVector256 const& v);
-    void setFieldArray (SField const& field, STArray const& v);
+    void
+    setFieldAmount(SField const& field, STAmount const&);
+    void
+    setFieldPathSet(SField const& field, STPathSet const&);
+    void
+    setFieldV256(SField const& field, STVector256 const& v);
+    void
+    setFieldArray(SField const& field, STArray const& v);
 
     template <class Tag>
-    void setFieldH160 (SField const& field, base_uint<160, Tag> const& v)
+    void
+    setFieldH160(SField const& field, base_uint<160, Tag> const& v)
     {
-        STBase* rf = getPField (field, true);
+        STBase* rf = getPField(field, true);
 
-        if (! rf)
+        if (!rf)
             throwFieldNotFound(field);
 
-        if (rf->getSType () == STI_NOTPRESENT)
-            rf = makeFieldPresent (field);
+        if (rf->getSType() == STI_NOTPRESENT)
+            rf = makeFieldPresent(field);
 
         using Bits = STBitString<160>;
-        if (auto cf = dynamic_cast<Bits*> (rf))
-            cf->setValue (v);
+        if (auto cf = dynamic_cast<Bits*>(rf))
+            cf->setValue(v);
         else
-            Throw<std::runtime_error> ("Wrong field type");
+            Throw<std::runtime_error>("Wrong field type");
     }
 
-    STObject& peekFieldObject (SField const& field);
-    STArray& peekFieldArray (SField const& field);
+    STObject&
+    peekFieldObject(SField const& field);
+    STArray&
+    peekFieldArray(SField const& field);
 
-    bool isFieldPresent (SField const& field) const;
-    STBase* makeFieldPresent (SField const& field);
-    void makeFieldAbsent (SField const& field);
-    bool delField (SField const& field);
-    void delField (int index);
+    bool
+    isFieldPresent(SField const& field) const;
+    STBase*
+    makeFieldPresent(SField const& field);
+    void
+    makeFieldAbsent(SField const& field);
+    bool
+    delField(SField const& field);
+    void
+    delField(int index);
 
-    bool hasMatchingEntry (const STBase&);
+    bool
+    hasMatchingEntry(const STBase&);
 
-    bool operator== (const STObject & o) const;
-    bool operator!= (const STObject & o) const
+    bool
+    operator==(const STObject& o) const;
+    bool
+    operator!=(const STObject& o) const
     {
-        return ! (*this == o);
+        return !(*this == o);
     }
 
 private:
-    enum WhichFields : bool
-    {
+    enum WhichFields : bool {
         // These values are carefully chosen to do the right thing if passed
         // to SField::shouldInclude (bool)
         omitSigningFields = false,
         withAllFields = true
     };
 
-    void add (Serializer & s, WhichFields whichFields) const;
+    void
+    add(Serializer& s, WhichFields whichFields) const;
 
     // Sort the entries in an STObject into the order that they will be
     // serialized.  Note: they are not sorted into pointer value order, they
     // are sorted by SField::fieldCode.
     static std::vector<STBase const*>
-    getSortedFields (
-        STObject const& objToSort, WhichFields whichFields);
+    getSortedFields(STObject const& objToSort, WhichFields whichFields);
 
     // Implementation for getting (most) fields that return by value.
     //
     // The remove_cv and remove_reference are necessitated by the STBitString
     // types.  Their value() returns by const ref.  We return those types
     // by value.
-    template <typename T, typename V =
-        typename std::remove_cv < typename std::remove_reference <
-            decltype (std::declval <T> ().value ())>::type >::type >
-    V getFieldByValue (SField const& field) const
+    template <
+        typename T,
+        typename V = typename std::remove_cv<typename std::remove_reference<
+            decltype(std::declval<T>().value())>::type>::type>
+    V
+    getFieldByValue(SField const& field) const
     {
-        const STBase* rf = peekAtPField (field);
+        const STBase* rf = peekAtPField(field);
 
-        if (! rf)
+        if (!rf)
             throwFieldNotFound(field);
 
-        SerializedTypeID id = rf->getSType ();
+        SerializedTypeID id = rf->getSType();
 
         if (id == STI_NOTPRESENT)
-            return V (); // optional field not present
+            return V();  // optional field not present
 
-        const T* cf = dynamic_cast<const T*> (rf);
+        const T* cf = dynamic_cast<const T*>(rf);
 
-        if (! cf)
-            Throw<std::runtime_error> ("Wrong field type");
+        if (!cf)
+            Throw<std::runtime_error>("Wrong field type");
 
-        return cf->value ();
+        return cf->value();
     }
 
     // Implementations for getting (most) fields that return by const reference.
@@ -578,84 +645,88 @@ private:
     // obvious to return.  So we insist on having the call provide an
     // 'empty' value we return in that circumstance.
     template <typename T, typename V>
-    V const& getFieldByConstRef (SField const& field, V const& empty) const
+    V const&
+    getFieldByConstRef(SField const& field, V const& empty) const
     {
-        const STBase* rf = peekAtPField (field);
+        const STBase* rf = peekAtPField(field);
 
-        if (! rf)
+        if (!rf)
             throwFieldNotFound(field);
 
-        SerializedTypeID id = rf->getSType ();
+        SerializedTypeID id = rf->getSType();
 
         if (id == STI_NOTPRESENT)
-            return empty; // optional field not present
+            return empty;  // optional field not present
 
-        const T* cf = dynamic_cast<const T*> (rf);
+        const T* cf = dynamic_cast<const T*>(rf);
 
-        if (! cf)
-            Throw<std::runtime_error> ("Wrong field type");
+        if (!cf)
+            Throw<std::runtime_error>("Wrong field type");
 
         return *cf;
     }
 
     // Implementation for setting most fields with a setValue() method.
     template <typename T, typename V>
-    void setFieldUsingSetValue (SField const& field, V value)
+    void
+    setFieldUsingSetValue(SField const& field, V value)
     {
         static_assert(!std::is_lvalue_reference<V>::value, "");
 
-        STBase* rf = getPField (field, true);
+        STBase* rf = getPField(field, true);
 
-        if (! rf)
+        if (!rf)
             throwFieldNotFound(field);
 
-        if (rf->getSType () == STI_NOTPRESENT)
-            rf = makeFieldPresent (field);
+        if (rf->getSType() == STI_NOTPRESENT)
+            rf = makeFieldPresent(field);
 
-        T* cf = dynamic_cast<T*> (rf);
+        T* cf = dynamic_cast<T*>(rf);
 
-        if (! cf)
-            Throw<std::runtime_error> ("Wrong field type");
+        if (!cf)
+            Throw<std::runtime_error>("Wrong field type");
 
-        cf->setValue (std::move (value));
+        cf->setValue(std::move(value));
     }
 
     // Implementation for setting fields using assignment
     template <typename T>
-    void setFieldUsingAssignment (SField const& field, T const& value)
+    void
+    setFieldUsingAssignment(SField const& field, T const& value)
     {
-        STBase* rf = getPField (field, true);
+        STBase* rf = getPField(field, true);
 
-        if (! rf)
+        if (!rf)
             throwFieldNotFound(field);
 
-        if (rf->getSType () == STI_NOTPRESENT)
-            rf = makeFieldPresent (field);
+        if (rf->getSType() == STI_NOTPRESENT)
+            rf = makeFieldPresent(field);
 
-        T* cf = dynamic_cast<T*> (rf);
+        T* cf = dynamic_cast<T*>(rf);
 
-        if (! cf)
-            Throw<std::runtime_error> ("Wrong field type");
+        if (!cf)
+            Throw<std::runtime_error>("Wrong field type");
 
         (*cf) = value;
     }
 
     // Implementation for peeking STObjects and STArrays
     template <typename T>
-    T& peekField (SField const& field)
+    T&
+    peekField(SField const& field)
     {
-        STBase* rf = getPField (field, true);
+        STBase* rf = getPField(field, true);
 
-        if (! rf)
+        if (!rf)
             throwFieldNotFound(field);
 
-        if (rf->getSType () == STI_NOTPRESENT)
-            rf = makeFieldPresent (field);
+        if (rf->getSType() == STI_NOTPRESENT)
+            rf = makeFieldPresent(field);
 
-        T* cf = dynamic_cast<T*> (rf);
+        T* cf = dynamic_cast<T*>(rf);
 
-        if (! cf)
-            Throw<std::runtime_error> ("Wrong field type");
+        if (!cf)
+            Throw<std::runtime_error>("Wrong field type");
 
         return *cf;
     }
@@ -664,15 +735,13 @@ private:
 //------------------------------------------------------------------------------
 
 template <class T>
-STObject::Proxy<T>::Proxy (STObject* st, TypedField<T> const* f)
-    : st_ (st)
-    , f_ (f)
+STObject::Proxy<T>::Proxy(STObject* st, TypedField<T> const* f) : st_(st), f_(f)
 {
     if (st_->mType)
     {
         // STObject has associated template
-        if (! st_->peekAtPField(*f_))
-            Throw<STObject::FieldErr> (
+        if (!st_->peekAtPField(*f_))
+            Throw<STObject::FieldErr>(
                 "Template field error '" + this->f_->getName() + "'");
         style_ = st_->mType->style(*f_);
     }
@@ -684,25 +753,22 @@ STObject::Proxy<T>::Proxy (STObject* st, TypedField<T> const* f)
 
 template <class T>
 auto
-STObject::Proxy<T>::value() const ->
-    value_type
+STObject::Proxy<T>::value() const -> value_type
 {
     auto const t = find();
     if (t)
         return t->value();
     if (style_ != soeDEFAULT)
-        Throw<STObject::FieldErr> (
+        Throw<STObject::FieldErr>(
             "Missing field '" + this->f_->getName() + "'");
     return value_type{};
 }
 
 template <class T>
-inline
-T const*
+inline T const*
 STObject::Proxy<T>::find() const
 {
-    return dynamic_cast<T const*>(
-        st_->peekAtPField(*f_));
+    return dynamic_cast<T const*>(st_->peekAtPField(*f_));
 }
 
 template <class T>
@@ -710,19 +776,16 @@ template <class U>
 void
 STObject::Proxy<T>::assign(U&& u)
 {
-    if (style_ == soeDEFAULT &&
-        u == value_type{})
+    if (style_ == soeDEFAULT && u == value_type{})
     {
         st_->makeFieldAbsent(*f_);
         return;
     }
     T* t;
     if (style_ == soeINVALID)
-        t = dynamic_cast<T*>(
-            st_->getPField(*f_, true));
+        t = dynamic_cast<T*>(st_->getPField(*f_, true));
     else
-        t = dynamic_cast<T*>(
-            st_->makeFieldPresent(*f_));
+        t = dynamic_cast<T*>(st_->makeFieldPresent(*f_));
     assert(t);
     *t = std::forward<U>(u);
 }
@@ -731,10 +794,8 @@ STObject::Proxy<T>::assign(U&& u)
 
 template <class T>
 template <class U>
-std::enable_if_t<
-    std::is_assignable_v<T, U>,
-        STObject::ValueProxy<T>&>
-STObject::ValueProxy<T>::operator= (U&& u)
+std::enable_if_t<std::is_assignable_v<T, U>, STObject::ValueProxy<T>&>
+STObject::ValueProxy<T>::operator=(U&& u)
 {
     this->assign(std::forward<U>(u));
     return *this;
@@ -747,8 +808,7 @@ STObject::ValueProxy<T>::operator value_type() const
 }
 
 template <class T>
-STObject::ValueProxy<T>::ValueProxy(
-        STObject* st, TypedField<T> const* f)
+STObject::ValueProxy<T>::ValueProxy(STObject* st, TypedField<T> const* f)
     : Proxy<T>(st, f)
 {
 }
@@ -763,15 +823,14 @@ STObject::OptionalProxy<T>::operator bool() const noexcept
 
 template <class T>
 auto
-STObject::OptionalProxy<T>::operator*() const ->
-    value_type
+STObject::OptionalProxy<T>::operator*() const -> value_type
 {
     return this->value();
 }
 
 template <class T>
-STObject::OptionalProxy<T>::operator
-    typename STObject::OptionalProxy<T>::optional_type() const
+STObject::OptionalProxy<T>::operator typename STObject::OptionalProxy<
+    T>::optional_type() const
 {
     return optional_value();
 }
@@ -785,8 +844,7 @@ STObject::OptionalProxy<T>::operator~() const
 
 template <class T>
 auto
-STObject::OptionalProxy<T>::operator=(boost::none_t const&) ->
-    OptionalProxy&
+STObject::OptionalProxy<T>::operator=(boost::none_t const&) -> OptionalProxy&
 {
     disengage();
     return *this;
@@ -794,8 +852,7 @@ STObject::OptionalProxy<T>::operator=(boost::none_t const&) ->
 
 template <class T>
 auto
-STObject::OptionalProxy<T>::operator=(optional_type&& v) ->
-        OptionalProxy&
+STObject::OptionalProxy<T>::operator=(optional_type&& v) -> OptionalProxy&
 {
     if (v)
         this->assign(std::move(*v));
@@ -806,8 +863,7 @@ STObject::OptionalProxy<T>::operator=(optional_type&& v) ->
 
 template <class T>
 auto
-STObject::OptionalProxy<T>::operator=(optional_type const& v) ->
-        OptionalProxy&
+STObject::OptionalProxy<T>::operator=(optional_type const& v) -> OptionalProxy&
 {
     if (v)
         this->assign(*v);
@@ -818,9 +874,7 @@ STObject::OptionalProxy<T>::operator=(optional_type const& v) ->
 
 template <class T>
 template <class U>
-std::enable_if_t<
-    std::is_assignable_v<T, U>,
-        STObject::OptionalProxy<T>&>
+std::enable_if_t<std::is_assignable_v<T, U>, STObject::OptionalProxy<T>&>
 STObject::OptionalProxy<T>::operator=(U&& u)
 {
     this->assign(std::forward<U>(u));
@@ -828,8 +882,7 @@ STObject::OptionalProxy<T>::operator=(U&& u)
 }
 
 template <class T>
-STObject::OptionalProxy<T>::OptionalProxy(
-        STObject* st, TypedField<T> const* f)
+STObject::OptionalProxy<T>::OptionalProxy(STObject* st, TypedField<T> const* f)
     : Proxy<T>(st, f)
 {
 }
@@ -838,17 +891,15 @@ template <class T>
 bool
 STObject::OptionalProxy<T>::engaged() const noexcept
 {
-    return this->style_ == soeDEFAULT
-        || this->find() != nullptr;
+    return this->style_ == soeDEFAULT || this->find() != nullptr;
 }
 
 template <class T>
 void
 STObject::OptionalProxy<T>::disengage()
 {
-    if (this->style_ == soeREQUIRED ||
-            this->style_ == soeDEFAULT)
-        Throw<STObject::FieldErr> (
+    if (this->style_ == soeREQUIRED || this->style_ == soeDEFAULT)
+        Throw<STObject::FieldErr>(
             "Template field error '" + this->f_->getName() + "'");
     if (this->style_ == soeINVALID)
         this->st_->delField(*this->f_);
@@ -858,60 +909,54 @@ STObject::OptionalProxy<T>::disengage()
 
 template <class T>
 auto
-STObject::OptionalProxy<T>::optional_value() const ->
-    optional_type
+STObject::OptionalProxy<T>::optional_value() const -> optional_type
 {
-    if (! engaged())
+    if (!engaged())
         return boost::none;
     return this->value();
 }
 
 //------------------------------------------------------------------------------
 
-template<class T>
+template <class T>
 typename T::value_type
 STObject::operator[](TypedField<T> const& f) const
 {
     auto const b = peekAtPField(f);
-    if (! b)
+    if (!b)
         // This is a free object (no constraints)
         // with no template
-        Throw<STObject::FieldErr> (
-            "Missing field '" + f.getName() + "'");
-    auto const u =
-        dynamic_cast<T const*>(b);
-    if (! u)
+        Throw<STObject::FieldErr>("Missing field '" + f.getName() + "'");
+    auto const u = dynamic_cast<T const*>(b);
+    if (!u)
     {
         assert(mType);
         assert(b->getSType() == STI_NOTPRESENT);
-        if(mType->style(f) == soeOPTIONAL)
-            Throw<STObject::FieldErr> (
-                "Missing field '" + f.getName() + "'");
+        if (mType->style(f) == soeOPTIONAL)
+            Throw<STObject::FieldErr>("Missing field '" + f.getName() + "'");
         assert(mType->style(f) == soeDEFAULT);
         // Handle the case where value_type is a
         // const reference, otherwise we return
         // the address of a temporary.
-        static std::decay_t<
-            typename T::value_type> const dv{};
+        static std::decay_t<typename T::value_type> const dv{};
         return dv;
     }
     return u->value();
 }
 
-template<class T>
+template <class T>
 boost::optional<std::decay_t<typename T::value_type>>
 STObject::operator[](OptionaledField<T> const& of) const
 {
     auto const b = peekAtPField(*of.f);
-    if (! b)
+    if (!b)
         return boost::none;
-    auto const u =
-        dynamic_cast<T const*>(b);
-    if (! u)
+    auto const u = dynamic_cast<T const*>(b);
+    if (!u)
     {
         assert(mType);
         assert(b->getSType() == STI_NOTPRESENT);
-        if(mType->style(*of.f) == soeOPTIONAL)
+        if (mType->style(*of.f) == soeOPTIONAL)
             return boost::none;
         assert(mType->style(*of.f) == soeDEFAULT);
         return typename T::value_type{};
@@ -919,24 +964,20 @@ STObject::operator[](OptionaledField<T> const& of) const
     return u->value();
 }
 
-template<class T>
-inline
-auto
-STObject::operator[](TypedField<T> const& f) ->
-    ValueProxy<T>
+template <class T>
+inline auto
+STObject::operator[](TypedField<T> const& f) -> ValueProxy<T>
 {
     return ValueProxy<T>(this, &f);
 }
 
-template<class T>
-inline
-auto
-STObject::operator[](OptionaledField<T> const& of) ->
-    OptionalProxy<T>
+template <class T>
+inline auto
+STObject::operator[](OptionaledField<T> const& of) -> OptionalProxy<T>
 {
     return OptionalProxy<T>(this, of.f);
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

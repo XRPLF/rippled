@@ -21,8 +21,8 @@
 #define RIPPLE_LEDGER_RAWVIEW_H_INCLUDED
 
 #include <ripple/ledger/ReadView.h>
-#include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/STLedgerEntry.h>
+#include <ripple/protocol/Serializer.h>
 #include <boost/optional.hpp>
 #include <cstdint>
 #include <memory>
@@ -40,16 +40,16 @@ public:
     virtual ~RawView() = default;
     RawView() = default;
     RawView(RawView const&) = default;
-    RawView& operator=(RawView const&) = delete;
+    RawView&
+    operator=(RawView const&) = delete;
 
     /** Delete an existing state item.
 
         The SLE is provided so the implementation
         can calculate metadata.
     */
-    virtual
-    void
-    rawErase (std::shared_ptr<SLE> const& sle) = 0;
+    virtual void
+    rawErase(std::shared_ptr<SLE> const& sle) = 0;
 
     /** Unconditionally insert a state item.
 
@@ -62,9 +62,8 @@ public:
 
         @note The key is taken from the SLE
     */
-    virtual
-    void
-    rawInsert (std::shared_ptr<SLE> const& sle) = 0;
+    virtual void
+    rawInsert(std::shared_ptr<SLE> const& sle) = 0;
 
     /** Unconditionally replace a state item.
 
@@ -78,17 +77,15 @@ public:
 
         @note The key is taken from the SLE
     */
-    virtual
-    void
-    rawReplace (std::shared_ptr<SLE> const& sle) = 0;
+    virtual void
+    rawReplace(std::shared_ptr<SLE> const& sle) = 0;
 
     /** Destroy XRP.
 
         This is used to pay for transaction fees.
     */
-    virtual
-    void
-    rawDestroyXRP (XRPAmount const& fee) = 0;
+    virtual void
+    rawDestroyXRP(XRPAmount const& fee) = 0;
 };
 
 //------------------------------------------------------------------------------
@@ -106,14 +103,13 @@ public:
         Closed ledgers must have metadata,
         while open ledgers omit metadata.
     */
-    virtual
-    void
-    rawTxInsert (ReadView::key_type const& key,
-        std::shared_ptr<Serializer const>
-            const& txn, std::shared_ptr<
-                Serializer const> const& metaData) = 0;
+    virtual void
+    rawTxInsert(
+        ReadView::key_type const& key,
+        std::shared_ptr<Serializer const> const& txn,
+        std::shared_ptr<Serializer const> const& metaData) = 0;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

@@ -240,5 +240,5 @@ operator==(
         a.prevLedger() == b.prevLedger() && a.position() == b.position() &&
         a.closeTime() == b.closeTime() && a.seenTime() == b.seenTime();
 }
-}
+}  // namespace ripple
 #endif

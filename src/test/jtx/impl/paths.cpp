@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <ripple/app/paths/Pathfinder.h>
-#include <test/jtx/paths.h>
 #include <ripple/protocol/jss.h>
+#include <test/jtx/paths.h>
 
 namespace ripple {
 namespace test {
@@ -29,27 +29,28 @@ void
 paths::operator()(Env& env, JTx& jt) const
 {
     auto& jv = jt.jv;
-    auto const from = env.lookup(
-        jv[jss::Account].asString());
-    auto const to = env.lookup(
-        jv[jss::Destination].asString());
-    auto const amount = amountFromJson(
-        sfAmount, jv[jss::Amount]);
-    Pathfinder pf (
+    auto const from = env.lookup(jv[jss::Account].asString());
+    auto const to = env.lookup(jv[jss::Destination].asString());
+    auto const amount = amountFromJson(sfAmount, jv[jss::Amount]);
+    Pathfinder pf(
         std::make_shared<RippleLineCache>(env.current()),
-            from, to, in_.currency, in_.account,
-                amount, boost::none, env.app());
-    if (! pf.findPaths(depth_))
+        from,
+        to,
+        in_.currency,
+        in_.account,
+        amount,
+        boost::none,
+        env.app());
+    if (!pf.findPaths(depth_))
         return;
 
     STPath fp;
-    pf.computePathRanks (limit_);
-    auto const found = pf.getBestPaths(
-        limit_, fp, {}, in_.account);
+    pf.computePathRanks(limit_);
+    auto const found = pf.getBestPaths(limit_, fp, {}, in_.account);
 
     // VFALCO TODO API to allow caller to examine the STPathSet
     // VFALCO isDefault should be renamed to empty()
-    if (! found.isDefault())
+    if (!found.isDefault())
         jv[jss::Paths] = found.getJson(JsonOptions::none);
 }
 
@@ -90,6 +91,6 @@ path::operator()(Env& env, JTx& jt) const
     jt.jv["Paths"].append(jv_);
 }
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

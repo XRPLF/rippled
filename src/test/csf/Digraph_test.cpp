@@ -18,9 +18,9 @@
 //==============================================================================
 
 #include <ripple/beast/unit_test.h>
+#include <string>
 #include <test/csf/Digraph.h>
 #include <vector>
-#include <string>
 
 namespace ripple {
 namespace test {
@@ -28,12 +28,11 @@ namespace test {
 class Digraph_test : public beast::unit_test::suite
 {
 public:
-
     void
     run() override
     {
         using namespace csf;
-        using Graph = Digraph<char,std::string>;
+        using Graph = Digraph<char, std::string>;
         Graph graph;
 
         BEAST_EXPECT(!graph.connected('a', 'b'));
@@ -50,13 +49,12 @@ public:
         BEAST_EXPECT(graph.connected('a', 'b'));
         BEAST_EXPECT(*graph.edge('a', 'b') == "repeat");
 
-
         BEAST_EXPECT(graph.connect('a', 'c', "tree"));
 
         {
             std::vector<std::tuple<char, char, std::string>> edges;
 
-            for (auto const & edge : graph.outEdges('a'))
+            for (auto const& edge : graph.outEdges('a'))
             {
                 edges.emplace_back(edge.source, edge.target, edge.data);
             }
@@ -74,7 +72,7 @@ public:
 
         // only 'a' has out edges
         BEAST_EXPECT(graph.outVertices().size() == 1);
-        std::vector<char> expected = {'b','c'};
+        std::vector<char> expected = {'b', 'c'};
 
         BEAST_EXPECT((graph.outVertices('a') == expected));
         BEAST_EXPECT(graph.outVertices('b').size() == 0);
@@ -82,14 +80,13 @@ public:
         BEAST_EXPECT(graph.outVertices('r').size() == 0);
 
         std::stringstream ss;
-        graph.saveDot(ss, [](char v) { return v;});
-        std::string expectedDot = "digraph {\n"
-        "a -> b;\n"
-        "a -> c;\n"
-        "}\n";
+        graph.saveDot(ss, [](char v) { return v; });
+        std::string expectedDot =
+            "digraph {\n"
+            "a -> b;\n"
+            "a -> c;\n"
+            "}\n";
         BEAST_EXPECT(ss.str() == expectedDot);
-
-
     }
 };
 

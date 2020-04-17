@@ -35,9 +35,9 @@ class SimpleWriter : public Writer
     boost::beast::multi_buffer sb_;
 
 public:
-    template<bool isRequest, class Body, class Fields>
-    explicit
-    SimpleWriter(boost::beast::http::message<isRequest, Body, Fields> const& msg)
+    template <bool isRequest, class Body, class Fields>
+    explicit SimpleWriter(
+        boost::beast::http::message<isRequest, Body, Fields> const& msg)
     {
         boost::beast::ostream(sb_) << msg;
     }
@@ -49,14 +49,13 @@ public:
     }
 
     void
-    consume (std::size_t bytes) override
+    consume(std::size_t bytes) override
     {
         sb_.consume(bytes);
     }
 
     bool
-    prepare(std::size_t bytes,
-        std::function<void(void)>) override
+    prepare(std::size_t bytes, std::function<void(void)>) override
     {
         return true;
     }
@@ -73,6 +72,6 @@ public:
     }
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

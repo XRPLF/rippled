@@ -34,47 +34,46 @@ namespace ripple {
 class RippleLineCache
 {
 public:
-    explicit
-    RippleLineCache (
-        std::shared_ptr <ReadView const> const& l);
+    explicit RippleLineCache(std::shared_ptr<ReadView const> const& l);
 
-    std::shared_ptr <ReadView const> const&
-    getLedger () const
+    std::shared_ptr<ReadView const> const&
+    getLedger() const
     {
         return mLedger;
     }
 
     std::vector<RippleState::pointer> const&
-    getRippleLines (AccountID const& accountID);
+    getRippleLines(AccountID const& accountID);
 
 private:
     std::mutex mLock;
 
     ripple::hardened_hash<> hasher_;
-    std::shared_ptr <ReadView const> mLedger;
+    std::shared_ptr<ReadView const> mLedger;
 
     struct AccountKey
     {
         AccountID account_;
         std::size_t hash_value_;
 
-        AccountKey (AccountID const& account, std::size_t hash)
-            : account_ (account)
-            , hash_value_ (hash)
-        { }
+        AccountKey(AccountID const& account, std::size_t hash)
+            : account_(account), hash_value_(hash)
+        {
+        }
 
-        AccountKey (AccountKey const& other) = default;
+        AccountKey(AccountKey const& other) = default;
 
         AccountKey&
         operator=(AccountKey const& other) = default;
 
-        bool operator== (AccountKey const& lhs) const
+        bool
+        operator==(AccountKey const& lhs) const
         {
             return hash_value_ == lhs.hash_value_ && account_ == lhs.account_;
         }
 
         std::size_t
-        get_hash () const
+        get_hash() const
         {
             return hash_value_;
         }
@@ -84,19 +83,17 @@ private:
             explicit Hash() = default;
 
             std::size_t
-            operator () (AccountKey const& key) const noexcept
+            operator()(AccountKey const& key) const noexcept
             {
-                return key.get_hash ();
+                return key.get_hash();
             }
         };
     };
 
-    hash_map <
-        AccountKey,
-        std::vector <RippleState::pointer>,
-        AccountKey::Hash> lines_;
+    hash_map<AccountKey, std::vector<RippleState::pointer>, AccountKey::Hash>
+        lines_;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

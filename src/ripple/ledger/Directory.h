@@ -49,16 +49,11 @@ public:
 class Dir::const_iterator
 {
 public:
-    using value_type =
-        Dir::value_type;
-    using pointer =
-        value_type const*;
-    using reference =
-        value_type const&;
-    using difference_type =
-        std::ptrdiff_t;
-    using iterator_category =
-        std::forward_iterator_tag;
+    using value_type = Dir::value_type;
+    using pointer = value_type const*;
+    using reference = value_type const&;
+    using difference_type = std::ptrdiff_t;
+    using iterator_category = std::forward_iterator_tag;
 
     bool
     operator==(const_iterator const& other) const;
@@ -66,7 +61,7 @@ public:
     bool
     operator!=(const_iterator const& other) const
     {
-        return ! (*this == other);
+        return !(*this == other);
     }
 
     reference
@@ -99,11 +94,8 @@ public:
 private:
     friend class Dir;
 
-    const_iterator(ReadView const& view,
-        Keylet const& root, Keylet const& page)
-    : view_(&view)
-    , root_(root)
-    , page_(page)
+    const_iterator(ReadView const& view, Keylet const& root, Keylet const& page)
+        : view_(&view), root_(root), page_(page)
     {
     }
 
@@ -117,6 +109,6 @@ private:
     std::vector<uint256>::const_iterator it_;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

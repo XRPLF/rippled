@@ -22,17 +22,17 @@
 
 #include <ripple/app/tx/impl/BookTip.h>
 #include <ripple/app/tx/impl/Offer.h>
-#include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/chrono.h>
+#include <ripple/beast/utility/Journal.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Quality.h>
-#include <ripple/beast/utility/Journal.h>
 
 #include <boost/container/flat_set.hpp>
 
 namespace ripple {
 
-template<class TIn, class TOut>
+template <class TIn, class TOut>
 class TOfferStreamBase
 {
 public:
@@ -44,15 +44,13 @@ public:
         beast::Journal j_;
 
     public:
-        StepCounter (std::uint32_t limit, beast::Journal j)
-            : limit_ (limit)
-            , count_ (0)
-            , j_ (j)
+        StepCounter(std::uint32_t limit, beast::Journal j)
+            : limit_(limit), count_(0), j_(j)
         {
         }
 
         bool
-        step ()
+        step()
         {
             if (count_ >= limit_)
             {
@@ -62,7 +60,8 @@ public:
             count_++;
             return true;
         }
-        std::uint32_t count() const
+        std::uint32_t
+        count() const
         {
             return count_;
         }
@@ -81,16 +80,19 @@ protected:
     StepCounter& counter_;
 
     void
-    erase (ApplyView& view);
+    erase(ApplyView& view);
 
-    virtual
-    void
-    permRmOffer (uint256 const& offerIndex) = 0;
+    virtual void
+    permRmOffer(uint256 const& offerIndex) = 0;
 
 public:
-    TOfferStreamBase (ApplyView& view, ApplyView& cancelView,
-        Book const& book, NetClock::time_point when,
-            StepCounter& counter, beast::Journal journal);
+    TOfferStreamBase(
+        ApplyView& view,
+        ApplyView& cancelView,
+        Book const& book,
+        NetClock::time_point when,
+        StepCounter& counter,
+        beast::Journal journal);
 
     virtual ~TOfferStreamBase() = default;
 
@@ -99,7 +101,7 @@ public:
         Only valid if step() returned `true`.
     */
     TOffer<TIn, TOut>&
-    tip () const
+    tip() const
     {
         return const_cast<TOfferStreamBase*>(this)->offer_;
     }
@@ -112,9 +114,10 @@ public:
         @return `true` if there is a valid offer.
     */
     bool
-    step ();
+    step();
 
-    TOut ownerFunds () const
+    TOut
+    ownerFunds() const
     {
         return *ownerFunds_;
     }
@@ -141,7 +144,8 @@ class OfferStream : public TOfferStreamBase<STAmount, STAmount>
 {
 protected:
     void
-    permRmOffer (uint256 const& offerIndex) override;
+    permRmOffer(uint256 const& offerIndex) override;
+
 public:
     using TOfferStreamBase<STAmount, STAmount>::TOfferStreamBase;
 };
@@ -177,14 +181,14 @@ public:
     // unintuitive.  See the discussion in the comments for
     // BookOfferCrossingStep::limitSelfCrossQuality().
     void
-    permRmOffer (uint256 const& offerIndex) override;
+    permRmOffer(uint256 const& offerIndex) override;
 
-    boost::container::flat_set<uint256> const& permToRemove () const
+    boost::container::flat_set<uint256> const&
+    permToRemove() const
     {
         return permToRemove_;
     }
 };
-}
+}  // namespace ripple
 
 #endif
-

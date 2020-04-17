@@ -20,9 +20,9 @@
 #ifndef RIPPLE_RPC_DELIVEREDAMOUNT_H_INCLUDED
 #define RIPPLE_RPC_DELIVEREDAMOUNT_H_INCLUDED
 
-#include <org/xrpl/rpc/v1/amount.pb.h>
-#include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/STAmount.h>
+#include <org/xrpl/rpc/v1/amount.pb.h>
 
 #include <functional>
 #include <memory>
@@ -48,8 +48,8 @@ struct Context;
    Add a `delivered_amount` field to the `meta` input/output parameter.
    The field is only added to successful payment and check cash transactions.
    If a delivered amount field is available in the TxMeta parameter, that value
-   is used. Otherwise, the transaction's `Amount` field is used. If neither is available,
-   then the delivered amount is set to "unavailable".
+   is used. Otherwise, the transaction's `Amount` field is used. If neither is
+   available, then the delivered amount is set to "unavailable".
 
    @{
  */
@@ -75,7 +75,7 @@ getDeliveredAmount(
     LedgerIndex const& ledgerIndex);
 /** @} */
 
-} // RPC
-} // ripple
+}  // namespace RPC
+}  // namespace ripple
 
 #endif

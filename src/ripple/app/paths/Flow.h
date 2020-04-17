@@ -20,18 +20,17 @@
 #ifndef RIPPLE_APP_PATHS_FLOW_H_INCLUDED
 #define RIPPLE_APP_PATHS_FLOW_H_INCLUDED
 
-#include <ripple/app/paths/impl/Steps.h>
 #include <ripple/app/paths/RippleCalc.h>
+#include <ripple/app/paths/impl/Steps.h>
 #include <ripple/protocol/Quality.h>
 
-namespace ripple
-{
+namespace ripple {
 
 namespace path {
-namespace detail{
+namespace detail {
 struct FlowDebugInfo;
 }
-}
+}  // namespace path
 
 /**
   Make a payment from the src account to the dst account
@@ -45,7 +44,8 @@ struct FlowDebugInfo;
   @param partialPayment If the payment cannot deliver the entire
            requested amount, deliver as much as possible, given the constraints
   @param ownerPaysTransferFee If true then owner, not sender, pays fee
-  @param offerCrossing If true then flow is executing offer crossing, not payments
+  @param offerCrossing If true then flow is executing offer crossing, not
+  payments
   @param limitQuality Do not use liquidity below this quality threshold
   @param sendMax Do not spend more than this amount
   @param j Journal to write journal messages to
@@ -53,7 +53,8 @@ struct FlowDebugInfo;
   @return Actual amount in and out, and the result code
 */
 path::RippleCalc::Output
-flow (PaymentSandbox& view,
+flow(
+    PaymentSandbox& view,
     STAmount const& deliver,
     AccountID const& src,
     AccountID const& dst,
@@ -65,8 +66,8 @@ flow (PaymentSandbox& view,
     boost::optional<Quality> const& limitQuality,
     boost::optional<STAmount> const& sendMax,
     beast::Journal j,
-    path::detail::FlowDebugInfo* flowDebugInfo=nullptr);
+    path::detail::FlowDebugInfo* flowDebugInfo = nullptr);
 
-}  // ripple
+}  // namespace ripple
 
 #endif

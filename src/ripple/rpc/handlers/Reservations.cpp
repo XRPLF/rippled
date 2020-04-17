@@ -75,7 +75,7 @@ doPeerReservationsAdd(RPC::JsonContext& context)
     PublicKey const& nodeId = *optPk;
 
     auto const previous = context.app.peerReservations().insert_or_assign(
-            PeerReservation{nodeId, desc});
+        PeerReservation{nodeId, desc});
 
     Json::Value result{Json::objectValue};
     if (previous)

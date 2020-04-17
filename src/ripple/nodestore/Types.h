@@ -20,15 +20,14 @@
 #ifndef RIPPLE_NODESTORE_TYPES_H_INCLUDED
 #define RIPPLE_NODESTORE_TYPES_H_INCLUDED
 
-#include <ripple/nodestore/NodeObject.h>
 #include <ripple/basics/BasicConfig.h>
+#include <ripple/nodestore/NodeObject.h>
 #include <vector>
 
 namespace ripple {
 namespace NodeStore {
 
-enum
-{
+enum {
     // This is only used to pre-allocate the array for
     // batch objects and does not affect the amount written.
     //
@@ -42,8 +41,7 @@ enum
 };
 
 /** Return codes from Backend operations. */
-enum Status
-{
+enum Status {
     ok,
     notFound,
     dataCorrupt,
@@ -53,9 +51,9 @@ enum Status
 };
 
 /** A batch of NodeObjects to write at once. */
-using Batch = std::vector <std::shared_ptr<NodeObject>>;
+using Batch = std::vector<std::shared_ptr<NodeObject>>;
 
-}
-}
+}  // namespace NodeStore
+}  // namespace ripple
 
 #endif

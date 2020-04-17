@@ -23,18 +23,15 @@
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/Serializer.h>
-#include <ostream>
 #include <memory>
+#include <ostream>
 #include <string>
+#include <type_traits>
 #include <typeinfo>
 #include <utility>
-#include <type_traits>
 namespace ripple {
 
-enum class JsonOptions {
-    none         = 0,
-    include_date = 1
-};
+enum class JsonOptions { none = 0, include_date = 1 };
 
 // VFALCO TODO fix this restriction on copy assignment.
 //
@@ -67,27 +64,27 @@ class STBase
 public:
     STBase();
 
-    explicit
-    STBase (SField const& n);
+    explicit STBase(SField const& n);
 
     virtual ~STBase() = default;
 
     STBase(const STBase& t) = default;
-    STBase& operator= (const STBase& t);
+    STBase&
+    operator=(const STBase& t);
 
-    bool operator== (const STBase& t) const;
-    bool operator!= (const STBase& t) const;
+    bool
+    operator==(const STBase& t) const;
+    bool
+    operator!=(const STBase& t) const;
 
-    virtual
-    STBase*
-    copy (std::size_t n, void* buf) const
+    virtual STBase*
+    copy(std::size_t n, void* buf) const
     {
         return emplace(n, buf, *this);
     }
 
-    virtual
-    STBase*
-    move (std::size_t n, void* buf)
+    virtual STBase*
+    move(std::size_t n, void* buf)
     {
         return emplace(n, buf, std::move(*this));
     }
@@ -96,9 +93,9 @@ public:
     D&
     downcast()
     {
-        D* ptr = dynamic_cast<D*> (this);
+        D* ptr = dynamic_cast<D*>(this);
         if (ptr == nullptr)
-            Throw<std::bad_cast> ();
+            Throw<std::bad_cast>();
         return *ptr;
     }
 
@@ -106,71 +103,63 @@ public:
     D const&
     downcast() const
     {
-        D const * ptr = dynamic_cast<D const*> (this);
+        D const* ptr = dynamic_cast<D const*>(this);
         if (ptr == nullptr)
-            Throw<std::bad_cast> ();
+            Throw<std::bad_cast>();
         return *ptr;
     }
 
-    virtual
-    SerializedTypeID
+    virtual SerializedTypeID
     getSType() const;
 
-    virtual
-    std::string
+    virtual std::string
     getFullText() const;
 
-    virtual
-    std::string
+    virtual std::string
     getText() const;
 
-    virtual
-    Json::Value
-    getJson (JsonOptions /*options*/) const;
+    virtual Json::Value getJson(JsonOptions /*options*/) const;
 
-    virtual
-    void
-    add (Serializer& s) const;
+    virtual void
+    add(Serializer& s) const;
 
-    virtual
-    bool
-    isEquivalent (STBase const& t) const;
+    virtual bool
+    isEquivalent(STBase const& t) const;
 
-    virtual
-    bool
+    virtual bool
     isDefault() const;
 
     /** A STBase is a field.
         This sets the name.
     */
     void
-    setFName (SField const& n);
+    setFName(SField const& n);
 
     SField const&
     getFName() const;
 
     void
-    addFieldID (Serializer& s) const;
+    addFieldID(Serializer& s) const;
 
 protected:
     SField const* fName;
 
     template <class T>
-    static
-    STBase*
+    static STBase*
     emplace(std::size_t n, void* buf, T&& val)
     {
         using U = std::decay_t<T>;
         if (sizeof(U) > n)
             return new U(std::forward<T>(val));
-        return new(buf) U(std::forward<T>(val));
+        return new (buf) U(std::forward<T>(val));
     }
 };
 
 //------------------------------------------------------------------------------
 
-std::ostream& operator<< (std::ostream& out, const STBase& t);
+std::ostream&
+operator<<(std::ostream& out, const STBase& t);
 
-} // ripple
+}  // namespace ripple
 
 #endif

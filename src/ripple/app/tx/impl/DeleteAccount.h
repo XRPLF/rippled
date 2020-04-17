@@ -26,8 +26,7 @@
 
 namespace ripple {
 
-class DeleteAccount
-    : public Transactor
+class DeleteAccount : public Transactor
 {
 public:
     // Set a reasonable upper limit on the number of deletable directory
@@ -36,37 +35,31 @@ public:
     //
     // A limit is useful because if we go much past this limit the
     // transaction will fail anyway due to too much metadata (tecOVERSIZE).
-    static constexpr std::int32_t maxDeletableDirEntries {1000};
+    static constexpr std::int32_t maxDeletableDirEntries{1000};
 
-    explicit DeleteAccount (ApplyContext& ctx)
-        : Transactor(ctx)
+    explicit DeleteAccount(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    static
-    bool
+    static bool
     affectsSubsequentTransactionAuth(STTx const& tx)
     {
         return true;
     }
 
-    static
-    NotTEC
-    preflight (PreflightContext const& ctx);
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-    static
-    FeeUnit64
-    calculateBaseFee (
-        ReadView const& view,
-        STTx const& tx);
+    static FeeUnit64
+    calculateBaseFee(ReadView const& view, STTx const& tx);
 
-    static
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
     TER
-    preclaim (PreclaimContext const& ctx);
-
-    TER doApply () override;
+    doApply() override;
 };
 
-}
+}  // namespace ripple
 
 #endif

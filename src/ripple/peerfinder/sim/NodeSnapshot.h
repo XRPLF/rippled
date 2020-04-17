@@ -30,8 +30,8 @@ struct NodeSnapshot
     explicit NodeSnapshot() = default;
 };
 
-}
-}
-}
+}  // namespace Sim
+}  // namespace PeerFinder
+}  // namespace ripple
 
 #endif

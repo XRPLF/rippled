@@ -25,20 +25,18 @@
 namespace ripple {
 
 FeeUnit64
-SetRegularKey::calculateBaseFee (
-    ReadView const& view,
-    STTx const& tx)
+SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     auto const id = tx.getAccountID(sfAccount);
     auto const spk = tx.getSigningPubKey();
 
-    if (publicKeyType (makeSlice (spk)))
+    if (publicKeyType(makeSlice(spk)))
     {
-        if (calcAccountID(PublicKey (makeSlice(spk))) == id)
+        if (calcAccountID(PublicKey(makeSlice(spk))) == id)
         {
             auto const sle = view.read(keylet::account(id));
 
-            if (sle && (! (sle->getFlags () & lsfPasswordSpent)))
+            if (sle && (!(sle->getFlags() & lsfPasswordSpent)))
             {
                 // flag is armed and they signed with the right account
                 return FeeUnit64{0};
@@ -46,30 +44,28 @@ SetRegularKey::calculateBaseFee (
         }
     }
 
-    return Transactor::calculateBaseFee (view, tx);
+    return Transactor::calculateBaseFee(view, tx);
 }
 
 NotTEC
-SetRegularKey::preflight (PreflightContext const& ctx)
+SetRegularKey::preflight(PreflightContext const& ctx)
 {
-    auto const ret = preflight1 (ctx);
-    if (!isTesSuccess (ret))
+    auto const ret = preflight1(ctx);
+    if (!isTesSuccess(ret))
         return ret;
 
-    std::uint32_t const uTxFlags = ctx.tx.getFlags ();
+    std::uint32_t const uTxFlags = ctx.tx.getFlags();
 
     if (uTxFlags & tfUniversalMask)
     {
-        JLOG(ctx.j.trace()) <<
-            "Malformed transaction: Invalid flags set.";
+        JLOG(ctx.j.trace()) << "Malformed transaction: Invalid flags set.";
 
         return temINVALID_FLAG;
     }
 
-
-    if (ctx.rules.enabled(fixMasterKeyAsRegularKey)
-        && ctx.tx.isFieldPresent(sfRegularKey)
-        && (ctx.tx.getAccountID(sfRegularKey) == ctx.tx.getAccountID(sfAccount)))
+    if (ctx.rules.enabled(fixMasterKeyAsRegularKey) &&
+        ctx.tx.isFieldPresent(sfRegularKey) &&
+        (ctx.tx.getAccountID(sfRegularKey) == ctx.tx.getAccountID(sfAccount)))
     {
         return temBAD_REGKEY;
     }
@@ -78,32 +74,30 @@ SetRegularKey::preflight (PreflightContext const& ctx)
 }
 
 TER
-SetRegularKey::doApply ()
+SetRegularKey::doApply()
 {
-    auto const sle = view ().peek (
-        keylet::account (account_));
-    if (! sle)
+    auto const sle = view().peek(keylet::account(account_));
+    if (!sle)
         return tefINTERNAL;
 
-    if (!minimumFee (ctx_.app, ctx_.baseFee, view ().fees (), view ().flags ()))
-        sle->setFlag (lsfPasswordSpent);
+    if (!minimumFee(ctx_.app, ctx_.baseFee, view().fees(), view().flags()))
+        sle->setFlag(lsfPasswordSpent);
 
-    if (ctx_.tx.isFieldPresent (sfRegularKey))
+    if (ctx_.tx.isFieldPresent(sfRegularKey))
     {
-        sle->setAccountID (sfRegularKey,
-            ctx_.tx.getAccountID (sfRegularKey));
+        sle->setAccountID(sfRegularKey, ctx_.tx.getAccountID(sfRegularKey));
     }
     else
     {
         // Account has disabled master key and no multi-signer signer list.
-        if (sle->isFlag (lsfDisableMaster) &&
-            !view().peek (keylet::signers (account_)))
+        if (sle->isFlag(lsfDisableMaster) &&
+            !view().peek(keylet::signers(account_)))
             return tecNO_ALTERNATIVE_KEY;
 
-        sle->makeFieldAbsent (sfRegularKey);
+        sle->makeFieldAbsent(sfRegularKey);
     }
 
     return tesSUCCESS;
 }
 
-}
+}  // namespace ripple

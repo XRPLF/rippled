@@ -24,26 +24,23 @@
 
 namespace ripple {
 
-class CashCheck
-    : public Transactor
+class CashCheck : public Transactor
 {
 public:
-    explicit CashCheck (ApplyContext& ctx)
-        : Transactor (ctx)
+    explicit CashCheck(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    static
-    NotTEC
-    preflight (PreflightContext const& ctx);
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-    static
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
     TER
-    preclaim (PreclaimContext const& ctx);
-
-    TER doApply () override;
+    doApply() override;
 };
 
-}
+}  // namespace ripple
 
 #endif

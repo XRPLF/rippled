@@ -24,4 +24,4 @@ namespace insight {
 
 Collector::~Collector() = default;
 }
-}
+}  // namespace beast

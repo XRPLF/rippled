@@ -28,15 +28,18 @@ namespace jtx {
 
 struct account_txn_id
 {
-    private:
-      uint256 hash_;
-public:
-    explicit account_txn_id(uint256 const& hash) : hash_(hash) {}
+private:
+    uint256 hash_;
 
-void
-operator()(Env&, JTx& jt) const;
+public:
+    explicit account_txn_id(uint256 const& hash) : hash_(hash)
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const;
 };
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 #endif

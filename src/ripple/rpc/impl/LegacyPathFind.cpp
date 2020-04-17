@@ -27,7 +27,7 @@
 namespace ripple {
 namespace RPC {
 
-LegacyPathFind::LegacyPathFind (bool isAdmin, Application& app) : m_isOk (false)
+LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app) : m_isOk(false)
 {
     if (isAdmin)
     {
@@ -36,8 +36,9 @@ LegacyPathFind::LegacyPathFind (bool isAdmin, Application& app) : m_isOk (false)
         return;
     }
 
-    auto const& jobCount = app.getJobQueue ().getJobCountGE (jtCLIENT);
-    if (jobCount > Tuning::maxPathfindJobCount || app.getFeeTrack().isLoadedLocal ())
+    auto const& jobCount = app.getJobQueue().getJobCountGE(jtCLIENT);
+    if (jobCount > Tuning::maxPathfindJobCount ||
+        app.getFeeTrack().isLoadedLocal())
         return;
 
     while (true)
@@ -46,7 +47,7 @@ LegacyPathFind::LegacyPathFind (bool isAdmin, Application& app) : m_isOk (false)
         if (prevVal >= Tuning::maxPathfindsInProgress)
             return;
 
-        if (inProgress.compare_exchange_strong (
+        if (inProgress.compare_exchange_strong(
                 prevVal,
                 prevVal + 1,
                 std::memory_order_release,
@@ -58,13 +59,13 @@ LegacyPathFind::LegacyPathFind (bool isAdmin, Application& app) : m_isOk (false)
     }
 }
 
-LegacyPathFind::~LegacyPathFind ()
+LegacyPathFind::~LegacyPathFind()
 {
     if (m_isOk)
         --inProgress;
 }
 
-std::atomic <int> LegacyPathFind::inProgress (0);
+std::atomic<int> LegacyPathFind::inProgress(0);
 
-} // RPC
-} // ripple
+}  // namespace RPC
+}  // namespace ripple

@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
-#include <ripple/protocol/STBase.h>
+#include <ripple/basics/contract.h>
 #include <ripple/protocol/STArray.h>
+#include <ripple/protocol/STBase.h>
 
 namespace ripple {
 
@@ -29,80 +29,77 @@ STArray::STArray()
     // VFALCO NOTE We need to determine if this is
     //             the right thing to do, and consider
     //             making it optional.
-    //v_.reserve(reserveSize);
+    // v_.reserve(reserveSize);
 }
 
-STArray::STArray (STArray&& other)
-    : STBase(other.getFName())
-    , v_(std::move(other.v_))
+STArray::STArray(STArray&& other)
+    : STBase(other.getFName()), v_(std::move(other.v_))
 {
 }
 
-STArray& STArray::operator= (STArray&& other)
+STArray&
+STArray::operator=(STArray&& other)
 {
     setFName(other.getFName());
     v_ = std::move(other.v_);
     return *this;
 }
 
-STArray::STArray (int n)
+STArray::STArray(int n)
 {
     v_.reserve(n);
 }
 
-STArray::STArray (SField const& f)
-    : STBase (f)
+STArray::STArray(SField const& f) : STBase(f)
 {
     v_.reserve(reserveSize);
 }
 
-STArray::STArray (SField const& f, int n)
-    : STBase (f)
+STArray::STArray(SField const& f, int n) : STBase(f)
 {
     v_.reserve(n);
 }
 
-STArray::STArray (SerialIter& sit, SField const& f, int depth)
-    : STBase(f)
+STArray::STArray(SerialIter& sit, SField const& f, int depth) : STBase(f)
 {
-    while (!sit.empty ())
+    while (!sit.empty())
     {
         int type, field;
-        sit.getFieldID (type, field);
+        sit.getFieldID(type, field);
 
         if ((type == STI_ARRAY) && (field == 1))
             break;
 
         if ((type == STI_OBJECT) && (field == 1))
         {
-            JLOG (debugLog().error()) <<
-                "Encountered array with end of object marker";
-            Throw<std::runtime_error> ("Illegal terminator in array");
+            JLOG(debugLog().error())
+                << "Encountered array with end of object marker";
+            Throw<std::runtime_error>("Illegal terminator in array");
         }
 
-        auto const& fn = SField::getField (type, field);
+        auto const& fn = SField::getField(type, field);
 
-        if (fn.isInvalid ())
+        if (fn.isInvalid())
         {
-            JLOG (debugLog().error()) <<
-                "Unknown field: " << type << "/" << field;
-            Throw<std::runtime_error> ("Unknown field");
+            JLOG(debugLog().error())
+                << "Unknown field: " << type << "/" << field;
+            Throw<std::runtime_error>("Unknown field");
         }
 
         if (fn.fieldType != STI_OBJECT)
         {
-            JLOG (debugLog().error()) <<
-                "Array contains non-object";
-            Throw<std::runtime_error> ("Non-object in array");
+            JLOG(debugLog().error()) << "Array contains non-object";
+            Throw<std::runtime_error>("Non-object in array");
         }
 
-        v_.emplace_back(sit, fn, depth+1);
+        v_.emplace_back(sit, fn, depth + 1);
 
-        v_.back().applyTemplateFromSField (fn);  // May throw
+        v_.back().applyTemplateFromSField(fn);  // May throw
     }
 }
 
-std::string STArray::getFullText () const
+std::string
+STArray::getFullText() const
 {
     std::string r = "[";
 
@@ -112,7 +109,7 @@ std::string STArray::getFullText () const
         if (!first)
             r += ",";
 
-        r += obj.getFullText ();
+        r += obj.getFullText();
         first = false;
     }
 
@@ -120,7 +117,8 @@ std::string STArray::getFullText () const
     return r;
 }
 
-std::string STArray::getText () const
+std::string
+STArray::getText() const
 {
     std::string r = "[";
 
@@ -130,7 +128,7 @@ std::string STArray::getText () const
         if (!first)
             r += ",";
 
-        r += o.getText ();
+        r += o.getText();
         first = false;
     }
 
@@ -138,39 +136,43 @@ std::string STArray::getText () const
     return r;
 }
 
-Json::Value STArray::getJson (JsonOptions p) const
+Json::Value
+STArray::getJson(JsonOptions p) const
 {
     Json::Value v = Json::arrayValue;
-    for (auto const& object: v_)
+    for (auto const& object : v_)
     {
-        if (object.getSType () != STI_NOTPRESENT)
+        if (object.getSType() != STI_NOTPRESENT)
         {
-            Json::Value& inner = v.append (Json::objectValue);
-            inner [object.getFName().getJsonName()] = object.getJson (p);
+            Json::Value& inner = v.append(Json::objectValue);
+            inner[object.getFName().getJsonName()] = object.getJson(p);
         }
     }
     return v;
 }
 
-void STArray::add (Serializer& s) const
+void
+STArray::add(Serializer& s) const
 {
     for (STObject const& object : v_)
     {
-        object.addFieldID (s);
-        object.add (s);
-        s.addFieldID (STI_OBJECT, 1);
+        object.addFieldID(s);
+        object.add(s);
+        s.addFieldID(STI_OBJECT, 1);
     }
 }
 
-bool STArray::isEquivalent (const STBase& t) const
+bool
+STArray::isEquivalent(const STBase& t) const
 {
-    auto v = dynamic_cast<const STArray*> (&t);
+    auto v = dynamic_cast<const STArray*>(&t);
     return v != nullptr && v_ == v->v_;
 }
 
-void STArray::sort (bool (*compare) (const STObject&, const STObject&))
+void
+STArray::sort(bool (*compare)(const STObject&, const STObject&))
 {
     std::sort(v_.begin(), v_.end(), compare);
 }
 
-} // ripple
+}  // namespace ripple

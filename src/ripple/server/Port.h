@@ -22,15 +22,21 @@
 
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/beast/net/IPEndpoint.h>
+#include <boost/asio/ip/address.hpp>
 #include <boost/beast/core/string.hpp>
 #include <boost/beast/websocket/option.hpp>
-#include <boost/asio/ip/address.hpp>
 #include <cstdint>
 #include <memory>
 #include <set>
 #include <string>
 
-namespace boost { namespace asio { namespace ssl { class context; } } }
+namespace boost {
+namespace asio {
+namespace ssl {
+class context;
+}
+}  // namespace asio
+}  // namespace boost
 
 namespace ripple {
 
@@ -64,17 +70,20 @@ struct Port
     std::uint16_t ws_queue_limit;
 
     // Returns `true` if any websocket protocols are specified
-    bool websockets() const;
+    bool
+    websockets() const;
 
     // Returns `true` if any secure protocols are specified
-    bool secure() const;
+    bool
+    secure() const;
 
     // Returns a string containing the list of protocols
-    std::string protocols() const;
+    std::string
+    protocols() const;
 };
 
 std::ostream&
-operator<< (std::ostream& os, Port const& p);
+operator<<(std::ostream& os, Port const& p);
 
 //------------------------------------------------------------------------------
 
@@ -103,8 +112,8 @@ struct ParsedPort
 };
 
 void
-parse_Port (ParsedPort& port, Section const& section, std::ostream& log);
+parse_Port(ParsedPort& port, Section const& section, std::ostream& log);
 
-} // ripple
+}  // namespace ripple
 
 #endif

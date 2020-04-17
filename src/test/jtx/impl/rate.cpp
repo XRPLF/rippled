@@ -17,29 +17,27 @@
 */
 //==============================================================================
 
-#include <test/jtx/rate.h>
-#include <ripple/protocol/jss.h>
 #include <ripple/basics/contract.h>
+#include <ripple/protocol/jss.h>
 #include <stdexcept>
+#include <test/jtx/rate.h>
 
 namespace ripple {
 namespace test {
 namespace jtx {
 
 Json::Value
-rate (Account const& account, double multiplier)
+rate(Account const& account, double multiplier)
 {
     if (multiplier > 4)
-        Throw<std::runtime_error> (
-            "rate multiplier out of range");
+        Throw<std::runtime_error>("rate multiplier out of range");
     Json::Value jv;
     jv[jss::Account] = account.human();
-    jv[jss::TransferRate] = std::uint32_t(
-        1000000000 * multiplier);
+    jv[jss::TransferRate] = std::uint32_t(1000000000 * multiplier);
     jv[jss::TransactionType] = jss::AccountSet;
     return jv;
 }
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

@@ -20,23 +20,23 @@
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/TxQ.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/GRPCHandlers.h>
+#include <ripple/basics/mulDiv.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/basics/mulDiv.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/rpc/GRPCHandlers.h>
 
-namespace ripple
+namespace ripple {
+Json::Value
+doFee(RPC::JsonContext& context)
 {
-    Json::Value doFee(RPC::JsonContext& context)
-    {
-        auto result = context.app.getTxQ().doRPC(context.app);
-        if (result.type() == Json::objectValue)
-            return result;
-        assert(false);
-        RPC::inject_error(rpcINTERNAL, context.params);
-        return context.params;
-    }
+    auto result = context.app.getTxQ().doRPC(context.app);
+    if (result.type() == Json::objectValue)
+        return result;
+    assert(false);
+    RPC::inject_error(rpcINTERNAL, context.params);
+    return context.params;
+}
 
 std::pair<org::xrpl::rpc::v1::GetFeeResponse, grpc::Status>
 doFeeGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetFeeRequest>& context)

@@ -20,9 +20,9 @@
 #ifndef RIPPLE_LEDGER_CACHEDVIEW_H_INCLUDED
 #define RIPPLE_LEDGER_CACHEDVIEW_H_INCLUDED
 
+#include <ripple/basics/hardened_hash.h>
 #include <ripple/ledger/CachedSLEs.h>
 #include <ripple/ledger/ReadView.h>
-#include <ripple/basics/hardened_hash.h>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -32,26 +32,25 @@ namespace ripple {
 
 namespace detail {
 
-class CachedViewImpl
-    : public DigestAwareReadView
+class CachedViewImpl : public DigestAwareReadView
 {
 private:
     DigestAwareReadView const& base_;
     CachedSLEs& cache_;
     std::mutex mutable mutex_;
-    std::unordered_map<key_type,
+    std::unordered_map<
+        key_type,
         std::shared_ptr<SLE const>,
-            hardened_hash<>> mutable map_;
+        hardened_hash<>> mutable map_;
 
 public:
     CachedViewImpl() = delete;
-    CachedViewImpl (CachedViewImpl const&) = delete;
-    CachedViewImpl& operator= (CachedViewImpl const&) = delete;
+    CachedViewImpl(CachedViewImpl const&) = delete;
+    CachedViewImpl&
+    operator=(CachedViewImpl const&) = delete;
 
-    CachedViewImpl (DigestAwareReadView const* base,
-            CachedSLEs& cache)
-        : base_ (*base)
-        , cache_ (cache)
+    CachedViewImpl(DigestAwareReadView const* base, CachedSLEs& cache)
+        : base_(*base), cache_(cache)
     {
     }
 
@@ -60,10 +59,10 @@ public:
     //
 
     bool
-    exists (Keylet const& k) const override;
+    exists(Keylet const& k) const override;
 
     std::shared_ptr<SLE const>
-    read (Keylet const& k) const override;
+    read(Keylet const& k) const override;
 
     bool
     open() const override
@@ -90,8 +89,9 @@ public:
     }
 
     boost::optional<key_type>
-    succ (key_type const& key, boost::optional<
-        key_type> const& last = boost::none) const override
+    succ(
+        key_type const& key,
+        boost::optional<key_type> const& last = boost::none) const override
     {
         return base_.succ(key, last);
     }
@@ -133,7 +133,7 @@ public:
     }
 
     tx_type
-    txRead (key_type const& key) const override
+    txRead(key_type const& key) const override
     {
         return base_.txRead(key);
     }
@@ -143,26 +143,23 @@ public:
     //
 
     boost::optional<digest_type>
-    digest (key_type const& key) const override
+    digest(key_type const& key) const override
     {
         return base_.digest(key);
     }
-
 };
 
-} // detail
+}  // namespace detail
 
 /** Wraps a DigestAwareReadView to provide caching.
 
     @tparam Base A subclass of DigestAwareReadView
 */
 template <class Base>
-class CachedView
-    : public detail::CachedViewImpl
+class CachedView : public detail::CachedViewImpl
 {
 private:
-    static_assert(std::is_base_of<
-        DigestAwareReadView, Base>::value, "");
+    static_assert(std::is_base_of<DigestAwareReadView, Base>::value, "");
 
     std::shared_ptr<Base const> sp_;
 
@@ -170,13 +167,12 @@ public:
     using base_type = Base;
 
     CachedView() = delete;
-    CachedView (CachedView const&) = delete;
-    CachedView& operator= (CachedView const&) = delete;
+    CachedView(CachedView const&) = delete;
+    CachedView&
+    operator=(CachedView const&) = delete;
 
-    CachedView (std::shared_ptr<
-        Base const> const& base, CachedSLEs& cache)
-        : CachedViewImpl (base.get(), cache)
-        , sp_ (base)
+    CachedView(std::shared_ptr<Base const> const& base, CachedSLEs& cache)
+        : CachedViewImpl(base.get(), cache), sp_(base)
     {
     }
 
@@ -191,6 +187,6 @@ public:
     }
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

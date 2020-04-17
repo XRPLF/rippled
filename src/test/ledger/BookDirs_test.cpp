@@ -15,16 +15,17 @@
 */
 //==============================================================================
 
-#include <test/jtx.h>
 #include <ripple/ledger/BookDirs.h>
 #include <ripple/protocol/Feature.h>
+#include <test/jtx.h>
 
 namespace ripple {
 namespace test {
 
 struct BookDirs_test : public beast::unit_test::suite
 {
-    void test_bookdir(FeatureBitset features)
+    void
+    test_bookdir(FeatureBitset features)
     {
         using namespace jtx;
         Env env(*this, features);
@@ -47,15 +48,16 @@ struct BookDirs_test : public beast::unit_test::suite
 
         {
             env(offer("alice", Account("alice")["USD"](50), XRP(10)));
-            auto d = BookDirs(*env.current(),
+            auto d = BookDirs(
+                *env.current(),
                 Book(Account("alice")["USD"].issue(), xrpIssue()));
             BEAST_EXPECT(std::distance(d.begin(), d.end()) == 1);
         }
 
         {
             env(offer("alice", gw["CNY"](50), XRP(10)));
-            auto d = BookDirs(*env.current(),
-                Book(gw["CNY"].issue(), xrpIssue()));
+            auto d =
+                BookDirs(*env.current(), Book(gw["CNY"].issue(), xrpIssue()));
             BEAST_EXPECT(std::distance(d.begin(), d.end()) == 1);
         }
 
@@ -63,7 +65,8 @@ struct BookDirs_test : public beast::unit_test::suite
             env.trust(Account("bob")["CNY"](10), "alice");
             env(pay("bob", "alice", Account("bob")["CNY"](10)));
             env(offer("alice", USD(50), Account("bob")["CNY"](10)));
-            auto d = BookDirs(*env.current(),
+            auto d = BookDirs(
+                *env.current(),
                 Book(USD.issue(), Account("bob")["CNY"].issue()));
             BEAST_EXPECT(std::distance(d.begin(), d.end()) == 1);
         }
@@ -74,8 +77,7 @@ struct BookDirs_test : public beast::unit_test::suite
                 for (auto k = 0; k < 80; ++k)
                     env(offer("alice", AUD(i), XRP(j)));
 
-            auto d = BookDirs(*env.current(),
-                Book(AUD.issue(), xrpIssue()));
+            auto d = BookDirs(*env.current(), Book(AUD.issue(), xrpIssue()));
             BEAST_EXPECT(std::distance(d.begin(), d.end()) == 240);
             auto i = 1, j = 3, k = 0;
             for (auto const& e : d)
@@ -91,7 +93,8 @@ struct BookDirs_test : public beast::unit_test::suite
         }
     }
 
-    void run() override
+    void
+    run() override
     {
         using namespace jtx;
         auto const sa = supported_amendments();
@@ -100,7 +103,7 @@ struct BookDirs_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(BookDirs,ledger,ripple);
+BEAST_DEFINE_TESTSUITE(BookDirs, ledger, ripple);
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple

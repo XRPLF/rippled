@@ -18,10 +18,10 @@
 //==============================================================================
 #ifndef RIPPLE_TEST_CSF_TX_H_INCLUDED
 #define RIPPLE_TEST_CSF_TX_H_INCLUDED
-#include <ripple/beast/hash/uhash.h>
 #include <ripple/beast/hash/hash_append.h>
-#include <boost/function_output_iterator.hpp>
+#include <ripple/beast/hash/uhash.h>
 #include <boost/container/flat_set.hpp>
+#include <boost/function_output_iterator.hpp>
 #include <map>
 #include <ostream>
 #include <string>
@@ -73,7 +73,8 @@ public:
     using ID = beast::uhash<>::result_type;
     using Tx = csf::Tx;
 
-    static ID calcID(TxSetType const & txs)
+    static ID
+    calcID(TxSetType const& txs)
     {
         return beast::uhash<>{}(txs);
     }
@@ -107,8 +108,7 @@ public:
     {
     }
 
-    TxSet(MutableTxSet && m)
-        : txs_{std::move(m.txs_)}, id_{calcID(txs_)}
+    TxSet(MutableTxSet&& m) : txs_{std::move(m.txs_)}, id_{calcID(txs_)}
     {
     }
 
@@ -128,7 +128,7 @@ public:
         return nullptr;
     }
 
-    TxSetType const &
+    TxSetType const&
     txs() const
     {
         return txs_;
@@ -215,8 +215,8 @@ hash_append(Hasher& h, Tx const& tx)
     hash_append(h, tx.id());
 }
 
-}  // csf
-}  // test
-}  // ripple
+}  // namespace csf
+}  // namespace test
+}  // namespace ripple
 
 #endif

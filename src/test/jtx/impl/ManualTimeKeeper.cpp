@@ -24,36 +24,31 @@ namespace test {
 
 using namespace std::chrono_literals;
 
-ManualTimeKeeper::ManualTimeKeeper()
-    : closeOffset_ {}
-    , now_ (0s)
+ManualTimeKeeper::ManualTimeKeeper() : closeOffset_{}, now_(0s)
 {
 }
 
 void
-ManualTimeKeeper::run (std::vector<std::string> const& servers)
+ManualTimeKeeper::run(std::vector<std::string> const& servers)
 {
 }
 
 auto
-ManualTimeKeeper::now() const ->
-    time_point
+ManualTimeKeeper::now() const -> time_point
 {
     std::lock_guard lock(mutex_);
     return now_;
 }
-    
+
 auto
-ManualTimeKeeper::closeTime() const ->
-    time_point
+ManualTimeKeeper::closeTime() const -> time_point
 {
     std::lock_guard lock(mutex_);
     return now_ + closeOffset_;
 }
 
 void
-ManualTimeKeeper::adjustCloseTime(
-    std::chrono::duration<std::int32_t> amount)
+ManualTimeKeeper::adjustCloseTime(std::chrono::duration<std::int32_t> amount)
 {
     // Copied from TimeKeeper::adjustCloseTime
     using namespace std::chrono;
@@ -83,21 +78,18 @@ ManualTimeKeeper::closeOffset() const
 }
 
 void
-ManualTimeKeeper::set (time_point now)
+ManualTimeKeeper::set(time_point now)
 {
     std::lock_guard lock(mutex_);
     now_ = now;
 }
 
 auto
-ManualTimeKeeper::adjust(
-        std::chrono::system_clock::time_point when) ->
-    time_point
+ManualTimeKeeper::adjust(std::chrono::system_clock::time_point when)
+    -> time_point
 {
-    return time_point(
-        std::chrono::duration_cast<duration>(
-            when.time_since_epoch() -
-                days(10957)));
+    return time_point(std::chrono::duration_cast<duration>(
+        when.time_since_epoch() - days(10957)));
 }
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple

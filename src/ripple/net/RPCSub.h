@@ -21,8 +21,8 @@
 #define RIPPLE_NET_RPCSUB_H_INCLUDED
 
 #include <ripple/core/JobQueue.h>
-#include <ripple/net/InfoSub.h>
 #include <ripple/core/Stoppable.h>
+#include <ripple/net/InfoSub.h>
 #include <boost/asio/io_service.hpp>
 
 namespace ripple {
@@ -31,20 +31,26 @@ namespace ripple {
 class RPCSub : public InfoSub
 {
 public:
-    virtual void setUsername (std::string const& strUsername) = 0;
-    virtual void setPassword (std::string const& strPassword) = 0;
+    virtual void
+    setUsername(std::string const& strUsername) = 0;
+    virtual void
+    setPassword(std::string const& strPassword) = 0;
 
 protected:
-    explicit RPCSub (InfoSub::Source& source);
+    explicit RPCSub(InfoSub::Source& source);
 };
 
 // VFALCO Why is the io_service needed?
-std::shared_ptr<RPCSub> make_RPCSub (
-    InfoSub::Source& source, boost::asio::io_service& io_service,
-    JobQueue& jobQueue, std::string const& strUrl,
-    std::string const& strUsername, std::string const& strPassword,
+std::shared_ptr<RPCSub>
+make_RPCSub(
+    InfoSub::Source& source,
+    boost::asio::io_service& io_service,
+    JobQueue& jobQueue,
+    std::string const& strUrl,
+    std::string const& strUsername,
+    std::string const& strPassword,
     Logs& logs);
 
-} // ripple
+}  // namespace ripple
 
 #endif

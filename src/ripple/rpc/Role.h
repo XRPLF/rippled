@@ -37,15 +37,7 @@ namespace ripple {
  * ADMIN role has unlimited resources and is able to perform all RPC
  *            commands.
  */
-enum class Role
-{
-    GUEST,
-    USER,
-    IDENTIFIED,
-    ADMIN,
-    PROXY,
-    FORBID
-};
+enum class Role { GUEST, USER, IDENTIFIED, ADMIN, PROXY, FORBID };
 
 /** Return the allowed privilege role.
     params must meet the requirements of the JSON-RPC
@@ -56,20 +48,26 @@ enum class Role
     passed in the HTTP header by a secure_gateway proxy.
 */
 Role
-requestRole (Role const& required, Port const& port,
-    Json::Value const& params, beast::IP::Endpoint const& remoteIp,
+requestRole(
+    Role const& required,
+    Port const& port,
+    Json::Value const& params,
+    beast::IP::Endpoint const& remoteIp,
     boost::string_view const& user);
 
 Resource::Consumer
-requestInboundEndpoint (Resource::Manager& manager,
-    beast::IP::Endpoint const& remoteAddress, Role const& role,
-    boost::string_view const& user, boost::string_view const& forwardedFor);
+requestInboundEndpoint(
+    Resource::Manager& manager,
+    beast::IP::Endpoint const& remoteAddress,
+    Role const& role,
+    boost::string_view const& user,
+    boost::string_view const& forwardedFor);
 
 /**
  * Check if the role entitles the user to unlimited resources.
  */
 bool
-isUnlimited (Role const& role);
+isUnlimited(Role const& role);
 
 /**
  * True if remoteIp is in any of adminIp
@@ -79,12 +77,13 @@ isUnlimited (Role const& role);
  * @return Whether remoteIp is in adminIp.
  */
 bool
-ipAllowed (beast::IP::Address const& remoteIp,
+ipAllowed(
+    beast::IP::Address const& remoteIp,
     std::vector<beast::IP::Address> const& adminIp);
 
 boost::string_view
 forwardedFor(http_request_type const& request);
 
-} // ripple
+}  // namespace ripple
 
 #endif

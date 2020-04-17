@@ -25,16 +25,18 @@ namespace ripple {
 struct RPCErr;
 
 // VFALCO NOTE Deprecated function
-Json::Value rpcError (int iError, Json::Value jvResult)
+Json::Value
+rpcError(int iError, Json::Value jvResult)
 {
-    RPC::inject_error (iError, jvResult);
+    RPC::inject_error(iError, jvResult);
     return jvResult;
 }
 
 // VFALCO NOTE Deprecated function
-bool isRpcError (Json::Value jvResult)
+bool
+isRpcError(Json::Value jvResult)
 {
-    return jvResult.isObject() && jvResult.isMember (jss::error);
+    return jvResult.isObject() && jvResult.isMember(jss::error);
 }
 
-} // ripple
+}  // namespace ripple

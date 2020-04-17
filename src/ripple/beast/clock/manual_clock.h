@@ -35,8 +35,7 @@ namespace beast {
         http://en.cppreference.com/w/cpp/concept/Clock
 */
 template <class Clock>
-class manual_clock
-    : public abstract_clock<Clock>
+class manual_clock : public abstract_clock<Clock>
 {
 public:
     using typename abstract_clock<Clock>::rep;
@@ -47,8 +46,7 @@ private:
     time_point now_;
 
 public:
-    explicit
-    manual_clock (time_point const& now = time_point(duration(0)))
+    explicit manual_clock(time_point const& now = time_point(duration(0)))
         : now_(now)
     {
     }
@@ -61,9 +59,9 @@ public:
 
     /** Set the current time of the manual clock. */
     void
-    set (time_point const& when)
+    set(time_point const& when)
     {
-        assert(! Clock::is_steady || when >= now_);
+        assert(!Clock::is_steady || when >= now_);
         now_ = when;
     }
 
@@ -72,8 +70,7 @@ public:
     void
     set(Integer seconds_from_epoch)
     {
-        set(time_point(duration(
-            std::chrono::seconds(seconds_from_epoch))));
+        set(time_point(duration(std::chrono::seconds(seconds_from_epoch))));
     }
 
     /** Advance the clock by a duration. */
@@ -81,20 +78,19 @@ public:
     void
     advance(std::chrono::duration<Rep, Period> const& elapsed)
     {
-        assert(! Clock::is_steady ||
-            (now_ + elapsed) >= now_);
+        assert(!Clock::is_steady || (now_ + elapsed) >= now_);
         now_ += elapsed;
     }
 
     /** Convenience for advancing the clock by one second. */
     manual_clock&
-    operator++ ()
+    operator++()
     {
         advance(std::chrono::seconds(1));
         return *this;
     }
 };
 
-}
+}  // namespace beast
 
 #endif

@@ -23,61 +23,62 @@
 namespace beast {
 namespace IP {
 
-Endpoint::Endpoint ()
-    : m_port (0)
+Endpoint::Endpoint() : m_port(0)
 {
 }
 
-Endpoint::Endpoint (Address const& addr, Port port)
-    : m_addr (addr)
-    , m_port (port)
+Endpoint::Endpoint(Address const& addr, Port port) : m_addr(addr), m_port(port)
 {
 }
 
-boost::optional<Endpoint> Endpoint::from_string_checked (std::string const& s)
+boost::optional<Endpoint>
+Endpoint::from_string_checked(std::string const& s)
 {
-    std::stringstream is (boost::trim_copy(s));
+    std::stringstream is(boost::trim_copy(s));
     Endpoint endpoint;
     is >> endpoint;
-    if (! is.fail() && is.rdbuf()->in_avail() == 0)
+    if (!is.fail() && is.rdbuf()->in_avail() == 0)
         return endpoint;
     return {};
 }
 
-Endpoint Endpoint::from_string (std::string const& s)
+Endpoint
+Endpoint::from_string(std::string const& s)
 {
     if (boost::optional<Endpoint> const result = from_string_checked(s))
         return *result;
     return Endpoint{};
 }
 
-std::string Endpoint::to_string () const
+std::string
+Endpoint::to_string() const
 {
     std::string s;
     s.reserve(
-        (address().is_v6() ? INET6_ADDRSTRLEN-1 : 15) +
+        (address().is_v6() ? INET6_ADDRSTRLEN - 1 : 15) +
         (port() == 0 ? 0 : 6 + (address().is_v6() ? 2 : 0)));
 
     if (port() != 0 && address().is_v6())
         s += '[';
-    s += address ().to_string();
+    s += address().to_string();
     if (port())
     {
         if (address().is_v6())
             s += ']';
-        s += ":" + std::to_string (port());
+        s += ":" + std::to_string(port());
     }
 
     return s;
 }
 
-bool operator== (Endpoint const& lhs, Endpoint const& rhs)
+bool
+operator==(Endpoint const& lhs, Endpoint const& rhs)
 {
-    return lhs.address() == rhs.address() &&
-           lhs.port() == rhs.port();
+    return lhs.address() == rhs.address() && lhs.port() == rhs.port();
 }
 
-bool operator<  (Endpoint const& lhs, Endpoint const& rhs)
+bool
+operator<(Endpoint const& lhs, Endpoint const& rhs)
 {
     if (lhs.address() < rhs.address())
         return true;
@@ -88,19 +89,20 @@ bool operator<  (Endpoint const& lhs, Endpoint const& rhs)
 
 //------------------------------------------------------------------------------
 
-std::istream& operator>> (std::istream& is, Endpoint& endpoint)
+std::istream&
+operator>>(std::istream& is, Endpoint& endpoint)
 {
     std::string addrStr;
     // valid addresses only need INET6_ADDRSTRLEN-1 chars, but allow the extra
     // char to check for invalid lengths
     addrStr.reserve(INET6_ADDRSTRLEN);
-    char i {0};
-    char readTo {0};
+    char i{0};
+    char readTo{0};
     is.get(i);
-    if (i == '[') // we are an IPv6 endpoint
+    if (i == '[')  // we are an IPv6 endpoint
         readTo = ']';
     else
-        addrStr+=i;
+        addrStr += i;
 
     while (is && is.rdbuf()->in_avail() > 0 && is.get(i))
     {
@@ -112,32 +114,30 @@ std::istream& operator>> (std::istream& is, Endpoint& endpoint)
         if (isspace(static_cast<unsigned char>(i)) || (readTo && i == readTo))
             break;
 
-        if ((i == '.') ||
-            (i >= '0' && i <= ':') ||
-            (i >= 'a' && i <= 'f') ||
+        if ((i == '.') || (i >= '0' && i <= ':') || (i >= 'a' && i <= 'f') ||
             (i >= 'A' && i <= 'F'))
         {
-            addrStr+=i;
+            addrStr += i;
 
             // don't exceed a reasonable length...
-            if ( addrStr.size() == INET6_ADDRSTRLEN ||
+            if (addrStr.size() == INET6_ADDRSTRLEN ||
                 (readTo && readTo == ':' && addrStr.size() > 15))
             {
-                is.setstate (std::ios_base::failbit);
+                is.setstate(std::ios_base::failbit);
                 return is;
             }
 
-            if (! readTo && (i == '.' || i == ':'))
+            if (!readTo && (i == '.' || i == ':'))
             {
                 // if we see a dot first, must be IPv4
                 // otherwise must be non-bracketed IPv6
                 readTo = (i == '.') ? ':' : ' ';
             }
         }
-        else // invalid char
+        else  // invalid char
         {
             is.unget();
-            is.setstate (std::ios_base::failbit);
+            is.setstate(std::ios_base::failbit);
             return is;
         }
     }
@@ -145,10 +145,10 @@ std::istream& operator>> (std::istream& is, Endpoint& endpoint)
     if (readTo == ']' && is.rdbuf()->in_avail() > 0)
     {
         is.get(i);
-        if (! (isspace(static_cast<unsigned char>(i)) || i == ':'))
+        if (!(isspace(static_cast<unsigned char>(i)) || i == ':'))
         {
             is.unget();
-            is.setstate (std::ios_base::failbit);
+            is.setstate(std::ios_base::failbit);
             return is;
         }
     }
@@ -157,7 +157,7 @@ std::istream& operator>> (std::istream& is, Endpoint& endpoint)
     auto addr = Address::from_string(addrStr, ec);
     if (ec)
     {
-        is.setstate (std::ios_base::failbit);
+        is.setstate(std::ios_base::failbit);
         return is;
     }
 
@@ -167,13 +167,13 @@ std::istream& operator>> (std::istream& is, Endpoint& endpoint)
         is >> port;
         if (is.fail())
             return is;
-        endpoint = Endpoint (addr, port);
+        endpoint = Endpoint(addr, port);
     }
     else
-        endpoint = Endpoint (addr);
+        endpoint = Endpoint(addr);
 
     return is;
 }
 
-}
-}
+}  // namespace IP
+}  // namespace beast

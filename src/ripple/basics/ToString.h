@@ -32,33 +32,36 @@ namespace ripple {
  */
 
 template <class T>
-typename std::enable_if<std::is_arithmetic<T>::value,
-                        std::string>::type
+typename std::enable_if<std::is_arithmetic<T>::value, std::string>::type
 to_string(T t)
 {
     return std::to_string(t);
 }
 
-inline std::string to_string(bool b)
+inline std::string
+to_string(bool b)
 {
     return b ? "true" : "false";
 }
 
-inline std::string to_string(char c)
+inline std::string
+to_string(char c)
 {
     return std::string(1, c);
 }
 
-inline std::string to_string(std::string s)
+inline std::string
+to_string(std::string s)
 {
     return s;
 }
 
-inline std::string to_string(char const* s)
+inline std::string
+to_string(char const* s)
 {
     return s;
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

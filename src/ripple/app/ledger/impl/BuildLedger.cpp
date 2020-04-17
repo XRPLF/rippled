@@ -62,10 +62,10 @@ buildLedgerImpl(
         // Write the final version of all modified SHAMap
         // nodes to the node store to preserve the new LCL
 
-        int const asf = built->stateMap().flushDirty(
-            hotACCOUNT_NODE, built->info().seq);
-        int const tmf = built->txMap().flushDirty(
-            hotTRANSACTION_NODE, built->info().seq);
+        int const asf =
+            built->stateMap().flushDirty(hotACCOUNT_NODE, built->info().seq);
+        int const tmf =
+            built->txMap().flushDirty(hotTRANSACTION_NODE, built->info().seq);
         JLOG(j.debug()) << "Flushed " << asf << " accounts and " << tmf
                         << " transaction nodes";
     }
@@ -103,9 +103,8 @@ applyTransactions(
     // Attempt to apply all of the retriable transactions
     for (int pass = 0; pass < LEDGER_TOTAL_PASSES; ++pass)
     {
-        JLOG(j.debug())
-            << (certainRetry ? "Pass: " : "Final pass: ") << pass
-            << " begins (" << txns.size() << " transactions)";
+        JLOG(j.debug()) << (certainRetry ? "Pass: " : "Final pass: ") << pass
+                        << " begins (" << txns.size() << " transactions)";
         int changes = 0;
 
         auto it = txns.begin();
@@ -147,9 +146,8 @@ applyTransactions(
             }
         }
 
-        JLOG(j.debug())
-            << (certainRetry ? "Pass: " : "Final pass: ") << pass
-            << " completed (" << changes << " changes)";
+        JLOG(j.debug()) << (certainRetry ? "Pass: " : "Final pass: ") << pass
+                        << " completed (" << changes << " changes)";
 
         // Accumulate changes.
         count += changes;
@@ -181,30 +179,30 @@ buildLedger(
     std::set<TxID>& failedTxns,
     beast::Journal j)
 {
-    JLOG(j.debug()) << "Report: Transaction Set = " << txns.key()
-                    << ", close " << closeTime.time_since_epoch().count()
+    JLOG(j.debug()) << "Report: Transaction Set = " << txns.key() << ", close "
+                    << closeTime.time_since_epoch().count()
                     << (closeTimeCorrect ? "" : " (incorrect)");
 
-    return buildLedgerImpl(parent, closeTime, closeTimeCorrect,
-        closeResolution, app, j,
-        [&](OpenView& accum, std::shared_ptr<Ledger> const& built)
-        {
+    return buildLedgerImpl(
+        parent,
+        closeTime,
+        closeTimeCorrect,
+        closeResolution,
+        app,
+        j,
+        [&](OpenView& accum, std::shared_ptr<Ledger> const& built) {
             JLOG(j.debug())
-                << "Attempting to apply " << txns.size()
-                << " transactions";
+                << "Attempting to apply " << txns.size() << " transactions";
 
-            auto const applied = applyTransactions(app, built, txns,
-                failedTxns, accum, j);
+            auto const applied =
+                applyTransactions(app, built, txns, failedTxns, accum, j);
 
             if (!txns.empty() || !failedTxns.empty())
-                JLOG(j.debug())
-                    << "Applied " << applied << " transactions; "
-                    << failedTxns.size() << " failed and "
-                    << txns.size() << " will be retried.";
+                JLOG(j.debug()) << "Applied " << applied << " transactions; "
+                                << failedTxns.size() << " failed and "
+                                << txns.size() << " will be retried.";
             else
-                JLOG(j.debug())
-                    << "Applied " << applied
-                    << " transactions.";
+                JLOG(j.debug()) << "Applied " << applied << " transactions.";
         });
 }
 
@@ -227,8 +225,7 @@ buildLedger(
         replayLedger->info().closeTimeResolution,
         app,
         j,
-        [&](OpenView& accum, std::shared_ptr<Ledger> const& built)
-        {
+        [&](OpenView& accum, std::shared_ptr<Ledger> const& built) {
             for (auto& tx : replayData.orderedTxns())
                 applyTransaction(app, accum, *tx.second, false, applyFlags, j);
         });

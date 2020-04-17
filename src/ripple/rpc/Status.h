@@ -20,8 +20,8 @@
 #ifndef RIPPLE_RPC_STATUS_H_INCLUDED
 #define RIPPLE_RPC_STATUS_H_INCLUDED
 
-#include <ripple/protocol/TER.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/TER.h>
 #include <cassert>
 
 namespace ripple {
@@ -39,41 +39,43 @@ namespace RPC {
 struct Status : public std::exception
 {
 public:
-    enum class Type {none, TER, error_code_i};
+    enum class Type { none, TER, error_code_i };
     using Code = int;
-    using Strings = std::vector <std::string>;
+    using Strings = std::vector<std::string>;
 
     static constexpr Code OK = 0;
 
-    Status () = default;
+    Status() = default;
 
     // The enable_if allows only integers (not enums).  Prevents enum narrowing.
-    template <typename T,
+    template <
+        typename T,
         typename = std::enable_if_t<std::is_integral<T>::value>>
-    Status (T code, Strings d = {})
-        : type_ (Type::none), code_ (code), messages_ (std::move (d))
+    Status(T code, Strings d = {})
+        : type_(Type::none), code_(code), messages_(std::move(d))
     {
     }
 
-    Status (TER ter, Strings d = {})
-        : type_ (Type::TER), code_ (TERtoInt (ter)), messages_ (std::move (d))
+    Status(TER ter, Strings d = {})
+        : type_(Type::TER), code_(TERtoInt(ter)), messages_(std::move(d))
     {
     }
 
-    Status (error_code_i e, Strings d = {})
-        : type_ (Type::error_code_i), code_ (e), messages_ (std::move (d))
+    Status(error_code_i e, Strings d = {})
+        : type_(Type::error_code_i), code_(e), messages_(std::move(d))
     {
     }
 
-    Status (error_code_i e, std::string const& s)
-        : type_ (Type::error_code_i), code_ (e), messages_ ({s})
+    Status(error_code_i e, std::string const& s)
+        : type_(Type::error_code_i), code_(e), messages_({s})
     {
     }
 
     /* Returns a representation of the integer status Code as a string.
        If the Status is OK, the result is an empty string.
     */
-    std::string codeString () const;
+    std::string
+    codeString() const;
 
     /** Returns true if the Status is *not* OK. */
     operator bool() const
@@ -82,60 +84,69 @@ public:
     }
 
     /** Returns true if the Status is OK. */
-    bool operator !() const
+    bool
+    operator!() const
     {
-        return ! bool (*this);
+        return !bool(*this);
     }
 
     /** Returns the Status as a TER.
         This may only be called if type() == Type::TER. */
-    TER toTER () const
+    TER
+    toTER() const
     {
-        assert (type_ == Type::TER);
-        return TER::fromInt (code_);
+        assert(type_ == Type::TER);
+        return TER::fromInt(code_);
     }
 
     /** Returns the Status as an error_code_i.
         This may only be called if type() == Type::error_code_i. */
-    error_code_i toErrorCode() const
+    error_code_i
+    toErrorCode() const
     {
-        assert (type_ == Type::error_code_i);
-        return error_code_i (code_);
+        assert(type_ == Type::error_code_i);
+        return error_code_i(code_);
     }
 
     /** Apply the Status to a JsonObject
      */
     template <class Object>
-    void inject (Object& object) const
+    void
+    inject(Object& object) const
     {
         if (auto ec = toErrorCode())
         {
             if (messages_.empty())
-                inject_error (ec, object);
+                inject_error(ec, object);
             else
-                inject_error (ec, message(), object);
+                inject_error(ec, message(), object);
         }
     }
 
-    Strings const& messages() const
+    Strings const&
+    messages() const
     {
         return messages_;
     }
 
     /** Return the first message, if any. */
-    std::string message() const;
+    std::string
+    message() const;
 
-    Type type() const
+    Type
+    type() const
     {
         return type_;
     }
 
-    std::string toString() const;
+    std::string
+    toString() const;
 
     /** Fill a Json::Value with an RPC 2.0 response.
         If the Status is OK, fillJson has no effect.
         Not currently used. */
-    void fillJson(Json::Value&);
+    void
+    fillJson(Json::Value&);
 
 private:
     Type type_ = Type::none;
@@ -143,7 +154,7 @@ private:
     Strings messages_;
 };
 
-} // namespace RPC
-} // ripple
+}  // namespace RPC
+}  // namespace ripple
 
 #endif

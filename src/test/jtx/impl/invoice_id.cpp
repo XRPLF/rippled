@@ -31,6 +31,6 @@ invoice_id::operator()(Env&, JTx& jt) const
         jt["InvoiceID"] = strHex(hash_);
 }
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

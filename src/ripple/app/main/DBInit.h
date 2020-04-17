@@ -27,20 +27,17 @@ namespace ripple {
 ////////////////////////////////////////////////////////////////////////////////
 
 // Ledger database holds ledgers and ledger confirmations
-inline constexpr auto LgrDBName {"ledger.db"};
+inline constexpr auto LgrDBName{"ledger.db"};
 
-inline constexpr
-std::array<char const*, 3> LgrDBPragma {{
-    "PRAGMA synchronous=NORMAL;",
-    "PRAGMA journal_mode=WAL;",
-    "PRAGMA journal_size_limit=1582080;"
-}};
+inline constexpr std::array<char const*, 3> LgrDBPragma{
+    {"PRAGMA synchronous=NORMAL;",
+     "PRAGMA journal_mode=WAL;",
+     "PRAGMA journal_size_limit=1582080;"}};
 
-inline constexpr
-std::array<char const*, 5> LgrDBInit {{
-    "BEGIN TRANSACTION;",
+inline constexpr std::array<char const*, 5> LgrDBInit{
+    {"BEGIN TRANSACTION;",
 
-    "CREATE TABLE IF NOT EXISTS Ledgers (           \
+     "CREATE TABLE IF NOT EXISTS Ledgers (           \
         LedgerHash      CHARACTER(64) PRIMARY KEY,  \
         LedgerSeq       BIGINT UNSIGNED,            \
         PrevHash        CHARACTER(64),              \
@@ -52,40 +49,40 @@ std::array<char const*, 5> LgrDBInit {{
         AccountSetHash  CHARACTER(64),              \
         TransSetHash    CHARACTER(64)               \
     );",
-    "CREATE INDEX IF NOT EXISTS SeqLedger ON Ledgers(LedgerSeq);",
+     "CREATE INDEX IF NOT EXISTS SeqLedger ON Ledgers(LedgerSeq);",
 
-    // Old table and indexes no longer needed
-    "DROP TABLE IF EXISTS Validations;",
+     // Old table and indexes no longer needed
+     "DROP TABLE IF EXISTS Validations;",
 
-    "END TRANSACTION;"
-}};
+     "END TRANSACTION;"}};
 
 ////////////////////////////////////////////////////////////////////////////////
 
 // Transaction database holds transactions and public keys
-inline constexpr auto TxDBName {"transaction.db"};
+inline constexpr auto TxDBName{"transaction.db"};
 
 inline constexpr
-#if (ULONG_MAX > UINT_MAX) && !defined (NO_SQLITE_MMAP)
-    std::array<char const*, 6> TxDBPragma {{
+#if (ULONG_MAX > UINT_MAX) && !defined(NO_SQLITE_MMAP)
+    std::array<char const*, 6>
+        TxDBPragma
+{
+    {
 #else
     std::array<char const*, 5> TxDBPragma {{
 #endif
-    "PRAGMA page_size=4096;",
-    "PRAGMA synchronous=NORMAL;",
-    "PRAGMA journal_mode=WAL;",
-    "PRAGMA journal_size_limit=1582080;",
-    "PRAGMA max_page_count=2147483646;",
-#if (ULONG_MAX > UINT_MAX) && !defined (NO_SQLITE_MMAP)
-    "PRAGMA mmap_size=17179869184;"
+        "PRAGMA page_size=4096;", "PRAGMA synchronous=NORMAL;",
+            "PRAGMA journal_mode=WAL;", "PRAGMA journal_size_limit=1582080;",
+            "PRAGMA max_page_count=2147483646;",
+#if (ULONG_MAX > UINT_MAX) && !defined(NO_SQLITE_MMAP)
+            "PRAGMA mmap_size=17179869184;"
 #endif
-}};
+    }
+};
 
-inline constexpr
-std::array<char const*, 8> TxDBInit {{
-    "BEGIN TRANSACTION;",
+inline constexpr std::array<char const*, 8> TxDBInit{
+    {"BEGIN TRANSACTION;",
 
-    "CREATE TABLE IF NOT EXISTS Transactions (          \
+     "CREATE TABLE IF NOT EXISTS Transactions (          \
         TransID     CHARACTER(64) PRIMARY KEY,          \
         TransType   CHARACTER(24),                      \
         FromAcct    CHARACTER(35),                      \
@@ -95,131 +92,111 @@ std::array<char const*, 8> TxDBInit {{
         RawTxn      BLOB,                               \
         TxnMeta     BLOB                                \
     );",
-    "CREATE INDEX IF NOT EXISTS TxLgrIndex ON           \
+     "CREATE INDEX IF NOT EXISTS TxLgrIndex ON           \
         Transactions(LedgerSeq);",
 
-    "CREATE TABLE IF NOT EXISTS AccountTransactions (   \
+     "CREATE TABLE IF NOT EXISTS AccountTransactions (   \
         TransID     CHARACTER(64),                      \
         Account     CHARACTER(64),                      \
         LedgerSeq   BIGINT UNSIGNED,                    \
         TxnSeq      INTEGER                             \
     );",
-    "CREATE INDEX IF NOT EXISTS AcctTxIDIndex ON        \
+     "CREATE INDEX IF NOT EXISTS AcctTxIDIndex ON        \
         AccountTransactions(TransID);",
-    "CREATE INDEX IF NOT EXISTS AcctTxIndex ON          \
+     "CREATE INDEX IF NOT EXISTS AcctTxIndex ON          \
         AccountTransactions(Account, LedgerSeq, TxnSeq, TransID);",
-    "CREATE INDEX IF NOT EXISTS AcctLgrIndex ON         \
+     "CREATE INDEX IF NOT EXISTS AcctLgrIndex ON         \
         AccountTransactions(LedgerSeq, Account, TransID);",
 
-    "END TRANSACTION;"
-}};
+     "END TRANSACTION;"}};
 
 ////////////////////////////////////////////////////////////////////////////////
 
 // Temporary database used with an incomplete shard that is being acquired
-inline constexpr auto AcquireShardDBName {"acquire.db"};
+inline constexpr auto AcquireShardDBName{"acquire.db"};
 
-inline constexpr
-std::array<char const*, 3> AcquireShardDBPragma {{
-    "PRAGMA synchronous=NORMAL;",
-    "PRAGMA journal_mode=WAL;",
-    "PRAGMA journal_size_limit=1582080;"
-}};
+inline constexpr std::array<char const*, 3> AcquireShardDBPragma{
+    {"PRAGMA synchronous=NORMAL;",
+     "PRAGMA journal_mode=WAL;",
+     "PRAGMA journal_size_limit=1582080;"}};
 
-inline constexpr
-std::array<char const*, 1> AcquireShardDBInit {{
-    "CREATE TABLE IF NOT EXISTS Shard (             \
+inline constexpr std::array<char const*, 1> AcquireShardDBInit{
+    {"CREATE TABLE IF NOT EXISTS Shard (             \
         ShardIndex          INTEGER PRIMARY KEY,    \
         LastLedgerHash      CHARACTER(64),          \
         StoredLedgerSeqs    BLOB                    \
-    );"
-}};
+    );"}};
 
 ////////////////////////////////////////////////////////////////////////////////
 
 // Pragma for Ledger and Transaction databases with complete shards
-inline constexpr
-std::array<char const*, 2> CompleteShardDBPragma{{
-    "PRAGMA synchronous=OFF;",
-    "PRAGMA journal_mode=OFF;"
-}};
+inline constexpr std::array<char const*, 2> CompleteShardDBPragma{
+    {"PRAGMA synchronous=OFF;", "PRAGMA journal_mode=OFF;"}};
 
 ////////////////////////////////////////////////////////////////////////////////
 
-inline constexpr auto WalletDBName {"wallet.db"};
+inline constexpr auto WalletDBName{"wallet.db"};
 
-inline constexpr
-std::array<char const*, 6> WalletDBInit {{
-    "BEGIN TRANSACTION;",
+inline constexpr std::array<char const*, 6> WalletDBInit{
+    {"BEGIN TRANSACTION;",
 
-    // A node's identity must be persisted, including
-    // for clustering purposes. This table holds one
-    // entry: the server's unique identity, but the
-    // value can be overriden by specifying a node
-    // identity in the config file using a [node_seed]
-    // entry.
-    "CREATE TABLE IF NOT EXISTS NodeIdentity (			\
+     // A node's identity must be persisted, including
+     // for clustering purposes. This table holds one
+     // entry: the server's unique identity, but the
+     // value can be overriden by specifying a node
+     // identity in the config file using a [node_seed]
+     // entry.
+     "CREATE TABLE IF NOT EXISTS NodeIdentity (			\
         PublicKey       CHARACTER(53),					\
         PrivateKey      CHARACTER(52)					\
     );",
 
-    // Peer reservations
-    "CREATE TABLE IF NOT EXISTS PeerReservations (		\
+     // Peer reservations
+     "CREATE TABLE IF NOT EXISTS PeerReservations (		\
         PublicKey       CHARACTER(53) UNIQUE NOT NULL,	\
         Description     CHARACTER(64) NOT NULL			\
     );",
 
-    // Validator Manifests
-    "CREATE TABLE IF NOT EXISTS ValidatorManifests (	\
+     // Validator Manifests
+     "CREATE TABLE IF NOT EXISTS ValidatorManifests (	\
         RawData          BLOB NOT NULL					\
     );",
 
-    "CREATE TABLE IF NOT EXISTS PublisherManifests (	\
+     "CREATE TABLE IF NOT EXISTS PublisherManifests (	\
         RawData          BLOB NOT NULL					\
     );",
 
-    "END TRANSACTION;"
-}};
+     "END TRANSACTION;"}};
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static constexpr auto stateDBName {"state.db"};
+static constexpr auto stateDBName{"state.db"};
 
-static constexpr
-std::array<char const*, 2> DownloaderDBPragma
-{{
-    "PRAGMA synchronous=FULL;",
-    "PRAGMA journal_mode=DELETE;"
-}};
+static constexpr std::array<char const*, 2> DownloaderDBPragma{
+    {"PRAGMA synchronous=FULL;", "PRAGMA journal_mode=DELETE;"}};
 
-static constexpr
-std::array<char const*, 3> ShardArchiveHandlerDBInit
-{{
-    "BEGIN TRANSACTION;",
+static constexpr std::array<char const*, 3> ShardArchiveHandlerDBInit{
+    {"BEGIN TRANSACTION;",
 
-    "CREATE TABLE IF NOT EXISTS State (     \
+     "CREATE TABLE IF NOT EXISTS State (     \
          ShardIndex  INTEGER PRIMARY KEY,   \
          URL         TEXT                   \
      );",
 
-    "END TRANSACTION;"
-}};
+     "END TRANSACTION;"}};
 
-static constexpr
-std::array<char const*, 3> DatabaseBodyDBInit
-{{
-    "BEGIN TRANSACTION;",
+static constexpr std::array<char const*, 3> DatabaseBodyDBInit{
+    {"BEGIN TRANSACTION;",
 
-    "CREATE TABLE IF NOT EXISTS download (      \
+     "CREATE TABLE IF NOT EXISTS download (      \
         Path        TEXT,                       \
         Data        BLOB,                       \
         Size        BIGINT UNSIGNED,            \
         Part        BIGINT UNSIGNED PRIMARY KEY \
     );",
 
-    "END TRANSACTION;"
-}};
+     "END TRANSACTION;"}};
 
-} // ripple
+}  // namespace ripple
 
 #endif

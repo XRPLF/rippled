@@ -33,23 +33,27 @@ namespace ripple {
 class LocalTxs
 {
 public:
-    virtual ~LocalTxs () = default;
+    virtual ~LocalTxs() = default;
 
     // Add a new local transaction
-    virtual void push_back (LedgerIndex index, std::shared_ptr<STTx const> const& txn) = 0;
+    virtual void
+    push_back(LedgerIndex index, std::shared_ptr<STTx const> const& txn) = 0;
 
     // Return the set of local transactions to a new open ledger
-    virtual CanonicalTXSet getTxSet () = 0;
+    virtual CanonicalTXSet
+    getTxSet() = 0;
 
     // Remove obsolete transactions based on a new fully-valid ledger
-    virtual void sweep (ReadView const& view) = 0;
+    virtual void
+    sweep(ReadView const& view) = 0;
 
-    virtual std::size_t size () = 0;
+    virtual std::size_t
+    size() = 0;
 };
 
 std::unique_ptr<LocalTxs>
-make_LocalTxs ();
+make_LocalTxs();
 
-} // ripple
+}  // namespace ripple
 
 #endif

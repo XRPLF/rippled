@@ -28,47 +28,52 @@
 #include <string>
 
 namespace soci {
-    class session;
+class session;
 }
 
 namespace ripple {
 
-template<class T, class TMutex>
+template <class T, class TMutex>
 class LockedPointer
 {
 public:
     using mutex = TMutex;
+
 private:
     T* it_;
     std::unique_lock<mutex> lock_;
 
 public:
-    LockedPointer (T* it, mutex& m) : it_ (it), lock_ (m)
+    LockedPointer(T* it, mutex& m) : it_(it), lock_(m)
     {
     }
-    LockedPointer (LockedPointer&& rhs) noexcept
-        : it_ (rhs.it_), lock_ (std::move (rhs.lock_))
+    LockedPointer(LockedPointer&& rhs) noexcept
+        : it_(rhs.it_), lock_(std::move(rhs.lock_))
     {
     }
-    LockedPointer () = delete;
-    LockedPointer (LockedPointer const& rhs) = delete;
-    LockedPointer& operator=(LockedPointer const& rhs) = delete;
+    LockedPointer() = delete;
+    LockedPointer(LockedPointer const& rhs) = delete;
+    LockedPointer&
+    operator=(LockedPointer const& rhs) = delete;
 
-    T* get ()
+    T*
+    get()
     {
         return it_;
     }
-    T& operator*()
+    T&
+    operator*()
     {
         return *it_;
     }
-    T* operator->()
+    T*
+    operator->()
     {
         return it_;
     }
     explicit operator bool() const
     {
-        return bool (it_);
+        return bool(it_);
     }
 };
 
@@ -86,7 +91,7 @@ public:
         boost::filesystem::path dataDir;
     };
 
-    template<std::size_t N, std::size_t M>
+    template <std::size_t N, std::size_t M>
     DatabaseCon(
         Setup const& setup,
         std::string const& DBName,
@@ -94,8 +99,7 @@ public:
         std::array<char const*, M> const& initSQL)
     {
         // Use temporary files or regular DB files?
-        auto const useTempFiles =
-            setup.standAlone &&
+        auto const useTempFiles = setup.standAlone &&
             setup.startUp != Config::LOAD &&
             setup.startUp != Config::LOAD_FILE &&
             setup.startUp != Config::REPLAY;
@@ -105,7 +109,7 @@ public:
         init(pPath, pragma, initSQL);
     }
 
-    template<std::size_t N, std::size_t M>
+    template <std::size_t N, std::size_t M>
     DatabaseCon(
         boost::filesystem::path const& dataDir,
         std::string const& DBName,
@@ -115,23 +119,26 @@ public:
         init((dataDir / DBName), pragma, initSQL);
     }
 
-    soci::session& getSession()
+    soci::session&
+    getSession()
     {
         return session_;
     }
 
-    LockedSociSession checkoutDb ()
+    LockedSociSession
+    checkoutDb()
     {
-        return LockedSociSession (&session_, lock_);
+        return LockedSociSession(&session_, lock_);
     }
 
-    void setupCheckpointing (JobQueue*, Logs&);
+    void
+    setupCheckpointing(JobQueue*, Logs&);
 
 private:
-
-    template<std::size_t N, std::size_t M>
+    template <std::size_t N, std::size_t M>
     void
-    init(boost::filesystem::path const& pPath,
+    init(
+        boost::filesystem::path const& pPath,
         std::array<char const*, N> const& pragma,
         std::array<char const*, M> const& initSQL)
     {
@@ -156,8 +163,8 @@ private:
 };
 
 DatabaseCon::Setup
-setup_DatabaseCon (Config const& c);
+setup_DatabaseCon(Config const& c);
 
-} // ripple
+}  // namespace ripple
 
 #endif

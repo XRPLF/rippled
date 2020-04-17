@@ -17,42 +17,39 @@
 */
 //==============================================================================
 
-#include <ripple/ledger/ApplyViewImpl.h>
 #include <ripple/basics/contract.h>
+#include <ripple/ledger/ApplyViewImpl.h>
 #include <cassert>
 
 namespace ripple {
 
-ApplyViewImpl::ApplyViewImpl(
-    ReadView const* base, ApplyFlags flags)
-    : ApplyViewBase (base, flags)
+ApplyViewImpl::ApplyViewImpl(ReadView const* base, ApplyFlags flags)
+    : ApplyViewBase(base, flags)
 {
 }
 
 void
-ApplyViewImpl::apply (OpenView& to,
-    STTx const& tx, TER ter,
-        beast::Journal j)
+ApplyViewImpl::apply(OpenView& to, STTx const& tx, TER ter, beast::Journal j)
 {
     items_.apply(to, tx, ter, deliver_, j);
 }
 
 std::size_t
-ApplyViewImpl::size ()
+ApplyViewImpl::size()
 {
-    return items_.size ();
+    return items_.size();
 }
 
 void
-ApplyViewImpl::visit (
+ApplyViewImpl::visit(
     OpenView& to,
-    std::function <void (
+    std::function<void(
         uint256 const& key,
         bool isDelete,
-        std::shared_ptr <SLE const> const& before,
-        std::shared_ptr <SLE const> const& after)> const& func)
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after)> const& func)
 {
-    items_.visit (to, func);
+    items_.visit(to, func);
 }
 
-} // ripple
+}  // namespace ripple

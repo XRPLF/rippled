@@ -24,23 +24,18 @@
 
 namespace ripple {
 
-class PayChanCreate
-    : public Transactor
+class PayChanCreate : public Transactor
 {
 public:
-    explicit
-    PayChanCreate (ApplyContext& ctx)
-        : Transactor(ctx)
+    explicit PayChanCreate(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    static
-    NotTEC
-    preflight (PreflightContext const& ctx);
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-    static
-    TER
-    preclaim(PreclaimContext const &ctx);
+    static TER
+    preclaim(PreclaimContext const& ctx);
 
     TER
     doApply() override;
@@ -48,19 +43,15 @@ public:
 
 //------------------------------------------------------------------------------
 
-class PayChanFund
-    : public Transactor
+class PayChanFund : public Transactor
 {
 public:
-    explicit
-    PayChanFund (ApplyContext& ctx)
-        : Transactor(ctx)
+    explicit PayChanFund(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    static
-    NotTEC
-    preflight (PreflightContext const& ctx);
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
     TER
     doApply() override;
@@ -68,24 +59,20 @@ public:
 
 //------------------------------------------------------------------------------
 
-class PayChanClaim
-    : public Transactor
+class PayChanClaim : public Transactor
 {
 public:
-    explicit
-    PayChanClaim (ApplyContext& ctx)
-        : Transactor(ctx)
+    explicit PayChanClaim(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    static
-    NotTEC
-    preflight (PreflightContext const& ctx);
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
     TER
     doApply() override;
 };
 
-}  // ripple
+}  // namespace ripple
 
 #endif

@@ -17,14 +17,15 @@
 */
 //==============================================================================
 
+#include <ripple/beast/utility/Zero.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/UintTypes.h>
-#include <ripple/beast/utility/Zero.h>
 
 namespace ripple {
 
-std::string to_string(Currency const& currency)
+std::string
+to_string(Currency const& currency)
 {
     // Characters we are willing to allow in the ASCII representation of a
     // three-letter currency code.
@@ -40,67 +41,66 @@ std::string to_string(Currency const& currency)
     if (currency == noCurrency())
         return "1";
 
-    static Currency const sIsoBits (
+    static Currency const sIsoBits(
         from_hex_text<Currency>("FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF"));
 
-    if ((currency & sIsoBits).isZero ())
+    if ((currency & sIsoBits).isZero())
     {
         // The offset of the 3 character ISO code in the currency descriptor
         int const isoOffset = 12;
 
         std::string const iso(
-            currency.data () + isoOffset,
-            currency.data () + isoOffset + 3);
+            currency.data() + isoOffset, currency.data() + isoOffset + 3);
 
         // Specifying the system currency code using ISO-style representation
         // is not allowed.
         if ((iso != systemCurrencyCode()) &&
-            (iso.find_first_not_of (allowed_characters) == std::string::npos))
+            (iso.find_first_not_of(allowed_characters) == std::string::npos))
         {
             return iso;
         }
     }
 
-    return strHex (currency);
+    return strHex(currency);
 }
 
-bool to_currency(Currency& currency, std::string const& code)
+bool
+to_currency(Currency& currency, std::string const& code)
 {
-    if (code.empty () || !code.compare (systemCurrencyCode()))
+    if (code.empty() || !code.compare(systemCurrencyCode()))
     {
         currency = beast::zero;
         return true;
     }
 
     static const int CURRENCY_CODE_LENGTH = 3;
-    if (code.size () == CURRENCY_CODE_LENGTH)
+    if (code.size() == CURRENCY_CODE_LENGTH)
     {
-        Blob codeBlob (CURRENCY_CODE_LENGTH);
+        Blob codeBlob(CURRENCY_CODE_LENGTH);
 
-        std::transform (code.begin (), code.end (), codeBlob.begin (),
-                        [](auto c)
-                        {
-                            return ::toupper(static_cast<unsigned char>(c));
-                        });
+        std::transform(code.begin(), code.end(), codeBlob.begin(), [](auto c) {
+            return ::toupper(static_cast<unsigned char>(c));
+        });
 
-        Serializer  s;
+        Serializer s;
 
-        s.addZeros (96 / 8);
-        s.addRaw (codeBlob);
-        s.addZeros (16 / 8);
-        s.addZeros (24 / 8);
+        s.addZeros(96 / 8);
+        s.addRaw(codeBlob);
+        s.addZeros(16 / 8);
+        s.addZeros(24 / 8);
 
-        s.get160 (currency, 0);
+        s.get160(currency, 0);
         return true;
     }
 
-    if (40 == code.size ())
-        return currency.SetHex (code);
+    if (40 == code.size())
+        return currency.SetHex(code);
 
     return false;
 }
 
-Currency to_currency(std::string const& code)
+Currency
+to_currency(std::string const& code)
 {
     Currency currency;
     if (!to_currency(currency, code))
@@ -108,22 +108,25 @@ Currency to_currency(std::string const& code)
     return currency;
 }
 
-Currency const& xrpCurrency()
+Currency const&
+xrpCurrency()
 {
     static Currency const currency(beast::zero);
     return currency;
 }
 
-Currency const& noCurrency()
+Currency const&
+noCurrency()
 {
     static Currency const currency(1);
     return currency;
 }
 
-Currency const& badCurrency()
+Currency const&
+badCurrency()
 {
     static Currency const currency(0x5852500000000000);
     return currency;
 }
 
-} // ripple
+}  // namespace ripple

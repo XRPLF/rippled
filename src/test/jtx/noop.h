@@ -27,15 +27,14 @@ namespace test {
 namespace jtx {
 
 /** The null transaction. */
-inline
-Json::Value
-noop (Account const& account)
+inline Json::Value
+noop(Account const& account)
 {
     return fset(account, 0);
 }
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

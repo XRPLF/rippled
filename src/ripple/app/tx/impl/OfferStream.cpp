@@ -55,57 +55,56 @@ TOfferStreamBase<TIn, TOut>::TOfferStreamBase(
 
 // Handle the case where a directory item with no corresponding ledger entry
 // is found. This shouldn't happen but if it does we clean it up.
-template<class TIn, class TOut>
+template <class TIn, class TOut>
 void
-TOfferStreamBase<TIn, TOut>::erase (ApplyView& view)
+TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
 {
     // NIKB NOTE This should be using ApplyView::dirRemove, which would
     //           correctly remove the directory if its the last entry.
     //           Unfortunately this is a protocol breaking change.
 
-    auto p = view.peek (keylet::page(tip_.dir()));
+    auto p = view.peek(keylet::page(tip_.dir()));
 
     if (p == nullptr)
     {
-        JLOG(j_.error()) <<
-            "Missing directory " << tip_.dir() <<
-            " for offer " << tip_.index();
+        JLOG(j_.error()) << "Missing directory " << tip_.dir() << " for offer "
+                         << tip_.index();
         return;
     }
 
-    auto v (p->getFieldV256 (sfIndexes));
-    auto it (std::find (v.begin(), v.end(), tip_.index()));
+    auto v(p->getFieldV256(sfIndexes));
+    auto it(std::find(v.begin(), v.end(), tip_.index()));
 
     if (it == v.end())
     {
-        JLOG(j_.error()) <<
-            "Missing offer " << tip_.index() <<
-            " for directory " << tip_.dir();
+        JLOG(j_.error()) << "Missing offer " << tip_.index()
+                         << " for directory " << tip_.dir();
         return;
     }
 
-    v.erase (it);
-    p->setFieldV256 (sfIndexes, v);
-    view.update (p);
+    v.erase(it);
+    p->setFieldV256(sfIndexes, v);
+    view.update(p);
 
-    JLOG(j_.trace()) <<
-        "Missing offer " << tip_.index() <<
-        " removed from directory " << tip_.dir();
+    JLOG(j_.trace()) << "Missing offer " << tip_.index()
+                     << " removed from directory " << tip_.dir();
 }
 
-static
-STAmount accountFundsHelper (ReadView const& view,
+static STAmount
+accountFundsHelper(
+    ReadView const& view,
     AccountID const& id,
     STAmount const& saDefault,
     Issue const&,
     FreezeHandling freezeHandling,
     beast::Journal j)
 {
-    return accountFunds (view, id, saDefault, freezeHandling, j);
+    return accountFunds(view, id, saDefault, freezeHandling, j);
 }
 
-static
-IOUAmount accountFundsHelper (ReadView const& view,
+static IOUAmount
+accountFundsHelper(
+    ReadView const& view,
     AccountID const& id,
     IOUAmount const& amtDefault,
     Issue const& issue,
@@ -116,25 +115,26 @@ IOUAmount accountFundsHelper (ReadView const& view,
         // self funded
         return amtDefault;
 
-    return toAmount<IOUAmount> (
-        accountHolds (view, id, issue.currency, issue.account, freezeHandling, j));
+    return toAmount<IOUAmount>(accountHolds(
+        view, id, issue.currency, issue.account, freezeHandling, j));
 }
 
-static
-XRPAmount accountFundsHelper (ReadView const& view,
+static XRPAmount
+accountFundsHelper(
+    ReadView const& view,
     AccountID const& id,
     XRPAmount const& amtDefault,
     Issue const& issue,
     FreezeHandling freezeHandling,
     beast::Journal j)
 {
-    return toAmount<XRPAmount> (
-        accountHolds (view, id, issue.currency, issue.account, freezeHandling, j));
+    return toAmount<XRPAmount>(accountHolds(
+        view, id, issue.currency, issue.account, freezeHandling, j));
 }
 
-template<class TIn, class TOut>
+template <class TIn, class TOut>
 bool
-TOfferStreamBase<TIn, TOut>::step ()
+TOfferStreamBase<TIn, TOut>::step()
 {
     // Modifying the order or logic of these
     // operations causes a protocol breaking change.
@@ -142,57 +142,60 @@ TOfferStreamBase<TIn, TOut>::step ()
     if (!validBook_)
         return false;
 
-    for(;;)
+    for (;;)
     {
         ownerFunds_ = boost::none;
         // BookTip::step deletes the current offer from the view before
         // advancing to the next (unless the ledger entry is missing).
-        if (! tip_.step(j_))
+        if (!tip_.step(j_))
             return false;
 
         std::shared_ptr<SLE> entry = tip_.entry();
 
         // If we exceed the maximum number of allowed steps, we're done.
-        if (!counter_.step ())
+        if (!counter_.step())
             return false;
 
         // Remove if missing
-        if (! entry)
+        if (!entry)
         {
-            erase (view_);
-            erase (cancelView_);
+            erase(view_);
+            erase(cancelView_);
             continue;
         }
 
         // Remove if expired
         using d = NetClock::duration;
         using tp = NetClock::time_point;
-        if (entry->isFieldPresent (sfExpiration) &&
+        if (entry->isFieldPresent(sfExpiration) &&
             tp{d{(*entry)[sfExpiration]}} <= expire_)
         {
-            JLOG(j_.trace()) <<
-                "Removing expired offer " << entry->key();
-                permRmOffer (entry->key());
+            JLOG(j_.trace()) << "Removing expired offer " << entry->key();
+            permRmOffer(entry->key());
             continue;
         }
 
-        offer_ = TOffer<TIn, TOut> (entry, tip_.quality());
+        offer_ = TOffer<TIn, TOut>(entry, tip_.quality());
 
-        auto const amount (offer_.amount());
+        auto const amount(offer_.amount());
 
         // Remove if either amount is zero
         if (amount.empty())
         {
-            JLOG(j_.warn()) <<
-                "Removing bad offer " << entry->key();
-            permRmOffer (entry->key());
+            JLOG(j_.warn()) << "Removing bad offer " << entry->key();
+            permRmOffer(entry->key());
             offer_ = TOffer<TIn, TOut>{};
             continue;
         }
 
         // Calculate owner funds
-        ownerFunds_ = accountFundsHelper (view_, offer_.owner (), amount.out,
-            offer_.issueOut (), fhZERO_IF_FROZEN, j_);
+        ownerFunds_ = accountFundsHelper(
+            view_,
+            offer_.owner(),
+            amount.out,
+            offer_.issueOut(),
+            fhZERO_IF_FROZEN,
+            j_);
 
         // Check for unfunded offer
         if (*ownerFunds_ <= beast::zero)
@@ -200,20 +203,23 @@ TOfferStreamBase<TIn, TOut>::step ()
             // If the owner's balance in the pristine view is the same,
             // we haven't modified the balance and therefore the
             // offer is "found unfunded" versus "became unfunded"
-            auto const original_funds =
-                accountFundsHelper (cancelView_, offer_.owner (), amount.out,
-                    offer_.issueOut (), fhZERO_IF_FROZEN, j_);
+            auto const original_funds = accountFundsHelper(
+                cancelView_,
+                offer_.owner(),
+                amount.out,
+                offer_.issueOut(),
+                fhZERO_IF_FROZEN,
+                j_);
 
             if (original_funds == *ownerFunds_)
             {
-                permRmOffer (entry->key());
-                JLOG(j_.trace()) <<
-                    "Removing unfunded offer " << entry->key();
+                permRmOffer(entry->key());
+                JLOG(j_.trace()) << "Removing unfunded offer " << entry->key();
             }
             else
             {
-                JLOG(j_.trace()) <<
-                    "Removing became unfunded offer " << entry->key();
+                JLOG(j_.trace())
+                    << "Removing became unfunded offer " << entry->key();
             }
             offer_ = TOffer<TIn, TOut>{};
             continue;
@@ -226,16 +232,16 @@ TOfferStreamBase<TIn, TOut>::step ()
 }
 
 void
-OfferStream::permRmOffer (uint256 const& offerIndex)
+OfferStream::permRmOffer(uint256 const& offerIndex)
 {
-    offerDelete (cancelView_,
-                 cancelView_.peek(keylet::offer(offerIndex)), j_);
+    offerDelete(cancelView_, cancelView_.peek(keylet::offer(offerIndex)), j_);
 }
 
-template<class TIn, class TOut>
-void FlowOfferStream<TIn, TOut>::permRmOffer (uint256 const& offerIndex)
+template <class TIn, class TOut>
+void
+FlowOfferStream<TIn, TOut>::permRmOffer(uint256 const& offerIndex)
 {
-    permToRemove_.insert (offerIndex);
+    permToRemove_.insert(offerIndex);
 }
 
 template class FlowOfferStream<STAmount, STAmount>;
@@ -247,4 +253,4 @@ template class TOfferStreamBase<STAmount, STAmount>;
 template class TOfferStreamBase<IOUAmount, IOUAmount>;
 template class TOfferStreamBase<XRPAmount, IOUAmount>;
 template class TOfferStreamBase<IOUAmount, XRPAmount>;
-}
+}  // namespace ripple

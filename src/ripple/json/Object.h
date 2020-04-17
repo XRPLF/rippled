@@ -39,8 +39,8 @@ namespace Json {
 
     1. Only one collection can be open for change at any one time.
 
-       This condition is enforced automatically and a std::logic_error thrown if it
-       is violated.
+       This condition is enforced automatically and a std::logic_error thrown if
+   it is violated.
 
     2. A tag may only be used once in an Object.
 
@@ -151,8 +151,9 @@ namespace Json {
 class Collection
 {
 public:
-    Collection (Collection&& c) noexcept;
-    Collection& operator= (Collection&& c) noexcept;
+    Collection(Collection&& c) noexcept;
+    Collection&
+    operator=(Collection&& c) noexcept;
     Collection() = delete;
 
     ~Collection();
@@ -160,8 +161,9 @@ public:
 protected:
     // A null parent means "no parent at all".
     // Writers cannot be null.
-    Collection (Collection* parent, Writer*);
-    void checkWritable (std::string const& label);
+    Collection(Collection* parent, Writer*);
+    void
+    checkWritable(std::string const& label);
 
     Collection* parent_;
     Writer* writer_;
@@ -193,40 +195,48 @@ public:
         An operator[] is provided to allow writing `object["key"] = scalar;`.
      */
     template <typename Scalar>
-    void set (std::string const& key, Scalar const&);
+    void
+    set(std::string const& key, Scalar const&);
 
-    void set (std::string const& key, Json::Value const&);
+    void
+    set(std::string const& key, Json::Value const&);
 
     // Detail class and method used to implement operator[].
     class Proxy;
 
-    Proxy operator[] (std::string const& key);
-    Proxy operator[] (Json::StaticString const& key);
+    Proxy
+    operator[](std::string const& key);
+    Proxy
+    operator[](Json::StaticString const& key);
 
     /** Make a new Object at a key and return it.
 
         This Object is disabled until that sub-object is destroyed.
         Throws an exception if this Object was already disabled.
      */
-    Object setObject (std::string const& key);
+    Object
+    setObject(std::string const& key);
 
     /** Make a new Array at a key and return it.
 
         This Object is disabled until that sub-array is destroyed.
         Throws an exception if this Object was already disabled.
      */
-    Array setArray (std::string const& key);
+    Array
+    setArray(std::string const& key);
 
 protected:
     friend class Array;
-    Object (Collection* parent, Writer* w) : Collection (parent, w) {}
+    Object(Collection* parent, Writer* w) : Collection(parent, w)
+    {
+    }
 };
 
 class Object::Root : public Object
 {
-  public:
+public:
     /** Each Object::Root must be constructed with its own unique Writer. */
-    Root (Writer&);
+    Root(Writer&);
 };
 
 //------------------------------------------------------------------------------
@@ -241,31 +251,37 @@ public:
         its sub-collections is enabled).
     */
     template <typename Scalar>
-    void append (Scalar const&);
+    void
+    append(Scalar const&);
 
     /**
        Appends a Json::Value to an array.
        Throws an exception if this Array was disabled.
      */
-    void append (Json::Value const&);
+    void
+    append(Json::Value const&);
 
     /** Append a new Object and return it.
 
         This Array is disabled until that sub-object is destroyed.
         Throws an exception if this Array was disabled.
      */
-    Object appendObject ();
+    Object
+    appendObject();
 
     /** Append a new Array and return it.
 
         This Array is disabled until that sub-array is destroyed.
         Throws an exception if this Array was already disabled.
      */
-    Array appendArray ();
+    Array
+    appendArray();
 
-  protected:
+protected:
     friend class Object;
-    Array (Collection* parent, Writer* w) : Collection (parent, w) {}
+    Array(Collection* parent, Writer* w) : Collection(parent, w)
+    {
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -274,68 +290,76 @@ public:
 // interoperate.
 
 /** Add a new subarray at a named key in a Json object. */
-Json::Value& setArray (Json::Value&, Json::StaticString const& key);
+Json::Value&
+setArray(Json::Value&, Json::StaticString const& key);
 
 /** Add a new subarray at a named key in a Json object. */
-Array setArray (Object&, Json::StaticString const& key);
-
-
-/** Add a new subobject at a named key in a Json object. */
-Json::Value& addObject (Json::Value&, Json::StaticString const& key);
+Array
+setArray(Object&, Json::StaticString const& key);
 
 /** Add a new subobject at a named key in a Json object. */
-Object addObject (Object&, Json::StaticString const& key);
+Json::Value&
+addObject(Json::Value&, Json::StaticString const& key);
 
+/** Add a new subobject at a named key in a Json object. */
+Object
+addObject(Object&, Json::StaticString const& key);
 
 /** Append a new subarray to a Json array. */
-Json::Value& appendArray (Json::Value&);
+Json::Value&
+appendArray(Json::Value&);
 
 /** Append a new subarray to a Json array. */
-Array appendArray (Array&);
-
-
-/** Append a new subobject to a Json object. */
-Json::Value& appendObject (Json::Value&);
+Array
+appendArray(Array&);
 
 /** Append a new subobject to a Json object. */
-Object appendObject (Array&);
+Json::Value&
+appendObject(Json::Value&);
 
+/** Append a new subobject to a Json object. */
+Object
+appendObject(Array&);
 
 /** Copy all the keys and values from one object into another. */
-void copyFrom (Json::Value& to, Json::Value const& from);
+void
+copyFrom(Json::Value& to, Json::Value const& from);
 
 /** Copy all the keys and values from one object into another. */
-void copyFrom (Object& to, Json::Value const& from);
-
+void
+copyFrom(Object& to, Json::Value const& from);
 
 /** An Object that contains its own Writer. */
 class WriterObject
 {
 public:
-    WriterObject (Output const& output)
-            : writer_ (std::make_unique<Writer> (output)),
-              object_ (std::make_unique<Object::Root> (*writer_))
+    WriterObject(Output const& output)
+        : writer_(std::make_unique<Writer>(output))
+        , object_(std::make_unique<Object::Root>(*writer_))
     {
     }
 
-    WriterObject (WriterObject&& other) = default;
+    WriterObject(WriterObject&& other) = default;
 
-    Object* operator->()
+    Object*
+    operator->()
     {
         return object_.get();
     }
 
-    Object& operator*()
+    Object&
+    operator*()
     {
         return *object_;
     }
 
 private:
-    std::unique_ptr <Writer> writer_;
+    std::unique_ptr<Writer> writer_;
     std::unique_ptr<Object::Root> object_;
 };
 
-WriterObject stringWriterObject (std::string&);
+WriterObject
+stringWriterObject(std::string&);
 
 //------------------------------------------------------------------------------
 // Implementation details.
@@ -348,12 +372,13 @@ private:
     std::string const key_;
 
 public:
-    Proxy (Object& object, std::string const& key);
+    Proxy(Object& object, std::string const& key);
 
     template <class T>
-    void operator= (T const& t)
+    void
+    operator=(T const& t)
     {
-        object_.set (key_, t);
+        object_.set(key_, t);
         // Note: This function shouldn't return *this, because it's a trap.
         //
         // In Json::Value, foo[jss::key] returns a reference to a
@@ -368,69 +393,71 @@ public:
 //------------------------------------------------------------------------------
 
 template <typename Scalar>
-void Array::append (Scalar const& value)
+void
+Array::append(Scalar const& value)
 {
-    checkWritable ("append");
+    checkWritable("append");
     if (writer_)
-        writer_->append (value);
+        writer_->append(value);
 }
 
 template <typename Scalar>
-void Object::set (std::string const& key, Scalar const& value)
+void
+Object::set(std::string const& key, Scalar const& value)
 {
-    checkWritable ("set");
+    checkWritable("set");
     if (writer_)
-        writer_->set (key, value);
+        writer_->set(key, value);
 }
 
-inline
-Json::Value& setArray (Json::Value& json, Json::StaticString const& key)
+inline Json::Value&
+setArray(Json::Value& json, Json::StaticString const& key)
 {
     return (json[key] = Json::arrayValue);
 }
 
-inline
-Array setArray (Object& json, Json::StaticString const& key)
+inline Array
+setArray(Object& json, Json::StaticString const& key)
 {
-    return json.setArray (std::string (key));
+    return json.setArray(std::string(key));
 }
 
-inline
-Json::Value& addObject (Json::Value& json, Json::StaticString const& key)
+inline Json::Value&
+addObject(Json::Value& json, Json::StaticString const& key)
 {
     return (json[key] = Json::objectValue);
 }
 
-inline
-Object addObject (Object& object, Json::StaticString const& key)
+inline Object
+addObject(Object& object, Json::StaticString const& key)
 {
-    return object.setObject (std::string (key));
+    return object.setObject(std::string(key));
 }
 
-inline
-Json::Value& appendArray (Json::Value& json)
+inline Json::Value&
+appendArray(Json::Value& json)
 {
-    return json.append (Json::arrayValue);
+    return json.append(Json::arrayValue);
 }
 
-inline
-Array appendArray (Array& json)
+inline Array
+appendArray(Array& json)
 {
-    return json.appendArray ();
+    return json.appendArray();
 }
 
-inline
-Json::Value& appendObject (Json::Value& json)
+inline Json::Value&
+appendObject(Json::Value& json)
 {
-    return json.append (Json::objectValue);
+    return json.append(Json::objectValue);
 }
 
-inline
-Object appendObject (Array& json)
+inline Object
+appendObject(Array& json)
 {
-    return json.appendObject ();
+    return json.appendObject();
 }
 
-} // Json
+}  // namespace Json
 
 #endif

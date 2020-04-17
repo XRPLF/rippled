@@ -20,8 +20,8 @@
 #ifndef RIPPLE_CORE_WORKERS_H_INCLUDED
 #define RIPPLE_CORE_WORKERS_H_INCLUDED
 
-#include <ripple/core/impl/semaphore.h>
 #include <ripple/beast/core/LockFreeStack.h>
+#include <ripple/core/impl/semaphore.h>
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
@@ -30,23 +30,23 @@
 
 namespace ripple {
 
-namespace perf
-{
-    class PerfLog;
+namespace perf {
+class PerfLog;
 }
 
 /** A group of threads that process tasks.
-*/
+ */
 class Workers
 {
 public:
     /** Called to perform tasks as needed. */
     struct Callback
     {
-        virtual ~Callback () = default;
+        virtual ~Callback() = default;
         Callback() = default;
         Callback(Callback const&) = delete;
-        Callback& operator=(Callback const&) = delete;
+        Callback&
+        operator=(Callback const&) = delete;
 
         /** Perform a task.
 
@@ -58,7 +58,8 @@ public:
 
             @see Workers::addTask
         */
-        virtual void processTask (int instance) = 0;
+        virtual void
+        processTask(int instance) = 0;
     };
 
     /** Create the object.
@@ -68,28 +69,31 @@ public:
 
         @param threadNames The name given to each created worker thread.
     */
-    explicit Workers (Callback& callback,
-                      perf::PerfLog* perfLog,
-                      std::string const& threadNames = "Worker",
-                      int numberOfThreads =
-                         static_cast<int>(std::thread::hardware_concurrency()));
+    explicit Workers(
+        Callback& callback,
+        perf::PerfLog* perfLog,
+        std::string const& threadNames = "Worker",
+        int numberOfThreads =
+            static_cast<int>(std::thread::hardware_concurrency()));
 
-    ~Workers ();
+    ~Workers();
 
     /** Retrieve the desired number of threads.
 
         This just returns the number of active threads that were requested. If
-        there was a recent call to setNumberOfThreads, the actual number of active
-        threads may be temporarily different from what was last requested.
+        there was a recent call to setNumberOfThreads, the actual number of
+       active threads may be temporarily different from what was last requested.
 
         @note This function is not thread-safe.
     */
-    int getNumberOfThreads () const noexcept;
+    int
+    getNumberOfThreads() const noexcept;
 
     /** Set the desired number of threads.
         @note This function is not thread-safe.
     */
-    void setNumberOfThreads (int numberOfThreads);
+    void
+    setNumberOfThreads(int numberOfThreads);
 
     /** Pause all threads and wait until they are paused.
 
@@ -99,7 +103,8 @@ public:
 
         @note This function is not thread-safe.
     */
-    void pauseAllThreadsAndWait ();
+    void
+    pauseAllThreadsAndWait();
 
     /** Add a task to be performed.
 
@@ -109,13 +114,15 @@ public:
 
         @note This function is thread-safe.
     */
-    void addTask ();
+    void
+    addTask();
 
     /** Get the number of currently executing calls of Callback::processTask.
         While this function is thread-safe, the value may not stay
         accurate for very long. It's mainly for diagnostic purposes.
     */
-    int numberOfCurrentlyRunningTasks () const noexcept;
+    int
+    numberOfCurrentlyRunningTasks() const noexcept;
 
     //--------------------------------------------------------------------------
 
@@ -133,21 +140,23 @@ private:
         Idle:   Active, but blocked on waiting for a task.
         Paused: Blocked waiting to exit or become active.
     */
-    class Worker
-        : public beast::LockFreeStack <Worker>::Node
-        , public beast::LockFreeStack <Worker, PausedTag>::Node
+    class Worker : public beast::LockFreeStack<Worker>::Node,
+                   public beast::LockFreeStack<Worker, PausedTag>::Node
     {
     public:
-        Worker (Workers& workers,
+        Worker(
+            Workers& workers,
             std::string const& threadName,
             int const instance);
 
-        ~Worker ();
+        ~Worker();
 
-        void notify ();
+        void
+        notify();
 
     private:
-        void run ();
+        void
+        run();
 
     private:
         Workers& m_workers;
@@ -157,29 +166,32 @@ private:
         std::thread thread_;
         std::mutex mutex_;
         std::condition_variable wakeup_;
-        int wakeCount_;               // how many times to un-pause
+        int wakeCount_;  // how many times to un-pause
         bool shouldExit_;
     };
 
 private:
-    static void deleteWorkers (beast::LockFreeStack <Worker>& stack);
+    static void
+    deleteWorkers(beast::LockFreeStack<Worker>& stack);
 
 private:
     Callback& m_callback;
     perf::PerfLog* perfLog_;
-    std::string m_threadNames;                   // The name to give each thread
-    std::condition_variable m_cv;                // signaled when all threads paused
-    std::mutex              m_mut;
-    bool                    m_allPaused;
-    semaphore m_semaphore;                       // each pending task is 1 resource
-    int m_numberOfThreads;                       // how many we want active now
-    std::atomic <int> m_activeCount;             // to know when all are paused
-    std::atomic <int> m_pauseCount;              // how many threads need to pause now
-    std::atomic <int> m_runningTaskCount;        // how many calls to processTask() active
-    beast::LockFreeStack <Worker> m_everyone;           // holds all created workers
-    beast::LockFreeStack <Worker, PausedTag> m_paused;  // holds just paused workers
+    std::string m_threadNames;     // The name to give each thread
+    std::condition_variable m_cv;  // signaled when all threads paused
+    std::mutex m_mut;
+    bool m_allPaused;
+    semaphore m_semaphore;           // each pending task is 1 resource
+    int m_numberOfThreads;           // how many we want active now
+    std::atomic<int> m_activeCount;  // to know when all are paused
+    std::atomic<int> m_pauseCount;   // how many threads need to pause now
+    std::atomic<int>
+        m_runningTaskCount;  // how many calls to processTask() active
+    beast::LockFreeStack<Worker> m_everyone;  // holds all created workers
+    beast::LockFreeStack<Worker, PausedTag>
+        m_paused;  // holds just paused workers
 };
 
-} // beast
+}  // namespace ripple
 
 #endif

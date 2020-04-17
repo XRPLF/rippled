@@ -25,11 +25,14 @@
 
 namespace ripple {
 
-Json::Value doAccountTxOld (RPC::JsonContext& context);
-Json::Value doAccountTxJson (RPC::JsonContext& context);
+Json::Value
+doAccountTxOld(RPC::JsonContext& context);
+Json::Value
+doAccountTxJson(RPC::JsonContext& context);
 
 // Temporary switching code until the old account_tx is removed
-Json::Value doAccountTxSwitch (RPC::JsonContext& context)
+Json::Value
+doAccountTxSwitch(RPC::JsonContext& context)
 {
     if (context.params.isMember(jss::offset) ||
         context.params.isMember(jss::count) ||
@@ -42,4 +45,4 @@ Json::Value doAccountTxSwitch (RPC::JsonContext& context)
     return doAccountTxJson(context);
 }
 
-} // ripple
+}  // namespace ripple

@@ -17,18 +17,17 @@
 */
 //==============================================================================
 
+#include <ripple/core/DatabaseCon.h>
+#include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/protocol/ErrorCodes.h>
 
 namespace ripple {
 
 class Transaction_test : public beast::unit_test::suite
 {
-
     void
     testRangeRequest()
     {
@@ -37,11 +36,12 @@ class Transaction_test : public beast::unit_test::suite
         using namespace test::jtx;
         using std::to_string;
 
-        const char* COMMAND   = jss::tx.c_str();
-        const char* BINARY    = jss::binary.c_str();
+        const char* COMMAND = jss::tx.c_str();
+        const char* BINARY = jss::binary.c_str();
         const char* NOT_FOUND = RPC::get_error_info(rpcTXN_NOT_FOUND).token;
-        const char* INVALID   = RPC::get_error_info(rpcINVALID_LGR_RANGE).token;
-        const char* EXCESSIVE = RPC::get_error_info(rpcEXCESSIVE_LGR_RANGE).token;
+        const char* INVALID = RPC::get_error_info(rpcINVALID_LGR_RANGE).token;
+        const char* EXCESSIVE =
+            RPC::get_error_info(rpcEXCESSIVE_LGR_RANGE).token;
 
         Env env(*this);
         auto const alice = Account("alice");
@@ -239,9 +239,7 @@ class Transaction_test : public beast::unit_test::suite
         // Provide an invalid range: (only one value)
         {
             auto const result = env.rpc(
-                COMMAND,
-                to_string(tx->getTransactionID()),
-                to_string(20));
+                COMMAND, to_string(tx->getTransactionID()), to_string(20));
 
             // Since we only provided one value for the range,
             // the interface parses it as a false binary flag,
@@ -268,16 +266,16 @@ class Transaction_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!result[jss::result].isMember(jss::searched_all));
         }
-
     }
 
 public:
-    void run () override
+    void
+    run() override
     {
         testRangeRequest();
     }
 };
 
-BEAST_DEFINE_TESTSUITE (Transaction, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(Transaction, rpc, ripple);
 
-}  // ripple
+}  // namespace ripple

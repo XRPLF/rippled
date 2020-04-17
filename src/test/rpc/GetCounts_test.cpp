@@ -17,17 +17,18 @@
 */
 //==============================================================================
 
-#include <test/jtx.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/protocol/SField.h>
 #include <ripple/basics/CountedObject.h>
+#include <ripple/beast/unit_test.h>
+#include <ripple/protocol/SField.h>
+#include <ripple/protocol/jss.h>
+#include <test/jtx.h>
 
 namespace ripple {
 
 class GetCounts_test : public beast::unit_test::suite
 {
-    void testGetCounts()
+    void
+    testGetCounts()
     {
         using namespace test::jtx;
         Env env(*this);
@@ -37,12 +38,12 @@ class GetCounts_test : public beast::unit_test::suite
             // check counts with no transactions posted
             result = env.rpc("get_counts")[jss::result];
             BEAST_EXPECT(result[jss::status] == "success");
-            BEAST_EXPECT(! result.isMember("Transaction"));
-            BEAST_EXPECT(! result.isMember("STObject"));
-            BEAST_EXPECT(! result.isMember("HashRouterEntry"));
+            BEAST_EXPECT(!result.isMember("Transaction"));
+            BEAST_EXPECT(!result.isMember("STObject"));
+            BEAST_EXPECT(!result.isMember("HashRouterEntry"));
             BEAST_EXPECT(
                 result.isMember(jss::uptime) &&
-                ! result[jss::uptime].asString().empty());
+                !result[jss::uptime].asString().empty());
             BEAST_EXPECT(
                 result.isMember(jss::dbKBTotal) &&
                 result[jss::dbKBTotal].asInt() > 0);
@@ -50,13 +51,13 @@ class GetCounts_test : public beast::unit_test::suite
 
         // create some transactions
         env.close();
-        Account alice {"alice"};
-        Account bob {"bob"};
-        env.fund (XRP(10000), alice, bob);
-        env.trust (alice["USD"](1000), bob);
-        for(auto i=0; i<20; ++i)
+        Account alice{"alice"};
+        Account bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        env.trust(alice["USD"](1000), bob);
+        for (auto i = 0; i < 20; ++i)
         {
-            env (pay (alice, bob, alice["USD"](5)));
+            env(pay(alice, bob, alice["USD"](5)));
             env.close();
         }
 
@@ -65,13 +66,14 @@ class GetCounts_test : public beast::unit_test::suite
             result = env.rpc("get_counts")[jss::result];
             BEAST_EXPECT(result[jss::status] == "success");
             // compare with values reported by CountedObjects
-            auto const& objectCounts = CountedObjects::getInstance ().getCounts (10);
+            auto const& objectCounts =
+                CountedObjects::getInstance().getCounts(10);
             for (auto const& it : objectCounts)
             {
                 BEAST_EXPECTS(result.isMember(it.first), it.first);
                 BEAST_EXPECTS(result[it.first].asInt() == it.second, it.first);
             }
-            BEAST_EXPECT(! result.isMember(jss::local_txs));
+            BEAST_EXPECT(!result.isMember(jss::local_txs));
         }
 
         {
@@ -81,22 +83,23 @@ class GetCounts_test : public beast::unit_test::suite
             BEAST_EXPECT(result[jss::status] == "success");
 
             // compare with values reported by CountedObjects
-            auto const& objectCounts = CountedObjects::getInstance ().getCounts (100);
+            auto const& objectCounts =
+                CountedObjects::getInstance().getCounts(100);
             for (auto const& it : objectCounts)
             {
                 BEAST_EXPECTS(result.isMember(it.first), it.first);
                 BEAST_EXPECTS(result[it.first].asInt() == it.second, it.first);
             }
-            BEAST_EXPECT(! result.isMember("Transaction"));
-            BEAST_EXPECT(! result.isMember("STTx"));
-            BEAST_EXPECT(! result.isMember("STArray"));
-            BEAST_EXPECT(! result.isMember("HashRouterEntry"));
-            BEAST_EXPECT(! result.isMember("STLedgerEntry"));
+            BEAST_EXPECT(!result.isMember("Transaction"));
+            BEAST_EXPECT(!result.isMember("STTx"));
+            BEAST_EXPECT(!result.isMember("STArray"));
+            BEAST_EXPECT(!result.isMember("HashRouterEntry"));
+            BEAST_EXPECT(!result.isMember("STLedgerEntry"));
         }
 
         {
             // local_txs field will exist when there are open Txs
-            env (pay (alice, bob, alice["USD"](5)));
+            env(pay(alice, bob, alice["USD"](5)));
             result = env.rpc("get_counts")[jss::result];
             // deliberately don't call close so we have open Tx
             BEAST_EXPECT(
@@ -106,13 +109,13 @@ class GetCounts_test : public beast::unit_test::suite
     }
 
 public:
-    void run () override
+    void
+    run() override
     {
         testGetCounts();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(GetCounts,rpc,ripple);
+BEAST_DEFINE_TESTSUITE(GetCounts, rpc, ripple);
 
-} // ripple
-
+}  // namespace ripple

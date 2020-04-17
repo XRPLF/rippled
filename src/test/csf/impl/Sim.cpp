@@ -34,7 +34,7 @@ Sim::run(int ledgers)
 }
 
 void
-Sim::run(SimDuration const & dur)
+Sim::run(SimDuration const& dur)
 {
     for (auto& p : peers)
     {
@@ -51,16 +51,14 @@ Sim::synchronized() const
 }
 
 bool
-Sim::synchronized(PeerGroup const & g) const
+Sim::synchronized(PeerGroup const& g) const
 {
     if (g.size() < 1)
         return true;
-    Peer const * ref = g[0];
+    Peer const* ref = g[0];
     return std::all_of(g.begin(), g.end(), [&ref](Peer const* p) {
-        return p->lastClosedLedger.id() ==
-            ref->lastClosedLedger.id() &&
-            p->fullyValidatedLedger.id() ==
-            ref->fullyValidatedLedger.id();
+        return p->lastClosedLedger.id() == ref->lastClosedLedger.id() &&
+            p->fullyValidatedLedger.id() == ref->fullyValidatedLedger.id();
     });
 }
 
@@ -70,12 +68,12 @@ Sim::branches() const
     return branches(allPeers);
 }
 std::size_t
-Sim::branches(PeerGroup const & g) const
+Sim::branches(PeerGroup const& g) const
 {
-    if(g.size() < 1)
+    if (g.size() < 1)
         return 0;
     std::set<Ledger> ledgers;
-    for(auto const & peer : g)
+    for (auto const& peer : g)
         ledgers.insert(peer->fullyValidatedLedger);
 
     return oracle.branches(ledgers);

@@ -20,14 +20,13 @@
 #ifndef RIPPLE_CONDITIONS_ERROR_H
 #define RIPPLE_CONDITIONS_ERROR_H
 
-#include <system_error>
 #include <string>
+#include <system_error>
 
 namespace ripple {
 namespace cryptoconditions {
 
-enum class error
-{
+enum class error {
     generic = 1,
     unsupported_type,
     unsupported_subtype,
@@ -50,13 +49,12 @@ enum class error
 std::error_code
 make_error_code(error ev);
 
-} // cryptoconditions
-} // ripple
+}  // namespace cryptoconditions
+}  // namespace ripple
 
-namespace std
-{
+namespace std {
 
-template<>
+template <>
 struct is_error_code_enum<ripple::cryptoconditions::error>
 {
     explicit is_error_code_enum() = default;
@@ -64,6 +62,6 @@ struct is_error_code_enum<ripple::cryptoconditions::error>
     static bool const value = true;
 };
 
-} // std
+}  // namespace std
 
 #endif

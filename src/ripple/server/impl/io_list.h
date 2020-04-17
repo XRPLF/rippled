@@ -37,8 +37,9 @@ class io_list final
 public:
     class work
     {
-        template<class = void>
-        void destroy();
+        template <class = void>
+        void
+        destroy();
 
         friend class io_list;
         io_list* ios_ = nullptr;
@@ -61,19 +62,20 @@ public:
             return *ios_;
         }
 
-        virtual void close() = 0;
+        virtual void
+        close() = 0;
     };
 
 private:
-    template<class = void>
-    void destroy();
+    template <class = void>
+    void
+    destroy();
 
     std::mutex m_;
     std::size_t n_ = 0;
     bool closed_ = false;
     std::condition_variable cv_;
-    boost::container::flat_map<work*,
-        std::weak_ptr<work>> map_;
+    boost::container::flat_map<work*, std::weak_ptr<work>> map_;
     std::function<void(void)> f_;
 
 public:
@@ -144,18 +146,18 @@ public:
 
             No effect after the first call.
     */
-    template<class Finisher>
+    template <class Finisher>
     void
     close(Finisher&& f);
 
     void
     close()
     {
-        close([]{});
+        close([] {});
     }
 
     /** Block until the io_list stops.
-        
+
         Effects:
             The caller is blocked until the io_list is
             closed and all associated work is destroyed.
@@ -168,35 +170,34 @@ public:
             used by work objects associated with this io_list
             exists in the caller's call stack.
     */
-    template<class = void>
+    template <class = void>
     void
     join();
 };
 
 //------------------------------------------------------------------------------
 
-template<class>
+template <class>
 void
 io_list::work::destroy()
 {
-    if(! ios_)
+    if (!ios_)
         return;
     std::function<void(void)> f;
     {
         std::lock_guard lock(ios_->m_);
         ios_->map_.erase(this);
-        if(--ios_->n_ == 0 &&
-            ios_->closed_)
+        if (--ios_->n_ == 0 && ios_->closed_)
         {
             std::swap(f, ios_->f_);
             ios_->cv_.notify_all();
         }
     }
-    if(f)
+    if (f)
         f();
 }
 
-template<class>
+template <class>
 void
 io_list::destroy()
 {
@@ -208,16 +209,15 @@ template <class T, class... Args>
 std::shared_ptr<T>
 io_list::emplace(Args&&... args)
 {
-    static_assert(std::is_base_of<work, T>::value,
-        "T must derive from io_list::work");
-    if(closed_)
+    static_assert(
+        std::is_base_of<work, T>::value, "T must derive from io_list::work");
+    if (closed_)
         return nullptr;
-    auto sp = std::make_shared<T>(
-        std::forward<Args>(args)...);
+    auto sp = std::make_shared<T>(std::forward<Args>(args)...);
     decltype(sp) dead;
 
     std::lock_guard lock(m_);
-    if(! closed_)
+    if (!closed_)
     {
         ++n_;
         sp->work::ios_ = this;
@@ -230,21 +230,21 @@ io_list::emplace(Args&&... args)
     return sp;
 }
 
-template<class Finisher>
+template <class Finisher>
 void
 io_list::close(Finisher&& f)
 {
     std::unique_lock<std::mutex> lock(m_);
-    if(closed_)
+    if (closed_)
         return;
     closed_ = true;
     auto map = std::move(map_);
-    if(! map.empty())
+    if (!map.empty())
     {
         f_ = std::forward<Finisher>(f);
         lock.unlock();
-        for(auto const& p : map)
-            if(auto sp = p.second.lock())
+        for (auto const& p : map)
+            if (auto sp = p.second.lock())
                 sp->close();
     }
     else
@@ -254,18 +254,14 @@ io_list::close(Finisher&& f)
     }
 }
 
-template<class>
+template <class>
 void
 io_list::join()
 {
     std::unique_lock<std::mutex> lock(m_);
-    cv_.wait(lock,
-        [&]
-        {
-            return closed_ && n_ == 0;
-        });
+    cv_.wait(lock, [&] { return closed_ && n_ == 0; });
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

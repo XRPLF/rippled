@@ -178,9 +178,7 @@ public:
         std::map<uint256, bool> ret;
         for (auto const& [k, v] : delta)
         {
-            assert(
-                (v.first && !v.second) ||
-                (v.second && !v.first));
+            assert((v.first && !v.second) || (v.second && !v.first));
 
             ret[k] = static_cast<bool>(v.first);
         }
@@ -190,5 +188,5 @@ public:
     //! The SHAMap representing the transactions.
     std::shared_ptr<SHAMap> map_;
 };
-}
+}  // namespace ripple
 #endif

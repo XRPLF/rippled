@@ -24,23 +24,18 @@
 
 namespace ripple {
 
-class EscrowCreate
-    : public Transactor
+class EscrowCreate : public Transactor
 {
 public:
-    explicit
-    EscrowCreate (ApplyContext& ctx)
-        : Transactor(ctx)
+    explicit EscrowCreate(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    static
-    XRPAmount
+    static XRPAmount
     calculateMaxSpend(STTx const& tx);
 
-    static
-    NotTEC
-    preflight (PreflightContext const& ctx);
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
     TER
     doApply() override;
@@ -48,25 +43,18 @@ public:
 
 //------------------------------------------------------------------------------
 
-class EscrowFinish
-    : public Transactor
+class EscrowFinish : public Transactor
 {
 public:
-    explicit
-    EscrowFinish (ApplyContext& ctx)
-        : Transactor(ctx)
+    explicit EscrowFinish(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    static
-    NotTEC
-    preflight (PreflightContext const& ctx);
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-    static
-    FeeUnit64
-    calculateBaseFee (
-        ReadView const& view,
-        STTx const& tx);
+    static FeeUnit64
+    calculateBaseFee(ReadView const& view, STTx const& tx);
 
     TER
     doApply() override;
@@ -74,24 +62,20 @@ public:
 
 //------------------------------------------------------------------------------
 
-class EscrowCancel
-    : public Transactor
+class EscrowCancel : public Transactor
 {
 public:
-    explicit
-    EscrowCancel (ApplyContext& ctx)
-        : Transactor(ctx)
+    explicit EscrowCancel(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    static
-    NotTEC
-    preflight (PreflightContext const& ctx);
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
     TER
     doApply() override;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

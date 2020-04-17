@@ -42,18 +42,19 @@ class Application;
 */
 class LoadManager : public Stoppable
 {
-    LoadManager (Application& app, Stoppable& parent, beast::Journal journal);
+    LoadManager(Application& app, Stoppable& parent, beast::Journal journal);
 
 public:
-    LoadManager () = delete;
-    LoadManager (LoadManager const&) = delete;
-    LoadManager& operator=(LoadManager const&) = delete;
+    LoadManager() = delete;
+    LoadManager(LoadManager const&) = delete;
+    LoadManager&
+    operator=(LoadManager const&) = delete;
 
     /** Destroy the manager.
 
         The destructor returns only after the thread has stopped.
     */
-    ~LoadManager ();
+    ~LoadManager();
 
     /** Turn on deadlock detection.
 
@@ -67,47 +68,55 @@ public:
     //             to prevent it from going off during program startup if
     //             there's a lengthy initialization operation taking place?
     //
-    void activateDeadlockDetector ();
+    void
+    activateDeadlockDetector();
 
     /** Reset the deadlock detection timer.
 
         A dedicated thread monitors the deadlock timer, and if too much
         time passes it will produce log warnings.
     */
-    void resetDeadlockDetector ();
+    void
+    resetDeadlockDetector();
 
     //--------------------------------------------------------------------------
 
     // Stoppable members
-    void onPrepare () override;
+    void
+    onPrepare() override;
 
-    void onStart () override;
+    void
+    onStart() override;
 
-    void onStop () override;
+    void
+    onStop() override;
 
 private:
-    void run ();
+    void
+    run();
 
 private:
     Application& app_;
     beast::Journal const journal_;
 
     std::thread thread_;
-    std::mutex mutex_;          // Guards deadLock_, armed_, and stop_.
+    std::mutex mutex_;  // Guards deadLock_, armed_, and stop_.
 
-    std::chrono::steady_clock::time_point deadLock_;  // Detect server deadlocks.
+    std::chrono::steady_clock::time_point
+        deadLock_;  // Detect server deadlocks.
     bool armed_;
     bool stop_;
 
-    friend
-    std::unique_ptr<LoadManager>
-    make_LoadManager(Application& app, Stoppable& parent, beast::Journal journal);
+    friend std::unique_ptr<LoadManager>
+    make_LoadManager(
+        Application& app,
+        Stoppable& parent,
+        beast::Journal journal);
 };
 
 std::unique_ptr<LoadManager>
-make_LoadManager (
-    Application& app, Stoppable& parent, beast::Journal journal);
+make_LoadManager(Application& app, Stoppable& parent, beast::Journal journal);
 
-} // ripple
+}  // namespace ripple
 
 #endif

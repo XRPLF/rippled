@@ -32,10 +32,11 @@ namespace ripple {
 // A few handy aliases
 
 using days = std::chrono::duration<
-    int, std::ratio_multiply<std::chrono::hours::period, std::ratio<24>>>;
+    int,
+    std::ratio_multiply<std::chrono::hours::period, std::ratio<24>>>;
 
-using weeks = std::chrono::duration<
-    int, std::ratio_multiply<days::period, std::ratio<7>>>;
+using weeks = std::chrono::
+    duration<int, std::ratio_multiply<days::period, std::ratio<7>>>;
 
 /** Clock for measuring Ripple Network Time.
 
@@ -47,9 +48,9 @@ class NetClock
 public:
     explicit NetClock() = default;
 
-    using rep        = std::uint32_t;
-    using period     = std::ratio<1>;
-    using duration   = std::chrono::duration<rep, period>;
+    using rep = std::uint32_t;
+    using period = std::ratio<1>;
+    using duration = std::chrono::duration<rep, period>;
     using time_point = std::chrono::time_point<NetClock>;
 
     static bool const is_steady = false;
@@ -62,8 +63,7 @@ to_string(date::sys_time<Duration> tp)
     return date::format("%Y-%b-%d %T %Z", tp);
 }
 
-inline
-std::string
+inline std::string
 to_string(NetClock::time_point tp)
 {
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
@@ -82,8 +82,7 @@ using Stopwatch = beast::abstract_clock<std::chrono::steady_clock>;
 using TestStopwatch = beast::manual_clock<std::chrono::steady_clock>;
 
 /** Returns an instance of a wall clock. */
-inline
-Stopwatch&
+inline Stopwatch&
 stopwatch()
 {
     return beast::get_abstract_clock<
@@ -91,6 +90,6 @@ stopwatch()
         beast::basic_seconds_clock<std::chrono::steady_clock>>();
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

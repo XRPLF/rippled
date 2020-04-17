@@ -37,7 +37,8 @@ struct LocalValues
     struct BasicValue
     {
         virtual ~BasicValue() = default;
-        virtual void* get() = 0;
+        virtual void*
+        get() = 0;
     };
 
     template <class T>
@@ -46,9 +47,12 @@ struct LocalValues
         T t_;
 
         Value() = default;
-        explicit Value(T const& t) : t_(t) {}
+        explicit Value(T const& t) : t_(t)
+        {
+        }
 
-        void* get() override
+        void*
+        get() override
         {
             return &t_;
         }
@@ -57,42 +61,41 @@ struct LocalValues
     // Keys are the address of a LocalValue.
     std::unordered_map<void const*, std::unique_ptr<BasicValue>> values;
 
-    static
-    inline
-    void
+    static inline void
     cleanup(LocalValues* lvs)
     {
-        if (lvs && ! lvs->onCoro)
+        if (lvs && !lvs->onCoro)
             delete lvs;
     }
 };
 
-template<class = void>
+template <class = void>
 boost::thread_specific_ptr<detail::LocalValues>&
 getLocalValues()
 {
-    static boost::thread_specific_ptr<
-        detail::LocalValues> tsp(&detail::LocalValues::cleanup);
+    static boost::thread_specific_ptr<detail::LocalValues> tsp(
+        &detail::LocalValues::cleanup);
     return tsp;
 }
 
-} // detail
+}  // namespace detail
 
 template <class T>
 class LocalValue
 {
 public:
     template <class... Args>
-    LocalValue(Args&&... args)
-        : t_(std::forward<Args>(args)...)
+    LocalValue(Args&&... args) : t_(std::forward<Args>(args)...)
     {
     }
 
     /** Stores instance of T specific to the calling coroutine or thread. */
-    T& operator*();
+    T&
+    operator*();
 
     /** Stores instance of T specific to the calling coroutine or thread. */
-    T* operator->()
+    T*
+    operator->()
     {
         return &**this;
     }
@@ -106,7 +109,7 @@ T&
 LocalValue<T>::operator*()
 {
     auto lvs = detail::getLocalValues().get();
-    if (! lvs)
+    if (!lvs)
     {
         lvs = new detail::LocalValues();
         lvs->onCoro = false;
@@ -119,10 +122,11 @@ LocalValue<T>::operator*()
             return *reinterpret_cast<T*>(iter->second->get());
     }
 
-    return *reinterpret_cast<T*>(lvs->values.emplace(this,
-        std::make_unique<detail::LocalValues::Value<T>>(t_)).
-            first->second->get());
+    return *reinterpret_cast<T*>(
+        lvs->values
+            .emplace(this, std::make_unique<detail::LocalValues::Value<T>>(t_))
+            .first->second->get());
 }
-} // ripple
+}  // namespace ripple
 
 #endif

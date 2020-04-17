@@ -43,7 +43,7 @@ struct Reporting
     static bool const dump_nodes = false;
 };
 
-}
-}
+}  // namespace PeerFinder
+}  // namespace ripple
 
 #endif

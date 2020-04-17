@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/app/tx/apply.h>
-#include <ripple/basics/Log.h>
-#include <ripple/core/DatabaseCon.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/HashRouter.h>
+#include <ripple/app/misc/Transaction.h>
+#include <ripple/app/tx/apply.h>
+#include <ripple/basics/Log.h>
 #include <ripple/basics/safe_cast.h>
+#include <ripple/core/DatabaseCon.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
@@ -32,16 +32,15 @@
 
 namespace ripple {
 
-Transaction::Transaction (std::shared_ptr<STTx const> const& stx,
-    std::string& reason, Application& app)
-    noexcept
-    : mTransaction (stx)
-    , mApp (app)
-    , j_ (app.journal ("Ledger"))
+Transaction::Transaction(
+    std::shared_ptr<STTx const> const& stx,
+    std::string& reason,
+    Application& app) noexcept
+    : mTransaction(stx), mApp(app), j_(app.journal("Ledger"))
 {
     try
     {
-        mTransactionID  = mTransaction->getTransactionID ();
+        mTransactionID = mTransaction->getTransactionID();
     }
     catch (std::exception& e)
     {
@@ -56,86 +55,100 @@ Transaction::Transaction (std::shared_ptr<STTx const> const& stx,
 // Misc.
 //
 
-void Transaction::setStatus (TransStatus ts, std::uint32_t lseq)
+void
+Transaction::setStatus(TransStatus ts, std::uint32_t lseq)
 {
-    mStatus     = ts;
-    mInLedger   = lseq;
+    mStatus = ts;
+    mInLedger = lseq;
 }
 
-TransStatus Transaction::sqlTransactionStatus(
-    boost::optional<std::string> const& status)
+TransStatus
+Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
 {
     char const c = (status) ? (*status)[0] : safe_cast<char>(txnSqlUnknown);
 
     switch (c)
     {
-    case txnSqlNew:       return NEW;
-    case txnSqlConflict:  return CONFLICTED;
-    case txnSqlHeld:      return HELD;
-    case txnSqlValidated: return COMMITTED;
-    case txnSqlIncluded:  return INCLUDED;
+        case txnSqlNew:
+            return NEW;
+        case txnSqlConflict:
+            return CONFLICTED;
+        case txnSqlHeld:
+            return HELD;
+        case txnSqlValidated:
+            return COMMITTED;
+        case txnSqlIncluded:
+            return INCLUDED;
     }
 
-    assert (c == txnSqlUnknown);
+    assert(c == txnSqlUnknown);
     return INVALID;
 }
 
-Transaction::pointer Transaction::transactionFromSQL (
+Transaction::pointer
+Transaction::transactionFromSQL(
     boost::optional<std::uint64_t> const& ledgerSeq,
     boost::optional<std::string> const& status,
     Blob const& rawTxn,
     Application& app)
 {
     std::uint32_t const inLedger =
-        rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or (0));
+        rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
 
-    SerialIter it (makeSlice(rawTxn));
-    auto txn = std::make_shared<STTx const> (it);
+    SerialIter it(makeSlice(rawTxn));
+    auto txn = std::make_shared<STTx const>(it);
     std::string reason;
-    auto tr = std::make_shared<Transaction> (
-        txn, reason, app);
+    auto tr = std::make_shared<Transaction>(txn, reason, app);
 
-    tr->setStatus (sqlTransactionStatus (status));
-    tr->setLedger (inLedger);
+    tr->setStatus(sqlTransactionStatus(status));
+    tr->setLedger(inLedger);
     return tr;
 }
 
-Transaction::pointer Transaction::load (uint256 const& id, Application& app, error_code_i& ec)
+Transaction::pointer
+Transaction::load(uint256 const& id, Application& app, error_code_i& ec)
 {
-    return boost::get<pointer> (load (id, app, boost::none, ec));
+    return boost::get<pointer>(load(id, app, boost::none, ec));
 }
 
 boost::variant<Transaction::pointer, bool>
-Transaction::load (uint256 const& id, Application& app, ClosedInterval<uint32_t> const& range,
+Transaction::load(
+    uint256 const& id,
+    Application& app,
+    ClosedInterval<uint32_t> const& range,
     error_code_i& ec)
 {
     using op = boost::optional<ClosedInterval<uint32_t>>;
 
-    return load (id, app, op {range}, ec);
+    return load(id, app, op{range}, ec);
 }
 
 boost::variant<Transaction::pointer, bool>
-Transaction::load (uint256 const& id, Application& app, boost::optional<ClosedInterval<uint32_t>> const& range,
+Transaction::load(
+    uint256 const& id,
+    Application& app,
+    boost::optional<ClosedInterval<uint32_t>> const& range,
     error_code_i& ec)
 {
-    std::string sql = "SELECT LedgerSeq,Status,RawTxn "
-                      "FROM Transactions WHERE TransID='";
+    std::string sql =
+        "SELECT LedgerSeq,Status,RawTxn "
+        "FROM Transactions WHERE TransID='";
 
-    sql.append (to_string (id));
-    sql.append ("';");
+    sql.append(to_string(id));
+    sql.append("';");
 
     boost::optional<std::uint64_t> ledgerSeq;
     boost::optional<std::string> status;
     Blob rawTxn;
     {
-        auto db = app.getTxnDB ().checkoutDb ();
-        soci::blob sociRawTxnBlob (*db);
+        auto db = app.getTxnDB().checkoutDb();
+        soci::blob sociRawTxnBlob(*db);
         soci::indicator rti;
 
-        *db << sql, soci::into (ledgerSeq), soci::into (status),
-                soci::into (sociRawTxnBlob, rti);
+        *db << sql, soci::into(ledgerSeq), soci::into(status),
+            soci::into(sociRawTxnBlob, rti);
 
-        auto const got_data = db->got_data ();
+        auto const got_data = db->got_data();
 
         if ((!got_data || rti != soci::i_ok) && !range)
             return nullptr;
@@ -144,27 +157,23 @@ Transaction::load (uint256 const& id, Application& app, boost::optional<ClosedIn
         {
             uint64_t count = 0;
 
-            *db << "SELECT COUNT(DISTINCT LedgerSeq) FROM Transactions WHERE LedgerSeq BETWEEN "
-                << range->first ()
-                << " AND "
-                << range->last ()
-                << ";",
-                soci::into (count, rti);
+            *db << "SELECT COUNT(DISTINCT LedgerSeq) FROM Transactions WHERE "
+                   "LedgerSeq BETWEEN "
+                << range->first() << " AND " << range->last() << ";",
+                soci::into(count, rti);
 
-            if (!db->got_data () || rti != soci::i_ok)
+            if (!db->got_data() || rti != soci::i_ok)
                 return false;
 
-            return count == (range->last () - range->first () + 1);
+            return count == (range->last() - range->first() + 1);
         }
 
-        convert (sociRawTxnBlob, rawTxn);
+        convert(sociRawTxnBlob, rawTxn);
     }
 
     try
     {
-        return Transaction::transactionFromSQL(
-            ledgerSeq, status,
-                rawTxn, app);
+        return Transaction::transactionFromSQL(ledgerSeq, status, rawTxn, app);
     }
     catch (std::exception& e)
     {
@@ -179,19 +188,19 @@ Transaction::load (uint256 const& id, Application& app, boost::optional<ClosedIn
 }
 
 // options 1 to include the date of the transaction
-Json::Value Transaction::getJson (JsonOptions options, bool binary) const
+Json::Value
+Transaction::getJson(JsonOptions options, bool binary) const
 {
-    Json::Value ret (mTransaction->getJson (JsonOptions::none, binary));
+    Json::Value ret(mTransaction->getJson(JsonOptions::none, binary));
 
     if (mInLedger)
     {
-        ret[jss::inLedger] = mInLedger;        // Deprecated.
+        ret[jss::inLedger] = mInLedger;  // Deprecated.
         ret[jss::ledger_index] = mInLedger;
 
         if (options == JsonOptions::include_date)
         {
-            auto ct = mApp.getLedgerMaster().
-                getCloseTimeBySeq (mInLedger);
+            auto ct = mApp.getLedgerMaster().getCloseTimeBySeq(mInLedger);
             if (ct)
                 ret[jss::date] = ct->time_since_epoch().count();
         }
@@ -200,4 +209,4 @@ Json::Value Transaction::getJson (JsonOptions options, bool binary) const
     return ret;
 }
 
-} // ripple
+}  // namespace ripple

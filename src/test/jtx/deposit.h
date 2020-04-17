@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_DEPOSIT_H_INCLUDED
 #define RIPPLE_TEST_JTX_DEPOSIT_H_INCLUDED
 
-#include <test/jtx/Env.h>
 #include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 
 namespace ripple {
 namespace test {
@@ -32,17 +32,17 @@ namespace deposit {
 
 /** Preauthorize for deposit.  Invoke as deposit::auth. */
 Json::Value
-auth (Account const& account, Account const& auth);
+auth(Account const& account, Account const& auth);
 
 /** Remove preauthorization for deposit.  Invoke as deposit::unauth. */
 Json::Value
-unauth (Account const& account, Account const& unauth);
+unauth(Account const& account, Account const& unauth);
 
-} // deposit
+}  // namespace deposit
 
-} // jtx
+}  // namespace jtx
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple
 
 #endif

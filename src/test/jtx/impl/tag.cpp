@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <test/jtx/tag.h>
 #include <ripple/protocol/jss.h>
+#include <test/jtx/tag.h>
 
 namespace ripple {
 namespace test {
@@ -36,6 +36,6 @@ stag::operator()(Env&, JTx& jt) const
     jt.jv["SourceTag"] = value_;
 }
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

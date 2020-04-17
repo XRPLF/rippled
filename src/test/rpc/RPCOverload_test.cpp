@@ -15,12 +15,12 @@
 */
 //==============================================================================
 
+#include <ripple/beast/unit_test.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/protocol/jss.h>
-#include <test/jtx/WSClient.h>
-#include <test/jtx/JSONRPCClient.h>
 #include <test/jtx.h>
-#include <ripple/beast/unit_test.h>
+#include <test/jtx/JSONRPCClient.h>
+#include <test/jtx/WSClient.h>
 
 namespace ripple {
 namespace test {
@@ -28,22 +28,22 @@ namespace test {
 class RPCOverload_test : public beast::unit_test::suite
 {
 public:
-    void testOverload(bool useWS)
+    void
+    testOverload(bool useWS)
     {
         testcase << "Overload " << (useWS ? "WS" : "HTTP") << " RPC client";
         using namespace jtx;
-        Env env {*this, envconfig([](std::unique_ptr<Config> cfg)
-            {
-                cfg->loadFromString ("[" SECTION_SIGNING_SUPPORT "]\ntrue");
-                return no_admin(std::move(cfg));
-            })};
+        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                    return no_admin(std::move(cfg));
+                })};
 
-        Account const alice {"alice"};
-        Account const bob {"bob"};
-        env.fund (XRP (10000), alice, bob);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
 
-        std::unique_ptr<AbstractClient> client = useWS ?
-              makeWSClient(env.app().config())
+        std::unique_ptr<AbstractClient> client = useWS
+            ? makeWSClient(env.app().config())
             : makeJSONRPCClient(env.app().config());
 
         Json::Value tx = Json::objectValue;
@@ -54,38 +54,38 @@ public:
         // Signing is a resource heavy transaction, so we want the server
         // to warn and eventually boot us.
         bool warned = false, booted = false;
-        for(int i = 0 ; i < 500 && !booted; ++i)
+        for (int i = 0; i < 500 && !booted; ++i)
         {
             auto jv = client->invoke("sign", tx);
-            if(!useWS)
+            if (!useWS)
                 jv = jv[jss::result];
             // When booted, we just get a null json response
-            if(jv.isNull())
+            if (jv.isNull())
                 booted = true;
             else if (!(jv.isMember(jss::status) &&
                        (jv[jss::status] == "success")))
             {
-                // Don't use BEAST_EXPECT above b/c it will be called a non-deterministic number of times
-                // and the number of tests run should be deterministic
+                // Don't use BEAST_EXPECT above b/c it will be called a
+                // non-deterministic number of times and the number of tests run
+                // should be deterministic
                 fail("", __FILE__, __LINE__);
             }
 
-            if(jv.isMember(jss::warning))
+            if (jv.isMember(jss::warning))
                 warned = jv[jss::warning] == jss::load;
         }
         BEAST_EXPECT(warned && booted);
     }
 
-
-
-    void run() override
+    void
+    run() override
     {
         testOverload(false /* http */);
         testOverload(true /* ws */);
     }
 };
 
-BEAST_DEFINE_TESTSUITE(RPCOverload,app,ripple);
+BEAST_DEFINE_TESTSUITE(RPCOverload, app, ripple);
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple

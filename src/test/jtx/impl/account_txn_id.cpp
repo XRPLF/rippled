@@ -30,6 +30,6 @@ account_txn_id::operator()(Env&, JTx& jt) const
         jt["AccountTxnID"] = strHex(hash_);
 }
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

@@ -22,8 +22,8 @@
 #include <ripple/conditions/Fulfillment.h>
 #include <ripple/conditions/impl/PreimageSha256.h>
 #include <ripple/conditions/impl/utils.h>
-#include <boost/regex.hpp>
 #include <boost/optional.hpp>
+#include <boost/regex.hpp>
 #include <type_traits>
 #include <vector>
 
@@ -31,9 +31,7 @@ namespace ripple {
 namespace cryptoconditions {
 
 bool
-match (
-    Fulfillment const& f,
-    Condition const& c)
+match(Fulfillment const& f, Condition const& c)
 {
     // Fast check: the fulfillment's type must match the
     // conditions's type:
@@ -46,26 +44,19 @@ match (
 }
 
 bool
-validate (
-    Fulfillment const& f,
-    Condition const& c,
-    Slice m)
+validate(Fulfillment const& f, Condition const& c, Slice m)
 {
-    return match (f, c) && f.validate (m);
+    return match(f, c) && f.validate(m);
 }
 
 bool
-validate (
-    Fulfillment const& f,
-    Condition const& c)
+validate(Fulfillment const& f, Condition const& c)
 {
-    return validate (f, c, {});
+    return validate(f, c, {});
 }
 
 std::unique_ptr<Fulfillment>
-Fulfillment::deserialize(
-    Slice s,
-    std::error_code& ec)
+Fulfillment::deserialize(Slice s, std::error_code& ec)
 {
     // Per the RFC, in a fulfillment we choose a type based
     // on the tag of the item we contain:
@@ -120,35 +111,35 @@ Fulfillment::deserialize(
     using TagType = decltype(p.tag);
     switch (p.tag)
     {
-    case safe_cast<TagType>(Type::preimageSha256):
-        f = PreimageSha256::deserialize(Slice(s.data(), p.length), ec);
-        if (ec)
+        case safe_cast<TagType>(Type::preimageSha256):
+            f = PreimageSha256::deserialize(Slice(s.data(), p.length), ec);
+            if (ec)
+                return {};
+            s += p.length;
+            break;
+
+        case safe_cast<TagType>(Type::prefixSha256):
+            ec = error::unsupported_type;
             return {};
-        s += p.length;
-        break;
+            break;
 
-    case safe_cast<TagType>(Type::prefixSha256):
-        ec = error::unsupported_type;
-        return {};
-        break;
+        case safe_cast<TagType>(Type::thresholdSha256):
+            ec = error::unsupported_type;
+            return {};
+            break;
 
-    case safe_cast<TagType>(Type::thresholdSha256):
-        ec = error::unsupported_type;
-        return {};
-        break;
+        case safe_cast<TagType>(Type::rsaSha256):
+            ec = error::unsupported_type;
+            return {};
+            break;
 
-    case safe_cast<TagType>(Type::rsaSha256):
-        ec = error::unsupported_type;
-        return {};
-        break;
+        case safe_cast<TagType>(Type::ed25519Sha256):
+            ec = error::unsupported_type;
+            return {};
 
-    case safe_cast<TagType>(Type::ed25519Sha256):
-        ec = error::unsupported_type;
-        return {};
-
-    default:
-        ec = error::unknown_type;
-        return {};
+        default:
+            ec = error::unknown_type;
+            return {};
     }
 
     if (!s.empty())
@@ -160,5 +151,5 @@ Fulfillment::deserialize(
     return f;
 }
 
-}
-}
+}  // namespace cryptoconditions
+}  // namespace ripple

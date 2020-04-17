@@ -31,11 +31,11 @@ class ec_key
 public:
     using pointer_t = struct opaque_EC_KEY*;
 
-    ec_key () : ptr(nullptr)
+    ec_key() : ptr(nullptr)
     {
     }
 
-    ec_key (pointer_t raw) : ptr(raw)
+    ec_key(pointer_t raw) : ptr(raw)
     {
     }
 
@@ -44,16 +44,22 @@ public:
         destroy();
     }
 
-    bool valid() const
+    bool
+    valid() const
     {
         return ptr != nullptr;
     }
 
-    pointer_t get() const  { return ptr; }
+    pointer_t
+    get() const
+    {
+        return ptr;
+    }
 
-    ec_key            (const ec_key&);
+    ec_key(const ec_key&);
 
-    pointer_t release()
+    pointer_t
+    release()
     {
         pointer_t released = ptr;
 
@@ -65,12 +71,14 @@ public:
 private:
     pointer_t ptr;
 
-    void destroy();
+    void
+    destroy();
 
-    ec_key& operator= (const ec_key&) = delete;
+    ec_key&
+    operator=(const ec_key&) = delete;
 };
 
-} // openssl
-} // ripple
+}  // namespace openssl
+}  // namespace ripple
 
 #endif

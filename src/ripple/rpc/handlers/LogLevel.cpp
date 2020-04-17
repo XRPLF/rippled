@@ -28,18 +28,19 @@
 
 namespace ripple {
 
-Json::Value doLogLevel (RPC::JsonContext& context)
+Json::Value
+doLogLevel(RPC::JsonContext& context)
 {
     // log_level
-    if (!context.params.isMember (jss::severity))
+    if (!context.params.isMember(jss::severity))
     {
         // get log severities
-        Json::Value ret (Json::objectValue);
-        Json::Value lev (Json::objectValue);
+        Json::Value ret(Json::objectValue);
+        Json::Value lev(Json::objectValue);
 
         lev[jss::base] =
             Logs::toString(Logs::fromSeverity(context.app.logs().threshold()));
-        std::vector< std::pair<std::string, std::string> > logTable (
+        std::vector<std::pair<std::string, std::string>> logTable(
             context.app.logs().partition_severities());
         using stringPair = std::map<std::string, std::string>::value_type;
         for (auto const& [k, v] : logTable)
@@ -49,15 +50,15 @@ Json::Value doLogLevel (RPC::JsonContext& context)
         return ret;
     }
 
-    LogSeverity const sv (
-        Logs::fromString (context.params[jss::severity].asString ()));
+    LogSeverity const sv(
+        Logs::fromString(context.params[jss::severity].asString()));
 
     if (sv == lsINVALID)
-        return rpcError (rpcINVALID_PARAMS);
+        return rpcError(rpcINVALID_PARAMS);
 
     auto severity = Logs::toSeverity(sv);
     // log_level severity
-    if (!context.params.isMember (jss::partition))
+    if (!context.params.isMember(jss::partition))
     {
         // set base log threshold
         context.app.logs().threshold(severity);
@@ -65,20 +66,20 @@ Json::Value doLogLevel (RPC::JsonContext& context)
     }
 
     // log_level partition severity base?
-    if (context.params.isMember (jss::partition))
+    if (context.params.isMember(jss::partition))
     {
         // set partition threshold
-        std::string partition (context.params[jss::partition].asString ());
+        std::string partition(context.params[jss::partition].asString());
 
-        if (boost::iequals (partition, "base"))
-            context.app.logs().threshold (severity);
+        if (boost::iequals(partition, "base"))
+            context.app.logs().threshold(severity);
         else
             context.app.logs().get(partition).threshold(severity);
 
         return Json::objectValue;
     }
 
-    return rpcError (rpcINVALID_PARAMS);
+    return rpcError(rpcINVALID_PARAMS);
 }
 
-} // ripple
+}  // namespace ripple

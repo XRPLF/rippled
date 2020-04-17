@@ -32,9 +32,9 @@ class Consensus_test : public beast::unit_test::suite
     SuiteJournal journal_;
 
 public:
-    Consensus_test ()
-    : journal_ ("Consensus_test", *this)
-    { }
+    Consensus_test() : journal_("Consensus_test", *this)
+    {
+    }
 
     void
     testShouldCloseLedger()
@@ -45,12 +45,12 @@ public:
         ConsensusParms const p{};
 
         // Bizarre times forcibly close
-        BEAST_EXPECT(
-            shouldCloseLedger(true, 10, 10, 10, -10s, 10s, 1s, 1s, p, journal_));
-        BEAST_EXPECT(
-            shouldCloseLedger(true, 10, 10, 10, 100h, 10s, 1s, 1s, p, journal_));
-        BEAST_EXPECT(
-            shouldCloseLedger(true, 10, 10, 10, 10s, 100h, 1s, 1s, p, journal_));
+        BEAST_EXPECT(shouldCloseLedger(
+            true, 10, 10, 10, -10s, 10s, 1s, 1s, p, journal_));
+        BEAST_EXPECT(shouldCloseLedger(
+            true, 10, 10, 10, 100h, 10s, 1s, 1s, p, journal_));
+        BEAST_EXPECT(shouldCloseLedger(
+            true, 10, 10, 10, 10s, 100h, 1s, 1s, p, journal_));
 
         // Rest of network has closed
         BEAST_EXPECT(
@@ -123,7 +123,7 @@ public:
 
         Sim s;
         PeerGroup peers = s.createGroup(1);
-        Peer * peer = peers[0];
+        Peer* peer = peers[0];
         peer->targetLedgers = 1;
         peer->start();
         peer->submit(Tx{1});
@@ -154,7 +154,7 @@ public:
             peers, date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
 
         // everyone submits their own ID as a TX
-        for (Peer * p : peers)
+        for (Peer* p : peers)
             p->submit(Tx(static_cast<std::uint32_t>(p->id)));
 
         sim.run(1);
@@ -276,8 +276,8 @@ public:
                 if (BEAST_EXPECT(sim.synchronized()))
                 {
                     // Verify all peers have same LCL but are missing
-                    // transaction 0,1 which was not received by all peers before
-                    // the ledger closed
+                    // transaction 0,1 which was not received by all peers
+                    // before the ledger closed
                     for (Peer* peer : network)
                     {
                         // Closed ledger has all but transaction 0,1
@@ -339,7 +339,6 @@ public:
                         }
                     }
                 }
-
             }
         }
     }
@@ -502,15 +501,15 @@ public:
             // synchronized because nodes 0 and 1 are running one ledger behind
             if (BEAST_EXPECT(sim.branches() == 1))
             {
-                for(Peer const* peer : majority)
+                for (Peer const* peer : majority)
                 {
                     // No jumps for majority nodes
                     BEAST_EXPECT(jumps[peer->id].closeJumps.empty());
                     BEAST_EXPECT(jumps[peer->id].fullyValidatedJumps.empty());
                 }
-                for(Peer const* peer : minority)
+                for (Peer const* peer : minority)
                 {
-                    auto & peerJumps = jumps[peer->id];
+                    auto& peerJumps = jumps[peer->id];
                     // last closed ledger jump between chains
                     {
                         if (BEAST_EXPECT(peerJumps.closeJumps.size() == 1))
@@ -578,7 +577,7 @@ public:
             sim.run(2);
 
             // Check all peers recovered
-            for (Peer * p: network)
+            for (Peer* p : network)
                 BEAST_EXPECT(p->prevLedgerID() == network[0]->prevLedgerID());
         }
     }
@@ -613,8 +612,7 @@ public:
         fast.connect(
             fast, date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY));
         slow.connect(
-            network,
-            date::round<milliseconds>(1.1 * parms.ledgerGRANULARITY));
+            network, date::round<milliseconds>(1.1 * parms.ledgerGRANULARITY));
 
         // Run to the ledger *prior* to decreasing the resolution
         sim.run(increaseLedgerTimeResolutionEvery - 2);
@@ -640,14 +638,12 @@ public:
             network[0]->lastClosedLedger.closeTimeResolution();
         BEAST_EXPECT(resolution == NetClock::duration{30s});
 
-        while (
-            ((when % NetClock::duration{30s}) != NetClock::duration{15s}) ||
-            ((when % NetClock::duration{20s}) != NetClock::duration{15s}))
+        while (((when % NetClock::duration{30s}) != NetClock::duration{15s}) ||
+               ((when % NetClock::duration{20s}) != NetClock::duration{15s}))
             when += 1s;
         // Advance the clock without consensus running (IS THIS WHAT
         // PREVENTS IT IN PRACTICE?)
-        sim.scheduler.step_for(
-            NetClock::time_point{when} - network[0]->now());
+        sim.scheduler.step_for(NetClock::time_point{when} - network[0]->now());
 
         // Run one more ledger with 30s resolution
         sim.run(1);
@@ -657,8 +653,7 @@ public:
             // the close time to round up
             for (Peer* peer : network)
             {
-                BEAST_EXPECT(
-                    peer->lastClosedLedger.closeTime() > peer->now());
+                BEAST_EXPECT(peer->lastClosedLedger.closeTime() > peer->now());
                 BEAST_EXPECT(peer->lastClosedLedger.closeAgree());
             }
         }
@@ -764,7 +759,7 @@ public:
         center.trust(validators);
 
         SimDuration delay =
-                date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+            date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
         validators.connect(center, delay);
 
         center[0]->runAsValidator = false;
@@ -773,7 +768,7 @@ public:
         sim.run(1);
 
         // everyone submits their own ID as a TX and relay it to peers
-        for (Peer * p : validators)
+        for (Peer* p : validators)
             p->submit(Tx(static_cast<std::uint32_t>(p->id)));
 
         sim.run(1);
@@ -781,7 +776,6 @@ public:
         // All peers are in sync
         BEAST_EXPECT(sim.synchronized());
     }
-
 
     // Helper collector for testPreferredByBranch
     // Invasively disconnects network at bad times to cause splits
@@ -807,7 +801,6 @@ public:
         on(csf::PeerID, csf::SimTime, E const&)
         {
         }
-
 
         void
         on(csf::PeerID who, csf::SimTime, csf::FullyValidateLedger const& e)
@@ -835,8 +828,6 @@ public:
                 network.connect(groupCsplit, delay);
             }
         }
-
-
     };
 
     void
@@ -864,7 +855,8 @@ public:
         //   validates C. The rest of the C nodes split at just the right time
         //   such that they never see any C validations but their own.
         // - The C nodes continue and generate 8 different child ledgers.
-        // - Meanwhile, the D nodes only saw 1 validation for C and 2 validations
+        // - Meanwhile, the D nodes only saw 1 validation for C and 2
+        // validations
         //   for B.
         // - The network reconnects and the validations for generation 3 ledgers
         //   are observed (D and the 8 C's)
@@ -873,7 +865,6 @@ public:
         //   EVEN though C was fully validated by one node
         // - In the new approach, 2 votes for D are not enough to outweight the
         //   8 implicit votes for C, so nodes will avalanche to C instead
-
 
         ConsensusParms const parms{};
         Sim sim;
@@ -888,10 +879,10 @@ public:
         PeerGroup groupNotFastC = groupABD + groupCsplit;
         PeerGroup network = groupABD + groupCsplit + groupCfast;
 
-        SimDuration delay = date::round<milliseconds>(
-            0.2 * parms.ledgerGRANULARITY);
-        SimDuration fDelay = date::round<milliseconds>(
-            0.1 * parms.ledgerGRANULARITY);
+        SimDuration delay =
+            date::round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+        SimDuration fDelay =
+            date::round<milliseconds>(0.1 * parms.ledgerGRANULARITY);
 
         network.trust(network);
         // C must have a shorter delay to see all the validations before the
@@ -909,10 +900,9 @@ public:
 
         // Next round generates B and C
         // To force B, we inject an extra transaction in to those nodes
-        for(Peer * peer : groupABD)
+        for (Peer* peer : groupABD)
         {
-            peer->txInjections.emplace(
-                    peer->lastClosedLedger.seq(), Tx{42});
+            peer->txInjections.emplace(peer->lastClosedLedger.seq(), Tx{42});
         }
         // The Disruptor will ensure that nodes disconnect before the C
         // validations make it to all but the fastC node
@@ -924,7 +914,7 @@ public:
         BEAST_EXPECT(sim.branches() == 1);
 
         //  Run another round to generate the 8 different C' ledgers
-        for (Peer * p : network)
+        for (Peer* p : network)
             p->submit(Tx(static_cast<std::uint32_t>(p->id)));
         sim.run(1);
 
@@ -935,11 +925,11 @@ public:
         // Disruptor will reconnect all but the fastC node
         sim.run(1);
 
-        if(BEAST_EXPECT(sim.branches() == 1))
+        if (BEAST_EXPECT(sim.branches() == 1))
         {
             BEAST_EXPECT(sim.synchronized());
         }
-        else // old approach caused a fork
+        else  // old approach caused a fork
         {
             BEAST_EXPECT(sim.branches(groupNotFastC) == 1);
             BEAST_EXPECT(sim.synchronized(groupNotFastC) == 1);

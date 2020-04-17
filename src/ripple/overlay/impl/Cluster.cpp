@@ -31,20 +31,19 @@
 
 namespace ripple {
 
-Cluster::Cluster (beast::Journal j)
-    : j_ (j)
+Cluster::Cluster(beast::Journal j) : j_(j)
 {
 }
 
 boost::optional<std::string>
-Cluster::member (PublicKey const& identity) const
+Cluster::member(PublicKey const& identity) const
 {
     std::lock_guard lock(mutex_);
 
-    auto iter = nodes_.find (identity);
-    if (iter == nodes_.end ())
+    auto iter = nodes_.find(identity);
+    if (iter == nodes_.end())
         return boost::none;
-    return iter->name ();
+    return iter->name();
 }
 
 std::size_t
@@ -56,7 +55,7 @@ Cluster::size() const
 }
 
 bool
-Cluster::update (
+Cluster::update(
     PublicKey const& identity,
     std::string name,
     std::uint32_t loadFee,
@@ -66,10 +65,9 @@ Cluster::update (
 
     // We can't use auto here yet due to the libstdc++ issue
     // described at https://gcc.gnu.org/bugzilla/show_bug.cgi?id=68190
-    std::set<ClusterNode, Comparator>::iterator iter =
-        nodes_.find (identity);
+    std::set<ClusterNode, Comparator>::iterator iter = nodes_.find(identity);
 
-    if (iter != nodes_.end ())
+    if (iter != nodes_.end())
     {
         if (reportTime <= iter->getReportTime())
             return false;
@@ -77,62 +75,57 @@ Cluster::update (
         if (name.empty())
             name = iter->name();
 
-        iter = nodes_.erase (iter);
+        iter = nodes_.erase(iter);
     }
 
-    nodes_.emplace_hint (iter, identity, name, loadFee, reportTime);
+    nodes_.emplace_hint(iter, identity, name, loadFee, reportTime);
     return true;
 }
 
 void
-Cluster::for_each (
-    std::function<void(ClusterNode const&)> func) const
+Cluster::for_each(std::function<void(ClusterNode const&)> func) const
 {
     std::lock_guard lock(mutex_);
     for (auto const& ni : nodes_)
-        func (ni);
+        func(ni);
 }
 
 bool
-Cluster::load (Section const& nodes)
+Cluster::load(Section const& nodes)
 {
-    static boost::regex const re (
-        "[[:space:]]*"            // skip leading whitespace
-        "([[:alnum:]]+)"          // node identity
-        "(?:"                     // begin optional comment block
-        "[[:space:]]+"            // (skip all leading whitespace)
-        "(?:"                     // begin optional comment
-        "(.*[^[:space:]]+)"       // the comment
-        "[[:space:]]*"            // (skip all trailing whitespace)
-        ")?"                      // end optional comment
-        ")?"                      // end optional comment block
+    static boost::regex const re(
+        "[[:space:]]*"       // skip leading whitespace
+        "([[:alnum:]]+)"     // node identity
+        "(?:"                // begin optional comment block
+        "[[:space:]]+"       // (skip all leading whitespace)
+        "(?:"                // begin optional comment
+        "(.*[^[:space:]]+)"  // the comment
+        "[[:space:]]*"       // (skip all trailing whitespace)
+        ")?"                 // end optional comment
+        ")?"                 // end optional comment block
     );
 
     for (auto const& n : nodes.values())
     {
         boost::smatch match;
 
-        if (!boost::regex_match (n, match, re))
+        if (!boost::regex_match(n, match, re))
         {
-            JLOG (j_.error()) <<
-                "Malformed entry: '" << n << "'";
+            JLOG(j_.error()) << "Malformed entry: '" << n << "'";
             return false;
         }
 
-        auto const id = parseBase58<PublicKey>(
-            TokenType::NodePublic, match[1]);
+        auto const id = parseBase58<PublicKey>(TokenType::NodePublic, match[1]);
 
         if (!id)
         {
-            JLOG (j_.error()) <<
-                "Invalid node identity: " << match[1];
+            JLOG(j_.error()) << "Invalid node identity: " << match[1];
             return false;
         }
 
-        if (member (*id))
+        if (member(*id))
         {
-            JLOG (j_.warn()) <<
-                "Duplicate node identity: " << match[1];
+            JLOG(j_.warn()) << "Duplicate node identity: " << match[1];
             continue;
         }
 
@@ -142,4 +135,4 @@ Cluster::load (Section const& nodes)
     return true;
 }
 
-} // ripple
+}  // namespace ripple

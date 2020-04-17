@@ -29,8 +29,7 @@
 
 #include <string>
 
-namespace ripple
-{
+namespace ripple {
 
 /** A closed interval over the domain T.
 
@@ -69,7 +68,6 @@ range(T low, T high)
 template <class T>
 using RangeSet = boost::icl::interval_set<T, std::less, ClosedInterval<T>>;
 
-
 /** Convert a ClosedInterval to a styled string
 
     The styled string is
@@ -80,7 +78,8 @@ using RangeSet = boost::icl::interval_set<T, std::less, ClosedInterval<T>>;
     @return The style string
 */
 template <class T>
-std::string to_string(ClosedInterval<T> const & ci)
+std::string
+to_string(ClosedInterval<T> const& ci)
 {
     if (ci.first() == ci.last())
         return std::to_string(ci.first());
@@ -96,14 +95,15 @@ std::string to_string(ClosedInterval<T> const & ci)
     @return The styled string
 */
 template <class T>
-std::string to_string(RangeSet<T> const & rs)
+std::string
+to_string(RangeSet<T> const& rs)
 {
     using ripple::to_string;
 
     if (rs.empty())
         return "empty";
     std::string res = "";
-    for (auto const & interval : rs)
+    for (auto const& interval : rs)
     {
         if (!res.empty())
             res += ",";
@@ -127,7 +127,7 @@ from_string(RangeSet<T>& rs, std::string const& s)
 {
     std::vector<std::string> intervals;
     std::vector<std::string> tokens;
-    bool result {true};
+    bool result{true};
 
     boost::split(tokens, s, boost::algorithm::is_any_of(","));
     for (auto const& t : tokens)
@@ -135,32 +135,30 @@ from_string(RangeSet<T>& rs, std::string const& s)
         boost::split(intervals, t, boost::algorithm::is_any_of("-"));
         switch (intervals.size())
         {
-        case 1:
-        {
-            T front;
-            if (!beast::lexicalCastChecked(front, intervals.front()))
-                result = false;
-            else
-                rs.insert(front);
-            break;
-        }
-        case 2:
-        {
-            T front;
-            if (!beast::lexicalCastChecked(front, intervals.front()))
-                result = false;
-            else
-            {
-                T back;
-                if (!beast::lexicalCastChecked(back, intervals.back()))
+            case 1: {
+                T front;
+                if (!beast::lexicalCastChecked(front, intervals.front()))
                     result = false;
                 else
-                    rs.insert(range(front, back));
+                    rs.insert(front);
+                break;
             }
-            break;
-        }
-        default:
-            result = false;
+            case 2: {
+                T front;
+                if (!beast::lexicalCastChecked(front, intervals.front()))
+                    result = false;
+                else
+                {
+                    T back;
+                    if (!beast::lexicalCastChecked(back, intervals.back()))
+                        result = false;
+                    else
+                        rs.insert(range(front, back));
+                }
+                break;
+            }
+            default:
+                result = false;
         }
 
         if (!result)
@@ -183,11 +181,11 @@ from_string(RangeSet<T>& rs, std::string const& s)
 */
 template <class T>
 boost::optional<T>
-prevMissing(RangeSet<T> const & rs, T t, T minVal = 0)
+prevMissing(RangeSet<T> const& rs, T t, T minVal = 0)
 {
     if (rs.empty() || t == minVal)
         return boost::none;
-    RangeSet<T> tgt{ ClosedInterval<T>{minVal, t - 1} };
+    RangeSet<T> tgt{ClosedInterval<T>{minVal, t - 1}};
     tgt -= rs;
     if (tgt.empty())
         return boost::none;
@@ -195,6 +193,5 @@ prevMissing(RangeSet<T> const & rs, T t, T minVal = 0)
 }
 
 }  // namespace ripple
-
 
 #endif

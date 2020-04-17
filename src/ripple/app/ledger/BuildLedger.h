@@ -20,9 +20,9 @@
 #ifndef RIPPLE_APP_LEDGER_BUILD_LEDGER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_BUILD_LEDGER_H_INCLUDED
 
-#include <ripple/ledger/ApplyView.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/ledger/ApplyView.h>
 #include <chrono>
 #include <memory>
 
@@ -33,7 +33,6 @@ class CanonicalTXSet;
 class Ledger;
 class LedgerReplay;
 class SHAMap;
-
 
 /** Build a new ledger by applying consensus transactions
 

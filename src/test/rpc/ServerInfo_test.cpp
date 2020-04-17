@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/beast/unit_test.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
-#include <ripple/beast/unit_test.h>
 
 #include <boost/format.hpp>
 
@@ -40,13 +40,12 @@ static auto const token =
     "hsSkFmVXNYZkFpQnNWSkdlc2FhZE9KYy9hQVpva1MxdnltR21WcmxIUEtXWDNZeXd1\n"
     "NmluOEhBU1FLUHVnQkQ2N2tNYVJGR3ZtcEFUSGxHS0pkdkRGbFdQWXk1QXFEZWRGdj\n"
     "VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ==\n";
-}
+}  // namespace validator_data
 
 class ServerInfo_test : public beast::unit_test::suite
 {
 public:
-    static
-    std::unique_ptr<Config>
+    static std::unique_ptr<Config>
     makeValidatorConfig()
     {
         auto p = std::make_unique<Config>();
@@ -58,7 +57,7 @@ public:
 %2%
 )rippleConfig");
 
-        p->loadFromString (boost::str (
+        p->loadFromString(boost::str(
             toLoad % validator_data::token % validator_data::public_key));
 
         setupConfigForUnitTests(*p);
@@ -66,36 +65,38 @@ public:
         return p;
     }
 
-    void testServerInfo()
+    void
+    testServerInfo()
     {
         using namespace test::jtx;
 
         {
             Env env(*this);
             auto const result = env.rpc("server_info");
-            BEAST_EXPECT(!result[jss::result].isMember (jss::error));
+            BEAST_EXPECT(!result[jss::result].isMember(jss::error));
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
             BEAST_EXPECT(result[jss::result].isMember(jss::info));
         }
         {
             Env env(*this, makeValidatorConfig());
             auto const result = env.rpc("server_info");
-            BEAST_EXPECT(!result[jss::result].isMember (jss::error));
+            BEAST_EXPECT(!result[jss::result].isMember(jss::error));
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
             BEAST_EXPECT(result[jss::result].isMember(jss::info));
-            BEAST_EXPECT(result[jss::result][jss::info]
-                [jss::pubkey_validator] == validator_data::public_key);
+            BEAST_EXPECT(
+                result[jss::result][jss::info][jss::pubkey_validator] ==
+                validator_data::public_key);
         }
     }
 
-    void run () override
+    void
+    run() override
     {
-        testServerInfo ();
+        testServerInfo();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ServerInfo,app,ripple);
+BEAST_DEFINE_TESTSUITE(ServerInfo, app, ripple);
 
-} // test
-} // ripple
-
+}  // namespace test
+}  // namespace ripple

@@ -31,10 +31,11 @@ class NullCollector : public Collector
 public:
     explicit NullCollector() = default;
 
-    static std::shared_ptr <Collector> New ();
+    static std::shared_ptr<Collector>
+    New();
 };
 
-}
-}
+}  // namespace insight
+}  // namespace beast
 
 #endif

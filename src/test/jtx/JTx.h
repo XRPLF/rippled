@@ -20,13 +20,13 @@
 #ifndef RIPPLE_TEST_JTX_JTX_H_INCLUDED
 #define RIPPLE_TEST_JTX_JTX_H_INCLUDED
 
-#include <test/jtx/requires.h>
-#include <test/jtx/basic_prop.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
 #include <functional>
 #include <memory>
+#include <test/jtx/basic_prop.h>
+#include <test/jtx/requires.h>
 #include <vector>
 
 namespace ripple {
@@ -42,7 +42,7 @@ struct JTx
 {
     Json::Value jv;
     requires_t requires;
-    boost::optional<TER> ter = TER {tesSUCCESS};
+    boost::optional<TER> ter = TER{tesSUCCESS};
     bool fill_fee = true;
     bool fill_seq = true;
     bool fill_sig = true;
@@ -50,18 +50,18 @@ struct JTx
     std::function<void(Env&, JTx&)> signer;
 
     JTx() = default;
-    JTx (JTx const&) = default;
-    JTx& operator=(JTx const&) = default;
+    JTx(JTx const&) = default;
+    JTx&
+    operator=(JTx const&) = default;
     JTx(JTx&&) = default;
-    JTx& operator=(JTx&&) = default;
+    JTx&
+    operator=(JTx&&) = default;
 
-    JTx (Json::Value&& jv_)
-        : jv(std::move(jv_))
+    JTx(Json::Value&& jv_) : jv(std::move(jv_))
     {
     }
 
-    JTx (Json::Value const& jv_)
-        : jv(jv_)
+    JTx(Json::Value const& jv_) : jv(jv_)
     {
     }
 
@@ -83,9 +83,7 @@ struct JTx
     {
         for (auto& prop : props_.list)
         {
-            if (auto test = dynamic_cast<
-                    prop_type<Prop>*>(
-                        prop.get()))
+            if (auto test = dynamic_cast<prop_type<Prop>*>(prop.get()))
                 return &test->t;
         }
         return nullptr;
@@ -97,9 +95,7 @@ struct JTx
     {
         for (auto& prop : props_.list)
         {
-            if (auto test = dynamic_cast<
-                    prop_type<Prop> const*>(
-                        prop.get()))
+            if (auto test = dynamic_cast<prop_type<Prop> const*>(prop.get()))
                 return &test->t;
         }
         return nullptr;
@@ -129,10 +125,7 @@ struct JTx
     void
     set(Args&&... args)
     {
-        set(std::make_unique<
-            prop_type<Prop>>(
-                std::forward <Args> (
-                    args)...));
+        set(std::make_unique<prop_type<Prop>>(std::forward<Args>(args)...));
     }
     /** @} */
 
@@ -147,7 +140,8 @@ private:
                 list.emplace_back(prop->clone());
         }
 
-        prop_list& operator=(prop_list const& other)
+        prop_list&
+        operator=(prop_list const& other)
         {
             if (this != &other)
             {
@@ -159,17 +153,17 @@ private:
         }
 
         prop_list(prop_list&& src) = default;
-        prop_list& operator=(prop_list&& src) = default;
+        prop_list&
+        operator=(prop_list&& src) = default;
 
-        std::vector<std::unique_ptr<
-            basic_prop>> list;
+        std::vector<std::unique_ptr<basic_prop>> list;
     };
 
     prop_list props_;
 };
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

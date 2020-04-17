@@ -36,7 +36,6 @@ class ScaleFreeSim_test : public beast::unit_test::suite
         // Generate a quasi-random scale free network and simulate consensus
         // as we vary transaction submission rates
 
-
         int const N = 100;  // Peers
 
         int const numUNLs = 15;  //  UNL lists
@@ -51,7 +50,10 @@ class ScaleFreeSim_test : public beast::unit_test::suite
             sample(network.size(), PowerLawDistribution{1, 3}, sim.rng);
 
         // generate scale-free trust graph
-        randomRankedTrust(network, ranks, numUNLs,
+        randomRankedTrust(
+            network,
+            ranks,
+            numUNLs,
             std::uniform_int_distribution<>{minUNLSize, maxUNLSize},
             sim.rng);
 
@@ -77,16 +79,15 @@ class ScaleFreeSim_test : public beast::unit_test::suite
         Rate const rate{100, 1000ms};
 
         // txs, start/stop/step, target
-        auto peerSelector = makeSelector(network.begin(),
-                                     network.end(),
-                                     ranks,
-                                     sim.rng);
-        auto txSubmitter = makeSubmitter(ConstantDistribution{rate.inv()},
-                          sim.scheduler.now() + quiet,
-                          sim.scheduler.now() + (simDuration - quiet),
-                          peerSelector,
-                          sim.scheduler,
-                          sim.rng);
+        auto peerSelector =
+            makeSelector(network.begin(), network.end(), ranks, sim.rng);
+        auto txSubmitter = makeSubmitter(
+            ConstantDistribution{rate.inv()},
+            sim.scheduler.now() + quiet,
+            sim.scheduler.now() + (simDuration - quiet),
+            peerSelector,
+            sim.scheduler,
+            sim.rng);
 
         // run simulation for given duration
         heart.start();
@@ -99,8 +100,8 @@ class ScaleFreeSim_test : public beast::unit_test::suite
 
         log << "Peers: " << network.size() << std::endl;
         log << "Simulated Duration: "
-            << duration_cast<milliseconds>(simDuration).count()
-            << " ms" << std::endl;
+            << duration_cast<milliseconds>(simDuration).count() << " ms"
+            << std::endl;
         log << "Branches: " << sim.branches() << std::endl;
         log << "Synchronized: " << (sim.synchronized() ? "Y" : "N")
             << std::endl;

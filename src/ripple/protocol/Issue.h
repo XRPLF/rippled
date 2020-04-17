@@ -37,24 +37,23 @@ public:
     Currency currency;
     AccountID account;
 
-    Issue ()
+    Issue()
     {
     }
 
-    Issue (Currency const& c, AccountID const& a)
-            : currency (c), account (a)
+    Issue(Currency const& c, AccountID const& a) : currency(c), account(a)
     {
     }
 };
 
 bool
-isConsistent (Issue const& ac);
+isConsistent(Issue const& ac);
 
 std::string
-to_string (Issue const& ac);
+to_string(Issue const& ac);
 
 std::ostream&
-operator<< (std::ostream& os, Issue const& x);
+operator<<(std::ostream& os, Issue const& x);
 
 template <class Hasher>
 void
@@ -69,44 +68,46 @@ hash_append(Hasher& h, Issue const& r)
     if the currency is not XRP.
 */
 int
-compare (Issue const& lhs, Issue const& rhs);
+compare(Issue const& lhs, Issue const& rhs);
 
 /** Equality comparison. */
 /** @{ */
 bool
-operator== (Issue const& lhs, Issue const& rhs);
+operator==(Issue const& lhs, Issue const& rhs);
 bool
-operator!= (Issue const& lhs, Issue const& rhs);
+operator!=(Issue const& lhs, Issue const& rhs);
 /** @} */
 
 /** Strict weak ordering. */
 /** @{ */
 bool
-operator< (Issue const& lhs, Issue const& rhs);
+operator<(Issue const& lhs, Issue const& rhs);
 bool
-operator> (Issue const& lhs, Issue const& rhs);
+operator>(Issue const& lhs, Issue const& rhs);
 bool
-operator>= (Issue const& lhs, Issue const& rhs);
+operator>=(Issue const& lhs, Issue const& rhs);
 bool
-operator<= (Issue const& lhs, Issue const& rhs);
+operator<=(Issue const& lhs, Issue const& rhs);
 /** @} */
 
 //------------------------------------------------------------------------------
 
 /** Returns an asset specifier that represents XRP. */
-inline Issue const& xrpIssue ()
+inline Issue const&
+xrpIssue()
 {
-    static Issue issue {xrpCurrency(), xrpAccount()};
+    static Issue issue{xrpCurrency(), xrpAccount()};
     return issue;
 }
 
 /** Returns an asset specifier that represents no account and currency. */
-inline Issue const& noIssue ()
+inline Issue const&
+noIssue()
 {
-    static Issue issue {noCurrency(), noAccount()};
+    static Issue issue{noCurrency(), noAccount()};
     return issue;
 }
 
-}
+}  // namespace ripple
 
 #endif

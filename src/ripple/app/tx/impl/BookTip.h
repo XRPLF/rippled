@@ -20,9 +20,9 @@
 #ifndef RIPPLE_APP_BOOK_BOOKTIP_H_INCLUDED
 #define RIPPLE_APP_BOOK_BOOKTIP_H_INCLUDED
 
-#include <ripple/protocol/Quality.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/Quality.h>
 
 #include <functional>
 
@@ -48,7 +48,7 @@ private:
 
 public:
     /** Create the iterator. */
-    BookTip (ApplyView& view, Book const& book);
+    BookTip(ApplyView& view, Book const& book);
 
     uint256 const&
     dir() const noexcept
@@ -79,9 +79,9 @@ public:
         @return `true` if there is a next offer
     */
     bool
-    step (beast::Journal j);
+    step(beast::Journal j);
 };
 
-}
+}  // namespace ripple
 
 #endif

@@ -43,13 +43,13 @@ STVar::~STVar()
     destroy();
 }
 
-STVar::STVar (STVar const& other)
+STVar::STVar(STVar const& other)
 {
     if (other.p_ != nullptr)
         p_ = other.p_->copy(max_size, &d_);
 }
 
-STVar::STVar (STVar&& other)
+STVar::STVar(STVar&& other)
 {
     if (other.on_heap())
     {
@@ -63,7 +63,7 @@ STVar::STVar (STVar&& other)
 }
 
 STVar&
-STVar::operator= (STVar const& rhs)
+STVar::operator=(STVar const& rhs)
 {
     if (&rhs != this)
     {
@@ -78,7 +78,7 @@ STVar::operator= (STVar const& rhs)
 }
 
 STVar&
-STVar::operator= (STVar&& rhs)
+STVar::operator=(STVar&& rhs)
 {
     if (&rhs != this)
     {
@@ -97,64 +97,123 @@ STVar::operator= (STVar&& rhs)
     return *this;
 }
 
-STVar::STVar (defaultObject_t, SField const& name)
-    : STVar(name.fieldType, name)
+STVar::STVar(defaultObject_t, SField const& name) : STVar(name.fieldType, name)
 {
 }
 
-STVar::STVar (nonPresentObject_t, SField const& name)
+STVar::STVar(nonPresentObject_t, SField const& name)
     : STVar(STI_NOTPRESENT, name)
 {
 }
 
-STVar::STVar (SerialIter& sit, SField const& name, int depth)
+STVar::STVar(SerialIter& sit, SField const& name, int depth)
 {
     if (depth > 10)
-        Throw<std::runtime_error> ("Maximum nesting depth of STVar exceeded");
+        Throw<std::runtime_error>("Maximum nesting depth of STVar exceeded");
     switch (name.fieldType)
     {
-    case STI_NOTPRESENT:    construct<STBase>(name); return;
-    case STI_UINT8:         construct<STUInt8>(sit, name); return;
-    case STI_UINT16:        construct<STUInt16>(sit, name); return;
-    case STI_UINT32:        construct<STUInt32>(sit, name); return;
-    case STI_UINT64:        construct<STUInt64>(sit, name); return;
-    case STI_AMOUNT:        construct<STAmount>(sit, name); return;
-    case STI_HASH128:       construct<STHash128>(sit, name); return;
-    case STI_HASH160:       construct<STHash160>(sit, name); return;
-    case STI_HASH256:       construct<STHash256>(sit, name); return;
-    case STI_VECTOR256:     construct<STVector256>(sit, name); return;
-    case STI_VL:            construct<STBlob>(sit, name); return;
-    case STI_ACCOUNT:       construct<STAccount>(sit, name); return;
-    case STI_PATHSET:       construct<STPathSet>(sit, name); return;
-    case STI_OBJECT:        construct<STObject>(sit, name, depth); return;
-    case STI_ARRAY:         construct<STArray>(sit, name, depth); return;
-    default:
-        Throw<std::runtime_error> ("Unknown object type");
+        case STI_NOTPRESENT:
+            construct<STBase>(name);
+            return;
+        case STI_UINT8:
+            construct<STUInt8>(sit, name);
+            return;
+        case STI_UINT16:
+            construct<STUInt16>(sit, name);
+            return;
+        case STI_UINT32:
+            construct<STUInt32>(sit, name);
+            return;
+        case STI_UINT64:
+            construct<STUInt64>(sit, name);
+            return;
+        case STI_AMOUNT:
+            construct<STAmount>(sit, name);
+            return;
+        case STI_HASH128:
+            construct<STHash128>(sit, name);
+            return;
+        case STI_HASH160:
+            construct<STHash160>(sit, name);
+            return;
+        case STI_HASH256:
+            construct<STHash256>(sit, name);
+            return;
+        case STI_VECTOR256:
+            construct<STVector256>(sit, name);
+            return;
+        case STI_VL:
+            construct<STBlob>(sit, name);
+            return;
+        case STI_ACCOUNT:
+            construct<STAccount>(sit, name);
+            return;
+        case STI_PATHSET:
+            construct<STPathSet>(sit, name);
+            return;
+        case STI_OBJECT:
+            construct<STObject>(sit, name, depth);
+            return;
+        case STI_ARRAY:
+            construct<STArray>(sit, name, depth);
+            return;
+        default:
+            Throw<std::runtime_error>("Unknown object type");
     }
 }
 
-STVar::STVar (SerializedTypeID id, SField const& name)
+STVar::STVar(SerializedTypeID id, SField const& name)
 {
-    assert ((id == STI_NOTPRESENT) || (id == name.fieldType));
+    assert((id == STI_NOTPRESENT) || (id == name.fieldType));
     switch (id)
     {
-    case STI_NOTPRESENT:    construct<STBase>(name); return;
-    case STI_UINT8:         construct<STUInt8>(name); return;
-    case STI_UINT16:        construct<STUInt16>(name); return;
-    case STI_UINT32:        construct<STUInt32>(name); return;
-    case STI_UINT64:        construct<STUInt64>(name); return;
-    case STI_AMOUNT:        construct<STAmount>(name); return;
-    case STI_HASH128:       construct<STHash128>(name); return;
-    case STI_HASH160:       construct<STHash160>(name); return;
-    case STI_HASH256:       construct<STHash256>(name); return;
-    case STI_VECTOR256:     construct<STVector256>(name); return;
-    case STI_VL:            construct<STBlob>(name); return;
-    case STI_ACCOUNT:       construct<STAccount>(name); return;
-    case STI_PATHSET:       construct<STPathSet>(name); return;
-    case STI_OBJECT:        construct<STObject>(name); return;
-    case STI_ARRAY:         construct<STArray>(name); return;
-    default:
-        Throw<std::runtime_error> ("Unknown object type");
+        case STI_NOTPRESENT:
+            construct<STBase>(name);
+            return;
+        case STI_UINT8:
+            construct<STUInt8>(name);
+            return;
+        case STI_UINT16:
+            construct<STUInt16>(name);
+            return;
+        case STI_UINT32:
+            construct<STUInt32>(name);
+            return;
+        case STI_UINT64:
+            construct<STUInt64>(name);
+            return;
+        case STI_AMOUNT:
+            construct<STAmount>(name);
+            return;
+        case STI_HASH128:
+            construct<STHash128>(name);
+            return;
+        case STI_HASH160:
+            construct<STHash160>(name);
+            return;
+        case STI_HASH256:
+            construct<STHash256>(name);
+            return;
+        case STI_VECTOR256:
+            construct<STVector256>(name);
+            return;
+        case STI_VL:
+            construct<STBlob>(name);
+            return;
+        case STI_ACCOUNT:
+            construct<STAccount>(name);
+            return;
+        case STI_PATHSET:
+            construct<STPathSet>(name);
+            return;
+        case STI_OBJECT:
+            construct<STObject>(name);
+            return;
+        case STI_ARRAY:
+            construct<STArray>(name);
+            return;
+        default:
+            Throw<std::runtime_error>("Unknown object type");
     }
 }
 
@@ -169,5 +228,5 @@ STVar::destroy()
     p_ = nullptr;
 }
 
-} // detail
-} // ripple
+}  // namespace detail
+}  // namespace ripple

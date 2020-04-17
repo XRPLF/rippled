@@ -37,40 +37,42 @@ private:
     std::string prefix_;
 
 public:
-    explicit
-    WrappedSink (beast::Journal::Sink& sink, std::string const& prefix = "")
-        : Sink (sink)
-        , sink_(sink)
-        , prefix_(prefix)
+    explicit WrappedSink(
+        beast::Journal::Sink& sink,
+        std::string const& prefix = "")
+        : Sink(sink), sink_(sink), prefix_(prefix)
     {
     }
 
-    explicit
-    WrappedSink (beast::Journal const& journal, std::string const& prefix = "")
-        : WrappedSink (journal.sink(), prefix)
+    explicit WrappedSink(
+        beast::Journal const& journal,
+        std::string const& prefix = "")
+        : WrappedSink(journal.sink(), prefix)
     {
     }
 
-    void prefix (std::string const& s)
+    void
+    prefix(std::string const& s)
     {
         prefix_ = s;
     }
 
     bool
-    active (beast::severities::Severity level) const override
+    active(beast::severities::Severity level) const override
     {
-        return sink_.active (level);
+        return sink_.active(level);
     }
 
     bool
-    console () const override
+    console() const override
     {
-        return sink_.console ();
+        return sink_.console();
     }
 
-    void console (bool output) override
+    void
+    console(bool output) override
     {
-        sink_.console (output);
+        sink_.console(output);
     }
 
     beast::severities::Severity
@@ -79,18 +81,20 @@ public:
         return sink_.threshold();
     }
 
-    void threshold (beast::severities::Severity thresh) override
+    void
+    threshold(beast::severities::Severity thresh) override
     {
-        sink_.threshold (thresh);
+        sink_.threshold(thresh);
     }
 
-    void write (beast::severities::Severity level, std::string const& text) override
+    void
+    write(beast::severities::Severity level, std::string const& text) override
     {
         using beast::Journal;
-        sink_.write (level, prefix_ + text);
+        sink_.write(level, prefix_ + text);
     }
 };
 
-}
+}  // namespace beast
 
 #endif

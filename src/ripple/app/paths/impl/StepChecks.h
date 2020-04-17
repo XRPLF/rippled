@@ -28,28 +28,27 @@
 
 namespace ripple {
 
-inline
-TER
-checkFreeze (
+inline TER
+checkFreeze(
     ReadView const& view,
     AccountID const& src,
     AccountID const& dst,
     Currency const& currency)
 {
-    assert (src != dst);
+    assert(src != dst);
 
     // check freeze
-    if (auto sle = view.read (keylet::account (dst)))
+    if (auto sle = view.read(keylet::account(dst)))
     {
-        if (sle->isFlag (lsfGlobalFreeze))
+        if (sle->isFlag(lsfGlobalFreeze))
         {
             return terNO_LINE;
         }
     }
 
-    if (auto sle = view.read (keylet::line (src, dst, currency)))
+    if (auto sle = view.read(keylet::line(src, dst, currency)))
     {
-        if (sle->isFlag ((dst > src) ? lsfHighFreeze : lsfLowFreeze))
+        if (sle->isFlag((dst > src) ? lsfHighFreeze : lsfLowFreeze))
         {
             return terNO_LINE;
         }
@@ -58,9 +57,8 @@ checkFreeze (
     return tesSUCCESS;
 }
 
-inline
-TER
-checkNoRipple (
+inline TER
+checkNoRipple(
     ReadView const& view,
     AccountID const& prev,
     AccountID const& cur,
@@ -70,25 +68,23 @@ checkNoRipple (
     beast::Journal j)
 {
     // fetch the ripple lines into and out of this node
-    auto sleIn = view.read (keylet::line (prev, cur, currency));
-    auto sleOut = view.read (keylet::line (cur, next, currency));
+    auto sleIn = view.read(keylet::line(prev, cur, currency));
+    auto sleOut = view.read(keylet::line(cur, next, currency));
 
     if (!sleIn || !sleOut)
         return terNO_LINE;
 
-    if ((*sleIn)[sfFlags] &
-            ((cur > prev) ? lsfHighNoRipple : lsfLowNoRipple) &&
-        (*sleOut)[sfFlags] &
-            ((cur > next) ? lsfHighNoRipple : lsfLowNoRipple))
+    if ((*sleIn)[sfFlags] & ((cur > prev) ? lsfHighNoRipple : lsfLowNoRipple) &&
+        (*sleOut)[sfFlags] & ((cur > next) ? lsfHighNoRipple : lsfLowNoRipple))
     {
-        JLOG (j.info()) << "Path violates noRipple constraint between " << prev
-                      << ", " << cur << " and " << next;
+        JLOG(j.info()) << "Path violates noRipple constraint between " << prev
+                       << ", " << cur << " and " << next;
 
         return terNO_RIPPLE;
     }
     return tesSUCCESS;
 }
 
-}
+}  // namespace ripple
 
 #endif

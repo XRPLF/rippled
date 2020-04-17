@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <ripple/basics/safe_cast.h>
-#include <ripple/protocol/tokens.h>
 #include <ripple/protocol/digest.h>
+#include <ripple/protocol/tokens.h>
 #include <boost/container/small_vector.hpp>
 #include <cassert>
 #include <cstring>
@@ -39,33 +39,31 @@ static char bitcoinAlphabet[] =
 //------------------------------------------------------------------------------
 
 template <class Hasher>
-static
-typename Hasher::result_type
-digest (void const* data, std::size_t size) noexcept
+static typename Hasher::result_type
+digest(void const* data, std::size_t size) noexcept
 {
     Hasher h;
     h(data, size);
-    return static_cast<
-        typename Hasher::result_type>(h);
+    return static_cast<typename Hasher::result_type>(h);
 }
 
-template <class Hasher, class T, std::size_t N,
+template <
+    class Hasher,
+    class T,
+    std::size_t N,
     class = std::enable_if_t<sizeof(T) == 1>>
-static
-typename Hasher::result_type
-digest (std::array<T, N> const& v)
+static typename Hasher::result_type
+digest(std::array<T, N> const& v)
 {
     return digest<Hasher>(v.data(), v.size());
 }
 
 // Computes a double digest (e.g. digest of the digest)
 template <class Hasher, class... Args>
-static
-typename Hasher::result_type
-digest2 (Args const&... args)
+static typename Hasher::result_type
+digest2(Args const&... args)
 {
-    return digest<Hasher>(
-        digest<Hasher>(args...));
+    return digest<Hasher>(digest<Hasher>(args...));
 }
 
 /*  Calculate a 4-byte checksum of the data
@@ -78,12 +76,9 @@ digest2 (Args const&... args)
     @note This checksum algorithm is part of the client API
 */
 void
-checksum (void* out,
-    void const* message,
-        std::size_t size)
+checksum(void* out, void const* message, std::size_t size)
 {
-    auto const h =
-        digest2<sha256_hasher>(message, size);
+    auto const h = digest2<sha256_hasher>(message, size);
     std::memcpy(out, h.data(), 4);
 }
 
@@ -99,12 +94,13 @@ checksum (void* out,
 // WARNING Do not call this directly, use
 //         encodeBase58Token instead since it
 //         calculates the size of buffer needed.
-static
-std::string
+static std::string
 encodeBase58(
-    void const* message, std::size_t size,
-        void *temp, std::size_t temp_size,
-            char const* const alphabet)
+    void const* message,
+    std::size_t size,
+    void* temp,
+    std::size_t temp_size,
+    char const* const alphabet)
 {
     auto pbegin = reinterpret_cast<unsigned char const*>(message);
     auto const pend = pbegin + size;
@@ -150,10 +146,12 @@ encodeBase58(
     return str;
 }
 
-static
-std::string
-encodeToken (TokenType type,
-    void const* token, std::size_t size, char const* const alphabet)
+static std::string
+encodeToken(
+    TokenType type,
+    void const* token,
+    std::size_t size,
+    char const* const alphabet)
 {
     // expanded token includes type + 4 byte checksum
     auto const expanded = 1 + size + 4;
@@ -163,31 +161,31 @@ encodeToken (TokenType type,
     // out to expanded * 3:
     auto const bufsize = expanded * 3;
 
-    boost::container::small_vector<std::uint8_t, 1024> buf (bufsize);
+    boost::container::small_vector<std::uint8_t, 1024> buf(bufsize);
 
     // Lay the data out as
     //      <type><token><checksum>
-    buf[0] = safe_cast<std::underlying_type_t <TokenType>>(type);
+    buf[0] = safe_cast<std::underlying_type_t<TokenType>>(type);
     if (size)
         std::memcpy(buf.data() + 1, token, size);
     checksum(buf.data() + 1 + size, buf.data(), 1 + size);
 
     return encodeBase58(
-        buf.data(), expanded,
-        buf.data() + expanded, bufsize - expanded,
+        buf.data(),
+        expanded,
+        buf.data() + expanded,
+        bufsize - expanded,
         alphabet);
 }
 
 std::string
-base58EncodeToken (TokenType type,
-    void const* token, std::size_t size)
+base58EncodeToken(TokenType type, void const* token, std::size_t size)
 {
     return encodeToken(type, token, size, rippleAlphabet);
 }
 
 std::string
-base58EncodeTokenBitcoin (TokenType type,
-    void const* token, std::size_t size)
+base58EncodeTokenBitcoin(TokenType type, void const* token, std::size_t size)
 {
     return encodeToken(type, token, size, bitcoinAlphabet);
 }
@@ -201,10 +199,8 @@ base58EncodeTokenBitcoin (TokenType type,
 //
 // Modified from the original
 template <class InverseArray>
-static
-std::string
-decodeBase58 (std::string const& s,
-    InverseArray const& inv)
+static std::string
+decodeBase58(std::string const& s, InverseArray const& inv)
 {
     auto psz = s.c_str();
     auto remain = s.size();
@@ -222,16 +218,14 @@ decodeBase58 (std::string const& s,
 
     // Allocate enough space in big-endian base256 representation.
     // log(58) / log(256), rounded up.
-    std::vector<unsigned char> b256(
-        remain * 733 / 1000 + 1);
+    std::vector<unsigned char> b256(remain * 733 / 1000 + 1);
     while (remain > 0)
     {
         auto carry = inv[*psz];
         if (carry == -1)
             return {};
         // Apply "b256 = b256 * 58 + carry".
-        for (auto iter = b256.rbegin();
-            iter != b256.rend(); ++iter)
+        for (auto iter = b256.rbegin(); iter != b256.rend(); ++iter)
         {
             carry += 58 * *iter;
             *iter = carry % 256;
@@ -243,11 +237,10 @@ decodeBase58 (std::string const& s,
     }
     // Skip leading zeroes in b256.
     auto iter = std::find_if(
-        b256.begin(), b256.end(),[](unsigned char c)
-            { return c != 0; });
+        b256.begin(), b256.end(), [](unsigned char c) { return c != 0; });
     std::string result;
-    result.reserve (zeroes + (b256.end() - iter));
-    result.assign (zeroes, 0x00);
+    result.reserve(zeroes + (b256.end() - iter));
+    result.assign(zeroes, 0x00);
     while (iter != b256.end())
         result.push_back(*(iter++));
     return result;
@@ -259,10 +252,8 @@ decodeBase58 (std::string const& s,
     and removed from the returned result.
 */
 template <class InverseArray>
-static
-std::string
-decodeBase58Token (std::string const& s,
-    TokenType type, InverseArray const& inv)
+static std::string
+decodeBase58Token(std::string const& s, TokenType type, InverseArray const& inv)
 {
     std::string const ret = decodeBase58(s, inv);
 
@@ -277,7 +268,7 @@ decodeBase58Token (std::string const& s,
     // And the checksum must as well.
     std::array<char, 4> guard;
     checksum(guard.data(), ret.data(), ret.size() - guard.size());
-    if (!std::equal (guard.rbegin(), guard.rend(), ret.rbegin()))
+    if (!std::equal(guard.rbegin(), guard.rend(), ret.rbegin()))
         return {};
 
     // Skip the leading type byte and the trailing checksum.
@@ -293,21 +284,18 @@ private:
     std::array<int, 256> map_;
 
 public:
-    explicit
-    InverseAlphabet(std::string const& digits)
+    explicit InverseAlphabet(std::string const& digits)
     {
         map_.fill(-1);
         int i = 0;
-        for(auto const c : digits)
-            map_[static_cast<
-                unsigned char>(c)] = i++;
+        for (auto const c : digits)
+            map_[static_cast<unsigned char>(c)] = i++;
     }
 
     int
     operator[](char c) const
     {
-        return map_[static_cast<
-            unsigned char>(c)];
+        return map_[static_cast<unsigned char>(c)];
     }
 };
 
@@ -316,17 +304,15 @@ static InverseAlphabet rippleInverse(rippleAlphabet);
 static InverseAlphabet bitcoinInverse(bitcoinAlphabet);
 
 std::string
-decodeBase58Token(
-    std::string const& s, TokenType type)
+decodeBase58Token(std::string const& s, TokenType type)
 {
     return decodeBase58Token(s, type, rippleInverse);
 }
 
 std::string
-decodeBase58TokenBitcoin(
-    std::string const& s, TokenType type)
+decodeBase58TokenBitcoin(std::string const& s, TokenType type)
 {
     return decodeBase58Token(s, type, bitcoinInverse);
 }
 
-} // ripple
+}  // namespace ripple

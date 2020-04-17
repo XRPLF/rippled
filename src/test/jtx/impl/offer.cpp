@@ -17,16 +17,19 @@
 */
 //==============================================================================
 
-#include <test/jtx/offer.h>
 #include <ripple/protocol/jss.h>
+#include <test/jtx/offer.h>
 
 namespace ripple {
 namespace test {
 namespace jtx {
 
 Json::Value
-offer (Account const& account,
-    STAmount const& in, STAmount const& out,  std::uint32_t flags)
+offer(
+    Account const& account,
+    STAmount const& in,
+    STAmount const& out,
+    std::uint32_t flags)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
@@ -39,7 +42,7 @@ offer (Account const& account,
 }
 
 Json::Value
-offer_cancel (Account const& account, std::uint32_t offerSeq)
+offer_cancel(Account const& account, std::uint32_t offerSeq)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
@@ -48,6 +51,6 @@ offer_cancel (Account const& account, std::uint32_t offerSeq)
     return jv;
 }
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

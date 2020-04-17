@@ -34,14 +34,14 @@ class PathRequests
 {
 public:
     /** A collection of all PathRequest instances. */
-    PathRequests (Application& app,
-            beast::Journal journal, beast::insight::Collector::ptr const& collector)
-        : app_ (app)
-        , mJournal (journal)
-        , mLastIdentifier (0)
+    PathRequests(
+        Application& app,
+        beast::Journal journal,
+        beast::insight::Collector::ptr const& collector)
+        : app_(app), mJournal(journal), mLastIdentifier(0)
     {
-        mFast = collector->make_event ("pathfind_fast");
-        mFull = collector->make_event ("pathfind_full");
+        mFast = collector->make_event("pathfind_fast");
+        mFull = collector->make_event("pathfind_full");
     }
 
     /** Update all of the contained PathRequest instances.
@@ -49,67 +49,76 @@ public:
         @param ledger Ledger we are pathfinding in.
         @param shouldCancel Invocable that returns whether to cancel.
      */
-    void updateAll (std::shared_ptr<ReadView const> const& ledger,
-                    Job::CancelCallback shouldCancel);
+    void
+    updateAll(
+        std::shared_ptr<ReadView const> const& ledger,
+        Job::CancelCallback shouldCancel);
 
-    std::shared_ptr<RippleLineCache> getLineCache (
-        std::shared_ptr <ReadView const> const& ledger, bool authoritative);
+    std::shared_ptr<RippleLineCache>
+    getLineCache(
+        std::shared_ptr<ReadView const> const& ledger,
+        bool authoritative);
 
     // Create a new-style path request that pushes
     // updates to a subscriber
-    Json::Value makePathRequest (
-        std::shared_ptr <InfoSub> const& subscriber,
+    Json::Value
+    makePathRequest(
+        std::shared_ptr<InfoSub> const& subscriber,
         std::shared_ptr<ReadView const> const& ledger,
         Json::Value const& request);
 
     // Create an old-style path request that is
     // managed by a coroutine and updated by
     // the path engine
-    Json::Value makeLegacyPathRequest (
+    Json::Value
+    makeLegacyPathRequest(
         PathRequest::pointer& req,
-        std::function <void (void)> completion,
+        std::function<void(void)> completion,
         Resource::Consumer& consumer,
         std::shared_ptr<ReadView const> const& inLedger,
         Json::Value const& request);
 
     // Execute an old-style path request immediately
     // with the ledger specified by the caller
-    Json::Value doLegacyPathRequest (
+    Json::Value
+    doLegacyPathRequest(
         Resource::Consumer& consumer,
         std::shared_ptr<ReadView const> const& inLedger,
         Json::Value const& request);
 
-    void reportFast (std::chrono::milliseconds ms)
+    void
+    reportFast(std::chrono::milliseconds ms)
     {
-        mFast.notify (ms);
+        mFast.notify(ms);
     }
 
-    void reportFull (std::chrono::milliseconds ms)
+    void
+    reportFull(std::chrono::milliseconds ms)
     {
-        mFull.notify (ms);
+        mFull.notify(ms);
     }
 
 private:
-    void insertPathRequest (PathRequest::pointer const&);
+    void
+    insertPathRequest(PathRequest::pointer const&);
 
     Application& app_;
-    beast::Journal                   mJournal;
+    beast::Journal mJournal;
 
-    beast::insight::Event            mFast;
-    beast::insight::Event            mFull;
+    beast::insight::Event mFast;
+    beast::insight::Event mFull;
 
     // Track all requests
     std::vector<PathRequest::wptr> requests_;
 
     // Use a RippleLineCache
-    std::shared_ptr<RippleLineCache>         mLineCache;
+    std::shared_ptr<RippleLineCache> mLineCache;
 
-    std::atomic<int>                 mLastIdentifier;
+    std::atomic<int> mLastIdentifier;
 
     std::recursive_mutex mLock;
-
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

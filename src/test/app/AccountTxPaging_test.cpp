@@ -16,31 +16,31 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
-#include <ripple/protocol/jss.h>
 #include <ripple/protocol/SField.h>
+#include <ripple/protocol/jss.h>
 #include <cstdlib>
+#include <test/jtx.h>
 
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/rpc/GRPCTestClientBase.h>
-
 
 namespace ripple {
 
 class AccountTxPaging_test : public beast::unit_test::suite
 {
     bool
-    checkTransaction (Json::Value const& tx, int sequence, int ledger)
+    checkTransaction(Json::Value const& tx, int sequence, int ledger)
     {
         return (
             tx[jss::tx][jss::Sequence].asInt() == sequence &&
             tx[jss::tx][jss::ledger_index].asInt() == ledger);
     }
 
-    auto next(
-        test::jtx::Env & env,
+    auto
+    next(
+        test::jtx::Env& env,
         test::jtx::Account const& account,
         int ledger_min,
         int ledger_max,
@@ -61,15 +61,15 @@ class AccountTxPaging_test : public beast::unit_test::suite
     }
 
     void
-    testAccountTxPaging ()
+    testAccountTxPaging()
     {
         testcase("Paging for Single Account");
         using namespace test::jtx;
 
         Env env(*this);
-        Account A1 {"A1"};
-        Account A2 {"A2"};
-        Account A3 {"A3"};
+        Account A1{"A1"};
+        Account A2{"A2"};
+        Account A3{"A3"};
 
         env.fund(XRP(10000), A1, A2, A3);
         env.close();
@@ -85,7 +85,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
             env(pay(A3, A1, A3["USD"](2)));
             env(offer(A1, XRP(11), A1["USD"](1)));
             env(offer(A2, XRP(10), A2["USD"](1)));
-            env(offer(A3, XRP(9),  A3["USD"](1)));
+            env(offer(A3, XRP(9), A3["USD"](1)));
             env.close();
         }
 
@@ -105,161 +105,161 @@ class AccountTxPaging_test : public beast::unit_test::suite
          * 9  ----> 8
          * 10 ----> 9
          * 11 ----> 9
-        */
+         */
 
         // page through the results in several ways.
         {
             // limit = 2, 3 batches giving the first 6 txs
             auto jrr = next(env, A3, 2, 5, 2, true);
             auto txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
+            if (!BEAST_EXPECT(txs.isArray() && txs.size() == 2))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 3, 3));
-            BEAST_EXPECT(checkTransaction (txs[1u], 3, 3));
-            if(! BEAST_EXPECT(jrr[jss::marker]))
-                return;
-
-            jrr = next(env, A3, 2, 5, 2, true, jrr[jss::marker]);
-            txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
-                return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 4, 4));
-            BEAST_EXPECT(checkTransaction (txs[1u], 4, 4));
-            if(! BEAST_EXPECT(jrr[jss::marker]))
+            BEAST_EXPECT(checkTransaction(txs[0u], 3, 3));
+            BEAST_EXPECT(checkTransaction(txs[1u], 3, 3));
+            if (!BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
             jrr = next(env, A3, 2, 5, 2, true, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
+            if (!BEAST_EXPECT(txs.isArray() && txs.size() == 2))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 4, 5));
-            BEAST_EXPECT(checkTransaction (txs[1u], 5, 5));
-            BEAST_EXPECT(! jrr[jss::marker]);
+            BEAST_EXPECT(checkTransaction(txs[0u], 4, 4));
+            BEAST_EXPECT(checkTransaction(txs[1u], 4, 4));
+            if (!BEAST_EXPECT(jrr[jss::marker]))
+                return;
+
+            jrr = next(env, A3, 2, 5, 2, true, jrr[jss::marker]);
+            txs = jrr[jss::transactions];
+            if (!BEAST_EXPECT(txs.isArray() && txs.size() == 2))
+                return;
+            BEAST_EXPECT(checkTransaction(txs[0u], 4, 5));
+            BEAST_EXPECT(checkTransaction(txs[1u], 5, 5));
+            BEAST_EXPECT(!jrr[jss::marker]);
         }
 
         {
             // limit 1, 3 requests giving the first 3 txs
             auto jrr = next(env, A3, 3, 9, 1, true);
             auto txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 1))
+            if (!BEAST_EXPECT(txs.isArray() && txs.size() == 1))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 3, 3));
-            if(! BEAST_EXPECT(jrr[jss::marker]))
-                return;
-
-            jrr = next(env, A3, 3, 9, 1, true, jrr[jss::marker]);
-            txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 1))
-                return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 3, 3));
-            if(! BEAST_EXPECT(jrr[jss::marker]))
+            BEAST_EXPECT(checkTransaction(txs[0u], 3, 3));
+            if (!BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
             jrr = next(env, A3, 3, 9, 1, true, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 1))
+            if (!BEAST_EXPECT(txs.isArray() && txs.size() == 1))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 4, 4));
-            if(! BEAST_EXPECT(jrr[jss::marker]))
+            BEAST_EXPECT(checkTransaction(txs[0u], 3, 3));
+            if (!BEAST_EXPECT(jrr[jss::marker]))
+                return;
+
+            jrr = next(env, A3, 3, 9, 1, true, jrr[jss::marker]);
+            txs = jrr[jss::transactions];
+            if (!BEAST_EXPECT(txs.isArray() && txs.size() == 1))
+                return;
+            BEAST_EXPECT(checkTransaction(txs[0u], 4, 4));
+            if (!BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
             // continue with limit 3, to end of all txs
             jrr = next(env, A3, 3, 9, 3, true, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
+            if (!BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 4, 4));
-            BEAST_EXPECT(checkTransaction (txs[1u], 4, 5));
-            BEAST_EXPECT(checkTransaction (txs[2u], 5, 5));
-            if(! BEAST_EXPECT(jrr[jss::marker]))
-                return;
-
-            jrr = next(env, A3, 3, 9, 3, true, jrr[jss::marker]);
-            txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
-                return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 6, 6));
-            BEAST_EXPECT(checkTransaction (txs[1u], 7, 6));
-            BEAST_EXPECT(checkTransaction (txs[2u], 8, 7));
-            if(! BEAST_EXPECT(jrr[jss::marker]))
+            BEAST_EXPECT(checkTransaction(txs[0u], 4, 4));
+            BEAST_EXPECT(checkTransaction(txs[1u], 4, 5));
+            BEAST_EXPECT(checkTransaction(txs[2u], 5, 5));
+            if (!BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
             jrr = next(env, A3, 3, 9, 3, true, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
+            if (!BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 9, 7));
-            BEAST_EXPECT(checkTransaction (txs[1u], 10, 8));
-            BEAST_EXPECT(checkTransaction (txs[2u], 11, 8));
-            if(! BEAST_EXPECT(jrr[jss::marker]))
+            BEAST_EXPECT(checkTransaction(txs[0u], 6, 6));
+            BEAST_EXPECT(checkTransaction(txs[1u], 7, 6));
+            BEAST_EXPECT(checkTransaction(txs[2u], 8, 7));
+            if (!BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
             jrr = next(env, A3, 3, 9, 3, true, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
+            if (!BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 12, 9));
-            BEAST_EXPECT(checkTransaction (txs[1u], 13, 9));
-            BEAST_EXPECT(! jrr[jss::marker]);
+            BEAST_EXPECT(checkTransaction(txs[0u], 9, 7));
+            BEAST_EXPECT(checkTransaction(txs[1u], 10, 8));
+            BEAST_EXPECT(checkTransaction(txs[2u], 11, 8));
+            if (!BEAST_EXPECT(jrr[jss::marker]))
+                return;
+
+            jrr = next(env, A3, 3, 9, 3, true, jrr[jss::marker]);
+            txs = jrr[jss::transactions];
+            if (!BEAST_EXPECT(txs.isArray() && txs.size() == 2))
+                return;
+            BEAST_EXPECT(checkTransaction(txs[0u], 12, 9));
+            BEAST_EXPECT(checkTransaction(txs[1u], 13, 9));
+            BEAST_EXPECT(!jrr[jss::marker]);
         }
 
         {
             // limit 2, descending, 2 batches giving last 4 txs
             auto jrr = next(env, A3, 3, 9, 2, false);
             auto txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
+            if (!BEAST_EXPECT(txs.isArray() && txs.size() == 2))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 13, 9));
-            BEAST_EXPECT(checkTransaction (txs[1u], 12, 9));
-            if(! BEAST_EXPECT(jrr[jss::marker]))
+            BEAST_EXPECT(checkTransaction(txs[0u], 13, 9));
+            BEAST_EXPECT(checkTransaction(txs[1u], 12, 9));
+            if (!BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
             jrr = next(env, A3, 3, 9, 2, false, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 2))
+            if (!BEAST_EXPECT(txs.isArray() && txs.size() == 2))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 11, 8));
-            BEAST_EXPECT(checkTransaction (txs[1u], 10, 8));
-            if(! BEAST_EXPECT(jrr[jss::marker]))
+            BEAST_EXPECT(checkTransaction(txs[0u], 11, 8));
+            BEAST_EXPECT(checkTransaction(txs[1u], 10, 8));
+            if (!BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
             // continue with limit 3 until all txs have been seen
             jrr = next(env, A3, 3, 9, 3, false, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
+            if (!BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 9, 7));
-            BEAST_EXPECT(checkTransaction (txs[1u], 8, 7));
-            BEAST_EXPECT(checkTransaction (txs[2u], 7, 6));
-            if(! BEAST_EXPECT(jrr[jss::marker]))
-                return;
-
-            jrr = next(env, A3, 3, 9, 3, false, jrr[jss::marker]);
-            txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
-                return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 6, 6));
-            BEAST_EXPECT(checkTransaction (txs[1u], 5, 5));
-            BEAST_EXPECT(checkTransaction (txs[2u], 4, 5));
-            if(! BEAST_EXPECT(jrr[jss::marker]))
+            BEAST_EXPECT(checkTransaction(txs[0u], 9, 7));
+            BEAST_EXPECT(checkTransaction(txs[1u], 8, 7));
+            BEAST_EXPECT(checkTransaction(txs[2u], 7, 6));
+            if (!BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
             jrr = next(env, A3, 3, 9, 3, false, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 3))
+            if (!BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 4, 4));
-            BEAST_EXPECT(checkTransaction (txs[1u], 4, 4));
-            BEAST_EXPECT(checkTransaction (txs[2u], 3, 3));
-            if(! BEAST_EXPECT(jrr[jss::marker]))
+            BEAST_EXPECT(checkTransaction(txs[0u], 6, 6));
+            BEAST_EXPECT(checkTransaction(txs[1u], 5, 5));
+            BEAST_EXPECT(checkTransaction(txs[2u], 4, 5));
+            if (!BEAST_EXPECT(jrr[jss::marker]))
                 return;
 
             jrr = next(env, A3, 3, 9, 3, false, jrr[jss::marker]);
             txs = jrr[jss::transactions];
-            if (! BEAST_EXPECT(txs.isArray() && txs.size() == 1))
+            if (!BEAST_EXPECT(txs.isArray() && txs.size() == 3))
                 return;
-            BEAST_EXPECT(checkTransaction (txs[0u], 3, 3));
-            BEAST_EXPECT(! jrr[jss::marker]);
+            BEAST_EXPECT(checkTransaction(txs[0u], 4, 4));
+            BEAST_EXPECT(checkTransaction(txs[1u], 4, 4));
+            BEAST_EXPECT(checkTransaction(txs[2u], 3, 3));
+            if (!BEAST_EXPECT(jrr[jss::marker]))
+                return;
+
+            jrr = next(env, A3, 3, 9, 3, false, jrr[jss::marker]);
+            txs = jrr[jss::transactions];
+            if (!BEAST_EXPECT(txs.isArray() && txs.size() == 1))
+                return;
+            BEAST_EXPECT(checkTransaction(txs[0u], 3, 3));
+            BEAST_EXPECT(!jrr[jss::marker]);
         }
     }
 
@@ -2174,7 +2174,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountTxPaging,app,ripple);
+BEAST_DEFINE_TESTSUITE(AccountTxPaging, app, ripple);
 
-}
-
+}  // namespace ripple

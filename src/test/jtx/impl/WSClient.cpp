@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <test/jtx/WSClient.h>
-#include <test/jtx.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/server/Port.h>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/websocket.hpp>
+#include <test/jtx.h>
+#include <test/jtx/WSClient.h>
 
 #include <condition_variable>
 #include <string>
@@ -45,42 +45,39 @@ class WSClientImpl : public WSClient
     {
         Json::Value jv;
 
-        explicit
-        msg(Json::Value&& jv_)
-            : jv(jv_)
+        explicit msg(Json::Value&& jv_) : jv(jv_)
         {
         }
     };
 
-    static
-    boost::asio::ip::tcp::endpoint
+    static boost::asio::ip::tcp::endpoint
     getEndpoint(BasicConfig const& cfg, bool v2)
     {
         auto& log = std::cerr;
         ParsedPort common;
-        parse_Port (common, cfg["server"], log);
+        parse_Port(common, cfg["server"], log);
         auto const ps = v2 ? "ws2" : "ws";
         for (auto const& name : cfg.section("server").values())
         {
-            if (! cfg.exists(name))
+            if (!cfg.exists(name))
                 continue;
             ParsedPort pp;
             parse_Port(pp, cfg[name], log);
-            if(pp.protocol.count(ps) == 0)
+            if (pp.protocol.count(ps) == 0)
                 continue;
             using namespace boost::asio::ip;
-            if(pp.ip && pp.ip->is_unspecified())
-               *pp.ip = pp.ip->is_v6() ? address{address_v6::loopback()} : address{address_v4::loopback()};
-            return { *pp.ip, *pp.port };
+            if (pp.ip && pp.ip->is_unspecified())
+                *pp.ip = pp.ip->is_v6() ? address{address_v6::loopback()}
+                                        : address{address_v4::loopback()};
+            return {*pp.ip, *pp.port};
         }
         Throw<std::runtime_error>("Missing WebSocket port");
-        return {}; // Silence compiler control paths return value warning
+        return {};  // Silence compiler control paths return value warning
     }
 
     template <class ConstBuffers>
-    static
-    std::string
-    buffer_string (ConstBuffers const& b)
+    static std::string
+    buffer_string(ConstBuffers const& b)
     {
         using boost::asio::buffer;
         using boost::asio::buffer_size;
@@ -91,8 +88,7 @@ class WSClientImpl : public WSClient
     }
 
     boost::asio::io_service ios_;
-    boost::optional<
-        boost::asio::io_service::work> work_;
+    boost::optional<boost::asio::io_service::work> work_;
     boost::asio::io_service::strand strand_;
     std::thread thread_;
     boost::asio::ip::tcp::socket stream_;
@@ -129,11 +125,14 @@ class WSClientImpl : public WSClient
     }
 
 public:
-    WSClientImpl(Config const& cfg, bool v2, unsigned rpc_version,
+    WSClientImpl(
+        Config const& cfg,
+        bool v2,
+        unsigned rpc_version,
         std::unordered_map<std::string, std::string> const& headers = {})
         : work_(ios_)
         , strand_(ios_)
-        , thread_([&]{ ios_.run(); })
+        , thread_([&] { ios_.run(); })
         , stream_(ios_)
         , ws_(stream_)
         , rpc_version_(rpc_version)
@@ -142,18 +141,19 @@ public:
         {
             auto const ep = getEndpoint(cfg, v2);
             stream_.connect(ep);
-            ws_.handshake_ex(ep.address().to_string() +
-                    ":" + std::to_string(ep.port()), "/",
-                [&](boost::beast::websocket::request_type &req)
-                {
+            ws_.handshake_ex(
+                ep.address().to_string() + ":" + std::to_string(ep.port()),
+                "/",
+                [&](boost::beast::websocket::request_type& req) {
                     for (auto const& h : headers)
                         req.set(h.first, h.second);
                 });
-            ws_.async_read(rb_,
-                strand_.wrap(std::bind(&WSClientImpl::on_read_msg,
-                    this, std::placeholders::_1)));
+            ws_.async_read(
+                rb_,
+                strand_.wrap(std::bind(
+                    &WSClientImpl::on_read_msg, this, std::placeholders::_1)));
         }
-        catch(std::exception&)
+        catch (std::exception&)
         {
             cleanup();
             Rethrow();
@@ -166,16 +166,15 @@ public:
     }
 
     Json::Value
-    invoke(std::string const& cmd,
-        Json::Value const& params) override
+    invoke(std::string const& cmd, Json::Value const& params) override
     {
         using boost::asio::buffer;
         using namespace std::chrono_literals;
 
         {
             Json::Value jp;
-            if(params)
-               jp = params;
+            if (params)
+                jp = params;
             if (rpc_version_ == 2)
             {
                 jp[jss::method] = cmd;
@@ -189,17 +188,14 @@ public:
             ws_.write_some(true, buffer(s));
         }
 
-        auto jv = findMsg(5s,
-            [&](Json::Value const& jval)
-            {
-                return jval[jss::type] == jss::response;
-            });
+        auto jv = findMsg(5s, [&](Json::Value const& jval) {
+            return jval[jss::type] == jss::response;
+        });
         if (jv)
         {
             // Normalize JSON output
             jv->removeMember(jss::type);
-            if ((*jv).isMember(jss::status) &&
-                (*jv)[jss::status] == jss::error)
+            if ((*jv).isMember(jss::status) && (*jv)[jss::status] == jss::error)
             {
                 Json::Value ret;
                 ret[jss::result] = *jv;
@@ -208,10 +204,8 @@ public:
                 ret[jss::status] = jss::error;
                 return ret;
             }
-            if ((*jv).isMember(jss::status) &&
-                (*jv).isMember(jss::result))
-                    (*jv)[jss::result][jss::status] =
-                        (*jv)[jss::status];
+            if ((*jv).isMember(jss::status) && (*jv).isMember(jss::result))
+                (*jv)[jss::result][jss::status] = (*jv)[jss::status];
             return *jv;
         }
         return {};
@@ -223,8 +217,7 @@ public:
         std::shared_ptr<msg> m;
         {
             std::unique_lock<std::mutex> lock(m_);
-            if(! cv_.wait_for(lock, timeout,
-                    [&]{ return ! msgs_.empty(); }))
+            if (!cv_.wait_for(lock, timeout, [&] { return !msgs_.empty(); }))
                 return boost::none;
             m = std::move(msgs_.back());
             msgs_.pop_back();
@@ -233,17 +226,15 @@ public:
     }
 
     boost::optional<Json::Value>
-    findMsg(std::chrono::milliseconds const& timeout,
+    findMsg(
+        std::chrono::milliseconds const& timeout,
         std::function<bool(Json::Value const&)> pred) override
     {
         std::shared_ptr<msg> m;
         {
             std::unique_lock<std::mutex> lock(m_);
-            if(! cv_.wait_for(lock, timeout,
-                [&]
-                {
-                    for (auto it = msgs_.begin();
-                        it != msgs_.end(); ++it)
+            if (!cv_.wait_for(lock, timeout, [&] {
+                    for (auto it = msgs_.begin(); it != msgs_.end(); ++it)
                     {
                         if (pred((*it)->jv))
                         {
@@ -261,7 +252,8 @@ public:
         return std::move(m->jv);
     }
 
-    unsigned version() const override
+    unsigned
+    version() const override
     {
         return rpc_version_;
     }
@@ -270,10 +262,10 @@ private:
     void
     on_read_msg(error_code const& ec)
     {
-        if(ec)
+        if (ec)
         {
-            if(ec == boost::beast::websocket::error::closed)
-               peerClosed_ = true;
+            if (ec == boost::beast::websocket::error::closed)
+                peerClosed_ = true;
             return;
         }
 
@@ -281,16 +273,16 @@ private:
         Json::Reader jr;
         jr.parse(buffer_string(rb_.data()), jv);
         rb_.consume(rb_.size());
-        auto m = std::make_shared<msg>(
-            std::move(jv));
+        auto m = std::make_shared<msg>(std::move(jv));
         {
             std::lock_guard lock(m_);
             msgs_.push_front(m);
             cv_.notify_all();
         }
-        ws_.async_read(rb_, strand_.wrap(
-            std::bind(&WSClientImpl::on_read_msg,
-                this, std::placeholders::_1)));
+        ws_.async_read(
+            rb_,
+            strand_.wrap(std::bind(
+                &WSClientImpl::on_read_msg, this, std::placeholders::_1)));
     }
 
     // Called when the read op terminates
@@ -304,11 +296,14 @@ private:
 };
 
 std::unique_ptr<WSClient>
-makeWSClient(Config const& cfg, bool v2, unsigned rpc_version,
+makeWSClient(
+    Config const& cfg,
+    bool v2,
+    unsigned rpc_version,
     std::unordered_map<std::string, std::string> const& headers)
 {
     return std::make_unique<WSClientImpl>(cfg, v2, rpc_version, headers);
 }
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple

@@ -20,9 +20,9 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/AmountConversions.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/Rate.h>
+#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 
 namespace ripple {
@@ -30,26 +30,27 @@ namespace ripple {
 class AccountSet_test : public beast::unit_test::suite
 {
 public:
-
-    void testNullAccountSet()
+    void
+    testNullAccountSet()
     {
-        testcase ("No AccountSet");
+        testcase("No AccountSet");
 
         using namespace test::jtx;
         Env env(*this);
-        Account const alice ("alice");
+        Account const alice("alice");
         env.fund(XRP(10000), noripple(alice));
-        //ask for the ledger entry - account root, to check its flags
+        // ask for the ledger entry - account root, to check its flags
         auto const jrr = env.le(alice);
-        BEAST_EXPECT((*env.le(alice))[ sfFlags ] == 0u);
+        BEAST_EXPECT((*env.le(alice))[sfFlags] == 0u);
     }
 
-    void testMostFlags()
+    void
+    testMostFlags()
     {
-        testcase ("Most Flags");
+        testcase("Most Flags");
 
         using namespace test::jtx;
-        Account const alice ("alice");
+        Account const alice("alice");
 
         // Test without DepositAuth enabled initially.
         Env env(*this, supported_amendments() - featureDepositAuth);
@@ -57,16 +58,16 @@ public:
 
         // Give alice a regular key so she can legally set and clear
         // her asfDisableMaster flag.
-        Account const alie {"alie", KeyType::secp256k1};
-        env(regkey (alice, alie));
+        Account const alie{"alie", KeyType::secp256k1};
+        env(regkey(alice, alie));
         env.close();
 
-        auto testFlags = [this, &alice, &alie, &env]
-            (std::initializer_list<std::uint32_t> goodFlags)
-        {
-            std::uint32_t const orig_flags = (*env.le(alice))[ sfFlags ];
-            for (std::uint32_t flag {1u};
-                 flag < std::numeric_limits<std::uint32_t>::digits; ++flag)
+        auto testFlags = [this, &alice, &alie, &env](
+                             std::initializer_list<std::uint32_t> goodFlags) {
+            std::uint32_t const orig_flags = (*env.le(alice))[sfFlags];
+            for (std::uint32_t flag{1u};
+                 flag < std::numeric_limits<std::uint32_t>::digits;
+                 ++flag)
             {
                 if (flag == asfNoFreeze)
                 {
@@ -74,7 +75,8 @@ public:
                     // elsewhere.
                     continue;
                 }
-                else if (std::find (goodFlags.begin(), goodFlags.end(), flag) !=
+                else if (
+                    std::find(goodFlags.begin(), goodFlags.end(), flag) !=
                     goodFlags.end())
                 {
                     // Good flag
@@ -85,64 +87,76 @@ public:
                     env(fclear(alice, flag), sig(alie));
                     env.close();
                     env.require(nflags(alice, flag));
-                    std::uint32_t const now_flags = (*env.le(alice))[ sfFlags ];
+                    std::uint32_t const now_flags = (*env.le(alice))[sfFlags];
                     BEAST_EXPECT(now_flags == orig_flags);
                 }
                 else
                 {
                     // Bad flag
-                    BEAST_EXPECT((*env.le(alice))[ sfFlags ] == orig_flags);
+                    BEAST_EXPECT((*env.le(alice))[sfFlags] == orig_flags);
                     env(fset(alice, flag), sig(alice));
                     env.close();
-                    BEAST_EXPECT((*env.le(alice))[ sfFlags ] == orig_flags);
+                    BEAST_EXPECT((*env.le(alice))[sfFlags] == orig_flags);
                     env(fclear(alice, flag), sig(alie));
                     env.close();
-                    BEAST_EXPECT((*env.le(alice))[ sfFlags ] == orig_flags);
+                    BEAST_EXPECT((*env.le(alice))[sfFlags] == orig_flags);
                 }
             }
         };
 
         // Test with featureDepositAuth disabled.
-        testFlags ({asfRequireDest, asfRequireAuth, asfDisallowXRP,
-            asfGlobalFreeze, asfDisableMaster, asfDefaultRipple});
+        testFlags(
+            {asfRequireDest,
+             asfRequireAuth,
+             asfDisallowXRP,
+             asfGlobalFreeze,
+             asfDisableMaster,
+             asfDefaultRipple});
 
         // Enable featureDepositAuth and retest.
-        env.enableFeature (featureDepositAuth);
+        env.enableFeature(featureDepositAuth);
         env.close();
-        testFlags ({asfRequireDest, asfRequireAuth, asfDisallowXRP,
-            asfGlobalFreeze, asfDisableMaster, asfDefaultRipple,
-            asfDepositAuth});
+        testFlags(
+            {asfRequireDest,
+             asfRequireAuth,
+             asfDisallowXRP,
+             asfGlobalFreeze,
+             asfDisableMaster,
+             asfDefaultRipple,
+             asfDepositAuth});
     }
 
-    void testSetAndResetAccountTxnID()
+    void
+    testSetAndResetAccountTxnID()
     {
-        testcase ("Set and reset AccountTxnID");
+        testcase("Set and reset AccountTxnID");
 
         using namespace test::jtx;
         Env env(*this);
-        Account const alice ("alice");
+        Account const alice("alice");
         env.fund(XRP(10000), noripple(alice));
 
-        std::uint32_t const orig_flags = (*env.le(alice))[ sfFlags ];
+        std::uint32_t const orig_flags = (*env.le(alice))[sfFlags];
 
         // asfAccountTxnID is special and not actually set as a flag,
         // so we check the field presence instead
-        BEAST_EXPECT(! env.le(alice)->isFieldPresent(sfAccountTxnID));
+        BEAST_EXPECT(!env.le(alice)->isFieldPresent(sfAccountTxnID));
         env(fset(alice, asfAccountTxnID), sig(alice));
         BEAST_EXPECT(env.le(alice)->isFieldPresent(sfAccountTxnID));
         env(fclear(alice, asfAccountTxnID));
-        BEAST_EXPECT(! env.le(alice)->isFieldPresent(sfAccountTxnID));
-        std::uint32_t const now_flags = (*env.le(alice))[ sfFlags ];
+        BEAST_EXPECT(!env.le(alice)->isFieldPresent(sfAccountTxnID));
+        std::uint32_t const now_flags = (*env.le(alice))[sfFlags];
         BEAST_EXPECT(now_flags == orig_flags);
     }
 
-    void testSetNoFreeze()
+    void
+    testSetNoFreeze()
     {
-        testcase ("Set NoFreeze");
+        testcase("Set NoFreeze");
 
         using namespace test::jtx;
         Env env(*this);
-        Account const alice ("alice");
+        Account const alice("alice");
         env.fund(XRP(10000), noripple(alice));
         env.memoize("eric");
         env(regkey(alice, "eric"));
@@ -156,13 +170,14 @@ public:
         env.require(flags(alice, asfNoFreeze));
     }
 
-    void testDomain()
+    void
+    testDomain()
     {
-        testcase ("Domain");
+        testcase("Domain");
 
         using namespace test::jtx;
         Env env(*this);
-        Account const alice ("alice");
+        Account const alice("alice");
         env.fund(XRP(10000), alice);
         auto jt = noop(alice);
         // The Domain field is represented as the hex string of the lowercase
@@ -174,11 +189,11 @@ public:
         std::string const domain = "example.com";
         jt[sfDomain.fieldName] = strHex(domain);
         env(jt);
-        BEAST_EXPECT((*env.le(alice))[ sfDomain ] == makeSlice(domain));
+        BEAST_EXPECT((*env.le(alice))[sfDomain] == makeSlice(domain));
 
         jt[sfDomain.fieldName] = "";
         env(jt);
-        BEAST_EXPECT(! env.le(alice)->isFieldPresent(sfDomain));
+        BEAST_EXPECT(!env.le(alice)->isFieldPresent(sfDomain));
 
         // The upper limit on the length is 256 bytes
         // (defined as DOMAIN_BYTES_MAX in SetAccount)
@@ -189,87 +204,95 @@ public:
             std::string domain2 =
                 std::string(len - domain.length() - 1, 'a') + "." + domain;
 
-            BEAST_EXPECT (domain2.length() == len);
+            BEAST_EXPECT(domain2.length() == len);
 
             jt[sfDomain.fieldName] = strHex(domain2);
 
             if (len <= maxLength)
             {
                 env(jt);
-                BEAST_EXPECT((*env.le(alice))[ sfDomain ] == makeSlice(domain2));
+                BEAST_EXPECT((*env.le(alice))[sfDomain] == makeSlice(domain2));
             }
             else
             {
                 env(jt, ter(telBAD_DOMAIN));
             }
-         }
+        }
     }
 
-    void testMessageKey()
+    void
+    testMessageKey()
     {
-        testcase ("MessageKey");
+        testcase("MessageKey");
 
         using namespace test::jtx;
         Env env(*this);
-        Account const alice ("alice");
+        Account const alice("alice");
         env.fund(XRP(10000), alice);
         auto jt = noop(alice);
 
         auto const rkp = randomKeyPair(KeyType::ed25519);
         jt[sfMessageKey.fieldName] = strHex(rkp.first.slice());
         env(jt);
-        BEAST_EXPECT(strHex((*env.le(alice))[ sfMessageKey ]) == strHex(rkp.first.slice()));
+        BEAST_EXPECT(
+            strHex((*env.le(alice))[sfMessageKey]) ==
+            strHex(rkp.first.slice()));
 
         jt[sfMessageKey.fieldName] = "";
         env(jt);
-        BEAST_EXPECT(! env.le(alice)->isFieldPresent(sfMessageKey));
+        BEAST_EXPECT(!env.le(alice)->isFieldPresent(sfMessageKey));
 
         using namespace std::string_literals;
         jt[sfMessageKey.fieldName] = strHex("NOT_REALLY_A_PUBKEY"s);
         env(jt, ter(telBAD_PUBLIC_KEY));
     }
 
-    void testWalletID()
+    void
+    testWalletID()
     {
-        testcase ("WalletID");
+        testcase("WalletID");
 
         using namespace test::jtx;
         Env env(*this);
-        Account const alice ("alice");
+        Account const alice("alice");
         env.fund(XRP(10000), alice);
         auto jt = noop(alice);
 
-        uint256 somehash = from_hex_text<uint256>("9633ec8af54f16b5286db1d7b519ef49eefc050c0c8ac4384f1d88acd1bfdf05");
+        uint256 somehash = from_hex_text<uint256>(
+            "9633ec8af54f16b5286db1d7b519ef49eefc050c0c8ac4384f1d88acd1bfdf05");
         jt[sfWalletLocator.fieldName] = to_string(somehash);
         env(jt);
-        BEAST_EXPECT((*env.le(alice))[ sfWalletLocator ] == somehash);
+        BEAST_EXPECT((*env.le(alice))[sfWalletLocator] == somehash);
 
         jt[sfWalletLocator.fieldName] = "";
         env(jt);
-        BEAST_EXPECT(! env.le(alice)->isFieldPresent(sfWalletLocator));
+        BEAST_EXPECT(!env.le(alice)->isFieldPresent(sfWalletLocator));
     }
 
-    void testEmailHash()
+    void
+    testEmailHash()
     {
-        testcase ("EmailHash");
+        testcase("EmailHash");
 
         using namespace test::jtx;
         Env env(*this);
-        Account const alice ("alice");
+        Account const alice("alice");
         env.fund(XRP(10000), alice);
         auto jt = noop(alice);
 
-        uint128 somehash = from_hex_text<uint128>("fff680681c2f5e6095324e2e08838f221a72ab4f");
+        uint128 somehash =
+            from_hex_text<uint128>("fff680681c2f5e6095324e2e08838f221a72ab4f");
         jt[sfEmailHash.fieldName] = to_string(somehash);
         env(jt);
-        BEAST_EXPECT((*env.le(alice))[ sfEmailHash ] == somehash);
+        BEAST_EXPECT((*env.le(alice))[sfEmailHash] == somehash);
 
         jt[sfEmailHash.fieldName] = "";
         env(jt);
-        BEAST_EXPECT(! env.le(alice)->isFieldPresent(sfEmailHash));
+        BEAST_EXPECT(!env.le(alice)->isFieldPresent(sfEmailHash));
     }
 
-    void testTransferRate()
+    void
+    testTransferRate()
     {
         struct test_results
         {
@@ -278,15 +301,15 @@ public:
             double get;
         };
 
-        testcase ("TransferRate");
+        testcase("TransferRate");
 
         using namespace test::jtx;
-        auto doTests = [this] (FeatureBitset const& features,
-            std::initializer_list<test_results> testData)
-        {
-            Env env (*this, features);
+        auto doTests = [this](
+                           FeatureBitset const& features,
+                           std::initializer_list<test_results> testData) {
+            Env env(*this, features);
 
-            Account const alice ("alice");
+            Account const alice("alice");
             env.fund(XRP(10000), alice);
 
             for (auto const& r : testData)
@@ -298,39 +321,40 @@ public:
                 if (!(*env.le(alice))[~sfTransferRate])
                     BEAST_EXPECT(r.get == 1.0);
                 else
-                    BEAST_EXPECT(*(*env.le(alice))[~sfTransferRate] ==
+                    BEAST_EXPECT(
+                        *(*env.le(alice))[~sfTransferRate] ==
                         r.get * QUALITY_ONE);
             }
         };
 
-        doTests (supported_amendments(),
-            {
-                { 1.0, tesSUCCESS,              1.0 },
-                { 1.1, tesSUCCESS,              1.1 },
-                { 2.0, tesSUCCESS,              2.0 },
-                { 2.1, temBAD_TRANSFER_RATE,    2.0 },
-                { 0.0, tesSUCCESS,              1.0 },
-                { 2.0, tesSUCCESS,              2.0 },
-                { 0.9, temBAD_TRANSFER_RATE,    2.0 }
-            });
+        doTests(
+            supported_amendments(),
+            {{1.0, tesSUCCESS, 1.0},
+             {1.1, tesSUCCESS, 1.1},
+             {2.0, tesSUCCESS, 2.0},
+             {2.1, temBAD_TRANSFER_RATE, 2.0},
+             {0.0, tesSUCCESS, 1.0},
+             {2.0, tesSUCCESS, 2.0},
+             {0.9, temBAD_TRANSFER_RATE, 2.0}});
     }
 
-    void testGateway()
+    void
+    testGateway()
     {
-        testcase ("Gateway");
+        testcase("Gateway");
 
         using namespace test::jtx;
 
-        Account const alice ("alice");
-        Account const bob ("bob");
-        Account const gw ("gateway");
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const gw("gateway");
         auto const USD = gw["USD"];
 
         // Test gateway with a variety of allowed transfer rates
-        for (double transferRate = 1.0;
-            transferRate <= 2.0; transferRate += 0.03125)
+        for (double transferRate = 1.0; transferRate <= 2.0;
+             transferRate += 0.03125)
         {
-            Env env (*this);
+            Env env(*this);
             env.fund(XRP(10000), gw, alice, bob);
             env.close();
             env.trust(USD(10), alice, bob);
@@ -339,9 +363,9 @@ public:
             env.close();
 
             auto const amount = USD(1);
-            Rate const rate (transferRate * QUALITY_ONE);
+            Rate const rate(transferRate * QUALITY_ONE);
             auto const amountWithRate =
-                toAmount<STAmount> (multiply(amount.value(), rate));
+                toAmount<STAmount>(multiply(amount.value(), rate));
 
             env(pay(gw, alice, USD(10)));
             env.close();
@@ -350,7 +374,7 @@ public:
 
             env.require(balance(alice, USD(10) - amountWithRate));
             env.require(balance(bob, USD(1)));
-       }
+        }
 
         // Since fix1201 was enabled on Nov 14 2017 a rate in excess of
         // 2.0 has been blocked by the transactor.  But there are a few
@@ -362,7 +386,7 @@ public:
         // They are 4.0 and 4.294967295.  So those are the values we test.
         for (double transferRate : {4.0, 4.294967295})
         {
-            Env env (*this);
+            Env env(*this);
             env.fund(XRP(10000), gw, alice, bob);
             env.close();
             env.trust(USD(10), alice, bob);
@@ -379,28 +403,24 @@ public:
             // checks with this modify() call.  If you call close() between
             // here and the end of the test all the effort will be lost.
             env.app().openLedger().modify(
-                [&gw, transferRate] (OpenView& view, beast::Journal j)
-                {
+                [&gw, transferRate](OpenView& view, beast::Journal j) {
                     // Get the account root we want to hijack.
-                    auto const sle = view.read (keylet::account(gw.id()));
-                    if (! sle)
-                        return false;   // This would be really surprising!
+                    auto const sle = view.read(keylet::account(gw.id()));
+                    if (!sle)
+                        return false;  // This would be really surprising!
 
                     // We'll insert a replacement for the account root
                     // with the higher (currently invalid) transfer rate.
-                    auto replacement =
-                        std::make_shared<SLE>(*sle, sle->key());
+                    auto replacement = std::make_shared<SLE>(*sle, sle->key());
                     (*replacement)[sfTransferRate] =
                         static_cast<std::uint32_t>(transferRate * QUALITY_ONE);
-                    view.rawReplace (replacement);
+                    view.rawReplace(replacement);
                     return true;
                 });
 
             auto const amount = USD(1);
-            auto const amountWithRate =
-                toAmount<STAmount> (
-                    multiply(amount.value(),
-                        Rate (transferRate * QUALITY_ONE)));
+            auto const amountWithRate = toAmount<STAmount>(
+                multiply(amount.value(), Rate(transferRate * QUALITY_ONE)));
 
             env(pay(gw, alice, USD(10)));
             env(pay(alice, bob, amount), sendmax(USD(10)));
@@ -410,13 +430,14 @@ public:
         }
     }
 
-    void testBadInputs()
+    void
+    testBadInputs()
     {
-        testcase ("Bad inputs");
+        testcase("Bad inputs");
 
         using namespace test::jtx;
-        Env env (*this);
-        Account const alice ("alice");
+        Env env(*this);
+        Account const alice("alice");
         env.fund(XRP(10000), alice);
 
         auto jt = fset(alice, asfDisallowXRP);
@@ -447,35 +468,37 @@ public:
         jt[sfFlags.fieldName] = tfAccountSetMask;
         env(jt, ter(temINVALID_FLAG));
 
-        env(fset (alice, asfDisableMaster),
+        env(fset(alice, asfDisableMaster),
             sig(alice),
             ter(tecNO_ALTERNATIVE_KEY));
     }
 
-    void testRequireAuthWithDir()
+    void
+    testRequireAuthWithDir()
     {
-        testcase ("Require auth");
+        testcase("Require auth");
 
         using namespace test::jtx;
         Env env(*this);
-        Account const alice ("alice");
-        Account const bob ("bob");
+        Account const alice("alice");
+        Account const bob("bob");
 
         env.fund(XRP(10000), alice);
         env.close();
 
         // alice should have an empty directory.
-        BEAST_EXPECT(dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
+        BEAST_EXPECT(dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
         // Give alice a signer list, then there will be stuff in the directory.
-        env(signers(alice, 1, { { bob, 1} }));
+        env(signers(alice, 1, {{bob, 1}}));
         env.close();
-        BEAST_EXPECT(! dirIsEmpty (*env.closed(), keylet::ownerDir(alice)));
+        BEAST_EXPECT(!dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
-        env(fset (alice, asfRequireAuth), ter(tecOWNERS));
+        env(fset(alice, asfRequireAuth), ter(tecOWNERS));
     }
 
-    void run() override
+    void
+    run() override
     {
         testNullAccountSet();
         testMostFlags();
@@ -492,7 +515,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountSet,app,ripple);
+BEAST_DEFINE_TESTSUITE(AccountSet, app, ripple);
 
-}
-
+}  // namespace ripple

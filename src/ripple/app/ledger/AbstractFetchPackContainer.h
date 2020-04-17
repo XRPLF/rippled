@@ -20,8 +20,8 @@
 #ifndef RIPPLE_APP_LEDGER_ABSTRACTFETCHPACKCONTAINER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_ABSTRACTFETCHPACKCONTAINER_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
 #include <ripple/basics/Blob.h>
+#include <ripple/basics/base_uint.h>
 #include <boost/optional.hpp>
 
 namespace ripple {
@@ -40,9 +40,10 @@ public:
         @return `boost::none` if the hash isn't cached,
             otherwise, the hash associated data.
     */
-    virtual boost::optional<Blob> getFetchPack(uint256 const& nodeHash) = 0;
+    virtual boost::optional<Blob>
+    getFetchPack(uint256 const& nodeHash) = 0;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

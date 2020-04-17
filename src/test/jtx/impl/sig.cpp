@@ -27,20 +27,17 @@ namespace jtx {
 void
 sig::operator()(Env&, JTx& jt) const
 {
-    if (! manual_)
+    if (!manual_)
         return;
     jt.fill_sig = false;
-    if(account_)
+    if (account_)
     {
         // VFALCO Inefficient pre-C++14
         auto const account = *account_;
-        jt.signer = [account](Env&, JTx& jtx)
-        {
-            jtx::sign(jtx.jv, account);
-        };
+        jt.signer = [account](Env&, JTx& jtx) { jtx::sign(jtx.jv, account); };
     }
 }
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

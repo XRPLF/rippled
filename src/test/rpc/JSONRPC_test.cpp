@@ -49,26 +49,29 @@ struct TxnTestData
     // The expMsg array contains the expected error string for the above cases.
     std::array<char const* const, 4> const expMsg;
 
-    constexpr TxnTestData (char const* description_, int line_,
-        char const* json_, std::array<char const* const, 4> const& expMsg_)
-    : description (description_)
-    , line (line_)
-    , json (json_)
-    , expMsg {expMsg_}
-    { }
+    constexpr TxnTestData(
+        char const* description_,
+        int line_,
+        char const* json_,
+        std::array<char const* const, 4> const& expMsg_)
+        : description(description_), line(line_), json(json_), expMsg{expMsg_}
+    {
+    }
 
-    TxnTestData () = delete;
-    TxnTestData (TxnTestData const&) = delete;
-    TxnTestData (TxnTestData&&) = delete;
-    TxnTestData& operator= (TxnTestData const&) = delete;
-    TxnTestData& operator= (TxnTestData&&) = delete;
+    TxnTestData() = delete;
+    TxnTestData(TxnTestData const&) = delete;
+    TxnTestData(TxnTestData&&) = delete;
+    TxnTestData&
+    operator=(TxnTestData const&) = delete;
+    TxnTestData&
+    operator=(TxnTestData&&) = delete;
 };
 
-static constexpr TxnTestData txnTestArray [] =
-{
+static constexpr TxnTestData txnTestArray[] = {
 
-{ "Minimal payment.", __LINE__,
-R"({
+    {"Minimal payment.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "secret": "masterpassphrase",
     "tx_json": {
@@ -78,14 +81,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"Missing field 'account'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"",
+       "",
+       "Missing field 'account'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "Pass in Fee with minimal payment.", __LINE__,
-R"({
+    {"Pass in Fee with minimal payment.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -97,14 +100,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"",
+       "",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "Pass in Sequence.", __LINE__,
-R"({
+    {"Pass in Sequence.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -116,14 +119,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}}},
+     {{"",
+       "",
+       "Missing field 'tx_json.Fee'.",
+       "Missing field 'tx_json.SigningPubKey'."}}},
 
-{ "Pass in Sequence and Fee with minimal payment.", __LINE__,
-R"({
+    {"Pass in Sequence and Fee with minimal payment.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -136,14 +139,15 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"A Signer may not be the transaction's Account (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
-"Missing field 'tx_json.SigningPubKey'."}}},
+     {{"",
+       "",
+       "A Signer may not be the transaction's Account "
+       "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+       "Missing field 'tx_json.SigningPubKey'."}}},
 
-{ "Add 'fee_mult_max' field.", __LINE__,
-R"({
+    {"Add 'fee_mult_max' field.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -156,14 +160,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}}},
+     {{"",
+       "",
+       "Missing field 'tx_json.Fee'.",
+       "Missing field 'tx_json.SigningPubKey'."}}},
 
-{ "Add 'fee_mult_max' and 'fee_div_max' field.", __LINE__,
-R"({
+    {"Add 'fee_mult_max' and 'fee_div_max' field.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -177,14 +181,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}}},
+     {{"",
+       "",
+       "Missing field 'tx_json.Fee'.",
+       "Missing field 'tx_json.SigningPubKey'."}}},
 
-{ "fee_mult_max is ignored if 'Fee' is present.", __LINE__,
-R"({
+    {"fee_mult_max is ignored if 'Fee' is present.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -198,14 +202,15 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"A Signer may not be the transaction's Account (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
-"Missing field 'tx_json.SigningPubKey'."}}},
+     {{"",
+       "",
+       "A Signer may not be the transaction's Account "
+       "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+       "Missing field 'tx_json.SigningPubKey'."}}},
 
-{ "fee_div_max is ignored if 'Fee' is present.", __LINE__,
-R"({
+    {"fee_div_max is ignored if 'Fee' is present.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -220,14 +225,15 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"A Signer may not be the transaction's Account (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
-"Missing field 'tx_json.SigningPubKey'."}}},
+     {{"",
+       "",
+       "A Signer may not be the transaction's Account "
+       "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+       "Missing field 'tx_json.SigningPubKey'."}}},
 
-{ "Invalid 'fee_mult_max' field.", __LINE__,
-R"({
+    {"Invalid 'fee_mult_max' field.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -240,14 +246,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Invalid field 'fee_mult_max', not a positive integer.",
-"Invalid field 'fee_mult_max', not a positive integer.",
-"Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}}},
+     {{"Invalid field 'fee_mult_max', not a positive integer.",
+       "Invalid field 'fee_mult_max', not a positive integer.",
+       "Missing field 'tx_json.Fee'.",
+       "Missing field 'tx_json.SigningPubKey'."}}},
 
-{ "Invalid 'fee_div_max' field.", __LINE__,
-R"({
+    {"Invalid 'fee_div_max' field.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -261,14 +267,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Invalid field 'fee_div_max', not a positive integer.",
-"Invalid field 'fee_div_max', not a positive integer.",
-"Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}}},
+     {{"Invalid field 'fee_div_max', not a positive integer.",
+       "Invalid field 'fee_div_max', not a positive integer.",
+       "Missing field 'tx_json.Fee'.",
+       "Missing field 'tx_json.SigningPubKey'."}}},
 
-{ "Invalid value for 'fee_mult_max' field.", __LINE__,
-R"({
+    {"Invalid value for 'fee_mult_max' field.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -281,14 +287,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Fee of 10 exceeds the requested tx limit of 0",
-"Fee of 10 exceeds the requested tx limit of 0",
-"Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}}},
+     {{"Fee of 10 exceeds the requested tx limit of 0",
+       "Fee of 10 exceeds the requested tx limit of 0",
+       "Missing field 'tx_json.Fee'.",
+       "Missing field 'tx_json.SigningPubKey'."}}},
 
-{ "Invalid value for 'fee_div_max' field.", __LINE__,
-R"({
+    {"Invalid value for 'fee_div_max' field.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -302,14 +308,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Fee of 10 exceeds the requested tx limit of 5",
-"Fee of 10 exceeds the requested tx limit of 5",
-"Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}}},
+     {{"Fee of 10 exceeds the requested tx limit of 5",
+       "Fee of 10 exceeds the requested tx limit of 5",
+       "Missing field 'tx_json.Fee'.",
+       "Missing field 'tx_json.SigningPubKey'."}}},
 
-{ "Invalid zero value for 'fee_div_max' field.", __LINE__,
-R"({
+    {"Invalid zero value for 'fee_div_max' field.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -323,14 +329,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Invalid field 'fee_div_max', not a positive integer.",
-"Invalid field 'fee_div_max', not a positive integer.",
-"Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}}},
+     {{"Invalid field 'fee_div_max', not a positive integer.",
+       "Invalid field 'fee_div_max', not a positive integer.",
+       "Missing field 'tx_json.Fee'.",
+       "Missing field 'tx_json.SigningPubKey'."}}},
 
-{ "Missing 'Amount'.", __LINE__,
-R"({
+    {"Missing 'Amount'.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -340,14 +346,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'tx_json.Amount'.",
-"Missing field 'tx_json.Amount'.",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"Missing field 'tx_json.Amount'.",
+       "Missing field 'tx_json.Amount'.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "Invalid 'Amount'.", __LINE__,
-R"({
+    {"Invalid 'Amount'.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -358,14 +364,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Invalid field 'tx_json.Amount'.",
-"Invalid field 'tx_json.Amount'.",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"Invalid field 'tx_json.Amount'.",
+       "Invalid field 'tx_json.Amount'.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "Missing 'Destination'.", __LINE__,
-R"({
+    {"Missing 'Destination'.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -375,14 +381,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'tx_json.Destination'.",
-"Missing field 'tx_json.Destination'.",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"Missing field 'tx_json.Destination'.",
+       "Missing field 'tx_json.Destination'.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "Invalid 'Destination'.", __LINE__,
-R"({
+    {"Invalid 'Destination'.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -393,14 +399,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Invalid field 'tx_json.Destination'.",
-"Invalid field 'tx_json.Destination'.",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"Invalid field 'tx_json.Destination'.",
+       "Invalid field 'tx_json.Destination'.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "Cannot create XRP to XRP paths.", __LINE__,
-R"({
+    {"Cannot create XRP to XRP paths.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -412,14 +418,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Cannot build XRP to XRP paths.",
-"Cannot build XRP to XRP paths.",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"Cannot build XRP to XRP paths.",
+       "Cannot build XRP to XRP paths.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "Successful 'build_path'.", __LINE__,
-R"({
+    {"Successful 'build_path'.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -435,14 +441,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"",
+       "",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "Not valid to include both 'Paths' and 'build_path'.", __LINE__,
-R"({
+    {"Not valid to include both 'Paths' and 'build_path'.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -459,14 +465,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Cannot specify both 'tx_json.Paths' and 'build_path'",
-"Cannot specify both 'tx_json.Paths' and 'build_path'",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"Cannot specify both 'tx_json.Paths' and 'build_path'",
+       "Cannot specify both 'tx_json.Paths' and 'build_path'",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "Successful 'SendMax'.", __LINE__,
-R"({
+    {"Successful 'SendMax'.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -487,14 +493,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"",
+       "",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "'Amount' may not be XRP for pathfinding, but 'SendMax' may be XRP.", __LINE__,
-R"({
+    {"'Amount' may not be XRP for pathfinding, but 'SendMax' may be XRP.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -511,14 +517,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"",
+       "",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "'secret' must be present.", __LINE__,
-R"({
+    {"'secret' must be present.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "tx_json": {
@@ -528,14 +534,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "'secret' must be non-empty.", __LINE__,
-R"({
+    {"'secret' must be non-empty.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "",
@@ -546,14 +552,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Invalid field 'secret'.",
-"Invalid field 'secret'.",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"Invalid field 'secret'.",
+       "Invalid field 'secret'.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "Use 'seed' instead of 'secret'.", __LINE__,
-R"({
+    {"Use 'seed' instead of 'secret'.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
     "key_type": "ed25519",
@@ -565,14 +571,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"",
+       "",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "Malformed 'seed'.", __LINE__,
-R"({
+    {"Malformed 'seed'.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
     "key_type": "ed25519",
@@ -584,14 +590,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Disallowed seed.",
-"Disallowed seed.",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"Disallowed seed.",
+       "Disallowed seed.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "'tx_json' must be present.", __LINE__,
-R"({
+    {"'tx_json' must be present.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -602,14 +608,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'tx_json'.",
-"Missing field 'tx_json'.",
-"Missing field 'tx_json'.",
-"Missing field 'tx_json'."}}},
+     {{"Missing field 'tx_json'.",
+       "Missing field 'tx_json'.",
+       "Missing field 'tx_json'.",
+       "Missing field 'tx_json'."}}},
 
-{ "'TransactionType' must be present.", __LINE__,
-R"({
+    {"'TransactionType' must be present.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -619,14 +625,14 @@ R"({
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     }
 })",
-{{
-"Missing field 'tx_json.TransactionType'.",
-"Missing field 'tx_json.TransactionType'.",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"Missing field 'tx_json.TransactionType'.",
+       "Missing field 'tx_json.TransactionType'.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "The 'TransactionType' must be a pre-established transaction type.", __LINE__,
-R"({
+    {"The 'TransactionType' must be a pre-established transaction type.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -637,14 +643,14 @@ R"({
         "TransactionType": "tt"
     }
 })",
-{{
-"Field 'tx_json.TransactionType' has invalid data.",
-"Field 'tx_json.TransactionType' has invalid data.",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"Field 'tx_json.TransactionType' has invalid data.",
+       "Field 'tx_json.TransactionType' has invalid data.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "The 'TransactionType' may be represented with an integer.", __LINE__,
-R"({
+    {"The 'TransactionType' may be represented with an integer.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -655,14 +661,14 @@ R"({
         "TransactionType": 0
     }
 })",
-{{
-"",
-"",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"",
+       "",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "'Account' must be present.", __LINE__,
-R"({
+    {"'Account' must be present.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -672,14 +678,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'tx_json.Account'.",
-"Missing field 'tx_json.Account'.",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"Missing field 'tx_json.Account'.",
+       "Missing field 'tx_json.Account'.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "'Account' must be well formed.", __LINE__,
-R"({
+    {"'Account' must be well formed.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -690,14 +696,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Invalid field 'tx_json.Account'.",
-"Invalid field 'tx_json.Account'.",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"Invalid field 'tx_json.Account'.",
+       "Invalid field 'tx_json.Account'.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "The 'offline' tag may be added to the transaction.", __LINE__,
-R"({
+    {"The 'offline' tag may be added to the transaction.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -709,14 +715,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"",
+       "",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "If 'offline' is true then a 'Sequence' field must be supplied.", __LINE__,
-R"({
+    {"If 'offline' is true then a 'Sequence' field must be supplied.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -729,14 +735,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "If 'offline' is true then a 'Fee' field must be supplied.", __LINE__,
-R"({
+    {"If 'offline' is true then a 'Fee' field must be supplied.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -749,14 +755,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.SigningPubKey'."}}},
+     {{"Missing field 'tx_json.Fee'.",
+       "Missing field 'tx_json.Fee'.",
+       "Missing field 'tx_json.Fee'.",
+       "Missing field 'tx_json.SigningPubKey'."}}},
 
-{ "Valid transaction if 'offline' is true.", __LINE__,
-R"({
+    {"Valid transaction if 'offline' is true.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -770,14 +776,15 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"A Signer may not be the transaction's Account (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
-"Missing field 'tx_json.SigningPubKey'."}}},
+     {{"",
+       "",
+       "A Signer may not be the transaction's Account "
+       "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+       "Missing field 'tx_json.SigningPubKey'."}}},
 
-{ "'offline' and 'build_path' are mutually exclusive.", __LINE__,
-R"({
+    {"'offline' and 'build_path' are mutually exclusive.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -792,14 +799,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Field 'build_path' not allowed in this context.",
-"Field 'build_path' not allowed in this context.",
-"Field 'build_path' not allowed in this context.",
-"Missing field 'tx_json.SigningPubKey'."}}},
+     {{"Field 'build_path' not allowed in this context.",
+       "Field 'build_path' not allowed in this context.",
+       "Field 'build_path' not allowed in this context.",
+       "Missing field 'tx_json.SigningPubKey'."}}},
 
-{ "A 'Flags' field may be specified.", __LINE__,
-R"({
+    {"A 'Flags' field may be specified.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -811,14 +818,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"",
+       "",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "The 'Flags' field must be numeric.", __LINE__,
-R"({
+    {"The 'Flags' field must be numeric.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -830,14 +837,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Field 'tx_json.Flags' has invalid data.",
-"Field 'tx_json.Flags' has invalid data.",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"Field 'tx_json.Flags' has invalid data.",
+       "Field 'tx_json.Flags' has invalid data.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "It's okay to add a 'debug_signing' field.", __LINE__,
-R"({
+    {"It's okay to add a 'debug_signing' field.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -849,14 +856,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"",
+       "",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "Single-sign a multisigned transaction.", __LINE__,
-R"({
+    {"Single-sign a multisigned transaction.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
     "secret": "a",
@@ -879,14 +886,14 @@ R"({
         "TransactionType" : "Payment"
     }
 })",
-{{
-"Already multisigned.",
-"Already multisigned.",
-"Secret does not match account.",
-""}}},
+     {{"Already multisigned.",
+       "Already multisigned.",
+       "Secret does not match account.",
+       ""}}},
 
-{ "Minimal sign_for.", __LINE__,
-R"({
+    {"Minimal sign_for.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -900,14 +907,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Secret does not match account.",
-"Secret does not match account.",
-"",
-"Missing field 'tx_json.Signers'."}}},
+     {{"Secret does not match account.",
+       "Secret does not match account.",
+       "",
+       "Missing field 'tx_json.Signers'."}}},
 
-{ "Minimal offline sign_for.", __LINE__,
-R"({
+    {"Minimal offline sign_for.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -922,14 +929,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"",
-"Missing field 'tx_json.Signers'."}}},
+     {{"", "", "", "Missing field 'tx_json.Signers'."}}},
 
-{ "Offline sign_for using 'seed' instead of 'secret'.", __LINE__,
-R"({
+    {"Offline sign_for using 'seed' instead of 'secret'.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
     "key_type": "ed25519",
@@ -945,14 +949,11 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"",
-"Missing field 'tx_json.Signers'."}}},
+     {{"", "", "", "Missing field 'tx_json.Signers'."}}},
 
-{ "Malformed seed in sign_for.", __LINE__,
-R"({
+    {"Malformed seed in sign_for.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
     "key_type": "ed25519",
@@ -968,14 +969,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Disallowed seed.",
-"Disallowed seed.",
-"Disallowed seed.",
-"Missing field 'tx_json.Signers'."}}},
+     {{"Disallowed seed.",
+       "Disallowed seed.",
+       "Disallowed seed.",
+       "Missing field 'tx_json.Signers'."}}},
 
-{ "Missing 'Account' in sign_for.", __LINE__,
-R"({
+    {"Missing 'Account' in sign_for.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -988,14 +989,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'tx_json.Account'.",
-"Missing field 'tx_json.Account'.",
-"Missing field 'tx_json.Account'.",
-"Missing field 'tx_json.Account'."}}},
+     {{"Missing field 'tx_json.Account'.",
+       "Missing field 'tx_json.Account'.",
+       "Missing field 'tx_json.Account'.",
+       "Missing field 'tx_json.Account'."}}},
 
-{ "Missing 'Amount' in sign_for.", __LINE__,
-R"({
+    {"Missing 'Amount' in sign_for.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -1008,14 +1009,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'tx_json.Amount'.",
-"Missing field 'tx_json.Amount'.",
-"Missing field 'tx_json.Amount'.",
-"Missing field 'tx_json.Amount'."}}},
+     {{"Missing field 'tx_json.Amount'.",
+       "Missing field 'tx_json.Amount'.",
+       "Missing field 'tx_json.Amount'.",
+       "Missing field 'tx_json.Amount'."}}},
 
-{ "Missing 'Destination' in sign_for.", __LINE__,
-R"({
+    {"Missing 'Destination' in sign_for.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -1028,14 +1029,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'tx_json.Destination'.",
-"Missing field 'tx_json.Destination'.",
-"Missing field 'tx_json.Destination'.",
-"Missing field 'tx_json.Destination'."}}},
+     {{"Missing field 'tx_json.Destination'.",
+       "Missing field 'tx_json.Destination'.",
+       "Missing field 'tx_json.Destination'.",
+       "Missing field 'tx_json.Destination'."}}},
 
-{ "Missing 'Fee' in sign_for.", __LINE__,
-R"({
+    {"Missing 'Fee' in sign_for.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -1048,14 +1049,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Secret does not match account.",
-"Secret does not match account.",
-"Missing field 'tx_json.Fee'.",
-"Missing field 'tx_json.Fee'."}}},
+     {{"Secret does not match account.",
+       "Secret does not match account.",
+       "Missing field 'tx_json.Fee'.",
+       "Missing field 'tx_json.Fee'."}}},
 
-{ "Missing 'Sequence' in sign_for.", __LINE__,
-R"({
+    {"Missing 'Sequence' in sign_for.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -1068,14 +1069,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Secret does not match account.",
-"Secret does not match account.",
-"Missing field 'tx_json.Sequence'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"Secret does not match account.",
+       "Secret does not match account.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "Missing 'SigningPubKey' in sign_for is automatically filled in.", __LINE__,
-R"({
+    {"Missing 'SigningPubKey' in sign_for is automatically filled in.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -1088,14 +1089,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Secret does not match account.",
-"Secret does not match account.",
-"",
-"Missing field 'tx_json.SigningPubKey'."}}},
+     {{"Secret does not match account.",
+       "Secret does not match account.",
+       "",
+       "Missing field 'tx_json.SigningPubKey'."}}},
 
-{ "In sign_for, an account may not sign for itself.", __LINE__,
-R"({
+    {"In sign_for, an account may not sign for itself.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
     "secret": "a",
@@ -1108,14 +1109,15 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"",
-"",
-"A Signer may not be the transaction's Account (rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA).",
-"Missing field 'tx_json.SigningPubKey'."}}},
+     {{"",
+       "",
+       "A Signer may not be the transaction's Account "
+       "(rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA).",
+       "Missing field 'tx_json.SigningPubKey'."}}},
 
-{ "Cannot put duplicate accounts in Signers array", __LINE__,
-R"({
+    {"Cannot put duplicate accounts in Signers array",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -1138,14 +1140,15 @@ R"({
         "TransactionType" : "Payment"
     }
 })",
-{{
-"Already multisigned.",
-"Already multisigned.",
-"Duplicate Signers:Signer:Account entries (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh) are not allowed.",
-""}}},
+     {{"Already multisigned.",
+       "Already multisigned.",
+       "Duplicate Signers:Signer:Account entries "
+       "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh) are not allowed.",
+       ""}}},
 
-{ "Correctly append to pre-established Signers array", __LINE__,
-R"({
+    {"Correctly append to pre-established Signers array",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
     "secret": "c",
@@ -1168,14 +1171,11 @@ R"({
         "TransactionType" : "Payment"
     }
 })",
-{{
-"Already multisigned.",
-"Already multisigned.",
-"",
-""}}},
+     {{"Already multisigned.", "Already multisigned.", "", ""}}},
 
-{ "Append to pre-established Signers array with bad signature", __LINE__,
-R"({
+    {"Append to pre-established Signers array with bad signature",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
     "secret": "c",
@@ -1198,14 +1198,14 @@ R"({
         "TransactionType" : "Payment"
     }
 })",
-{{
-"Already multisigned.",
-"Already multisigned.",
-"Invalid signature.",
-"Invalid signature."}}},
+     {{"Already multisigned.",
+       "Already multisigned.",
+       "Invalid signature.",
+       "Invalid signature."}}},
 
-{ "Non-empty 'SigningPubKey' in sign_for.", __LINE__,
-R"({
+    {"Non-empty 'SigningPubKey' in sign_for.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -1219,14 +1219,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Secret does not match account.",
-"Secret does not match account.",
-"When multi-signing 'tx_json.SigningPubKey' must be empty.",
-"When multi-signing 'tx_json.SigningPubKey' must be empty."}}},
+     {{"Secret does not match account.",
+       "Secret does not match account.",
+       "When multi-signing 'tx_json.SigningPubKey' must be empty.",
+       "When multi-signing 'tx_json.SigningPubKey' must be empty."}}},
 
-{ "Missing 'TransactionType' in sign_for.", __LINE__,
-R"({
+    {"Missing 'TransactionType' in sign_for.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
@@ -1239,14 +1239,14 @@ R"({
         "SigningPubKey": "",
     }
 })",
-{{
-"Missing field 'tx_json.TransactionType'.",
-"Missing field 'tx_json.TransactionType'.",
-"Missing field 'tx_json.TransactionType'.",
-"Missing field 'tx_json.TransactionType'."}}},
+     {{"Missing field 'tx_json.TransactionType'.",
+       "Missing field 'tx_json.TransactionType'.",
+       "Missing field 'tx_json.TransactionType'.",
+       "Missing field 'tx_json.TransactionType'."}}},
 
-{ "TxnSignature in sign_for.", __LINE__,
-R"({
+    {"TxnSignature in sign_for.",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
     "secret": "c",
@@ -1270,53 +1270,53 @@ R"({
         "TransactionType" : "Payment"
     }
 })",
-{{
-"Already multisigned.",
-"Already multisigned.",
-"Already single-signed.",
-"Signing of transaction is malformed."}}},
+     {{"Already multisigned.",
+       "Already multisigned.",
+       "Already single-signed.",
+       "Signing of transaction is malformed."}}},
 
-{ "Invalid field 'tx_json': string instead of object", __LINE__,
-R"({
+    {"Invalid field 'tx_json': string instead of object",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": ""
 })",
-{{
-"Invalid field 'tx_json', not object.",
-"Invalid field 'tx_json', not object.",
-"Invalid field 'tx_json', not object.",
-"Invalid field 'tx_json', not object."}}},
+     {{"Invalid field 'tx_json', not object.",
+       "Invalid field 'tx_json', not object.",
+       "Invalid field 'tx_json', not object.",
+       "Invalid field 'tx_json', not object."}}},
 
-{ "Invalid field 'tx_json': integer instead of object", __LINE__,
-R"({
+    {"Invalid field 'tx_json': integer instead of object",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": 20160331
 })",
-{{
-"Invalid field 'tx_json', not object.",
-"Invalid field 'tx_json', not object.",
-"Invalid field 'tx_json', not object.",
-"Invalid field 'tx_json', not object."}}},
+     {{"Invalid field 'tx_json', not object.",
+       "Invalid field 'tx_json', not object.",
+       "Invalid field 'tx_json', not object.",
+       "Invalid field 'tx_json', not object."}}},
 
-{ "Invalid field 'tx_json': array instead of object", __LINE__,
-R"({
+    {"Invalid field 'tx_json': array instead of object",
+     __LINE__,
+     R"({
     "command": "doesnt_matter",
     "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
     "secret": "masterpassphrase",
     "tx_json": [ "hello", "world" ]
 })",
-{{
-"Invalid field 'tx_json', not object.",
-"Invalid field 'tx_json', not object.",
-"Invalid field 'tx_json', not object.",
-"Invalid field 'tx_json', not object."}}},
+     {{"Invalid field 'tx_json', not object.",
+       "Invalid field 'tx_json', not object.",
+       "Invalid field 'tx_json', not object.",
+       "Invalid field 'tx_json', not object."}}},
 
-{ "Minimal submit_multisigned.", __LINE__,
-R"({
+    {"Minimal submit_multisigned.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1337,14 +1337,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-""}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       ""}}},
 
-{ "Minimal submit_multisigned with bad signature.", __LINE__,
-R"({
+    {"Minimal submit_multisigned with bad signature.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1365,14 +1365,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Invalid signature."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Invalid signature."}}},
 
-{ "Missing tx_json in submit_multisigned.", __LINE__,
-R"({
+    {"Missing tx_json in submit_multisigned.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "Signers": [
         {
@@ -1384,14 +1384,14 @@ R"({
         }
     ]
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Missing field 'tx_json'."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Missing field 'tx_json'."}}},
 
-{ "Missing sequence in submit_multisigned.", __LINE__,
-R"({
+    {"Missing sequence in submit_multisigned.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1411,14 +1411,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Missing field 'tx_json.Sequence'."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Missing field 'tx_json.Sequence'."}}},
 
-{ "Missing SigningPubKey in submit_multisigned.", __LINE__,
-R"({
+    {"Missing SigningPubKey in submit_multisigned.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1438,14 +1438,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Missing field 'tx_json.SigningPubKey'."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Missing field 'tx_json.SigningPubKey'."}}},
 
-{ "Non-empty SigningPubKey in submit_multisigned.", __LINE__,
-R"({
+    {"Non-empty SigningPubKey in submit_multisigned.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1466,14 +1466,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"When multi-signing 'tx_json.SigningPubKey' must be empty."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "When multi-signing 'tx_json.SigningPubKey' must be empty."}}},
 
-{ "Missing TransactionType in submit_multisigned.", __LINE__,
-R"({
+    {"Missing TransactionType in submit_multisigned.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1493,14 +1493,14 @@ R"({
         "SigningPubKey": "",
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Missing field 'tx_json.TransactionType'."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Missing field 'tx_json.TransactionType'."}}},
 
-{ "Missing Account in submit_multisigned.", __LINE__,
-R"({
+    {"Missing Account in submit_multisigned.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Amount": "1000000000",
@@ -1520,14 +1520,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Missing field 'tx_json.Account'."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Missing field 'tx_json.Account'."}}},
 
-{ "Malformed Account in submit_multisigned.", __LINE__,
-R"({
+    {"Malformed Account in submit_multisigned.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "NotAnAccount",
@@ -1548,14 +1548,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Invalid field 'tx_json.Account'."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Invalid field 'tx_json.Account'."}}},
 
-{ "Account not in ledger in submit_multisigned.", __LINE__,
-R"({
+    {"Account not in ledger in submit_multisigned.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
@@ -1576,14 +1576,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Source account not found."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Source account not found."}}},
 
-{ "Missing Fee in submit_multisigned.", __LINE__,
-R"({
+    {"Missing Fee in submit_multisigned.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1603,14 +1603,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Missing field 'tx_json.Fee'."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Missing field 'tx_json.Fee'."}}},
 
-{ "Non-numeric Fee in submit_multisigned.", __LINE__,
-R"({
+    {"Non-numeric Fee in submit_multisigned.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1631,14 +1631,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Field 'tx_json.Fee' has invalid data."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Field 'tx_json.Fee' has invalid data."}}},
 
-{ "Missing Amount in submit_multisigned Payment.", __LINE__,
-R"({
+    {"Missing Amount in submit_multisigned Payment.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1658,14 +1658,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Missing field 'tx_json.Amount'."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Missing field 'tx_json.Amount'."}}},
 
-{ "Invalid Amount in submit_multisigned Payment.", __LINE__,
-R"({
+    {"Invalid Amount in submit_multisigned Payment.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1686,14 +1686,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Invalid field 'tx_json.Amount'."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Invalid field 'tx_json.Amount'."}}},
 
-{ "No build_path in submit_multisigned.", __LINE__,
-R"({
+    {"No build_path in submit_multisigned.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "build_path": 1,
     "tx_json": {
@@ -1715,14 +1715,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Field 'build_path' not allowed in this context."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Field 'build_path' not allowed in this context."}}},
 
-{ "Missing Destination in submit_multisigned Payment.", __LINE__,
-R"({
+    {"Missing Destination in submit_multisigned Payment.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1742,14 +1742,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Missing field 'tx_json.Destination'."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Missing field 'tx_json.Destination'."}}},
 
-{ "Malformed Destination in submit_multisigned Payment.", __LINE__,
-R"({
+    {"Malformed Destination in submit_multisigned Payment.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1770,14 +1770,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Invalid field 'tx_json.Destination'."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Invalid field 'tx_json.Destination'."}}},
 
-{ "Missing Signers field in submit_multisigned.", __LINE__,
-R"({
+    {"Missing Signers field in submit_multisigned.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1789,14 +1789,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Missing field 'tx_json.Signers'."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Missing field 'tx_json.Signers'."}}},
 
-{ "Signers not an array in submit_multisigned.", __LINE__,
-R"({
+    {"Signers not an array in submit_multisigned.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1813,14 +1813,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Field 'tx_json.Signers' is not a JSON array."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Field 'tx_json.Signers' is not a JSON array."}}},
 
-{ "Empty Signers array in submit_multisigned.", __LINE__,
-R"({
+    {"Empty Signers array in submit_multisigned.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1834,14 +1834,14 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"tx_json.Signers array may not be empty."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "tx_json.Signers array may not be empty."}}},
 
-{ "Duplicate Signer in submit_multisigned.", __LINE__,
-R"({
+    {"Duplicate Signer in submit_multisigned.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1869,14 +1869,15 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"Duplicate Signers:Signer:Account entries (rPcNzota6B8YBokhYtcTNqQVCngtbnWfux) are not allowed."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Duplicate Signers:Signer:Account entries "
+       "(rPcNzota6B8YBokhYtcTNqQVCngtbnWfux) are not allowed."}}},
 
-{ "Signer is tx_json Account in submit_multisigned.", __LINE__,
-R"({
+    {"Signer is tx_json Account in submit_multisigned.",
+     __LINE__,
+     R"({
     "command": "submit_multisigned",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
@@ -1897,30 +1898,31 @@ R"({
         "TransactionType": "Payment"
     }
 })",
-{{
-"Missing field 'secret'.",
-"Missing field 'secret'.",
-"Missing field 'account'.",
-"A Signer may not be the transaction's Account (rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh)."}}},
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "A Signer may not be the transaction's Account "
+       "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh)."}}},
 
 };
-
 
 class JSONRPC_test : public beast::unit_test::suite
 {
 public:
-    void testBadRpcCommand ()
+    void
+    testBadRpcCommand()
     {
         test::jtx::Env env(*this);
-        Json::Value const result {
-            env.rpc ("bad_command", R"({"MakingThisUp": 0})")};
+        Json::Value const result{
+            env.rpc("bad_command", R"({"MakingThisUp": 0})")};
 
-        BEAST_EXPECT (result[jss::result][jss::error] == "unknownCmd");
-        BEAST_EXPECT (
+        BEAST_EXPECT(result[jss::result][jss::error] == "unknownCmd");
+        BEAST_EXPECT(
             result[jss::result][jss::request][jss::command] == "bad_command");
     }
 
-    void testAutoFillFees ()
+    void
+    testAutoFillFees()
     {
         test::jtx::Env env(*this);
         auto ledger = env.current();
@@ -1928,15 +1930,20 @@ public:
 
         {
             Json::Value req;
-            Json::Reader ().parse (
+            Json::Reader().parse(
                 "{ \"fee_mult_max\" : 1, \"tx_json\" : { } } ", req);
-            Json::Value result =
-                checkFee (req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
-                        env.app().getTxQ(), ledger);
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                ledger);
 
-            BEAST_EXPECT(! RPC::contains_error (result));
-            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == 10);
         }
 
@@ -1944,27 +1951,37 @@ public:
             Json::Value req;
             Json::Reader().parse(
                 "{ \"fee_mult_max\" : 3, \"fee_div_max\" : 2, "
-                    "\"tx_json\" : { } } ", req);
-            Json::Value result =
-                checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
-                        env.app().getTxQ(), ledger);
+                "\"tx_json\" : { } } ",
+                req);
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                ledger);
 
             BEAST_EXPECT(!RPC::contains_error(result));
-            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == 10);
         }
 
         {
             Json::Value req;
-            Json::Reader ().parse (
+            Json::Reader().parse(
                 "{ \"fee_mult_max\" : 0, \"tx_json\" : { } } ", req);
-            Json::Value result =
-                checkFee (req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
-                        env.app().getTxQ(), ledger);
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                ledger);
 
-            BEAST_EXPECT(RPC::contains_error (result));
+            BEAST_EXPECT(RPC::contains_error(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
@@ -1974,11 +1991,16 @@ public:
             Json::Value req;
             Json::Reader().parse(
                 "{ \"fee_mult_max\" : 3, \"fee_div_max\" : 6, "
-                    "\"tx_json\" : { } } ", req);
-            Json::Value result =
-                checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
-                        env.app().getTxQ(), ledger);
+                "\"tx_json\" : { } } ",
+                req);
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                ledger);
 
             BEAST_EXPECT(RPC::contains_error(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
@@ -1988,11 +2010,16 @@ public:
             Json::Value req;
             Json::Reader().parse(
                 "{ \"fee_mult_max\" : 0, \"fee_div_max\" : 2, "
-                    "\"tx_json\" : { } } ", req);
-            Json::Value result =
-                checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
-                        env.app().getTxQ(), ledger);
+                "\"tx_json\" : { } } ",
+                req);
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                ledger);
 
             BEAST_EXPECT(RPC::contains_error(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
@@ -2002,60 +2029,79 @@ public:
             Json::Value req;
             Json::Reader().parse(
                 "{ \"fee_mult_max\" : 10, \"fee_div_max\" : 0, "
-                    "\"tx_json\" : { } } ", req);
-            Json::Value result =
-                checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrack,
-                        env.app().getTxQ(), ledger);
+                "\"tx_json\" : { } } ",
+                req);
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                ledger);
 
             BEAST_EXPECT(RPC::contains_error(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
     }
 
-    void testAutoFillEscalatedFees ()
+    void
+    testAutoFillEscalatedFees()
     {
         using namespace test::jtx;
-        Env env {*this, envconfig([](std::unique_ptr<Config> cfg)
-            {
-                cfg->loadFromString ("[" SECTION_SIGNING_SUPPORT "]\ntrue");
-                cfg->section("transaction_queue")
-                    .set("minimum_txn_in_ledger_standalone", "3");
-                return cfg;
-            })};
+        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                    cfg->section("transaction_queue")
+                        .set("minimum_txn_in_ledger_standalone", "3");
+                    return cfg;
+                })};
         LoadFeeTrack const& feeTrackOuter = env.app().getFeeTrack();
 
         {
             // high mult, no tx
             Json::Value req;
-            Json::Reader ().parse (R"({
+            Json::Reader().parse(
+                R"({
                 "fee_mult_max" : 1000,
                 "tx_json" : { }
-            })", req);
-            Json::Value result =
-                checkFee (req, Role::ADMIN, true,
-                    env.app().config(), feeTrackOuter,
-                        env.app().getTxQ(), env.current());
+            })",
+                req);
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.current());
 
-            BEAST_EXPECT(! RPC::contains_error (result));
-            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == 10);
         }
 
         {
             // low mult, no tx
             Json::Value req;
-            Json::Reader().parse(R"({
+            Json::Reader().parse(
+                R"({
                 "fee_mult_max" : 5,
                 "tx_json" : { }
-            })", req);
-            Json::Value result =
-                checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrackOuter,
-                    env.app().getTxQ(), env.current());
+            })",
+                req);
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.current());
 
             BEAST_EXPECT(!RPC::contains_error(result));
-            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == 10);
         }
 
@@ -2068,31 +2114,44 @@ public:
         {
             // high mult, 4 txs
             Json::Value req;
-            Json::Reader().parse(R"({
+            Json::Reader().parse(
+                R"({
                 "fee_mult_max" : 1000,
                 "tx_json" : { }
-            })", req);
-            Json::Value result =
-                checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrackOuter,
-                        env.app().getTxQ(), env.current());
+            })",
+                req);
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.current());
 
             BEAST_EXPECT(!RPC::contains_error(result));
-            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == 8889);
         }
 
         {
             // low mult, 4 tx
             Json::Value req;
-            Json::Reader().parse(R"({
+            Json::Reader().parse(
+                R"({
                 "fee_mult_max" : 5,
                 "tx_json" : { }
-            })", req);
-            Json::Value result =
-                checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrackOuter,
-                      env.app().getTxQ(), env.current());
+            })",
+                req);
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.current());
 
             BEAST_EXPECT(RPC::contains_error(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
@@ -2101,15 +2160,21 @@ public:
         {
             // different low mult, 4 tx
             Json::Value req;
-            Json::Reader().parse(R"({
+            Json::Reader().parse(
+                R"({
                 "fee_mult_max" : 1000,
                 "fee_div_max" : 3,
                 "tx_json" : { }
-            })", req);
-            Json::Value result =
-                checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrackOuter,
-                    env.app().getTxQ(), env.current());
+            })",
+                req);
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.current());
 
             BEAST_EXPECT(RPC::contains_error(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
@@ -2118,32 +2183,45 @@ public:
         {
             // high mult, 4 tx
             Json::Value req;
-            Json::Reader().parse(R"({
+            Json::Reader().parse(
+                R"({
                 "fee_mult_max" : 8000,
                 "fee_div_max" : 3,
                 "tx_json" : { }
-            })", req);
-            Json::Value result =
-                checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrackOuter,
-                    env.app().getTxQ(), env.current());
+            })",
+                req);
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.current());
 
             BEAST_EXPECT(!RPC::contains_error(result));
-            BEAST_EXPECT(req[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] == 8889);
         }
 
         {
             // negative mult
             Json::Value req;
-            Json::Reader().parse(R"({
+            Json::Reader().parse(
+                R"({
                 "fee_mult_max" : -5,
                 "tx_json" : { }
-            })", req);
-            Json::Value result =
-                checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrackOuter,
-                      env.app().getTxQ(), env.current());
+            })",
+                req);
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.current());
 
             BEAST_EXPECT(RPC::contains_error(result));
         }
@@ -2151,14 +2229,20 @@ public:
         {
             // negative div
             Json::Value req;
-            Json::Reader().parse(R"({
+            Json::Reader().parse(
+                R"({
                 "fee_div_max" : -2,
                 "tx_json" : { }
-            })", req);
-            Json::Value result =
-                checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrackOuter,
-                      env.app().getTxQ(), env.current());
+            })",
+                req);
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.current());
 
             BEAST_EXPECT(RPC::contains_error(result));
         }
@@ -2166,15 +2250,21 @@ public:
         {
             // negative mult & div
             Json::Value req;
-            Json::Reader().parse(R"({
+            Json::Reader().parse(
+                R"({
                 "fee_mult_max" : -2,
                 "fee_div_max" : -3,
                 "tx_json" : { }
-            })", req);
-            Json::Value result =
-                checkFee(req, Role::ADMIN, true,
-                    env.app().config(), feeTrackOuter,
-                      env.app().getTxQ(), env.current());
+            })",
+                req);
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrackOuter,
+                env.app().getTxQ(),
+                env.current());
 
             BEAST_EXPECT(RPC::contains_error(result));
         }
@@ -2189,10 +2279,12 @@ public:
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(! RPC::contains_error(result));
-            BEAST_EXPECT(result[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::Fee) &&
                 result[jss::tx_json][jss::Fee] == "10");
-            BEAST_EXPECT(result[jss::tx_json].isMember(jss::Sequence) &&
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::Sequence) &&
                 result[jss::tx_json][jss::Sequence].isConvertibleTo(
                     Json::ValueType::uintValue));
         }
@@ -2203,8 +2295,7 @@ public:
             for (;;)
             {
                 auto metrics = env.app().getTxQ().getMetrics(*env.current());
-                if (metrics.openLedgerFeeLevel >
-                        metrics.minProcessingFeeLevel)
+                if (metrics.openLedgerFeeLevel > metrics.minProcessingFeeLevel)
                     break;
                 env(noop(env.master));
             }
@@ -2216,10 +2307,12 @@ public:
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(! RPC::contains_error(result));
-            BEAST_EXPECT(result[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::Fee) &&
                 result[jss::tx_json][jss::Fee] == "7813");
-            BEAST_EXPECT(result[jss::tx_json].isMember(jss::Sequence) &&
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::Sequence) &&
                 result[jss::tx_json][jss::Sequence].isConvertibleTo(
                     Json::ValueType::uintValue));
 
@@ -2242,10 +2335,12 @@ public:
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(! RPC::contains_error(result));
-            BEAST_EXPECT(result[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::Fee) &&
                 result[jss::tx_json][jss::Fee] == "47");
-            BEAST_EXPECT(result[jss::tx_json].isMember(jss::Sequence) &&
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::Sequence) &&
                 result[jss::tx_json][jss::Sequence].isConvertibleTo(
                     Json::ValueType::uintValue));
         }
@@ -2258,14 +2353,12 @@ public:
             for (;;)
             {
                 auto metrics = env.app().getTxQ().getMetrics(*env.current());
-                if (metrics.openLedgerFeeLevel >
-                        metrics.minProcessingFeeLevel)
+                if (metrics.openLedgerFeeLevel > metrics.minProcessingFeeLevel)
                     break;
                 env(noop(env.master), fee(47));
             }
 
             Env_ss envs(env);
-
 
             Json::Value toSign;
             toSign[jss::tx_json] = noop(env.master);
@@ -2275,33 +2368,40 @@ public:
             auto rpcResult = env.rpc("json", "sign", to_string(toSign));
             auto result = rpcResult[jss::result];
 
-            BEAST_EXPECT(! RPC::contains_error(result));
-            BEAST_EXPECT(result[jss::tx_json].isMember(jss::Fee) &&
+            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::Fee) &&
                 result[jss::tx_json][jss::Fee] == "6806");
-            BEAST_EXPECT(result[jss::tx_json].isMember(jss::Sequence) &&
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::Sequence) &&
                 result[jss::tx_json][jss::Sequence].isConvertibleTo(
                     Json::ValueType::uintValue));
         }
     }
 
     // A function that can be called as though it would process a transaction.
-    static void fakeProcessTransaction (
-        std::shared_ptr<Transaction>&, bool, bool, NetworkOPs::FailHard)
+    static void
+    fakeProcessTransaction(
+        std::shared_ptr<Transaction>&,
+        bool,
+        bool,
+        NetworkOPs::FailHard)
     {
         ;
     }
 
-    void testTransactionRPC ()
+    void
+    testTransactionRPC()
     {
         using namespace std::chrono_literals;
         // Use jtx to set up a ledger so the tests will do the right thing.
-        test::jtx::Account const a {"a"}; // rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA
-        test::jtx::Account const g {"g"}; // rLPwWB1itaUGMV8kbMLLysjGkEpTM2Soy4
+        test::jtx::Account const a{"a"};  // rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA
+        test::jtx::Account const g{"g"};  // rLPwWB1itaUGMV8kbMLLysjGkEpTM2Soy4
         auto const USD = g["USD"];
 
         // Account: rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi
         // seed:    sh1yJfwoi98zCygwijUzuHmJDeVKd
-        test::jtx::Account const ed {"ed", KeyType::ed25519};
+        test::jtx::Account const ed{"ed", KeyType::ed25519};
         // master is rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh.
         // "b" (not in the ledger) is rDg53Haik2475DJx8bjMDSDPj4VX7htaMd.
         // "c" (phantom signer) is rPcNzota6B8YBokhYtcTNqQVCngtbnWfux.
@@ -2319,31 +2419,33 @@ public:
         ProcessTransactionFn processTxn = fakeProcessTransaction;
 
         // A list of all the functions we want to test.
-        using signFunc = Json::Value (*) (
+        using signFunc = Json::Value (*)(
             Json::Value params,
             NetworkOPs::FailHard failType,
             Role role,
             std::chrono::seconds validatedLedgerAge,
-            Application& app);
+            Application & app);
 
-        using submitFunc = Json::Value (*) (
+        using submitFunc = Json::Value (*)(
             Json::Value params,
             NetworkOPs::FailHard failType,
             Role role,
             std::chrono::seconds validatedLedgerAge,
-            Application& app,
+            Application & app,
             ProcessTransactionFn const& processTransaction);
 
         using TestStuff =
-            std::tuple <signFunc, submitFunc, char const*, unsigned int>;
+            std::tuple<signFunc, submitFunc, char const*, unsigned int>;
 
-        static TestStuff const testFuncs [] =
-        {
-            TestStuff {transactionSign, nullptr,              "sign",               0},
-            TestStuff {nullptr, transactionSubmit,            "submit",             1},
-            TestStuff {transactionSignFor, nullptr,           "sign_for",           2},
-            TestStuff {nullptr, transactionSubmitMultiSigned, "submit_multisigned", 3}
-        };
+        static TestStuff const testFuncs[] = {
+            TestStuff{transactionSign, nullptr, "sign", 0},
+            TestStuff{nullptr, transactionSubmit, "submit", 1},
+            TestStuff{transactionSignFor, nullptr, "sign_for", 2},
+            TestStuff{
+                nullptr,
+                transactionSubmitMultiSigned,
+                "submit_multisigned",
+                3}};
 
         for (auto testFunc : testFuncs)
         {
@@ -2351,13 +2453,13 @@ public:
             for (auto const& txnTest : txnTestArray)
             {
                 Json::Value req;
-                Json::Reader ().parse (txnTest.json, req);
-                if (RPC::contains_error (req))
-                    Throw<std::runtime_error> (
+                Json::Reader().parse(txnTest.json, req);
+                if (RPC::contains_error(req))
+                    Throw<std::runtime_error>(
                         "Internal JSONRPC_test error.  Bad test JSON.");
 
-                static Role const testedRoles[] =
-                    {Role::GUEST, Role::USER, Role::ADMIN, Role::FORBID};
+                static Role const testedRoles[] = {
+                    Role::GUEST, Role::USER, Role::ADMIN, Role::FORBID};
 
                 for (Role testRole : testedRoles)
                 {
@@ -2365,8 +2467,8 @@ public:
                     auto const signFn = get<0>(testFunc);
                     if (signFn != nullptr)
                     {
-                        assert (get<1>(testFunc) == nullptr);
-                        result = signFn (
+                        assert(get<1>(testFunc) == nullptr);
+                        result = signFn(
                             req,
                             NetworkOPs::FailHard::yes,
                             testRole,
@@ -2376,8 +2478,8 @@ public:
                     else
                     {
                         auto const submitFn = get<1>(testFunc);
-                        assert (submitFn != nullptr);
-                        result = submitFn (
+                        assert(submitFn != nullptr);
+                        result = submitFn(
                             req,
                             NetworkOPs::FailHard::yes,
                             testRole,
@@ -2387,8 +2489,8 @@ public:
                     }
 
                     std::string errStr;
-                    if (RPC::contains_error (result))
-                        errStr = result["error_message"].asString ();
+                    if (RPC::contains_error(result))
+                        errStr = result["error_message"].asString();
 
                     if (errStr == txnTest.expMsg[get<3>(testFunc)])
                     {
@@ -2398,26 +2500,26 @@ public:
                     {
                         std::ostringstream description;
                         description << txnTest.description << "  Called "
-                            << get<2>(testFunc) << "().  Got \'"
-                            << errStr << "\'";
-                        fail (description.str(), __FILE__, txnTest.line);
+                                    << get<2>(testFunc) << "().  Got \'"
+                                    << errStr << "\'";
+                        fail(description.str(), __FILE__, txnTest.line);
                     }
                 }
             }
         }
     }
 
-    void run () override
+    void
+    run() override
     {
-        testBadRpcCommand ();
-        testAutoFillFees ();
-        testAutoFillEscalatedFees ();
-        testTransactionRPC ();
+        testBadRpcCommand();
+        testAutoFillFees();
+        testAutoFillEscalatedFees();
+        testTransactionRPC();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(JSONRPC,ripple_app,ripple);
+BEAST_DEFINE_TESTSUITE(JSONRPC, ripple_app, ripple);
 
-} // RPC
-} // ripple
-
+}  // namespace RPC
+}  // namespace ripple

@@ -30,22 +30,24 @@
 #include <string>
 
 namespace ripple {
-inline static std::string sqlEscape (std::string const& strSrc)
+inline static std::string
+sqlEscape(std::string const& strSrc)
 {
-    static boost::format f ("X'%s'");
-    return str (boost::format (f) % strHex (strSrc));
+    static boost::format f("X'%s'");
+    return str(boost::format(f) % strHex(strSrc));
 }
 
-inline static std::string sqlEscape (Blob const& vecSrc)
+inline static std::string
+sqlEscape(Blob const& vecSrc)
 {
-    size_t size = vecSrc.size ();
+    size_t size = vecSrc.size();
 
     if (size == 0)
         return "X''";
 
-    std::string j (size * 2 + 3, 0);
+    std::string j(size * 2 + 3, 0);
 
-    unsigned char* oPtr = reinterpret_cast<unsigned char*> (&*j.begin ());
+    unsigned char* oPtr = reinterpret_cast<unsigned char*>(&*j.begin());
     const unsigned char* iPtr = &vecSrc[0];
 
     *oPtr++ = 'X';
@@ -54,15 +56,16 @@ inline static std::string sqlEscape (Blob const& vecSrc)
     for (int i = size; i != 0; --i)
     {
         unsigned char c = *iPtr++;
-        *oPtr++ = charHex (c >> 4);
-        *oPtr++ = charHex (c & 15);
+        *oPtr++ = charHex(c >> 4);
+        *oPtr++ = charHex(c & 15);
     }
 
     *oPtr++ = '\'';
     return j;
 }
 
-uint64_t uintFromHex (std::string const& strSrc);
+uint64_t
+uintFromHex(std::string const& strSrc);
 
 template <class Iterator>
 boost::optional<Blob>
@@ -105,16 +108,14 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
     return {std::move(out)};
 }
 
-inline
-boost::optional<Blob>
-strUnHex (std::string const& strSrc)
+inline boost::optional<Blob>
+strUnHex(std::string const& strSrc)
 {
     return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
 }
 
-inline
-boost::optional<Blob>
-strViewUnHex (boost::string_view const& strSrc)
+inline boost::optional<Blob>
+strViewUnHex(boost::string_view const& strSrc)
 {
     return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
 }
@@ -131,21 +132,22 @@ struct parsedURL
     std::string path;
 
     bool
-    operator == (parsedURL const& other) const
+    operator==(parsedURL const& other) const
     {
-        return scheme == other.scheme &&
-            domain == other.domain &&
-            port == other.port &&
-            path == other.path;
+        return scheme == other.scheme && domain == other.domain &&
+            port == other.port && path == other.path;
     }
 };
 
-bool parseUrl (parsedURL& pUrl, std::string const& strUrl);
+bool
+parseUrl(parsedURL& pUrl, std::string const& strUrl);
 
-std::string trim_whitespace (std::string str);
+std::string
+trim_whitespace(std::string str);
 
-boost::optional<std::uint64_t> to_uint64(std::string const& s);
+boost::optional<std::uint64_t>
+to_uint64(std::string const& s);
 
-} // ripple
+}  // namespace ripple
 
 #endif

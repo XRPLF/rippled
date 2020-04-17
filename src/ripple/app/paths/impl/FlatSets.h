@@ -26,7 +26,8 @@ namespace ripple {
 
 /** Given two flat sets dst and src, compute dst = dst union src
 
-    @param dst set to store the resulting union, and also a source of elements for the union
+    @param dst set to store the resulting union, and also a source of elements
+   for the union
     @param src second source of elements for the union
  */
 template <class T>

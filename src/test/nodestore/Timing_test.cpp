@@ -17,19 +17,17 @@
 */
 //==============================================================================
 
-#include <test/nodestore/TestBase.h>
-#include <ripple/nodestore/DummyScheduler.h>
-#include <ripple/nodestore/Manager.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/safe_cast.h>
-#include <ripple/unity/rocksdb.h>
+#include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/beast/xor_shift_engine.h>
-#include <ripple/beast/unit_test.h>
-#include <test/unit_test/SuiteJournal.h>
-#include <beast/unit_test/thread.hpp>
+#include <ripple/nodestore/DummyScheduler.h>
+#include <ripple/nodestore/Manager.h>
+#include <ripple/unity/rocksdb.h>
 #include <boost/algorithm/string.hpp>
 #include <atomic>
+#include <beast/unit_test/thread.hpp>
 #include <chrono>
 #include <iterator>
 #include <limits>
@@ -37,6 +35,8 @@
 #include <random>
 #include <sstream>
 #include <stdexcept>
+#include <test/nodestore/TestBase.h>
+#include <test/unit_test/SuiteJournal.h>
 #include <thread>
 #include <type_traits>
 #include <utility>
@@ -50,9 +50,8 @@ namespace NodeStore {
 
 // Fill memory with random bits
 template <class Generator>
-static
-void
-rngcpy (void* buffer, std::size_t bytes, Generator& g)
+static void
+rngcpy(void* buffer, std::size_t bytes, Generator& g)
 {
     using result_type = typename Generator::result_type;
     while (bytes >= sizeof(result_type))
@@ -75,13 +74,7 @@ rngcpy (void* buffer, std::size_t bytes, Generator& g)
 class Sequence
 {
 private:
-    enum
-    {
-        minLedger = 1,
-        maxLedger = 1000000,
-        minSize = 250,
-        maxSize = 1250
-    };
+    enum { minLedger = 1, maxLedger = 1000000, minSize = 250, maxSize = 1250 };
 
     beast::xor_shift_engine gen_;
     std::uint8_t prefix_;
@@ -89,50 +82,47 @@ private:
     std::uniform_int_distribution<std::uint32_t> d_size_;
 
 public:
-    explicit
-    Sequence(std::uint8_t prefix)
-        : prefix_ (prefix)
+    explicit Sequence(std::uint8_t prefix)
+        : prefix_(prefix)
         // uniform distribution over hotLEDGER - hotTRANSACTION_NODE
         // but exclude  hotTRANSACTION = 2 (removed)
-        , d_type_ ({1, 1, 0, 1, 1})
-        , d_size_ (minSize, maxSize)
+        , d_type_({1, 1, 0, 1, 1})
+        , d_size_(minSize, maxSize)
     {
     }
 
     // Returns the n-th key
     uint256
-    key (std::size_t n)
+    key(std::size_t n)
     {
-        gen_.seed(n+1);
+        gen_.seed(n + 1);
         uint256 result;
-        rngcpy (&*result.begin(), result.size(), gen_);
+        rngcpy(&*result.begin(), result.size(), gen_);
         return result;
     }
 
     // Returns the n-th complete NodeObject
     std::shared_ptr<NodeObject>
-    obj (std::size_t n)
+    obj(std::size_t n)
     {
-        gen_.seed(n+1);
+        gen_.seed(n + 1);
         uint256 key;
-        auto const data =
-            static_cast<std::uint8_t*>(&*key.begin());
+        auto const data = static_cast<std::uint8_t*>(&*key.begin());
         *data = prefix_;
-        rngcpy (data + 1, key.size() - 1, gen_);
+        rngcpy(data + 1, key.size() - 1, gen_);
         Blob value(d_size_(gen_));
-        rngcpy (&value[0], value.size(), gen_);
-        return NodeObject::createObject (
-            safe_cast<NodeObjectType>(d_type_(gen_)),
-                std::move(value), key);
+        rngcpy(&value[0], value.size(), gen_);
+        return NodeObject::createObject(
+            safe_cast<NodeObjectType>(d_type_(gen_)), std::move(value), key);
     }
 
     // returns a batch of NodeObjects starting at n
     void
-    batch (std::size_t n, Batch& b, std::size_t size)
+    batch(std::size_t n, Batch& b, std::size_t size)
     {
         b.clear();
-        b.reserve (size);
-        while(size--)
+        b.reserve(size);
+        while (size--)
             b.emplace_back(obj(n++));
     }
 };
@@ -142,8 +132,7 @@ public:
 class Timing_test : public beast::unit_test::suite
 {
 public:
-    enum
-    {
+    enum {
         // percent of fetches for missing nodes
         missingNodePercent = 20
     };
@@ -152,7 +141,7 @@ public:
 #ifndef NDEBUG
     std::size_t const default_items = 10000;
 #else
-    std::size_t const default_items = 100000; // release
+    std::size_t const default_items = 100000;  // release
 #endif
 
     using clock_type = std::chrono::steady_clock;
@@ -164,35 +153,30 @@ public:
         std::size_t threads;
     };
 
-    static
-    std::string
-    to_string (Section const& config)
+    static std::string
+    to_string(Section const& config)
     {
         std::string s;
         for (auto iter = config.begin(); iter != config.end(); ++iter)
-            s += (iter != config.begin() ? "," : "") +
-                iter->first + "=" + iter->second;
+            s += (iter != config.begin() ? "," : "") + iter->first + "=" +
+                iter->second;
         return s;
     }
 
-    static
-    std::string
-    to_string (duration_type const& d)
+    static std::string
+    to_string(duration_type const& d)
     {
         std::stringstream ss;
-        ss << std::fixed << std::setprecision(3) <<
-            (d.count() / 1000.) << "s";
+        ss << std::fixed << std::setprecision(3) << (d.count() / 1000.) << "s";
         return ss.str();
     }
 
-    static
-    Section
-    parse (std::string s)
+    static Section
+    parse(std::string s)
     {
         Section section;
-        std::vector <std::string> v;
-        boost::split (v, s,
-            boost::algorithm::is_any_of (","));
+        std::vector<std::string> v;
+        boost::split(v, s, boost::algorithm::is_any_of(","));
         section.append(v);
         return section;
     }
@@ -209,10 +193,8 @@ public:
         std::atomic<std::size_t>& c_;
 
     public:
-        parallel_for_lambda (std::size_t n,
-                std::atomic<std::size_t>& c)
-            : n_ (n)
-            , c_ (c)
+        parallel_for_lambda(std::size_t n, std::atomic<std::size_t>& c)
+            : n_(n), c_(c)
         {
         }
 
@@ -221,12 +203,12 @@ public:
         operator()(Args&&... args)
         {
             Body body(args...);
-            for(;;)
+            for (;;)
             {
                 auto const i = c_++;
                 if (i >= n_)
                     break;
-                body (i);
+                body(i);
             }
         }
     };
@@ -239,32 +221,32 @@ public:
     */
     template <class Body, class... Args>
     void
-    parallel_for (std::size_t const n,
-        std::size_t number_of_threads, Args const&... args)
+    parallel_for(
+        std::size_t const n,
+        std::size_t number_of_threads,
+        Args const&... args)
     {
         std::atomic<std::size_t> c(0);
         std::vector<beast::unit_test::thread> t;
         t.reserve(number_of_threads);
         for (std::size_t id = 0; id < number_of_threads; ++id)
-            t.emplace_back(*this,
-                parallel_for_lambda<Body>(n, c),
-                    args...);
+            t.emplace_back(*this, parallel_for_lambda<Body>(n, c), args...);
         for (auto& _ : t)
             _.join();
     }
 
     template <class Body, class... Args>
     void
-    parallel_for_id (std::size_t const n,
-        std::size_t number_of_threads, Args const&... args)
+    parallel_for_id(
+        std::size_t const n,
+        std::size_t number_of_threads,
+        Args const&... args)
     {
         std::atomic<std::size_t> c(0);
         std::vector<beast::unit_test::thread> t;
         t.reserve(number_of_threads);
         for (std::size_t id = 0; id < number_of_threads; ++id)
-            t.emplace_back(*this,
-                parallel_for_lambda<Body>(n, c),
-                    id, args...);
+            t.emplace_back(*this, parallel_for_lambda<Body>(n, c), id, args...);
         for (auto& _ : t)
             _.join();
     }
@@ -273,11 +255,13 @@ public:
 
     // Insert only
     void
-    do_insert (Section const& config,
-        Params const& params, beast::Journal journal)
+    do_insert(
+        Section const& config,
+        Params const& params,
+        beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend (config, scheduler, journal);
+        auto backend = make_Backend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
@@ -289,11 +273,8 @@ public:
             Sequence seq_;
 
         public:
-            explicit
-            Body (suite& s, Backend& backend)
-                : suite_ (s)
-                , backend_ (backend)
-                , seq_(1)
+            explicit Body(suite& s, Backend& backend)
+                : suite_(s), backend_(backend), seq_(1)
             {
             }
 
@@ -304,7 +285,7 @@ public:
                 {
                     backend_.store(seq_.obj(i));
                 }
-                catch(std::exception const& e)
+                catch (std::exception const& e)
                 {
                     suite_.fail(e.what());
                 }
@@ -313,14 +294,17 @@ public:
 
         try
         {
-            parallel_for<Body>(params.items,
-                params.threads, std::ref(*this), std::ref(*backend));
+            parallel_for<Body>(
+                params.items,
+                params.threads,
+                std::ref(*this),
+                std::ref(*backend));
         }
         catch (std::exception const&)
         {
-        #if NODESTORE_TIMING_DO_VERIFY
+#if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
-        #endif
+#endif
             Rethrow();
         }
         backend->close();
@@ -328,11 +312,13 @@ public:
 
     // Fetch existing keys
     void
-    do_fetch (Section const& config,
-        Params const& params, beast::Journal journal)
+    do_fetch(
+        Section const& config,
+        Params const& params,
+        beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend (config, scheduler, journal);
+        auto backend = make_Backend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
@@ -346,13 +332,16 @@ public:
             std::uniform_int_distribution<std::size_t> dist_;
 
         public:
-            Body (std::size_t id, suite& s,
-                    Params const& params, Backend& backend)
+            Body(
+                std::size_t id,
+                suite& s,
+                Params const& params,
+                Backend& backend)
                 : suite_(s)
-                , backend_ (backend)
-                , seq1_ (1)
-                , gen_ (id + 1)
-                , dist_ (0, params.items - 1)
+                , backend_(backend)
+                , seq1_(1)
+                , gen_(id + 1)
+                , dist_(0, params.items - 1)
             {
             }
 
@@ -367,7 +356,7 @@ public:
                     backend_.fetch(obj->getHash().data(), &result);
                     suite_.expect(result && isSame(result, obj));
                 }
-                catch(std::exception const& e)
+                catch (std::exception const& e)
                 {
                     suite_.fail(e.what());
                 }
@@ -375,14 +364,18 @@ public:
         };
         try
         {
-            parallel_for_id<Body>(params.items, params.threads,
-                std::ref(*this), std::ref(params), std::ref(*backend));
+            parallel_for_id<Body>(
+                params.items,
+                params.threads,
+                std::ref(*this),
+                std::ref(params),
+                std::ref(*backend));
         }
         catch (std::exception const&)
         {
-        #if NODESTORE_TIMING_DO_VERIFY
+#if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
-        #endif
+#endif
             Rethrow();
         }
         backend->close();
@@ -390,11 +383,13 @@ public:
 
     // Perform lookups of non-existent keys
     void
-    do_missing (Section const& config,
-        Params const& params, beast::Journal journal)
+    do_missing(
+        Section const& config,
+        Params const& params,
+        beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend (config, scheduler, journal);
+        auto backend = make_Backend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
@@ -402,21 +397,24 @@ public:
         {
         private:
             suite& suite_;
-            //Params const& params_;
+            // Params const& params_;
             Backend& backend_;
             Sequence seq2_;
             beast::xor_shift_engine gen_;
             std::uniform_int_distribution<std::size_t> dist_;
 
         public:
-            Body (std::size_t id, suite& s,
-                    Params const& params, Backend& backend)
-                : suite_ (s)
+            Body(
+                std::size_t id,
+                suite& s,
+                Params const& params,
+                Backend& backend)
+                : suite_(s)
                 //, params_ (params)
-                , backend_ (backend)
-                , seq2_ (2)
-                , gen_ (id + 1)
-                , dist_ (0, params.items - 1)
+                , backend_(backend)
+                , seq2_(2)
+                , gen_(id + 1)
+                , dist_(0, params.items - 1)
             {
             }
 
@@ -428,9 +426,9 @@ public:
                     auto const key = seq2_.key(i);
                     std::shared_ptr<NodeObject> result;
                     backend_.fetch(key.data(), &result);
-                    suite_.expect(! result);
+                    suite_.expect(!result);
                 }
-                catch(std::exception const& e)
+                catch (std::exception const& e)
                 {
                     suite_.fail(e.what());
                 }
@@ -439,14 +437,18 @@ public:
 
         try
         {
-            parallel_for_id<Body>(params.items, params.threads,
-                std::ref(*this), std::ref(params), std::ref(*backend));
+            parallel_for_id<Body>(
+                params.items,
+                params.threads,
+                std::ref(*this),
+                std::ref(params),
+                std::ref(*backend));
         }
         catch (std::exception const&)
         {
-        #if NODESTORE_TIMING_DO_VERIFY
+#if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
-        #endif
+#endif
             Rethrow();
         }
         backend->close();
@@ -454,11 +456,13 @@ public:
 
     // Fetch with present and missing keys
     void
-    do_mixed (Section const& config,
-        Params const& params, beast::Journal journal)
+    do_mixed(
+        Section const& config,
+        Params const& params,
+        beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend (config, scheduler, journal);
+        auto backend = make_Backend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
@@ -466,7 +470,7 @@ public:
         {
         private:
             suite& suite_;
-            //Params const& params_;
+            // Params const& params_;
             Backend& backend_;
             Sequence seq1_;
             Sequence seq2_;
@@ -475,16 +479,19 @@ public:
             std::uniform_int_distribution<std::size_t> dist_;
 
         public:
-            Body (std::size_t id, suite& s,
-                    Params const& params, Backend& backend)
-                : suite_ (s)
+            Body(
+                std::size_t id,
+                suite& s,
+                Params const& params,
+                Backend& backend)
+                : suite_(s)
                 //, params_ (params)
-                , backend_ (backend)
-                , seq1_ (1)
-                , seq2_ (2)
-                , gen_ (id + 1)
-                , rand_ (0, 99)
-                , dist_ (0, params.items - 1)
+                , backend_(backend)
+                , seq1_(1)
+                , seq2_(2)
+                , gen_(id + 1)
+                , rand_(0, 99)
+                , dist_(0, params.items - 1)
             {
             }
 
@@ -498,7 +505,7 @@ public:
                         auto const key = seq2_.key(dist_(gen_));
                         std::shared_ptr<NodeObject> result;
                         backend_.fetch(key.data(), &result);
-                        suite_.expect(! result);
+                        suite_.expect(!result);
                     }
                     else
                     {
@@ -509,7 +516,7 @@ public:
                         suite_.expect(result && isSame(result, obj));
                     }
                 }
-                catch(std::exception const& e)
+                catch (std::exception const& e)
                 {
                     suite_.fail(e.what());
                 }
@@ -518,14 +525,18 @@ public:
 
         try
         {
-            parallel_for_id<Body>(params.items, params.threads,
-                std::ref(*this), std::ref(params), std::ref(*backend));
+            parallel_for_id<Body>(
+                params.items,
+                params.threads,
+                std::ref(*this),
+                std::ref(params),
+                std::ref(*backend));
         }
         catch (std::exception const&)
         {
-        #if NODESTORE_TIMING_DO_VERIFY
+#if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
-        #endif
+#endif
             Rethrow();
         }
         backend->close();
@@ -537,11 +548,10 @@ public:
     //      fetches an old key
     //      fetches recent, possibly non existent data
     void
-    do_work (Section const& config,
-        Params const& params, beast::Journal journal)
+    do_work(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend (config, scheduler, journal);
+        auto backend = make_Backend(config, scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->setDeletePath();
         backend->open();
@@ -559,16 +569,19 @@ public:
             std::uniform_int_distribution<std::size_t> older_;
 
         public:
-            Body (std::size_t id, suite& s,
-                    Params const& params, Backend& backend)
-                : suite_ (s)
-                , params_ (params)
-                , backend_ (backend)
-                , seq1_ (1)
-                , gen_ (id + 1)
-                , rand_ (0, 99)
-                , recent_ (params.items, params.items * 2 - 1)
-                , older_ (0, params.items - 1)
+            Body(
+                std::size_t id,
+                suite& s,
+                Params const& params,
+                Backend& backend)
+                : suite_(s)
+                , params_(params)
+                , backend_(backend)
+                , seq1_(1)
+                , gen_(id + 1)
+                , rand_(0, 99)
+                , recent_(params.items, params.items * 2 - 1)
+                , older_(0, params.items - 1)
             {
             }
 
@@ -597,30 +610,27 @@ public:
                     {
                         switch (p[q])
                         {
-                        case 0:
-                        {
-                            // fetch recent
-                            std::shared_ptr<NodeObject> obj;
-                            std::shared_ptr<NodeObject> result;
-                            auto const j = recent_(gen_);
-                            obj = seq1_.obj(j);
-                            backend_.fetch(obj->getHash().data(), &result);
-                            suite_.expect(! result ||
-                                isSame(result, obj));
-                            break;
-                        }
+                            case 0: {
+                                // fetch recent
+                                std::shared_ptr<NodeObject> obj;
+                                std::shared_ptr<NodeObject> result;
+                                auto const j = recent_(gen_);
+                                obj = seq1_.obj(j);
+                                backend_.fetch(obj->getHash().data(), &result);
+                                suite_.expect(!result || isSame(result, obj));
+                                break;
+                            }
 
-                        case 1:
-                        {
-                            // insert new
-                            auto const j = i + params_.items;
-                            backend_.store(seq1_.obj(j));
-                            break;
-                        }
+                            case 1: {
+                                // insert new
+                                auto const j = i + params_.items;
+                                backend_.store(seq1_.obj(j));
+                                break;
+                            }
                         }
                     }
                 }
-                catch(std::exception const& e)
+                catch (std::exception const& e)
                 {
                     suite_.fail(e.what());
                 }
@@ -629,14 +639,18 @@ public:
 
         try
         {
-            parallel_for_id<Body>(params.items, params.threads,
-                std::ref(*this), std::ref(params), std::ref(*backend));
+            parallel_for_id<Body>(
+                params.items,
+                params.threads,
+                std::ref(*this),
+                std::ref(params),
+                std::ref(*backend));
         }
         catch (std::exception const&)
         {
-        #if NODESTORE_TIMING_DO_VERIFY
+#if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
-        #endif
+#endif
             Rethrow();
         }
         backend->close();
@@ -644,22 +658,27 @@ public:
 
     //--------------------------------------------------------------------------
 
-    using test_func = void (Timing_test::*)(
-        Section const&, Params const&, beast::Journal);
-    using test_list = std::vector <std::pair<std::string, test_func>>;
+    using test_func =
+        void (Timing_test::*)(Section const&, Params const&, beast::Journal);
+    using test_list = std::vector<std::pair<std::string, test_func>>;
 
     duration_type
-    do_test (test_func f,
-        Section const& config, Params const& params, beast::Journal journal)
+    do_test(
+        test_func f,
+        Section const& config,
+        Params const& params,
+        beast::Journal journal)
     {
         auto const start = clock_type::now();
         (this->*f)(config, params, journal);
-        return std::chrono::duration_cast<duration_type> (
+        return std::chrono::duration_cast<duration_type>(
             clock_type::now() - start);
     }
 
     void
-    do_tests (std::size_t threads, test_list const& tests,
+    do_tests(
+        std::size_t threads,
+        test_list const& tests,
         std::vector<std::string> const& config_strings)
     {
         using std::setw;
@@ -667,9 +686,8 @@ public:
         for (auto const& test : tests)
             if (w < test.first.size())
                 w = test.first.size();
-        log <<
-            threads << " Thread" << (threads > 1 ? "s" : "") << ", " <<
-            default_items << " Objects" << std::endl;
+        log << threads << " Thread" << (threads > 1 ? "s" : "") << ", "
+            << default_items << " Objects" << std::endl;
         {
             std::stringstream ss;
             ss << std::left << setw(10) << "Backend" << std::right;
@@ -679,7 +697,7 @@ public:
         }
 
         using namespace beast::severities;
-        test::SuiteJournal journal ("Timing_test", *this);
+        test::SuiteJournal journal("Timing_test", *this);
 
         for (auto const& config_string : config_strings)
         {
@@ -690,13 +708,14 @@ public:
             {
                 beast::temp_dir tempDir;
                 Section config = parse(config_string);
-                config.set ("path", tempDir.path());
+                config.set("path", tempDir.path());
                 std::stringstream ss;
-                ss << std::left << setw(10) <<
-                    get(config, "type", std::string()) << std::right;
+                ss << std::left << setw(10)
+                   << get(config, "type", std::string()) << std::right;
                 for (auto const& test : tests)
-                    ss << " " << setw(w) << to_string(
-                        do_test (test.second, config, params, journal));
+                    ss << " " << setw(w)
+                       << to_string(
+                              do_test(test.second, config, params, journal));
                 ss << "   " << to_string(config);
                 log << ss.str() << std::endl;
             }
@@ -706,7 +725,7 @@ public:
     void
     run() override
     {
-        testcase ("Timing", beast::unit_test::abort_on_fail);
+        testcase("Timing", beast::unit_test::abort_on_fail);
 
         /*  Parameters:
 
@@ -716,44 +735,39 @@ public:
         */
         std::string default_args =
             "type=nudb"
-        #if RIPPLE_ROCKSDB_AVAILABLE
+#if RIPPLE_ROCKSDB_AVAILABLE
             ";type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"
-                "file_size_mb=8,file_size_mult=2"
-        #endif
-        #if 0
+            "file_size_mb=8,file_size_mult=2"
+#endif
+#if 0
             ";type=memory|path=NodeStore"
-        #endif
+#endif
             ;
 
-        test_list const tests =
-            {
-                 { "Insert",    &Timing_test::do_insert }
-                ,{ "Fetch",     &Timing_test::do_fetch }
-                ,{ "Missing",   &Timing_test::do_missing }
-                ,{ "Mixed",     &Timing_test::do_mixed }
-                ,{ "Work",      &Timing_test::do_work }
-            };
+        test_list const tests = {
+            {"Insert", &Timing_test::do_insert},
+            {"Fetch", &Timing_test::do_fetch},
+            {"Missing", &Timing_test::do_missing},
+            {"Mixed", &Timing_test::do_mixed},
+            {"Work", &Timing_test::do_work}};
 
         auto args = arg().empty() ? default_args : arg();
-        std::vector <std::string> config_strings;
-        boost::split (config_strings, args,
-            boost::algorithm::is_any_of (";"));
-        for (auto iter = config_strings.begin();
-                iter != config_strings.end();)
+        std::vector<std::string> config_strings;
+        boost::split(config_strings, args, boost::algorithm::is_any_of(";"));
+        for (auto iter = config_strings.begin(); iter != config_strings.end();)
             if (iter->empty())
-                iter = config_strings.erase (iter);
+                iter = config_strings.erase(iter);
             else
                 ++iter;
 
-        do_tests ( 1, tests, config_strings);
-        do_tests ( 4, tests, config_strings);
-        do_tests ( 8, tests, config_strings);
-        //do_tests (16, tests, config_strings);
+        do_tests(1, tests, config_strings);
+        do_tests(4, tests, config_strings);
+        do_tests(8, tests, config_strings);
+        // do_tests (16, tests, config_strings);
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Timing,NodeStore,ripple,1);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Timing, NodeStore, ripple, 1);
 
-}
-}
-
+}  // namespace NodeStore
+}  // namespace ripple

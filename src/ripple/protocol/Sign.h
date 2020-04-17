@@ -22,8 +22,8 @@
 
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/STObject.h>
+#include <ripple/protocol/SecretKey.h>
 #include <utility>
 
 namespace ripple {
@@ -40,9 +40,12 @@ namespace ripple {
     @note If a signature already exists, it is overwritten.
 */
 void
-sign (STObject& st, HashPrefix const& prefix,
-    KeyType type, SecretKey const& sk,
-        SF_Blob const& sigField = sfSignature);
+sign(
+    STObject& st,
+    HashPrefix const& prefix,
+    KeyType type,
+    SecretKey const& sk,
+    SF_Blob const& sigField = sfSignature);
 
 /** Returns `true` if STObject contains valid signature
 
@@ -53,13 +56,15 @@ sign (STObject& st, HashPrefix const& prefix,
     If not specified the value defaults to `sfSignature`.
 */
 bool
-verify (STObject const& st, HashPrefix const& prefix,
+verify(
+    STObject const& st,
+    HashPrefix const& prefix,
     PublicKey const& pk,
-        SF_Blob const& sigField = sfSignature);
+    SF_Blob const& sigField = sfSignature);
 
 /** Return a Serializer suitable for computing a multisigning TxnSignature. */
 Serializer
-buildMultiSigningData (STObject const& obj, AccountID const& signingID);
+buildMultiSigningData(STObject const& obj, AccountID const& signingID);
 
 /** Break the multi-signing hash computation into 2 parts for optimization.
 
@@ -74,14 +79,14 @@ buildMultiSigningData (STObject const& obj, AccountID const& signingID);
         signer's unique data.
 */
 Serializer
-startMultiSigningData (STObject const& obj);
+startMultiSigningData(STObject const& obj);
 
 inline void
-finishMultiSigningData (AccountID const& signingID, Serializer& s)
+finishMultiSigningData(AccountID const& signingID, Serializer& s)
 {
-    s.add160 (signingID);
+    s.add160(signingID);
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

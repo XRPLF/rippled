@@ -21,8 +21,8 @@
 #define RIPPLE_CORE_LOADFEETRACK_H_INCLUDED
 
 #include <ripple/basics/FeeUnits.h>
-#include <ripple/json/json_value.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/json/json_value.h>
 #include <algorithm>
 #include <cstdint>
 #include <mutex>
@@ -43,51 +43,58 @@ struct Fees;
 class LoadFeeTrack final
 {
 public:
-    explicit LoadFeeTrack (beast::Journal journal =
-        beast::Journal(beast::Journal::getNullSink()))
-        : j_ (journal)
-        , localTxnLoadFee_ (lftNormalFee)
-        , remoteTxnLoadFee_ (lftNormalFee)
-        , clusterTxnLoadFee_ (lftNormalFee)
-        , raiseCount_ (0)
+    explicit LoadFeeTrack(
+        beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
+        : j_(journal)
+        , localTxnLoadFee_(lftNormalFee)
+        , remoteTxnLoadFee_(lftNormalFee)
+        , clusterTxnLoadFee_(lftNormalFee)
+        , raiseCount_(0)
     {
     }
 
     ~LoadFeeTrack() = default;
 
-    void setRemoteFee (std::uint32_t f)
+    void
+    setRemoteFee(std::uint32_t f)
     {
-        std::lock_guard sl (lock_);
+        std::lock_guard sl(lock_);
         remoteTxnLoadFee_ = f;
     }
 
-    std::uint32_t getRemoteFee () const
+    std::uint32_t
+    getRemoteFee() const
     {
-        std::lock_guard sl (lock_);
+        std::lock_guard sl(lock_);
         return remoteTxnLoadFee_;
     }
 
-    std::uint32_t getLocalFee () const
+    std::uint32_t
+    getLocalFee() const
     {
-        std::lock_guard sl (lock_);
+        std::lock_guard sl(lock_);
         return localTxnLoadFee_;
     }
 
-    std::uint32_t getClusterFee () const
+    std::uint32_t
+    getClusterFee() const
     {
-        std::lock_guard sl (lock_);
+        std::lock_guard sl(lock_);
         return clusterTxnLoadFee_;
     }
 
-    std::uint32_t getLoadBase () const
+    std::uint32_t
+    getLoadBase() const
     {
         return lftNormalFee;
     }
 
-    std::uint32_t getLoadFactor () const
+    std::uint32_t
+    getLoadFactor() const
     {
-        std::lock_guard sl (lock_);
-        return std::max({ clusterTxnLoadFee_, localTxnLoadFee_, remoteTxnLoadFee_ });
+        std::lock_guard sl(lock_);
+        return std::max(
+            {clusterTxnLoadFee_, localTxnLoadFee_, remoteTxnLoadFee_});
     }
 
     std::pair<std::uint32_t, std::uint32_t>
@@ -100,41 +107,49 @@ public:
             std::max(remoteTxnLoadFee_, clusterTxnLoadFee_));
     }
 
-
-    void setClusterFee (std::uint32_t fee)
+    void
+    setClusterFee(std::uint32_t fee)
     {
-        std::lock_guard sl (lock_);
+        std::lock_guard sl(lock_);
         clusterTxnLoadFee_ = fee;
     }
 
-    bool raiseLocalFee ();
-    bool lowerLocalFee ();
+    bool
+    raiseLocalFee();
+    bool
+    lowerLocalFee();
 
-    bool isLoadedLocal () const
+    bool
+    isLoadedLocal() const
     {
-        std::lock_guard sl (lock_);
+        std::lock_guard sl(lock_);
         return (raiseCount_ != 0) || (localTxnLoadFee_ != lftNormalFee);
     }
 
-    bool isLoadedCluster () const
+    bool
+    isLoadedCluster() const
     {
-        std::lock_guard sl (lock_);
+        std::lock_guard sl(lock_);
         return (raiseCount_ != 0) || (localTxnLoadFee_ != lftNormalFee) ||
             (clusterTxnLoadFee_ != lftNormalFee);
     }
 
 private:
-    static std::uint32_t constexpr lftNormalFee = 256;        // 256 is the minimum/normal load factor
-    static std::uint32_t constexpr lftFeeIncFraction = 4;     // increase fee by 1/4
-    static std::uint32_t constexpr lftFeeDecFraction = 4;     // decrease fee by 1/4
+    static std::uint32_t constexpr lftNormalFee =
+        256;  // 256 is the minimum/normal load factor
+    static std::uint32_t constexpr lftFeeIncFraction =
+        4;  // increase fee by 1/4
+    static std::uint32_t constexpr lftFeeDecFraction =
+        4;  // decrease fee by 1/4
     static std::uint32_t constexpr lftFeeMax = lftNormalFee * 1000000;
 
     beast::Journal const j_;
     std::mutex mutable lock_;
 
-    std::uint32_t localTxnLoadFee_;        // Scale factor, lftNormalFee = normal fee
-    std::uint32_t remoteTxnLoadFee_;       // Scale factor, lftNormalFee = normal fee
-    std::uint32_t clusterTxnLoadFee_;      // Scale factor, lftNormalFee = normal fee
+    std::uint32_t localTxnLoadFee_;   // Scale factor, lftNormalFee = normal fee
+    std::uint32_t remoteTxnLoadFee_;  // Scale factor, lftNormalFee = normal fee
+    std::uint32_t
+        clusterTxnLoadFee_;  // Scale factor, lftNormalFee = normal fee
     std::uint32_t raiseCount_;
 };
 
@@ -142,9 +157,12 @@ private:
 
 // Scale using load as well as base rate
 XRPAmount
-scaleFeeLoad(FeeUnit64 fee, LoadFeeTrack const& feeTrack,
-    Fees const& fees, bool bUnlimited);
+scaleFeeLoad(
+    FeeUnit64 fee,
+    LoadFeeTrack const& feeTrack,
+    Fees const& fees,
+    bool bUnlimited);
 
-} // ripple
+}  // namespace ripple
 
 #endif

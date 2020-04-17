@@ -32,5 +32,5 @@ EventImpl::~EventImpl() = default;
 GaugeImpl::~GaugeImpl() = default;
 
 MeterImpl::~MeterImpl() = default;
-}
-}
+}  // namespace insight
+}  // namespace beast

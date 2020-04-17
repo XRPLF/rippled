@@ -21,26 +21,24 @@
 #define RIPPLE_APP_LEDGER_LEDGERCLEANER_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
-#include <ripple/json/json_value.h>
-#include <ripple/core/Stoppable.h>
-#include <ripple/beast/utility/PropertyStream.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/beast/utility/PropertyStream.h>
+#include <ripple/core/Stoppable.h>
+#include <ripple/json/json_value.h>
 #include <memory>
 
 namespace ripple {
 namespace detail {
 
 /** Check the ledger/transaction databases to make sure they have continuity */
-class LedgerCleaner
-    : public Stoppable
-    , public beast::PropertyStream::Source
+class LedgerCleaner : public Stoppable, public beast::PropertyStream::Source
 {
 protected:
-    explicit LedgerCleaner (Stoppable& parent);
+    explicit LedgerCleaner(Stoppable& parent);
 
 public:
     /** Destroy the object. */
-    virtual ~LedgerCleaner () = 0;
+    virtual ~LedgerCleaner() = 0;
 
     /** Start a long running task to clean the ledger.
         The ledger is cleaned asynchronously, on an implementation defined
@@ -52,14 +50,14 @@ public:
 
         @param parameters A Json object with configurable parameters.
     */
-    virtual void doClean (Json::Value const& parameters) = 0;
+    virtual void
+    doClean(Json::Value const& parameters) = 0;
 };
 
 std::unique_ptr<LedgerCleaner>
-make_LedgerCleaner (Application& app,
-    Stoppable& parent, beast::Journal journal);
+make_LedgerCleaner(Application& app, Stoppable& parent, beast::Journal journal);
 
-} // detail
-} // ripple
+}  // namespace detail
+}  // namespace ripple
 
 #endif

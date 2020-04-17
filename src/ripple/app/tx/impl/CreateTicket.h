@@ -27,22 +27,20 @@
 
 namespace ripple {
 
-class CreateTicket
-    : public Transactor
+class CreateTicket : public Transactor
 {
 public:
-    explicit CreateTicket (ApplyContext& ctx)
-        : Transactor(ctx)
+    explicit CreateTicket(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    static
-    NotTEC
-    preflight (PreflightContext const& ctx);
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-    TER doApply () override;
+    TER
+    doApply() override;
 };
 
-}
+}  // namespace ripple
 
 #endif

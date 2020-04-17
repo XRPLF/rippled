@@ -25,80 +25,89 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/TransactionSign.h>
 #include <ripple/rpc/GRPCHandlers.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/GRPCHelpers.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
+#include <ripple/rpc/impl/TransactionSign.h>
 
 namespace ripple {
 
-static NetworkOPs::FailHard getFailHard (RPC::JsonContext const& context)
+static NetworkOPs::FailHard
+getFailHard(RPC::JsonContext const& context)
 {
-    return NetworkOPs::doFailHard (
-        context.params.isMember ("fail_hard")
-        && context.params["fail_hard"].asBool ());
+    return NetworkOPs::doFailHard(
+        context.params.isMember("fail_hard") &&
+        context.params["fail_hard"].asBool());
 }
 
 // {
 //   tx_json: <object>,
 //   secret: <secret>
 // }
-Json::Value doSubmit (RPC::JsonContext& context)
+Json::Value
+doSubmit(RPC::JsonContext& context)
 {
     context.loadType = Resource::feeMediumBurdenRPC;
 
-    if (!context.params.isMember (jss::tx_blob))
+    if (!context.params.isMember(jss::tx_blob))
     {
-        auto const failType = getFailHard (context);
+        auto const failType = getFailHard(context);
 
         if (context.role != Role::ADMIN && !context.app.config().canSign())
-            return RPC::make_error (rpcNOT_SUPPORTED,
-                "Signing is not supported by this server.");
+            return RPC::make_error(
+                rpcNOT_SUPPORTED, "Signing is not supported by this server.");
 
-        auto ret = RPC::transactionSubmit (
-            context.params, failType, context.role,
+        auto ret = RPC::transactionSubmit(
+            context.params,
+            failType,
+            context.role,
             context.ledgerMaster.getValidatedLedgerAge(),
-            context.app, RPC::getProcessTxnFn (context.netOps));
+            context.app,
+            RPC::getProcessTxnFn(context.netOps));
 
-        ret[jss::deprecated] = "Signing support in the 'submit' command has been "
-                               "deprecated and will be removed in a future version "
-                               "of the server. Please migrate to a standalone "
-                               "signing tool.";
+        ret[jss::deprecated] =
+            "Signing support in the 'submit' command has been "
+            "deprecated and will be removed in a future version "
+            "of the server. Please migrate to a standalone "
+            "signing tool.";
 
         return ret;
     }
 
     Json::Value jvResult;
 
-    auto ret = strUnHex (context.params[jss::tx_blob].asString ());
+    auto ret = strUnHex(context.params[jss::tx_blob].asString());
 
-    if (!ret || !ret->size ())
-        return rpcError (rpcINVALID_PARAMS);
+    if (!ret || !ret->size())
+        return rpcError(rpcINVALID_PARAMS);
 
-    SerialIter sitTrans (makeSlice(*ret));
+    SerialIter sitTrans(makeSlice(*ret));
 
     std::shared_ptr<STTx const> stpTrans;
 
     try
     {
-        stpTrans = std::make_shared<STTx const> (std::ref (sitTrans));
+        stpTrans = std::make_shared<STTx const>(std::ref(sitTrans));
     }
     catch (std::exception& e)
     {
-        jvResult[jss::error]        = "invalidTransaction";
-        jvResult[jss::error_exception] = e.what ();
+        jvResult[jss::error] = "invalidTransaction";
+        jvResult[jss::error_exception] = e.what();
 
         return jvResult;
     }
 
-
     {
         if (!context.app.checkSigs())
-            forceValidity(context.app.getHashRouter(),
-                stpTrans->getTransactionID(), Validity::SigGoodOnly);
-        auto [validity, reason] = checkValidity(context.app.getHashRouter(),
-            *stpTrans, context.ledgerMaster.getCurrentLedger()->rules(),
-                context.app.config());
+            forceValidity(
+                context.app.getHashRouter(),
+                stpTrans->getTransactionID(),
+                Validity::SigGoodOnly);
+        auto [validity, reason] = checkValidity(
+            context.app.getHashRouter(),
+            *stpTrans,
+            context.ledgerMaster.getCurrentLedger()->rules(),
+            context.app.config());
         if (validity != Validity::Valid)
         {
             jvResult[jss::error] = "invalidTransaction";
@@ -109,11 +118,10 @@ Json::Value doSubmit (RPC::JsonContext& context)
     }
 
     std::string reason;
-    auto tpTrans = std::make_shared<Transaction> (
-        stpTrans, reason, context.app);
+    auto tpTrans = std::make_shared<Transaction>(stpTrans, reason, context.app);
     if (tpTrans->getStatus() != NEW)
     {
-        jvResult[jss::error]            = "invalidTransaction";
+        jvResult[jss::error] = "invalidTransaction";
         jvResult[jss::error_exception] = "fails local checks: " + reason;
 
         return jvResult;
@@ -121,36 +129,35 @@ Json::Value doSubmit (RPC::JsonContext& context)
 
     try
     {
-        auto const failType = getFailHard (context);
+        auto const failType = getFailHard(context);
 
-        context.netOps.processTransaction (
-            tpTrans, isUnlimited (context.role), true, failType);
+        context.netOps.processTransaction(
+            tpTrans, isUnlimited(context.role), true, failType);
     }
     catch (std::exception& e)
     {
-        jvResult[jss::error]           = "internalSubmit";
-        jvResult[jss::error_exception] = e.what ();
+        jvResult[jss::error] = "internalSubmit";
+        jvResult[jss::error_exception] = e.what();
 
         return jvResult;
     }
 
-
     try
     {
-        jvResult[jss::tx_json] = tpTrans->getJson (JsonOptions::none);
-        jvResult[jss::tx_blob] = strHex (
-            tpTrans->getSTransaction ()->getSerializer ().peekData ());
+        jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
+        jvResult[jss::tx_blob] =
+            strHex(tpTrans->getSTransaction()->getSerializer().peekData());
 
-        if (temUNCERTAIN != tpTrans->getResult ())
+        if (temUNCERTAIN != tpTrans->getResult())
         {
             std::string sToken;
             std::string sHuman;
 
-            transResultInfo (tpTrans->getResult (), sToken, sHuman);
+            transResultInfo(tpTrans->getResult(), sToken, sHuman);
 
-            jvResult[jss::engine_result]           = sToken;
-            jvResult[jss::engine_result_code]      = tpTrans->getResult ();
-            jvResult[jss::engine_result_message]   = sHuman;
+            jvResult[jss::engine_result] = sToken;
+            jvResult[jss::engine_result_code] = tpTrans->getResult();
+            jvResult[jss::engine_result_message] = sHuman;
 
             auto const submitResult = tpTrans->getSubmitResult();
 
@@ -162,14 +169,17 @@ Json::Value doSubmit (RPC::JsonContext& context)
 
             if (auto currentLedgerState = tpTrans->getCurrentLedgerState())
             {
-                jvResult[jss::account_sequence_next]
-                    = safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqNext);
-                jvResult[jss::account_sequence_available]
-                    = safe_cast<Json::Value::UInt>(currentLedgerState->accountSeqAvail);
-                jvResult[jss::open_ledger_cost]
-                    = to_string(currentLedgerState->minFeeRequired);
-                jvResult[jss::validated_ledger_index]
-                    = safe_cast<Json::Value::UInt>(currentLedgerState->validatedLedger);
+                jvResult[jss::account_sequence_next] =
+                    safe_cast<Json::Value::UInt>(
+                        currentLedgerState->accountSeqNext);
+                jvResult[jss::account_sequence_available] =
+                    safe_cast<Json::Value::UInt>(
+                        currentLedgerState->accountSeqAvail);
+                jvResult[jss::open_ledger_cost] =
+                    to_string(currentLedgerState->minFeeRequired);
+                jvResult[jss::validated_ledger_index] =
+                    safe_cast<Json::Value::UInt>(
+                        currentLedgerState->validatedLedger);
             }
         }
 
@@ -177,15 +187,16 @@ Json::Value doSubmit (RPC::JsonContext& context)
     }
     catch (std::exception& e)
     {
-        jvResult[jss::error]           = "internalJson";
-        jvResult[jss::error_exception] = e.what ();
+        jvResult[jss::error] = "internalJson";
+        jvResult[jss::error_exception] = e.what();
 
         return jvResult;
     }
 }
 
 std::pair<org::xrpl::rpc::v1::SubmitTransactionResponse, grpc::Status>
-doSubmitGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::SubmitTransactionRequest>& context)
+doSubmitGrpc(
+    RPC::GRPCContext<org::xrpl::rpc::v1::SubmitTransactionRequest>& context)
 {
     // return values
     org::xrpl::rpc::v1::SubmitTransactionResponse result;
@@ -228,8 +239,9 @@ doSubmitGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::SubmitTransactionRequest>& con
             context.app.config());
         if (validity != Validity::Valid)
         {
-            grpc::Status errorStatus{grpc::StatusCode::INVALID_ARGUMENT,
-                                     "invalid transaction: " + reason};
+            grpc::Status errorStatus{
+                grpc::StatusCode::INVALID_ARGUMENT,
+                "invalid transaction: " + reason};
             return {result, errorStatus};
         }
     }
@@ -238,8 +250,9 @@ doSubmitGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::SubmitTransactionRequest>& con
     auto tpTrans = std::make_shared<Transaction>(stpTrans, reason, context.app);
     if (tpTrans->getStatus() != NEW)
     {
-        grpc::Status errorStatus{grpc::StatusCode::INVALID_ARGUMENT,
-                                 "invalid transaction: " + reason};
+        grpc::Status errorStatus{
+            grpc::StatusCode::INVALID_ARGUMENT,
+            "invalid transaction: " + reason};
         return {result, errorStatus};
     }
 

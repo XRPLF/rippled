@@ -20,9 +20,9 @@
 #ifndef RIPPLE_TEST_JTX_REGKEY_H_INCLUDED
 #define RIPPLE_TEST_JTX_REGKEY_H_INCLUDED
 
+#include <ripple/json/json_value.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/tags.h>
-#include <ripple/json/json_value.h>
 
 namespace ripple {
 namespace test {
@@ -30,16 +30,14 @@ namespace jtx {
 
 /** Disable the regular key. */
 Json::Value
-regkey (Account const& account,
-    disabled_t);
+regkey(Account const& account, disabled_t);
 
 /** Set a regular key. */
 Json::Value
-regkey (Account const& account,
-    Account const& signer);
+regkey(Account const& account, Account const& signer);
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

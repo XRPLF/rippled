@@ -19,67 +19,66 @@
 
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/AmountConversions.h>
-#include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/STAmount.h>
 
 namespace ripple {
 
 STAmount
-creditLimit (
+creditLimit(
     ReadView const& view,
     AccountID const& account,
     AccountID const& issuer,
     Currency const& currency)
 {
-    STAmount result ({currency, account});
+    STAmount result({currency, account});
 
-    auto sleRippleState = view.read(
-        keylet::line(account, issuer, currency));
+    auto sleRippleState = view.read(keylet::line(account, issuer, currency));
 
     if (sleRippleState)
     {
-        result = sleRippleState->getFieldAmount (
+        result = sleRippleState->getFieldAmount(
             account < issuer ? sfLowLimit : sfHighLimit);
-        result.setIssuer (account);
+        result.setIssuer(account);
     }
 
-    assert (result.getIssuer () == account);
-    assert (result.getCurrency () == currency);
+    assert(result.getIssuer() == account);
+    assert(result.getCurrency() == currency);
     return result;
 }
 
 IOUAmount
-creditLimit2 (
+creditLimit2(
     ReadView const& v,
     AccountID const& acc,
     AccountID const& iss,
     Currency const& cur)
 {
-    return toAmount<IOUAmount> (creditLimit (v, acc, iss, cur));
+    return toAmount<IOUAmount>(creditLimit(v, acc, iss, cur));
 }
 
-STAmount creditBalance (
+STAmount
+creditBalance(
     ReadView const& view,
     AccountID const& account,
     AccountID const& issuer,
     Currency const& currency)
 {
-    STAmount result ({currency, account});
+    STAmount result({currency, account});
 
-    auto sleRippleState = view.read(
-        keylet::line(account, issuer, currency));
+    auto sleRippleState = view.read(keylet::line(account, issuer, currency));
 
     if (sleRippleState)
     {
-        result = sleRippleState->getFieldAmount (sfBalance);
+        result = sleRippleState->getFieldAmount(sfBalance);
         if (account < issuer)
-            result.negate ();
-        result.setIssuer (account);
+            result.negate();
+        result.setIssuer(account);
     }
 
-    assert (result.getIssuer () == account);
-    assert (result.getCurrency () == currency);
+    assert(result.getIssuer() == account);
+    assert(result.getCurrency() == currency);
     return result;
 }
 
-} // ripple
+}  // namespace ripple

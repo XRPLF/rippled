@@ -146,9 +146,10 @@ public:
         // No mismatch
         {
             bool found = false;
-            Env env{*this,
-                    envconfig(),
-                    std::make_unique<CheckMessageLogs>("MISMATCH ", found)};
+            Env env{
+                *this,
+                envconfig(),
+                std::make_unique<CheckMessageLogs>("MISMATCH ", found)};
             LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
             auto const genesis = makeLedger({}, env, lh, 0s);
             uint256 const dummyTxHash{1};
@@ -161,10 +162,11 @@ public:
         // Close time mismatch
         {
             bool found = false;
-            Env env{*this,
-                    envconfig(),
-                    std::make_unique<CheckMessageLogs>(
-                        "MISMATCH on close time", found)};
+            Env env{
+                *this,
+                envconfig(),
+                std::make_unique<CheckMessageLogs>(
+                    "MISMATCH on close time", found)};
             LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
             auto const genesis = makeLedger({}, env, lh, 0s);
             auto const ledgerA = makeLedger(genesis, env, lh, 4s);
@@ -180,10 +182,11 @@ public:
         // Prior ledger mismatch
         {
             bool found = false;
-            Env env{*this,
-                    envconfig(),
-                    std::make_unique<CheckMessageLogs>(
-                        "MISMATCH on prior ledger", found)};
+            Env env{
+                *this,
+                envconfig(),
+                std::make_unique<CheckMessageLogs>(
+                    "MISMATCH on prior ledger", found)};
             LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
             auto const genesis = makeLedger({}, env, lh, 0s);
             auto const ledgerA = makeLedger(genesis, env, lh, 4s);
@@ -206,9 +209,10 @@ public:
                 ? "MISMATCH with same consensus transaction set"
                 : "MISMATCH on consensus transaction set";
             bool found = false;
-            Env env{*this,
-                    envconfig(),
-                    std::make_unique<CheckMessageLogs>(msg, found)};
+            Env env{
+                *this,
+                envconfig(),
+                std::make_unique<CheckMessageLogs>(msg, found)};
             LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
 
             Account alice{"A1"};

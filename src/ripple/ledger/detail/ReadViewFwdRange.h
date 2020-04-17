@@ -20,10 +20,10 @@
 #ifndef RIPPLE_LEDGER_READVIEWFWDRANGE_H_INCLUDED
 #define RIPPLE_LEDGER_READVIEWFWDRANGE_H_INCLUDED
 
+#include <boost/optional.hpp>
 #include <cstddef>
 #include <iterator>
 #include <memory>
-#include <boost/optional.hpp>
 
 namespace ripple {
 
@@ -43,38 +43,33 @@ public:
 
     ReadViewFwdIter() = default;
     ReadViewFwdIter(ReadViewFwdIter const&) = default;
-    ReadViewFwdIter& operator=(ReadViewFwdIter const&) = default;
+    ReadViewFwdIter&
+    operator=(ReadViewFwdIter const&) = default;
 
-    virtual
-    ~ReadViewFwdIter() = default;
+    virtual ~ReadViewFwdIter() = default;
 
-    virtual
-    std::unique_ptr<ReadViewFwdIter>
+    virtual std::unique_ptr<ReadViewFwdIter>
     copy() const = 0;
 
-    virtual
-    bool
-    equal (ReadViewFwdIter const& impl) const = 0;
+    virtual bool
+    equal(ReadViewFwdIter const& impl) const = 0;
 
-    virtual
-    void
+    virtual void
     increment() = 0;
 
-    virtual
-    value_type
+    virtual value_type
     dereference() const = 0;
 };
 
 // A range using type-erased ForwardIterator
 //
-template<class ValueType>
+template <class ValueType>
 class ReadViewFwdRange
 {
 public:
-    using iter_base =
-        ReadViewFwdIter<ValueType>;
+    using iter_base = ReadViewFwdIter<ValueType>;
 
-   static_assert(
+    static_assert(
         std::is_nothrow_move_constructible<ValueType>{},
         "ReadViewFwdRange move and move assign constructors should be "
         "noexcept");
@@ -88,33 +83,31 @@ public:
 
         using reference = value_type const&;
 
-        using difference_type =
-            std::ptrdiff_t;
+        using difference_type = std::ptrdiff_t;
 
-        using iterator_category =
-            std::forward_iterator_tag;
+        using iterator_category = std::forward_iterator_tag;
 
         iterator() = default;
 
-        iterator (iterator const& other);
-        iterator (iterator&& other) noexcept;
+        iterator(iterator const& other);
+        iterator(iterator&& other) noexcept;
 
         // Used by the implementation
-        explicit
-        iterator (ReadView const* view,
+        explicit iterator(
+            ReadView const* view,
             std::unique_ptr<iter_base> impl);
 
         iterator&
-        operator= (iterator const& other);
+        operator=(iterator const& other);
 
         iterator&
-        operator= (iterator&& other) noexcept;
+        operator=(iterator&& other) noexcept;
 
         bool
-        operator== (iterator const& other) const;
+        operator==(iterator const& other) const;
 
         bool
-        operator!= (iterator const& other) const;
+        operator!=(iterator const& other) const;
 
         // Can throw
         reference
@@ -138,22 +131,21 @@ public:
 
     static_assert(std::is_nothrow_move_constructible<iterator>{}, "");
     static_assert(std::is_nothrow_move_assignable<iterator>{}, "");
- 
+
     using const_iterator = iterator;
 
     using value_type = ValueType;
 
     ReadViewFwdRange() = delete;
-    ReadViewFwdRange (ReadViewFwdRange const&) = default;
-    ReadViewFwdRange& operator= (ReadViewFwdRange const&) = default;
+    ReadViewFwdRange(ReadViewFwdRange const&) = default;
+    ReadViewFwdRange&
+    operator=(ReadViewFwdRange const&) = default;
 
     // VFALCO Otherwise causes errors on clang
-//private:
-//    friend class ReadView;
+    // private:
+    //    friend class ReadView;
 
-    explicit
-    ReadViewFwdRange (ReadView const& view)
-        : view_ (&view)
+    explicit ReadViewFwdRange(ReadView const& view) : view_(&view)
     {
     }
 
@@ -162,7 +154,7 @@ protected:
     boost::optional<iterator> mutable end_;
 };
 
-} // detail
-} // ripple
+}  // namespace detail
+}  // namespace ripple
 
 #endif

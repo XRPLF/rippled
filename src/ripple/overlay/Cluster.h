@@ -21,12 +21,12 @@
 #define RIPPLE_OVERLAY_CLUSTER_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
-#include <ripple/basics/chrono.h>
 #include <ripple/basics/BasicConfig.h>
-#include <ripple/overlay/ClusterNode.h>
-#include <ripple/protocol/PublicKey.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/beast/hash/uhash.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/overlay/ClusterNode.h>
+#include <ripple/protocol/PublicKey.h>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -45,25 +45,19 @@ private:
         using is_transparent = std::true_type;
 
         bool
-        operator() (
-            ClusterNode const& lhs,
-            ClusterNode const& rhs) const
+        operator()(ClusterNode const& lhs, ClusterNode const& rhs) const
         {
             return lhs.identity() < rhs.identity();
         }
 
         bool
-        operator() (
-            ClusterNode const& lhs,
-            PublicKey const& rhs) const
+        operator()(ClusterNode const& lhs, PublicKey const& rhs) const
         {
             return lhs.identity() < rhs;
         }
 
         bool
-        operator() (
-            PublicKey const& lhs,
-            ClusterNode const& rhs) const
+        operator()(PublicKey const& lhs, ClusterNode const& rhs) const
         {
             return lhs < rhs.identity();
         }
@@ -74,7 +68,7 @@ private:
     beast::Journal mutable j_;
 
 public:
-    Cluster (beast::Journal j);
+    Cluster(beast::Journal j);
 
     /** Determines whether a node belongs in the cluster
         @return boost::none if the node isn't a member,
@@ -82,7 +76,7 @@ public:
                 node (which may be an empty string).
     */
     boost::optional<std::string>
-    member (PublicKey const& node) const;
+    member(PublicKey const& node) const;
 
     /** The number of nodes in the cluster list. */
     std::size_t
@@ -94,7 +88,7 @@ public:
         @return true if we updated our information
     */
     bool
-    update (
+    update(
         PublicKey const& identity,
         std::string name,
         std::uint32_t loadFee = 0,
@@ -105,8 +99,7 @@ public:
               within the callback.
     */
     void
-    for_each (
-        std::function<void(ClusterNode const&)> func) const;
+    for_each(std::function<void(ClusterNode const&)> func) const;
 
     /** Load the list of cluster nodes.
 
@@ -119,9 +112,9 @@ public:
                 true otherwise.
     */
     bool
-    load (Section const& nodes);
+    load(Section const& nodes);
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

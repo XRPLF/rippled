@@ -23,13 +23,12 @@
 #include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/ledger/TxMeta.h>
 
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/Tuning.h>
-#include <ripple/rpc/Status.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/TxQ.h>
-#include <org/xrpl/rpc/v1/xrp_ledger.pb.h>
+#include <ripple/protocol/SecretKey.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/rpc/Status.h>
+#include <ripple/rpc/impl/Tuning.h>
 #include <boost/optional.hpp>
 #include <org/xrpl/rpc/v1/xrp_ledger.pb.h>
 
@@ -48,14 +47,16 @@ struct JsonContext;
 
 /** Get an AccountID from an account ID or public key. */
 boost::optional<AccountID>
-accountFromStringStrict (std::string const&);
+accountFromStringStrict(std::string const&);
 
 // --> strIdent: public key, account ID, or regular seed.
 // --> bStrict: Only allow account id or public key.
 //
 // Returns a Json::objectValue, containing error information if there was one.
 Json::Value
-accountFromString (AccountID& result, std::string const& strIdent,
+accountFromString(
+    AccountID& result,
+    std::string const& strIdent,
     bool bStrict = false);
 
 /** Decode account ID from string
@@ -65,7 +66,9 @@ accountFromString (AccountID& result, std::string const& strIdent,
     @return code representing error, or rpcSUCCES on success
 */
 error_code_i
-accountFromStringWithCode (AccountID& result, std::string const& strIdent,
+accountFromStringWithCode(
+    AccountID& result,
+    std::string const& strIdent,
     bool bStrict = false);
 
 /** Gathers all objects for an account in a ledger.
@@ -78,17 +81,24 @@ accountFromStringWithCode (AccountID& result, std::string const& strIdent,
     @param jvResult A JSON result that holds the request objects.
 */
 bool
-getAccountObjects (ReadView const& ledger, AccountID const& account,
-    boost::optional<std::vector<LedgerEntryType>> const& typeFilter, uint256 dirIndex,
-    uint256 const& entryIndex, std::uint32_t const limit, Json::Value& jvResult);
+getAccountObjects(
+    ReadView const& ledger,
+    AccountID const& account,
+    boost::optional<std::vector<LedgerEntryType>> const& typeFilter,
+    uint256 dirIndex,
+    uint256 const& entryIndex,
+    std::uint32_t const limit,
+    Json::Value& jvResult);
 
 /** Get ledger by hash
     If there is no error in the return value, the ledger pointer will have
     been filled
 */
 Status
-getLedger(std::shared_ptr<ReadView const>& ledger, uint256 const & ledgerHash, Context& context);
-
+getLedger(
+    std::shared_ptr<ReadView const>& ledger,
+    uint256 const& ledgerHash,
+    Context& context);
 
 /** Get ledger by sequence
     If there is no error in the return value, the ledger pointer will have
@@ -98,12 +108,7 @@ template <class T>
 Status
 getLedger(T& ledger, uint32_t ledgerIndex, Context& context);
 
-enum LedgerShortcut
-{
-    CURRENT,
-    CLOSED,
-    VALIDATED
-};
+enum LedgerShortcut { CURRENT, CLOSED, VALIDATED };
 /** Get ledger specified in shortcut.
     If there is no error in the return value, the ledger pointer will have
     been filled
@@ -112,7 +117,6 @@ template <class T>
 Status
 getLedger(T& ledger, LedgerShortcut shortcut, Context& context);
 
-
 /** Look up a ledger from a request and fill a Json::Result with either
     an error, or data representing a ledger.
 
@@ -120,7 +124,7 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context);
     been filled.
 */
 Json::Value
-lookupLedger (std::shared_ptr<ReadView const>&, JsonContext&);
+lookupLedger(std::shared_ptr<ReadView const>&, JsonContext&);
 
 /** Look up a ledger from a request and fill a Json::Result with the data
     representing a ledger.
@@ -128,7 +132,10 @@ lookupLedger (std::shared_ptr<ReadView const>&, JsonContext&);
     If the returned Status is OK, the ledger pointer will have been filled.
 */
 Status
-lookupLedger (std::shared_ptr<ReadView const>&, JsonContext&, Json::Value& result);
+lookupLedger(
+    std::shared_ptr<ReadView const>&,
+    JsonContext&,
+    Json::Value& result);
 
 template <class T>
 Status
@@ -137,10 +144,12 @@ ledgerFromRequest(
     GRPCContext<org::xrpl::rpc::v1::GetAccountInfoRequest>& context);
 
 bool
-isValidated(LedgerMaster& ledgerMaster, ReadView const& ledger,
+isValidated(
+    LedgerMaster& ledgerMaster,
+    ReadView const& ledger,
     Application& app);
 
-hash_set <AccountID>
+hash_set<AccountID>
 parseAccountIds(Json::Value const& jvArray);
 
 /** Inject JSON describing ledger entry
@@ -160,7 +169,10 @@ injectSLE(Json::Value& jv, SLE const& sle);
     If there is an error, return it as JSON.
 */
 boost::optional<Json::Value>
-readLimitField(unsigned int& limit, Tuning::LimitRange const&, JsonContext const&);
+readLimitField(
+    unsigned int& limit,
+    Tuning::LimitRange const&,
+    JsonContext const&);
 
 boost::optional<Seed>
 getSeedFromRPC(Json::Value const& params, Json::Value& error);
@@ -200,25 +212,24 @@ constexpr unsigned int APIInvalidVersion = 0;
 constexpr unsigned int APIVersionIfUnspecified = 1;
 constexpr unsigned int ApiMinimumSupportedVersion = 1;
 constexpr unsigned int ApiMaximumSupportedVersion = 1;
-constexpr unsigned int APINumberVersionSupported = ApiMaximumSupportedVersion -
-                                                   ApiMinimumSupportedVersion + 1;
+constexpr unsigned int APINumberVersionSupported =
+    ApiMaximumSupportedVersion - ApiMinimumSupportedVersion + 1;
 
-static_assert (ApiMinimumSupportedVersion >= APIVersionIfUnspecified);
-static_assert (ApiMaximumSupportedVersion >= ApiMinimumSupportedVersion);
-
+static_assert(ApiMinimumSupportedVersion >= APIVersionIfUnspecified);
+static_assert(ApiMaximumSupportedVersion >= ApiMinimumSupportedVersion);
 
 template <class Object>
 void
 setVersion(Object& parent)
 {
-    auto&& object = addObject (parent, jss::version);
+    auto&& object = addObject(parent, jss::version);
     object[jss::first] = firstVersion.print();
     object[jss::good] = goodVersion.print();
     object[jss::last] = lastVersion.print();
 }
 
 std::pair<RPC::Status, LedgerEntryType>
-    chooseLedgerEntryType(Json::Value const& params);
+chooseLedgerEntryType(Json::Value const& params);
 
 /**
  * Retrieve the api version number from the json value
@@ -233,9 +244,10 @@ std::pair<RPC::Status, LedgerEntryType>
  *        the api version number
  * @return the api version number
  */
-unsigned int getAPIVersionNumber(const Json::Value & value);
+unsigned int
+getAPIVersionNumber(const Json::Value& value);
 
-} // RPC
-} // ripple
+}  // namespace RPC
+}  // namespace ripple
 
 #endif

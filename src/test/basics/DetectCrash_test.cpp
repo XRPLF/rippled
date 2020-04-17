@@ -26,20 +26,22 @@ namespace test {
 
 struct DetectCrash_test : public beast::unit_test::suite
 {
-    void testDetectCrash ()
+    void
+    testDetectCrash()
     {
-        testcase ("Detect Crash");
+        testcase("Detect Crash");
         // Kill the process. This is used to test that the multi-process
         // unit test will correctly report the crash.
         std::terminate();
     }
-    void run() override
+    void
+    run() override
     {
         testDetectCrash();
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(DetectCrash,unit_test,beast);
+BEAST_DEFINE_TESTSUITE_MANUAL(DetectCrash, unit_test, beast);
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple

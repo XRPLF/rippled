@@ -35,23 +35,21 @@ class temp_dir
     boost::filesystem::path path_;
 
 public:
-#if ! GENERATING_DOCS
+#if !GENERATING_DOCS
     temp_dir(const temp_dir&) = delete;
-    temp_dir& operator=(const temp_dir&) = delete;
+    temp_dir&
+    operator=(const temp_dir&) = delete;
 #endif
 
     /// Construct a temporary directory.
     temp_dir()
     {
-        auto const dir =
-            boost::filesystem::temp_directory_path();
+        auto const dir = boost::filesystem::temp_directory_path();
         do
         {
-            path_ =
-                dir / boost::filesystem::unique_path();
-        }
-        while(boost::filesystem::exists(path_));
-        boost::filesystem::create_directory (path_);
+            path_ = dir / boost::filesystem::unique_path();
+        } while (boost::filesystem::exists(path_));
+        boost::filesystem::create_directory(path_);
     }
 
     /// Destroy a temporary directory.
@@ -81,6 +79,6 @@ public:
     }
 };
 
-} // beast
+}  // namespace beast
 
 #endif

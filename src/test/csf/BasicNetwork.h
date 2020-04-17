@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_CSF_BASICNETWORK_H_INCLUDED
 #define RIPPLE_TEST_CSF_BASICNETWORK_H_INCLUDED
 
-#include <test/csf/Scheduler.h>
 #include <test/csf/Digraph.h>
+#include <test/csf/Scheduler.h>
 
 namespace ripple {
 namespace test {
@@ -177,7 +177,6 @@ public:
     void
     send(Peer const& from, Peer const& to, Function&& f);
 
-
     /** Return the range of active links.
 
         @return A random access range over Digraph::Edge instances
@@ -189,8 +188,8 @@ public:
     }
 
     /** Return the underlying digraph
-    */
-    Digraph<Peer, link_type> const &
+     */
+    Digraph<Peer, link_type> const&
     graph() const
     {
         return links_;
@@ -212,7 +211,7 @@ BasicNetwork<Peer>::connect(
     if (to == from)
         return false;
     time_point const now = scheduler.now();
-    if(!links_.connect(from, to, link_type{false, delay, now}))
+    if (!links_.connect(from, to, link_type{false, delay, now}))
         return false;
     auto const result = links_.connect(to, from, link_type{true, delay, now});
     (void)result;
@@ -224,7 +223,7 @@ template <class Peer>
 inline bool
 BasicNetwork<Peer>::disconnect(Peer const& peer1, Peer const& peer2)
 {
-    if (! links_.disconnect(peer1, peer2))
+    if (!links_.disconnect(peer1, peer2))
         return false;
     bool r = links_.disconnect(peer2, peer1);
     (void)r;
@@ -237,17 +236,15 @@ template <class Function>
 inline void
 BasicNetwork<Peer>::send(Peer const& from, Peer const& to, Function&& f)
 {
-    auto link = links_.edge(from,to);
-    if(!link)
+    auto link = links_.edge(from, to);
+    if (!link)
         return;
     time_point const sent = scheduler.now();
     scheduler.in(
-        link->delay,
-        [ from, to, sent, f = std::forward<Function>(f), this ] {
+        link->delay, [from, to, sent, f = std::forward<Function>(f), this] {
             // only process if still connected and connection was
             // not broken since the message was sent
-            if (auto l = links_.edge(from, to);
-                l && l->established <= sent)
+            if (auto l = links_.edge(from, to); l && l->established <= sent)
             {
                 f();
             }

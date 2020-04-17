@@ -17,18 +17,16 @@
 */
 //==============================================================================
 
-#include <test/jtx/pay.h>
-#include <ripple/protocol/jss.h>
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/protocol/jss.h>
+#include <test/jtx/pay.h>
 
 namespace ripple {
 namespace test {
 namespace jtx {
 
 Json::Value
-pay (Account const& account,
-    Account const& to,
-        AnyAmount amount)
+pay(Account const& account, Account const& to, AnyAmount amount)
 {
     amount.to(to);
     Json::Value jv;
@@ -40,6 +38,6 @@ pay (Account const& account,
     return jv;
 }
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

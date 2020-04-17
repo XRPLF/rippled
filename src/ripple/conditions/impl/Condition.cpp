@@ -22,10 +22,10 @@
 #include <ripple/conditions/Fulfillment.h>
 #include <ripple/conditions/impl/PreimageSha256.h>
 #include <ripple/conditions/impl/utils.h>
-#include <boost/regex.hpp>
 #include <boost/optional.hpp>
-#include <vector>
+#include <boost/regex.hpp>
 #include <iostream>
+#include <vector>
 
 namespace ripple {
 namespace cryptoconditions {
@@ -111,7 +111,7 @@ loadSimpleSha256(Type type, Slice s, std::error_code& ec)
     if (!isPrimitive(p) || !isContextSpecific(p))
     {
         ec = error::malformed_encoding;
-        return{};
+        return {};
     }
 
     if (p.tag != 1)
@@ -133,22 +133,22 @@ loadSimpleSha256(Type type, Slice s, std::error_code& ec)
 
     switch (type)
     {
-    case Type::preimageSha256:
-        if (cost > PreimageSha256::maxPreimageLength)
-        {
-            ec = error::preimage_too_long;
-            return {};
-        }
-        break;
+        case Type::preimageSha256:
+            if (cost > PreimageSha256::maxPreimageLength)
+            {
+                ec = error::preimage_too_long;
+                return {};
+            }
+            break;
 
-    default:
-        break;
+        default:
+            break;
     }
 
     return std::make_unique<Condition>(type, cost, std::move(b));
 }
 
-}
+}  // namespace detail
 
 std::unique_ptr<Condition>
 Condition::deserialize(Slice s, std::error_code& ec)
@@ -199,33 +199,32 @@ Condition::deserialize(Slice s, std::error_code& ec)
 
     switch (p.tag)
     {
-    case 0: // PreimageSha256
-        c = detail::loadSimpleSha256(
-            Type::preimageSha256,
-            Slice(s.data(), p.length), ec);
-        if (!ec)
-            s += p.length;
-        break;
+        case 0:  // PreimageSha256
+            c = detail::loadSimpleSha256(
+                Type::preimageSha256, Slice(s.data(), p.length), ec);
+            if (!ec)
+                s += p.length;
+            break;
 
-    case 1: // PrefixSha256
-        ec = error::unsupported_type;
-        return {};
+        case 1:  // PrefixSha256
+            ec = error::unsupported_type;
+            return {};
 
-    case 2: // ThresholdSha256
-        ec = error::unsupported_type;
-        return {};
+        case 2:  // ThresholdSha256
+            ec = error::unsupported_type;
+            return {};
 
-    case 3: // RsaSha256
-        ec = error::unsupported_type;
-        return {};
+        case 3:  // RsaSha256
+            ec = error::unsupported_type;
+            return {};
 
-    case 4: // Ed25519Sha256
-        ec = error::unsupported_type;
-        return {};
+        case 4:  // Ed25519Sha256
+            ec = error::unsupported_type;
+            return {};
 
-    default:
-        ec = error::unknown_type;
-        return {};
+        default:
+            ec = error::unknown_type;
+            return {};
     }
 
     if (!s.empty())
@@ -237,5 +236,5 @@ Condition::deserialize(Slice s, std::error_code& ec)
     return c;
 }
 
-}
-}
+}  // namespace cryptoconditions
+}  // namespace ripple

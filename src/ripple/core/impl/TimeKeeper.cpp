@@ -34,28 +34,21 @@ private:
     std::unique_ptr<SNTPClock> clock_;
 
     // Adjust system_clock::time_point for NetClock epoch
-    static
-    time_point
-    adjust (std::chrono::system_clock::time_point when)
+    static time_point
+    adjust(std::chrono::system_clock::time_point when)
     {
-        return time_point(
-            std::chrono::duration_cast<duration>(
-                when.time_since_epoch() -
-                    days(10957)));
+        return time_point(std::chrono::duration_cast<duration>(
+            when.time_since_epoch() - days(10957)));
     }
 
 public:
-    explicit
-    TimeKeeperImpl (beast::Journal j)
-        : j_ (j)
-        , closeOffset_ {}
-        , clock_ (make_SNTPClock(j))
+    explicit TimeKeeperImpl(beast::Journal j)
+        : j_(j), closeOffset_{}, clock_(make_SNTPClock(j))
     {
     }
 
     void
-    run (std::vector<
-        std::string> const& servers) override
+    run(std::vector<std::string> const& servers) override
     {
         clock_->run(servers);
     }
@@ -75,8 +68,7 @@ public:
     }
 
     void
-    adjustCloseTime(
-        std::chrono::duration<std::int32_t> amount) override
+    adjustCloseTime(std::chrono::duration<std::int32_t> amount) override
     {
         using namespace std::chrono;
         auto const s = amount.count();
@@ -91,17 +83,15 @@ public:
             closeOffset_ = (closeOffset_ * 3) / 4;
         if (closeOffset_.count() != 0)
         {
-            if (std::abs (closeOffset_.count()) < 60)
+            if (std::abs(closeOffset_.count()) < 60)
             {
-                JLOG(j_.info()) <<
-                    "TimeKeeper: Close time offset now " <<
-                        closeOffset_.count();
+                JLOG(j_.info()) << "TimeKeeper: Close time offset now "
+                                << closeOffset_.count();
             }
             else
             {
-                JLOG(j_.warn()) <<
-                    "TimeKeeper: Large close time offset = " <<
-                        closeOffset_.count();
+                JLOG(j_.warn()) << "TimeKeeper: Large close time offset = "
+                                << closeOffset_.count();
             }
         }
     }
@@ -126,9 +116,9 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<TimeKeeper>
-make_TimeKeeper (beast::Journal j)
+make_TimeKeeper(beast::Journal j)
 {
     return std::make_unique<TimeKeeperImpl>(j);
 }
 
-} // ripple
+}  // namespace ripple

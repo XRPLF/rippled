@@ -35,13 +35,15 @@ class Work
 public:
     virtual ~Work() = default;
 
-    virtual void run() = 0;
+    virtual void
+    run() = 0;
 
-    virtual void cancel() = 0;
+    virtual void
+    cancel() = 0;
 };
 
-} // detail
+}  // namespace detail
 
-} // ripple
+}  // namespace ripple
 
 #endif

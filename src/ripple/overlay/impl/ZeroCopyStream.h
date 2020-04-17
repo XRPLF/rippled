@@ -20,19 +20,19 @@
 #ifndef RIPPLE_OVERLAY_ZEROCOPYSTREAM_H_INCLUDED
 #define RIPPLE_OVERLAY_ZEROCOPYSTREAM_H_INCLUDED
 
-#include <google/protobuf/io/zero_copy_stream.h>
 #include <boost/asio/buffer.hpp>
 #include <cstdint>
+#include <google/protobuf/io/zero_copy_stream.h>
 
 namespace ripple {
 
 /** Implements ZeroCopyInputStream around a buffer sequence.
     @tparam Buffers A type meeting the requirements of ConstBufferSequence.
-    @see https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.io.zero_copy_stream
+    @see
+   https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.io.zero_copy_stream
 */
 template <class Buffers>
-class ZeroCopyInputStream
-    : public ::google::protobuf::io::ZeroCopyInputStream
+class ZeroCopyInputStream : public ::google::protobuf::io::ZeroCopyInputStream
 {
 private:
     using iterator = typename Buffers::const_iterator;
@@ -44,17 +44,16 @@ private:
     const_buffer pos_;  // What Next() will return
 
 public:
-    explicit
-    ZeroCopyInputStream (Buffers const& buffers);
+    explicit ZeroCopyInputStream(Buffers const& buffers);
 
     bool
-    Next (const void** data, int* size) override;
+    Next(const void** data, int* size) override;
 
     void
-    BackUp (int count) override;
+    BackUp(int count) override;
 
     bool
-    Skip (int count) override;
+    Skip(int count) override;
 
     google::protobuf::int64
     ByteCount() const override
@@ -66,50 +65,44 @@ public:
 //------------------------------------------------------------------------------
 
 template <class Buffers>
-ZeroCopyInputStream<Buffers>::ZeroCopyInputStream (
-        Buffers const& buffers)
-    : last_ (buffers.end())
-    , first_ (buffers.begin())
-    , pos_ ((first_ != last_) ?
-        *first_ : const_buffer(nullptr, 0))
+ZeroCopyInputStream<Buffers>::ZeroCopyInputStream(Buffers const& buffers)
+    : last_(buffers.end())
+    , first_(buffers.begin())
+    , pos_((first_ != last_) ? *first_ : const_buffer(nullptr, 0))
 {
 }
 
 template <class Buffers>
 bool
-ZeroCopyInputStream<Buffers>::Next (
-    const void** data, int* size)
+ZeroCopyInputStream<Buffers>::Next(const void** data, int* size)
 {
     *data = boost::asio::buffer_cast<void const*>(pos_);
     *size = boost::asio::buffer_size(pos_);
     if (first_ == last_)
         return false;
     count_ += *size;
-    pos_ = (++first_ != last_) ? *first_ :
-        const_buffer(nullptr, 0);
+    pos_ = (++first_ != last_) ? *first_ : const_buffer(nullptr, 0);
     return true;
 }
 
 template <class Buffers>
 void
-ZeroCopyInputStream<Buffers>::BackUp (int count)
+ZeroCopyInputStream<Buffers>::BackUp(int count)
 {
     --first_;
-    pos_ = *first_ +
-        (boost::asio::buffer_size(*first_) - count);
+    pos_ = *first_ + (boost::asio::buffer_size(*first_) - count);
     count_ -= count;
 }
 
 template <class Buffers>
 bool
-ZeroCopyInputStream<Buffers>::Skip (int count)
+ZeroCopyInputStream<Buffers>::Skip(int count)
 {
     if (first_ == last_)
         return false;
     while (count > 0)
     {
-        auto const size =
-            boost::asio::buffer_size(pos_);
+        auto const size = boost::asio::buffer_size(pos_);
         if (count < size)
         {
             pos_ = pos_ + count;
@@ -132,8 +125,7 @@ ZeroCopyInputStream<Buffers>::Skip (int count)
     @tparam Streambuf A type meeting the requirements of Streambuf.
 */
 template <class Streambuf>
-class ZeroCopyOutputStream
-    : public ::google::protobuf::io::ZeroCopyOutputStream
+class ZeroCopyOutputStream : public ::google::protobuf::io::ZeroCopyOutputStream
 {
 private:
     using buffers_type = typename Streambuf::mutable_buffers_type;
@@ -148,17 +140,15 @@ private:
     iterator pos_;
 
 public:
-    explicit
-    ZeroCopyOutputStream (Streambuf& streambuf,
-        std::size_t blockSize);
+    explicit ZeroCopyOutputStream(Streambuf& streambuf, std::size_t blockSize);
 
     ~ZeroCopyOutputStream();
 
     bool
-    Next (void** data, int* size) override;
+    Next(void** data, int* size) override;
 
     void
-    BackUp (int count) override;
+    BackUp(int count) override;
 
     google::protobuf::int64
     ByteCount() const override
@@ -171,11 +161,12 @@ public:
 
 template <class Streambuf>
 ZeroCopyOutputStream<Streambuf>::ZeroCopyOutputStream(
-        Streambuf& streambuf, std::size_t blockSize)
-    : streambuf_ (streambuf)
-    , blockSize_ (blockSize)
-    , buffers_ (streambuf_.prepare(blockSize_))
-    , pos_ (buffers_.begin())
+    Streambuf& streambuf,
+    std::size_t blockSize)
+    : streambuf_(streambuf)
+    , blockSize_(blockSize)
+    , buffers_(streambuf_.prepare(blockSize_))
+    , pos_(buffers_.begin())
 {
 }
 
@@ -188,8 +179,7 @@ ZeroCopyOutputStream<Streambuf>::~ZeroCopyOutputStream()
 
 template <class Streambuf>
 bool
-ZeroCopyOutputStream<Streambuf>::Next(
-    void** data, int* size)
+ZeroCopyOutputStream<Streambuf>::Next(void** data, int* size)
 {
     if (commit_ != 0)
     {
@@ -199,7 +189,7 @@ ZeroCopyOutputStream<Streambuf>::Next(
 
     if (pos_ == buffers_.end())
     {
-        buffers_ = streambuf_.prepare (blockSize_);
+        buffers_ = streambuf_.prepare(blockSize_);
         pos_ = buffers_.begin();
     }
 
@@ -212,7 +202,7 @@ ZeroCopyOutputStream<Streambuf>::Next(
 
 template <class Streambuf>
 void
-ZeroCopyOutputStream<Streambuf>::BackUp (int count)
+ZeroCopyOutputStream<Streambuf>::BackUp(int count)
 {
     assert(count <= commit_);
     auto const n = commit_ - count;
@@ -221,6 +211,6 @@ ZeroCopyOutputStream<Streambuf>::BackUp (int count)
     commit_ = 0;
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

@@ -36,7 +36,7 @@ namespace ripple {
 
 /** Generates and logs a call stack */
 void
-LogThrow (std::string const& title);
+LogThrow(std::string const& title);
 
 /** Rethrow the exception currently being handled.
 
@@ -44,36 +44,33 @@ LogThrow (std::string const& title);
     control to the next matching exception handler, if any.
     Otherwise, std::terminate will be called.
 */
-[[noreturn]]
-inline
-void
-Rethrow ()
+[[noreturn]] inline void
+Rethrow()
 {
-    LogThrow ("Re-throwing exception");
+    LogThrow("Re-throwing exception");
     throw;
 }
 
 template <class E, class... Args>
-[[noreturn]]
-inline
-void
-Throw (Args&&... args)
+[[noreturn]] inline void
+Throw(Args&&... args)
 {
-    static_assert (std::is_convertible<E*, std::exception*>::value,
+    static_assert(
+        std::is_convertible<E*, std::exception*>::value,
         "Exception must derive from std::exception.");
 
     E e(std::forward<Args>(args)...);
-    LogThrow (std::string("Throwing exception of type " +
-                          beast::type_name<E>() +": ") + e.what());
+    LogThrow(
+        std::string(
+            "Throwing exception of type " + beast::type_name<E>() + ": ") +
+        e.what());
     throw e;
 }
 
 /** Called when faulty logic causes a broken invariant. */
-[[noreturn]]
-void
-LogicError (
-    std::string const& how) noexcept;
+[[noreturn]] void
+LogicError(std::string const& how) noexcept;
 
-} // ripple
+}  // namespace ripple
 
 #endif

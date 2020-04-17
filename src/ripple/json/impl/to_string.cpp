@@ -20,17 +20,18 @@
 #include <ripple/json/json_writer.h>
 #include <ripple/json/to_string.h>
 
-namespace Json
-{
+namespace Json {
 
-std::string to_string (Value const& value)
+std::string
+to_string(Value const& value)
 {
-    return FastWriter ().write (value);
+    return FastWriter().write(value);
 }
 
-std::string pretty (Value const& value)
+std::string
+pretty(Value const& value)
 {
-    return StyledWriter().write (value);
+    return StyledWriter().write(value);
 }
 
-} // namespace Json
+}  // namespace Json

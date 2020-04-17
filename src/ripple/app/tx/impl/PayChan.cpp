@@ -18,18 +18,18 @@
 //==============================================================================
 
 #include <ripple/app/tx/impl/PayChan.h>
-#include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/XRPAmount.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/ledger/ApplyView.h>
 #include <ripple/ledger/View.h>
-#include <ripple/protocol/digest.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/PayChan.h>
 #include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/st.h>
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/protocol/digest.h>
+#include <ripple/protocol/st.h>
 
 namespace ripple {
 
@@ -97,33 +97,23 @@ namespace ripple {
         Channel
             The 256-bit ID of the channel.
         Balance (optional)
-            The total amount of XRP delivered after this claim is processed (optional, not
-            needed if just closing).
-        Amount (optional)
-            The amount of XRP the signature is for (not needed if equal to Balance or just
-            closing the line).
-        Signature (optional)
-            Authorization for the balance above, signed by the owner (optional,
-            not needed if closing or owner is performing the transaction). The
-            signature if for the following message: CLM\0 followed by the
-            256-bit channel ID, and a 64-bit integer drops.
-        PublicKey (optional)
-           The public key that made the signature (optional, required if a signature
-           is present)
-        Flags
-            tfClose
-                Request that the channel be closed
-            tfRenew
-                Request that the channel's expiration be reset. Only the owner
-                may renew a channel.
+            The total amount of XRP delivered after this claim is processed
+   (optional, not needed if just closing). Amount (optional) The amount of XRP
+   the signature is for (not needed if equal to Balance or just closing the
+   line). Signature (optional) Authorization for the balance above, signed by
+   the owner (optional, not needed if closing or owner is performing the
+   transaction). The signature if for the following message: CLM\0 followed by
+   the 256-bit channel ID, and a 64-bit integer drops. PublicKey (optional) The
+   public key that made the signature (optional, required if a signature is
+   present) Flags tfClose Request that the channel be closed tfRenew Request
+   that the channel's expiration be reset. Only the owner may renew a channel.
 
 */
 
 //------------------------------------------------------------------------------
 
-static
-TER
-closeChannel (
+static TER
+closeChannel(
     std::shared_ptr<SLE> const& slep,
     ApplyView& view,
     uint256 const& key,
@@ -133,9 +123,10 @@ closeChannel (
     // Remove PayChan from owner directory
     {
         auto const page = (*slep)[sfOwnerNode];
-        if (! view.dirRemove(keylet::ownerDir(src), page, key, true))
+        if (!view.dirRemove(keylet::ownerDir(src), page, key, true))
         {
-            JLOG (j.fatal()) << "Could not remove paychan from src owner directory";
+            JLOG(j.fatal())
+                << "Could not remove paychan from src owner directory";
             return tefBAD_LEDGER;
         }
     }
@@ -147,40 +138,41 @@ closeChannel (
         auto const dst = (*slep)[sfDestination];
         if (!view.dirRemove(keylet::ownerDir(dst), *page, key, true))
         {
-            JLOG (j.fatal()) << "Could not remove paychan from dst owner directory";
+            JLOG(j.fatal())
+                << "Could not remove paychan from dst owner directory";
             return tefBAD_LEDGER;
         }
     }
 
     // Transfer amount back to owner, decrement owner count
-    auto const sle = view.peek (keylet::account (src));
-    if (! sle)
+    auto const sle = view.peek(keylet::account(src));
+    if (!sle)
         return tefINTERNAL;
 
-    assert ((*slep)[sfAmount] >= (*slep)[sfBalance]);
+    assert((*slep)[sfAmount] >= (*slep)[sfBalance]);
     (*sle)[sfBalance] =
         (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
     adjustOwnerCount(view, sle, -1, j);
-    view.update (sle);
+    view.update(sle);
 
     // Remove PayChan from ledger
-    view.erase (slep);
+    view.erase(slep);
     return tesSUCCESS;
 }
 
 //------------------------------------------------------------------------------
 
 NotTEC
-PayChanCreate::preflight (PreflightContext const& ctx)
+PayChanCreate::preflight(PreflightContext const& ctx)
 {
     if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
-    auto const ret = preflight1 (ctx);
-    if (!isTesSuccess (ret))
+    auto const ret = preflight1(ctx);
+    if (!isTesSuccess(ret))
         return ret;
 
-    if (!isXRP (ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
+    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
         return temBAD_AMOUNT;
 
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
@@ -189,22 +181,22 @@ PayChanCreate::preflight (PreflightContext const& ctx)
     if (!publicKeyType(ctx.tx[sfPublicKey]))
         return temMALFORMED;
 
-    return preflight2 (ctx);
+    return preflight2(ctx);
 }
 
 TER
-PayChanCreate::preclaim(PreclaimContext const &ctx)
+PayChanCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
-    auto const sle = ctx.view.read (keylet::account (account));
-    if (! sle)
+    auto const sle = ctx.view.read(keylet::account(account));
+    if (!sle)
         return terNO_ACCOUNT;
 
     // Check reserve and funds availability
     {
         auto const balance = (*sle)[sfBalance];
         auto const reserve =
-                ctx.view.fees ().accountReserve ((*sle)[sfOwnerCount] + 1);
+            ctx.view.fees().accountReserve((*sle)[sfOwnerCount] + 1);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -217,7 +209,7 @@ PayChanCreate::preclaim(PreclaimContext const &ctx)
 
     {
         // Check destination account
-        auto const sled = ctx.view.read (keylet::account (dst));
+        auto const sled = ctx.view.read(keylet::account(dst));
         if (!sled)
             return tecNO_DST;
         if (((*sled)[sfFlags] & lsfRequireDestTag) &&
@@ -238,19 +230,19 @@ TER
 PayChanCreate::doApply()
 {
     auto const account = ctx_.tx[sfAccount];
-    auto const sle = ctx_.view ().peek (keylet::account (account));
+    auto const sle = ctx_.view().peek(keylet::account(account));
     if (!sle)
         return tefINTERNAL;
 
     auto const dst = ctx_.tx[sfDestination];
 
     // Create PayChan in ledger
-    auto const slep = std::make_shared<SLE> (
-        keylet::payChan (account, dst, (*sle)[sfSequence] - 1));
+    auto const slep = std::make_shared<SLE>(
+        keylet::payChan(account, dst, (*sle)[sfSequence] - 1));
     // Funds held in this channel
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
     // Amount channel has already paid
-    (*slep)[sfBalance] = ctx_.tx[sfAmount].zeroed ();
+    (*slep)[sfBalance] = ctx_.tx[sfAmount].zeroed();
     (*slep)[sfAccount] = account;
     (*slep)[sfDestination] = dst;
     (*slep)[sfSettleDelay] = ctx_.tx[sfSettleDelay];
@@ -259,12 +251,17 @@ PayChanCreate::doApply()
     (*slep)[~sfSourceTag] = ctx_.tx[~sfSourceTag];
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
 
-    ctx_.view ().insert (slep);
+    ctx_.view().insert(slep);
 
     // Add PayChan to owner directory
     {
-        auto const page = dirAdd (ctx_.view(), keylet::ownerDir(account), slep->key(),
-            false, describeOwnerDir (account), ctx_.app.journal ("View"));
+        auto const page = dirAdd(
+            ctx_.view(),
+            keylet::ownerDir(account),
+            slep->key(),
+            false,
+            describeOwnerDir(account),
+            ctx_.app.journal("View"));
         if (!page)
             return tecDIR_FULL;
         (*slep)[sfOwnerNode] = *page;
@@ -273,8 +270,13 @@ PayChanCreate::doApply()
     // Add PayChan to the recipient's owner directory
     if (ctx_.view().rules().enabled(fixPayChanRecipientOwnerDir))
     {
-        auto const page = dirAdd(ctx_.view(), keylet::ownerDir(dst), slep->key(),
-            false, describeOwnerDir(dst), ctx_.app.journal("View"));
+        auto const page = dirAdd(
+            ctx_.view(),
+            keylet::ownerDir(dst),
+            slep->key(),
+            false,
+            describeOwnerDir(dst),
+            ctx_.app.journal("View"));
         if (!page)
             return tecDIR_FULL;
         (*slep)[sfDestinationNode] = *page;
@@ -283,7 +285,7 @@ PayChanCreate::doApply()
     // Deduct owner's balance, increment owner count
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
     adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
-    ctx_.view ().update (sle);
+    ctx_.view().update(sle);
 
     return tesSUCCESS;
 }
@@ -291,26 +293,26 @@ PayChanCreate::doApply()
 //------------------------------------------------------------------------------
 
 NotTEC
-PayChanFund::preflight (PreflightContext const& ctx)
+PayChanFund::preflight(PreflightContext const& ctx)
 {
     if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
-    auto const ret = preflight1 (ctx);
-    if (!isTesSuccess (ret))
+    auto const ret = preflight1(ctx);
+    if (!isTesSuccess(ret))
         return ret;
 
-    if (!isXRP (ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
+    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
         return temBAD_AMOUNT;
 
-    return preflight2 (ctx);
+    return preflight2(ctx);
 }
 
 TER
 PayChanFund::doApply()
 {
-    Keylet const k (ltPAYCHAN, ctx_.tx[sfPayChannel]);
-    auto const slep = ctx_.view ().peek (k);
+    Keylet const k(ltPAYCHAN, ctx_.tx[sfPayChannel]);
+    auto const slep = ctx_.view().peek(k);
     if (!slep)
         return tecNO_ENTRY;
 
@@ -321,11 +323,11 @@ PayChanFund::doApply()
     {
         auto const cancelAfter = (*slep)[~sfCancelAfter];
         auto const closeTime =
-            ctx_.view ().info ().parentCloseTime.time_since_epoch ().count ();
+            ctx_.view().info().parentCloseTime.time_since_epoch().count();
         if ((cancelAfter && closeTime >= *cancelAfter) ||
             (expiration && closeTime >= *expiration))
-            return closeChannel (
-                slep, ctx_.view (), k.key, ctx_.app.journal ("View"));
+            return closeChannel(
+                slep, ctx_.view(), k.key, ctx_.app.journal("View"));
     }
 
     if (src != txAccount)
@@ -335,26 +337,26 @@ PayChanFund::doApply()
     if (auto extend = ctx_.tx[~sfExpiration])
     {
         auto minExpiration =
-            ctx_.view ().info ().parentCloseTime.time_since_epoch ().count () +
-                (*slep)[sfSettleDelay];
+            ctx_.view().info().parentCloseTime.time_since_epoch().count() +
+            (*slep)[sfSettleDelay];
         if (expiration && *expiration < minExpiration)
             minExpiration = *expiration;
 
         if (*extend < minExpiration)
             return temBAD_EXPIRATION;
         (*slep)[~sfExpiration] = *extend;
-        ctx_.view ().update (slep);
+        ctx_.view().update(slep);
     }
 
-    auto const sle = ctx_.view ().peek (keylet::account (txAccount));
-    if (! sle)
+    auto const sle = ctx_.view().peek(keylet::account(txAccount));
+    if (!sle)
         return tefINTERNAL;
 
     {
         // Check reserve and funds availability
         auto const balance = (*sle)[sfBalance];
         auto const reserve =
-            ctx_.view ().fees ().accountReserve ((*sle)[sfOwnerCount]);
+            ctx_.view().fees().accountReserve((*sle)[sfOwnerCount]);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -371,10 +373,10 @@ PayChanFund::doApply()
     }
 
     (*slep)[sfAmount] = (*slep)[sfAmount] + ctx_.tx[sfAmount];
-    ctx_.view ().update (slep);
+    ctx_.view().update(slep);
 
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    ctx_.view ().update (sle);
+    ctx_.view().update(sle);
 
     return tesSUCCESS;
 }
@@ -382,18 +384,18 @@ PayChanFund::doApply()
 //------------------------------------------------------------------------------
 
 NotTEC
-PayChanClaim::preflight (PreflightContext const& ctx)
+PayChanClaim::preflight(PreflightContext const& ctx)
 {
-    auto const ret = preflight1 (ctx);
-    if (!isTesSuccess (ret))
+    auto const ret = preflight1(ctx);
+    if (!isTesSuccess(ret))
         return ret;
 
     auto const bal = ctx.tx[~sfBalance];
-    if (bal && (!isXRP (*bal) || *bal <= beast::zero))
+    if (bal && (!isXRP(*bal) || *bal <= beast::zero))
         return temBAD_AMOUNT;
 
     auto const amt = ctx.tx[~sfAmount];
-    if (amt && (!isXRP (*amt) || *amt <= beast::zero))
+    if (amt && (!isXRP(*amt) || *amt <= beast::zero))
         return temBAD_AMOUNT;
 
     if (bal && amt && *bal > *amt)
@@ -418,30 +420,30 @@ PayChanClaim::preflight (PreflightContext const& ctx)
         // The signature isn't needed if txAccount == src, but if it's
         // present, check it
 
-        auto const reqBalance = bal->xrp ();
+        auto const reqBalance = bal->xrp();
         auto const authAmt = amt ? amt->xrp() : reqBalance;
 
         if (reqBalance > authAmt)
             return temBAD_AMOUNT;
 
-        Keylet const k (ltPAYCHAN, ctx.tx[sfPayChannel]);
+        Keylet const k(ltPAYCHAN, ctx.tx[sfPayChannel]);
         if (!publicKeyType(ctx.tx[sfPublicKey]))
             return temMALFORMED;
-        PublicKey const pk (ctx.tx[sfPublicKey]);
+        PublicKey const pk(ctx.tx[sfPublicKey]);
         Serializer msg;
-        serializePayChanAuthorization (msg, k.key, authAmt);
-        if (!verify (pk, msg.slice (), *sig, /*canonical*/ true))
+        serializePayChanAuthorization(msg, k.key, authAmt);
+        if (!verify(pk, msg.slice(), *sig, /*canonical*/ true))
             return temBAD_SIGNATURE;
     }
 
-    return preflight2 (ctx);
+    return preflight2(ctx);
 }
 
 TER
 PayChanClaim::doApply()
 {
-    Keylet const k (ltPAYCHAN, ctx_.tx[sfPayChannel]);
-    auto const slep = ctx_.view ().peek (k);
+    Keylet const k(ltPAYCHAN, ctx_.tx[sfPayChannel]);
+    auto const slep = ctx_.view().peek(k);
     if (!slep)
         return tecNO_TARGET;
 
@@ -453,11 +455,11 @@ PayChanClaim::doApply()
     {
         auto const cancelAfter = (*slep)[~sfCancelAfter];
         auto const closeTime =
-            ctx_.view ().info ().parentCloseTime.time_since_epoch ().count ();
+            ctx_.view().info().parentCloseTime.time_since_epoch().count();
         if ((cancelAfter && closeTime >= *cancelAfter) ||
             (curExpiration && closeTime >= *curExpiration))
-            return closeChannel (
-                slep, ctx_.view (), k.key, ctx_.app.journal ("View"));
+            return closeChannel(
+                slep, ctx_.view(), k.key, ctx_.app.journal("View"));
     }
 
     if (txAccount != src && txAccount != dst)
@@ -465,16 +467,16 @@ PayChanClaim::doApply()
 
     if (ctx_.tx[~sfBalance])
     {
-        auto const chanBalance = slep->getFieldAmount (sfBalance).xrp ();
-        auto const chanFunds = slep->getFieldAmount (sfAmount).xrp ();
-        auto const reqBalance = ctx_.tx[sfBalance].xrp ();
+        auto const chanBalance = slep->getFieldAmount(sfBalance).xrp();
+        auto const chanFunds = slep->getFieldAmount(sfAmount).xrp();
+        auto const reqBalance = ctx_.tx[sfBalance].xrp();
 
         if (txAccount == dst && !ctx_.tx[~sfSignature])
             return temBAD_SIGNATURE;
 
         if (ctx_.tx[~sfSignature])
         {
-            PublicKey const pk ((*slep)[sfPublicKey]);
+            PublicKey const pk((*slep)[sfPublicKey]);
             if (ctx_.tx[sfPublicKey] != pk)
                 return temBAD_SIGNER;
         }
@@ -486,13 +488,13 @@ PayChanClaim::doApply()
             // nothing requested
             return tecUNFUNDED_PAYMENT;
 
-        auto const sled = ctx_.view ().peek (keylet::account (dst));
+        auto const sled = ctx_.view().peek(keylet::account(dst));
         if (!sled)
             return tecNO_DST;
 
         // Obeying the lsfDisallowXRP flag was a bug.  Piggyback on
         // featureDepositAuth to remove the bug.
-        bool const depositAuth {ctx_.view().rules().enabled(featureDepositAuth)};
+        bool const depositAuth{ctx_.view().rules().enabled(featureDepositAuth)};
         if (!depositAuth &&
             (txAccount == src && (sled->getFlags() & lsfDisallowXRP)))
             return tecNO_TARGET;
@@ -506,47 +508,46 @@ PayChanClaim::doApply()
             //  2. If Account is deposit preauthorized by destination.
             if (txAccount != dst)
             {
-                if (! view().exists (keylet::depositPreauth (dst, txAccount)))
+                if (!view().exists(keylet::depositPreauth(dst, txAccount)))
                     return tecNO_PERMISSION;
             }
         }
 
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
         XRPAmount const reqDelta = reqBalance - chanBalance;
-        assert (reqDelta >= beast::zero);
+        assert(reqDelta >= beast::zero);
         (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
-        ctx_.view ().update (sled);
-        ctx_.view ().update (slep);
+        ctx_.view().update(sled);
+        ctx_.view().update(slep);
     }
 
-    if (ctx_.tx.getFlags () & tfRenew)
+    if (ctx_.tx.getFlags() & tfRenew)
     {
         if (src != txAccount)
             return tecNO_PERMISSION;
         (*slep)[~sfExpiration] = boost::none;
-        ctx_.view ().update (slep);
+        ctx_.view().update(slep);
     }
 
-    if (ctx_.tx.getFlags () & tfClose)
+    if (ctx_.tx.getFlags() & tfClose)
     {
         // Channel will close immediately if dry or the receiver closes
         if (dst == txAccount || (*slep)[sfBalance] == (*slep)[sfAmount])
-            return closeChannel (
-                slep, ctx_.view (), k.key, ctx_.app.journal ("View"));
+            return closeChannel(
+                slep, ctx_.view(), k.key, ctx_.app.journal("View"));
 
         auto const settleExpiration =
-            ctx_.view ().info ().parentCloseTime.time_since_epoch ().count () +
-                (*slep)[sfSettleDelay];
+            ctx_.view().info().parentCloseTime.time_since_epoch().count() +
+            (*slep)[sfSettleDelay];
 
         if (!curExpiration || *curExpiration > settleExpiration)
         {
             (*slep)[~sfExpiration] = settleExpiration;
-            ctx_.view ().update (slep);
+            ctx_.view().update(slep);
         }
     }
 
     return tesSUCCESS;
 }
 
-} // ripple
-
+}  // namespace ripple

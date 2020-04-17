@@ -29,9 +29,8 @@ namespace ripple {
 // Various protocol and system specific constant globals.
 
 /* The name of the system. */
-static inline
-std::string const&
-systemName ()
+static inline std::string const&
+systemName()
 {
     static std::string const name = "ripple";
     return name;
@@ -40,31 +39,26 @@ systemName ()
 /** Configure the native currency. */
 
 /** Number of drops in the genesis account. */
-constexpr
-XRPAmount
-INITIAL_XRP{100'000'000'000 * DROPS_PER_XRP };
+constexpr XRPAmount INITIAL_XRP{100'000'000'000 * DROPS_PER_XRP};
 
 /** Returns true if the amount does not exceed the initial XRP in existence. */
-inline
-bool isLegalAmount (XRPAmount const& amount)
+inline bool
+isLegalAmount(XRPAmount const& amount)
 {
     return amount <= INITIAL_XRP;
 }
 
 /* The currency code for the native currency. */
-static inline
-std::string const&
-systemCurrencyCode ()
+static inline std::string const&
+systemCurrencyCode()
 {
     static std::string const code = "XRP";
     return code;
 }
 
 /** The XRP ledger network's earliest allowed sequence */
-static
-std::uint32_t constexpr
-XRP_LEDGER_EARLIEST_SEQ {32570};
+static std::uint32_t constexpr XRP_LEDGER_EARLIEST_SEQ{32570};
 
-} // ripple
+}  // namespace ripple
 
 #endif
