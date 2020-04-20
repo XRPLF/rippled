@@ -29,7 +29,7 @@ if (NOT local_libarchive)
       endif ()
   else ()
     ## now try searching using the minimal find module that cmake provides
-    find_package(LibArchive 3.3.3 QUIET)
+    find_package(LibArchive 3.4.3 QUIET)
     if (LibArchive_FOUND)
       if (static)
         # find module doesn't find static libs currently, so we re-search
@@ -70,7 +70,7 @@ if (local_libarchive)
   ExternalProject_Add (libarchive
     PREFIX ${nih_cache_path}
     GIT_REPOSITORY https://github.com/libarchive/libarchive.git
-    GIT_TAG v3.3.3
+    GIT_TAG v3.4.3
     CMAKE_ARGS
       # passing the compiler seems to be needed for windows CI, sadly
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
