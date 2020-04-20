@@ -1,5 +1,5 @@
 find_package (PkgConfig REQUIRED)
-pkg_search_module (libarchive_PC QUIET libarchive>=3.3.3)
+pkg_search_module (libarchive_PC QUIET libarchive>=3.4.3)
 
 if(static)
   set(LIBARCHIVE_LIB libarchive.a)
