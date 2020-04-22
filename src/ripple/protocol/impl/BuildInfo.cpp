@@ -31,7 +31,9 @@ namespace BuildInfo {
 //  The build version number. You must edit this for each release
 //  and follow the format described at http://semver.org/
 //------------------------------------------------------------------------------
+// clang-format off
 char const* const versionString = "1.6.0-b2"
+// clang-format on
 
 #if defined(DEBUG) || defined(SANITIZER)
         "+"
