@@ -19,8 +19,8 @@
 #ifndef RIPPLE_TEST_CSF_COLLECTOREF_H_INCLUDED
 #define RIPPLE_TEST_CSF_COLLECTOREF_H_INCLUDED
 
-#include <test/csf/events.h>
 #include <test/csf/SimTime.h>
+#include <test/csf/events.h>
 
 namespace ripple {
 namespace test {
@@ -35,9 +35,9 @@ namespace csf {
     for all events emitted by a Peer.
 
     This class is used to type-erase the actual collector used by each peer in
-    the simulation. The idea is to compose complicated and typed collectors using
-    the helpers in collectors.h, then only type erase at the higher-most level
-    when adding to the simulation.
+    the simulation. The idea is to compose complicated and typed collectors
+   using the helpers in collectors.h, then only type erase at the higher-most
+   level when adding to the simulation.
 
     The example code below demonstrates the reason for storing the collector
     as a reference.  The collector's lifetime will generally be be longer than
@@ -142,19 +142,21 @@ class CollectorRef
     template <class T>
     class Any final : public ICollector
     {
-        T & t_;
+        T& t_;
 
     public:
-        Any(T & t) : t_{t}
+        Any(T& t) : t_{t}
         {
         }
 
         // Can't copy
-        Any(Any const & ) = delete;
-        Any& operator=(Any const & ) = delete;
+        Any(Any const&) = delete;
+        Any&
+        operator=(Any const&) = delete;
 
-        Any(Any && ) = default;
-        Any& operator=(Any && ) = default;
+        Any(Any&&) = default;
+        Any&
+        operator=(Any&&) = default;
 
         virtual void
         on(PeerID node, tp when, Share<Tx> const& e) override
@@ -293,10 +295,12 @@ public:
 
     // Non-copyable
     CollectorRef(CollectorRef const& c) = delete;
-    CollectorRef& operator=(CollectorRef& c) = delete;
+    CollectorRef&
+    operator=(CollectorRef& c) = delete;
 
     CollectorRef(CollectorRef&&) = default;
-    CollectorRef& operator=(CollectorRef&&) = default;
+    CollectorRef&
+    operator=(CollectorRef&&) = default;
 
     template <class E>
     void
@@ -319,10 +323,11 @@ public:
 class CollectorRefs
 {
     std::vector<CollectorRef> collectors_;
-public:
 
+public:
     template <class Collector>
-    void add(Collector & collector)
+    void
+    add(Collector& collector)
     {
         collectors_.emplace_back(collector);
     }
@@ -331,12 +336,11 @@ public:
     void
     on(PeerID node, SimTime when, E const& e)
     {
-        for (auto & c : collectors_)
+        for (auto& c : collectors_)
         {
             c.on(node, when, e);
         }
     }
-
 };
 
 }  // namespace csf

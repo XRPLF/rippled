@@ -31,15 +31,9 @@ namespace compression {
 std::size_t constexpr headerBytes = 6;
 std::size_t constexpr headerBytesCompressed = 10;
 
-enum class Algorithm : std::uint8_t {
-    None = 0x00,
-    LZ4 = 0x01
-};
+enum class Algorithm : std::uint8_t { None = 0x00, LZ4 = 0x01 };
 
-enum class Compressed : std::uint8_t {
-    On,
-    Off
-};
+enum class Compressed : std::uint8_t { On, Off };
 
 /** Decompress input stream.
  * @tparam InputStream ZeroCopyInputStream
@@ -49,23 +43,31 @@ enum class Compressed : std::uint8_t {
  * @param algorithm Compression algorithm type
  * @return Size of decompressed data or zero if failed to decompress
  */
-template<typename InputStream>
+template <typename InputStream>
 std::size_t
-decompress(InputStream& in, std::size_t inSize, std::uint8_t* decompressed,
-           std::size_t decompressedSize, Algorithm algorithm = Algorithm::LZ4) {
+decompress(
+    InputStream& in,
+    std::size_t inSize,
+    std::uint8_t* decompressed,
+    std::size_t decompressedSize,
+    Algorithm algorithm = Algorithm::LZ4)
+{
     try
     {
         if (algorithm == Algorithm::LZ4)
-            return ripple::compression_algorithms::lz4Decompress(in, inSize,
-                                                                 decompressed, decompressedSize);
+            return ripple::compression_algorithms::lz4Decompress(
+                in, inSize, decompressed, decompressedSize);
         else
         {
-            JLOG(debugLog().warn()) << "decompress: invalid compression algorithm "
-                                    << static_cast<int>(algorithm);
+            JLOG(debugLog().warn())
+                << "decompress: invalid compression algorithm "
+                << static_cast<int>(algorithm);
             assert(0);
         }
     }
-    catch (...) {}
+    catch (...)
+    {
+    }
     return 0;
 }
 
@@ -78,14 +80,19 @@ decompress(InputStream& in, std::size_t inSize, std::uint8_t* decompressed,
  * @param algorithm Compression algorithm type
  * @return Size of compressed data, or zero if failed to compress
  */
-template<class BufferFactory>
+template <class BufferFactory>
 std::size_t
-compress(void const* in,
-         std::size_t inSize, BufferFactory&& bf, Algorithm algorithm = Algorithm::LZ4) {
+compress(
+    void const* in,
+    std::size_t inSize,
+    BufferFactory&& bf,
+    Algorithm algorithm = Algorithm::LZ4)
+{
     try
     {
         if (algorithm == Algorithm::LZ4)
-            return ripple::compression_algorithms::lz4Compress(in, inSize, std::forward<BufferFactory>(bf));
+            return ripple::compression_algorithms::lz4Compress(
+                in, inSize, std::forward<BufferFactory>(bf));
         else
         {
             JLOG(debugLog().warn()) << "compress: invalid compression algorithm"
@@ -93,11 +100,13 @@ compress(void const* in,
             assert(0);
         }
     }
-    catch (...) {}
+    catch (...)
+    {
+    }
     return 0;
 }
-} // compression
+}  // namespace compression
 
-} // ripple
+}  // namespace ripple
 
-#endif //RIPPLED_COMPRESSION_H_INCLUDED
+#endif  // RIPPLED_COMPRESSION_H_INCLUDED

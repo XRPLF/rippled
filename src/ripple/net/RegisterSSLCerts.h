@@ -20,8 +20,8 @@
 #ifndef RIPPLE_NET_REGISTER_SSL_CERTS_H_INCLUDED
 #define RIPPLE_NET_REGISTER_SSL_CERTS_H_INCLUDED
 
-#include <boost/asio/ssl/context.hpp>
 #include <ripple/basics/Log.h>
+#include <boost/asio/ssl/context.hpp>
 
 namespace ripple {
 /** Register default SSL certificates.

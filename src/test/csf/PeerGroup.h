@@ -40,6 +40,7 @@ class PeerGroup
 {
     using peers_type = std::vector<Peer*>;
     peers_type peers_;
+
 public:
     using iterator = peers_type::iterator;
     using const_iterator = peers_type::const_iterator;
@@ -94,7 +95,7 @@ public:
     }
 
     bool
-    contains(Peer const * p)
+    contains(Peer const* p)
     {
         return std::find(peers_.begin(), peers_.end(), p) != peers_.end();
     }
@@ -120,11 +121,11 @@ public:
         @param o The group of peers to trust
     */
     void
-    trust(PeerGroup const & o)
+    trust(PeerGroup const& o)
     {
-        for(Peer * p : peers_)
+        for (Peer* p : peers_)
         {
-            for (Peer * target : o.peers_)
+            for (Peer* target : o.peers_)
             {
                 p->trust(*target);
             }
@@ -138,11 +139,11 @@ public:
         @param o The group of peers to untrust
     */
     void
-    untrust(PeerGroup const & o)
+    untrust(PeerGroup const& o)
     {
-        for(Peer * p : peers_)
+        for (Peer* p : peers_)
         {
-            for (Peer * target : o.peers_)
+            for (Peer* target : o.peers_)
             {
                 p->untrust(*target);
             }
@@ -151,8 +152,8 @@ public:
 
     /** Establish network connection
 
-        Establish outbound connections from all peers in this group to all peers in
-        o. If a connection already exists, no new connection is established.
+        Establish outbound connections from all peers in this group to all peers
+       in o. If a connection already exists, no new connection is established.
 
         @param o The group of peers to connect to (will get inbound connections)
         @param delay The fixed messaging delay for all established connections
@@ -162,12 +163,12 @@ public:
     void
     connect(PeerGroup const& o, SimDuration delay)
     {
-        for(Peer * p : peers_)
+        for (Peer* p : peers_)
         {
-            for (Peer * target : o.peers_)
+            for (Peer* target : o.peers_)
             {
                 // cannot send messages to self over network
-                if(p != target)
+                if (p != target)
                     p->connect(*target, delay);
             }
         }
@@ -180,11 +181,11 @@ public:
         @param o The group of peers to disconnect from
     */
     void
-    disconnect(PeerGroup const &o)
+    disconnect(PeerGroup const& o)
     {
-        for(Peer * p : peers_)
+        for (Peer* p : peers_)
         {
-            for (Peer * target : o.peers_)
+            for (Peer* target : o.peers_)
             {
                 p->disconnect(*target);
             }
@@ -200,7 +201,7 @@ public:
         @param delay The fixed messaging delay for all established connections
     */
     void
-    trustAndConnect(PeerGroup const & o, SimDuration delay)
+    trustAndConnect(PeerGroup const& o, SimDuration delay)
     {
         trust(o);
         connect(o, delay);
@@ -218,9 +219,9 @@ public:
     void
     connectFromTrust(SimDuration delay)
     {
-        for (Peer * peer : peers_)
+        for (Peer* peer : peers_)
         {
-            for (Peer * to : peer->trustGraph.trustedPeers(peer))
+            for (Peer* to : peer->trustGraph.trustedPeers(peer))
             {
                 peer->connect(*to, delay);
             }
@@ -228,9 +229,8 @@ public:
     }
 
     // Union of PeerGroups
-    friend
-    PeerGroup
-    operator+(PeerGroup const & a, PeerGroup const & b)
+    friend PeerGroup
+    operator+(PeerGroup const& a, PeerGroup const& b)
     {
         PeerGroup res;
         std::set_union(
@@ -243,9 +243,8 @@ public:
     }
 
     // Set difference of PeerGroups
-    friend
-    PeerGroup
-    operator-(PeerGroup const & a, PeerGroup const & b)
+    friend PeerGroup
+    operator-(PeerGroup const& a, PeerGroup const& b)
     {
         PeerGroup res;
 
@@ -266,7 +265,7 @@ public:
         bool first = true;
         for (Peer const* p : t)
         {
-            if(!first)
+            if (!first)
                 o << ", ";
             first = false;
             o << p->id;
@@ -298,8 +297,8 @@ public:
 template <class RandomNumberDistribution, class Generator>
 std::vector<PeerGroup>
 randomRankedGroups(
-    PeerGroup & peers,
-    std::vector<double> const & ranks,
+    PeerGroup& peers,
+    std::vector<double> const& ranks,
     int numGroups,
     RandomNumberDistribution sizeDist,
     Generator& g)
@@ -318,8 +317,6 @@ randomRankedGroups(
     return groups;
 }
 
-
-
 /** Generate random trust groups based on peer rankings.
 
     @see randomRankedGroups for descriptions of the arguments
@@ -327,8 +324,8 @@ randomRankedGroups(
 template <class RandomNumberDistribution, class Generator>
 void
 randomRankedTrust(
-    PeerGroup & peers,
-    std::vector<double> const & ranks,
+    PeerGroup& peers,
+    std::vector<double> const& ranks,
     int numGroups,
     RandomNumberDistribution sizeDist,
     Generator& g)
@@ -337,10 +334,10 @@ randomRankedTrust(
         randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
 
     std::uniform_int_distribution<int> u(0, groups.size() - 1);
-    for(auto & peer : peers)
+    for (auto& peer : peers)
     {
-        for(auto & target : groups[u(g)])
-             peer->trust(*target);
+        for (auto& target : groups[u(g)])
+            peer->trust(*target);
     }
 }
 
@@ -351,8 +348,8 @@ randomRankedTrust(
 template <class RandomNumberDistribution, class Generator>
 void
 randomRankedConnect(
-    PeerGroup & peers,
-    std::vector<double> const & ranks,
+    PeerGroup& peers,
+    std::vector<double> const& ranks,
     int numGroups,
     RandomNumberDistribution sizeDist,
     Generator& g,
@@ -362,10 +359,10 @@ randomRankedConnect(
         randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
 
     std::uniform_int_distribution<int> u(0, groups.size() - 1);
-    for(auto & peer : peers)
+    for (auto& peer : peers)
     {
-        for(auto & target : groups[u(g)])
-             peer->connect(*target, delay);
+        for (auto& target : groups[u(g)])
+            peer->connect(*target, delay);
     }
 }
 
@@ -373,4 +370,3 @@ randomRankedConnect(
 }  // namespace test
 }  // namespace ripple
 #endif
-

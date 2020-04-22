@@ -35,27 +35,23 @@ public:
     using result_type = std::uint64_t;
 
     xor_shift_engine(xor_shift_engine const&) = default;
-    xor_shift_engine& operator=(xor_shift_engine const&) = default;
+    xor_shift_engine&
+    operator=(xor_shift_engine const&) = default;
 
-    explicit
-    xor_shift_engine (result_type val = 1977u);
+    explicit xor_shift_engine(result_type val = 1977u);
 
     void
-    seed (result_type seed);
+    seed(result_type seed);
 
     result_type
     operator()();
 
-    static
-    result_type constexpr
-    min()
+    static result_type constexpr min()
     {
         return std::numeric_limits<result_type>::min();
     }
 
-    static
-    result_type constexpr
-    max()
+    static result_type constexpr max()
     {
         return std::numeric_limits<result_type>::max();
     }
@@ -63,32 +59,29 @@ public:
 private:
     result_type s_[2];
 
-    static
-    result_type
-    murmurhash3 (result_type x);
+    static result_type
+    murmurhash3(result_type x);
 };
 
 template <class _>
-xor_shift_engine<_>::xor_shift_engine (
-    result_type val)
+xor_shift_engine<_>::xor_shift_engine(result_type val)
 {
-    seed (val);
+    seed(val);
 }
 
 template <class _>
 void
-xor_shift_engine<_>::seed (result_type seed)
+xor_shift_engine<_>::seed(result_type seed)
 {
     if (seed == 0)
         throw std::domain_error("invalid seed");
-    s_[0] = murmurhash3 (seed);
-    s_[1] = murmurhash3 (s_[0]);
+    s_[0] = murmurhash3(seed);
+    s_[1] = murmurhash3(s_[0]);
 }
 
 template <class _>
 auto
-xor_shift_engine<_>::operator()() ->
-    result_type
+xor_shift_engine<_>::operator()() -> result_type
 {
     result_type s1 = s_[0];
     result_type const s0 = s_[1];
@@ -99,8 +92,7 @@ xor_shift_engine<_>::operator()() ->
 
 template <class _>
 auto
-xor_shift_engine<_>::murmurhash3 (result_type x)
-    -> result_type
+xor_shift_engine<_>::murmurhash3(result_type x) -> result_type
 {
     x ^= x >> 33;
     x *= 0xff51afd7ed558ccdULL;
@@ -109,7 +101,7 @@ xor_shift_engine<_>::murmurhash3 (result_type x)
     return x ^= x >> 33;
 }
 
-} // detail
+}  // namespace detail
 
 /** XOR-shift Generator.
 
@@ -121,6 +113,6 @@ xor_shift_engine<_>::murmurhash3 (result_type x)
 */
 using xor_shift_engine = detail::xor_shift_engine<>;
 
-}
+}  // namespace beast
 
 #endif

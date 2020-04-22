@@ -105,8 +105,7 @@ PeerReservationTable::load(DatabaseCon& connection)
 }
 
 auto
-PeerReservationTable::insert_or_assign(
-        PeerReservation const& reservation)
+PeerReservationTable::insert_or_assign(PeerReservation const& reservation)
     -> boost::optional<PeerReservation>
 {
     boost::optional<PeerReservation> previous;
@@ -114,7 +113,8 @@ PeerReservationTable::insert_or_assign(
     std::lock_guard lock(mutex_);
 
     auto hint = table_.find(reservation);
-    if (hint != table_.end()) {
+    if (hint != table_.end())
+    {
         // The node already has a reservation. Remove it.
         // `std::unordered_set` does not have an `insert_or_assign` method,
         // and sadly makes it impossible for us to implement one efficiently:

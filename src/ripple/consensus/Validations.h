@@ -83,7 +83,7 @@ struct ValidationParms
      *  ledgerMAX_CONSENSUS such that validators who are waiting for
      *  laggards are not considered offline.
      */
-    std::chrono::seconds validationFRESHNESS = std::chrono::seconds {20};
+    std::chrono::seconds validationFRESHNESS = std::chrono::seconds{20};
 };
 
 /** Enforce validation increasing sequence requirement.
@@ -326,7 +326,10 @@ class Validations
 private:
     // Remove support of a validated ledger
     void
-    removeTrie(std::lock_guard<Mutex> const&, NodeID const& nodeID, Validation const& val)
+    removeTrie(
+        std::lock_guard<Mutex> const&,
+        NodeID const& nodeID,
+        Validation const& val)
     {
         {
             auto it =
@@ -369,7 +372,10 @@ private:
 
     // Update the trie to reflect a new validated ledger
     void
-    updateTrie(std::lock_guard<Mutex> const&, NodeID const& nodeID, Ledger ledger)
+    updateTrie(
+        std::lock_guard<Mutex> const&,
+        NodeID const& nodeID,
+        Ledger ledger)
     {
         auto const [it, inserted] = lastLedger_.emplace(nodeID, ledger);
         if (!inserted)
@@ -449,7 +455,8 @@ private:
     withTrie(std::lock_guard<Mutex> const& lock, F&& f)
     {
         // Call current to flush any stale validations
-        current(lock, [](auto) {}, [](auto, auto) {});
+        current(
+            lock, [](auto) {}, [](auto, auto) {});
         checkAcquired(lock);
         return f(trie_);
     }
@@ -510,7 +517,11 @@ private:
     */
     template <class Pre, class F>
     void
-    byLedger(std::lock_guard<Mutex> const&, ID const& ledgerID, Pre&& pre, F&& f)
+    byLedger(
+        std::lock_guard<Mutex> const&,
+        ID const& ledgerID,
+        Pre&& pre,
+        F&& f)
     {
         auto it = byLedger_.find(ledgerID);
         if (it != byLedger_.end())
@@ -976,7 +987,8 @@ public:
     {
         std::size_t laggards = 0;
 
-        current(std::lock_guard{mutex_},
+        current(
+            std::lock_guard{mutex_},
             [](std::size_t) {},
             [&](NodeID const&, Validation const& v) {
                 if (adaptor_.now() <

@@ -21,9 +21,9 @@
 #define RIPPLE_APP_PENDINGSAVES_H_INCLUDED
 
 #include <ripple/protocol/Protocol.h>
+#include <condition_variable>
 #include <map>
 #include <mutex>
-#include <condition_variable>
 
 namespace ripple {
 
@@ -37,11 +37,10 @@ class PendingSaves
 {
 private:
     std::mutex mutable mutex_;
-    std::map <LedgerIndex, bool> map_;
+    std::map<LedgerIndex, bool> map_;
     std::condition_variable await_;
 
 public:
-
     /** Start working on a ledger
 
         This is called prior to updating the SQLite indexes.
@@ -49,11 +48,11 @@ public:
         @return 'true' if work should be done
     */
     bool
-    startWork (LedgerIndex seq)
+    startWork(LedgerIndex seq)
     {
         std::lock_guard lock(mutex_);
 
-        auto it = map_.find (seq);
+        auto it = map_.find(seq);
 
         if ((it == map_.end()) || it->second)
         {
@@ -72,17 +71,17 @@ public:
         threads awaiting completion are notified.
     */
     void
-    finishWork (LedgerIndex seq)
+    finishWork(LedgerIndex seq)
     {
         std::lock_guard lock(mutex_);
 
-        map_.erase (seq);
+        map_.erase(seq);
         await_.notify_all();
     }
 
     /** Return `true` if a ledger is in the progress of being saved. */
     bool
-    pending (LedgerIndex seq)
+    pending(LedgerIndex seq)
     {
         std::lock_guard lock(mutex_);
         return map_.find(seq) != map_.end();
@@ -97,12 +96,12 @@ public:
         @return 'true' if work should be done or dispatched
     */
     bool
-    shouldWork (LedgerIndex seq, bool isSynchronous)
+    shouldWork(LedgerIndex seq, bool isSynchronous)
     {
-        std::unique_lock <std::mutex> lock(mutex_);
+        std::unique_lock<std::mutex> lock(mutex_);
         do
         {
-            auto it = map_.find (seq);
+            auto it = map_.find(seq);
 
             if (it == map_.end())
             {
@@ -110,20 +109,20 @@ public:
                 return true;
             }
 
-            if (! isSynchronous)
+            if (!isSynchronous)
             {
                 // Already dispatched
                 return false;
             }
 
-            if (! it->second)
+            if (!it->second)
             {
                 // Scheduled, but not dispatched
                 return true;
             }
 
             // Already in progress, just need to wait
-            await_.wait (lock);
+            await_.wait(lock);
 
         } while (true);
     }
@@ -134,16 +133,15 @@ public:
         that is in progress or dispatched. The boolean indicates
         whether work is currently in progress.
     */
-    std::map <LedgerIndex, bool>
-    getSnapshot () const
+    std::map<LedgerIndex, bool>
+    getSnapshot() const
     {
         std::lock_guard lock(mutex_);
 
         return map_;
     }
-
 };
 
-}
+}  // namespace ripple
 
 #endif

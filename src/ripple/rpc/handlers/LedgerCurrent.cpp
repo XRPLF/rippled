@@ -26,12 +26,13 @@
 
 namespace ripple {
 
-Json::Value doLedgerCurrent (RPC::JsonContext& context)
+Json::Value
+doLedgerCurrent(RPC::JsonContext& context)
 {
     Json::Value jvResult;
     jvResult[jss::ledger_current_index] =
-        context.ledgerMaster.getCurrentLedgerIndex ();
+        context.ledgerMaster.getCurrentLedgerIndex();
     return jvResult;
 }
 
-} // ripple
+}  // namespace ripple

@@ -75,10 +75,16 @@ public:
     sweep();
 
     std::uint32_t
-    index() const {return index_;}
+    index() const
+    {
+        return index_;
+    }
 
     boost::filesystem::path const&
-    getDir() const {return dir_;}
+    getDir() const
+    {
+        return dir_;
+    }
 
     std::tuple<
         std::shared_ptr<Backend>,
@@ -90,7 +96,7 @@ public:
     getBackend() const;
 
     /** Returns `true` if all shard ledgers have been stored in the backend
-    */
+     */
     bool
     isBackendComplete() const;
 
@@ -107,12 +113,12 @@ public:
     fileInfo() const;
 
     /** Returns `true` if the shard is complete, validated, and immutable.
-    */
+     */
     bool
     isFinal() const;
 
     /** Returns `true` if the shard is older, without final key data
-    */
+     */
     bool
     isLegacy() const;
 
@@ -125,16 +131,22 @@ public:
     finalize(const bool writeSQLite);
 
     void
-    stop() {stop_ = true;}
+    stop()
+    {
+        stop_ = true;
+    }
 
     /** If called, the shard directory will be removed when
         the shard is destroyed.
     */
     void
-    removeOnDestroy() {removeOnDestroy_ = true;}
+    removeOnDestroy()
+    {
+        removeOnDestroy_ = true;
+    }
 
     // Current shard version
-    static constexpr std::uint32_t version {2};
+    static constexpr std::uint32_t version{2};
 
     // The finalKey is a hard coded value of zero. It is used to store
     // finalizing shard data to the backend. The data contains a version,
@@ -177,10 +189,10 @@ private:
     boost::filesystem::path const dir_;
 
     // Storage space utilized by the shard
-    std::uint64_t fileSz_ {0};
+    std::uint64_t fileSz_{0};
 
     // Number of file descriptors required by the shard
-    std::uint32_t fdRequired_ {0};
+    std::uint32_t fdRequired_{0};
 
     // NuDB key/value store for node objects
     std::shared_ptr<Backend> backend_;
@@ -198,20 +210,20 @@ private:
     beast::Journal const j_;
 
     // True if backend has stored all ledgers pertaining to the shard
-    bool backendComplete_ {false};
+    bool backendComplete_{false};
 
     // Older shard without an acquire database or final key
     // Eventually there will be no need for this and should be removed
-    bool legacy_ {false};
+    bool legacy_{false};
 
     // True if the backend has a final key stored
-    bool final_ {false};
+    bool final_{false};
 
     // Determines if the shard needs to stop processing for shutdown
-    std::atomic<bool> stop_ {false};
+    std::atomic<bool> stop_{false};
 
     // Determines if the shard directory should be removed in the destructor
-    std::atomic<bool> removeOnDestroy_ {false};
+    std::atomic<bool> removeOnDestroy_{false};
 
     // Set the backend cache
     // Lock over mutex_ required

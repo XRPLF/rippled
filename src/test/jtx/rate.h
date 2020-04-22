@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_RATE_H_INCLUDED
 #define RIPPLE_TEST_JTX_RATE_H_INCLUDED
 
-#include <test/jtx/Account.h>
 #include <ripple/json/json_value.h>
+#include <test/jtx/Account.h>
 
 namespace ripple {
 namespace test {
@@ -29,11 +29,10 @@ namespace jtx {
 
 /** Set a transfer rate. */
 Json::Value
-rate (Account const& account,
-    double multiplier);
+rate(Account const& account, double multiplier);
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

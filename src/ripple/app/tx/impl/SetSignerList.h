@@ -21,13 +21,13 @@
 #define RIPPLE_TX_SETSIGNERLIST_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
-#include <ripple/protocol/STObject.h>
-#include <ripple/protocol/STArray.h>
-#include <ripple/protocol/STTx.h>
-#include <ripple/protocol/Indexes.h>
+#include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/basics/Log.h>
+#include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/STArray.h>
+#include <ripple/protocol/STObject.h>
+#include <ripple/protocol/STTx.h>
 #include <algorithm>
 #include <cstdint>
 #include <vector>
@@ -42,59 +42,62 @@ class SetSignerList : public Transactor
 {
 private:
     // Values determined during preCompute for use later.
-    enum Operation {unknown, set, destroy};
-    Operation do_ {unknown};
-    std::uint32_t quorum_ {0};
+    enum Operation { unknown, set, destroy };
+    Operation do_{unknown};
+    std::uint32_t quorum_{0};
     std::vector<SignerEntries::SignerEntry> signers_;
 
 public:
-    explicit SetSignerList (ApplyContext& ctx)
-        : Transactor(ctx)
+    explicit SetSignerList(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    static
-    bool
+    static bool
     affectsSubsequentTransactionAuth(STTx const& tx)
     {
         return true;
     }
 
-    static
-    NotTEC
-    preflight (PreflightContext const& ctx);
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-    TER doApply () override;
-    void preCompute() override;
+    TER
+    doApply() override;
+    void
+    preCompute() override;
 
     // Interface used by DeleteAccount
-    static
-    TER
-    removeFromLedger (
-        Application& app, ApplyView& view, AccountID const& account);
+    static TER
+    removeFromLedger(
+        Application& app,
+        ApplyView& view,
+        AccountID const& account);
 
 private:
-    static
-    std::tuple<NotTEC, std::uint32_t,
+    static std::tuple<
+        NotTEC,
+        std::uint32_t,
         std::vector<SignerEntries::SignerEntry>,
-            Operation>
-    determineOperation(STTx const& tx,
-        ApplyFlags flags, beast::Journal j);
+        Operation>
+    determineOperation(STTx const& tx, ApplyFlags flags, beast::Journal j);
 
-    static
-    NotTEC validateQuorumAndSignerEntries (
+    static NotTEC
+    validateQuorumAndSignerEntries(
         std::uint32_t quorum,
-            std::vector<SignerEntries::SignerEntry> const& signers,
-                AccountID const& account,
-                    beast::Journal j);
+        std::vector<SignerEntries::SignerEntry> const& signers,
+        AccountID const& account,
+        beast::Journal j);
 
-    TER replaceSignerList ();
-    TER destroySignerList ();
+    TER
+    replaceSignerList();
+    TER
+    destroySignerList();
 
-    void writeSignersToSLE (
-        SLE::pointer const& ledgerEntry, std::uint32_t flags) const;
+    void
+    writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags)
+        const;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

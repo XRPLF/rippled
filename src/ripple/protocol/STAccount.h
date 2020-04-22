@@ -26,8 +26,7 @@
 
 namespace ripple {
 
-class STAccount final
-    : public STBase
+class STAccount final : public STBase
 {
 private:
     // The original implementation of STAccount kept the value in an STBlob.
@@ -40,61 +39,63 @@ private:
 public:
     using value_type = AccountID;
 
-    STAccount ();
-    STAccount (SField const& n);
-    STAccount (SField const& n, Buffer&& v);
-    STAccount (SerialIter& sit, SField const& name);
-    STAccount (SField const& n, AccountID const& v);
+    STAccount();
+    STAccount(SField const& n);
+    STAccount(SField const& n, Buffer&& v);
+    STAccount(SerialIter& sit, SField const& name);
+    STAccount(SField const& n, AccountID const& v);
 
     STBase*
-    copy (std::size_t n, void* buf) const override
+    copy(std::size_t n, void* buf) const override
     {
-        return emplace (n, buf, *this);
+        return emplace(n, buf, *this);
     }
 
     STBase*
-    move (std::size_t n, void* buf) override
+    move(std::size_t n, void* buf) override
     {
-        return emplace (n, buf, std::move(*this));
+        return emplace(n, buf, std::move(*this));
     }
 
-    SerializedTypeID getSType () const override
+    SerializedTypeID
+    getSType() const override
     {
         return STI_ACCOUNT;
     }
 
-    std::string getText () const override;
+    std::string
+    getText() const override;
 
     void
-    add (Serializer& s) const override
+    add(Serializer& s) const override
     {
-        assert (fName->isBinary ());
-        assert (fName->fieldType == STI_ACCOUNT);
+        assert(fName->isBinary());
+        assert(fName->fieldType == STI_ACCOUNT);
 
         // Preserve the serialization behavior of an STBlob:
         //  o If we are default (all zeros) serialize as an empty blob.
         //  o Otherwise serialize 160 bits.
         int const size = isDefault() ? 0 : uint160::bytes;
-        s.addVL (value_.data(), size);
+        s.addVL(value_.data(), size);
     }
 
     bool
-    isEquivalent (const STBase& t) const override
+    isEquivalent(const STBase& t) const override
     {
         auto const* const tPtr = dynamic_cast<STAccount const*>(&t);
         return tPtr && (default_ == tPtr->default_) && (value_ == tPtr->value_);
     }
 
     bool
-    isDefault () const override
+    isDefault() const override
     {
         return default_;
     }
 
     STAccount&
-    operator= (AccountID const& value)
+    operator=(AccountID const& value)
     {
-        setValue (value);
+        setValue(value);
         return *this;
     }
 
@@ -104,13 +105,14 @@ public:
         return value_;
     }
 
-    void setValue (AccountID const& v)
+    void
+    setValue(AccountID const& v)
     {
         value_ = v;
         default_ = false;
     }
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

@@ -19,32 +19,31 @@
 
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/basics/Log.h>
-#include <ripple/protocol/st.h>
 #include <ripple/ledger/View.h>
+#include <ripple/protocol/st.h>
 
 namespace ripple {
 
 NotTEC
-CancelOffer::preflight (PreflightContext const& ctx)
+CancelOffer::preflight(PreflightContext const& ctx)
 {
-    auto const ret = preflight1 (ctx);
-    if (!isTesSuccess (ret))
+    auto const ret = preflight1(ctx);
+    if (!isTesSuccess(ret))
         return ret;
 
     auto const uTxFlags = ctx.tx.getFlags();
 
     if (uTxFlags & tfUniversalMask)
     {
-        JLOG(ctx.j.trace()) << "Malformed transaction: " <<
-            "Invalid flags set.";
+        JLOG(ctx.j.trace()) << "Malformed transaction: "
+                            << "Invalid flags set.";
         return temINVALID_FLAG;
     }
 
-    auto const seq = ctx.tx.getFieldU32 (sfOfferSequence);
-    if (! seq)
+    auto const seq = ctx.tx.getFieldU32(sfOfferSequence);
+    if (!seq)
     {
-        JLOG(ctx.j.trace()) <<
-            "CancelOffer::preflight: missing sequence";
+        JLOG(ctx.j.trace()) << "CancelOffer::preflight: missing sequence";
         return temBAD_SEQUENCE;
     }
 
@@ -60,13 +59,13 @@ CancelOffer::preclaim(PreclaimContext const& ctx)
     auto const offerSequence = ctx.tx[sfOfferSequence];
 
     auto const sle = ctx.view.read(keylet::account(id));
-    if (! sle)
+    if (!sle)
         return terNO_ACCOUNT;
 
     if ((*sle)[sfSequence] <= offerSequence)
     {
-        JLOG(ctx.j.trace()) << "Malformed transaction: " <<
-            "Sequence " << offerSequence << " is invalid.";
+        JLOG(ctx.j.trace()) << "Malformed transaction: "
+                            << "Sequence " << offerSequence << " is invalid.";
         return temBAD_SEQUENCE;
     }
 
@@ -76,27 +75,26 @@ CancelOffer::preclaim(PreclaimContext const& ctx)
 //------------------------------------------------------------------------------
 
 TER
-CancelOffer::doApply ()
+CancelOffer::doApply()
 {
     auto const offerSequence = ctx_.tx[sfOfferSequence];
 
     auto const sle = view().read(keylet::account(account_));
-    if (! sle)
+    if (!sle)
         return tefINTERNAL;
 
-    uint256 const offerIndex (getOfferIndex (account_, offerSequence));
+    uint256 const offerIndex(getOfferIndex(account_, offerSequence));
 
-    auto sleOffer = view().peek (
-        keylet::offer(offerIndex));
+    auto sleOffer = view().peek(keylet::offer(offerIndex));
 
     if (sleOffer)
     {
         JLOG(j_.debug()) << "Trying to cancel offer #" << offerSequence;
-        return offerDelete (view(), sleOffer, ctx_.app.journal("View"));
+        return offerDelete(view(), sleOffer, ctx_.app.journal("View"));
     }
 
     JLOG(j_.debug()) << "Offer #" << offerSequence << " can't be found.";
     return tesSUCCESS;
 }
 
-}
+}  // namespace ripple

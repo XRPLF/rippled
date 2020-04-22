@@ -25,7 +25,6 @@
 
 namespace ripple {
 
-
 /** Versioning information for this build. */
 // VFALCO The namespace is deprecated
 namespace BuildInfo {
@@ -44,8 +43,8 @@ getVersionString();
 std::string const&
 getFullVersionString();
 
-} // BuildInfo (DEPRECATED)
+}  // namespace BuildInfo
 
-} // ripple
+}  // namespace ripple
 
 #endif

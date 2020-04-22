@@ -21,13 +21,13 @@
 #define RIPPLE_APP_LEDGER_OPENLEDGER_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/ledger/CachedSLEs.h>
-#include <ripple/ledger/OpenView.h>
 #include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/UnorderedContainers.h>
-#include <ripple/core/Config.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/core/Config.h>
+#include <ripple/ledger/CachedSLEs.h>
+#include <ripple/ledger/OpenView.h>
 #include <cassert>
 #include <mutex>
 
@@ -67,22 +67,21 @@ public:
         `true` won't cause harm, but it may be
         sub-optimal.
     */
-    using modify_type = std::function<
-        bool(OpenView&, beast::Journal)>;
+    using modify_type = std::function<bool(OpenView&, beast::Journal)>;
 
     OpenLedger() = delete;
-    OpenLedger (OpenLedger const&) = delete;
-    OpenLedger& operator= (OpenLedger const&) = delete;
+    OpenLedger(OpenLedger const&) = delete;
+    OpenLedger&
+    operator=(OpenLedger const&) = delete;
 
     /** Create a new open ledger object.
 
         @param ledger A closed ledger
     */
-    explicit
-    OpenLedger(std::shared_ptr<
-        Ledger const> const& ledger,
-            CachedSLEs& cache,
-                beast::Journal journal);
+    explicit OpenLedger(
+        std::shared_ptr<Ledger const> const& ledger,
+        CachedSLEs& cache,
+        beast::Journal journal);
 
     /** Returns `true` if there are no transactions.
 
@@ -124,7 +123,7 @@ public:
         @return `true` if the open view was changed
     */
     bool
-    modify (modify_type const& f);
+    modify(modify_type const& f);
 
     /** Accept a new ledger.
 
@@ -160,12 +159,16 @@ public:
         @param ledger A new closed ledger
     */
     void
-    accept (Application& app, Rules const& rules,
+    accept(
+        Application& app,
+        Rules const& rules,
         std::shared_ptr<Ledger const> const& ledger,
-            OrderedTxs const& locals, bool retriesFirst,
-                OrderedTxs& retries, ApplyFlags flags,
-                    std::string const& suffix = "",
-                        modify_type const& f = {});
+        OrderedTxs const& locals,
+        bool retriesFirst,
+        OrderedTxs& retries,
+        ApplyFlags flags,
+        std::string const& suffix = "",
+        modify_type const& f = {});
 
 private:
     /** Algorithm for applying transactions.
@@ -174,45 +177,48 @@ private:
         used for consensus and building the open ledger.
     */
     template <class FwdRange>
-    static
-    void
-    apply (Application& app, OpenView& view,
-        ReadView const& check, FwdRange const& txs,
-            OrderedTxs& retries, ApplyFlags flags,
-                std::map<uint256, bool>& shouldRecover,
-                    beast::Journal j);
+    static void
+    apply(
+        Application& app,
+        OpenView& view,
+        ReadView const& check,
+        FwdRange const& txs,
+        OrderedTxs& retries,
+        ApplyFlags flags,
+        std::map<uint256, bool>& shouldRecover,
+        beast::Journal j);
 
-    enum Result
-    {
-        success,
-        failure,
-        retry
-    };
+    enum Result { success, failure, retry };
 
     std::shared_ptr<OpenView>
-    create (Rules const& rules,
-        std::shared_ptr<Ledger const> const& ledger);
+    create(Rules const& rules, std::shared_ptr<Ledger const> const& ledger);
 
-    static
-    Result
-    apply_one (Application& app, OpenView& view,
-        std::shared_ptr< STTx const> const& tx,
-            bool retry, ApplyFlags flags,
-                bool shouldRecover, beast::Journal j);
+    static Result
+    apply_one(
+        Application& app,
+        OpenView& view,
+        std::shared_ptr<STTx const> const& tx,
+        bool retry,
+        ApplyFlags flags,
+        bool shouldRecover,
+        beast::Journal j);
 };
 
 //------------------------------------------------------------------------------
 
 template <class FwdRange>
 void
-OpenLedger::apply (Application& app, OpenView& view,
-    ReadView const& check, FwdRange const& txs,
-        OrderedTxs& retries, ApplyFlags flags,
-            std::map<uint256, bool>& shouldRecover,
-                beast::Journal j)
+OpenLedger::apply(
+    Application& app,
+    OpenView& view,
+    ReadView const& check,
+    FwdRange const& txs,
+    OrderedTxs& retries,
+    ApplyFlags flags,
+    std::map<uint256, bool>& shouldRecover,
+    beast::Journal j)
 {
-    for (auto iter = txs.begin();
-        iter != txs.end(); ++iter)
+    for (auto iter = txs.begin(); iter != txs.end(); ++iter)
     {
         try
         {
@@ -222,51 +228,53 @@ OpenLedger::apply (Application& app, OpenView& view,
             auto const txId = tx->getTransactionID();
             if (check.txExists(txId))
                 continue;
-            auto const result = apply_one(app, view,
-                tx, true, flags, shouldRecover[txId], j);
+            auto const result =
+                apply_one(app, view, tx, true, flags, shouldRecover[txId], j);
             if (result == Result::retry)
                 retries.insert(tx);
         }
-        catch(std::exception const&)
+        catch (std::exception const&)
         {
-            JLOG(j.error()) <<
-                "Caught exception";
+            JLOG(j.error()) << "Caught exception";
         }
     }
     bool retry = true;
-    for (int pass = 0;
-        pass < LEDGER_TOTAL_PASSES;
-            ++pass)
+    for (int pass = 0; pass < LEDGER_TOTAL_PASSES; ++pass)
     {
         int changes = 0;
         auto iter = retries.begin();
         while (iter != retries.end())
         {
-            switch (apply_one(app, view,
-                iter->second, retry, flags,
-                    shouldRecover[iter->second->getTransactionID()], j))
+            switch (apply_one(
+                app,
+                view,
+                iter->second,
+                retry,
+                flags,
+                shouldRecover[iter->second->getTransactionID()],
+                j))
             {
-            case Result::success:
-                ++changes;
-                [[fallthrough]];
-            case Result::failure:
-                iter = retries.erase (iter);
-                break;
-            case Result::retry:
-                ++iter;
+                case Result::success:
+                    ++changes;
+                    [[fallthrough]];
+                case Result::failure:
+                    iter = retries.erase(iter);
+                    break;
+                case Result::retry:
+                    ++iter;
             }
         }
         // A non-retry pass made no changes
-        if (! changes && ! retry)
+        if (!changes && !retry)
             return;
         // Stop retriable passes
-        if (! changes || (pass >= LEDGER_RETRY_PASSES))
+        if (!changes || (pass >= LEDGER_RETRY_PASSES))
             retry = false;
     }
 
     // If there are any transactions left, we must have
     // tried them in at least one final pass
-    assert (retries.empty() || ! retry);
+    assert(retries.empty() || !retry);
 }
 
 //------------------------------------------------------------------------------
@@ -274,17 +282,17 @@ OpenLedger::apply (Application& app, OpenView& view,
 // For debug logging
 
 std::string
-debugTxstr (std::shared_ptr<STTx const> const& tx);
+debugTxstr(std::shared_ptr<STTx const> const& tx);
 
 std::string
-debugTostr (OrderedTxs const& set);
+debugTostr(OrderedTxs const& set);
 
 std::string
-debugTostr (SHAMap const& set);
+debugTostr(SHAMap const& set);
 
 std::string
-debugTostr (std::shared_ptr<ReadView const> const& view);
+debugTostr(std::shared_ptr<ReadView const> const& view);
 
-} // ripple
+}  // namespace ripple
 
 #endif

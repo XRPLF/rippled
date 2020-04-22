@@ -76,18 +76,16 @@ public:
 
         if (publicKeyType(makeSlice(spk)) != KeyType::secp256k1)
         {
-            JLOG (debugLog().error())
-                << "Invalid public key in validation"
-                << getJson (JsonOptions::none);
-            Throw<std::runtime_error> ("Invalid public key in validation");
+            JLOG(debugLog().error()) << "Invalid public key in validation"
+                                     << getJson(JsonOptions::none);
+            Throw<std::runtime_error>("Invalid public key in validation");
         }
 
-        if  (checkSignature && !isValid ())
+        if (checkSignature && !isValid())
         {
-            JLOG (debugLog().error())
-                << "Invalid signature in validation"
-                << getJson (JsonOptions::none);
-            Throw<std::runtime_error> ("Invalid signature in validation");
+            JLOG(debugLog().error()) << "Invalid signature in validation"
+                                     << getJson(JsonOptions::none);
+            Throw<std::runtime_error>("Invalid signature in validation");
         }
 
         mNodeID = lookupNodeID(PublicKey(makeSlice(spk)));
@@ -119,7 +117,8 @@ public:
         @param nodeID ID corresponding to node's public master key
         @param isFull Whether the validation is full or partial
         @param fee FeeSettings to include in the validation
-        @param amendments If not empty, the amendments to include in this validation
+        @param amendments If not empty, the amendments to include in this
+       validation
 
         @note The fee and amendment settings are only set if not boost::none.
               Typically, the amendments and fees are set for validations of flag
@@ -212,7 +211,6 @@ public:
     getSignature() const;
 
 private:
-
     static SOTemplate const&
     getFormat();
 
@@ -221,6 +219,6 @@ private:
     NetClock::time_point mSeen = {};
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

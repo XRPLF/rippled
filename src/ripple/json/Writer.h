@@ -20,8 +20,8 @@
 #ifndef RIPPLE_JSON_WRITER_H_INCLUDED
 #define RIPPLE_JSON_WRITER_H_INCLUDED
 
-#include <ripple/basics/contract.h>
 #include <ripple/basics/ToString.h>
+#include <ripple/basics/contract.h>
 #include <ripple/json/Output.h>
 #include <ripple/json/json_value.h>
 #include <memory>
@@ -126,29 +126,33 @@ namespace Json {
 class Writer
 {
 public:
-    enum CollectionType {array, object};
+    enum CollectionType { array, object };
 
-    explicit Writer (Output const& output);
+    explicit Writer(Output const& output);
     Writer(Writer&&) noexcept;
-    Writer& operator=(Writer&&) noexcept;
+    Writer&
+    operator=(Writer&&) noexcept;
 
     ~Writer();
 
     /** Start a new collection at the root level. */
-    void startRoot (CollectionType);
+    void startRoot(CollectionType);
 
     /** Start a new collection inside an array. */
-    void startAppend (CollectionType);
+    void startAppend(CollectionType);
 
     /** Start a new collection inside an object. */
-    void startSet (CollectionType, std::string const& key);
+    void
+    startSet(CollectionType, std::string const& key);
 
     /** Finish the collection most recently started. */
-    void finish ();
+    void
+    finish();
 
     /** Finish all objects and arrays.  After finishArray() has been called, no
      *  more operations can be performed. */
-    void finishAll ();
+    void
+    finishAll();
 
     /** Append a value to an array.
      *
@@ -156,15 +160,17 @@ public:
      *  literal, nullptr or Json::Value
      */
     template <typename Scalar>
-    void append (Scalar t)
+    void
+    append(Scalar t)
     {
         rawAppend();
-        output (t);
+        output(t);
     }
 
     /** Add a comma before this next item if not the first item in an array.
         Useful if you are writing the actual array yourself. */
-    void rawAppend();
+    void
+    rawAppend();
 
     /** Add a key, value assignment to an object.
      *
@@ -178,65 +184,77 @@ public:
      *  the tag you use has already been used in this object.
      */
     template <typename Type>
-    void set (std::string const& tag, Type t)
+    void
+    set(std::string const& tag, Type t)
     {
-        rawSet (tag);
-        output (t);
+        rawSet(tag);
+        output(t);
     }
 
     /** Emit just "tag": as part of an object.  Useful if you are writing the
         actual value data yourself. */
-    void rawSet (std::string const& key);
+    void
+    rawSet(std::string const& key);
 
     // You won't need to call anything below here until you are writing single
     // items (numbers, strings, bools, null) to a JSON stream.
 
     /*** Output a string. */
-    void output (std::string const&);
+    void
+    output(std::string const&);
 
     /*** Output a literal constant or C string. */
-    void output (char const*);
+    void
+    output(char const*);
 
     /*** Output a Json::Value. */
-    void output (Json::Value const&);
+    void
+    output(Json::Value const&);
 
     /** Output a null. */
-    void output (std::nullptr_t);
+    void output(std::nullptr_t);
 
     /** Output a float. */
-    void output (float);
+    void
+    output(float);
 
     /** Output a double. */
-    void output (double);
+    void
+    output(double);
 
     /** Output a bool. */
-    void output (bool);
+    void
+    output(bool);
 
     /** Output numbers or booleans. */
     template <typename Type>
-    void output (Type t)
+    void
+    output(Type t)
     {
-        implOutput (std::to_string (t));
+        implOutput(std::to_string(t));
     }
 
-    void output (Json::StaticString const& t)
+    void
+    output(Json::StaticString const& t)
     {
-        output (t.c_str());
+        output(t.c_str());
     }
 
 private:
     class Impl;
-    std::unique_ptr <Impl> impl_;
+    std::unique_ptr<Impl> impl_;
 
-    void implOutput (std::string const&);
+    void
+    implOutput(std::string const&);
 };
 
-inline void check (bool condition, std::string const& message)
+inline void
+check(bool condition, std::string const& message)
 {
-    if (! condition)
-        ripple::Throw<std::logic_error> (message);
+    if (!condition)
+        ripple::Throw<std::logic_error>(message);
 }
 
-} // Json
+}  // namespace Json
 
 #endif

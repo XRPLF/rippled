@@ -24,26 +24,26 @@
 
 namespace ripple {
 
-STBase::STBase()
-    : fName(&sfGeneric)
+STBase::STBase() : fName(&sfGeneric)
 {
 }
 
-STBase::STBase (SField const& n)
-    : fName(&n)
+STBase::STBase(SField const& n) : fName(&n)
 {
     assert(fName);
 }
 
 STBase&
-STBase::operator= (const STBase& t)
+STBase::operator=(const STBase& t)
 {
     if ((t.fName != fName) && fName->isUseful() && t.fName->isUseful())
     {
         // VFALCO We shouldn't be logging at this low a level
         /*
-        WriteLog ((t.getSType () == STI_AMOUNT) ? lsTRACE : lsWARNING, STBase) // This is common for amounts
-                << "Caution: " << t.fName->getName () << " not replacing " << fName->getName ();
+        WriteLog ((t.getSType () == STI_AMOUNT) ? lsTRACE : lsWARNING, STBase)
+        // This is common for amounts
+                << "Caution: " << t.fName->getName () << " not replacing " <<
+        fName->getName ();
         */
     }
     if (!fName->isUseful())
@@ -52,15 +52,15 @@ STBase::operator= (const STBase& t)
 }
 
 bool
-STBase::operator== (const STBase& t) const
+STBase::operator==(const STBase& t) const
 {
-    return (getSType () == t.getSType ()) && isEquivalent (t);
+    return (getSType() == t.getSType()) && isEquivalent(t);
 }
 
 bool
-STBase::operator!= (const STBase& t) const
+STBase::operator!=(const STBase& t) const
 {
-    return (getSType () != t.getSType ()) || !isEquivalent (t);
+    return (getSType() != t.getSType()) || !isEquivalent(t);
 }
 
 SerializedTypeID
@@ -74,15 +74,15 @@ STBase::getFullText() const
 {
     std::string ret;
 
-    if (getSType () != STI_NOTPRESENT)
+    if (getSType() != STI_NOTPRESENT)
     {
-        if (fName->hasName ())
+        if (fName->hasName())
         {
             ret = fName->fieldName;
             ret += " = ";
         }
 
-        ret += getText ();
+        ret += getText();
     }
 
     return ret;
@@ -94,27 +94,27 @@ STBase::getText() const
     return std::string();
 }
 
-Json::Value
-STBase::getJson (JsonOptions /*options*/) const
+Json::Value STBase::getJson(JsonOptions /*options*/) const
 {
     return getText();
 }
 
 void
-STBase::add (Serializer& s) const
+STBase::add(Serializer& s) const
 {
     // Should never be called
     assert(false);
 }
 
 bool
-STBase::isEquivalent (const STBase& t) const
+STBase::isEquivalent(const STBase& t) const
 {
-    assert (getSType () == STI_NOTPRESENT);
-    if (t.getSType () == STI_NOTPRESENT)
+    assert(getSType() == STI_NOTPRESENT);
+    if (t.getSType() == STI_NOTPRESENT)
         return true;
     // VFALCO We shouldn't be logging at this low a level
-    //WriteLog (lsDEBUG, STBase) << "notEquiv " << getFullText() << " not STI_NOTPRESENT";
+    // WriteLog (lsDEBUG, STBase) << "notEquiv " << getFullText() << " not
+    // STI_NOTPRESENT";
     return false;
 }
 
@@ -125,10 +125,10 @@ STBase::isDefault() const
 }
 
 void
-STBase::setFName (SField const& n)
+STBase::setFName(SField const& n)
 {
     fName = &n;
-    assert (fName);
+    assert(fName);
 }
 
 SField const&
@@ -138,18 +138,18 @@ STBase::getFName() const
 }
 
 void
-STBase::addFieldID (Serializer& s) const
+STBase::addFieldID(Serializer& s) const
 {
-    assert (fName->isBinary ());
-    s.addFieldID (fName->fieldType, fName->fieldValue);
+    assert(fName->isBinary());
+    s.addFieldID(fName->fieldType, fName->fieldValue);
 }
 
 //------------------------------------------------------------------------------
 
 std::ostream&
-operator<< (std::ostream& out, const STBase& t)
+operator<<(std::ostream& out, const STBase& t)
 {
-    return out << t.getFullText ();
+    return out << t.getFullText();
 }
 
-} // ripple
+}  // namespace ripple

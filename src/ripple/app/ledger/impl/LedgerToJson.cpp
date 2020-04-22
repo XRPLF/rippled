@@ -29,74 +29,80 @@ namespace ripple {
 
 namespace {
 
-bool isFull(LedgerFill const& fill)
+bool
+isFull(LedgerFill const& fill)
 {
     return fill.options & LedgerFill::full;
 }
 
-bool isExpanded(LedgerFill const& fill)
+bool
+isExpanded(LedgerFill const& fill)
 {
     return isFull(fill) || (fill.options & LedgerFill::expand);
 }
 
-bool isBinary(LedgerFill const& fill)
+bool
+isBinary(LedgerFill const& fill)
 {
     return fill.options & LedgerFill::binary;
 }
 
 template <class Object>
-void fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
+void
+fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
 {
-    json[jss::parent_hash]  = to_string (info.parentHash);
-    json[jss::ledger_index] = to_string (info.seq);
-    json[jss::seqNum]       = to_string (info.seq);      // DEPRECATED
+    json[jss::parent_hash] = to_string(info.parentHash);
+    json[jss::ledger_index] = to_string(info.seq);
+    json[jss::seqNum] = to_string(info.seq);  // DEPRECATED
 
     if (closed)
     {
         json[jss::closed] = true;
     }
-    else if (! bFull)
+    else if (!bFull)
     {
         json[jss::closed] = false;
         return;
     }
 
-    json[jss::ledger_hash] = to_string (info.hash);
-    json[jss::transaction_hash] = to_string (info.txHash);
-    json[jss::account_hash] = to_string (info.accountHash);
-    json[jss::total_coins] = to_string (info.drops);
+    json[jss::ledger_hash] = to_string(info.hash);
+    json[jss::transaction_hash] = to_string(info.txHash);
+    json[jss::account_hash] = to_string(info.accountHash);
+    json[jss::total_coins] = to_string(info.drops);
 
     // These next three are DEPRECATED.
-    json[jss::hash] = to_string (info.hash);
-    json[jss::totalCoins] = to_string (info.drops);
+    json[jss::hash] = to_string(info.hash);
+    json[jss::totalCoins] = to_string(info.drops);
     json[jss::accepted] = closed;
     json[jss::close_flags] = info.closeFlags;
 
     // Always show fields that contribute to the ledger hash
-    json[jss::parent_close_time] = info.parentCloseTime.time_since_epoch().count();
+    json[jss::parent_close_time] =
+        info.parentCloseTime.time_since_epoch().count();
     json[jss::close_time] = info.closeTime.time_since_epoch().count();
     json[jss::close_time_resolution] = info.closeTimeResolution.count();
 
     if (info.closeTime != NetClock::time_point{})
     {
         json[jss::close_time_human] = to_string(info.closeTime);
-        if (! getCloseAgree(info))
+        if (!getCloseAgree(info))
             json[jss::close_time_estimated] = true;
     }
 }
 
 template <class Object>
-void fillJsonBinary(Object& json, bool closed, LedgerInfo const& info)
+void
+fillJsonBinary(Object& json, bool closed, LedgerInfo const& info)
 {
-    if (! closed)
+    if (!closed)
         json[jss::closed] = false;
     else
     {
         json[jss::closed] = true;
 
         Serializer s;
-        addRaw (info, s);
-        json[jss::ledger_data] = strHex (s.peekData ());
+        addRaw(info, s);
+        json[jss::ledger_data] = strHex(s.peekData());
     }
 }
 
@@ -160,17 +166,19 @@ fillJsonTx(
 }
 
 template <class Object>
-void fillJsonTx (Object& json, LedgerFill const& fill)
+void
+fillJsonTx(Object& json, LedgerFill const& fill)
 {
-    auto&& txns = setArray (json, jss::transactions);
+    auto&& txns = setArray(json, jss::transactions);
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
     try
     {
-        for (auto& i: fill.ledger.txs)
+        for (auto& i : fill.ledger.txs)
         {
-            txns.append(fillJsonTx(fill, bBinary, bExpanded, i.first, i.second));
+            txns.append(
+                fillJsonTx(fill, bBinary, bExpanded, i.first, i.second));
         }
     }
     catch (std::exception const&)
@@ -180,16 +188,17 @@ void fillJsonTx (Object& json, LedgerFill const& fill)
 }
 
 template <class Object>
-void fillJsonState(Object& json, LedgerFill const& fill)
+void
+fillJsonState(Object& json, LedgerFill const& fill)
 {
     auto& ledger = fill.ledger;
-    auto&& array = Json::setArray (json, jss::accountState);
+    auto&& array = Json::setArray(json, jss::accountState);
     auto expanded = isExpanded(fill);
     auto binary = isBinary(fill);
 
-    for(auto const& sle : ledger.sles)
+    for (auto const& sle : ledger.sles)
     {
-        if (fill.type == ltINVALID || sle->getType () == fill.type)
+        if (fill.type == ltINVALID || sle->getType() == fill.type)
         {
             if (binary)
             {
@@ -206,7 +215,8 @@ void fillJsonState(Object& json, LedgerFill const& fill)
 }
 
 template <class Object>
-void fillJsonQueue(Object& json, LedgerFill const& fill)
+void
+fillJsonQueue(Object& json, LedgerFill const& fill)
 {
     auto&& queueData = Json::setArray(json, jss::queue_data);
     auto bBinary = isBinary(fill);
@@ -220,13 +230,11 @@ void fillJsonQueue(Object& json, LedgerFill const& fill)
             txJson[jss::LastLedgerSequence] = *tx.lastValid;
         if (tx.consequences)
         {
-            txJson[jss::fee] = to_string(
-                tx.consequences->fee);
-            auto spend = tx.consequences->potentialSpend +
-                tx.consequences->fee;
+            txJson[jss::fee] = to_string(tx.consequences->fee);
+            auto spend = tx.consequences->potentialSpend + tx.consequences->fee;
             txJson[jss::max_spend_drops] = to_string(spend);
-            auto authChanged = tx.consequences->category ==
-                TxConsequences::blocker;
+            auto authChanged =
+                tx.consequences->category == TxConsequences::blocker;
             txJson[jss::auth_change] = authChanged;
         }
 
@@ -241,15 +249,16 @@ void fillJsonQueue(Object& json, LedgerFill const& fill)
 }
 
 template <class Object>
-void fillJson (Object& json, LedgerFill const& fill)
+void
+fillJson(Object& json, LedgerFill const& fill)
 {
     // TODO: what happens if bBinary and bExtracted are both set?
     // Is there a way to report this back?
     auto bFull = isFull(fill);
     if (isBinary(fill))
-        fillJsonBinary(json, ! fill.ledger.open(), fill.ledger.info());
+        fillJsonBinary(json, !fill.ledger.open(), fill.ledger.info());
     else
-        fillJson(json, ! fill.ledger.open(), fill.ledger.info(), bFull);
+        fillJson(json, !fill.ledger.open(), fill.ledger.info(), bFull);
 
     if (bFull || fill.options & LedgerFill::dumpTxrp)
         fillJsonTx(json, fill);
@@ -258,22 +267,24 @@ void fillJson (Object& json, LedgerFill const& fill)
         fillJsonState(json, fill);
 }
 
-} // namespace
+}  // namespace
 
-void addJson (Json::Value& json, LedgerFill const& fill)
+void
+addJson(Json::Value& json, LedgerFill const& fill)
 {
-    auto&& object = Json::addObject (json, jss::ledger);
-    fillJson (object, fill);
+    auto&& object = Json::addObject(json, jss::ledger);
+    fillJson(object, fill);
 
     if ((fill.options & LedgerFill::dumpQueue) && !fill.txQueue.empty())
         fillJsonQueue(json, fill);
 }
 
-Json::Value getJson (LedgerFill const& fill)
+Json::Value
+getJson(LedgerFill const& fill)
 {
     Json::Value json;
-    fillJson (json, fill);
+    fillJson(json, fill);
     return json;
 }
 
-} // ripple
+}  // namespace ripple

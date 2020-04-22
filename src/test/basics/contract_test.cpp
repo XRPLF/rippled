@@ -26,7 +26,8 @@ namespace ripple {
 class contract_test : public beast::unit_test::suite
 {
 public:
-    void run () override
+    void
+    run() override
     {
         try
         {
@@ -56,6 +57,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(contract,basics,ripple);
+BEAST_DEFINE_TESTSUITE(contract, basics, ripple);
 
-}
+}  // namespace ripple

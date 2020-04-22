@@ -25,7 +25,7 @@
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <cstdint>
-#include <memory> // <memory>
+#include <memory>  // <memory>
 
 namespace ripple {
 
@@ -40,20 +40,18 @@ class RippleState
 {
 public:
     // VFALCO Why is this shared_ptr?
-    using pointer = std::shared_ptr <RippleState>;
+    using pointer = std::shared_ptr<RippleState>;
 
 public:
-    RippleState () = delete;
+    RippleState() = delete;
 
     virtual ~RippleState() = default;
 
-    static RippleState::pointer makeItem(
-        AccountID const& accountID,
-        std::shared_ptr<SLE const> sle);
+    static RippleState::pointer
+    makeItem(AccountID const& accountID, std::shared_ptr<SLE const> sle);
 
     // Must be public, for make_shared
-    RippleState (std::shared_ptr<SLE const>&& sle,
-        AccountID const& viewAccount);
+    RippleState(std::shared_ptr<SLE const>&& sle, AccountID const& viewAccount);
 
     /** Returns the state map key for the ledger entry. */
     uint256
@@ -64,103 +62,114 @@ public:
 
     // VFALCO Take off the "get" from each function name
 
-    AccountID const& getAccountID () const
+    AccountID const&
+    getAccountID() const
     {
-        return  mViewLowest ? mLowID : mHighID;
+        return mViewLowest ? mLowID : mHighID;
     }
 
-    AccountID const& getAccountIDPeer () const
+    AccountID const&
+    getAccountIDPeer() const
     {
         return !mViewLowest ? mLowID : mHighID;
     }
 
     // True, Provided auth to peer.
-    bool getAuth () const
+    bool
+    getAuth() const
     {
         return mFlags & (mViewLowest ? lsfLowAuth : lsfHighAuth);
     }
 
-    bool getAuthPeer () const
+    bool
+    getAuthPeer() const
     {
         return mFlags & (!mViewLowest ? lsfLowAuth : lsfHighAuth);
     }
 
-    bool getNoRipple () const
+    bool
+    getNoRipple() const
     {
         return mFlags & (mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
     }
 
-    bool getNoRipplePeer () const
+    bool
+    getNoRipplePeer() const
     {
         return mFlags & (!mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
     }
 
     /** Have we set the freeze flag on our peer */
-    bool getFreeze () const
+    bool
+    getFreeze() const
     {
         return mFlags & (mViewLowest ? lsfLowFreeze : lsfHighFreeze);
     }
 
     /** Has the peer set the freeze flag on us */
-    bool getFreezePeer () const
+    bool
+    getFreezePeer() const
     {
         return mFlags & (!mViewLowest ? lsfLowFreeze : lsfHighFreeze);
     }
 
-    STAmount const& getBalance () const
+    STAmount const&
+    getBalance() const
     {
         return mBalance;
     }
 
-    STAmount const& getLimit () const
+    STAmount const&
+    getLimit() const
     {
-        return  mViewLowest ? mLowLimit : mHighLimit;
+        return mViewLowest ? mLowLimit : mHighLimit;
     }
 
-    STAmount const& getLimitPeer () const
+    STAmount const&
+    getLimitPeer() const
     {
         return !mViewLowest ? mLowLimit : mHighLimit;
     }
 
     Rate const&
-    getQualityIn () const
+    getQualityIn() const
     {
         return mViewLowest ? lowQualityIn_ : highQualityIn_;
     }
 
     Rate const&
-    getQualityOut () const
+    getQualityOut() const
     {
         return mViewLowest ? lowQualityOut_ : highQualityOut_;
     }
 
-    Json::Value getJson (int);
+    Json::Value
+    getJson(int);
 
 private:
     std::shared_ptr<SLE const> sle_;
 
-    bool                            mViewLowest;
+    bool mViewLowest;
 
-    std::uint32_t                   mFlags;
+    std::uint32_t mFlags;
 
-    STAmount const&                 mLowLimit;
-    STAmount const&                 mHighLimit;
+    STAmount const& mLowLimit;
+    STAmount const& mHighLimit;
 
-    AccountID const&                  mLowID;
-    AccountID const&                  mHighID;
+    AccountID const& mLowID;
+    AccountID const& mHighID;
 
     Rate lowQualityIn_;
     Rate lowQualityOut_;
     Rate highQualityIn_;
     Rate highQualityOut_;
 
-    STAmount                        mBalance;
+    STAmount mBalance;
 };
 
-std::vector <RippleState::pointer>
-getRippleStateItems (AccountID const& accountID,
-    ReadView const& view);
+std::vector<RippleState::pointer>
+getRippleStateItems(AccountID const& accountID, ReadView const& view);
 
-} // ripple
+}  // namespace ripple
 
 #endif

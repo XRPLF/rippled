@@ -39,10 +39,10 @@ struct Gossip
         beast::IP::Endpoint address;
     };
 
-    std::vector <Item> items;
+    std::vector<Item> items;
 };
 
-}
-}
+}  // namespace Resource
+}  // namespace ripple
 
 #endif

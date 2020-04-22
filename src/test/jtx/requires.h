@@ -32,8 +32,8 @@ class Env;
 using require_t = std::function<void(Env&)>;
 using requires_t = std::vector<require_t>;
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

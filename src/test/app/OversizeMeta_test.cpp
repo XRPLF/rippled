@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <test/jtx.h>
 #include <ripple/beast/unit_test.h>
 #include <algorithm>
+#include <test/jtx.h>
 
 namespace ripple {
 namespace test {
@@ -29,8 +29,7 @@ class PlumpBook_test : public beast::unit_test::suite
 {
 public:
     void
-    createOffers (jtx::Env& env,
-        jtx::IOU const& iou, std::size_t n)
+    createOffers(jtx::Env& env, jtx::IOU const& iou, std::size_t n)
     {
         using namespace jtx;
         for (std::size_t i = 1; i <= n; ++i)
@@ -41,7 +40,7 @@ public:
     }
 
     void
-    test (std::size_t n)
+    test(std::size_t n)
     {
         using namespace jtx;
         auto const billion = 1000000000ul;
@@ -62,7 +61,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(PlumpBook,tx,ripple,5);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(PlumpBook, tx, ripple, 5);
 
 //------------------------------------------------------------------------------
 
@@ -71,7 +70,7 @@ class ThinBook_test : public PlumpBook_test
 {
 public:
     void
-        run() override
+    run() override
     {
         test(1);
     }
@@ -85,8 +84,7 @@ class OversizeMeta_test : public beast::unit_test::suite
 {
 public:
     void
-    createOffers (jtx::Env& env, jtx::IOU const& iou,
-        std::size_t n)
+    createOffers(jtx::Env& env, jtx::IOU const& iou, std::size_t n)
     {
         using namespace jtx;
         for (std::size_t i = 1; i <= n; ++i)
@@ -121,7 +119,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(OversizeMeta,tx,ripple,3);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(OversizeMeta, tx, ripple, 3);
 
 //------------------------------------------------------------------------------
 
@@ -130,8 +128,7 @@ class FindOversizeCross_test : public beast::unit_test::suite
 public:
     // Return lowest x in [lo, hi] for which f(x)==true
     template <class Function>
-    static
-    std::size_t
+    static std::size_t
     bfind(std::size_t lo, std::size_t hi, Function&& f)
     {
         auto len = hi - lo;
@@ -139,7 +136,7 @@ public:
         {
             auto l2 = len / 2;
             auto m = lo + l2;
-            if (! f(m))
+            if (!f(m))
             {
                 lo = ++m;
                 len -= l2 + 1;
@@ -151,8 +148,7 @@ public:
     }
 
     void
-    createOffers (jtx::Env& env, jtx::IOU const& iou,
-        std::size_t n)
+    createOffers(jtx::Env& env, jtx::IOU const& iou, std::size_t n)
     {
         using namespace jtx;
         for (std::size_t i = 1; i <= n; ++i)
@@ -183,14 +179,13 @@ public:
     void
     run() override
     {
-        auto const result = bfind(100, 9000,
-            [&](std::size_t n) { return oversize(n); });
+        auto const result =
+            bfind(100, 9000, [&](std::size_t n) { return oversize(n); });
         log << "Min oversize offers = " << result << '\n';
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross,tx,ripple,50);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross, tx, ripple, 50);
 
-} // test
-} // ripple
-
+}  // namespace test
+}  // namespace ripple

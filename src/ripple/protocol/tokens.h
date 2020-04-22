@@ -26,33 +26,32 @@
 
 namespace ripple {
 
-enum class TokenType : std::uint8_t
-{
-    None             = 1,       // unused
-    NodePublic       = 28,
-    NodePrivate      = 32,
-    AccountID        = 0,
-    AccountPublic    = 35,
-    AccountSecret    = 34,
-    FamilyGenerator  = 41,      // unused
-    FamilySeed       = 33
+enum class TokenType : std::uint8_t {
+    None = 1,  // unused
+    NodePublic = 28,
+    NodePrivate = 32,
+    AccountID = 0,
+    AccountPublic = 35,
+    AccountSecret = 34,
+    FamilyGenerator = 41,  // unused
+    FamilySeed = 33
 };
 
 template <class T>
 boost::optional<T>
-parseBase58 (std::string const& s);
-
-template<class T>
-boost::optional<T>
-parseBase58 (TokenType type, std::string const& s);
+parseBase58(std::string const& s);
 
 template <class T>
 boost::optional<T>
-parseHex (std::string const& s);
+parseBase58(TokenType type, std::string const& s);
 
 template <class T>
 boost::optional<T>
-parseHexOrBase58 (std::string const& s);
+parseHex(std::string const& s);
+
+template <class T>
+boost::optional<T>
+parseHexOrBase58(std::string const& s);
 
 // Facilities for converting Ripple tokens
 // to and from their human readable strings
@@ -75,7 +74,7 @@ parseHexOrBase58 (std::string const& s);
     @param size the size of the token buffer in bytes
 */
 std::string
-base58EncodeToken (TokenType type, void const* token, std::size_t size);
+base58EncodeToken(TokenType type, void const* token, std::size_t size);
 
 /*  Base-58 encode a Bitcoin Token
  *
@@ -86,7 +85,7 @@ base58EncodeToken (TokenType type, void const* token, std::size_t size);
  *
  */
 std::string
-base58EncodeTokenBitcoin (TokenType type, void const* token, std::size_t size);
+base58EncodeTokenBitcoin(TokenType type, void const* token, std::size_t size);
 
 /** Decode a Base58 token
 
@@ -109,6 +108,6 @@ decodeBase58Token(std::string const& s, TokenType type);
 std::string
 decodeBase58TokenBitcoin(std::string const& s, TokenType type);
 
-} // ripple
+}  // namespace ripple
 
 #endif

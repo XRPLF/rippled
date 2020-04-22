@@ -34,4 +34,3 @@
 #include "ripple.pb.h"
 
 #endif
-

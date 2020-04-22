@@ -25,21 +25,19 @@ namespace ripple {
 void
 CachedSLEs::expire()
 {
-    std::vector<
-        std::shared_ptr<void const>> trash;
+    std::vector<std::shared_ptr<void const>> trash;
     {
-        auto const expireTime =
-            map_.clock().now() - timeToLive_;
+        auto const expireTime = map_.clock().now() - timeToLive_;
         std::lock_guard lock(mutex_);
         for (auto iter = map_.chronological.begin();
-            iter != map_.chronological.end(); ++iter)
+             iter != map_.chronological.end();
+             ++iter)
         {
             if (iter.when() > expireTime)
                 break;
             if (iter->second.unique())
             {
-                trash.emplace_back(
-                    std::move(iter->second));
+                trash.emplace_back(std::move(iter->second));
                 iter = map_.erase(iter);
             }
         }
@@ -56,4 +54,4 @@ CachedSLEs::rate() const
     return double(hit_) / tot;
 }
 
-} // ripple
+}  // namespace ripple

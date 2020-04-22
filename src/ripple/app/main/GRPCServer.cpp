@@ -100,15 +100,14 @@ GRPCServerImpl::CallData<Request, Response>::process()
         JobType::jtRPC,
         "gRPC-Client",
         [thisShared](std::shared_ptr<JobQueue::Coro> coro) {
-
             thisShared->process(coro);
         });
 
     // If coro is null, then the JobQueue has already been shutdown
     if (!coro)
     {
-        grpc::Status status{grpc::StatusCode::INTERNAL,
-                            "Job Queue is already stopped"};
+        grpc::Status status{
+            grpc::StatusCode::INTERNAL, "Job Queue is already stopped"};
         responder_.FinishWithError(status, this);
     }
 }
@@ -123,8 +122,9 @@ GRPCServerImpl::CallData<Request, Response>::process(
         auto usage = getUsage();
         if (usage.disconnect())
         {
-            grpc::Status status{grpc::StatusCode::RESOURCE_EXHAUSTED,
-                                "usage balance exceeds threshhold"};
+            grpc::Status status{
+                grpc::StatusCode::RESOURCE_EXHAUSTED,
+                "usage balance exceeds threshhold"};
             responder_.FinishWithError(status, this);
         }
         else
@@ -133,16 +133,17 @@ GRPCServerImpl::CallData<Request, Response>::process(
             usage.charge(loadType);
             auto role = getRole();
 
-            RPC::GRPCContext<Request> context{{app_.journal("gRPCServer"),
-                                               app_,
-                                               loadType,
-                                               app_.getOPs(),
-                                               app_.getLedgerMaster(),
-                                               usage,
-                                               role,
-                                               coro,
-                                               InfoSub::pointer()},
-                                              request_};
+            RPC::GRPCContext<Request> context{
+                {app_.journal("gRPCServer"),
+                 app_,
+                 loadType,
+                 app_.getOPs(),
+                 app_.getLedgerMaster(),
+                 usage,
+                 role,
+                 coro,
+                 InfoSub::pointer()},
+                request_};
 
             // Make sure we can currently handle the rpc
             error_code_i conditionMetRes =
@@ -151,8 +152,9 @@ GRPCServerImpl::CallData<Request, Response>::process(
             if (conditionMetRes != rpcSUCCESS)
             {
                 RPC::ErrorInfo errorInfo = RPC::get_error_info(conditionMetRes);
-                grpc::Status status{grpc::StatusCode::FAILED_PRECONDITION,
-                                    errorInfo.message.c_str()};
+                grpc::Status status{
+                    grpc::StatusCode::FAILED_PRECONDITION,
+                    errorInfo.message.c_str()};
                 responder_.FinishWithError(status, this);
             }
             else
@@ -234,13 +236,13 @@ GRPCServerImpl::shutdown()
 {
     JLOG(journal_.debug()) << "Shutting down";
 
-    //The below call cancels all "listeners" (CallData objects that are waiting
-    //for a request, as opposed to processing a request), and blocks until all
-    //requests being processed are completed. CallData objects in the midst of
-    //processing requests need to actually send data back to the client, via
-    //responder_.Finish(...) or responder_.FinishWithError(...), for this call
-    //to unblock. Each cancelled listener is returned via cq_.Next(...) with ok
-    //set to false
+    // The below call cancels all "listeners" (CallData objects that are waiting
+    // for a request, as opposed to processing a request), and blocks until all
+    // requests being processed are completed. CallData objects in the midst of
+    // processing requests need to actually send data back to the client, via
+    // responder_.Finish(...) or responder_.FinishWithError(...), for this call
+    // to unblock. Each cancelled listener is returned via cq_.Next(...) with ok
+    // set to false
     server_->Shutdown();
     JLOG(journal_.debug()) << "Server has been shutdown";
 
@@ -249,7 +251,6 @@ GRPCServerImpl::shutdown()
     // queue have been processed. See handleRpcs() for more details.
     cq_->Shutdown();
     JLOG(journal_.debug()) << "Completion Queue has been shutdown";
-
 }
 
 void
@@ -292,13 +293,12 @@ GRPCServerImpl::handleRpcs()
     {
         auto ptr = static_cast<Processor*>(tag);
         JLOG(journal_.trace()) << "Processing CallData object."
-            << " ptr = " << ptr
-            << " ok = " << ok;
+                               << " ptr = " << ptr << " ok = " << ok;
 
         if (!ok)
         {
             JLOG(journal_.debug()) << "Request listener cancelled. "
-                << "Destroying object";
+                                   << "Destroying object";
             erase(ptr);
         }
         else
@@ -315,7 +315,6 @@ GRPCServerImpl::handleRpcs()
             }
             else
             {
-
                 JLOG(journal_.debug()) << "Sent response. Destroying object";
                 erase(ptr);
             }
@@ -335,13 +334,16 @@ GRPCServerImpl::setupListeners()
     };
 
     {
-        using cd = CallData<org::xrpl::rpc::v1::GetFeeRequest, org::xrpl::rpc::v1::GetFeeResponse>;
+        using cd = CallData<
+            org::xrpl::rpc::v1::GetFeeRequest,
+            org::xrpl::rpc::v1::GetFeeResponse>;
 
         addToRequests(std::make_shared<cd>(
             service_,
             *cq_,
             app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetFee,
+            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::
+                RequestGetFee,
             doFeeGrpc,
             RPC::NEEDS_CURRENT_LEDGER,
             Resource::feeReferenceRPC));
@@ -355,7 +357,8 @@ GRPCServerImpl::setupListeners()
             service_,
             *cq_,
             app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetAccountInfo,
+            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::
+                RequestGetAccountInfo,
             doAccountInfoGrpc,
             RPC::NO_CONDITION,
             Resource::feeReferenceRPC));
@@ -369,7 +372,8 @@ GRPCServerImpl::setupListeners()
             service_,
             *cq_,
             app_,
-            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::RequestGetTransaction,
+            &org::xrpl::rpc::v1::XRPLedgerAPIService::AsyncService::
+                RequestGetTransaction,
             doTxGrpc,
             RPC::NEEDS_CURRENT_LEDGER,
             Resource::feeReferenceRPC));

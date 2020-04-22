@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/ledger/CachedView.h>
 #include <ripple/basics/contract.h>
+#include <ripple/ledger/CachedView.h>
 #include <ripple/protocol/Serializer.h>
 
 namespace ripple {
 namespace detail {
 
 bool
-CachedViewImpl::exists (Keylet const& k) const
+CachedViewImpl::exists(Keylet const& k) const
 {
     return read(k) != nullptr;
 }
@@ -55,9 +55,9 @@ CachedViewImpl::read(Keylet const& k) const
     {
         if (!inserted)
         {
-            // On entry, this function did not find this key in map_. Now something
-            // (another thread?) has inserted the sle into the map and it has
-            // the wrong type.
+            // On entry, this function did not find this key in map_. Now
+            // something (another thread?) has inserted the sle into the map and
+            // it has the wrong type.
             LogicError("CachedView::read: wrong type");
         }
         return nullptr;
@@ -65,5 +65,5 @@ CachedViewImpl::read(Keylet const& k) const
     return iter->second;
 }
 
-} // detail
-} // ripple
+}  // namespace detail
+}  // namespace ripple

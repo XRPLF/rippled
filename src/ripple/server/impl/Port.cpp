@@ -18,9 +18,9 @@
 //==============================================================================
 
 #include <ripple/basics/safe_cast.h>
-#include <ripple/server/Port.h>
-#include <ripple/beast/rfc2616.h>
 #include <ripple/beast/core/LexicalCast.h>
+#include <ripple/beast/rfc2616.h>
+#include <ripple/server/Port.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -29,79 +29,79 @@ namespace ripple {
 bool
 Port::secure() const
 {
-    return protocol.count("peer") > 0 ||
-        protocol.count("https") > 0 ||
-        protocol.count("wss") > 0 ||
-        protocol.count("wss2") > 0;
+    return protocol.count("peer") > 0 || protocol.count("https") > 0 ||
+        protocol.count("wss") > 0 || protocol.count("wss2") > 0;
 }
 
 std::string
 Port::protocols() const
 {
     std::string s;
-    for (auto iter = protocol.cbegin();
-            iter != protocol.cend(); ++iter)
+    for (auto iter = protocol.cbegin(); iter != protocol.cend(); ++iter)
         s += (iter != protocol.cbegin() ? "," : "") + *iter;
     return s;
 }
 
 std::ostream&
-operator<< (std::ostream& os, Port const& p)
+operator<<(std::ostream& os, Port const& p)
 {
     os << "'" << p.name << "' (ip=" << p.ip << ":" << p.port << ", ";
 
-    if (! p.admin_ip.empty ())
+    if (!p.admin_ip.empty())
     {
         os << "admin IPs:";
         for (auto const& ip : p.admin_ip)
-            os << ip.to_string () << ", ";
+            os << ip.to_string() << ", ";
     }
 
-    if (! p.secure_gateway_ip.empty ())
+    if (!p.secure_gateway_ip.empty())
     {
         os << "secure_gateway IPs:";
         for (auto const& ip : p.secure_gateway_ip)
-            os << ip.to_string () << ", ";
+            os << ip.to_string() << ", ";
     }
 
-    os << p.protocols () << ")";
+    os << p.protocols() << ")";
     return os;
 }
 
 //------------------------------------------------------------------------------
 
-static
-void
-populate (Section const& section, std::string const& field, std::ostream& log,
+static void
+populate(
+    Section const& section,
+    std::string const& field,
+    std::ostream& log,
     boost::optional<std::vector<beast::IP::Address>>& ips,
-    bool allowAllIps, std::vector<beast::IP::Address> const& admin_ip)
+    bool allowAllIps,
+    std::vector<beast::IP::Address> const& admin_ip)
 {
     auto const result = section.find(field);
     if (result.second)
     {
-        std::stringstream ss (result.first);
+        std::stringstream ss(result.first);
         std::string ip;
-        bool has_any (false);
+        bool has_any(false);
 
         ips.emplace();
-        while (std::getline (ss, ip, ','))
+        while (std::getline(ss, ip, ','))
         {
-            auto const addr = beast::IP::Endpoint::from_string_checked (ip);
-            if (! addr)
+            auto const addr = beast::IP::Endpoint::from_string_checked(ip);
+            if (!addr)
             {
-                log << "Invalid value '" << ip << "' for key '" << field <<
-                    "' in [" << section.name () << "]";
-                Throw<std::exception> ();
+                log << "Invalid value '" << ip << "' for key '" << field
+                    << "' in [" << section.name() << "]";
+                Throw<std::exception>();
             }
 
-            if (is_unspecified (*addr))
+            if (is_unspecified(*addr))
             {
-                if (! allowAllIps)
+                if (!allowAllIps)
                 {
-                    log << addr->address() << " not allowed'" <<
-                        "' for key '" << field << "' in [" <<
-                        section.name () << "]";
-                    Throw<std::exception> ();
+                    log << addr->address() << " not allowed'"
+                        << "' for key '" << field << "' in [" << section.name()
+                        << "]";
+                    Throw<std::exception>();
                 }
                 else
                 {
@@ -109,34 +109,34 @@ populate (Section const& section, std::string const& field, std::ostream& log,
                 }
             }
 
-            if (has_any && ! ips->empty ())
+            if (has_any && !ips->empty())
             {
-                log << "IP specified along with " << addr->address() <<
-                    " '" << ip << "' for key '" << field << "' in [" <<
-                    section.name () << "]";
-                Throw<std::exception> ();
+                log << "IP specified along with " << addr->address() << " '"
+                    << ip << "' for key '" << field << "' in ["
+                    << section.name() << "]";
+                Throw<std::exception>();
             }
 
             auto const& address = addr->address();
-            if (std::find_if (admin_ip.begin(), admin_ip.end(),
-                [&address] (beast::IP::Address const& a)
-                {
-                    return address == a;
-                }
-                ) != admin_ip.end())
+            if (std::find_if(
+                    admin_ip.begin(),
+                    admin_ip.end(),
+                    [&address](beast::IP::Address const& a) {
+                        return address == a;
+                    }) != admin_ip.end())
             {
-                log << "IP specified for " << field << " is also for " <<
-                    "admin: " << ip << " in [" << section.name() << "]";
-                Throw<std::exception> ();
+                log << "IP specified for " << field << " is also for "
+                    << "admin: " << ip << " in [" << section.name() << "]";
+                Throw<std::exception>();
             }
 
-            ips->emplace_back (addr->address ());
+            ips->emplace_back(addr->address());
         }
     }
 }
 
 void
-parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
+parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
 {
     {
         auto result = section.find("ip");
@@ -148,8 +148,8 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
             }
             catch (std::exception const&)
             {
-                log << "Invalid value '" << result.first <<
-                    "' for key 'ip' in [" << section.name() << "]";
+                log << "Invalid value '" << result.first
+                    << "' for key 'ip' in [" << section.name() << "]";
                 Rethrow();
             }
         }
@@ -166,13 +166,12 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
 
                 // Port 0 is not supported
                 if (*port.port == 0)
-                    Throw<std::exception> ();
+                    Throw<std::exception>();
             }
             catch (std::exception const&)
             {
-                log <<
-                    "Invalid value '" << result.first << "' for key " <<
-                    "'port' in [" << section.name() << "]";
+                log << "Invalid value '" << result.first << "' for key "
+                    << "'port' in [" << section.name() << "]";
                 Rethrow();
             }
         }
@@ -183,26 +182,25 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
         if (result.second)
         {
             for (auto const& s : beast::rfc2616::split_commas(
-                    result.first.begin(), result.first.end()))
+                     result.first.begin(), result.first.end()))
                 port.protocol.insert(s);
         }
     }
 
     {
-        auto const lim = get (section, "limit", "unlimited");
+        auto const lim = get(section, "limit", "unlimited");
 
-        if (!boost::iequals (lim, "unlimited"))
+        if (!boost::iequals(lim, "unlimited"))
         {
             try
             {
-                port.limit = safe_cast<int> (
-                    beast::lexicalCastThrow<std::uint16_t>(lim));
+                port.limit =
+                    safe_cast<int>(beast::lexicalCastThrow<std::uint16_t>(lim));
             }
             catch (std::exception const&)
             {
-                log <<
-                    "Invalid value '" << lim << "' for key " <<
-                    "'limit' in [" << section.name() << "]";
+                log << "Invalid value '" << lim << "' for key "
+                    << "'limit' in [" << section.name() << "]";
                 Rethrow();
             }
         }
@@ -223,9 +221,8 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
             }
             catch (std::exception const&)
             {
-                log <<
-                    "Invalid value '" << result.first << "' for key " <<
-                    "'send_queue_limit' in [" << section.name() << "]";
+                log << "Invalid value '" << result.first << "' for key "
+                    << "'send_queue_limit' in [" << section.name() << "]";
                 Rethrow();
             }
         }
@@ -236,8 +233,13 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
         }
     }
 
-    populate (section, "admin", log, port.admin_ip, true, {});
-    populate (section, "secure_gateway", log, port.secure_gateway_ip, false,
+    populate(section, "admin", log, port.admin_ip, true, {});
+    populate(
+        section,
+        "secure_gateway",
+        log,
+        port.secure_gateway_ip,
+        false,
         port.admin_ip.get_value_or({}));
 
     set(port.user, "user", section);
@@ -259,10 +261,8 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
         section.value_or("client_no_context_takeover", false);
     port.pmd_options.server_no_context_takeover =
         section.value_or("server_no_context_takeover", false);
-    port.pmd_options.compLevel =
-        section.value_or("compress_level", 8);
-    port.pmd_options.memLevel =
-        section.value_or("memory_level", 4);
+    port.pmd_options.compLevel = section.value_or("compress_level", 8);
+    port.pmd_options.memLevel = section.value_or("memory_level", 4);
 }
 
-} // ripple
+}  // namespace ripple

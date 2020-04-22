@@ -31,19 +31,21 @@ namespace BuildInfo {
 //  The build version number. You must edit this for each release
 //  and follow the format described at http://semver.org/
 //------------------------------------------------------------------------------
+// clang-format off
 char const* const versionString = "1.6.0-b2"
+// clang-format on
 
 #if defined(DEBUG) || defined(SANITIZER)
-        "+"
+    "+"
 #ifdef DEBUG
-        "DEBUG"
+    "DEBUG"
 #ifdef SANITIZER
-        "."
+    "."
 #endif
 #endif
 
 #ifdef SANITIZER
-        BOOST_PP_STRINGIZE(SANITIZER)
+    BOOST_PP_STRINGIZE(SANITIZER)
 #endif
 #endif
 
@@ -55,25 +57,25 @@ char const* const versionString = "1.6.0-b2"
 //
 
 std::string const&
-getVersionString ()
+getVersionString()
 {
     static std::string const value = [] {
         std::string const s = versionString;
         beast::SemanticVersion v;
-        if (!v.parse (s) || v.print () != s)
-            LogicError (s + ": Bad server version string");
+        if (!v.parse(s) || v.print() != s)
+            LogicError(s + ": Bad server version string");
         return s;
     }();
     return value;
 }
 
-std::string const& getFullVersionString ()
+std::string const&
+getFullVersionString()
 {
-    static std::string const value =
-        "rippled-" + getVersionString();
+    static std::string const value = "rippled-" + getVersionString();
     return value;
 }
 
-} // BuildInfo
+}  // namespace BuildInfo
 
-} // ripple
+}  // namespace ripple

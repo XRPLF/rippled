@@ -36,11 +36,13 @@ namespace detail {
 class seconds_clock_worker
 {
 public:
-    virtual void sample () = 0;
+    virtual void
+    sample() = 0;
     virtual ~seconds_clock_worker() = default;
     seconds_clock_worker() = default;
     seconds_clock_worker(seconds_clock_worker const&) = delete;
-    seconds_clock_worker& operator=(seconds_clock_worker const&) = delete;
+    seconds_clock_worker&
+    operator=(seconds_clock_worker const&) = delete;
 };
 
 //------------------------------------------------------------------------------
@@ -51,11 +53,11 @@ class seconds_clock_thread
 public:
     using mutex = std::mutex;
     using cond_var = std::condition_variable;
-    using unique_lock = std::unique_lock <mutex>;
+    using unique_lock = std::unique_lock<mutex>;
     using clock_type = std::chrono::steady_clock;
     using seconds = std::chrono::seconds;
     using thread = std::thread;
-    using workers = std::vector <seconds_clock_worker*>;
+    using workers = std::vector<seconds_clock_worker*>;
 
     bool stop_;
     mutex mutex_;
@@ -63,36 +65,37 @@ public:
     workers workers_;
     thread thread_;
 
-    seconds_clock_thread ()
-        : stop_ (false)
+    seconds_clock_thread() : stop_(false)
     {
-        thread_ = thread (&seconds_clock_thread::run, this);
+        thread_ = thread(&seconds_clock_thread::run, this);
     }
 
-    ~seconds_clock_thread ()
+    ~seconds_clock_thread()
     {
         stop();
     }
 
-    void add (seconds_clock_worker& w)
+    void
+    add(seconds_clock_worker& w)
     {
-        std::lock_guard lock (mutex_);
-        workers_.push_back (&w);
+        std::lock_guard lock(mutex_);
+        workers_.push_back(&w);
     }
 
-    void remove (seconds_clock_worker& w)
+    void
+    remove(seconds_clock_worker& w)
     {
-        std::lock_guard lock (mutex_);
-        workers_.erase (std::find (
-            workers_.begin (), workers_.end(), &w));
+        std::lock_guard lock(mutex_);
+        workers_.erase(std::find(workers_.begin(), workers_.end(), &w));
     }
 
-    void stop()
+    void
+    stop()
     {
         if (thread_.joinable())
         {
             {
-                std::lock_guard lock (mutex_);
+                std::lock_guard lock(mutex_);
                 stop_ = true;
             }
             cond_.notify_all();
@@ -100,9 +103,11 @@ public:
         }
     }
 
-    void run()
+    void
+    run()
     {
-        unique_lock lock (mutex_);;
+        unique_lock lock(mutex_);
+        ;
 
         for (;;)
         {
@@ -110,24 +115,24 @@ public:
                 iter->sample();
 
             using namespace std::chrono;
-            clock_type::time_point const when (
-                date::floor <seconds> (
-                    clock_type::now().time_since_epoch()) +
-                        seconds (1));
+            clock_type::time_point const when(
+                date::floor<seconds>(clock_type::now().time_since_epoch()) +
+                seconds(1));
 
-            if (cond_.wait_until (lock, when, [this]{ return stop_; }))
+            if (cond_.wait_until(lock, when, [this] { return stop_; }))
                 return;
         }
     }
 
-    static seconds_clock_thread& instance ()
+    static seconds_clock_thread&
+    instance()
     {
         static seconds_clock_thread singleton;
         return singleton;
     }
 };
 
-}
+}  // namespace detail
 
 //------------------------------------------------------------------------------
 
@@ -136,8 +141,7 @@ public:
     http://connect.microsoft.com/VisualStudio/feedback/details/786016/creating-a-global-c-object-that-used-thread-join-in-its-destructor-causes-a-lockup
     http://stackoverflow.com/questions/10915233/stdthreadjoin-hangs-if-called-after-main-exits-when-using-vs2012-rc
 */
-inline
-void
+inline void
 basic_seconds_clock_main_hook()
 {
 #ifdef _MSC_VER
@@ -167,14 +171,15 @@ public:
 
     static bool const is_steady = Clock::is_steady;
 
-    static time_point now()
+    static time_point
+    now()
     {
         // Make sure the thread is constructed before the
         // worker otherwise we will crash during destruction
         // of objects with static storage duration.
         struct initializer
         {
-            initializer ()
+            initializer()
             {
                 detail::seconds_clock_thread::instance();
             }
@@ -186,8 +191,7 @@ public:
             time_point m_now;
             std::mutex mutex_;
 
-            worker()
-                : m_now(Clock::now())
+            worker() : m_now(Clock::now())
             {
                 detail::seconds_clock_thread::instance().add(*this);
             }
@@ -197,15 +201,17 @@ public:
                 detail::seconds_clock_thread::instance().remove(*this);
             }
 
-            time_point now()
+            time_point
+            now()
             {
-                std::lock_guard lock (mutex_);
+                std::lock_guard lock(mutex_);
                 return m_now;
             }
 
-            void sample() override
+            void
+            sample() override
             {
-                std::lock_guard lock (mutex_);
+                std::lock_guard lock(mutex_);
                 m_now = Clock::now();
             }
         };
@@ -216,6 +222,6 @@ public:
     }
 };
 
-}
+}  // namespace beast
 
 #endif

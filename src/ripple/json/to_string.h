@@ -20,22 +20,25 @@
 #ifndef RIPPLE_JSON_TO_STRING_H_INCLUDED
 #define RIPPLE_JSON_TO_STRING_H_INCLUDED
 
-#include <string>
 #include <ostream>
+#include <string>
 
 namespace Json {
 
 class Value;
 
 /** Writes a Json::Value to an std::string. */
-std::string to_string (Value const&);
+std::string
+to_string(Value const&);
 
 /** Writes a Json::Value to an std::string. */
-std::string pretty (Value const&);
+std::string
+pretty(Value const&);
 
 /** Output using the StyledStreamWriter. @see Json::operator>>(). */
-std::ostream& operator<< (std::ostream&, const Value& root);
+std::ostream&
+operator<<(std::ostream&, const Value& root);
 
-} // Json
+}  // namespace Json
 
-#endif // JSON_TO_STRING_H_INCLUDED
+#endif  // JSON_TO_STRING_H_INCLUDED

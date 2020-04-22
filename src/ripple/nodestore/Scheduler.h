@@ -61,23 +61,26 @@ public:
 
     /** Schedules a task.
         Depending on the implementation, the task may be invoked either on
-        the current thread of execution, or an unspecified implementation-defined
-        foreign thread.
+        the current thread of execution, or an unspecified
+       implementation-defined foreign thread.
     */
-    virtual void scheduleTask (Task& task) = 0;
+    virtual void
+    scheduleTask(Task& task) = 0;
 
     /** Reports completion of a fetch
         Allows the scheduler to monitor the node store's performance
     */
-    virtual void onFetch (FetchReport const& report) = 0;
+    virtual void
+    onFetch(FetchReport const& report) = 0;
 
     /** Reports the completion of a batch write
         Allows the scheduler to monitor the node store's performance
     */
-    virtual void onBatchWrite (BatchWriteReport const& report) = 0;
+    virtual void
+    onBatchWrite(BatchWriteReport const& report) = 0;
 };
 
-}
-}
+}  // namespace NodeStore
+}  // namespace ripple
 
 #endif

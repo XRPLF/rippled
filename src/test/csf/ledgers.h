@@ -21,14 +21,13 @@
 
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/basics/chrono.h>
-#include <ripple/consensus/LedgerTiming.h>
 #include <ripple/basics/tagged_integer.h>
 #include <ripple/consensus/LedgerTiming.h>
 #include <ripple/json/json_value.h>
-#include <test/csf/Tx.h>
 #include <boost/bimap/bimap.hpp>
 #include <boost/optional.hpp>
 #include <set>
+#include <test/csf/Tx.h>
 
 namespace ripple {
 namespace test {
@@ -66,13 +65,18 @@ public:
     struct IdTag;
     using ID = tagged_integer<std::uint32_t, IdTag>;
 
-    struct MakeGenesis {};
+    struct MakeGenesis
+    {
+    };
+
 private:
     // The instance is the common immutable data that will be assigned a unique
     // ID by the oracle
     struct Instance
     {
-        Instance() {}
+        Instance()
+        {
+        }
 
         // Sequence number
         Seq seq{0};
@@ -103,8 +107,14 @@ private:
         auto
         asTie() const
         {
-            return std::tie(seq, txs, closeTimeResolution, closeTime,
-                closeTimeAgree, parentID, parentCloseTime);
+            return std::tie(
+                seq,
+                txs,
+                closeTimeResolution,
+                closeTime,
+                closeTimeAgree,
+                parentID,
+                parentCloseTime);
         }
 
         friend bool
@@ -120,7 +130,7 @@ private:
         }
 
         friend bool
-        operator<(Instance const & a, Instance const & b)
+        operator<(Instance const& a, Instance const& b)
         {
             return a.asTie() < b.asTie();
         }
@@ -133,7 +143,6 @@ private:
             hash_append(h, instance.asTie());
         }
     };
-
 
     // Single common genesis instance
     static const Instance genesis;
@@ -211,15 +220,15 @@ public:
     operator[](Seq seq) const;
 
     /** Return the sequence number of the first mismatching ancestor
-    */
-    friend
-    Ledger::Seq
-    mismatch(Ledger const & a, Ledger const & o);
+     */
+    friend Ledger::Seq
+    mismatch(Ledger const& a, Ledger const& o);
 
-    Json::Value getJson() const;
+    Json::Value
+    getJson() const;
 
     friend bool
-    operator<(Ledger const & a, Ledger const & b)
+    operator<(Ledger const& a, Ledger const& b)
     {
         return a.id() < b.id();
     }
@@ -229,9 +238,8 @@ private:
     Instance const* instance_;
 };
 
-
 /** Oracle maintaining unique ledgers for a simulation.
-*/
+ */
 class LedgerOracle
 {
     using InstanceMap = boost::bimaps::bimap<Ledger::Instance, Ledger::ID>;
@@ -245,12 +253,11 @@ class LedgerOracle
     nextID() const;
 
 public:
-
     LedgerOracle();
 
     /** Find the ledger with the given ID */
     boost::optional<Ledger>
-    lookup(Ledger::ID const & id) const;
+    lookup(Ledger::ID const& id) const;
 
     /** Accept the given txs and generate a new ledger
 
@@ -261,7 +268,9 @@ public:
                                   if 0
     */
     Ledger
-    accept(Ledger const & curr, TxSetType const& txs,
+    accept(
+        Ledger const& curr,
+        TxSetType const& txs,
         NetClock::duration closeTimeResolution,
         NetClock::time_point const& consensusCloseTime);
 
@@ -278,16 +287,15 @@ public:
 
     /** Determine the number of distinct branches for the set of ledgers.
 
-        Ledgers A and B are on different branches if A != B, A is not an ancestor
-        of B and B is not an ancestor of A, e.g.
+        Ledgers A and B are on different branches if A != B, A is not an
+       ancestor of B and B is not an ancestor of A, e.g.
 
           /--> A
         O
           \--> B
     */
     std::size_t
-    branches(std::set<Ledger> const & ledgers) const;
-
+    branches(std::set<Ledger> const& ledgers) const;
 };
 
 /** Helper for writing unit tests with controlled ledger histories.
@@ -326,7 +334,8 @@ struct LedgerHistoryHelper
         Creates any necessary intermediate ledgers, but asserts if
         a letter is re-used (e.g. "abc" then "adc" would assert)
     */
-    Ledger const& operator[](std::string const& s)
+    Ledger const&
+    operator[](std::string const& s)
     {
         auto it = ledgers.find(s);
         if (it != ledgers.end())
@@ -341,8 +350,8 @@ struct LedgerHistoryHelper
     }
 };
 
-}  // csf
-}  // test
-}  // ripple
+}  // namespace csf
+}  // namespace test
+}  // namespace ripple
 
 #endif

@@ -36,12 +36,10 @@ namespace ripple {
  * */
 using ProtocolVersion = std::pair<std::uint16_t, std::uint16_t>;
 
-inline
-constexpr
-ProtocolVersion
+inline constexpr ProtocolVersion
 make_protocol(std::uint16_t major, std::uint16_t minor)
 {
-    return { major, minor };
+    return {major, minor};
 }
 
 /** Print a protocol version a human-readable string. */
@@ -79,6 +77,6 @@ supportedProtocolVersions();
 bool
 isProtocolSupported(ProtocolVersion const& v);
 
-}
+}  // namespace ripple
 
 #endif

@@ -19,34 +19,30 @@
 
 #include <ripple/net/DatabaseDownloader.h>
 
-namespace ripple
-{
+namespace ripple {
 
 DatabaseDownloader::DatabaseDownloader(
-    boost::asio::io_service & io_service,
+    boost::asio::io_service& io_service,
     beast::Journal j,
-    Config const & config)
+    Config const& config)
     : SSLHTTPDownloader(io_service, j, config)
-      , config_(config)
-      , io_service_(io_service)
+    , config_(config)
+    , io_service_(io_service)
 {
 }
 
 auto
-DatabaseDownloader::getParser(boost::filesystem::path dstPath,
+DatabaseDownloader::getParser(
+    boost::filesystem::path dstPath,
     std::function<void(boost::filesystem::path)> complete,
-    boost::system::error_code & ec) -> std::shared_ptr<parser>
+    boost::system::error_code& ec) -> std::shared_ptr<parser>
 {
     using namespace boost::beast;
 
-    auto p = std::make_shared<http::response_parser<DatabaseBody >>();
+    auto p = std::make_shared<http::response_parser<DatabaseBody>>();
     p->body_limit(std::numeric_limits<std::uint64_t>::max());
-    p->get().body().open(
-        dstPath,
-        config_,
-        io_service_,
-        ec);
-    if(ec)
+    p->get().body().open(dstPath, config_, io_service_, ec);
+    if (ec)
     {
         p->get().body().close();
         fail(dstPath, complete, ec, "open");
@@ -56,7 +52,7 @@ DatabaseDownloader::getParser(boost::filesystem::path dstPath,
 }
 
 bool
-DatabaseDownloader::checkPath(boost::filesystem::path const & dstPath)
+DatabaseDownloader::checkPath(boost::filesystem::path const& dstPath)
 {
     return dstPath.string().size() <= MAX_PATH_LEN;
 }
@@ -66,8 +62,8 @@ DatabaseDownloader::closeBody(std::shared_ptr<parser> p)
 {
     using namespace boost::beast;
 
-    auto databaseBodyParser = std::dynamic_pointer_cast<
-        http::response_parser<DatabaseBody >>(p);
+    auto databaseBodyParser =
+        std::dynamic_pointer_cast<http::response_parser<DatabaseBody>>(p);
     assert(databaseBodyParser);
 
     databaseBodyParser->get().body().close();
@@ -78,11 +74,11 @@ DatabaseDownloader::size(std::shared_ptr<parser> p)
 {
     using namespace boost::beast;
 
-    auto databaseBodyParser = std::dynamic_pointer_cast<
-        http::response_parser<DatabaseBody >>(p);
+    auto databaseBodyParser =
+        std::dynamic_pointer_cast<http::response_parser<DatabaseBody>>(p);
     assert(databaseBodyParser);
 
     return databaseBodyParser->get().body().size();
 }
 
-} // ripple
+}  // namespace ripple

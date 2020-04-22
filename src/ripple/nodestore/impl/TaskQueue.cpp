@@ -40,7 +40,7 @@ TaskQueue::onStop()
 void
 TaskQueue::addTask(std::function<void()> task)
 {
-    std::lock_guard lock {mutex_};
+    std::lock_guard lock{mutex_};
 
     tasks_.emplace(std::move(task));
     workers_.addTask();
@@ -52,7 +52,7 @@ TaskQueue::processTask(int instance)
     std::function<void()> task;
 
     {
-        std::lock_guard lock {mutex_};
+        std::lock_guard lock{mutex_};
         assert(!tasks_.empty());
 
         task = std::move(tasks_.front());
@@ -62,5 +62,5 @@ TaskQueue::processTask(int instance)
     task();
 }
 
-} // NodeStore
-} // ripple
+}  // namespace NodeStore
+}  // namespace ripple

@@ -39,26 +39,29 @@ class LedgerHolder
 {
 public:
     // Update the held ledger
-    void set (std::shared_ptr<Ledger const> ledger)
+    void
+    set(std::shared_ptr<Ledger const> ledger)
     {
-        if(! ledger)
+        if (!ledger)
             LogicError("LedgerHolder::set with nullptr");
-        if(! ledger->isImmutable())
+        if (!ledger->isImmutable())
             LogicError("LedgerHolder::set with mutable Ledger");
-        std::lock_guard sl (m_lock);
+        std::lock_guard sl(m_lock);
         m_heldLedger = std::move(ledger);
     }
 
     // Return the (immutable) held ledger
-    std::shared_ptr<Ledger const> get ()
+    std::shared_ptr<Ledger const>
+    get()
     {
-        std::lock_guard sl (m_lock);
+        std::lock_guard sl(m_lock);
         return m_heldLedger;
     }
 
-    bool empty ()
+    bool
+    empty()
     {
-        std::lock_guard sl (m_lock);
+        std::lock_guard sl(m_lock);
         return m_heldLedger == nullptr;
     }
 
@@ -67,6 +70,6 @@ private:
     std::shared_ptr<Ledger const> m_heldLedger;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

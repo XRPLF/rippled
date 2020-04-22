@@ -24,25 +24,23 @@
 
 namespace ripple {
 
-Json::Value doUnlList (RPC::JsonContext& context)
+Json::Value
+doUnlList(RPC::JsonContext& context)
 {
-    Json::Value obj (Json::objectValue);
+    Json::Value obj(Json::objectValue);
 
-    context.app.validators().for_each_listed (
-        [&unl = obj[jss::unl]](
-            PublicKey const& publicKey,
-            bool trusted)
-        {
-            Json::Value node (Json::objectValue);
+    context.app.validators().for_each_listed(
+        [&unl = obj[jss::unl]](PublicKey const& publicKey, bool trusted) {
+            Json::Value node(Json::objectValue);
 
-            node[jss::pubkey_validator] = toBase58(
-                TokenType::NodePublic, publicKey);
+            node[jss::pubkey_validator] =
+                toBase58(TokenType::NodePublic, publicKey);
             node[jss::trusted] = trusted;
 
-            unl.append (std::move (node));
+            unl.append(std::move(node));
         });
 
     return obj;
 }
 
-} // ripple
+}  // namespace ripple

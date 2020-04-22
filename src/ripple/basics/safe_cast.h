@@ -29,58 +29,42 @@ namespace ripple {
 // the destination can hold all values of the source.  This is particularly
 // handy when the source or destination is an enumeration type.
 
-template<class Dest, class Src>
+template <class Dest, class Src>
 static constexpr bool is_safetocasttovalue_v =
-    ( std::is_integral_v<Src> &&
-        std::is_integral_v<Dest> ) &&
-    ( std::is_signed<Src>::value ||
-        std::is_unsigned<Dest>::value ) &&
-    ( std::is_signed<Src>::value !=
-        std::is_signed<Dest>::value ?
-        sizeof(Dest) > sizeof(Src) :
-        sizeof(Dest) >= sizeof(Src) );
+    (std::is_integral_v<Src> && std::is_integral_v<Dest>)&&(
+        std::is_signed<Src>::value || std::is_unsigned<Dest>::value) &&
+    (std::is_signed<Src>::value != std::is_signed<Dest>::value
+         ? sizeof(Dest) > sizeof(Src)
+         : sizeof(Dest) >= sizeof(Src));
 
 template <class Dest, class Src>
-inline
-constexpr
-std::enable_if_t
-<
-    std::is_integral_v<Dest> && std::is_integral_v<Src>,
-    Dest
->
-safe_cast(Src s) noexcept
+inline constexpr std::
+    enable_if_t<std::is_integral_v<Dest> && std::is_integral_v<Src>, Dest>
+    safe_cast(Src s) noexcept
 {
-    static_assert(std::is_signed_v<Dest> || std::is_unsigned_v<Src>,
+    static_assert(
+        std::is_signed_v<Dest> || std::is_unsigned_v<Src>,
         "Cannot cast signed to unsigned");
-    constexpr unsigned not_same = std::is_signed_v<Dest> !=
-                                  std::is_signed_v<Src>;
-    static_assert(sizeof(Dest) >= sizeof(Src) + not_same,
+    constexpr unsigned not_same =
+        std::is_signed_v<Dest> != std::is_signed_v<Src>;
+    static_assert(
+        sizeof(Dest) >= sizeof(Src) + not_same,
         "Destination is too small to hold all values of source");
     return static_cast<Dest>(s);
 }
 
 template <class Dest, class Src>
-inline
-constexpr
-std::enable_if_t
-<
-    std::is_enum_v<Dest> && std::is_integral_v<Src>,
-    Dest
->
-safe_cast(Src s) noexcept
+inline constexpr std::
+    enable_if_t<std::is_enum_v<Dest> && std::is_integral_v<Src>, Dest>
+    safe_cast(Src s) noexcept
 {
     return static_cast<Dest>(safe_cast<std::underlying_type_t<Dest>>(s));
 }
 
 template <class Dest, class Src>
-inline
-constexpr
-std::enable_if_t
-<
-    std::is_integral_v<Dest> && std::is_enum_v<Src>,
-    Dest
->
-safe_cast(Src s) noexcept
+inline constexpr std::
+    enable_if_t<std::is_integral_v<Dest> && std::is_enum_v<Src>, Dest>
+    safe_cast(Src s) noexcept
 {
     return safe_cast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
 }
@@ -90,47 +74,33 @@ safe_cast(Src s) noexcept
 // underlying types become safe, it can be converted to a safe_cast.
 
 template <class Dest, class Src>
-inline
-constexpr
-std::enable_if_t
-<
-    std::is_integral_v<Dest> && std::is_integral_v<Src>,
-    Dest
->
-unsafe_cast(Src s) noexcept
+inline constexpr std::
+    enable_if_t<std::is_integral_v<Dest> && std::is_integral_v<Src>, Dest>
+    unsafe_cast(Src s) noexcept
 {
-    static_assert(! is_safetocasttovalue_v<Dest, Src>,
+    static_assert(
+        !is_safetocasttovalue_v<Dest, Src>,
         "Only unsafe if casting signed to unsigned or "
         "destination is too small");
     return static_cast<Dest>(s);
 }
 
 template <class Dest, class Src>
-inline
-constexpr
-std::enable_if_t
-<
-    std::is_enum_v<Dest> && std::is_integral_v<Src>,
-    Dest
->
-unsafe_cast(Src s) noexcept
+inline constexpr std::
+    enable_if_t<std::is_enum_v<Dest> && std::is_integral_v<Src>, Dest>
+    unsafe_cast(Src s) noexcept
 {
     return static_cast<Dest>(unsafe_cast<std::underlying_type_t<Dest>>(s));
 }
 
 template <class Dest, class Src>
-inline
-constexpr
-std::enable_if_t
-<
-    std::is_integral_v<Dest> && std::is_enum_v<Src>,
-    Dest
->
-unsafe_cast(Src s) noexcept
+inline constexpr std::
+    enable_if_t<std::is_integral_v<Dest> && std::is_enum_v<Src>, Dest>
+    unsafe_cast(Src s) noexcept
 {
     return unsafe_cast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

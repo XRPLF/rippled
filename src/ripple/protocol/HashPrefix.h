@@ -27,17 +27,15 @@ namespace ripple {
 
 namespace detail {
 
-constexpr
-std::uint32_t
+constexpr std::uint32_t
 make_hash_prefix(char a, char b, char c)
 {
-    return
-        (static_cast<std::uint32_t>(a) << 24) +
+    return (static_cast<std::uint32_t>(a) << 24) +
         (static_cast<std::uint32_t>(b) << 16) +
         (static_cast<std::uint32_t>(c) << 8);
 }
 
-}
+}  // namespace detail
 
 /** Prefix for hashing functions.
 
@@ -53,37 +51,36 @@ make_hash_prefix(char a, char b, char c)
     @note Hash prefixes are part of the protocol; you cannot, arbitrarily,
           change the type or the value of any of these without causing breakage.
 */
-enum class HashPrefix : std::uint32_t
-{
+enum class HashPrefix : std::uint32_t {
     /** transaction plus signature to give transaction ID */
-    transactionID       = detail::make_hash_prefix('T', 'X', 'N'),
+    transactionID = detail::make_hash_prefix('T', 'X', 'N'),
 
     /** transaction plus metadata */
-    txNode              = detail::make_hash_prefix('S', 'N', 'D'),
+    txNode = detail::make_hash_prefix('S', 'N', 'D'),
 
     /** account state */
-    leafNode            = detail::make_hash_prefix('M', 'L', 'N'),
+    leafNode = detail::make_hash_prefix('M', 'L', 'N'),
 
     /** inner node in V1 tree */
-    innerNode           = detail::make_hash_prefix('M', 'I', 'N'),
+    innerNode = detail::make_hash_prefix('M', 'I', 'N'),
 
     /** ledger master data for signing */
-    ledgerMaster        = detail::make_hash_prefix('L', 'W', 'R'),
+    ledgerMaster = detail::make_hash_prefix('L', 'W', 'R'),
 
     /** inner transaction to sign */
-    txSign              = detail::make_hash_prefix('S', 'T', 'X'),
+    txSign = detail::make_hash_prefix('S', 'T', 'X'),
 
     /** inner transaction to multi-sign */
-    txMultiSign         = detail::make_hash_prefix('S', 'M', 'T'),
+    txMultiSign = detail::make_hash_prefix('S', 'M', 'T'),
 
     /** validation for signing */
-    validation          = detail::make_hash_prefix('V', 'A', 'L'),
+    validation = detail::make_hash_prefix('V', 'A', 'L'),
 
     /** proposal for signing */
-    proposal            = detail::make_hash_prefix('P', 'R', 'P'),
+    proposal = detail::make_hash_prefix('P', 'R', 'P'),
 
     /** Manifest */
-    manifest            = detail::make_hash_prefix('M', 'A', 'N'),
+    manifest = detail::make_hash_prefix('M', 'A', 'N'),
 
     /** Payment Channel Claim */
     paymentChannelClaim = detail::make_hash_prefix('C', 'L', 'M'),
@@ -91,13 +88,12 @@ enum class HashPrefix : std::uint32_t
 
 template <class Hasher>
 void
-hash_append (Hasher& h, HashPrefix const& hp) noexcept
+hash_append(Hasher& h, HashPrefix const& hp) noexcept
 {
     using beast::hash_append;
-    hash_append(h,
-        static_cast<std::uint32_t>(hp));
+    hash_append(h, static_cast<std::uint32_t>(hp));
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

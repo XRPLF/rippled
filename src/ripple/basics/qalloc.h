@@ -20,8 +20,8 @@
 #ifndef RIPPLE_BASICS_QALLOC_H_INCLUDED
 #define RIPPLE_BASICS_QALLOC_H_INCLUDED
 
-#include <ripple/basics/contract.h>
 #include <ripple/basics/ByteUtilities.h>
+#include <ripple/basics/contract.h>
 #include <boost/intrusive/list.hpp>
 #include <cstddef>
 #include <cstdint>
@@ -51,14 +51,14 @@ private:
     public:
         block* next;
 
-        block (block const&) = delete;
-        block& operator= (block const&) = delete;
+        block(block const&) = delete;
+        block&
+        operator=(block const&) = delete;
 
-        explicit
-        block (std::size_t bytes);
+        explicit block(std::size_t bytes);
 
         void*
-        allocate (std::size_t bytes, std::size_t align);
+        allocate(std::size_t bytes, std::size_t align);
 
         bool
         deallocate();
@@ -71,19 +71,20 @@ public:
     static constexpr auto block_size = kilobytes(256);
 
     qalloc_impl() = default;
-    qalloc_impl (qalloc_impl const&) = delete;
-    qalloc_impl& operator= (qalloc_impl const&) = delete;
+    qalloc_impl(qalloc_impl const&) = delete;
+    qalloc_impl&
+    operator=(qalloc_impl const&) = delete;
 
     ~qalloc_impl();
 
     void*
-    allocate (std::size_t bytes, std::size_t align);
+    allocate(std::size_t bytes, std::size_t align);
 
     void
-    deallocate (void* p);
+    deallocate(void* p);
 };
 
-} // detail
+}  // namespace detail
 
 template <class T, bool ShareOnCopy = true>
 class qalloc_type
@@ -92,19 +93,15 @@ private:
     template <class, bool>
     friend class qalloc_type;
 
-    std::shared_ptr<
-        detail::qalloc_impl<>> impl_;
+    std::shared_ptr<detail::qalloc_impl<>> impl_;
 
 public:
     using value_type = T;
     using pointer = T*;
     using const_pointer = T const*;
-    using reference = typename
-        std::add_lvalue_reference<T>::type;
-    using const_reference = typename
-        std::add_lvalue_reference<T const>::type;
-    using propagate_on_container_move_assignment =
-        std::true_type;
+    using reference = typename std::add_lvalue_reference<T>::type;
+    using const_reference = typename std::add_lvalue_reference<T const>::type;
+    using propagate_on_container_move_assignment = std::true_type;
 
     template <class U>
     struct rebind
@@ -114,47 +111,47 @@ public:
         using other = qalloc_type<U, ShareOnCopy>;
     };
 
-    qalloc_type (qalloc_type const&) = default;
-    qalloc_type (qalloc_type&& other) noexcept = default;
-    qalloc_type& operator= (qalloc_type const&) = default;
-    qalloc_type& operator= (qalloc_type&&) noexcept = default;
+    qalloc_type(qalloc_type const&) = default;
+    qalloc_type(qalloc_type&& other) noexcept = default;
+    qalloc_type&
+    operator=(qalloc_type const&) = default;
+    qalloc_type&
+    operator=(qalloc_type&&) noexcept = default;
 
     qalloc_type();
 
     template <class U>
-    qalloc_type (qalloc_type<U, ShareOnCopy> const& u);
+    qalloc_type(qalloc_type<U, ShareOnCopy> const& u);
 
     template <class U>
     U*
-    alloc (std::size_t n);
+    alloc(std::size_t n);
 
     template <class U>
     void
-    dealloc (U* p, std::size_t n);
+    dealloc(U* p, std::size_t n);
 
     T*
-    allocate (std::size_t n);
+    allocate(std::size_t n);
 
     void
-    deallocate (T* p, std::size_t n);
+    deallocate(T* p, std::size_t n);
 
     template <class U>
     bool
-    operator== (qalloc_type<U, ShareOnCopy> const& u);
+    operator==(qalloc_type<U, ShareOnCopy> const& u);
 
     template <class U>
     bool
-    operator!= (qalloc_type<U, ShareOnCopy> const& u);
+    operator!=(qalloc_type<U, ShareOnCopy> const& u);
 
     qalloc_type
     select_on_container_copy_construction() const;
 
 private:
-    qalloc_type
-    select_on_copy(std::true_type) const;
+    qalloc_type select_on_copy(std::true_type) const;
 
-    qalloc_type
-    select_on_copy(std::false_type) const;
+    qalloc_type select_on_copy(std::false_type) const;
 };
 
 /** Allocator optimized for delete in temporal order.
@@ -174,38 +171,29 @@ using qalloc = qalloc_type<int, true>;
 namespace detail {
 
 template <class _>
-qalloc_impl<_>::block::block (std::size_t bytes)
-    : bytes_ (bytes - sizeof(*this))
-    , remain_ (bytes_)
-    , free_ (reinterpret_cast<
-        std::uint8_t*>(this + 1))
+qalloc_impl<_>::block::block(std::size_t bytes)
+    : bytes_(bytes - sizeof(*this))
+    , remain_(bytes_)
+    , free_(reinterpret_cast<std::uint8_t*>(this + 1))
 {
 }
 
 template <class _>
 void*
-qalloc_impl<_>::block::allocate(
-    std::size_t bytes, std::size_t align)
+qalloc_impl<_>::block::allocate(std::size_t bytes, std::size_t align)
 {
-    align = std::max(align,
-        std::alignment_of<block*>::value);
-    auto pad = [](void const* p, std::size_t a)
-    {
-        auto const i = reinterpret_cast<
-            std::uintptr_t>(p);
+    align = std::max(align, std::alignment_of<block*>::value);
+    auto pad = [](void const* p, std::size_t a) {
+        auto const i = reinterpret_cast<std::uintptr_t>(p);
         return (a - (i % a)) % a;
     };
 
-    auto const n0 =
-        pad(free_ + sizeof(block*), align);
-    auto const n1 =
-        n0 + sizeof(block*) + bytes;
+    auto const n0 = pad(free_ + sizeof(block*), align);
+    auto const n1 = n0 + sizeof(block*) + bytes;
     if (remain_ < n1)
         return nullptr;
-    auto p = reinterpret_cast<block**>(
-        free_ + n0 + sizeof(block*));
-    assert(pad(p - 1,
-        std::alignment_of<block*>::value) == 0);
+    auto p = reinterpret_cast<block**>(free_ + n0 + sizeof(block*));
+    assert(pad(p - 1, std::alignment_of<block*>::value) == 0);
     p[-1] = this;
     ++count_;
     free_ += n1;
@@ -221,8 +209,7 @@ qalloc_impl<_>::block::deallocate()
     if (count_ > 0)
         return false;
     remain_ = bytes_;
-    free_ = reinterpret_cast<
-        std::uint8_t*>(this + 1);
+    free_ = reinterpret_cast<std::uint8_t*>(this + 1);
     return true;
 }
 
@@ -245,21 +232,18 @@ qalloc_impl<_>::~qalloc_impl()
 
 template <class _>
 void*
-qalloc_impl<_>::allocate(
-    std::size_t bytes, std::size_t align)
+qalloc_impl<_>::allocate(std::size_t bytes, std::size_t align)
 {
     if (used_)
     {
-        auto const p =
-            used_->allocate(bytes, align);
+        auto const p = used_->allocate(bytes, align);
         if (p)
             return p;
         used_ = nullptr;
     }
     if (free_)
     {
-        auto const p =
-            free_->allocate(bytes, align);
+        auto const p = free_->allocate(bytes, align);
         if (p)
         {
             used_ = free_;
@@ -270,13 +254,12 @@ qalloc_impl<_>::allocate(
     std::size_t const adj_align =
         std::max(align, std::alignment_of<block*>::value);
     std::size_t const min_alloc =  // align up
-        ((sizeof (block) + sizeof (block*) + bytes) + (adj_align - 1)) &
+        ((sizeof(block) + sizeof(block*) + bytes) + (adj_align - 1)) &
         ~(adj_align - 1);
     auto const n = std::max<std::size_t>(block_size, min_alloc);
-    block* const b =
-        new(std::malloc(n)) block(n);
-    if (! b)
-        Throw<std::bad_alloc> ();
+    block* const b = new (std::malloc(n)) block(n);
+    if (!b)
+        Throw<std::bad_alloc>();
     used_ = b;
     // VFALCO This has to succeed
     return used_->allocate(bytes, align);
@@ -284,10 +267,9 @@ qalloc_impl<_>::allocate(
 
 template <class _>
 void
-qalloc_impl<_>::deallocate (void* p)
+qalloc_impl<_>::deallocate(void* p)
 {
-    auto const b =
-        reinterpret_cast<block**>(p)[-1];
+    auto const b = reinterpret_cast<block**>(p)[-1];
     if (b->deallocate())
     {
         if (used_ == b)
@@ -297,110 +279,94 @@ qalloc_impl<_>::deallocate (void* p)
     }
 }
 
-} // detail
+}  // namespace detail
 
 //------------------------------------------------------------------------------
 
 template <class T, bool ShareOnCopy>
 qalloc_type<T, ShareOnCopy>::qalloc_type()
-    : impl_ (std::make_shared<
-        detail::qalloc_impl<>>())
+    : impl_(std::make_shared<detail::qalloc_impl<>>())
 {
 }
 
 template <class T, bool ShareOnCopy>
 template <class U>
-qalloc_type<T, ShareOnCopy>::qalloc_type(
-        qalloc_type<U, ShareOnCopy> const& u)
-    : impl_ (u.impl_)
+qalloc_type<T, ShareOnCopy>::qalloc_type(qalloc_type<U, ShareOnCopy> const& u)
+    : impl_(u.impl_)
 {
 }
 
 template <class T, bool ShareOnCopy>
 template <class U>
 U*
-qalloc_type<T, ShareOnCopy>::alloc (std::size_t n)
+qalloc_type<T, ShareOnCopy>::alloc(std::size_t n)
 {
-    if (n > std::numeric_limits<
-            std::size_t>::max() / sizeof(U))
-        Throw<std::bad_alloc> ();
+    if (n > std::numeric_limits<std::size_t>::max() / sizeof(U))
+        Throw<std::bad_alloc>();
     auto const bytes = n * sizeof(U);
-    return static_cast<U*>(
-        impl_->allocate(bytes,
-            std::alignment_of<U>::value));
+    return static_cast<U*>(impl_->allocate(bytes, std::alignment_of<U>::value));
 }
 
 template <class T, bool ShareOnCopy>
 template <class U>
-inline
-void
-qalloc_type<T, ShareOnCopy>::dealloc(
-    U* p, std::size_t n)
+inline void
+qalloc_type<T, ShareOnCopy>::dealloc(U* p, std::size_t n)
 {
     impl_->deallocate(p);
 }
 
 template <class T, bool ShareOnCopy>
 T*
-qalloc_type<T, ShareOnCopy>::allocate (std::size_t n)
+qalloc_type<T, ShareOnCopy>::allocate(std::size_t n)
 {
     return alloc<T>(n);
 }
 
 template <class T, bool ShareOnCopy>
-inline
-void
-qalloc_type<T, ShareOnCopy>::deallocate(
-    T* p, std::size_t n)
+inline void
+qalloc_type<T, ShareOnCopy>::deallocate(T* p, std::size_t n)
 {
     dealloc(p, n);
 }
 
 template <class T, bool ShareOnCopy>
 template <class U>
-inline
-bool
-qalloc_type<T, ShareOnCopy>::operator==(
-    qalloc_type<U, ShareOnCopy> const& u)
+inline bool
+qalloc_type<T, ShareOnCopy>::operator==(qalloc_type<U, ShareOnCopy> const& u)
 {
     return impl_.get() == u.impl_.get();
 }
 
 template <class T, bool ShareOnCopy>
 template <class U>
-inline
-bool
-qalloc_type<T, ShareOnCopy>::operator!=(
-    qalloc_type<U, ShareOnCopy> const& u)
+inline bool
+qalloc_type<T, ShareOnCopy>::operator!=(qalloc_type<U, ShareOnCopy> const& u)
 {
-    return ! (*this == u);
+    return !(*this == u);
 }
 
 template <class T, bool ShareOnCopy>
 auto
-qalloc_type<T, ShareOnCopy>::select_on_container_copy_construction() const ->
-    qalloc_type
+qalloc_type<T, ShareOnCopy>::select_on_container_copy_construction() const
+    -> qalloc_type
 {
-    return select_on_copy(
-        std::integral_constant<bool, ShareOnCopy>{});
+    return select_on_copy(std::integral_constant<bool, ShareOnCopy>{});
 }
 
 template <class T, bool ShareOnCopy>
-auto
-qalloc_type<T, ShareOnCopy>::select_on_copy(std::true_type) const ->
-    qalloc_type
+auto qalloc_type<T, ShareOnCopy>::select_on_copy(std::true_type) const
+    -> qalloc_type
 {
-    return *this; // shared arena
+    return *this;  // shared arena
 }
 
 template <class T, bool ShareOnCopy>
-auto
-qalloc_type<T, ShareOnCopy>::select_on_copy(std::false_type) const ->
-    qalloc_type
+auto qalloc_type<T, ShareOnCopy>::select_on_copy(std::false_type) const
+    -> qalloc_type
 {
-    return {}; // new arena
+    return {};  // new arena
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

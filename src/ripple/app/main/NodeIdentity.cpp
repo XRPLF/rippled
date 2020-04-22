@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#include <ripple/core/DatabaseCon.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/NodeIdentity.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/core/DatabaseCon.h>
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
 
 namespace ripple {
 
 std::pair<PublicKey, SecretKey>
-loadNodeIdentity (Application& app)
+loadNodeIdentity(Application& app)
 {
     // If a seed is specified in the configuration file use that directly.
     if (app.config().exists(SECTION_NODE_SEED))
@@ -38,31 +38,29 @@ loadNodeIdentity (Application& app)
             app.config().section(SECTION_NODE_SEED).lines().front());
 
         if (!seed)
-            Throw<std::runtime_error>(
-                "NodeIdentity: Bad [" SECTION_NODE_SEED "] specified");
+            Throw<std::runtime_error>("NodeIdentity: Bad [" SECTION_NODE_SEED
+                                      "] specified");
 
-        auto secretKey =
-            generateSecretKey (KeyType::secp256k1, *seed);
-        auto publicKey =
-            derivePublicKey (KeyType::secp256k1, secretKey);
+        auto secretKey = generateSecretKey(KeyType::secp256k1, *seed);
+        auto publicKey = derivePublicKey(KeyType::secp256k1, secretKey);
 
-        return { publicKey, secretKey };
+        return {publicKey, secretKey};
     }
 
     // Try to load a node identity from the database:
     boost::optional<PublicKey> publicKey;
     boost::optional<SecretKey> secretKey;
 
-    auto db = app.getWalletDB ().checkoutDb ();
+    auto db = app.getWalletDB().checkoutDb();
 
     {
         boost::optional<std::string> pubKO, priKO;
-        soci::statement st = (db->prepare <<
-            "SELECT PublicKey, PrivateKey FROM NodeIdentity;",
-                soci::into(pubKO),
-                soci::into(priKO));
-        st.execute ();
-        while (st.fetch ())
+        soci::statement st =
+            (db->prepare << "SELECT PublicKey, PrivateKey FROM NodeIdentity;",
+             soci::into(pubKO),
+             soci::into(priKO));
+        st.execute();
+        while (st.fetch())
         {
             auto const sk = parseBase58<SecretKey>(
                 TokenType::NodePrivate, priKO.value_or(""));
@@ -70,7 +68,7 @@ loadNodeIdentity (Application& app)
                 TokenType::NodePublic, pubKO.value_or(""));
 
             // Only use if the public and secret keys are a pair
-            if (sk && pk && (*pk == derivePublicKey (KeyType::secp256k1, *sk)))
+            if (sk && pk && (*pk == derivePublicKey(KeyType::secp256k1, *sk)))
             {
                 secretKey = sk;
                 publicKey = pk;
@@ -83,13 +81,14 @@ loadNodeIdentity (Application& app)
     {
         std::tie(publicKey, secretKey) = randomKeyPair(KeyType::secp256k1);
 
-        *db << str (boost::format (
-            "INSERT INTO NodeIdentity (PublicKey,PrivateKey) VALUES ('%s','%s');")
-                % toBase58 (TokenType::NodePublic, *publicKey)
-                % toBase58 (TokenType::NodePrivate, *secretKey));
+        *db << str(
+            boost::format("INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
+                          "VALUES ('%s','%s');") %
+            toBase58(TokenType::NodePublic, *publicKey) %
+            toBase58(TokenType::NodePrivate, *secretKey));
     }
 
-    return { *publicKey, *secretKey };
+    return {*publicKey, *secretKey};
 }
 
-} // ripple
+}  // namespace ripple

@@ -28,36 +28,43 @@ namespace RPC {
 class VersionHandler
 {
 public:
-    explicit VersionHandler (JsonContext&) {}
+    explicit VersionHandler(JsonContext&)
+    {
+    }
 
-    Status check()
+    Status
+    check()
     {
         return Status::OK;
     }
 
     template <class Object>
-    void writeResult (Object& obj)
+    void
+    writeResult(Object& obj)
     {
-        setVersion (obj);
+        setVersion(obj);
     }
 
-    static char const* name()
+    static char const*
+    name()
     {
         return "version";
     }
 
-    static Role role()
+    static Role
+    role()
     {
         return Role::USER;
     }
 
-    static Condition condition()
+    static Condition
+    condition()
     {
         return NO_CONDITION;
     }
 };
 
-} // RPC
-} // ripple
+}  // namespace RPC
+}  // namespace ripple
 
 #endif

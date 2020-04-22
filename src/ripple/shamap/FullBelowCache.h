@@ -20,8 +20,8 @@
 #ifndef RIPPLE_SHAMAP_FULLBELOWCACHE_H_INCLUDED
 #define RIPPLE_SHAMAP_FULLBELOWCACHE_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
 #include <ripple/basics/KeyCache.h>
+#include <ripple/basics/base_uint.h>
 #include <ripple/beast/insight/Collector.h>
 #include <atomic>
 #include <string>
@@ -37,16 +37,13 @@ template <class Key>
 class BasicFullBelowCache
 {
 private:
-    using CacheType = KeyCache <Key>;
+    using CacheType = KeyCache<Key>;
 
 public:
-    enum
-    {
-         defaultCacheTargetSize = 0
-    };
+    enum { defaultCacheTargetSize = 0 };
 
-    using key_type   = Key;
-    using size_type  = typename CacheType::size_type;
+    using key_type = Key;
+    using size_type = typename CacheType::size_type;
     using clock_type = typename CacheType::clock_type;
 
     /** Construct the cache.
@@ -56,39 +53,42 @@ public:
         @param targetSize The cache target size.
         @param targetExpirationSeconds The expiration time for items.
     */
-    BasicFullBelowCache (std::string const& name, clock_type& clock,
+    BasicFullBelowCache(
+        std::string const& name,
+        clock_type& clock,
         beast::insight::Collector::ptr const& collector =
-            beast::insight::NullCollector::New (),
+            beast::insight::NullCollector::New(),
         std::size_t target_size = defaultCacheTargetSize,
         std::chrono::seconds expiration = std::chrono::minutes{2})
-        : m_cache (name, clock, collector, target_size,
-            expiration)
-        , m_gen (1)
+        : m_cache(name, clock, collector, target_size, expiration), m_gen(1)
     {
     }
 
     /** Return the clock associated with the cache. */
-    clock_type& clock()
+    clock_type&
+    clock()
     {
-        return m_cache.clock ();
+        return m_cache.clock();
     }
 
     /** Return the number of elements in the cache.
         Thread safety:
             Safe to call from any thread.
     */
-    size_type size () const
+    size_type
+    size() const
     {
-        return m_cache.size ();
+        return m_cache.size();
     }
 
     /** Remove expired cache items.
         Thread safety:
             Safe to call from any thread.
     */
-    void sweep ()
+    void
+    sweep()
     {
-        m_cache.sweep ();
+        m_cache.sweep();
     }
 
     /** Refresh the last access time of an item, if it exists.
@@ -97,9 +97,10 @@ public:
         @param key The key to refresh.
         @return `true` If the key exists.
     */
-    bool touch_if_exists (key_type const& key)
+    bool
+    touch_if_exists(key_type const& key)
     {
-        return m_cache.touch_if_exists (key);
+        return m_cache.touch_if_exists(key);
     }
 
     /** Insert a key into the cache.
@@ -109,38 +110,42 @@ public:
             Safe to call from any thread.
         @param key The key to insert.
     */
-    void insert (key_type const& key)
+    void
+    insert(key_type const& key)
     {
-        m_cache.insert (key);
+        m_cache.insert(key);
     }
 
     /** generation determines whether cached entry is valid */
-    std::uint32_t getGeneration (void) const
+    std::uint32_t
+    getGeneration(void) const
     {
         return m_gen;
     }
 
-    void clear ()
+    void
+    clear()
     {
-        m_cache.clear ();
+        m_cache.clear();
         ++m_gen;
     }
 
-    void reset ()
+    void
+    reset()
     {
         m_cache.clear();
-        m_gen  = 1;
+        m_gen = 1;
     }
 
 private:
-    KeyCache <Key> m_cache;
-    std::atomic <std::uint32_t> m_gen;
+    KeyCache<Key> m_cache;
+    std::atomic<std::uint32_t> m_gen;
 };
 
-} // detail
+}  // namespace detail
 
-using FullBelowCache = detail::BasicFullBelowCache <uint256>;
+using FullBelowCache = detail::BasicFullBelowCache<uint256>;
 
-}
+}  // namespace ripple
 
 #endif

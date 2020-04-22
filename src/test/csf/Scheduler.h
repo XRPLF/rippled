@@ -92,8 +92,7 @@ private:
 
         template <class DeducedHandler>
         event_impl(time_point when_, DeducedHandler&& h)
-            : event(when_)
-            , h_(std::forward<DeducedHandler>(h))
+            : event(when_), h_(std::forward<DeducedHandler>(h))
         {
         }
 
@@ -160,7 +159,7 @@ public:
     alloc() const;
 
     /** Return the clock. (aged_containers want a non-const ref =( */
-    clock_type &
+    clock_type&
     clock() const;
 
     /** Return the current network time.
@@ -309,7 +308,6 @@ Scheduler::queue_type::end() -> iterator
     return by_when_.end();
 }
 
-
 template <class Handler>
 inline auto
 Scheduler::queue_type::emplace(time_point when, Handler&& h) ->
@@ -317,8 +315,7 @@ Scheduler::queue_type::emplace(time_point when, Handler&& h) ->
 {
     using event_type = event_impl<std::decay_t<Handler>>;
     auto const p = alloc_.alloc<event_type>(1);
-    auto& e = *new (p) event_type(
-        when, std::forward<Handler>(h));
+    auto& e = *new (p) event_type(when, std::forward<Handler>(h));
     return by_when_.insert(e);
 }
 
@@ -363,7 +360,7 @@ Scheduler::alloc() const
 }
 
 inline auto
-Scheduler::clock() const -> clock_type &
+Scheduler::clock() const -> clock_type&
 {
     return clock_;
 }

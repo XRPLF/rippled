@@ -25,10 +25,11 @@
 namespace ripple {
 
 // VFALCO NOTE these are deprecated
-bool isRpcError (Json::Value jvResult);
-Json::Value rpcError (int iError,
-                      Json::Value jvResult = Json::Value (Json::objectValue));
+bool
+isRpcError(Json::Value jvResult);
+Json::Value
+rpcError(int iError, Json::Value jvResult = Json::Value(Json::objectValue));
 
-} // ripple
+}  // namespace ripple
 
 #endif

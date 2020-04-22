@@ -20,8 +20,7 @@
 #ifndef RIPPLE_JSON_JSON_FORWARDS_H_INCLUDED
 #define RIPPLE_JSON_JSON_FORWARDS_H_INCLUDED
 
-namespace Json
-{
+namespace Json {
 
 // value.h
 using Int = int;
@@ -32,7 +31,6 @@ class ValueIteratorBase;
 class ValueIterator;
 class ValueConstIterator;
 
-} // namespace Json
+}  // namespace Json
 
-
-#endif // JSON_FORWARDS_H_INCLUDED
+#endif  // JSON_FORWARDS_H_INCLUDED

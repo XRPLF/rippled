@@ -24,7 +24,8 @@ namespace test {
 
 struct Transaction_ordering_test : public beast::unit_test::suite
 {
-    void testCorrectOrder()
+    void
+    testCorrectOrder()
     {
         using namespace jtx;
 
@@ -35,7 +36,9 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         auto const aliceSequence = env.seq(alice);
 
         auto const tx1 = env.jt(noop(alice), seq(aliceSequence));
-        auto const tx2 = env.jt(noop(alice), seq(aliceSequence + 1),
+        auto const tx2 = env.jt(
+            noop(alice),
+            seq(aliceSequence + 1),
             json(R"({"LastLedgerSequence":7})"));
 
         env(tx1);
@@ -48,16 +51,21 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         env.close();
 
         {
-            auto const result = env.rpc("tx", to_string(tx1.stx->getTransactionID()));
-            BEAST_EXPECT(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
+            auto const result =
+                env.rpc("tx", to_string(tx1.stx->getTransactionID()));
+            BEAST_EXPECT(
+                result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
         }
         {
-            auto const result = env.rpc("tx", to_string(tx2.stx->getTransactionID()));
-            BEAST_EXPECT(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
+            auto const result =
+                env.rpc("tx", to_string(tx2.stx->getTransactionID()));
+            BEAST_EXPECT(
+                result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
         }
     }
 
-    void testIncorrectOrder()
+    void
+    testIncorrectOrder()
     {
         using namespace jtx;
 
@@ -69,7 +77,9 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         auto const aliceSequence = env.seq(alice);
 
         auto const tx1 = env.jt(noop(alice), seq(aliceSequence));
-        auto const tx2 = env.jt(noop(alice), seq(aliceSequence + 1),
+        auto const tx2 = env.jt(
+            noop(alice),
+            seq(aliceSequence + 1),
             json(R"({"LastLedgerSequence":7})"));
 
         env(tx2, ter(terPRE_SEQ));
@@ -81,16 +91,21 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         env.close();
 
         {
-            auto const result = env.rpc("tx", to_string(tx1.stx->getTransactionID()));
-            BEAST_EXPECT(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
+            auto const result =
+                env.rpc("tx", to_string(tx1.stx->getTransactionID()));
+            BEAST_EXPECT(
+                result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
         }
         {
-            auto const result = env.rpc("tx", to_string(tx2.stx->getTransactionID()));
-            BEAST_EXPECT(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
+            auto const result =
+                env.rpc("tx", to_string(tx2.stx->getTransactionID()));
+            BEAST_EXPECT(
+                result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
         }
     }
 
-    void testIncorrectOrderMultipleIntermediaries()
+    void
+    testIncorrectOrderMultipleIntermediaries()
     {
         using namespace jtx;
 
@@ -104,10 +119,10 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         std::vector<JTx> tx;
         for (auto i = 0; i < 5; ++i)
         {
-            tx.emplace_back(
-                env.jt(noop(alice), seq(aliceSequence + i),
-                    json(R"({"LastLedgerSequence":7})"))
-            );
+            tx.emplace_back(env.jt(
+                noop(alice),
+                seq(aliceSequence + i),
+                json(R"({"LastLedgerSequence":7})")));
         }
 
         for (auto i = 1; i < 5; ++i)
@@ -124,12 +139,15 @@ struct Transaction_ordering_test : public beast::unit_test::suite
 
         for (auto i = 0; i < 5; ++i)
         {
-            auto const result = env.rpc("tx", to_string(tx[i].stx->getTransactionID()));
-            BEAST_EXPECT(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
+            auto const result =
+                env.rpc("tx", to_string(tx[i].stx->getTransactionID()));
+            BEAST_EXPECT(
+                result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
         }
     }
 
-    void run() override
+    void
+    run() override
     {
         testCorrectOrder();
         testIncorrectOrder();
@@ -137,7 +155,7 @@ struct Transaction_ordering_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Transaction_ordering,app,ripple);
+BEAST_DEFINE_TESTSUITE(Transaction_ordering, app, ripple);
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple

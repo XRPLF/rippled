@@ -20,8 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_PROTOCOL_H_INCLUDED
 #define RIPPLE_PROTOCOL_PROTOCOL_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
 #include <ripple/basics/ByteUtilities.h>
+#include <ripple/basics/base_uint.h>
 #include <cstdint>
 
 namespace ripple {
@@ -64,6 +64,6 @@ using TxID = uint256;
 
 using TxSeq = std::uint32_t;
 
-} // ripple
+}  // namespace ripple
 
 #endif

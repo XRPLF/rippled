@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TX_APPLYSTEPS_H_INCLUDED
 #define RIPPLE_TX_APPLYSTEPS_H_INCLUDED
 
-#include <ripple/ledger/ApplyViewImpl.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/ledger/ApplyViewImpl.h>
 
 namespace ripple {
 
@@ -31,8 +31,7 @@ class STTx;
 /** Return true if the transaction can claim a fee (tec),
     and the `ApplyFlags` do not allow soft failures.
  */
-inline
-bool
+inline bool
 isTecClaimHardFail(TER ter, ApplyFlags flags)
 {
     return isTecClaim(ter) && !(flags & tapRETRY);
@@ -60,9 +59,8 @@ public:
     NotTEC const ter;
 
     /// Constructor
-    template<class Context>
-    PreflightResult(Context const& ctx_,
-        NotTEC ter_)
+    template <class Context>
+    PreflightResult(Context const& ctx_, NotTEC ter_)
         : tx(ctx_.tx)
         , rules(ctx_.rules)
         , flags(ctx_.flags)
@@ -73,7 +71,8 @@ public:
 
     PreflightResult(PreflightResult const&) = default;
     /// Deleted copy assignment operator
-    PreflightResult& operator=(PreflightResult const&) = delete;
+    PreflightResult&
+    operator=(PreflightResult const&) = delete;
 };
 
 /** Describes the results of the `preclaim` check
@@ -101,21 +100,21 @@ public:
     bool const likelyToClaimFee;
 
     /// Constructor
-    template<class Context>
+    template <class Context>
     PreclaimResult(Context const& ctx_, TER ter_)
         : view(ctx_.view)
         , tx(ctx_.tx)
         , flags(ctx_.flags)
         , j(ctx_.j)
         , ter(ter_)
-        , likelyToClaimFee(ter == tesSUCCESS
-            || isTecClaimHardFail(ter, flags))
+        , likelyToClaimFee(ter == tesSUCCESS || isTecClaimHardFail(ter, flags))
     {
     }
 
     PreclaimResult(PreclaimResult const&) = default;
     /// Deleted copy assignment operator
-    PreclaimResult& operator=(PreclaimResult const&) = delete;
+    PreclaimResult&
+    operator=(PreclaimResult const&) = delete;
 };
 
 /** Structure describing the consequences to the account
@@ -128,8 +127,7 @@ struct TxConsequences
 {
     /// Describes how the transaction affects subsequent
     /// transactions
-    enum ConsequenceCategory
-    {
+    enum ConsequenceCategory {
         /// Moves currency around, creates offers, etc.
         normal = 0,
         /// Affects the ability of subsequent transactions
@@ -146,23 +144,24 @@ struct TxConsequences
     XRPAmount const potentialSpend;
 
     /// Constructor
-    TxConsequences(ConsequenceCategory const category_,
-        XRPAmount const fee_, XRPAmount const spend_)
-        : category(category_)
-        , fee(fee_)
-        , potentialSpend(spend_)
+    TxConsequences(
+        ConsequenceCategory const category_,
+        XRPAmount const fee_,
+        XRPAmount const spend_)
+        : category(category_), fee(fee_), potentialSpend(spend_)
     {
     }
 
     /// Constructor
     TxConsequences(TxConsequences const&) = default;
     /// Deleted copy assignment operator
-    TxConsequences& operator=(TxConsequences const&) = delete;
+    TxConsequences&
+    operator=(TxConsequences const&) = delete;
     /// Constructor
     TxConsequences(TxConsequences&&) = default;
     /// Deleted copy assignment operator
-    TxConsequences& operator=(TxConsequences&&) = delete;
-
+    TxConsequences&
+    operator=(TxConsequences&&) = delete;
 };
 
 /** Gate a transaction based on static information.
@@ -182,9 +181,12 @@ struct TxConsequences
     other things, the `TER` code.
 */
 PreflightResult
-preflight(Application& app, Rules const& rules,
-    STTx const& tx, ApplyFlags flags,
-        beast::Journal j);
+preflight(
+    Application& app,
+    Rules const& rules,
+    STTx const& tx,
+    ApplyFlags flags,
+    beast::Journal j);
 
 /** Gate a transaction based on static ledger information.
 
@@ -215,8 +217,10 @@ preflight(Application& app, Rules const& rules,
     this transaction.
 */
 PreclaimResult
-preclaim(PreflightResult const& preflightResult,
-    Application& app, OpenView const& view);
+preclaim(
+    PreflightResult const& preflightResult,
+    Application& app,
+    OpenView const& view);
 
 /** Compute only the expected base fee for a transaction.
 
@@ -235,8 +239,7 @@ preclaim(PreflightResult const& preflightResult,
     @return The base fee.
 */
 FeeUnit64
-calculateBaseFee(ReadView const& view,
-    STTx const& tx);
+calculateBaseFee(ReadView const& view, STTx const& tx);
 
 /** Determine the XRP balance consequences if a transaction
     consumes the maximum XRP allowed.
@@ -273,9 +276,8 @@ calculateConsequences(PreflightResult const& preflightResult);
     whether or not the transaction was applied.
 */
 std::pair<TER, bool>
-doApply(PreclaimResult const& preclaimResult,
-    Application& app, OpenView& view);
+doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view);
 
-}
+}  // namespace ripple
 
 #endif

@@ -124,9 +124,10 @@ public:
 
             BEAST_EXPECT(handler->init());
 
-            Downloads const dl = {{1, "https://foo:443/1.tar.lz4"},
-                                  {2, "https://foo:443/2.tar.lz4"},
-                                  {3, "https://foo:443/3.tar.lz4"}};
+            Downloads const dl = {
+                {1, "https://foo:443/1.tar.lz4"},
+                {2, "https://foo:443/2.tar.lz4"},
+                {3, "https://foo:443/3.tar.lz4"}};
 
             for (auto const& entry : dl)
             {
@@ -191,10 +192,11 @@ public:
 
                 for (int i = 1; i <= 10; ++i)
                 {
-                    ret.push_back({i,
-                                   (boost::format("https://%s:%d/%d.tar.lz4") %
-                                    host % port % i)
-                                       .str()});
+                    ret.push_back(
+                        {i,
+                         (boost::format("https://%s:%d/%d.tar.lz4") % host %
+                          port % i)
+                             .str()});
                 }
 
                 return ret;
@@ -264,10 +266,11 @@ public:
 
                 for (int i = 1; i <= 10; ++i)
                 {
-                    ret.push_back({i,
-                                   (boost::format("https://%s:%d/%d.tar.lz4") %
-                                    host % port % i)
-                                       .str()});
+                    ret.push_back(
+                        {i,
+                         (boost::format("https://%s:%d/%d.tar.lz4") % host %
+                          port % i)
+                             .str()});
                 }
 
                 return ret;

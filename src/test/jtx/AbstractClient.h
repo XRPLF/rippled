@@ -36,7 +36,8 @@ public:
     virtual ~AbstractClient() = default;
     AbstractClient() = default;
     AbstractClient(AbstractClient const&) = delete;
-    AbstractClient& operator=(AbstractClient const&) = delete;
+    AbstractClient&
+    operator=(AbstractClient const&) = delete;
 
     /** Submit a command synchronously.
 
@@ -49,16 +50,15 @@ public:
                       with zero or more key/value pairs.
         @return The server response in normalized format.
     */
-    virtual
-    Json::Value
-    invoke(std::string const& cmd,
-        Json::Value const& params = {}) = 0;
+    virtual Json::Value
+    invoke(std::string const& cmd, Json::Value const& params = {}) = 0;
 
     /// Get RPC 1.0 or RPC 2.0
-    virtual unsigned version() const = 0;
+    virtual unsigned
+    version() const = 0;
 };
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple
 
 #endif

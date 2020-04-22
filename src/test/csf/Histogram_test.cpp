@@ -17,10 +17,8 @@
 */
 //==============================================================================
 
-
 #include <ripple/beast/unit_test.h>
 #include <test/csf/Histogram.h>
-
 
 namespace ripple {
 namespace test {
@@ -74,7 +72,7 @@ public:
         BEAST_EXPECT(hist.numBins() == 2);
         BEAST_EXPECT(hist.minValue() == 1);
         BEAST_EXPECT(hist.maxValue() == 9);
-        BEAST_EXPECT(hist.avg() == 11/3);
+        BEAST_EXPECT(hist.avg() == 11 / 3);
         BEAST_EXPECT(hist.percentile(0.0f) == hist.minValue());
         BEAST_EXPECT(hist.percentile(0.5f) == 1);
         BEAST_EXPECT(hist.percentile(0.9f) == 9);
@@ -84,5 +82,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Histogram, test, ripple);
 
-}  // test
-}  // ripple
+}  // namespace test
+}  // namespace ripple

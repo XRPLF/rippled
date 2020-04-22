@@ -52,7 +52,6 @@ class tagged_integer
                       tagged_integer<Int, Tag>,
                       boost::shiftable<tagged_integer<Int, Tag>>>>>>
 {
-
 private:
     Int m_value;
 
@@ -67,10 +66,7 @@ public:
         class = typename std::enable_if<
             std::is_integral<OtherInt>::value &&
             sizeof(OtherInt) <= sizeof(Int)>::type>
-    explicit
-    constexpr
-    tagged_integer(OtherInt value) noexcept
-    : m_value(value)
+    explicit constexpr tagged_integer(OtherInt value) noexcept : m_value(value)
     {
         static_assert(
             sizeof(tagged_integer) == sizeof(Int),
@@ -78,13 +74,13 @@ public:
     }
 
     bool
-    operator<(const tagged_integer & rhs) const noexcept
+    operator<(const tagged_integer& rhs) const noexcept
     {
         return m_value < rhs.m_value;
     }
 
     bool
-    operator==(const tagged_integer & rhs) const noexcept
+    operator==(const tagged_integer& rhs) const noexcept
     {
         return m_value == rhs.m_value;
     }
@@ -178,50 +174,46 @@ public:
     }
 
     tagged_integer&
-    operator++ () noexcept
+    operator++() noexcept
     {
         ++m_value;
         return *this;
     }
 
     tagged_integer&
-    operator-- () noexcept
+    operator--() noexcept
     {
         --m_value;
         return *this;
     }
 
-    explicit
-    operator Int() const noexcept
+    explicit operator Int() const noexcept
     {
         return m_value;
     }
 
-    friend
-    std::ostream&
-    operator<< (std::ostream& s, tagged_integer const& t)
+    friend std::ostream&
+    operator<<(std::ostream& s, tagged_integer const& t)
     {
         s << t.m_value;
         return s;
     }
 
-    friend
-    std::istream&
-    operator>> (std::istream& s, tagged_integer& t)
+    friend std::istream&
+    operator>>(std::istream& s, tagged_integer& t)
     {
         s >> t.m_value;
         return s;
     }
 
-    friend
-    std::string
+    friend std::string
     to_string(tagged_integer const& t)
     {
         return std::to_string(t.m_value);
     }
 };
 
-} // ripple
+}  // namespace ripple
 
 namespace beast {
 template <class Int, class Tag, class HashAlgorithm>
@@ -231,6 +223,5 @@ struct is_contiguously_hashable<ripple::tagged_integer<Int, Tag>, HashAlgorithm>
     explicit is_contiguously_hashable() = default;
 };
 
-} // beast
+}  // namespace beast
 #endif
-

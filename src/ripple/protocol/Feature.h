@@ -69,15 +69,14 @@ namespace detail {
 
 class FeatureCollections
 {
-    static constexpr char const* const featureNames[] =
-    {
-        "MultiSign",                   // Unconditionally supported.
+    static constexpr char const* const featureNames[] = {
+        "MultiSign",  // Unconditionally supported.
         "Tickets",
-        "TrustSetAuth",                // Unconditionally supported.
-        "FeeEscalation",               // Unconditionally supported.
+        "TrustSetAuth",   // Unconditionally supported.
+        "FeeEscalation",  // Unconditionally supported.
         "OwnerPaysFee",
         "PayChan",
-        "Flow",                        // Unconditionally supported.
+        "Flow",  // Unconditionally supported.
         "CompareTakerFlowCross",
         "FlowCross",
         "CryptoConditions",
@@ -110,7 +109,8 @@ class FeatureCollections
         // fixQualityUpperBound should be activated before FlowCross
         "fixQualityUpperBound",
         "RequireFullyCanonicalSig",
-        "fix1781", // XRPEndpointSteps should be included in the circular payment check
+        "fix1781",  // XRPEndpointSteps should be included in the circular
+                    // payment check
     };
 
     std::vector<uint256> features;
@@ -120,9 +120,10 @@ class FeatureCollections
 public:
     FeatureCollections();
 
-    static constexpr std::size_t numFeatures()
+    static constexpr std::size_t
+    numFeatures()
     {
-        return sizeof (featureNames) / sizeof (featureNames[0]);
+        return sizeof(featureNames) / sizeof(featureNames[0]);
     }
 
     boost::optional<uint256>
@@ -137,12 +138,12 @@ public:
 
 /** Amendments that this server supports, but doesn't enable by default */
 std::vector<std::string> const&
-supportedAmendments ();
+supportedAmendments();
 
-} // detail
+}  // namespace detail
 
 boost::optional<uint256>
-getRegisteredFeature (std::string const& name);
+getRegisteredFeature(std::string const& name);
 
 size_t
 featureToBitsetIndex(uint256 const& f);
@@ -155,8 +156,9 @@ class FeatureBitset
 {
     using base = std::bitset<detail::FeatureCollections::numFeatures()>;
 
-    template<class... Fs>
-    void initFromFeatures(uint256 const& f, Fs&&... fs)
+    template <class... Fs>
+    void
+    initFromFeatures(uint256 const& f, Fs&&... fs)
     {
         set(f);
         if constexpr (sizeof...(fs) > 0)
@@ -168,49 +170,47 @@ public:
     using base::operator==;
     using base::operator!=;
 
-    using base::test;
     using base::all;
     using base::any;
-    using base::none;
     using base::count;
-    using base::size;
-    using base::set;
-    using base::reset;
     using base::flip;
+    using base::none;
+    using base::reset;
+    using base::set;
+    using base::size;
+    using base::test;
     using base::operator[];
     using base::to_string;
-    using base::to_ulong;
     using base::to_ullong;
+    using base::to_ulong;
 
     FeatureBitset() = default;
 
-    explicit
-    FeatureBitset(base const& b)
-        : base(b)
+    explicit FeatureBitset(base const& b) : base(b)
     {
     }
 
-    template<class... Fs>
-    explicit
-    FeatureBitset(uint256 const& f, Fs&&... fs)
+    template <class... Fs>
+    explicit FeatureBitset(uint256 const& f, Fs&&... fs)
     {
         initFromFeatures(f, std::forward<Fs>(fs)...);
     }
 
     template <class Col>
-    explicit
-    FeatureBitset(Col const& fs)
+    explicit FeatureBitset(Col const& fs)
     {
         for (auto const& f : fs)
             set(featureToBitsetIndex(f));
     }
 
-    auto operator[](uint256 const& f)
+    auto
+    operator[](uint256 const& f)
     {
         return base::operator[](featureToBitsetIndex(f));
     }
 
-    auto operator[](uint256 const& f) const
+    auto
+    operator[](uint256 const& f) const
     {
         return base::operator[](featureToBitsetIndex(f));
     }
@@ -236,119 +236,98 @@ public:
         return *this;
     }
 
-    FeatureBitset& operator&=(FeatureBitset const& rhs)
+    FeatureBitset&
+    operator&=(FeatureBitset const& rhs)
     {
         base::operator&=(rhs);
         return *this;
     }
 
-    FeatureBitset& operator|=(FeatureBitset const& rhs)
+    FeatureBitset&
+    operator|=(FeatureBitset const& rhs)
     {
         base::operator|=(rhs);
         return *this;
     }
 
-    FeatureBitset operator~() const
+    FeatureBitset
+    operator~() const
     {
         return FeatureBitset{base::operator~()};
     }
 
-    friend
-    FeatureBitset operator&(
-        FeatureBitset const& lhs,
-        FeatureBitset const& rhs)
+    friend FeatureBitset
+    operator&(FeatureBitset const& lhs, FeatureBitset const& rhs)
     {
-        return FeatureBitset{static_cast<base const&>(lhs) &
-                             static_cast<base const&>(rhs)};
+        return FeatureBitset{
+            static_cast<base const&>(lhs) & static_cast<base const&>(rhs)};
     }
 
-    friend
-    FeatureBitset operator&(
-        FeatureBitset const& lhs,
-        uint256 const& rhs)
+    friend FeatureBitset
+    operator&(FeatureBitset const& lhs, uint256 const& rhs)
     {
         return lhs & FeatureBitset{rhs};
     }
 
-    friend
-    FeatureBitset operator&(
-        uint256 const& lhs,
-        FeatureBitset const& rhs)
+    friend FeatureBitset
+    operator&(uint256 const& lhs, FeatureBitset const& rhs)
     {
         return FeatureBitset{lhs} & rhs;
     }
 
-    friend
-    FeatureBitset operator|(
-        FeatureBitset const& lhs,
-        FeatureBitset const& rhs)
+    friend FeatureBitset
+    operator|(FeatureBitset const& lhs, FeatureBitset const& rhs)
     {
-        return FeatureBitset{static_cast<base const&>(lhs) |
-                             static_cast<base const&>(rhs)};
+        return FeatureBitset{
+            static_cast<base const&>(lhs) | static_cast<base const&>(rhs)};
     }
 
-    friend
-    FeatureBitset operator|(
-        FeatureBitset const& lhs,
-        uint256 const& rhs)
+    friend FeatureBitset
+    operator|(FeatureBitset const& lhs, uint256 const& rhs)
     {
         return lhs | FeatureBitset{rhs};
     }
 
-    friend
-    FeatureBitset operator|(
-        uint256 const& lhs,
-        FeatureBitset const& rhs)
+    friend FeatureBitset
+    operator|(uint256 const& lhs, FeatureBitset const& rhs)
     {
         return FeatureBitset{lhs} | rhs;
     }
 
-    friend
-    FeatureBitset operator^(
-        FeatureBitset const& lhs,
-        FeatureBitset const& rhs)
+    friend FeatureBitset
+    operator^(FeatureBitset const& lhs, FeatureBitset const& rhs)
     {
-        return FeatureBitset{static_cast<base const&>(lhs) ^
-                             static_cast<base const&>(rhs)};
+        return FeatureBitset{
+            static_cast<base const&>(lhs) ^ static_cast<base const&>(rhs)};
     }
 
-    friend
-    FeatureBitset operator^(
-        FeatureBitset const& lhs,
-        uint256 const& rhs)
+    friend FeatureBitset
+    operator^(FeatureBitset const& lhs, uint256 const& rhs)
     {
-        return lhs ^ FeatureBitset{rhs};
+        return lhs ^ FeatureBitset { rhs };
     }
 
-    friend
-    FeatureBitset operator^(
-        uint256 const& lhs,
-        FeatureBitset const& rhs)
+    friend FeatureBitset
+    operator^(uint256 const& lhs, FeatureBitset const& rhs)
     {
         return FeatureBitset{lhs} ^ rhs;
     }
 
     // set difference
-    friend
-    FeatureBitset operator-(
-        FeatureBitset const& lhs,
-        FeatureBitset const& rhs)
+    friend FeatureBitset
+    operator-(FeatureBitset const& lhs, FeatureBitset const& rhs)
     {
         return lhs & ~rhs;
     }
 
-    friend
-    FeatureBitset operator-(
-        FeatureBitset const& lhs,
-        uint256 const& rhs)
+    friend FeatureBitset
+    operator-(FeatureBitset const& lhs, uint256 const& rhs)
     {
         return lhs - FeatureBitset{rhs};
     }
 
-    friend
-    FeatureBitset operator-(
-        uint256 const& lhs,
-        FeatureBitset const& rhs)
+    friend FeatureBitset
+    operator-(uint256 const& lhs, FeatureBitset const& rhs)
     {
         return FeatureBitset{lhs} - rhs;
     }
@@ -403,6 +382,6 @@ extern uint256 const retiredFix1512;
 extern uint256 const retiredFix1523;
 extern uint256 const retiredFix1528;
 
-} // ripple
+}  // namespace ripple
 
 #endif

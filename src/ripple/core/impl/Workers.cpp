@@ -17,39 +17,40 @@
 */
 //==============================================================================
 
-#include <ripple/core/impl/Workers.h>
 #include <ripple/basics/PerfLog.h>
 #include <ripple/beast/core/CurrentThreadName.h>
+#include <ripple/core/impl/Workers.h>
 #include <cassert>
 
 namespace ripple {
 
-Workers::Workers (
+Workers::Workers(
     Callback& callback,
     perf::PerfLog* perfLog,
     std::string const& threadNames,
     int numberOfThreads)
-        : m_callback (callback)
-        , perfLog_ (perfLog)
-        , m_threadNames (threadNames)
-        , m_allPaused (true)
-        , m_semaphore (0)
-        , m_numberOfThreads (0)
-        , m_activeCount (0)
-        , m_pauseCount (0)
-        , m_runningTaskCount (0)
+    : m_callback(callback)
+    , perfLog_(perfLog)
+    , m_threadNames(threadNames)
+    , m_allPaused(true)
+    , m_semaphore(0)
+    , m_numberOfThreads(0)
+    , m_activeCount(0)
+    , m_pauseCount(0)
+    , m_runningTaskCount(0)
 {
-    setNumberOfThreads (numberOfThreads);
+    setNumberOfThreads(numberOfThreads);
 }
 
-Workers::~Workers ()
+Workers::~Workers()
 {
-    pauseAllThreadsAndWait ();
+    pauseAllThreadsAndWait();
 
-    deleteWorkers (m_everyone);
+    deleteWorkers(m_everyone);
 }
 
-int Workers::getNumberOfThreads () const noexcept
+int
+Workers::getNumberOfThreads() const noexcept
 {
     return m_numberOfThreads;
 }
@@ -58,9 +59,10 @@ int Workers::getNumberOfThreads () const noexcept
 //             increase the number of threads, it could result in
 //             more paused threads being created than expected.
 //
-void Workers::setNumberOfThreads (int numberOfThreads)
+void
+Workers::setNumberOfThreads(int numberOfThreads)
 {
-    static int instance {0};
+    static int instance{0};
     if (m_numberOfThreads != numberOfThreads)
     {
         if (perfLog_)
@@ -74,19 +76,19 @@ void Workers::setNumberOfThreads (int numberOfThreads)
             for (int i = 0; i < amount; ++i)
             {
                 // See if we can reuse a paused worker
-                Worker* worker = m_paused.pop_front ();
+                Worker* worker = m_paused.pop_front();
 
                 if (worker != nullptr)
                 {
                     // If we got here then the worker thread is at [1]
                     // This will unblock their call to wait()
                     //
-                    worker->notify ();
+                    worker->notify();
                 }
                 else
                 {
-                    worker = new Worker (*this, m_threadNames, instance++);
-                    m_everyone.push_front (worker);
+                    worker = new Worker(*this, m_threadNames, instance++);
+                    m_everyone.push_front(worker);
                 }
             }
         }
@@ -100,7 +102,7 @@ void Workers::setNumberOfThreads (int numberOfThreads)
                 ++m_pauseCount;
 
                 // Pausing a thread counts as one "internal task"
-                m_semaphore.notify ();
+                m_semaphore.notify();
             }
         }
 
@@ -108,32 +110,36 @@ void Workers::setNumberOfThreads (int numberOfThreads)
     }
 }
 
-void Workers::pauseAllThreadsAndWait ()
+void
+Workers::pauseAllThreadsAndWait()
 {
-    setNumberOfThreads (0);
+    setNumberOfThreads(0);
 
     std::unique_lock<std::mutex> lk{m_mut};
-    m_cv.wait(lk, [this]{return m_allPaused;});
+    m_cv.wait(lk, [this] { return m_allPaused; });
     lk.unlock();
 
-    assert (numberOfCurrentlyRunningTasks () == 0);
+    assert(numberOfCurrentlyRunningTasks() == 0);
 }
 
-void Workers::addTask ()
+void
+Workers::addTask()
 {
-    m_semaphore.notify ();
+    m_semaphore.notify();
 }
 
-int Workers::numberOfCurrentlyRunningTasks () const noexcept
+int
+Workers::numberOfCurrentlyRunningTasks() const noexcept
 {
-    return m_runningTaskCount.load ();
+    return m_runningTaskCount.load();
 }
 
-void Workers::deleteWorkers (beast::LockFreeStack <Worker>& stack)
+void
+Workers::deleteWorkers(beast::LockFreeStack<Worker>& stack)
 {
     for (;;)
     {
-        Worker* const worker = stack.pop_front ();
+        Worker* const worker = stack.pop_front();
 
         if (worker != nullptr)
         {
@@ -149,21 +155,23 @@ void Workers::deleteWorkers (beast::LockFreeStack <Worker>& stack)
 
 //------------------------------------------------------------------------------
 
-Workers::Worker::Worker (Workers& workers, std::string const& threadName,
+Workers::Worker::Worker(
+    Workers& workers,
+    std::string const& threadName,
     int const instance)
-    : m_workers {workers}
-    , threadName_ {threadName}
-    , instance_ {instance}
-    , wakeCount_ {0}
-    , shouldExit_ {false}
+    : m_workers{workers}
+    , threadName_{threadName}
+    , instance_{instance}
+    , wakeCount_{0}
+    , shouldExit_{false}
 {
-    thread_ = std::thread {&Workers::Worker::run, this};
+    thread_ = std::thread{&Workers::Worker::run, this};
 }
 
-Workers::Worker::~Worker ()
+Workers::Worker::~Worker()
 {
     {
-        std::lock_guard lock {mutex_};
+        std::lock_guard lock{mutex_};
         ++wakeCount_;
         shouldExit_ = true;
     }
@@ -172,14 +180,16 @@ Workers::Worker::~Worker ()
     thread_.join();
 }
 
-void Workers::Worker::notify ()
+void
+Workers::Worker::notify()
 {
-    std::lock_guard lock {mutex_};
+    std::lock_guard lock{mutex_};
     ++wakeCount_;
     wakeup_.notify_one();
 }
 
-void Workers::Worker::run ()
+void
+Workers::Worker::run()
 {
     bool shouldExit = true;
     do
@@ -196,16 +206,16 @@ void Workers::Worker::run ()
         for (;;)
         {
             // Put the name back in case the callback changed it
-            beast::setCurrentThreadName (threadName_);
+            beast::setCurrentThreadName(threadName_);
 
             // Acquire a task or "internal task."
             //
-            m_workers.m_semaphore.wait ();
+            m_workers.m_semaphore.wait();
 
             // See if there's a pause request. This
             // counts as an "internal task."
             //
-            int pauseCount = m_workers.m_pauseCount.load ();
+            int pauseCount = m_workers.m_pauseCount.load();
 
             if (pauseCount > 0)
             {
@@ -228,7 +238,7 @@ void Workers::Worker::run ()
             // unblocked in order to process a task.
             //
             ++m_workers.m_runningTaskCount;
-            m_workers.m_callback.processTask (instance_);
+            m_workers.m_callback.processTask(instance_);
             --m_workers.m_runningTaskCount;
         }
 
@@ -236,7 +246,7 @@ void Workers::Worker::run ()
         // guarantee that it will eventually block on its
         // event object.
         //
-        m_workers.m_paused.push_front (this);
+        m_workers.m_paused.push_front(this);
 
         // Decrement the count of active workers, and if we
         // are the last one then signal the "all paused" event.
@@ -249,7 +259,7 @@ void Workers::Worker::run ()
         }
 
         // Set inactive thread name.
-        beast::setCurrentThreadName ("(" + threadName_ + ")");
+        beast::setCurrentThreadName("(" + threadName_ + ")");
 
         // [1] We will be here when the paused list is popped
         //
@@ -258,13 +268,13 @@ void Workers::Worker::run ()
         //
         // wakeup_ will get signaled by either Worker::notify() or ~Worker.
         {
-            std::unique_lock <std::mutex> lock {mutex_};
-            wakeup_.wait (lock, [this] {return this->wakeCount_ > 0;});
+            std::unique_lock<std::mutex> lock{mutex_};
+            wakeup_.wait(lock, [this] { return this->wakeCount_ > 0; });
 
             shouldExit = shouldExit_;
             --wakeCount_;
         }
-    } while (! shouldExit);
+    } while (!shouldExit);
 }
 
-} // ripple
+}  // namespace ripple

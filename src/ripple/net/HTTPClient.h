@@ -29,7 +29,7 @@
 namespace ripple {
 
 /** Provides an asynchronous HTTP client implementation with optional SSL.
-*/
+ */
 class HTTPClient
 {
 public:
@@ -37,42 +37,54 @@ public:
 
     static constexpr auto maxClientHeaderBytes = kilobytes(32);
 
-    static void initializeSSLContext (Config const& config, beast::Journal j);
+    static void
+    initializeSSLContext(Config const& config, beast::Journal j);
 
-    static void get (
-        bool bSSL,
+    static void
+    get(bool bSSL,
         boost::asio::io_service& io_service,
-        std::deque <std::string> deqSites,
+        std::deque<std::string> deqSites,
         const unsigned short port,
         std::string const& strPath,
-        std::size_t responseMax,    // if no Content-Length header
+        std::size_t responseMax,  // if no Content-Length header
         std::chrono::seconds timeout,
-        std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete,
+        std::function<bool(
+            const boost::system::error_code& ecResult,
+            int iStatus,
+            std::string const& strData)> complete,
         beast::Journal& j);
 
-    static void get (
-        bool bSSL,
+    static void
+    get(bool bSSL,
         boost::asio::io_service& io_service,
         std::string strSite,
         const unsigned short port,
         std::string const& strPath,
-        std::size_t responseMax,    // if no Content-Length header
+        std::size_t responseMax,  // if no Content-Length header
         std::chrono::seconds timeout,
-        std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete,
+        std::function<bool(
+            const boost::system::error_code& ecResult,
+            int iStatus,
+            std::string const& strData)> complete,
         beast::Journal& j);
 
-    static void request (
+    static void
+    request(
         bool bSSL,
         boost::asio::io_service& io_service,
         std::string strSite,
         const unsigned short port,
-        std::function <void (boost::asio::streambuf& sb, std::string const& strHost)> build,
-        std::size_t responseMax,    // if no Content-Length header
+        std::function<
+            void(boost::asio::streambuf& sb, std::string const& strHost)> build,
+        std::size_t responseMax,  // if no Content-Length header
         std::chrono::seconds timeout,
-        std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete,
+        std::function<bool(
+            const boost::system::error_code& ecResult,
+            int iStatus,
+            std::string const& strData)> complete,
         beast::Journal& j);
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

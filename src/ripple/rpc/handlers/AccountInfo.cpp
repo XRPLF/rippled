@@ -23,12 +23,12 @@
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/jss.h>
 #include <ripple/protocol/UintTypes.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/GRPCHandlers.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/GRPCHelpers.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <grpc/status.h>
 
 namespace ripple {
@@ -49,7 +49,8 @@ namespace ripple {
 // }
 
 // TODO(tom): what is that "default"?
-Json::Value doAccountInfo (RPC::JsonContext& context)
+Json::Value
+doAccountInfo(RPC::JsonContext& context)
 {
     auto& params = context.params;
 
@@ -59,20 +60,20 @@ Json::Value doAccountInfo (RPC::JsonContext& context)
     else if (params.isMember(jss::ident))
         strIdent = params[jss::ident].asString();
     else
-        return RPC::missing_field_error (jss::account);
+        return RPC::missing_field_error(jss::account);
 
     std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger (ledger, context);
+    auto result = RPC::lookupLedger(ledger, context);
 
     if (!ledger)
         return result;
 
-    bool bStrict = params.isMember (jss::strict) && params[jss::strict].asBool ();
+    bool bStrict = params.isMember(jss::strict) && params[jss::strict].asBool();
     AccountID accountID;
 
     // Get info on account.
 
-    auto jvAccepted = RPC::accountFromString (accountID, strIdent, bStrict);
+    auto jvAccepted = RPC::accountFromString(accountID, strIdent, bStrict);
 
     if (jvAccepted)
         return jvAccepted;
@@ -80,8 +81,8 @@ Json::Value doAccountInfo (RPC::JsonContext& context)
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
     {
-        auto const queue = params.isMember(jss::queue) &&
-            params[jss::queue].asBool();
+        auto const queue =
+            params.isMember(jss::queue) && params[jss::queue].asBool();
 
         if (queue && !ledger->open())
         {
@@ -95,8 +96,8 @@ Json::Value doAccountInfo (RPC::JsonContext& context)
         result[jss::account_data] = jvAccepted;
 
         // Return SignerList(s) if that is requested.
-        if (params.isMember (jss::signer_lists) &&
-            params[jss::signer_lists].asBool ())
+        if (params.isMember(jss::signer_lists) &&
+            params[jss::signer_lists].asBool())
         {
             // We put the SignerList in an array because of an anticipated
             // future when we support multiple signer lists on one account.
@@ -104,9 +105,9 @@ Json::Value doAccountInfo (RPC::JsonContext& context)
 
             // This code will need to be revisited if in the future we support
             // multiple SignerLists on one account.
-            auto const sleSigners = ledger->read (keylet::signers (accountID));
+            auto const sleSigners = ledger->read(keylet::signers(accountID));
             if (sleSigners)
-                jvSignerList.append (sleSigners->getJson (JsonOptions::none));
+                jvSignerList.append(sleSigners->getJson(JsonOptions::none));
 
             result[jss::account_data][jss::signer_lists] =
                 std::move(jvSignerList);
@@ -116,11 +117,12 @@ Json::Value doAccountInfo (RPC::JsonContext& context)
         {
             Json::Value jvQueueData = Json::objectValue;
 
-            auto const txs = context.app.getTxQ().getAccountTxs(
-                accountID, *ledger);
+            auto const txs =
+                context.app.getTxQ().getAccountTxs(accountID, *ledger);
             if (!txs.empty())
             {
-                jvQueueData[jss::txn_count] = static_cast<Json::UInt>(txs.size());
+                jvQueueData[jss::txn_count] =
+                    static_cast<Json::UInt>(txs.size());
                 jvQueueData[jss::lowest_sequence] = txs.begin()->first;
                 jvQueueData[jss::highest_sequence] = txs.rbegin()->first;
 
@@ -140,8 +142,7 @@ Json::Value doAccountInfo (RPC::JsonContext& context)
                         jvTx[jss::LastLedgerSequence] = *txDetails.lastValid;
                     if (txDetails.consequences)
                     {
-                        jvTx[jss::fee] = to_string(
-                            txDetails.consequences->fee);
+                        jvTx[jss::fee] = to_string(txDetails.consequences->fee);
                         auto spend = txDetails.consequences->potentialSpend +
                             txDetails.consequences->fee;
                         jvTx[jss::max_spend_drops] = to_string(spend);
@@ -164,8 +165,7 @@ Json::Value doAccountInfo (RPC::JsonContext& context)
                 }
 
                 if (anyAuthChanged)
-                    jvQueueData[jss::auth_change_queued] =
-                        *anyAuthChanged;
+                    jvQueueData[jss::auth_change_queued] = *anyAuthChanged;
                 if (totalSpend)
                     jvQueueData[jss::max_spend_drops_total] =
                         to_string(*totalSpend);
@@ -178,15 +178,16 @@ Json::Value doAccountInfo (RPC::JsonContext& context)
     }
     else
     {
-        result[jss::account] = context.app.accountIDCache().toBase58 (accountID);
-        RPC::inject_error (rpcACT_NOT_FOUND, result);
+        result[jss::account] = context.app.accountIDCache().toBase58(accountID);
+        RPC::inject_error(rpcACT_NOT_FOUND, result);
     }
 
     return result;
 }
 
 std::pair<org::xrpl::rpc::v1::GetAccountInfoResponse, grpc::Status>
-doAccountInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAccountInfoRequest>& context)
+doAccountInfoGrpc(
+    RPC::GRPCContext<org::xrpl::rpc::v1::GetAccountInfoRequest>& context)
 {
     // Return values
     org::xrpl::rpc::v1::GetAccountInfoResponse result;
@@ -225,8 +226,8 @@ doAccountInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAccountInfoRequest>& c
         RPC::accountFromStringWithCode(accountID, strIdent, params.strict());
     if (code != rpcSUCCESS)
     {
-        grpc::Status errorStatus{grpc::StatusCode::INVALID_ARGUMENT,
-                                 "invalid account"};
+        grpc::Status errorStatus{
+            grpc::StatusCode::INVALID_ARGUMENT, "invalid account"};
         return {result, errorStatus};
     }
 
@@ -260,14 +261,15 @@ doAccountInfoGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetAccountInfoRequest>& c
             }
             auto const txs =
                 context.app.getTxQ().getAccountTxs(accountID, *ledger);
-            org::xrpl::rpc::v1::QueueData& queueData = *result.mutable_queue_data();
+            org::xrpl::rpc::v1::QueueData& queueData =
+                *result.mutable_queue_data();
             RPC::convert(queueData, txs);
         }
     }
     else
     {
-        grpc::Status errorStatus{grpc::StatusCode::NOT_FOUND,
-                                 "account not found"};
+        grpc::Status errorStatus{
+            grpc::StatusCode::NOT_FOUND, "account not found"};
         return {result, errorStatus};
     }
 

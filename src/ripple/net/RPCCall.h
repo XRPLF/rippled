@@ -41,34 +41,44 @@ namespace ripple {
 /** Processes Ripple RPC calls. */
 namespace RPCCall {
 
-int fromCommandLine (
+int
+fromCommandLine(
     Config const& config,
     const std::vector<std::string>& vCmd,
     Logs& logs);
 
-void fromNetwork (
+void
+fromNetwork(
     boost::asio::io_service& io_service,
-    std::string const& strIp, const std::uint16_t iPort,
-    std::string const& strUsername, std::string const& strPassword,
-    std::string const& strPath, std::string const& strMethod,
-    Json::Value const& jvParams, const bool bSSL, bool quiet,
+    std::string const& strIp,
+    const std::uint16_t iPort,
+    std::string const& strUsername,
+    std::string const& strPassword,
+    std::string const& strPath,
+    std::string const& strMethod,
+    Json::Value const& jvParams,
+    const bool bSSL,
+    bool quiet,
     Logs& logs,
-    std::function<void (Json::Value const& jvInput)> callbackFuncP = std::function<void (Json::Value const& jvInput)> (),
+    std::function<void(Json::Value const& jvInput)> callbackFuncP =
+        std::function<void(Json::Value const& jvInput)>(),
     std::unordered_map<std::string, std::string> headers = {});
-}
+}  // namespace RPCCall
 
 /** Given a rippled command line, return the corresponding JSON.
-*/
+ */
 Json::Value
-cmdLineToJSONRPC (std::vector<std::string> const& args, beast::Journal j);
+cmdLineToJSONRPC(std::vector<std::string> const& args, beast::Journal j);
 
 /** Internal invocation of RPC client.
-*/
+ */
 std::pair<int, Json::Value>
-rpcClient(std::vector<std::string> const& args,
-    Config const& config, Logs& logs,
+rpcClient(
+    std::vector<std::string> const& args,
+    Config const& config,
+    Logs& logs,
     std::unordered_map<std::string, std::string> const& headers = {});
 
-} // ripple
+}  // namespace ripple
 
 #endif

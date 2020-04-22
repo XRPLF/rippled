@@ -26,20 +26,22 @@ namespace ripple {
 class SetRegularKey_test : public beast::unit_test::suite
 {
 public:
-
-    void testDisableMasterKey()
+    void
+    testDisableMasterKey()
     {
         using namespace test::jtx;
 
         testcase("Set regular key");
-        Env env {*this, supported_amendments() - fixMasterKeyAsRegularKey};
+        Env env{*this, supported_amendments() - fixMasterKeyAsRegularKey};
         Account const alice("alice");
         Account const bob("bob");
         env.fund(XRP(10000), alice, bob);
 
         env(regkey(alice, bob));
         auto const ar = env.le(alice);
-        BEAST_EXPECT(ar->isFieldPresent(sfRegularKey) && (ar->getAccountID(sfRegularKey) == bob.id()));
+        BEAST_EXPECT(
+            ar->isFieldPresent(sfRegularKey) &&
+            (ar->getAccountID(sfRegularKey) == bob.id()));
 
         env(noop(alice), sig(bob));
         env(noop(alice), sig(alice));
@@ -50,7 +52,9 @@ public:
         env(noop(alice), sig(alice), ter(tefMASTER_DISABLED));
 
         testcase("Re-enable master key");
-        env(fclear(alice, asfDisableMaster), sig(alice), ter(tefMASTER_DISABLED));
+        env(fclear(alice, asfDisableMaster),
+            sig(alice),
+            ter(tefMASTER_DISABLED));
 
         env(fclear(alice, asfDisableMaster), sig(bob));
         env(noop(alice), sig(bob));
@@ -62,7 +66,8 @@ public:
         env(noop(alice), sig(alice));
     }
 
-    void testDisableMasterKeyAfterFix()
+    void
+    testDisableMasterKeyAfterFix()
     {
         using namespace test::jtx;
 
@@ -82,11 +87,9 @@ public:
         env(noop(alice), sig(alice), ter(tefMASTER_DISABLED));
 
         testcase("Re-enable master key");
-        env(
-            fclear(alice, asfDisableMaster),
+        env(fclear(alice, asfDisableMaster),
             sig(alice),
-            ter(tefMASTER_DISABLED)
-        );
+            ter(tefMASTER_DISABLED));
 
         env(fclear(alice, asfDisableMaster), sig(bob));
         env(noop(alice), sig(bob));
@@ -98,13 +101,15 @@ public:
         env(noop(alice), sig(alice));
     }
 
-    void testDisabledRegularKey()
+    void
+    testDisabledRegularKey()
     {
         using namespace test::jtx;
 
         // See https://ripplelabs.atlassian.net/browse/RIPD-1721.
-        testcase("Set regular key to master key (before fixMasterKeyAsRegularKey)");
-        Env env {*this, supported_amendments() - fixMasterKeyAsRegularKey};
+        testcase(
+            "Set regular key to master key (before fixMasterKeyAsRegularKey)");
+        Env env{*this, supported_amendments() - fixMasterKeyAsRegularKey};
         Account const alice("alice");
         env.fund(XRP(10000), alice);
 
@@ -127,12 +132,14 @@ public:
         env(fset(alice, asfDisableMaster), ter(tecNO_ALTERNATIVE_KEY));
     }
 
-    void testDisableRegularKeyAfterFix()
+    void
+    testDisableRegularKeyAfterFix()
     {
         using namespace test::jtx;
 
-        testcase("Set regular key to master key (after fixMasterKeyAsRegularKey)");
-        Env env {*this, supported_amendments() | fixMasterKeyAsRegularKey};
+        testcase(
+            "Set regular key to master key (after fixMasterKeyAsRegularKey)");
+        Env env{*this, supported_amendments() | fixMasterKeyAsRegularKey};
         Account const alice("alice");
         env.fund(XRP(10000), alice);
 
@@ -140,7 +147,8 @@ public:
         env(regkey(alice, alice), ter(temBAD_REGKEY));
     }
 
-    void testPasswordSpent()
+    void
+    testPasswordSpent()
     {
         using namespace test::jtx;
 
@@ -151,12 +159,17 @@ public:
         env.fund(XRP(10000), alice, bob);
 
         auto ar = env.le(alice);
-        BEAST_EXPECT(ar->isFieldPresent(sfFlags) && ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == 0));
+        BEAST_EXPECT(
+            ar->isFieldPresent(sfFlags) &&
+            ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == 0));
 
         env(regkey(alice, bob), sig(alice), fee(0));
 
         ar = env.le(alice);
-        BEAST_EXPECT(ar->isFieldPresent(sfFlags) && ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == lsfPasswordSpent));
+        BEAST_EXPECT(
+            ar->isFieldPresent(sfFlags) &&
+            ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) ==
+             lsfPasswordSpent));
 
         // The second SetRegularKey transaction with Fee=0 should fail.
         env(regkey(alice, bob), sig(alice), fee(0), ter(telINSUF_FEE_P));
@@ -164,10 +177,13 @@ public:
         env.trust(bob["USD"](1), alice);
         env(pay(bob, alice, bob["USD"](1)));
         ar = env.le(alice);
-        BEAST_EXPECT(ar->isFieldPresent(sfFlags) && ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == 0));
+        BEAST_EXPECT(
+            ar->isFieldPresent(sfFlags) &&
+            ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == 0));
     }
 
-    void testUniversalMask()
+    void
+    testUniversalMask()
     {
         using namespace test::jtx;
 
@@ -182,7 +198,8 @@ public:
         env(jv, ter(temINVALID_FLAG));
     }
 
-    void run() override
+    void
+    run() override
     {
         testDisableMasterKey();
         testDisableMasterKeyAfterFix();
@@ -191,10 +208,8 @@ public:
         testPasswordSpent();
         testUniversalMask();
     }
-
 };
 
-BEAST_DEFINE_TESTSUITE(SetRegularKey,app,ripple);
+BEAST_DEFINE_TESTSUITE(SetRegularKey, app, ripple);
 
-}
-
+}  // namespace ripple

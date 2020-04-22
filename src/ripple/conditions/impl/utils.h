@@ -23,13 +23,13 @@
 #include <ripple/basics/strHex.h>
 #include <ripple/conditions/impl/error.h>
 #include <boost/dynamic_bitset.hpp>
+#include <iomanip>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
 #include <string>
-#include <vector>
-#include <iomanip>
-#include <sstream>
 #include <utility>
+#include <vector>
 
 namespace ripple {
 namespace cryptoconditions {
@@ -51,50 +51,43 @@ struct Preamble
     std::size_t length = 0;
 };
 
-inline
-bool
+inline bool
 isPrimitive(Preamble const& p)
 {
     return (p.type & 0x20) == 0;
 }
 
-inline
-bool
+inline bool
 isConstructed(Preamble const& p)
 {
     return !isPrimitive(p);
 }
 
-inline
-bool
+inline bool
 isUniversal(Preamble const& p)
 {
     return (p.type & 0xC0) == 0;
 }
 
-inline
-bool
+inline bool
 isApplication(Preamble const& p)
 {
     return (p.type & 0xC0) == 0x40;
 }
 
-inline
-bool
+inline bool
 isContextSpecific(Preamble const& p)
 {
     return (p.type & 0xC0) == 0x80;
 }
 
-inline
-bool
+inline bool
 isPrivate(Preamble const& p)
 {
     return (p.type & 0xC0) == 0xC0;
 }
 
-inline
-Preamble
+inline Preamble
 parsePreamble(Slice& s, std::error_code& ec)
 {
     Preamble p;
@@ -111,7 +104,7 @@ parsePreamble(Slice& s, std::error_code& ec)
     s += 1;
 
     if (p.tag == 0x1F)
-    { // Long tag form, which we do not support:
+    {  // Long tag form, which we do not support:
         ec = error::long_tag;
         return p;
     }
@@ -120,7 +113,7 @@ parsePreamble(Slice& s, std::error_code& ec)
     s += 1;
 
     if (p.length & 0x80)
-    { // Long form length:
+    {  // Long form length:
         std::size_t const cnt = p.length & 0x7F;
 
         if (cnt == 0)
@@ -158,8 +151,7 @@ parsePreamble(Slice& s, std::error_code& ec)
     return p;
 }
 
-inline
-Buffer
+inline Buffer
 parseOctetString(Slice& s, std::uint32_t count, std::error_code& ec)
 {
     if (count > s.size())
@@ -235,8 +227,8 @@ parseInteger(Slice& s, std::size_t count, std::error_code& ec)
     return v;
 }
 
-} // der
-} // cryptoconditions
-} // ripple
+}  // namespace der
+}  // namespace cryptoconditions
+}  // namespace ripple
 
 #endif

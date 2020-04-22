@@ -40,89 +40,133 @@ public:
     class Set;
     class Source;
 
-    PropertyStream () = default;
-    virtual ~PropertyStream () = default;
+    PropertyStream() = default;
+    virtual ~PropertyStream() = default;
 
 protected:
-    virtual void map_begin () = 0;
-    virtual void map_begin (std::string const& key) = 0;
-    virtual void map_end () = 0;
+    virtual void
+    map_begin() = 0;
+    virtual void
+    map_begin(std::string const& key) = 0;
+    virtual void
+    map_end() = 0;
 
-    virtual void add (std::string const& key, std::string const& value) = 0;
+    virtual void
+    add(std::string const& key, std::string const& value) = 0;
 
-    void add (std::string const& key, char const* value)
+    void
+    add(std::string const& key, char const* value)
     {
-        add (key, std::string (value));
+        add(key, std::string(value));
     }
 
     template <typename Value>
-    void lexical_add (std::string const &key, Value value)
+    void
+    lexical_add(std::string const& key, Value value)
     {
         std::stringstream ss;
         ss << value;
-        add (key, ss.str());
+        add(key, ss.str());
     }
 
-    virtual void add (std::string const& key, bool value);
-    virtual void add (std::string const& key, char value);
-    virtual void add (std::string const& key, signed char value);
-    virtual void add (std::string const& key, unsigned char value);
-    virtual void add (std::string const& key, wchar_t value);
+    virtual void
+    add(std::string const& key, bool value);
+    virtual void
+    add(std::string const& key, char value);
+    virtual void
+    add(std::string const& key, signed char value);
+    virtual void
+    add(std::string const& key, unsigned char value);
+    virtual void
+    add(std::string const& key, wchar_t value);
 #if 0
     virtual void add (std::string const& key, char16_t value);
     virtual void add (std::string const& key, char32_t value);
 #endif
-    virtual void add (std::string const& key, short value);
-    virtual void add (std::string const& key, unsigned short value);
-    virtual void add (std::string const& key, int value);
-    virtual void add (std::string const& key, unsigned int value);
-    virtual void add (std::string const& key, long value);
-    virtual void add (std::string const& key, unsigned long value);
-    virtual void add (std::string const& key, long long value);
-    virtual void add (std::string const& key, unsigned long long value);
-    virtual void add (std::string const& key, float value);
-    virtual void add (std::string const& key, double value);
-    virtual void add (std::string const& key, long double value);
+    virtual void
+    add(std::string const& key, short value);
+    virtual void
+    add(std::string const& key, unsigned short value);
+    virtual void
+    add(std::string const& key, int value);
+    virtual void
+    add(std::string const& key, unsigned int value);
+    virtual void
+    add(std::string const& key, long value);
+    virtual void
+    add(std::string const& key, unsigned long value);
+    virtual void
+    add(std::string const& key, long long value);
+    virtual void
+    add(std::string const& key, unsigned long long value);
+    virtual void
+    add(std::string const& key, float value);
+    virtual void
+    add(std::string const& key, double value);
+    virtual void
+    add(std::string const& key, long double value);
 
-    virtual void array_begin () = 0;
-    virtual void array_begin (std::string const& key) = 0;
-    virtual void array_end () = 0;
+    virtual void
+    array_begin() = 0;
+    virtual void
+    array_begin(std::string const& key) = 0;
+    virtual void
+    array_end() = 0;
 
-    virtual void add (std::string const& value) = 0;
+    virtual void
+    add(std::string const& value) = 0;
 
-    void add (char const* value)
+    void
+    add(char const* value)
     {
-        add (std::string (value));
+        add(std::string(value));
     }
 
     template <typename Value>
-    void lexical_add (Value value)
+    void
+    lexical_add(Value value)
     {
         std::stringstream ss;
         ss << value;
-        add (ss.str());
+        add(ss.str());
     }
 
-    virtual void add (bool value);
-    virtual void add (char value);
-    virtual void add (signed char value);
-    virtual void add (unsigned char value);
-    virtual void add (wchar_t value);
+    virtual void
+    add(bool value);
+    virtual void
+    add(char value);
+    virtual void
+    add(signed char value);
+    virtual void
+    add(unsigned char value);
+    virtual void
+    add(wchar_t value);
 #if 0
     virtual void add (char16_t value);
     virtual void add (char32_t value);
 #endif
-    virtual void add (short value);
-    virtual void add (unsigned short value);
-    virtual void add (int value);
-    virtual void add (unsigned int value);
-    virtual void add (long value);
-    virtual void add (unsigned long value);
-    virtual void add (long long value);
-    virtual void add (unsigned long long value);
-    virtual void add (float value);
-    virtual void add (double value);
-    virtual void add (long double value);
+    virtual void
+    add(short value);
+    virtual void
+    add(unsigned short value);
+    virtual void
+    add(int value);
+    virtual void
+    add(unsigned int value);
+    virtual void
+    add(long value);
+    virtual void
+    add(unsigned long value);
+    virtual void
+    add(long long value);
+    virtual void
+    add(unsigned long long value);
+    virtual void
+    add(float value);
+    virtual void
+    add(double value);
+    virtual void
+    add(long double value);
 
 private:
     class Item;
@@ -135,13 +179,17 @@ private:
 //
 //------------------------------------------------------------------------------
 
-class PropertyStream::Item : public List <Item>::Node
+class PropertyStream::Item : public List<Item>::Node
 {
 public:
-    explicit Item (Source* source);
-    Source& source() const;
-    Source* operator-> () const;
-    Source& operator* () const;
+    explicit Item(Source* source);
+    Source&
+    source() const;
+    Source*
+    operator->() const;
+    Source&
+    operator*() const;
+
 private:
     Source* m_source;
 };
@@ -160,17 +208,20 @@ private:
     std::ostringstream mutable m_ostream;
 
 public:
-    Proxy (Map const& map, std::string const& key);
-    Proxy (Proxy const& other);
-    ~Proxy ();
+    Proxy(Map const& map, std::string const& key);
+    Proxy(Proxy const& other);
+    ~Proxy();
 
     template <typename Value>
-    Proxy& operator= (Value value);
+    Proxy&
+    operator=(Value value);
 
-    std::ostream& operator<< (std::ostream& manip (std::ostream&)) const;
+    std::ostream&
+    operator<<(std::ostream& manip(std::ostream&)) const;
 
     template <typename T>
-    std::ostream& operator<< (T const& t) const
+    std::ostream&
+    operator<<(T const& t) const
     {
         return m_ostream << t;
     }
@@ -188,52 +239,63 @@ private:
     PropertyStream& m_stream;
 
 public:
-    explicit Map (PropertyStream& stream);
-    explicit Map (Set& parent);
-    Map (std::string const& key, Map& parent);
-    Map (std::string const& key, PropertyStream& stream);
-    ~Map ();
+    explicit Map(PropertyStream& stream);
+    explicit Map(Set& parent);
+    Map(std::string const& key, Map& parent);
+    Map(std::string const& key, PropertyStream& stream);
+    ~Map();
 
     Map(Map const&) = delete;
-    Map& operator= (Map const&) = delete;
+    Map&
+    operator=(Map const&) = delete;
 
-    PropertyStream& stream();
-    PropertyStream const& stream() const;
+    PropertyStream&
+    stream();
+    PropertyStream const&
+    stream() const;
 
     template <typename Value>
-    void add (std::string const& key, Value value) const
+    void
+    add(std::string const& key, Value value) const
     {
-        m_stream.add (key, value);
+        m_stream.add(key, value);
     }
 
     template <typename Key, typename Value>
-    void add (Key key, Value value) const
+    void
+    add(Key key, Value value) const
     {
         std::stringstream ss;
         ss << key;
-        add (ss.str(), value);
+        add(ss.str(), value);
     }
 
-    Proxy operator[] (std::string const& key);
+    Proxy
+    operator[](std::string const& key);
 
-    Proxy operator[] (char const* key)
-        { return Proxy (*this, key); }
+    Proxy
+    operator[](char const* key)
+    {
+        return Proxy(*this, key);
+    }
 
     template <typename Key>
-    Proxy operator[] (Key key) const
+    Proxy
+    operator[](Key key) const
     {
         std::stringstream ss;
         ss << key;
-        return Proxy (*this, ss.str());
+        return Proxy(*this, ss.str());
     }
 };
 
 //--------------------------------------------------------------------------
 
 template <typename Value>
-PropertyStream::Proxy& PropertyStream::Proxy::operator= (Value value)
+PropertyStream::Proxy&
+PropertyStream::Proxy::operator=(Value value)
 {
-    m_map->add (m_key, value);
+    m_map->add(m_key, value);
     return *this;
 }
 
@@ -249,19 +311,25 @@ private:
     PropertyStream& m_stream;
 
 public:
-    Set (std::string const& key, Map& map);
-    Set (std::string const& key, PropertyStream& stream);
-    ~Set ();
+    Set(std::string const& key, Map& map);
+    Set(std::string const& key, PropertyStream& stream);
+    ~Set();
 
-    Set (Set const&) = delete;
-    Set& operator= (Set const&) = delete;
+    Set(Set const&) = delete;
+    Set&
+    operator=(Set const&) = delete;
 
-    PropertyStream& stream();
-    PropertyStream const& stream() const;
+    PropertyStream&
+    stream();
+    PropertyStream const&
+    stream() const;
 
     template <typename Value>
-    void add (Value value) const
-        { m_stream.add (value); }
+    void
+    add(Value value) const
+    {
+        m_stream.add(value);
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -278,49 +346,58 @@ private:
     std::recursive_mutex lock_;
     Item item_;
     Source* parent_;
-    List <Item> children_;
+    List<Item> children_;
 
 public:
-    explicit Source (std::string const& name);
-    virtual ~Source ();
+    explicit Source(std::string const& name);
+    virtual ~Source();
 
-    Source (Source const&) = delete;
-    Source& operator= (Source const&) = delete;
+    Source(Source const&) = delete;
+    Source&
+    operator=(Source const&) = delete;
 
     /** Returns the name of this source. */
-    std::string const& name() const;
+    std::string const&
+    name() const;
 
     /** Add a child source. */
-    void add (Source& source);
+    void
+    add(Source& source);
 
     /** Add a child source by pointer.
         The source pointer is returned so it can be used in ctor-initializers.
     */
     template <class Derived>
-    Derived* add (Derived* child)
+    Derived*
+    add(Derived* child)
     {
-        add (*static_cast <Source*>(child));
+        add(*static_cast<Source*>(child));
         return child;
     }
 
     /** Remove a child source from this Source. */
-    void remove (Source& child);
+    void
+    remove(Source& child);
 
     /** Remove all child sources from this Source. */
-    void removeAll ();
+    void
+    removeAll();
 
     /** Write only this Source to the stream. */
-    void write_one  (PropertyStream& stream);
+    void
+    write_one(PropertyStream& stream);
 
     /** write this source and all its children recursively to the stream. */
-    void write      (PropertyStream& stream);
+    void
+    write(PropertyStream& stream);
 
     /** Parse the path and write the corresponding Source and optional children.
         If the source is found, it is written. If the wildcard character '*'
         exists as the last character in the path, then all the children are
         written recursively.
     */
-    void write      (PropertyStream& stream, std::string const& path);
+    void
+    write(PropertyStream& stream, std::string const& path);
 
     /** Parse the dot-delimited Source path and return the result.
         The first value will be a pointer to the Source object corresponding
@@ -334,27 +411,35 @@ public:
         "parent.child." start at the parent and print down to child
         "parent.grandchild" prints nothing- grandchild not direct discendent
         "parent.grandchild." starts at the parent and prints down to grandchild
-        "parent.grandchild.*" starts at parent, print through grandchild children
+        "parent.grandchild.*" starts at parent, print through grandchild
+       children
     */
-    std::pair <Source*, bool> find (std::string path);
+    std::pair<Source*, bool>
+    find(std::string path);
 
-    Source* find_one_deep (std::string const& name);
-    PropertyStream::Source* find_path(std::string path);
-    PropertyStream::Source* find_one(std::string const& name);
+    Source*
+    find_one_deep(std::string const& name);
+    PropertyStream::Source*
+    find_path(std::string path);
+    PropertyStream::Source*
+    find_one(std::string const& name);
 
-    static bool peel_leading_slash (std::string* path);
-    static bool peel_trailing_slashstar (std::string* path);
-    static std::string peel_name(std::string* path);
-
+    static bool
+    peel_leading_slash(std::string* path);
+    static bool
+    peel_trailing_slashstar(std::string* path);
+    static std::string
+    peel_name(std::string* path);
 
     //--------------------------------------------------------------------------
 
     /** Subclass override.
         The default version does nothing.
     */
-    virtual void onWrite (Map&);
+    virtual void
+    onWrite(Map&);
 };
 
-}
+}  // namespace beast
 
 #endif

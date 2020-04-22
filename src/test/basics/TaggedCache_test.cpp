@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/chrono.h>
 #include <ripple/basics/TaggedCache.h>
-#include <ripple/beast/unit_test.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/beast/clock/manual_clock.h>
+#include <ripple/beast/unit_test.h>
 #include <test/unit_test/SuiteJournal.h>
 
 namespace ripple {
@@ -38,102 +38,103 @@ original object.
 class TaggedCache_test : public beast::unit_test::suite
 {
 public:
-    void run () override
+    void
+    run() override
     {
         using namespace std::chrono_literals;
         using namespace beast::severities;
-        test::SuiteJournal journal ("TaggedCache_test", *this);
+        test::SuiteJournal journal("TaggedCache_test", *this);
 
         TestStopwatch clock;
-        clock.set (0);
+        clock.set(0);
 
         using Key = int;
         using Value = std::string;
-        using Cache = TaggedCache <Key, Value>;
+        using Cache = TaggedCache<Key, Value>;
 
-        Cache c ("test", 1, 1s, clock, journal);
+        Cache c("test", 1, 1s, clock, journal);
 
         // Insert an item, retrieve it, and age it so it gets purged.
         {
             BEAST_EXPECT(c.getCacheSize() == 0);
             BEAST_EXPECT(c.getTrackSize() == 0);
-            BEAST_EXPECT(! c.insert (1, "one"));
+            BEAST_EXPECT(!c.insert(1, "one"));
             BEAST_EXPECT(c.getCacheSize() == 1);
             BEAST_EXPECT(c.getTrackSize() == 1);
 
             {
                 std::string s;
-                BEAST_EXPECT(c.retrieve (1, s));
+                BEAST_EXPECT(c.retrieve(1, s));
                 BEAST_EXPECT(s == "one");
             }
 
             ++clock;
-            c.sweep ();
-            BEAST_EXPECT(c.getCacheSize () == 0);
-            BEAST_EXPECT(c.getTrackSize () == 0);
+            c.sweep();
+            BEAST_EXPECT(c.getCacheSize() == 0);
+            BEAST_EXPECT(c.getTrackSize() == 0);
         }
 
         // Insert an item, maintain a strong pointer, age it, and
         // verify that the entry still exists.
         {
-            BEAST_EXPECT(! c.insert (2, "two"));
+            BEAST_EXPECT(!c.insert(2, "two"));
             BEAST_EXPECT(c.getCacheSize() == 1);
             BEAST_EXPECT(c.getTrackSize() == 1);
 
             {
-                Cache::mapped_ptr p (c.fetch (2));
+                Cache::mapped_ptr p(c.fetch(2));
                 BEAST_EXPECT(p != nullptr);
                 ++clock;
-                c.sweep ();
+                c.sweep();
                 BEAST_EXPECT(c.getCacheSize() == 0);
                 BEAST_EXPECT(c.getTrackSize() == 1);
             }
 
             // Make sure its gone now that our reference is gone
             ++clock;
-            c.sweep ();
+            c.sweep();
             BEAST_EXPECT(c.getCacheSize() == 0);
             BEAST_EXPECT(c.getTrackSize() == 0);
         }
 
         // Insert the same key/value pair and make sure we get the same result
         {
-            BEAST_EXPECT(! c.insert (3, "three"));
+            BEAST_EXPECT(!c.insert(3, "three"));
 
             {
-                Cache::mapped_ptr const p1 (c.fetch (3));
-                Cache::mapped_ptr p2 (std::make_shared <Value> ("three"));
+                Cache::mapped_ptr const p1(c.fetch(3));
+                Cache::mapped_ptr p2(std::make_shared<Value>("three"));
                 c.canonicalize_replace_client(3, p2);
                 BEAST_EXPECT(p1.get() == p2.get());
             }
             ++clock;
-            c.sweep ();
+            c.sweep();
             BEAST_EXPECT(c.getCacheSize() == 0);
             BEAST_EXPECT(c.getTrackSize() == 0);
         }
 
-        // Put an object in but keep a strong pointer to it, advance the clock a lot,
-        // then canonicalize a new object with the same key, make sure you get the
-        // original object.
+        // Put an object in but keep a strong pointer to it, advance the clock a
+        // lot, then canonicalize a new object with the same key, make sure you
+        // get the original object.
         {
             // Put an object in
-            BEAST_EXPECT(! c.insert (4, "four"));
+            BEAST_EXPECT(!c.insert(4, "four"));
             BEAST_EXPECT(c.getCacheSize() == 1);
             BEAST_EXPECT(c.getTrackSize() == 1);
 
             {
                 // Keep a strong pointer to it
-                Cache::mapped_ptr p1 (c.fetch (4));
+                Cache::mapped_ptr p1(c.fetch(4));
                 BEAST_EXPECT(p1 != nullptr);
                 BEAST_EXPECT(c.getCacheSize() == 1);
                 BEAST_EXPECT(c.getTrackSize() == 1);
                 // Advance the clock a lot
                 ++clock;
-                c.sweep ();
+                c.sweep();
                 BEAST_EXPECT(c.getCacheSize() == 0);
                 BEAST_EXPECT(c.getTrackSize() == 1);
                 // Canonicalize a new object with the same key
-                Cache::mapped_ptr p2 (std::make_shared <std::string> ("four"));
+                Cache::mapped_ptr p2(std::make_shared<std::string>("four"));
                 BEAST_EXPECT(c.canonicalize_replace_client(4, p2));
                 BEAST_EXPECT(c.getCacheSize() == 1);
                 BEAST_EXPECT(c.getTrackSize() == 1);
@@ -142,13 +143,13 @@ public:
             }
 
             ++clock;
-            c.sweep ();
+            c.sweep();
             BEAST_EXPECT(c.getCacheSize() == 0);
             BEAST_EXPECT(c.getTrackSize() == 0);
         }
     }
 };
 
-BEAST_DEFINE_TESTSUITE(TaggedCache,common,ripple);
+BEAST_DEFINE_TESTSUITE(TaggedCache, common, ripple);
 
-}
+}  // namespace ripple

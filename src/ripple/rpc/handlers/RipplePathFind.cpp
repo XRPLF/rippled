@@ -28,27 +28,28 @@
 namespace ripple {
 
 // This interface is deprecated.
-Json::Value doRipplePathFind (RPC::JsonContext& context)
+Json::Value
+doRipplePathFind(RPC::JsonContext& context)
 {
     if (context.app.config().PATH_SEARCH_MAX == 0)
-        return rpcError (rpcNOT_SUPPORTED);
+        return rpcError(rpcNOT_SUPPORTED);
 
     context.loadType = Resource::feeHighBurdenRPC;
 
-    std::shared_ptr <ReadView const> lpLedger;
+    std::shared_ptr<ReadView const> lpLedger;
     Json::Value jvResult;
 
-    if (! context.app.config().standalone() &&
-        ! context.params.isMember(jss::ledger) &&
-        ! context.params.isMember(jss::ledger_index) &&
-        ! context.params.isMember(jss::ledger_hash))
+    if (!context.app.config().standalone() &&
+        !context.params.isMember(jss::ledger) &&
+        !context.params.isMember(jss::ledger_index) &&
+        !context.params.isMember(jss::ledger_hash))
     {
         // No ledger specified, use pathfinding defaults
         // and dispatch to pathfinding engine
         if (context.app.getLedgerMaster().getValidatedLedgerAge() >
             RPC::Tuning::maxValidatedLedgerAge)
         {
-            return rpcError (rpcNO_NETWORK);
+            return rpcError(rpcNO_NETWORK);
         }
 
         PathRequest::pointer request;
@@ -122,15 +123,15 @@ Json::Value doRipplePathFind (RPC::JsonContext& context)
         // JobQueue before letting the thread continue.
         //
         // May 2017
-        jvResult = context.app.getPathRequests().makeLegacyPathRequest (
+        jvResult = context.app.getPathRequests().makeLegacyPathRequest(
             request,
-            [&context] () {
+            [&context]() {
                 // Copying the shared_ptr keeps the coroutine alive up
                 // through the return.  Otherwise the storage under the
                 // captured reference could evaporate when we return from
                 // coroCopy->resume().  This is not strictly necessary, but
                 // will make maintenance easier.
-                std::shared_ptr<JobQueue::Coro> coroCopy {context.coro};
+                std::shared_ptr<JobQueue::Coro> coroCopy{context.coro};
                 if (!coroCopy->post())
                 {
                     // The post() failed, so we won't get a thread to let
@@ -140,32 +141,34 @@ Json::Value doRipplePathFind (RPC::JsonContext& context)
                     coroCopy->resume();
                 }
             },
-            context.consumer, lpLedger, context.params);
+            context.consumer,
+            lpLedger,
+            context.params);
         if (request)
         {
             context.coro->yield();
-            jvResult = request->doStatus (context.params);
+            jvResult = request->doStatus(context.params);
         }
 
         return jvResult;
     }
 
     // The caller specified a ledger
-    jvResult = RPC::lookupLedger (lpLedger, context);
-    if (! lpLedger)
+    jvResult = RPC::lookupLedger(lpLedger, context);
+    if (!lpLedger)
         return jvResult;
 
-    RPC::LegacyPathFind lpf (isUnlimited (context.role), context.app);
-    if (! lpf.isOk ())
-        return rpcError (rpcTOO_BUSY);
+    RPC::LegacyPathFind lpf(isUnlimited(context.role), context.app);
+    if (!lpf.isOk())
+        return rpcError(rpcTOO_BUSY);
 
-    auto result = context.app.getPathRequests().doLegacyPathRequest (
+    auto result = context.app.getPathRequests().doLegacyPathRequest(
         context.consumer, lpLedger, context.params);
 
-    for (auto &fieldName : jvResult.getMemberNames ())
-        result[fieldName] = std::move (jvResult[fieldName]);
+    for (auto& fieldName : jvResult.getMemberNames())
+        result[fieldName] = std::move(jvResult[fieldName]);
 
     return result;
 }
 
-} // ripple
+}  // namespace ripple

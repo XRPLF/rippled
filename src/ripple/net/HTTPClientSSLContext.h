@@ -20,8 +20,8 @@
 #ifndef RIPPLE_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
 #define RIPPLE_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
 
-#include <ripple/basics/contract.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/contract.h>
 #include <ripple/core/Config.h>
 #include <ripple/net/RegisterSSLCerts.h>
 #include <boost/asio.hpp>
@@ -34,51 +34,48 @@ namespace ripple {
 class HTTPClientSSLContext
 {
 public:
-
-    explicit
-    HTTPClientSSLContext (
+    explicit HTTPClientSSLContext(
         Config const& config,
         beast::Journal j,
         boost::asio::ssl::context_base::method method =
             boost::asio::ssl::context::sslv23)
-        : ssl_context_ {method}
-        , j_(j)
-        , verify_ {config.SSL_VERIFY}
+        : ssl_context_{method}, j_(j), verify_{config.SSL_VERIFY}
     {
         boost::system::error_code ec;
 
-        if (config.SSL_VERIFY_FILE.empty ())
+        if (config.SSL_VERIFY_FILE.empty())
         {
             registerSSLCerts(ssl_context_, ec, j_);
 
-            if (ec && config.SSL_VERIFY_DIR.empty ())
-                Throw<std::runtime_error> (
-                    boost::str (boost::format (
-                        "Failed to set_default_verify_paths: %s") %
-                            ec.message ()));
+            if (ec && config.SSL_VERIFY_DIR.empty())
+                Throw<std::runtime_error>(boost::str(
+                    boost::format("Failed to set_default_verify_paths: %s") %
+                    ec.message()));
         }
         else
         {
-            ssl_context_.load_verify_file (config.SSL_VERIFY_FILE);
+            ssl_context_.load_verify_file(config.SSL_VERIFY_FILE);
         }
 
-        if (! config.SSL_VERIFY_DIR.empty ())
+        if (!config.SSL_VERIFY_DIR.empty())
         {
-            ssl_context_.add_verify_path (config.SSL_VERIFY_DIR, ec);
+            ssl_context_.add_verify_path(config.SSL_VERIFY_DIR, ec);
 
             if (ec)
-                Throw<std::runtime_error> (
-                    boost::str (boost::format (
-                        "Failed to add verify path: %s") % ec.message ()));
+                Throw<std::runtime_error>(boost::str(
+                    boost::format("Failed to add verify path: %s") %
+                    ec.message()));
         }
     }
 
-    boost::asio::ssl::context& context()
+    boost::asio::ssl::context&
+    context()
     {
         return ssl_context_;
     }
 
-    bool sslVerify() const
+    bool
+    sslVerify() const
     {
         return verify_;
     }
@@ -95,37 +92,45 @@ public:
      *
      * @return error_code indicating failures, if any
      */
-    template<class T,
+    template <
+        class T,
         class = std::enable_if_t<
-            std::is_same<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>::value ||
-            std::is_same<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>::value
-       >
-    >
+            std::is_same<
+                T,
+                boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>::
+                value ||
+            std::is_same<
+                T,
+                boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>::
+                value>>
     boost::system::error_code
-    preConnectVerify (
-        T& strm,
-        std::string const& host)
+    preConnectVerify(T& strm, std::string const& host)
     {
         boost::system::error_code ec;
         if (!SSL_set_tlsext_host_name(strm.native_handle(), host.c_str()))
         {
-            ec.assign(static_cast<int>(
-                ::ERR_get_error()), boost::asio::error::get_ssl_category());
+            ec.assign(
+                static_cast<int>(::ERR_get_error()),
+                boost::asio::error::get_ssl_category());
         }
         else if (!sslVerify())
         {
             strm.set_verify_mode(boost::asio::ssl::verify_none, ec);
         }
         return ec;
-
     }
 
-    template<class T,
+    template <
+        class T,
         class = std::enable_if_t<
-            std::is_same<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>::value ||
-            std::is_same<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>::value
-       >
-    >
+            std::is_same<
+                T,
+                boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>::
+                value ||
+            std::is_same<
+                T,
+                boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>::
+                value>>
     /**
      * @brief invoked after connect/async_connect but before sending data
      * on an ssl stream - to setup name verification.
@@ -134,20 +139,23 @@ public:
      * @param host hostname to verify
      */
     boost::system::error_code
-    postConnectVerify (
-        T& strm,
-        std::string const& host)
+    postConnectVerify(T& strm, std::string const& host)
     {
         boost::system::error_code ec;
 
         if (sslVerify())
         {
-            strm.set_verify_mode (boost::asio::ssl::verify_peer, ec);
+            strm.set_verify_mode(boost::asio::ssl::verify_peer, ec);
             if (!ec)
             {
-                strm.set_verify_callback (
-                    std::bind (&rfc2818_verify, host,
-                       std::placeholders::_1, std::placeholders::_2, j_), ec);
+                strm.set_verify_callback(
+                    std::bind(
+                        &rfc2818_verify,
+                        host,
+                        std::placeholders::_1,
+                        std::placeholders::_2,
+                        j_),
+                    ec);
             }
         }
 
@@ -163,20 +171,18 @@ public:
      * @param ctx passed by implementation
      * @param j journal for logging
      */
-    static
-    bool
-    rfc2818_verify (
+    static bool
+    rfc2818_verify(
         std::string const& domain,
         bool preverified,
         boost::asio::ssl::verify_context& ctx,
         beast::Journal j)
     {
-        if (boost::asio::ssl::rfc2818_verification (domain) (preverified, ctx))
+        if (boost::asio::ssl::rfc2818_verification(domain)(preverified, ctx))
             return true;
 
-        JLOG (j.warn()) <<
-            "Outbound SSL connection to " << domain <<
-            " fails certificate verification";
+        JLOG(j.warn()) << "Outbound SSL connection to " << domain
+                       << " fails certificate verification";
         return false;
     }
 
@@ -186,6 +192,6 @@ private:
     const bool verify_;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

@@ -31,9 +31,8 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/Role.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/GRPCHelpers.h>
-
+#include <ripple/rpc/impl/RPCHelpers.h>
 
 #include <grpcpp/grpcpp.h>
 
@@ -124,8 +123,9 @@ parseLedgerArgs(
         {
             if (uint256::size() != specifier.hash().size())
             {
-                grpc::Status errorStatus{grpc::StatusCode::INVALID_ARGUMENT,
-                                         "ledger hash malformed"};
+                grpc::Status errorStatus{
+                    grpc::StatusCode::INVALID_ARGUMENT,
+                    "ledger hash malformed"};
                 return errorStatus;
             }
             ledger = uint256::fromVoid(specifier.hash().data());
@@ -190,8 +190,8 @@ parseLedgerArgs(Json::Value const& params)
                 ledger = LedgerShortcut::VALIDATED;
             else
             {
-                RPC::Status status{rpcINVALID_PARAMS,
-                                   "ledger_index string malformed"};
+                RPC::Status status{
+                    rpcINVALID_PARAMS, "ledger_index string malformed"};
                 status.inject(response);
                 return response;
             }
@@ -592,8 +592,9 @@ doAccountTxGrpc(
 
     if (request.has_marker())
     {
-        args.marker = {request.marker().ledger_index(),
-                       request.marker().account_sequence()};
+        args.marker = {
+            request.marker().ledger_index(),
+            request.marker().account_sequence()};
     }
 
     auto parseRes = parseLedgerArgs(request);

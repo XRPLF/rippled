@@ -17,10 +17,10 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
-#include <ripple/core/impl/Workers.h>
-#include <ripple/beast/unit_test.h>
 #include <ripple/basics/PerfLog.h>
+#include <ripple/beast/unit_test.h>
 #include <ripple/core/JobTypes.h>
+#include <ripple/core/impl/Workers.h>
 #include <ripple/json/json_value.h>
 #include <chrono>
 #include <condition_variable>
@@ -37,49 +37,67 @@ namespace ripple {
 
 namespace perf {
 
-class PerfLogTest
-    : public PerfLog
+class PerfLogTest : public PerfLog
 {
-    void rpcStart(std::string const &method, std::uint64_t requestId) override
-    {}
+    void
+    rpcStart(std::string const& method, std::uint64_t requestId) override
+    {
+    }
 
-    void rpcFinish(std::string const &method, std::uint64_t requestId) override
-    {}
+    void
+    rpcFinish(std::string const& method, std::uint64_t requestId) override
+    {
+    }
 
-    void rpcError(std::string const &method, std::uint64_t dur) override
-    {}
+    void
+    rpcError(std::string const& method, std::uint64_t dur) override
+    {
+    }
 
-    void jobQueue(JobType const type) override
-    {}
+    void
+    jobQueue(JobType const type) override
+    {
+    }
 
-    void jobStart(JobType const type,
+    void
+    jobStart(
+        JobType const type,
         std::chrono::microseconds dur,
         std::chrono::time_point<std::chrono::steady_clock> startTime,
         int instance) override
-    {}
+    {
+    }
 
-    void jobFinish(JobType const type, std::chrono::microseconds dur,
-        int instance) override
-    {}
+    void
+    jobFinish(JobType const type, std::chrono::microseconds dur, int instance)
+        override
+    {
+    }
 
-    Json::Value countersJson() const override
+    Json::Value
+    countersJson() const override
     {
         return Json::Value();
     }
 
-    Json::Value currentJson() const override
+    Json::Value
+    currentJson() const override
     {
         return Json::Value();
     }
 
-    void resizeJobs(int const resize) override
-    {}
+    void
+    resizeJobs(int const resize) override
+    {
+    }
 
-    void rotate() override
-    {}
+    void
+    rotate() override
+    {
+    }
 };
 
-} // perf
+}  // namespace perf
 
 //------------------------------------------------------------------------------
 
@@ -88,7 +106,8 @@ class Workers_test : public beast::unit_test::suite
 public:
     struct TestCallback : Workers::Callback
     {
-        void processTask(int instance) override
+        void
+        processTask(int instance) override
         {
             std::lock_guard lk{mut};
             if (--count == 0)
@@ -96,14 +115,16 @@ public:
         }
 
         std::condition_variable cv;
-        std::mutex              mut;
-        int                     count = 0;
+        std::mutex mut;
+        int count = 0;
     };
 
-    void testThreads(int const tc1, int const tc2, int const tc3)
+    void
+    testThreads(int const tc1, int const tc2, int const tc3)
     {
-        testcase("threadCounts: " + std::to_string(tc1) +
-            " -> " + std::to_string(tc2) + " -> " + std::to_string(tc3));
+        testcase(
+            "threadCounts: " + std::to_string(tc1) + " -> " +
+            std::to_string(tc2) + " -> " + std::to_string(tc3));
 
         TestCallback cb;
         std::unique_ptr<perf::PerfLog> perfLog =
@@ -112,8 +133,7 @@ public:
         Workers w(cb, perfLog.get(), "Test", tc1);
         BEAST_EXPECT(w.getNumberOfThreads() == tc1);
 
-        auto testForThreadCount = [this, &cb, &w] (int const threadCount)
-        {
+        auto testForThreadCount = [this, &cb, &w](int const threadCount) {
             // Prepare the callback.
             cb.count = threadCount;
 
@@ -128,25 +148,27 @@ public:
             //
             using namespace std::chrono_literals;
             std::unique_lock<std::mutex> lk{cb.mut};
-            bool const signaled = cb.cv.wait_for(lk, 10s, [&cb]{return cb.count == 0;});
+            bool const signaled =
+                cb.cv.wait_for(lk, 10s, [&cb] { return cb.count == 0; });
             BEAST_EXPECT(signaled);
             BEAST_EXPECT(cb.count == 0);
         };
-        testForThreadCount (tc1);
-        testForThreadCount (tc2);
-        testForThreadCount (tc3);
+        testForThreadCount(tc1);
+        testForThreadCount(tc2);
+        testForThreadCount(tc3);
         w.pauseAllThreadsAndWait();
 
         // We had better finished all our work!
         BEAST_EXPECT(cb.count == 0);
     }
 
-    void run() override
+    void
+    run() override
     {
-        testThreads( 0, 0,  0);
-        testThreads( 1, 0,  1);
-        testThreads( 2, 1,  2);
-        testThreads( 4, 3,  5);
+        testThreads(0, 0, 0);
+        testThreads(1, 0, 1);
+        testThreads(2, 1, 2);
+        testThreads(4, 3, 5);
         testThreads(16, 4, 15);
         testThreads(64, 3, 65);
     }
@@ -154,4 +176,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Workers, core, ripple);
 
-}
+}  // namespace ripple

@@ -25,15 +25,15 @@
 namespace ripple {
 namespace RPC {
 
-using Output = std::function <void (boost::string_ref const&)>;
+using Output = std::function<void(boost::string_ref const&)>;
 
-inline
-Output stringOutput (std::string& s)
+inline Output
+stringOutput(std::string& s)
 {
-    return [&](boost::string_ref const& b) { s.append (b.data(), b.size()); };
+    return [&](boost::string_ref const& b) { s.append(b.data(), b.size()); };
 }
 
-} // RPC
-} // ripple
+}  // namespace RPC
+}  // namespace ripple
 
 #endif

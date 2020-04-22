@@ -30,23 +30,25 @@ namespace ripple {
 class SHAMapSyncFilter
 {
 public:
-    virtual ~SHAMapSyncFilter () = default;
+    virtual ~SHAMapSyncFilter() = default;
     SHAMapSyncFilter() = default;
     SHAMapSyncFilter(SHAMapSyncFilter const&) = delete;
-    SHAMapSyncFilter& operator=(SHAMapSyncFilter const&) = delete;
+    SHAMapSyncFilter&
+    operator=(SHAMapSyncFilter const&) = delete;
 
     // Note that the nodeData is overwritten by this call
-    virtual
-    void
-    gotNode(bool fromFilter, SHAMapHash const& nodeHash,
-        std::uint32_t ledgerSeq, Blob&& nodeData,
-            SHAMapTreeNode::TNType type) const = 0;
+    virtual void
+    gotNode(
+        bool fromFilter,
+        SHAMapHash const& nodeHash,
+        std::uint32_t ledgerSeq,
+        Blob&& nodeData,
+        SHAMapTreeNode::TNType type) const = 0;
 
-    virtual
-    boost::optional<Blob>
+    virtual boost::optional<Blob>
     getNode(SHAMapHash const& nodeHash) const = 0;
 };
 
-}
+}  // namespace ripple
 
 #endif

@@ -49,12 +49,11 @@ template <class>
 class STInteger;
 class STVector256;
 
-enum SerializedTypeID
-{
+enum SerializedTypeID {
     // special types
-    STI_UNKNOWN     = -2,
-    STI_DONE        = -1,
-    STI_NOTPRESENT  = 0,
+    STI_UNKNOWN = -2,
+    STI_DONE = -1,
+    STI_NOTPRESENT = 0,
 
     // // types (common)
     STI_UINT16 = 1,
@@ -79,21 +78,19 @@ enum SerializedTypeID
     // cannot be serialized inside other types
     STI_TRANSACTION = 10001,
     STI_LEDGERENTRY = 10002,
-    STI_VALIDATION  = 10003,
-    STI_METADATA    = 10004,
+    STI_VALIDATION = 10003,
+    STI_METADATA = 10004,
 };
 
 // constexpr
-inline
-int
+inline int
 field_code(SerializedTypeID id, int index)
 {
     return (safe_cast<int>(id) << 16) | index;
 }
 
 // constexpr
-inline
-int
+inline int
 field_code(int id, int index)
 {
     return (id << 16) | index;
@@ -112,91 +109,105 @@ field_code(int id, int index)
 class SField
 {
 public:
-    enum
-    {
-        sMD_Never          = 0x00,
-        sMD_ChangeOrig     = 0x01, // original value when it changes
-        sMD_ChangeNew      = 0x02, // new value when it changes
-        sMD_DeleteFinal    = 0x04, // final value when it is deleted
-        sMD_Create         = 0x08, // value when it's created
-        sMD_Always         = 0x10, // value when node containing it is affected at all
-        sMD_Default        = sMD_ChangeOrig | sMD_ChangeNew | sMD_DeleteFinal | sMD_Create
+    enum {
+        sMD_Never = 0x00,
+        sMD_ChangeOrig = 0x01,   // original value when it changes
+        sMD_ChangeNew = 0x02,    // new value when it changes
+        sMD_DeleteFinal = 0x04,  // final value when it is deleted
+        sMD_Create = 0x08,       // value when it's created
+        sMD_Always = 0x10,  // value when node containing it is affected at all
+        sMD_Default =
+            sMD_ChangeOrig | sMD_ChangeNew | sMD_DeleteFinal | sMD_Create
     };
 
-    enum class IsSigning : unsigned char
-    {
-        no,
-        yes
-    };
-    static IsSigning const   notSigning = IsSigning::no;
+    enum class IsSigning : unsigned char { no, yes };
+    static IsSigning const notSigning = IsSigning::no;
 
-    int const                fieldCode;      // (type<<16)|index
-    SerializedTypeID const   fieldType;      // STI_*
-    int const                fieldValue;     // Code number for protocol
-    std::string const        fieldName;
-    int const                fieldMeta;
-    int const                fieldNum;
-    IsSigning const          signingField;
+    int const fieldCode;               // (type<<16)|index
+    SerializedTypeID const fieldType;  // STI_*
+    int const fieldValue;              // Code number for protocol
+    std::string const fieldName;
+    int const fieldMeta;
+    int const fieldNum;
+    IsSigning const signingField;
     Json::StaticString const jsonName;
 
     SField(SField const&) = delete;
-    SField& operator=(SField const&) = delete;
+    SField&
+    operator=(SField const&) = delete;
     SField(SField&&) = delete;
-    SField& operator=(SField&&) = delete;
+    SField&
+    operator=(SField&&) = delete;
 
 public:
-    struct private_access_tag_t;   // public, but still an implementation detail
+    struct private_access_tag_t;  // public, but still an implementation detail
 
     // These constructors can only be called from SField.cpp
-    SField (private_access_tag_t, SerializedTypeID tid, int fv,
-        const char* fn, int meta = sMD_Default,
+    SField(
+        private_access_tag_t,
+        SerializedTypeID tid,
+        int fv,
+        const char* fn,
+        int meta = sMD_Default,
         IsSigning signing = IsSigning::yes);
-    explicit SField (private_access_tag_t, int fc);
+    explicit SField(private_access_tag_t, int fc);
 
-    static const SField& getField (int fieldCode);
-    static const SField& getField (std::string const& fieldName);
-    static const SField& getField (int type, int value)
+    static const SField&
+    getField(int fieldCode);
+    static const SField&
+    getField(std::string const& fieldName);
+    static const SField&
+    getField(int type, int value)
     {
-        return getField (field_code (type, value));
+        return getField(field_code(type, value));
     }
 
-    static const SField& getField (SerializedTypeID type, int value)
+    static const SField&
+    getField(SerializedTypeID type, int value)
     {
-        return getField (field_code (type, value));
+        return getField(field_code(type, value));
     }
 
-    std::string const& getName () const
+    std::string const&
+    getName() const
     {
         return fieldName;
     }
 
-    bool hasName () const
+    bool
+    hasName() const
     {
         return fieldCode > 0;
     }
 
-    Json::StaticString const& getJsonName () const
+    Json::StaticString const&
+    getJsonName() const
     {
         return jsonName;
     }
 
-    bool isGeneric () const
+    bool
+    isGeneric() const
     {
         return fieldCode == 0;
     }
-    bool isInvalid () const
+    bool
+    isInvalid() const
     {
         return fieldCode == -1;
     }
-    bool isUseful () const
+    bool
+    isUseful() const
     {
         return fieldCode > 0;
     }
-    bool isKnown () const
+    bool
+    isKnown() const
     {
         return fieldType != STI_UNKNOWN;
     }
-    bool isBinary () const
+    bool
+    isBinary() const
     {
         return fieldValue < 256;
     }
@@ -205,50 +216,60 @@ public:
     // should be discarded during serialization,like 'hash'.
     // You cannot serialize an object's hash inside that object,
     // but you can have it in the JSON representation.
-    bool isDiscardable () const
+    bool
+    isDiscardable() const
     {
         return fieldValue > 256;
     }
 
-    int getCode () const
+    int
+    getCode() const
     {
         return fieldCode;
     }
-    int getNum () const
+    int
+    getNum() const
     {
         return fieldNum;
     }
-    static int getNumFields ()
+    static int
+    getNumFields()
     {
         return num;
     }
 
-    bool isSigningField () const
+    bool
+    isSigningField() const
     {
         return signingField == IsSigning::yes;
     }
-    bool shouldMeta (int c) const
+    bool
+    shouldMeta(int c) const
     {
         return (fieldMeta & c) != 0;
     }
 
-    bool shouldInclude (bool withSigningField) const
+    bool
+    shouldInclude(bool withSigningField) const
     {
         return (fieldValue < 256) &&
             (withSigningField || (signingField == IsSigning::yes));
     }
 
-    bool operator== (const SField& f) const
+    bool
+    operator==(const SField& f) const
     {
         return fieldCode == f.fieldCode;
     }
 
-    bool operator!= (const SField& f) const
+    bool
+    operator!=(const SField& f) const
     {
         return fieldCode != f.fieldCode;
     }
 
-    static int compare (const SField& f1, const SField& f2);
+    static int
+    compare(const SField& f1, const SField& f2);
 
 private:
     static int num;
@@ -262,14 +283,11 @@ struct TypedField : SField
     using type = T;
 
     template <class... Args>
-    explicit
-    TypedField (Args&&... args)
-        : SField(std::forward<Args>(args)...)
+    explicit TypedField(Args&&... args) : SField(std::forward<Args>(args)...)
     {
     }
 
-    TypedField (TypedField&& u)
-        : SField(std::move(u))
+    TypedField(TypedField&& u) : SField(std::move(u))
     {
     }
 };
@@ -280,16 +298,13 @@ struct OptionaledField
 {
     TypedField<T> const* f;
 
-    explicit
-    OptionaledField (TypedField<T> const& f_)
-        : f (&f_)
+    explicit OptionaledField(TypedField<T> const& f_) : f(&f_)
     {
     }
 };
 
 template <class T>
-inline
-OptionaledField<T>
+inline OptionaledField<T>
 operator~(TypedField<T> const& f)
 {
     return OptionaledField<T>(f);
@@ -386,7 +401,6 @@ extern SF_U64 const sfLowNode;
 extern SF_U64 const sfHighNode;
 extern SF_U64 const sfDestinationNode;
 extern SF_U64 const sfCookie;
-
 
 // 128-bit
 extern SF_U128 const sfEmailHash;
@@ -503,6 +517,6 @@ extern SField const sfMajorities;
 
 //------------------------------------------------------------------------------
 
-} // ripple
+}  // namespace ripple
 
 #endif

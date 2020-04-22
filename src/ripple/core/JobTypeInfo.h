@@ -20,8 +20,9 @@
 #ifndef RIPPLE_CORE_JOBTYPEINFO_H_INCLUDED
 #define RIPPLE_CORE_JOBTYPEINFO_H_INCLUDED
 
-namespace ripple
-{
+#include <ripple/core/Job.h>
+
+namespace ripple {
 
 /** Holds all the 'static' information about a job, which does not change */
 class JobTypeInfo
@@ -42,52 +43,61 @@ private:
 
 public:
     // Not default constructible
-    JobTypeInfo () = delete;
+    JobTypeInfo() = delete;
 
-    JobTypeInfo (JobType type, std::string name, int limit,
-            bool special, std::chrono::milliseconds avgLatency,
-            std::chrono::milliseconds peakLatency)
-        : m_type (type)
-        , m_name (std::move(name))
-        , m_limit (limit)
-        , m_special (special)
-        , m_avgLatency (avgLatency)
-        , m_peakLatency (peakLatency)
+    JobTypeInfo(
+        JobType type,
+        std::string name,
+        int limit,
+        bool special,
+        std::chrono::milliseconds avgLatency,
+        std::chrono::milliseconds peakLatency)
+        : m_type(type)
+        , m_name(std::move(name))
+        , m_limit(limit)
+        , m_special(special)
+        , m_avgLatency(avgLatency)
+        , m_peakLatency(peakLatency)
     {
-
     }
 
-    JobType type () const
+    JobType
+    type() const
     {
         return m_type;
     }
 
-    std::string const& name () const
+    std::string const&
+    name() const
     {
         return m_name;
     }
 
-    int limit () const
+    int
+    limit() const
     {
         return m_limit;
     }
 
-    bool special () const
+    bool
+    special() const
     {
         return m_special;
     }
 
-    std::chrono::milliseconds getAverageLatency () const
+    std::chrono::milliseconds
+    getAverageLatency() const
     {
         return m_avgLatency;
     }
 
-    std::chrono::milliseconds getPeakLatency () const
+    std::chrono::milliseconds
+    getPeakLatency() const
     {
         return m_peakLatency;
     }
 };
 
-}
+}  // namespace ripple
 
 #endif

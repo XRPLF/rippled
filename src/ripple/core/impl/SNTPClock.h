@@ -30,24 +30,18 @@
 namespace ripple {
 
 /** A clock based on system_clock and adjusted for SNTP. */
-class SNTPClock
-    : public beast::abstract_clock<
-        std::chrono::system_clock>
+class SNTPClock : public beast::abstract_clock<std::chrono::system_clock>
 {
 public:
-    virtual
-    void
-    run (std::vector <std::string> const& servers) = 0;
+    virtual void
+    run(std::vector<std::string> const& servers) = 0;
 
-    virtual
-    duration
+    virtual duration
     offset() const = 0;
 };
 
-extern
-std::unique_ptr<SNTPClock>
-make_SNTPClock (beast::Journal);
+extern std::unique_ptr<SNTPClock> make_SNTPClock(beast::Journal);
 
-} // ripple
+}  // namespace ripple
 
 #endif

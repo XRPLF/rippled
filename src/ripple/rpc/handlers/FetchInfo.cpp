@@ -24,11 +24,13 @@
 
 namespace ripple {
 
-Json::Value doFetchInfo (RPC::JsonContext& context)
+Json::Value
+doFetchInfo(RPC::JsonContext& context)
 {
-    Json::Value ret (Json::objectValue);
+    Json::Value ret(Json::objectValue);
 
-    if (context.params.isMember(jss::clear) && context.params[jss::clear].asBool())
+    if (context.params.isMember(jss::clear) &&
+        context.params[jss::clear].asBool())
     {
         context.netOps.clearLedgerFetch();
         ret[jss::clear] = true;
@@ -39,4 +41,4 @@ Json::Value doFetchInfo (RPC::JsonContext& context)
     return ret;
 }
 
-} // ripple
+}  // namespace ripple

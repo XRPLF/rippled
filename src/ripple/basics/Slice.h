@@ -29,8 +29,8 @@
 #include <cstring>
 #include <stdexcept>
 #include <string>
-#include <vector>
 #include <type_traits>
+#include <vector>
 
 namespace ripple {
 
@@ -52,13 +52,13 @@ public:
     /** Default constructed Slice has length 0. */
     Slice() noexcept = default;
 
-    Slice (Slice const&) noexcept = default;
-    Slice& operator= (Slice const&) noexcept = default;
+    Slice(Slice const&) noexcept = default;
+    Slice&
+    operator=(Slice const&) noexcept = default;
 
     /** Create a slice pointing to existing memory. */
-    Slice (void const* data, std::size_t size) noexcept
-        : data_ (reinterpret_cast<std::uint8_t const*>(data))
-        , size_ (size)
+    Slice(void const* data, std::size_t size) noexcept
+        : data_(reinterpret_cast<std::uint8_t const*>(data)), size_(size)
     {
     }
 
@@ -100,23 +100,22 @@ public:
     /** Advance the buffer. */
     /** @{ */
     Slice&
-    operator+= (std::size_t n)
+    operator+=(std::size_t n)
     {
         if (n > size_)
-            Throw<std::domain_error> ("too small");
+            Throw<std::domain_error>("too small");
         data_ += n;
         size_ -= n;
         return *this;
     }
 
     Slice
-    operator+ (std::size_t n) const
+    operator+(std::size_t n) const
     {
         Slice temp = *this;
         return temp += n;
     }
     /** @} */
-
 
     const_iterator
     begin() const noexcept
@@ -146,16 +145,14 @@ public:
 //------------------------------------------------------------------------------
 
 template <class Hasher>
-inline
-void
-hash_append (Hasher& h, Slice const& v)
+inline void
+hash_append(Hasher& h, Slice const& v)
 {
     h(v.data(), v.size());
 }
 
-inline
-bool
-operator== (Slice const& lhs, Slice const& rhs) noexcept
+inline bool
+operator==(Slice const& lhs, Slice const& rhs) noexcept
 {
     if (lhs.size() != rhs.size())
         return false;
@@ -166,25 +163,25 @@ operator== (Slice const& lhs, Slice const& rhs) noexcept
     return std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;
 }
 
-inline
-bool
-operator!= (Slice const& lhs, Slice const& rhs) noexcept
+inline bool
+operator!=(Slice const& lhs, Slice const& rhs) noexcept
 {
     return !(lhs == rhs);
 }
 
-inline
-bool
-operator< (Slice const& lhs, Slice const& rhs) noexcept
+inline bool
+operator<(Slice const& lhs, Slice const& rhs) noexcept
 {
     return std::lexicographical_compare(
-        lhs.data(), lhs.data() + lhs.size(),
-            rhs.data(), rhs.data() + rhs.size());
+        lhs.data(),
+        lhs.data() + lhs.size(),
+        rhs.data(),
+        rhs.data() + rhs.size());
 }
 
-
 template <class Stream>
-Stream& operator<<(Stream& s, Slice const& v)
+Stream&
+operator<<(Stream& s, Slice const& v)
 {
     s << strHex(v);
     return s;
@@ -192,33 +189,29 @@ Stream& operator<<(Stream& s, Slice const& v)
 
 template <class T, std::size_t N>
 std::enable_if_t<
-    std::is_same<T, char>::value ||
-        std::is_same<T, unsigned char>::value,
-    Slice
->
-makeSlice (std::array<T, N> const& a)
+    std::is_same<T, char>::value || std::is_same<T, unsigned char>::value,
+    Slice>
+makeSlice(std::array<T, N> const& a)
 {
     return Slice(a.data(), a.size());
 }
 
 template <class T, class Alloc>
 std::enable_if_t<
-    std::is_same<T, char>::value ||
-        std::is_same<T, unsigned char>::value,
-    Slice
->
-makeSlice (std::vector<T, Alloc> const& v)
+    std::is_same<T, char>::value || std::is_same<T, unsigned char>::value,
+    Slice>
+makeSlice(std::vector<T, Alloc> const& v)
 {
     return Slice(v.data(), v.size());
 }
 
 template <class Traits, class Alloc>
 Slice
-makeSlice (std::basic_string<char, Traits, Alloc> const& s)
+makeSlice(std::basic_string<char, Traits, Alloc> const& s)
 {
     return Slice(s.data(), s.size());
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

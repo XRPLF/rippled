@@ -17,18 +17,17 @@
 */
 //==============================================================================
 
-#include <ripple/overlay/impl/Handshake.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/base64.h>
 #include <ripple/basics/safe_cast.h>
-#include <ripple/beast/rfc2616.h>
 #include <ripple/beast/core/LexicalCast.h>
+#include <ripple/beast/rfc2616.h>
+#include <ripple/overlay/impl/Handshake.h>
 #include <ripple/protocol/digest.h>
 #include <boost/regex.hpp>
 #include <algorithm>
 #include <chrono>
-
 
 // VFALCO Shouldn't we have to include the OpenSSL
 // headers or something for SSL_get_finished?
@@ -49,42 +48,39 @@ namespace ripple {
           this topic, see https://github.com/openssl/openssl/issues/5509 and
           https://github.com/ripple/rippled/issues/2413.
 */
-static
-boost::optional<base_uint<512>>
-hashLastMessage (SSL const* ssl,
-    size_t (*get)(const SSL *, void *, size_t))
+static boost::optional<base_uint<512>>
+hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
 {
     constexpr std::size_t sslMinimumFinishedLength = 12;
 
     unsigned char buf[1024];
     size_t len = get(ssl, buf, sizeof(buf));
 
-    if(len < sslMinimumFinishedLength)
+    if (len < sslMinimumFinishedLength)
         return boost::none;
 
     sha512_hasher h;
 
     base_uint<512> cookie;
-    SHA512 (buf, len, cookie.data());
+    SHA512(buf, len, cookie.data());
     return cookie;
 }
 
 boost::optional<uint256>
-makeSharedValue (stream_type& ssl, beast::Journal journal)
+makeSharedValue(stream_type& ssl, beast::Journal journal)
 {
-    auto const cookie1 = hashLastMessage(
-        ssl.native_handle(), SSL_get_finished);
+    auto const cookie1 = hashLastMessage(ssl.native_handle(), SSL_get_finished);
     if (!cookie1)
     {
-        JLOG (journal.error()) << "Cookie generation: local setup not complete";
+        JLOG(journal.error()) << "Cookie generation: local setup not complete";
         return boost::none;
     }
 
-    auto const cookie2 = hashLastMessage(
-        ssl.native_handle(), SSL_get_peer_finished);
+    auto const cookie2 =
+        hashLastMessage(ssl.native_handle(), SSL_get_peer_finished);
     if (!cookie2)
     {
-        JLOG (journal.error()) << "Cookie generation: peer setup not complete";
+        JLOG(journal.error()) << "Cookie generation: peer setup not complete";
         return boost::none;
     }
 
@@ -94,11 +90,12 @@ makeSharedValue (stream_type& ssl, beast::Journal journal)
     // is 0. Don't allow this.
     if (result == beast::zero)
     {
-        JLOG(journal.error()) << "Cookie generation: identical finished messages";
+        JLOG(journal.error())
+            << "Cookie generation: identical finished messages";
         return boost::none;
     }
 
-    return sha512Half (Slice (result.data(), result.size()));
+    return sha512Half(Slice(result.data(), result.size()));
 }
 
 void
@@ -118,32 +115,36 @@ buildHandshake(
         h.insert("Network-ID", std::to_string(*networkID));
     }
 
-    h.insert ("Network-Time",
+    h.insert(
+        "Network-Time",
         std::to_string(app.timeKeeper().now().time_since_epoch().count()));
 
-    h.insert ("Public-Key",
+    h.insert(
+        "Public-Key",
         toBase58(TokenType::NodePublic, app.nodeIdentity().first));
 
     {
-        auto const sig = signDigest(app.nodeIdentity().first,
-            app.nodeIdentity().second, sharedValue);
-        h.insert("Session-Signature",
-            base64_encode(sig.data(), sig.size()));
+        auto const sig = signDigest(
+            app.nodeIdentity().first, app.nodeIdentity().second, sharedValue);
+        h.insert("Session-Signature", base64_encode(sig.data(), sig.size()));
     }
 
-    if (beast::IP::is_public (remote_ip))
-        h.insert ("Remote-IP", remote_ip.to_string());
+    if (beast::IP::is_public(remote_ip))
+        h.insert("Remote-IP", remote_ip.to_string());
 
     if (!public_ip.is_unspecified())
-        h.insert ("Local-IP", public_ip.to_string());
+        h.insert("Local-IP", public_ip.to_string());
 
     if (auto const cl = app.getLedgerMaster().getClosedLedger())
     {
         // TODO: Use hex for these
-        h.insert ("Closed-Ledger", base64_encode(
-            cl->info().hash.begin(), cl->info().hash.size()));
-        h.insert ("Previous-Ledger", base64_encode(
-            cl->info().parentHash.begin(), cl->info().parentHash.size()));
+        h.insert(
+            "Closed-Ledger",
+            base64_encode(cl->info().hash.begin(), cl->info().hash.size()));
+        h.insert(
+            "Previous-Ledger",
+            base64_encode(
+                cl->info().parentHash.begin(), cl->info().parentHash.size()));
     }
 }
 
@@ -165,7 +166,7 @@ verifyHandshake(
             if (!beast::lexicalCastChecked(nid, iter->value().to_string()))
                 throw std::runtime_error("Invalid peer network identifier");
 
-            if(nid != *networkID)
+            if (nid != *networkID)
                 throw std::runtime_error("Peer is on a different network");
         }
     }
@@ -173,8 +174,7 @@ verifyHandshake(
     if (auto const iter = headers.find("Network-Time"); iter != headers.end())
     {
         auto const netTime =
-            [str = iter->value().to_string()]() -> TimeKeeper::time_point
-        {
+            [str = iter->value().to_string()]() -> TimeKeeper::time_point {
             TimeKeeper::duration::rep val;
 
             if (beast::lexicalCastChecked(val, str))
@@ -194,12 +194,11 @@ verifyHandshake(
         // uses an unsigned integer for representing durations, which is
         // a problem when trying to subtract time points.
         // FIXME: @HowardHinnant, should we migrate to using std::int64_t?
-        auto calculateOffset = [](
-            TimeKeeper::time_point a, TimeKeeper::time_point b)
-        {
+        auto calculateOffset = [](TimeKeeper::time_point a,
+                                  TimeKeeper::time_point b) {
             if (a > b)
                 return duration_cast<std::chrono::seconds>(a - b);
-            return - duration_cast<std::chrono::seconds>(b - a);
+            return -duration_cast<std::chrono::seconds>(b - a);
         };
 
         auto const offset = calculateOffset(netTime, ourTime);
@@ -208,14 +207,13 @@ verifyHandshake(
             throw std::runtime_error("Peer clock is too far off");
     }
 
-    PublicKey const publicKey = [&headers]
-    {
-        if (auto const iter = headers.find ("Public-Key"); iter != headers.end())
+    PublicKey const publicKey = [&headers] {
+        if (auto const iter = headers.find("Public-Key"); iter != headers.end())
         {
             auto pk = parseBase58<PublicKey>(
                 TokenType::NodePublic, iter->value().to_string());
 
-            if(pk)
+            if (pk)
             {
                 if (publicKeyType(*pk) != KeyType::secp256k1)
                     throw std::runtime_error("Unsupported public key type");
@@ -244,11 +242,11 @@ verifyHandshake(
 
         auto sig = base64_decode(iter->value().to_string());
 
-        if (! verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
+        if (!verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
             throw std::runtime_error("Failed to verify session");
     }
 
-    if (auto const iter = headers.find ("Local-IP"); iter != headers.end())
+    if (auto const iter = headers.find("Local-IP"); iter != headers.end())
     {
         boost::system::error_code ec;
         auto const local_ip = boost::asio::ip::address::from_string(
@@ -258,8 +256,9 @@ verifyHandshake(
             throw std::runtime_error("Invalid Local-IP");
 
         if (beast::IP::is_public(remote) && remote != local_ip)
-            throw std::runtime_error("Incorrect Local-IP: " +
-                remote.to_string() + " instead of " + local_ip.to_string());
+            throw std::runtime_error(
+                "Incorrect Local-IP: " + remote.to_string() + " instead of " +
+                local_ip.to_string());
     }
 
     if (auto const iter = headers.find("Remote-IP"); iter != headers.end())
@@ -271,17 +270,19 @@ verifyHandshake(
         if (ec)
             throw std::runtime_error("Invalid Remote-IP");
 
-        if (beast::IP::is_public(remote) && !beast::IP::is_unspecified(public_ip))
+        if (beast::IP::is_public(remote) &&
+            !beast::IP::is_unspecified(public_ip))
         {
             // We know our public IP and peer reports our connection came
             // from some other IP.
             if (remote_ip != public_ip)
-                throw std::runtime_error("Incorrect Remote-IP: " +
-                    public_ip.to_string() + " instead of " + remote_ip.to_string());
+                throw std::runtime_error(
+                    "Incorrect Remote-IP: " + public_ip.to_string() +
+                    " instead of " + remote_ip.to_string());
         }
     }
 
     return publicKey;
 }
 
-}
+}  // namespace ripple

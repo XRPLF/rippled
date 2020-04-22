@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
@@ -30,7 +30,7 @@
 namespace ripple {
 
 void
-convertBlobsToTxResult (
+convertBlobsToTxResult(
     NetworkOPs::AccountTxs& to,
     std::uint32_t ledger_index,
     std::string const& status,
@@ -38,23 +38,23 @@ convertBlobsToTxResult (
     Blob const& rawMeta,
     Application& app)
 {
-    SerialIter it (makeSlice(rawTxn));
-    auto txn = std::make_shared<STTx const> (it);
+    SerialIter it(makeSlice(rawTxn));
+    auto txn = std::make_shared<STTx const>(it);
     std::string reason;
 
-    auto tr = std::make_shared<Transaction> (txn, reason, app);
+    auto tr = std::make_shared<Transaction>(txn, reason, app);
 
-    tr->setStatus (Transaction::sqlTransactionStatus(status));
-    tr->setLedger (ledger_index);
+    tr->setStatus(Transaction::sqlTransactionStatus(status));
+    tr->setLedger(ledger_index);
 
-    auto metaset = std::make_shared<TxMeta> (
-        tr->getID (), tr->getLedger (), rawMeta);
+    auto metaset =
+        std::make_shared<TxMeta>(tr->getID(), tr->getLedger(), rawMeta);
 
     to.emplace_back(std::move(tr), metaset);
 };
 
 void
-saveLedgerAsync (Application& app, std::uint32_t seq)
+saveLedgerAsync(Application& app, std::uint32_t seq)
 {
     if (auto l = app.getLedgerMaster().getLedgerBySeq(seq))
         pendSaveValidated(app, l, false, false);
@@ -259,4 +259,4 @@ accountTxPage(
 
     return;
 }
-}
+}  // namespace ripple

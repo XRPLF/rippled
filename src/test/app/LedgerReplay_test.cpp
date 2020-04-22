@@ -1,4 +1,4 @@
- //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2018 Ripple Labs Inc.
@@ -17,17 +17,18 @@
 */
 //==============================================================================
 
-#include <test/jtx.h>
 #include <ripple/app/ledger/BuildLedger.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerReplay.h>
+#include <test/jtx.h>
 
 namespace ripple {
 namespace test {
 
 struct LedgerReplay_test : public beast::unit_test::suite
 {
-    void run() override
+    void
+    run() override
     {
         testcase("Replay ledger");
 
@@ -47,7 +48,7 @@ struct LedgerReplay_test : public beast::unit_test::suite
             ledgerMaster.getLedgerByHash(lastClosed->info().parentHash);
 
         auto const replayed = buildLedger(
-            LedgerReplay(lastClosedParent,lastClosed),
+            LedgerReplay(lastClosedParent, lastClosed),
             tapNONE,
             env.app(),
             env.journal);
@@ -56,7 +57,7 @@ struct LedgerReplay_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerReplay,app,ripple);
+BEAST_DEFINE_TESTSUITE(LedgerReplay, app, ripple);
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple

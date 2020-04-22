@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/csf/BasicNetwork.h>
+#include <test/csf/Digraph.h>
 #include <test/csf/Histogram.h>
 #include <test/csf/Peer.h>
 #include <test/csf/PeerGroup.h>
@@ -28,7 +29,6 @@
 #include <test/csf/TrustGraph.h>
 #include <test/csf/Tx.h>
 #include <test/csf/collectors.h>
-#include <test/csf/Digraph.h>
 #include <test/csf/events.h>
 #include <test/csf/ledgers.h>
 #include <test/csf/random.h>

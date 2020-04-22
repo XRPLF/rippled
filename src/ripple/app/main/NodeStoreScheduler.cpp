@@ -22,43 +22,47 @@
 
 namespace ripple {
 
-NodeStoreScheduler::NodeStoreScheduler (Stoppable& parent)
-    : Stoppable ("NodeStoreScheduler", parent)
+NodeStoreScheduler::NodeStoreScheduler(Stoppable& parent)
+    : Stoppable("NodeStoreScheduler", parent)
 {
 }
 
-void NodeStoreScheduler::setJobQueue (JobQueue& jobQueue)
+void
+NodeStoreScheduler::setJobQueue(JobQueue& jobQueue)
 {
     m_jobQueue = &jobQueue;
 }
 
-void NodeStoreScheduler::onStop ()
+void
+NodeStoreScheduler::onStop()
 {
 }
 
-void NodeStoreScheduler::onChildrenStopped ()
+void
+NodeStoreScheduler::onChildrenStopped()
 {
-    assert (m_taskCount == 0);
-    stopped ();
+    assert(m_taskCount == 0);
+    stopped();
 }
 
-void NodeStoreScheduler::scheduleTask (NodeStore::Task& task)
+void
+NodeStoreScheduler::scheduleTask(NodeStore::Task& task)
 {
     ++m_taskCount;
-    if (!m_jobQueue->addJob (
-        jtWRITE,
-        "NodeObject::store",
-        [this, &task] (Job&) { doTask(task); }))
+    if (!m_jobQueue->addJob(jtWRITE, "NodeObject::store", [this, &task](Job&) {
+            doTask(task);
+        }))
     {
         // Job not added, presumably because we're shutting down.
         // Recover by executing the task synchronously.
-        doTask (task);
+        doTask(task);
     }
 }
 
-void NodeStoreScheduler::doTask (NodeStore::Task& task)
+void
+NodeStoreScheduler::doTask(NodeStore::Task& task)
 {
-    task.performScheduledTask ();
+    task.performScheduledTask();
 
     // NOTE: It feels a bit off that there are two different methods that
     // call stopped(): onChildrenStopped() and doTask().  There's a
@@ -71,18 +75,20 @@ void NodeStoreScheduler::doTask (NodeStore::Task& task)
         stopped();
 }
 
-void NodeStoreScheduler::onFetch (NodeStore::FetchReport const& report)
+void
+NodeStoreScheduler::onFetch(NodeStore::FetchReport const& report)
 {
     if (report.wentToDisk)
-        m_jobQueue->addLoadEvents (
+        m_jobQueue->addLoadEvents(
             report.isAsync ? jtNS_ASYNC_READ : jtNS_SYNC_READ,
-                1, report.elapsed);
+            1,
+            report.elapsed);
 }
 
-void NodeStoreScheduler::onBatchWrite (NodeStore::BatchWriteReport const& report)
+void
+NodeStoreScheduler::onBatchWrite(NodeStore::BatchWriteReport const& report)
 {
-    m_jobQueue->addLoadEvents (jtNS_WRITE,
-        report.writeCount, report.elapsed);
+    m_jobQueue->addLoadEvents(jtNS_WRITE, report.writeCount, report.elapsed);
 }
 
-} // ripple
+}  // namespace ripple

@@ -20,11 +20,11 @@
 #ifndef RIPPLE_RPC_WSINFOSUB_H
 #define RIPPLE_RPC_WSINFOSUB_H
 
-#include <ripple/server/WSSession.h>
-#include <ripple/net/InfoSub.h>
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/json/json_writer.h>
+#include <ripple/net/InfoSub.h>
 #include <ripple/rpc/Role.h>
+#include <ripple/server/WSSession.h>
 #include <boost/utility/string_view.hpp>
 #include <memory>
 #include <string>
@@ -39,12 +39,13 @@ class WSInfoSub : public InfoSub
 
 public:
     WSInfoSub(Source& source, std::shared_ptr<WSSession> const& ws)
-        : InfoSub(source)
-        , ws_(ws)
+        : InfoSub(source), ws_(ws)
     {
         auto const& h = ws->request();
-        if (ipAllowed(beast::IPAddressConversion::from_asio(
-            ws->remote_endpoint()).address(), ws->port().secure_gateway_ip))
+        if (ipAllowed(
+                beast::IPAddressConversion::from_asio(ws->remote_endpoint())
+                    .address(),
+                ws->port().secure_gateway_ip))
         {
             auto it = h.find("X-User");
             if (it != h.end())
@@ -69,22 +70,18 @@ public:
     send(Json::Value const& jv, bool) override
     {
         auto sp = ws_.lock();
-        if(! sp)
+        if (!sp)
             return;
         boost::beast::multi_buffer sb;
-        Json::stream(jv,
-            [&](void const* data, std::size_t n)
-            {
-                sb.commit(boost::asio::buffer_copy(
-                    sb.prepare(n), boost::asio::buffer(data, n)));
-            });
-        auto m = std::make_shared<
-            StreambufWSMsg<decltype(sb)>>(
-                std::move(sb));
+        Json::stream(jv, [&](void const* data, std::size_t n) {
+            sb.commit(boost::asio::buffer_copy(
+                sb.prepare(n), boost::asio::buffer(data, n)));
+        });
+        auto m = std::make_shared<StreambufWSMsg<decltype(sb)>>(std::move(sb));
         sp->send(m);
     }
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

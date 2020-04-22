@@ -33,8 +33,10 @@ public:
     DatabaseShardImp() = delete;
     DatabaseShardImp(DatabaseShardImp const&) = delete;
     DatabaseShardImp(DatabaseShardImp&&) = delete;
-    DatabaseShardImp& operator=(DatabaseShardImp const&) = delete;
-    DatabaseShardImp& operator=(DatabaseShardImp&&) = delete;
+    DatabaseShardImp&
+    operator=(DatabaseShardImp const&) = delete;
+    DatabaseShardImp&
+    operator=(DatabaseShardImp&&) = delete;
 
     DatabaseShardImp(
         Application& app,
@@ -62,9 +64,8 @@ public:
     getPreShards() override;
 
     bool
-    importShard(
-        std::uint32_t shardIndex,
-        boost::filesystem::path const& srcDir) override;
+    importShard(std::uint32_t shardIndex, boost::filesystem::path const& srcDir)
+        override;
 
     std::shared_ptr<Ledger>
     fetchLedger(uint256 const& hash, std::uint32_t seq) override;
@@ -164,7 +165,7 @@ public:
     getCacheHitRate() override;
 
     void
-    tune(int size, std::chrono::seconds age) override {};
+    tune(int size, std::chrono::seconds age) override{};
 
     void
     sweep() override;
@@ -172,29 +173,28 @@ public:
 private:
     struct ShardInfo
     {
-        enum class State
-        {
+        enum class State {
             none,
-            final,      // Immutable, complete and validated
-            acquire,    // Being acquired
-            import,     // Being imported
-            finalize    // Being finalized
+            final,    // Immutable, complete and validated
+            acquire,  // Being acquired
+            import,   // Being imported
+            finalize  // Being finalized
         };
 
         ShardInfo() = default;
         ShardInfo(std::shared_ptr<Shard> shard_, State state_)
-            : shard(std::move(shard_))
-            , state(state_)
-        {}
+            : shard(std::move(shard_)), state(state_)
+        {
+        }
 
         std::shared_ptr<Shard> shard;
-        State state {State::none};
+        State state{State::none};
     };
 
     Application& app_;
     Stoppable& parent_;
     mutable std::mutex mutex_;
-    bool init_ {false};
+    bool init_{false};
 
     // The context shared with all shard backend databases
     std::unique_ptr<nudb::context> ctx_;
@@ -206,13 +206,13 @@ private:
     std::map<std::uint32_t, ShardInfo> shards_;
 
     // Shard index being acquired from the peer network
-    std::uint32_t acquireIndex_ {0};
+    std::uint32_t acquireIndex_{0};
 
     // The shard store root directory
     boost::filesystem::path dir_;
 
     // If new shards can be stored
-    bool canAdd_ {true};
+    bool canAdd_{true};
 
     // Complete shard indexes
     std::string status_;
@@ -224,7 +224,7 @@ private:
     std::uint64_t maxFileSz_;
 
     // Storage space utilized by the shard store (in bytes)
-    std::uint64_t fileSz_ {0};
+    std::uint64_t fileSz_{0};
 
     // Each shard stores 16384 ledgers. The earliest shard may store
     // less if the earliest ledger sequence truncates its beginning.
@@ -249,7 +249,7 @@ private:
     fetchFrom(uint256 const& hash, std::uint32_t seq) override;
 
     void
-    for_each(std::function <void(std::shared_ptr<NodeObject>)> f) override
+    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
         Throw<std::runtime_error>("Shard store import not supported");
     }
@@ -292,7 +292,7 @@ private:
         std::shared_ptr<Ledger const> const& ledger);
 };
 
-} // NodeStore
-} // ripple
+}  // namespace NodeStore
+}  // namespace ripple
 
 #endif

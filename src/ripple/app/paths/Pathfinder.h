@@ -38,7 +38,7 @@ class Pathfinder
 {
 public:
     /** Construct a pathfinder without an issuer.*/
-    Pathfinder (
+    Pathfinder(
         std::shared_ptr<RippleLineCache> const& cache,
         AccountID const& srcAccount,
         AccountID const& dstAccount,
@@ -47,16 +47,20 @@ public:
         STAmount const& dstAmount,
         boost::optional<STAmount> const& srcAmount,
         Application& app);
-    Pathfinder (Pathfinder const&) = delete;
-    Pathfinder& operator= (Pathfinder const&) = delete;
+    Pathfinder(Pathfinder const&) = delete;
+    Pathfinder&
+    operator=(Pathfinder const&) = delete;
     ~Pathfinder() = default;
 
-    static void initPathTable ();
+    static void
+    initPathTable();
 
-    bool findPaths (int searchLevel);
+    bool
+    findPaths(int searchLevel);
 
     /** Compute the rankings of the paths. */
-    void computePathRanks (int maxPaths);
+    void
+    computePathRanks(int maxPaths);
 
     /* Get the best paths, up to maxPaths in number, from mCompletePaths.
 
@@ -64,29 +68,27 @@ public:
        additional single path which can consume all the liquidity.
     */
     STPathSet
-    getBestPaths (
+    getBestPaths(
         int maxPaths,
         STPath& fullLiquidityPath,
         STPathSet const& extraPaths,
         AccountID const& srcIssuer);
 
-    enum NodeType
-    {
+    enum NodeType {
         nt_SOURCE,     // The source account: with an issuer account, if needed.
         nt_ACCOUNTS,   // Accounts that connect from this source/currency.
         nt_BOOKS,      // Order books that connect to this currency.
         nt_XRP_BOOK,   // The order book from this currency to XRP.
         nt_DEST_BOOK,  // The order book to the destination currency/issuer.
-        nt_DESTINATION // The destination account only.
+        nt_DESTINATION  // The destination account only.
     };
 
     // The PathType is a list of the NodeTypes for a path.
-    using PathType = std::vector <NodeType>;
+    using PathType = std::vector<NodeType>;
 
     // PaymentType represents the types of the source and destination currencies
     // in a path request.
-    enum PaymentType
-    {
+    enum PaymentType {
         pt_XRP_to_XRP,
         pt_XRP_to_nonXRP,
         pt_nonXRP_to_XRP,
@@ -123,32 +125,37 @@ private:
       getBestPaths
      */
 
-
     // Add all paths of one type to mCompletePaths.
-    STPathSet& addPathsForType (PathType const& type);
+    STPathSet&
+    addPathsForType(PathType const& type);
 
-    bool issueMatchesOrigin (Issue const&);
+    bool
+    issueMatchesOrigin(Issue const&);
 
-    int getPathsOut (
+    int
+    getPathsOut(
         Currency const& currency,
         AccountID const& account,
         bool isDestCurrency,
         AccountID const& dest);
 
-    void addLink (
+    void
+    addLink(
         STPath const& currentPath,
         STPathSet& incompletePaths,
         int addFlags);
 
     // Call addLink() for each path in currentPaths.
-    void addLinks (
+    void
+    addLinks(
         STPathSet const& currentPaths,
         STPathSet& incompletePaths,
         int addFlags);
 
     // Compute the liquidity for a path.  Return tesSUCCESS if it has has enough
     // liquidity to be worth keeping, otherwise an error.
-    TER getPathLiquidity (
+    TER
+    getPathLiquidity(
         STPath const& path,            // IN:  The path to check.
         STAmount const& minDstAmount,  // IN:  The minimum output this path must
                                        //      deliver to be worth keeping.
@@ -157,22 +164,25 @@ private:
 
     // Does this path end on an account-to-account link whose last account has
     // set the "no ripple" flag on the link?
-    bool isNoRippleOut (STPath const& currentPath);
+    bool
+    isNoRippleOut(STPath const& currentPath);
 
     // Is the "no ripple" flag set from one account to another?
-    bool isNoRipple (
+    bool
+    isNoRipple(
         AccountID const& fromAccount,
         AccountID const& toAccount,
         Currency const& currency);
 
-    void rankPaths (
+    void
+    rankPaths(
         int maxPaths,
         STPathSet const& paths,
-        std::vector <PathRank>& rankedPaths);
+        std::vector<PathRank>& rankedPaths);
 
     AccountID mSrcAccount;
     AccountID mDstAccount;
-    AccountID mEffectiveDst; // The account the paths need to end at
+    AccountID mEffectiveDst;  // The account the paths need to end at
     STAmount mDstAmount;
     Currency mSrcCurrency;
     boost::optional<AccountID> mSrcIssuer;
@@ -182,7 +192,7 @@ private:
     STAmount mRemainingAmount;
     bool convert_all_;
 
-    std::shared_ptr <ReadView const> mLedger;
+    std::shared_ptr<ReadView const> mLedger;
     std::unique_ptr<LoadEvent> m_loadEvent;
     std::shared_ptr<RippleLineCache> mRLCache;
 
@@ -212,6 +222,6 @@ private:
     static std::uint32_t const afAC_LAST = 0x080;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

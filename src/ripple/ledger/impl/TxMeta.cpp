@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/ledger/TxMeta.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/contract.h>
 #include <ripple/json/to_string.h>
+#include <ripple/ledger/TxMeta.h>
 #include <ripple/protocol/STAccount.h>
 #include <string>
 
@@ -28,131 +28,141 @@ namespace ripple {
 
 // VFALCO TODO rename class to TransactionMeta
 
-template<class T>
-TxMeta::TxMeta (uint256 const& txid,
-    std::uint32_t ledger, T const& data, CtorHelper)
-    : mTransactionID (txid)
-    , mLedger (ledger)
-    , mNodes (sfAffectedNodes, 32)
+template <class T>
+TxMeta::TxMeta(
+    uint256 const& txid,
+    std::uint32_t ledger,
+    T const& data,
+    CtorHelper)
+    : mTransactionID(txid), mLedger(ledger), mNodes(sfAffectedNodes, 32)
 {
-    SerialIter sit (makeSlice(data));
+    SerialIter sit(makeSlice(data));
 
     STObject obj(sit, sfMetadata);
-    mResult = obj.getFieldU8 (sfTransactionResult);
-    mIndex = obj.getFieldU32 (sfTransactionIndex);
-    mNodes = * dynamic_cast<STArray*> (&obj.getField (sfAffectedNodes));
+    mResult = obj.getFieldU8(sfTransactionResult);
+    mIndex = obj.getFieldU32(sfTransactionIndex);
+    mNodes = *dynamic_cast<STArray*>(&obj.getField(sfAffectedNodes));
 
-    if (obj.isFieldPresent (sfDeliveredAmount))
-        setDeliveredAmount (obj.getFieldAmount (sfDeliveredAmount));
+    if (obj.isFieldPresent(sfDeliveredAmount))
+        setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
 }
 
-TxMeta::TxMeta (uint256 const& txid, std::uint32_t ledger, STObject const& obj)
-    : mTransactionID (txid)
-    , mLedger (ledger)
-    , mNodes (obj.getFieldArray (sfAffectedNodes))
+TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
+    : mTransactionID(txid)
+    , mLedger(ledger)
+    , mNodes(obj.getFieldArray(sfAffectedNodes))
 {
-    mResult = obj.getFieldU8 (sfTransactionResult);
-    mIndex = obj.getFieldU32 (sfTransactionIndex);
+    mResult = obj.getFieldU8(sfTransactionResult);
+    mIndex = obj.getFieldU32(sfTransactionIndex);
 
-    auto affectedNodes = dynamic_cast <STArray const*>
-        (obj.peekAtPField (sfAffectedNodes));
-    assert (affectedNodes);
+    auto affectedNodes =
+        dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes));
+    assert(affectedNodes);
     if (affectedNodes)
         mNodes = *affectedNodes;
 
-    if (obj.isFieldPresent (sfDeliveredAmount))
-        setDeliveredAmount (obj.getFieldAmount (sfDeliveredAmount));
+    if (obj.isFieldPresent(sfDeliveredAmount))
+        setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
 }
 
-TxMeta::TxMeta (uint256 const& txid,
-    std::uint32_t ledger,
-    Blob const& vec)
-    : TxMeta (txid, ledger, vec, CtorHelper ())
+TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
+    : TxMeta(txid, ledger, vec, CtorHelper())
 {
 }
 
-TxMeta::TxMeta (uint256 const& txid,
+TxMeta::TxMeta(
+    uint256 const& txid,
     std::uint32_t ledger,
     std::string const& data)
-    : TxMeta (txid, ledger, data, CtorHelper ())
+    : TxMeta(txid, ledger, data, CtorHelper())
 {
 }
 
-bool TxMeta::isNodeAffected (uint256 const& node) const
+bool
+TxMeta::isNodeAffected(uint256 const& node) const
 {
     for (auto const& n : mNodes)
     {
-        if (n.getFieldH256 (sfLedgerIndex) == node)
+        if (n.getFieldH256(sfLedgerIndex) == node)
             return true;
     }
 
     return false;
 }
 
-void TxMeta::setAffectedNode (uint256 const& node, SField const& type,
-                                          std::uint16_t nodeType)
+void
+TxMeta::setAffectedNode(
+    uint256 const& node,
+    SField const& type,
+    std::uint16_t nodeType)
 {
     // make sure the node exists and force its type
     for (auto& n : mNodes)
     {
-        if (n.getFieldH256 (sfLedgerIndex) == node)
+        if (n.getFieldH256(sfLedgerIndex) == node)
         {
-            n.setFName (type);
-            n.setFieldU16 (sfLedgerEntryType, nodeType);
+            n.setFName(type);
+            n.setFieldU16(sfLedgerEntryType, nodeType);
             return;
         }
     }
 
-    mNodes.push_back (STObject (type));
-    STObject& obj = mNodes.back ();
+    mNodes.push_back(STObject(type));
+    STObject& obj = mNodes.back();
 
-    assert (obj.getFName () == type);
-    obj.setFieldH256 (sfLedgerIndex, node);
-    obj.setFieldU16 (sfLedgerEntryType, nodeType);
+    assert(obj.getFName() == type);
+    obj.setFieldH256(sfLedgerIndex, node);
+    obj.setFieldU16(sfLedgerEntryType, nodeType);
 }
 
 boost::container::flat_set<AccountID>
 TxMeta::getAffectedAccounts(beast::Journal j) const
 {
     boost::container::flat_set<AccountID> list;
-    list.reserve (10);
+    list.reserve(10);
 
     // This code should match the behavior of the JS method:
     // Meta#getAffectedAccounts
     for (auto const& it : mNodes)
     {
-        int index = it.getFieldIndex ((it.getFName () == sfCreatedNode) ? sfNewFields : sfFinalFields);
+        int index = it.getFieldIndex(
+            (it.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
 
         if (index != -1)
         {
-            const STObject* inner = dynamic_cast<const STObject*> (&it.peekAtIndex (index));
+            const STObject* inner =
+                dynamic_cast<const STObject*>(&it.peekAtIndex(index));
             assert(inner);
             if (inner)
             {
                 for (auto const& field : *inner)
                 {
-                    if (auto sa = dynamic_cast<STAccount const*> (&field))
+                    if (auto sa = dynamic_cast<STAccount const*>(&field))
                     {
-                        assert (! sa->isDefault());
-                        if (! sa->isDefault())
+                        assert(!sa->isDefault());
+                        if (!sa->isDefault())
                             list.insert(sa->value());
                     }
-                    else if ((field.getFName () == sfLowLimit) || (field.getFName () == sfHighLimit) ||
-                             (field.getFName () == sfTakerPays) || (field.getFName () == sfTakerGets))
+                    else if (
+                        (field.getFName() == sfLowLimit) ||
+                        (field.getFName() == sfHighLimit) ||
+                        (field.getFName() == sfTakerPays) ||
+                        (field.getFName() == sfTakerGets))
                     {
-                        const STAmount* lim = dynamic_cast<const STAmount*> (&field);
+                        const STAmount* lim =
+                            dynamic_cast<const STAmount*>(&field);
 
                         if (lim != nullptr)
                         {
-                            auto issuer = lim->getIssuer ();
+                            auto issuer = lim->getIssuer();
 
-                            if (issuer.isNonZero ())
+                            if (issuer.isNonZero())
                                 list.insert(issuer);
                         }
                         else
                         {
-                            JLOG (j.fatal()) << "limit is not amount "
-                                << field.getJson (JsonOptions::none);
+                            JLOG(j.fatal()) << "limit is not amount "
+                                            << field.getJson(JsonOptions::none);
                         }
                     }
                 }
@@ -163,103 +173,112 @@ TxMeta::getAffectedAccounts(beast::Journal j) const
     return list;
 }
 
-STObject& TxMeta::getAffectedNode (SLE::ref node, SField const& type)
+STObject&
+TxMeta::getAffectedNode(SLE::ref node, SField const& type)
 {
     uint256 index = node->key();
     for (auto& n : mNodes)
     {
-        if (n.getFieldH256 (sfLedgerIndex) == index)
+        if (n.getFieldH256(sfLedgerIndex) == index)
             return n;
     }
-    mNodes.push_back (STObject (type));
-    STObject& obj = mNodes.back ();
+    mNodes.push_back(STObject(type));
+    STObject& obj = mNodes.back();
 
-    assert (obj.getFName () == type);
-    obj.setFieldH256 (sfLedgerIndex, index);
-    obj.setFieldU16 (sfLedgerEntryType, node->getFieldU16 (sfLedgerEntryType));
+    assert(obj.getFName() == type);
+    obj.setFieldH256(sfLedgerIndex, index);
+    obj.setFieldU16(sfLedgerEntryType, node->getFieldU16(sfLedgerEntryType));
 
     return obj;
 }
 
-STObject& TxMeta::getAffectedNode (uint256 const& node)
+STObject&
+TxMeta::getAffectedNode(uint256 const& node)
 {
     for (auto& n : mNodes)
     {
-        if (n.getFieldH256 (sfLedgerIndex) == node)
+        if (n.getFieldH256(sfLedgerIndex) == node)
             return n;
     }
-    assert (false);
-    Throw<std::runtime_error> ("Affected node not found");
-    return *(mNodes.begin()); // Silence compiler warning.
+    assert(false);
+    Throw<std::runtime_error>("Affected node not found");
+    return *(mNodes.begin());  // Silence compiler warning.
 }
 
-const STObject& TxMeta::peekAffectedNode (uint256 const& node) const
+const STObject&
+TxMeta::peekAffectedNode(uint256 const& node) const
 {
     for (auto const& n : mNodes)
     {
-        if (n.getFieldH256 (sfLedgerIndex) == node)
+        if (n.getFieldH256(sfLedgerIndex) == node)
             return n;
     }
 
-    Throw<std::runtime_error> ("Affected node not found");
-    return *(mNodes.begin()); // Silence compiler warning.
+    Throw<std::runtime_error>("Affected node not found");
+    return *(mNodes.begin());  // Silence compiler warning.
 }
 
-void TxMeta::init (uint256 const& id, std::uint32_t ledger)
+void
+TxMeta::init(uint256 const& id, std::uint32_t ledger)
 {
     mTransactionID = id;
     mLedger = ledger;
-    mNodes = STArray (sfAffectedNodes, 32);
-    mDelivered = boost::optional <STAmount> ();
+    mNodes = STArray(sfAffectedNodes, 32);
+    mDelivered = boost::optional<STAmount>();
 }
 
-void TxMeta::swap (TxMeta& s) noexcept
+void
+TxMeta::swap(TxMeta& s) noexcept
 {
-    assert ((mTransactionID == s.mTransactionID) && (mLedger == s.mLedger));
-    mNodes.swap (s.mNodes);
+    assert((mTransactionID == s.mTransactionID) && (mLedger == s.mLedger));
+    mNodes.swap(s.mNodes);
 }
 
-bool TxMeta::thread (STObject& node, uint256 const& prevTxID, std::uint32_t prevLgrID)
+bool
+TxMeta::thread(STObject& node, uint256 const& prevTxID, std::uint32_t prevLgrID)
 {
-    if (node.getFieldIndex (sfPreviousTxnID) == -1)
+    if (node.getFieldIndex(sfPreviousTxnID) == -1)
     {
-        assert (node.getFieldIndex (sfPreviousTxnLgrSeq) == -1);
-        node.setFieldH256 (sfPreviousTxnID, prevTxID);
-        node.setFieldU32 (sfPreviousTxnLgrSeq, prevLgrID);
+        assert(node.getFieldIndex(sfPreviousTxnLgrSeq) == -1);
+        node.setFieldH256(sfPreviousTxnID, prevTxID);
+        node.setFieldU32(sfPreviousTxnLgrSeq, prevLgrID);
         return true;
     }
 
-    assert (node.getFieldH256 (sfPreviousTxnID) == prevTxID);
-    assert (node.getFieldU32 (sfPreviousTxnLgrSeq) == prevLgrID);
+    assert(node.getFieldH256(sfPreviousTxnID) == prevTxID);
+    assert(node.getFieldU32(sfPreviousTxnLgrSeq) == prevLgrID);
     return false;
 }
 
-static bool compare (const STObject& o1, const STObject& o2)
+static bool
+compare(const STObject& o1, const STObject& o2)
 {
-    return o1.getFieldH256 (sfLedgerIndex) < o2.getFieldH256 (sfLedgerIndex);
+    return o1.getFieldH256(sfLedgerIndex) < o2.getFieldH256(sfLedgerIndex);
 }
 
-STObject TxMeta::getAsObject () const
+STObject
+TxMeta::getAsObject() const
 {
-    STObject metaData (sfTransactionMetaData);
-    assert (mResult != 255);
-    metaData.setFieldU8 (sfTransactionResult, mResult);
-    metaData.setFieldU32 (sfTransactionIndex, mIndex);
-    metaData.emplace_back (mNodes);
-    if (hasDeliveredAmount ())
-        metaData.setFieldAmount (sfDeliveredAmount, getDeliveredAmount ());
+    STObject metaData(sfTransactionMetaData);
+    assert(mResult != 255);
+    metaData.setFieldU8(sfTransactionResult, mResult);
+    metaData.setFieldU32(sfTransactionIndex, mIndex);
+    metaData.emplace_back(mNodes);
+    if (hasDeliveredAmount())
+        metaData.setFieldAmount(sfDeliveredAmount, getDeliveredAmount());
     return metaData;
 }
 
-void TxMeta::addRaw (Serializer& s, TER result, std::uint32_t index)
+void
+TxMeta::addRaw(Serializer& s, TER result, std::uint32_t index)
 {
-    mResult = TERtoInt (result);
+    mResult = TERtoInt(result);
     mIndex = index;
-    assert ((mResult == 0) || ((mResult > 100) && (mResult <= 255)));
+    assert((mResult == 0) || ((mResult > 100) && (mResult <= 255)));
 
-    mNodes.sort (compare);
+    mNodes.sort(compare);
 
-    getAsObject ().add (s);
+    getAsObject().add(s);
 }
 
-} // ripple
+}  // namespace ripple

@@ -36,30 +36,31 @@
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobQueue.h>
 #define SOCI_USE_BOOST
+#include <cstdint>
 #include <soci/soci.h>
 #include <string>
-#include <cstdint>
 #include <vector>
 
 namespace sqlite_api {
-    struct sqlite3;
+struct sqlite3;
 }
 
 namespace ripple {
 
 template <class T, class C>
-T rangeCheckedCast (C c)
+T
+rangeCheckedCast(C c)
 {
-    if ((c > std::numeric_limits<T>::max ()) ||
+    if ((c > std::numeric_limits<T>::max()) ||
         (!std::numeric_limits<T>::is_signed && c < 0) ||
         (std::numeric_limits<T>::is_signed &&
          std::numeric_limits<C>::is_signed &&
-         c < std::numeric_limits<T>::lowest ()))
+         c < std::numeric_limits<T>::lowest()))
     {
-        JLOG (debugLog().error()) << "rangeCheckedCast domain error:"
-          << " value = " << c
-          << " min = " << std::numeric_limits<T>::lowest ()
-          << " max: " << std::numeric_limits<T>::max ();
+        JLOG(debugLog().error())
+            << "rangeCheckedCast domain error:"
+            << " value = " << c << " min = " << std::numeric_limits<T>::lowest()
+            << " max: " << std::numeric_limits<T>::max();
     }
 
     return static_cast<T>(c);
@@ -79,10 +80,11 @@ class SociConfig
     SociConfig(std::pair<std::string, soci::backend_factory const&> init);
 
 public:
-    SociConfig(BasicConfig const& config,
-               std::string const& dbName);
-    std::string connectionString () const;
-    void open (soci::session& s) const;
+    SociConfig(BasicConfig const& config, std::string const& dbName);
+    std::string
+    connectionString() const;
+    void
+    open(soci::session& s) const;
 };
 
 /**
@@ -97,9 +99,8 @@ public:
                  backends. Sometimes it is part of a filename (sqlite3),
                  other times it is a database name (postgresql).
 */
-void open (soci::session& s,
-           BasicConfig const& config,
-           std::string const& dbName);
+void
+open(soci::session& s, BasicConfig const& config, std::string const& dbName);
 
 /**
  *  Open a soci session.
@@ -110,21 +111,29 @@ void open (soci::session& s,
  *         see the soci::open documentation for how to use this.
  *
  */
-void open (soci::session& s,
-           std::string const& beName,
-           std::string const& connectionString);
+void
+open(
+    soci::session& s,
+    std::string const& beName,
+    std::string const& connectionString);
 
-size_t getKBUsedAll (soci::session& s);
-size_t getKBUsedDB (soci::session& s);
+size_t
+getKBUsedAll(soci::session& s);
+size_t
+getKBUsedDB(soci::session& s);
 
-void convert (soci::blob& from, std::vector<std::uint8_t>& to);
-void convert (soci::blob& from, std::string& to);
-void convert (std::vector<std::uint8_t> const& from, soci::blob& to);
-void convert (std::string const& from, soci::blob& to);
+void
+convert(soci::blob& from, std::vector<std::uint8_t>& to);
+void
+convert(soci::blob& from, std::string& to);
+void
+convert(std::vector<std::uint8_t> const& from, soci::blob& to);
+void
+convert(std::string const& from, soci::blob& to);
 
 class Checkpointer
 {
-  public:
+public:
     virtual ~Checkpointer() = default;
 };
 
@@ -134,9 +143,10 @@ class Checkpointer
     The Checkpointer contains references to the session and job queue
     and so must outlive them both.
  */
-std::unique_ptr <Checkpointer> makeCheckpointer (soci::session&, JobQueue&, Logs&);
+std::unique_ptr<Checkpointer>
+makeCheckpointer(soci::session&, JobQueue&, Logs&);
 
-} // ripple
+}  // namespace ripple
 
 #if defined(__clang__)
 #pragma clang diagnostic pop

@@ -17,26 +17,28 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
+#include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/app/tx/applySteps.h>
-#include <ripple/app/misc/HashRouter.h>
+#include <ripple/basics/Log.h>
 #include <ripple/protocol/Feature.h>
 
 namespace ripple {
 
 // These are the same flags defined as SF_PRIVATE1-4 in HashRouter.h
-#define SF_SIGBAD      SF_PRIVATE1    // Signature is bad
-#define SF_SIGGOOD     SF_PRIVATE2    // Signature is good
-#define SF_LOCALBAD    SF_PRIVATE3    // Local checks failed
-#define SF_LOCALGOOD   SF_PRIVATE4    // Local checks passed
+#define SF_SIGBAD SF_PRIVATE1     // Signature is bad
+#define SF_SIGGOOD SF_PRIVATE2    // Signature is good
+#define SF_LOCALBAD SF_PRIVATE3   // Local checks failed
+#define SF_LOCALGOOD SF_PRIVATE4  // Local checks passed
 
 //------------------------------------------------------------------------------
 
 std::pair<Validity, std::string>
-checkValidity(HashRouter& router,
-    STTx const& tx, Rules const& rules,
-        Config const& config)
+checkValidity(
+    HashRouter& router,
+    STTx const& tx,
+    Rules const& rules,
+    Config const& config)
 {
     auto const id = tx.getTransactionID();
     auto const flags = router.getFlags(id);
@@ -48,12 +50,12 @@ checkValidity(HashRouter& router,
     {
         // Don't know signature state. Check it.
         auto const requireCanonicalSig =
-            rules.enabled(featureRequireFullyCanonicalSig) ?
-            STTx::RequireFullyCanonicalSig::yes :
-            STTx::RequireFullyCanonicalSig::no;
+            rules.enabled(featureRequireFullyCanonicalSig)
+            ? STTx::RequireFullyCanonicalSig::yes
+            : STTx::RequireFullyCanonicalSig::no;
 
         auto const sigVerify = tx.checkSign(requireCanonicalSig);
-        if (! sigVerify.first)
+        if (!sigVerify.first)
         {
             router.setFlags(id, SF_SIGBAD);
             return {Validity::SigBad, sigVerify.second};
@@ -84,30 +86,32 @@ checkValidity(HashRouter& router,
 }
 
 void
-forceValidity(HashRouter& router, uint256 const& txid,
-    Validity validity)
+forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
 {
     int flags = 0;
     switch (validity)
     {
-    case Validity::Valid:
-        flags |= SF_LOCALGOOD;
-        [[fallthrough]];
-    case Validity::SigGoodOnly:
-        flags |= SF_SIGGOOD;
-        [[fallthrough]];
-    case Validity::SigBad:
-        // would be silly to call directly
-        break;
+        case Validity::Valid:
+            flags |= SF_LOCALGOOD;
+            [[fallthrough]];
+        case Validity::SigGoodOnly:
+            flags |= SF_SIGGOOD;
+            [[fallthrough]];
+        case Validity::SigBad:
+            // would be silly to call directly
+            break;
     }
     if (flags)
         router.setFlags(txid, flags);
 }
 
 std::pair<TER, bool>
-apply (Application& app, OpenView& view,
-    STTx const& tx, ApplyFlags flags,
-        beast::Journal j)
+apply(
+    Application& app,
+    OpenView& view,
+    STTx const& tx,
+    ApplyFlags flags,
+    beast::Journal j)
 {
     auto pfresult = preflight(app, view.rules(), tx, flags, j);
     auto pcresult = preclaim(pfresult, app, view);
@@ -115,46 +119,48 @@ apply (Application& app, OpenView& view,
 }
 
 ApplyResult
-applyTransaction (Application& app, OpenView& view,
+applyTransaction(
+    Application& app,
+    OpenView& view,
     STTx const& txn,
-        bool retryAssured, ApplyFlags flags,
-            beast::Journal j)
+    bool retryAssured,
+    ApplyFlags flags,
+    beast::Journal j)
 {
     // Returns false if the transaction has need not be retried.
     if (retryAssured)
         flags = flags | tapRETRY;
 
-    JLOG (j.debug()) << "TXN " << txn.getTransactionID ()
-        << (retryAssured ? "/retry" : "/final");
+    JLOG(j.debug()) << "TXN " << txn.getTransactionID()
+                    << (retryAssured ? "/retry" : "/final");
 
     try
     {
         auto const result = apply(app, view, txn, flags, j);
         if (result.second)
         {
-            JLOG (j.debug())
-                << "Transaction applied: " << transHuman (result.first);
+            JLOG(j.debug())
+                << "Transaction applied: " << transHuman(result.first);
             return ApplyResult::Success;
         }
 
-        if (isTefFailure (result.first) || isTemMalformed (result.first) ||
-            isTelLocal (result.first))
+        if (isTefFailure(result.first) || isTemMalformed(result.first) ||
+            isTelLocal(result.first))
         {
             // failure
-            JLOG (j.debug())
-                << "Transaction failure: " << transHuman (result.first);
+            JLOG(j.debug())
+                << "Transaction failure: " << transHuman(result.first);
             return ApplyResult::Fail;
         }
 
-        JLOG (j.debug())
-            << "Transaction retry: " << transHuman (result.first);
+        JLOG(j.debug()) << "Transaction retry: " << transHuman(result.first);
         return ApplyResult::Retry;
     }
     catch (std::exception const&)
     {
-        JLOG (j.warn()) << "Throws";
+        JLOG(j.warn()) << "Throws";
         return ApplyResult::Fail;
     }
 }
 
-} // ripple
+}  // namespace ripple

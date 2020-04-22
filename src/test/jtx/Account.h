@@ -20,12 +20,12 @@
 #ifndef RIPPLE_TEST_JTX_ACCOUNT_H_INCLUDED
 #define RIPPLE_TEST_JTX_ACCOUNT_H_INCLUDED
 
+#include <ripple/beast/hash/uhash.h>
 #include <ripple/protocol/KeyType.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/UintTypes.h>
-#include <ripple/beast/hash/uhash.h>
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 
 namespace ripple {
 namespace test {
@@ -38,33 +38,38 @@ class Account
 {
 private:
     // Tag for access to private contr
-    struct privateCtorTag{};
+    struct privateCtorTag
+    {
+    };
+
 public:
     /** The master account. */
     static Account const master;
 
     Account() = default;
-    Account (Account&&) = default;
-    Account (Account const&) = default;
-    Account& operator= (Account const&) = default;
-    Account& operator= (Account&&) = default;
+    Account(Account&&) = default;
+    Account(Account const&) = default;
+    Account&
+    operator=(Account const&) = default;
+    Account&
+    operator=(Account&&) = default;
 
     /** Create an account from a simple string name. */
     /** @{ */
-    Account (std::string name,
-        KeyType type = KeyType::secp256k1);
+    Account(std::string name, KeyType type = KeyType::secp256k1);
 
-    Account (char const* name,
-        KeyType type = KeyType::secp256k1)
+    Account(char const* name, KeyType type = KeyType::secp256k1)
         : Account(std::string(name), type)
     {
     }
 
-    // This constructor needs to be public so `std::pair` can use it when emplacing
-    // into the cache. However, it is logically `private`. This is enforced with the
-    // `privateTag` parameter.
-    Account (std::string name,
-             std::pair<PublicKey, SecretKey> const& keys, Account::privateCtorTag);
+    // This constructor needs to be public so `std::pair` can use it when
+    // emplacing into the cache. However, it is logically `private`. This is
+    // enforced with the `privateTag` parameter.
+    Account(
+        std::string name,
+        std::pair<PublicKey, SecretKey> const& keys,
+        Account::privateCtorTag);
 
     /** @} */
 
@@ -121,47 +126,42 @@ public:
     operator[](std::string const& s) const;
 
 private:
-    static std::unordered_map<
-        std::pair<std::string, KeyType>,
-            Account, beast::uhash<>> cache_;
-
+    static std::
+        unordered_map<std::pair<std::string, KeyType>, Account, beast::uhash<>>
+            cache_;
 
     // Return the account from the cache & add it to the cache if needed
-    static Account fromCache(std::string name, KeyType type);
+    static Account
+    fromCache(std::string name, KeyType type);
 
     std::string name_;
     PublicKey pk_;
     SecretKey sk_;
     AccountID id_;
-    std::string human_; // base58 public key string
+    std::string human_;  // base58 public key string
 };
 
-inline
-bool
-operator== (Account const& lhs,
-    Account const& rhs) noexcept
+inline bool
+operator==(Account const& lhs, Account const& rhs) noexcept
 {
     return lhs.id() == rhs.id();
 }
 
 template <class Hasher>
 void
-hash_append (Hasher& h,
-    Account const& v) noexcept
+hash_append(Hasher& h, Account const& v) noexcept
 {
     hash_append(h, v.id());
 }
 
-inline
-bool
-operator< (Account const& lhs,
-    Account const& rhs) noexcept
+inline bool
+operator<(Account const& lhs, Account const& rhs) noexcept
 {
     return lhs.id() < rhs.id();
 }
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

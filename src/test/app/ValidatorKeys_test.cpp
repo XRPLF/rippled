@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/ValidatorKeys.h>
 #include <ripple/app/misc/Manifest.h>
+#include <ripple/app/misc/ValidatorKeys.h>
 #include <ripple/basics/base64.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
-#include <test/unit_test/SuiteJournal.h>
 #include <string>
+#include <test/unit_test/SuiteJournal.h>
 
 namespace ripple {
 namespace test {
@@ -75,7 +75,7 @@ public:
     void
     run() override
     {
-        SuiteJournal journal ("ValidatorKeys_test", *this);
+        SuiteJournal journal("ValidatorKeys_test", *this);
 
         // Keys/ID when using [validation_seed]
         SecretKey const seedSecretKey =
@@ -85,8 +85,8 @@ public:
         NodeID const seedNodeID = calcNodeID(seedPublicKey);
 
         // Keys when using [validation_token]
-        auto const tokenSecretKey = *parseBase58<SecretKey>(
-            TokenType::NodePrivate, tokenSecretStr);
+        auto const tokenSecretKey =
+            *parseBase58<SecretKey>(TokenType::NodePrivate, tokenSecretStr);
 
         auto const tokenPublicKey =
             derivePublicKey(KeyType::secp256k1, tokenSecretKey);
@@ -102,7 +102,6 @@ public:
             BEAST_EXPECT(k.publicKey.size() == 0);
             BEAST_EXPECT(k.manifest.empty());
             BEAST_EXPECT(!k.configInvalid());
-
         }
         {
             // validation seed section -> empty manifest and valid seeds
@@ -172,7 +171,6 @@ public:
             BEAST_EXPECT(k.publicKey.size() == 0);
             BEAST_EXPECT(k.manifest.empty());
         }
-
     }
 };  // namespace test
 

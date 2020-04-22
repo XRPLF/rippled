@@ -17,35 +17,36 @@
 */
 //==============================================================================
 
+#include <ripple/basics/Log.h>
+#include <ripple/basics/contract.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/core/SociDB.h>
-#include <ripple/basics/contract.h>
-#include <ripple/basics/Log.h>
 #include <memory>
 
 namespace ripple {
 
-DatabaseCon::Setup setup_DatabaseCon (Config const& c)
+DatabaseCon::Setup
+setup_DatabaseCon(Config const& c)
 {
     DatabaseCon::Setup setup;
 
     setup.startUp = c.START_UP;
     setup.standAlone = c.standalone();
-    setup.dataDir = c.legacy ("database_path");
+    setup.dataDir = c.legacy("database_path");
     if (!setup.standAlone && setup.dataDir.empty())
     {
-        Throw<std::runtime_error>(
-            "database_path must be set.");
+        Throw<std::runtime_error>("database_path must be set.");
     }
 
     return setup;
 }
 
-void DatabaseCon::setupCheckpointing (JobQueue* q, Logs& l)
+void
+DatabaseCon::setupCheckpointing(JobQueue* q, Logs& l)
 {
-    if (! q)
-        Throw<std::logic_error> ("No JobQueue");
-    checkpointer_ = makeCheckpointer (session_, *q, l);
+    if (!q)
+        Throw<std::logic_error>("No JobQueue");
+    checkpointer_ = makeCheckpointer(session_, *q, l);
 }
 
-} // ripple
+}  // namespace ripple

@@ -34,54 +34,56 @@ namespace ripple {
 // {
 //   start: <index>
 // }
-Json::Value doTxHistory (RPC::JsonContext& context)
+Json::Value
+doTxHistory(RPC::JsonContext& context)
 {
     context.loadType = Resource::feeMediumBurdenRPC;
 
-    if (!context.params.isMember (jss::start))
-        return rpcError (rpcINVALID_PARAMS);
+    if (!context.params.isMember(jss::start))
+        return rpcError(rpcINVALID_PARAMS);
 
-    unsigned int startIndex = context.params[jss::start].asUInt ();
+    unsigned int startIndex = context.params[jss::start].asUInt();
 
-    if ((startIndex > 10000) &&  (! isUnlimited (context.role)))
-        return rpcError (rpcNO_PERMISSION);
+    if ((startIndex > 10000) && (!isUnlimited(context.role)))
+        return rpcError(rpcNO_PERMISSION);
 
     Json::Value obj;
     Json::Value txs;
 
     obj[jss::index] = startIndex;
 
-    std::string sql =
-        boost::str (boost::format (
+    std::string sql = boost::str(
+        boost::format(
             "SELECT LedgerSeq, Status, RawTxn "
-            "FROM Transactions ORDER BY LedgerSeq desc LIMIT %u,20;")
-                    % startIndex);
+            "FROM Transactions ORDER BY LedgerSeq desc LIMIT %u,20;") %
+        startIndex);
 
     {
-        auto db = context.app.getTxnDB ().checkoutDb ();
+        auto db = context.app.getTxnDB().checkoutDb();
 
         boost::optional<std::uint64_t> ledgerSeq;
         boost::optional<std::string> status;
-        soci::blob sociRawTxnBlob (*db);
+        soci::blob sociRawTxnBlob(*db);
         soci::indicator rti;
         Blob rawTxn;
 
-        soci::statement st = (db->prepare << sql,
-                              soci::into (ledgerSeq),
-                              soci::into (status),
-                              soci::into (sociRawTxnBlob, rti));
+        soci::statement st =
+            (db->prepare << sql,
+             soci::into(ledgerSeq),
+             soci::into(status),
+             soci::into(sociRawTxnBlob, rti));
 
-        st.execute ();
-        while (st.fetch ())
+        st.execute();
+        while (st.fetch())
         {
             if (soci::i_ok == rti)
                 convert(sociRawTxnBlob, rawTxn);
             else
-                rawTxn.clear ();
+                rawTxn.clear();
 
-            if (auto trans = Transaction::transactionFromSQL (
+            if (auto trans = Transaction::transactionFromSQL(
                     ledgerSeq, status, rawTxn, context.app))
-                txs.append (trans->getJson (JsonOptions::none));
+                txs.append(trans->getJson(JsonOptions::none));
         }
     }
 
@@ -90,4 +92,4 @@ Json::Value doTxHistory (RPC::JsonContext& context)
     return obj;
 }
 
-} // ripple
+}  // namespace ripple

@@ -28,10 +28,10 @@
 
 namespace ripple {
 
-template<class Handler>
+template <class Handler>
 class PlainHTTPPeer
-    : public BaseHTTPPeer<Handler, PlainHTTPPeer<Handler>>
-    , public std::enable_shared_from_this<PlainHTTPPeer<Handler>>
+    : public BaseHTTPPeer<Handler, PlainHTTPPeer<Handler>>,
+      public std::enable_shared_from_this<PlainHTTPPeer<Handler>>
 {
 private:
     friend class BaseHTTPPeer<Handler, PlainHTTPPeer>;
@@ -53,7 +53,8 @@ public:
         ConstBufferSequence const& buffers,
         stream_type&& stream);
 
-    void run();
+    void
+    run();
 
     std::shared_ptr<WSSession>
     websocketUpgrade() override;
@@ -92,57 +93,61 @@ PlainHTTPPeer<Handler>::PlainHTTPPeer(
     // otherwise Nagle's algorithm makes Env
     // tests run slower on Linux systems.
     //
-    if(remote_endpoint.address().is_loopback())
+    if (remote_endpoint.address().is_loopback())
         socket_.set_option(boost::asio::ip::tcp::no_delay{true});
 }
 
-template<class Handler>
+template <class Handler>
 void
-PlainHTTPPeer<Handler>::
-run()
+PlainHTTPPeer<Handler>::run()
 {
-    if (! this->handler_.onAccept(this->session(), this->remote_address_))
+    if (!this->handler_.onAccept(this->session(), this->remote_address_))
     {
-        boost::asio::spawn(this->strand_,
-            std::bind (&PlainHTTPPeer::do_close,
-                this->shared_from_this()));
+        boost::asio::spawn(
+            this->strand_,
+            std::bind(&PlainHTTPPeer::do_close, this->shared_from_this()));
         return;
     }
 
-    if (! socket_.is_open())
+    if (!socket_.is_open())
         return;
 
-    boost::asio::spawn(this->strand_, std::bind(&PlainHTTPPeer::do_read,
-        this->shared_from_this(), std::placeholders::_1));
+    boost::asio::spawn(
+        this->strand_,
+        std::bind(
+            &PlainHTTPPeer::do_read,
+            this->shared_from_this(),
+            std::placeholders::_1));
 }
 
-template<class Handler>
+template <class Handler>
 std::shared_ptr<WSSession>
-PlainHTTPPeer<Handler>::
-websocketUpgrade()
+PlainHTTPPeer<Handler>::websocketUpgrade()
 {
     auto ws = this->ios().template emplace<PlainWSPeer<Handler>>(
-        this->port_, this->handler_, this->remote_address_,
-            std::move(this->message_), std::move(stream_),
-                this->journal_);
+        this->port_,
+        this->handler_,
+        this->remote_address_,
+        std::move(this->message_),
+        std::move(stream_),
+        this->journal_);
     return ws;
 }
 
-template<class Handler>
+template <class Handler>
 void
-PlainHTTPPeer<Handler>::
-do_request()
+PlainHTTPPeer<Handler>::do_request()
 {
     ++this->request_count_;
-    auto const what = this->handler_.onHandoff(this->session(),
-        std::move(this->message_), this->remote_address_);
+    auto const what = this->handler_.onHandoff(
+        this->session(), std::move(this->message_), this->remote_address_);
     if (what.moved)
         return;
     boost::system::error_code ec;
     if (what.response)
     {
         // half-close on Connection: close
-        if (! what.keep_alive)
+        if (!what.keep_alive)
             socket_.shutdown(socket_type::shutdown_receive, ec);
         if (ec)
             return this->fail(ec, "request");
@@ -150,7 +155,7 @@ do_request()
     }
 
     // Perform half-close when Connection: close and not SSL
-    if (! beast::rfc2616::is_keep_alive(this->message_))
+    if (!beast::rfc2616::is_keep_alive(this->message_))
         socket_.shutdown(socket_type::shutdown_receive, ec);
     if (ec)
         return this->fail(ec, "request");
@@ -158,15 +163,14 @@ do_request()
     this->handler_.onRequest(this->session());
 }
 
-template<class Handler>
+template <class Handler>
 void
-PlainHTTPPeer<Handler>::
-do_close()
+PlainHTTPPeer<Handler>::do_close()
 {
     boost::system::error_code ec;
     socket_.shutdown(socket_type::shutdown_send, ec);
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

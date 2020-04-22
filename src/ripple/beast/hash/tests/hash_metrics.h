@@ -22,8 +22,8 @@
 #define BEAST_HASH_HASH_METRICS_H_INCLUDED
 
 #include <algorithm>
-#include <cmath>
 #include <climits>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <set>
@@ -38,10 +38,10 @@ namespace hash_metrics {
 /** Returns the fraction of duplicate items in the sequence. */
 template <class FwdIter>
 float
-collision_factor (FwdIter first, FwdIter last)
+collision_factor(FwdIter first, FwdIter last)
 {
-    std::set <typename FwdIter::value_type> s (first, last);
-    return 1 - static_cast <float>(s.size()) / std::distance (first, last);
+    std::set<typename FwdIter::value_type> s(first, last);
+    return 1 - static_cast<float>(s.size()) / std::distance(first, last);
 }
 
 //------------------------------------------------------------------------------
@@ -49,19 +49,18 @@ collision_factor (FwdIter first, FwdIter last)
 /** Returns the deviation of the sequence from the ideal distribution. */
 template <class FwdIter>
 float
-distribution_factor (FwdIter first, FwdIter last)
+distribution_factor(FwdIter first, FwdIter last)
 {
     using value_type = typename FwdIter::value_type;
-    static_assert (std::is_unsigned <value_type>::value, "");
+    static_assert(std::is_unsigned<value_type>::value, "");
 
     const unsigned nbits = CHAR_BIT * sizeof(std::size_t);
     const unsigned rows = nbits / 4;
     unsigned counts[rows][16] = {};
-    std::for_each (first, last, [&](typename FwdIter::value_type h)
-    {
+    std::for_each(first, last, [&](typename FwdIter::value_type h) {
         std::size_t mask = 0xF;
         for (unsigned i = 0; i < rows; ++i, mask <<= 4)
-            counts[i][(h & mask) >> 4*i] += 1;
+            counts[i][(h & mask) >> 4 * i] += 1;
     });
     float mean_rows[rows] = {0};
     float mean_cols[16] = {0};
@@ -82,8 +81,10 @@ distribution_factor (FwdIter first, FwdIter last)
     {
         for (unsigned j = 0; j < 16; ++j)
         {
-            dev[i][j].first = std::abs(counts[i][j] - mean_rows[i]) / mean_rows[i];
-            dev[i][j].second = std::abs(counts[i][j] - mean_cols[j]) / mean_cols[j];
+            dev[i][j].first =
+                std::abs(counts[i][j] - mean_rows[i]) / mean_rows[i];
+            dev[i][j].second =
+                std::abs(counts[i][j] - mean_cols[j]) / mean_cols[j];
         }
     }
     float max_err = 0;
@@ -105,88 +106,88 @@ distribution_factor (FwdIter first, FwdIter last)
 namespace detail {
 
 template <class T>
-inline
-T
+inline T
 sqr(T t)
 {
-    return t*t;
+    return t * t;
 }
 
 double
-score (int const* bins, std::size_t const bincount, double const k)
+score(int const* bins, std::size_t const bincount, double const k)
 {
     double const n = bincount;
     // compute rms^2 value
     double rms_sq = 0;
-    for(std::size_t i = 0; i < bincount; ++i)
-        rms_sq += sqr(bins[i]);;
+    for (std::size_t i = 0; i < bincount; ++i)
+        rms_sq += sqr(bins[i]);
+    ;
     rms_sq /= n;
     // compute fill factor
-    double const f = (sqr(k) - 1) / (n*rms_sq - k);
+    double const f = (sqr(k) - 1) / (n * rms_sq - k);
     // rescale to (0,1) with 0 = good, 1 = bad
     return 1 - (f / n);
 }
 
 template <class T>
 std::uint32_t
-window (T* blob, int start, int count )
+window(T* blob, int start, int count)
 {
     std::size_t const len = sizeof(T);
     static_assert((len & 3) == 0, "");
-    if(count == 0)
+    if (count == 0)
         return 0;
     int const nbits = len * CHAR_BIT;
     start %= nbits;
     int ndwords = len / 4;
-    std::uint32_t const* k = static_cast <
-        std::uint32_t const*>(static_cast<void const*>(blob));
-    int c = start & (32-1);
+    std::uint32_t const* k =
+        static_cast<std::uint32_t const*>(static_cast<void const*>(blob));
+    int c = start & (32 - 1);
     int d = start / 32;
-    if(c == 0)
+    if (c == 0)
         return (k[d] & ((1 << count) - 1));
     int ia = (d + 1) % ndwords;
     int ib = (d + 0) % ndwords;
     std::uint32_t a = k[ia];
     std::uint32_t b = k[ib];
-    std::uint32_t t = (a << (32-c)) | (b >> c);
-    t &= ((1 << count)-1);
+    std::uint32_t t = (a << (32 - c)) | (b >> c);
+    t &= ((1 << count) - 1);
     return t;
 }
 
-} // detail
+}  // namespace detail
 
 /** Calculated a windowed metric using bins.
     TODO Need reference (SMHasher?)
 */
 template <class FwdIter>
 double
-windowed_score (FwdIter first, FwdIter last)
+windowed_score(FwdIter first, FwdIter last)
 {
-    auto const size (std::distance (first, last));
+    auto const size(std::distance(first, last));
     int maxwidth = 20;
     // We need at least 5 keys per bin to reliably test distribution biases
     // down to 1%, so don't bother to test sparser distributions than that
     while (static_cast<double>(size) / (1ull << maxwidth) < 5.0)
         maxwidth--;
     double worst = 0;
-    std::vector <int> bins (1ull << maxwidth);
+    std::vector<int> bins(1ull << maxwidth);
     int const hashbits = sizeof(std::size_t) * CHAR_BIT;
     for (int start = 0; start < hashbits; ++start)
     {
         int width = maxwidth;
-        bins.assign (1ull << width, 0);
-        for (auto iter (first); iter != last; ++iter)
+        bins.assign(1ull << width, 0);
+        for (auto iter(first); iter != last; ++iter)
             ++bins[detail::window(&*iter, start, width)];
         // Test the distribution, then fold the bins in half,
         // repeat until we're down to 256 bins
         while (bins.size() >= 256)
         {
-            double score (detail::score (
-                bins.data(), bins.size(), size));
+            double score(detail::score(bins.data(), bins.size(), size));
             worst = std::max(score, worst);
             if (--width < 8)
                 break;
-            for (std::size_t i = 0, j = bins.size() / 2; j < bins.size(); ++i, ++j)
+            for (std::size_t i = 0, j = bins.size() / 2; j < bins.size();
+                 ++i, ++j)
                 bins[i] += bins[j];
             bins.resize(bins.size() / 2);
         }
@@ -194,7 +195,7 @@ windowed_score (FwdIter first, FwdIter last)
     return worst;
 }
 
-} // hash_metrics
-} // beast
+}  // namespace hash_metrics
+}  // namespace beast
 
 #endif

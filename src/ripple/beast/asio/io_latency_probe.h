@@ -47,30 +47,31 @@ private:
     bool m_cancel;
 
 public:
-    io_latency_probe (duration const& period,
-        boost::asio::io_service& ios)
-        : m_count (1)
-        , m_period (period)
-        , m_ios (ios)
-        , m_timer (m_ios)
-        , m_cancel (false)
+    io_latency_probe(duration const& period, boost::asio::io_service& ios)
+        : m_count(1)
+        , m_period(period)
+        , m_ios(ios)
+        , m_timer(m_ios)
+        , m_cancel(false)
     {
     }
 
-    ~io_latency_probe ()
+    ~io_latency_probe()
     {
-        std::unique_lock <decltype (m_mutex)> lock (m_mutex);
-        cancel (lock, true);
+        std::unique_lock<decltype(m_mutex)> lock(m_mutex);
+        cancel(lock, true);
     }
 
     /** Return the io_service associated with the latency probe. */
     /** @{ */
-    boost::asio::io_service& get_io_service ()
+    boost::asio::io_service&
+    get_io_service()
     {
         return m_ios;
     }
 
-    boost::asio::io_service const& get_io_service () const
+    boost::asio::io_service const&
+    get_io_service() const
     {
         return m_ios;
     }
@@ -80,16 +81,18 @@ public:
         Any handlers which have already been queued will still be called.
     */
     /** @{ */
-    void cancel ()
+    void
+    cancel()
     {
-        std::unique_lock <decltype(m_mutex)> lock (m_mutex);
-        cancel (lock, true);
+        std::unique_lock<decltype(m_mutex)> lock(m_mutex);
+        cancel(lock, true);
     }
 
-    void cancel_async ()
+    void
+    cancel_async()
     {
-        std::unique_lock <decltype(m_mutex)> lock (m_mutex);
-        cancel (lock, false);
+        std::unique_lock<decltype(m_mutex)> lock(m_mutex);
+        cancel(lock, false);
     }
     /** @} */
 
@@ -98,14 +101,14 @@ public:
             void Handler (Duration d);
     */
     template <class Handler>
-    void sample_one (Handler&& handler)
+    void
+    sample_one(Handler&& handler)
     {
-        std::lock_guard lock (m_mutex);
+        std::lock_guard lock(m_mutex);
         if (m_cancel)
-            throw std::logic_error ("io_latency_probe is canceled");
-        m_ios.post (sample_op <Handler> (
-            std::forward <Handler> (handler),
-                Clock::now(), false, this));
+            throw std::logic_error("io_latency_probe is canceled");
+        m_ios.post(sample_op<Handler>(
+            std::forward<Handler>(handler), Clock::now(), false, this));
     }
 
     /** Initiate continuous i/o latency sampling.
@@ -113,21 +116,21 @@ public:
             void Handler (std::chrono::milliseconds);
     */
     template <class Handler>
-    void sample (Handler&& handler)
+    void
+    sample(Handler&& handler)
     {
-        std::lock_guard lock (m_mutex);
+        std::lock_guard lock(m_mutex);
         if (m_cancel)
-            throw std::logic_error ("io_latency_probe is canceled");
-        m_ios.post (sample_op <Handler> (
-            std::forward <Handler> (handler),
-                Clock::now(), true, this));
+            throw std::logic_error("io_latency_probe is canceled");
+        m_ios.post(sample_op<Handler>(
+            std::forward<Handler>(handler), Clock::now(), true, this));
     }
 
 private:
-    void cancel (std::unique_lock <decltype (m_mutex)>& lock,
-        bool wait)
+    void
+    cancel(std::unique_lock<decltype(m_mutex)>& lock, bool wait)
     {
-        if (! m_cancel)
+        if (!m_cancel)
         {
             --m_count;
             m_cancel = true;
@@ -136,24 +139,25 @@ private:
         if (wait)
 #ifdef BOOST_NO_CXX11_LAMBDAS
             while (m_count != 0)
-                m_cond.wait (lock);
+                m_cond.wait(lock);
 #else
-            m_cond.wait (lock, [this] {
-                return this->m_count == 0; });
+            m_cond.wait(lock, [this] { return this->m_count == 0; });
 #endif
     }
 
-    void addref ()
+    void
+    addref()
     {
-        std::lock_guard lock (m_mutex);
+        std::lock_guard lock(m_mutex);
         ++m_count;
     }
 
-    void release ()
+    void
+    release()
     {
-        std::lock_guard lock (m_mutex);
+        std::lock_guard lock(m_mutex);
         if (--m_count == 0)
-            m_cond.notify_all ();
+            m_cond.notify_all();
     }
 
     template <class Handler>
@@ -164,48 +168,54 @@ private:
         bool m_repeat;
         io_latency_probe* m_probe;
 
-        sample_op (Handler const& handler, time_point const& start,
-            bool repeat, io_latency_probe* probe)
-            : m_handler (handler)
-            , m_start (start)
-            , m_repeat (repeat)
-            , m_probe (probe)
+        sample_op(
+            Handler const& handler,
+            time_point const& start,
+            bool repeat,
+            io_latency_probe* probe)
+            : m_handler(handler)
+            , m_start(start)
+            , m_repeat(repeat)
+            , m_probe(probe)
         {
             assert(m_probe);
             m_probe->addref();
         }
 
-        sample_op (sample_op&& from) noexcept
-            : m_handler (std::move(from.m_handler))
-            , m_start (from.m_start)
-            , m_repeat (from.m_repeat)
-            , m_probe (from.m_probe)
+        sample_op(sample_op&& from) noexcept
+            : m_handler(std::move(from.m_handler))
+            , m_start(from.m_start)
+            , m_repeat(from.m_repeat)
+            , m_probe(from.m_probe)
         {
             assert(m_probe);
             from.m_probe = nullptr;
         }
 
-        sample_op (sample_op const&) = delete;
-        sample_op operator= (sample_op const&) = delete;
-        sample_op& operator= (sample_op&&) = delete;
+        sample_op(sample_op const&) = delete;
+        sample_op
+        operator=(sample_op const&) = delete;
+        sample_op&
+        operator=(sample_op&&) = delete;
 
-        ~sample_op ()
+        ~sample_op()
         {
-            if(m_probe)
+            if (m_probe)
                 m_probe->release();
         }
 
-        void operator() () const
+        void
+        operator()() const
         {
             if (!m_probe)
                 return;
-            typename Clock::time_point const now (Clock::now());
-            typename Clock::duration const elapsed (now - m_start);
+            typename Clock::time_point const now(Clock::now());
+            typename Clock::duration const elapsed(now - m_start);
 
-            m_handler (elapsed);
+            m_handler(elapsed);
 
             {
-                std::lock_guard lock (m_probe->m_mutex);
+                std::lock_guard lock(m_probe->m_mutex);
                 if (m_probe->m_cancel)
                     return;
             }
@@ -215,7 +225,7 @@ private:
                 // Calculate when we want to sample again, and
                 // adjust for the expected latency.
                 //
-                typename Clock::time_point const when (
+                typename Clock::time_point const when(
                     now + m_probe->m_period - 2 * elapsed);
 
                 if (when <= now)
@@ -223,29 +233,30 @@ private:
                     // The latency is too high to maintain the desired
                     // period so don't bother with a timer.
                     //
-                    m_probe->m_ios.post (sample_op <Handler> (
-                        m_handler, now, m_repeat, m_probe));
+                    m_probe->m_ios.post(
+                        sample_op<Handler>(m_handler, now, m_repeat, m_probe));
                 }
                 else
                 {
                     m_probe->m_timer.expires_from_now(when - now);
-                    m_probe->m_timer.async_wait (sample_op <Handler> (
-                        m_handler, now, m_repeat, m_probe));
+                    m_probe->m_timer.async_wait(
+                        sample_op<Handler>(m_handler, now, m_repeat, m_probe));
                 }
             }
         }
 
-        void operator () (boost::system::error_code const& ec)
+        void
+        operator()(boost::system::error_code const& ec)
         {
             if (!m_probe)
                 return;
-            typename Clock::time_point const now (Clock::now());
-            m_probe->m_ios.post (sample_op <Handler> (
-                m_handler, now, m_repeat, m_probe));
+            typename Clock::time_point const now(Clock::now());
+            m_probe->m_ios.post(
+                sample_op<Handler>(m_handler, now, m_repeat, m_probe));
         }
     };
 };
 
-}
+}  // namespace beast
 
 #endif

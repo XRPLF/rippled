@@ -32,27 +32,27 @@ struct aged_associative_container_extract_t
     explicit aged_associative_container_extract_t() = default;
 
     template <class Value>
-    decltype (Value::first) const&
-    operator() (Value const& value) const
+    decltype(Value::first) const&
+    operator()(Value const& value) const
     {
         return value.first;
     }
 };
 
 template <>
-struct aged_associative_container_extract_t <false>
+struct aged_associative_container_extract_t<false>
 {
     explicit aged_associative_container_extract_t() = default;
 
     template <class Value>
     Value const&
-    operator() (Value const& value) const
+    operator()(Value const& value) const
     {
         return value;
     }
 };
 
-}
-}
+}  // namespace detail
+}  // namespace beast
 
 #endif

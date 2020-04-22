@@ -37,12 +37,12 @@ public:
     }
 
     /** Add a new subscription for this book
-    */
+     */
     void
     addSubscriber(InfoSub::ref sub);
 
     /** Stop publishing to a subscriber
-    */
+     */
     void
     removeSubscriber(std::uint64_t sub);
 

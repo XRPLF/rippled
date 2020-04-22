@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
@@ -27,25 +27,26 @@
 
 namespace ripple {
 
-OrderBookDB::OrderBookDB (Application& app, Stoppable& parent)
-    : Stoppable ("OrderBookDB", parent)
-    , app_ (app)
-    , mSeq (0)
-    , j_ (app.journal ("OrderBookDB"))
+OrderBookDB::OrderBookDB(Application& app, Stoppable& parent)
+    : Stoppable("OrderBookDB", parent)
+    , app_(app)
+    , mSeq(0)
+    , j_(app.journal("OrderBookDB"))
 {
 }
 
-void OrderBookDB::invalidate ()
+void
+OrderBookDB::invalidate()
 {
-    std::lock_guard sl (mLock);
+    std::lock_guard sl(mLock);
     mSeq = 0;
 }
 
-void OrderBookDB::setup(
-    std::shared_ptr<ReadView const> const& ledger)
+void
+OrderBookDB::setup(std::shared_ptr<ReadView const> const& ledger)
 {
     {
-        std::lock_guard sl (mLock);
+        std::lock_guard sl(mLock);
         auto seq = ledger->info().seq;
 
         // Do a full update every 256 ledgers
@@ -59,8 +60,7 @@ void OrderBookDB::setup(
                 return;
         }
 
-        JLOG (j_.debug())
-            << "Advancing from " << mSeq << " to " << seq;
+        JLOG(j_.debug()) << "Advancing from " << mSeq << " to " << seq;
 
         mSeq = seq;
     }
@@ -73,19 +73,20 @@ void OrderBookDB::setup(
         update(ledger);
     else
         app_.getJobQueue().addJob(
-            jtUPDATE_PF, "OrderBookDB::update",
-            [this, ledger] (Job&) { update(ledger); });
+            jtUPDATE_PF, "OrderBookDB::update", [this, ledger](Job&) {
+                update(ledger);
+            });
 }
 
-void OrderBookDB::update(
-    std::shared_ptr<ReadView const> const& ledger)
+void
+OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
 {
-    hash_set< uint256 > seen;
+    hash_set<uint256> seen;
     OrderBookDB::IssueToOrderBook destMap;
     OrderBookDB::IssueToOrderBook sourceMap;
-    hash_set< Issue > XRPBooks;
+    hash_set<Issue> XRPBooks;
 
-    JLOG (j_.debug()) << "OrderBookDB::update>";
+    JLOG(j_.debug()) << "OrderBookDB::update>";
 
     if (app_.config().PATH_SEARCH_MAX == 0)
     {
@@ -98,20 +99,20 @@ void OrderBookDB::update(
 
     try
     {
-        for(auto& sle : ledger->sles)
+        for (auto& sle : ledger->sles)
         {
             if (isStopping())
             {
-                JLOG (j_.info())
+                JLOG(j_.info())
                     << "OrderBookDB::update exiting due to isStopping";
-                std::lock_guard sl (mLock);
+                std::lock_guard sl(mLock);
                 mSeq = 0;
                 return;
             }
 
-            if (sle->getType () == ltDIR_NODE &&
-                sle->isFieldPresent (sfExchangeRate) &&
-                sle->getFieldH256 (sfRootIndex) == sle->key())
+            if (sle->getType() == ltDIR_NODE &&
+                sle->isFieldPresent(sfExchangeRate) &&
+                sle->getFieldH256(sfRootIndex) == sle->key())
             {
                 Book book;
                 book.in.currency = sle->getFieldH160(sfTakerPaysCurrency);
@@ -119,12 +120,12 @@ void OrderBookDB::update(
                 book.out.account = sle->getFieldH160(sfTakerGetsIssuer);
                 book.out.currency = sle->getFieldH160(sfTakerGetsCurrency);
 
-                uint256 index = getBookBase (book);
-                if (seen.insert (index).second)
+                uint256 index = getBookBase(book);
+                if (seen.insert(index).second)
                 {
-                    auto orderBook = std::make_shared<OrderBook> (index, book);
-                    sourceMap[book.in].push_back (orderBook);
-                    destMap[book.out].push_back (orderBook);
+                    auto orderBook = std::make_shared<OrderBook>(index, book);
+                    sourceMap[book.in].push_back(orderBook);
+                    destMap[book.out].push_back(orderBook);
                     if (isXRP(book.out))
                         XRPBooks.insert(book.in);
                     ++books;
@@ -134,17 +135,15 @@ void OrderBookDB::update(
     }
     catch (SHAMapMissingNode const& mn)
     {
-        JLOG (j_.info())
-            << "OrderBookDB::update: " << mn.what();
-        std::lock_guard sl (mLock);
+        JLOG(j_.info()) << "OrderBookDB::update: " << mn.what();
+        std::lock_guard sl(mLock);
         mSeq = 0;
         return;
     }
 
-    JLOG (j_.debug())
-        << "OrderBookDB::update< " << books << " books found";
+    JLOG(j_.debug()) << "OrderBookDB::update< " << books << " books found";
     {
-        std::lock_guard sl (mLock);
+        std::lock_guard sl(mLock);
 
         mXRPBooks.swap(XRPBooks);
         mSourceMap.swap(sourceMap);
@@ -153,24 +152,25 @@ void OrderBookDB::update(
     app_.getLedgerMaster().newOrderBookDB();
 }
 
-void OrderBookDB::addOrderBook(Book const& book)
+void
+OrderBookDB::addOrderBook(Book const& book)
 {
-    bool toXRP = isXRP (book.out);
-    std::lock_guard sl (mLock);
+    bool toXRP = isXRP(book.out);
+    std::lock_guard sl(mLock);
 
     if (toXRP)
     {
         // We don't want to search through all the to-XRP or from-XRP order
         // books!
-        for (auto ob: mSourceMap[book.in])
+        for (auto ob : mSourceMap[book.in])
         {
-            if (isXRP (ob->getCurrencyOut ())) // also to XRP
+            if (isXRP(ob->getCurrencyOut()))  // also to XRP
                 return;
         }
     }
     else
     {
-        for (auto ob: mDestMap[book.out])
+        for (auto ob : mDestMap[book.out])
         {
             if (ob->getCurrencyIn() == book.in.currency &&
                 ob->getIssuerIn() == book.in.account)
@@ -180,57 +180,63 @@ void OrderBookDB::addOrderBook(Book const& book)
         }
     }
     uint256 index = getBookBase(book);
-    auto orderBook = std::make_shared<OrderBook> (index, book);
+    auto orderBook = std::make_shared<OrderBook>(index, book);
 
-    mSourceMap[book.in].push_back (orderBook);
-    mDestMap[book.out].push_back (orderBook);
+    mSourceMap[book.in].push_back(orderBook);
+    mDestMap[book.out].push_back(orderBook);
     if (toXRP)
         mXRPBooks.insert(book.in);
 }
 
 // return list of all orderbooks that want this issuerID and currencyID
-OrderBook::List OrderBookDB::getBooksByTakerPays (Issue const& issue)
+OrderBook::List
+OrderBookDB::getBooksByTakerPays(Issue const& issue)
 {
-    std::lock_guard sl (mLock);
-    auto it = mSourceMap.find (issue);
-    return it == mSourceMap.end () ? OrderBook::List() : it->second;
+    std::lock_guard sl(mLock);
+    auto it = mSourceMap.find(issue);
+    return it == mSourceMap.end() ? OrderBook::List() : it->second;
 }
 
-int OrderBookDB::getBookSize(Issue const& issue) {
-    std::lock_guard sl (mLock);
-    auto it = mSourceMap.find (issue);
-    return it == mSourceMap.end () ? 0 : it->second.size();
+int
+OrderBookDB::getBookSize(Issue const& issue)
+{
+    std::lock_guard sl(mLock);
+    auto it = mSourceMap.find(issue);
+    return it == mSourceMap.end() ? 0 : it->second.size();
 }
 
-bool OrderBookDB::isBookToXRP(Issue const& issue)
+bool
+OrderBookDB::isBookToXRP(Issue const& issue)
 {
-    std::lock_guard sl (mLock);
+    std::lock_guard sl(mLock);
     return mXRPBooks.count(issue) > 0;
 }
 
-BookListeners::pointer OrderBookDB::makeBookListeners (Book const& book)
+BookListeners::pointer
+OrderBookDB::makeBookListeners(Book const& book)
 {
-    std::lock_guard sl (mLock);
-    auto ret = getBookListeners (book);
+    std::lock_guard sl(mLock);
+    auto ret = getBookListeners(book);
 
     if (!ret)
     {
-        ret = std::make_shared<BookListeners> ();
+        ret = std::make_shared<BookListeners>();
 
-        mListeners [book] = ret;
-        assert (getBookListeners (book) == ret);
+        mListeners[book] = ret;
+        assert(getBookListeners(book) == ret);
     }
 
     return ret;
 }
 
-BookListeners::pointer OrderBookDB::getBookListeners (Book const& book)
+BookListeners::pointer
+OrderBookDB::getBookListeners(Book const& book)
 {
     BookListeners::pointer ret;
-    std::lock_guard sl (mLock);
+    std::lock_guard sl(mLock);
 
-    auto it0 = mListeners.find (book);
-    if (it0 != mListeners.end ())
+    auto it0 = mListeners.find(book);
+    if (it0 != mListeners.end())
         ret = it0->second;
 
     return ret;
@@ -238,12 +244,14 @@ BookListeners::pointer OrderBookDB::getBookListeners (Book const& book)
 
 // Based on the meta, send the meta to the streams that are listening.
 // We need to determine which streams a given meta effects.
-void OrderBookDB::processTxn (
+void
+OrderBookDB::processTxn(
     std::shared_ptr<ReadView const> const& ledger,
-        const AcceptedLedgerTx& alTx, Json::Value const& jvObj)
+    const AcceptedLedgerTx& alTx,
+    Json::Value const& jvObj)
 {
-    std::lock_guard sl (mLock);
-    if (alTx.getResult () == tesSUCCESS)
+    std::lock_guard sl(mLock);
+    if (alTx.getResult() == tesSUCCESS)
     {
         // For this particular transaction, maintain the set of unique
         // subscriptions that have already published it.  This prevents sending
@@ -255,34 +263,34 @@ void OrderBookDB::processTxn (
         // Check if this is an offer or an offer cancel or a payment that
         // consumes an offer.
         // Check to see what the meta looks like.
-        for (auto& node : alTx.getMeta ()->getNodes ())
+        for (auto& node : alTx.getMeta()->getNodes())
         {
             try
             {
-                if (node.getFieldU16 (sfLedgerEntryType) == ltOFFER)
+                if (node.getFieldU16(sfLedgerEntryType) == ltOFFER)
                 {
                     SField const* field = nullptr;
 
                     // We need a field that contains the TakerGets and TakerPays
                     // parameters.
-                    if (node.getFName () == sfModifiedNode)
+                    if (node.getFName() == sfModifiedNode)
                         field = &sfPreviousFields;
-                    else if (node.getFName () == sfCreatedNode)
+                    else if (node.getFName() == sfCreatedNode)
                         field = &sfNewFields;
-                    else if (node.getFName () == sfDeletedNode)
+                    else if (node.getFName() == sfDeletedNode)
                         field = &sfFinalFields;
 
                     if (field)
                     {
-                        auto data = dynamic_cast<const STObject*> (
-                            node.peekAtPField (*field));
+                        auto data = dynamic_cast<const STObject*>(
+                            node.peekAtPField(*field));
 
-                        if (data &&
-                            data->isFieldPresent (sfTakerPays) &&
-                            data->isFieldPresent (sfTakerGets))
+                        if (data && data->isFieldPresent(sfTakerPays) &&
+                            data->isFieldPresent(sfTakerGets))
                         {
                             // determine the OrderBook
-                            Book b{data->getFieldAmount(sfTakerGets).issue(),
+                            Book b{
+                                data->getFieldAmount(sfTakerGets).issue(),
                                 data->getFieldAmount(sfTakerPays).issue()};
 
                             auto listeners = getBookListeners(b);
@@ -296,11 +304,11 @@ void OrderBookDB::processTxn (
             }
             catch (std::exception const&)
             {
-                JLOG (j_.info())
+                JLOG(j_.info())
                     << "Fields not found in OrderBookDB::processTxn";
             }
         }
     }
 }
 
-} // ripple
+}  // namespace ripple

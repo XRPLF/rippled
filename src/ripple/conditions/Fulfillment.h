@@ -51,35 +51,29 @@ public:
 
         https://tools.ietf.org/html/draft-thomas-crypto-conditions-02#section-7.3
     */
-    static
-    std::unique_ptr<Fulfillment>
-    deserialize(
-        Slice s,
-        std::error_code& ec);
+    static std::unique_ptr<Fulfillment>
+    deserialize(Slice s, std::error_code& ec);
 
 public:
     virtual ~Fulfillment() = default;
 
     /** Returns the fulfillment's fingerprint:
-    
+
         The fingerprint is an octet string uniquely
         representing this fulfillment's condition
         with respect to other conditions of the
         same type.
    */
-    virtual
-    Buffer
+    virtual Buffer
     fingerprint() const = 0;
 
     /** Returns the type of this condition. */
-    virtual
-    Type
-    type () const = 0;
+    virtual Type
+    type() const = 0;
 
     /** Validates a fulfillment. */
-    virtual
-    bool
-    validate (Slice data) const = 0;
+    virtual bool
+    validate(Slice data) const = 0;
 
     /** Calculates the cost associated with this fulfillment. *
 
@@ -87,8 +81,7 @@ public:
         type and properties of the condition and the fulfillment
         that the condition is generated from.
     */
-    virtual
-    std::uint32_t
+    virtual std::uint32_t
     cost() const = 0;
 
     /** Returns the condition associated with the given fulfillment.
@@ -97,50 +90,40 @@ public:
         will, if compliant, produce the identical condition for the
         same fulfillment.
     */
-    virtual
-    Condition
+    virtual Condition
     condition() const = 0;
 };
 
-inline
-bool
-operator== (Fulfillment const& lhs, Fulfillment const& rhs)
+inline bool
+operator==(Fulfillment const& lhs, Fulfillment const& rhs)
 {
     // FIXME: for compound conditions, need to also check subtypes
-    return
-        lhs.type() == rhs.type() &&
-            lhs.cost() == rhs.cost() &&
-                lhs.fingerprint() == rhs.fingerprint();
+    return lhs.type() == rhs.type() && lhs.cost() == rhs.cost() &&
+        lhs.fingerprint() == rhs.fingerprint();
 }
 
-inline
-bool
-operator!= (Fulfillment const& lhs, Fulfillment const& rhs)
+inline bool
+operator!=(Fulfillment const& lhs, Fulfillment const& rhs)
 {
     return !(lhs == rhs);
 }
 
 /** Determine whether the given fulfillment and condition match */
 bool
-match (
-    Fulfillment const& f,
-    Condition const& c);
+match(Fulfillment const& f, Condition const& c);
 
 /** Verify if the given message satisfies the fulfillment.
 
     @param f The fulfillment
     @param c The condition
     @param m The message
-    
+
     @note the message is not relevant for some conditions
           and a fulfillment will successfully satisfy its
           condition for any given message.
 */
 bool
-validate (
-    Fulfillment const& f,
-    Condition const& c,
-    Slice m);
+validate(Fulfillment const& f, Condition const& c, Slice m);
 
 /** Verify a cryptoconditional trigger.
 
@@ -156,11 +139,9 @@ validate (
     @param c The condition
 */
 bool
-validate (
-    Fulfillment const& f,
-    Condition const& c);
+validate(Fulfillment const& f, Condition const& c);
 
-}
-}
+}  // namespace cryptoconditions
+}  // namespace ripple
 
 #endif

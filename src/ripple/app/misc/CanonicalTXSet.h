@@ -39,28 +39,33 @@ private:
     class Key
     {
     public:
-        Key (uint256 const& account, std::uint32_t seq, uint256 const& id)
-            : mAccount (account)
-            , mTXid (id)
-            , mSeq (seq)
+        Key(uint256 const& account, std::uint32_t seq, uint256 const& id)
+            : mAccount(account), mTXid(id), mSeq(seq)
         {
         }
 
-        bool operator<  (Key const& rhs) const;
-        bool operator>  (Key const& rhs) const;
-        bool operator<= (Key const& rhs) const;
-        bool operator>= (Key const& rhs) const;
+        bool
+        operator<(Key const& rhs) const;
+        bool
+        operator>(Key const& rhs) const;
+        bool
+        operator<=(Key const& rhs) const;
+        bool
+        operator>=(Key const& rhs) const;
 
-        bool operator== (Key const& rhs) const
+        bool
+        operator==(Key const& rhs) const
         {
             return mTXid == rhs.mTXid;
         }
-        bool operator!= (Key const& rhs) const
+        bool
+        operator!=(Key const& rhs) const
         {
             return mTXid != rhs.mTXid;
         }
 
-        uint256 const& getTXID () const
+        uint256 const&
+        getTXID() const
         {
             return mTXid;
         }
@@ -72,65 +77,74 @@ private:
     };
 
     // Calculate the salted key for the given account
-    uint256 accountKey (AccountID const& account);
+    uint256
+    accountKey(AccountID const& account);
 
 public:
-    using const_iterator = std::map <Key, std::shared_ptr<STTx const>>::const_iterator;
+    using const_iterator =
+        std::map<Key, std::shared_ptr<STTx const>>::const_iterator;
 
 public:
-    explicit CanonicalTXSet (LedgerHash const& saltHash)
-        : salt_ (saltHash)
+    explicit CanonicalTXSet(LedgerHash const& saltHash) : salt_(saltHash)
     {
     }
 
-    void insert (std::shared_ptr<STTx const> const& txn);
+    void
+    insert(std::shared_ptr<STTx const> const& txn);
 
     std::vector<std::shared_ptr<STTx const>>
     prune(AccountID const& account, std::uint32_t const seq);
 
     // VFALCO TODO remove this function
-    void reset (LedgerHash const& salt)
+    void
+    reset(LedgerHash const& salt)
     {
         salt_ = salt;
-        map_.clear ();
+        map_.clear();
     }
 
-    const_iterator erase (const_iterator const& it)
+    const_iterator
+    erase(const_iterator const& it)
     {
         return map_.erase(it);
     }
 
-    const_iterator begin () const
+    const_iterator
+    begin() const
     {
         return map_.begin();
     }
 
-    const_iterator end() const
+    const_iterator
+    end() const
     {
         return map_.end();
     }
 
-    size_t size () const
+    size_t
+    size() const
     {
-        return map_.size ();
+        return map_.size();
     }
-    bool empty () const
+    bool
+    empty() const
     {
-        return map_.empty ();
+        return map_.empty();
     }
 
-    uint256 const& key() const
+    uint256 const&
+    key() const
     {
         return salt_;
     }
 
 private:
-    std::map <Key, std::shared_ptr<STTx const>> map_;
+    std::map<Key, std::shared_ptr<STTx const>> map_;
 
     // Used to salt the accounts so people can't mine for low account numbers
     uint256 salt_;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

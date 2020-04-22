@@ -38,11 +38,15 @@ public:
     ApplyFlags flags;
     beast::Journal const j;
 
-    PreflightContext(Application& app_, STTx const& tx_,
-        Rules const& rules_, ApplyFlags flags_,
-            beast::Journal j_);
+    PreflightContext(
+        Application& app_,
+        STTx const& tx_,
+        Rules const& rules_,
+        ApplyFlags flags_,
+        beast::Journal j_);
 
-    PreflightContext& operator=(PreflightContext const&) = delete;
+    PreflightContext&
+    operator=(PreflightContext const&) = delete;
 };
 
 /** State information when determining if a tx is likely to claim a fee. */
@@ -56,10 +60,13 @@ public:
     ApplyFlags flags;
     beast::Journal const j;
 
-    PreclaimContext(Application& app_, ReadView const& view_,
-        TER preflightResult_, STTx const& tx_,
-            ApplyFlags flags_,
-            beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
+    PreclaimContext(
+        Application& app_,
+        ReadView const& view_,
+        TER preflightResult_,
+        STTx const& tx_,
+        ApplyFlags flags_,
+        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
         : app(app_)
         , view(view_)
         , preflightResult(preflightResult_)
@@ -69,7 +76,8 @@ public:
     {
     }
 
-    PreclaimContext& operator=(PreclaimContext const&) = delete;
+    PreclaimContext&
+    operator=(PreclaimContext const&) = delete;
 };
 
 struct TxConsequences;
@@ -81,13 +89,14 @@ protected:
     ApplyContext& ctx_;
     beast::Journal const j_;
 
-    AccountID     account_;
-    XRPAmount     mPriorBalance;  // Balance before fees.
-    XRPAmount     mSourceBalance; // Balance after fees.
+    AccountID account_;
+    XRPAmount mPriorBalance;   // Balance before fees.
+    XRPAmount mSourceBalance;  // Balance after fees.
 
     virtual ~Transactor() = default;
-    Transactor (Transactor const&) = delete;
-    Transactor& operator= (Transactor const&) = delete;
+    Transactor(Transactor const&) = delete;
+    Transactor&
+    operator=(Transactor const&) = delete;
 
 public:
     /** Process the transaction. */
@@ -116,43 +125,33 @@ public:
     comes with it.
     */
 
-    static
-    NotTEC
-    checkSeq (PreclaimContext const& ctx);
+    static NotTEC
+    checkSeq(PreclaimContext const& ctx);
 
-    static
-    TER
-    checkFee (PreclaimContext const& ctx, FeeUnit64 baseFee);
+    static TER
+    checkFee(PreclaimContext const& ctx, FeeUnit64 baseFee);
 
-    static
-    NotTEC
-    checkSign (PreclaimContext const& ctx);
+    static NotTEC
+    checkSign(PreclaimContext const& ctx);
 
     // Returns the fee in fee units, not scaled for load.
-    static
-    FeeUnit64
-    calculateBaseFee (
-        ReadView const& view,
-        STTx const& tx);
+    static FeeUnit64
+    calculateBaseFee(ReadView const& view, STTx const& tx);
 
-    static
-    bool
+    static bool
     affectsSubsequentTransactionAuth(STTx const& tx)
     {
         return false;
     }
 
-    static
-    XRPAmount
+    static XRPAmount
     calculateFeePaid(STTx const& tx);
 
-    static
-    XRPAmount
+    static XRPAmount
     calculateMaxSpend(STTx const& tx);
 
-    static
-    TER
-    preclaim(PreclaimContext const &ctx)
+    static TER
+    preclaim(PreclaimContext const& ctx)
     {
         // Most transactors do nothing
         // after checkSeq/Fee/Sign.
@@ -164,12 +163,13 @@ protected:
     TER
     apply();
 
-    explicit
-    Transactor (ApplyContext& ctx);
+    explicit Transactor(ApplyContext& ctx);
 
-    virtual void preCompute();
+    virtual void
+    preCompute();
 
-    virtual TER doApply () = 0;
+    virtual TER
+    doApply() = 0;
 
     /** Compute the minimum fee required to process a transaction
         with a given baseFee based on the current server load.
@@ -180,18 +180,25 @@ protected:
         @param fees Fee settings from the current ledger
         @param flags Transaction processing fees
      */
-    static
-    XRPAmount
-    minimumFee (Application& app, FeeUnit64 baseFee,
-        Fees const& fees, ApplyFlags flags);
+    static XRPAmount
+    minimumFee(
+        Application& app,
+        FeeUnit64 baseFee,
+        Fees const& fees,
+        ApplyFlags flags);
 
 private:
-    XRPAmount reset(XRPAmount fee);
+    XRPAmount
+    reset(XRPAmount fee);
 
-    void setSeq ();
-    TER payFee ();
-    static NotTEC checkSingleSign (PreclaimContext const& ctx);
-    static NotTEC checkMultiSign (PreclaimContext const& ctx);
+    void
+    setSeq();
+    TER
+    payFee();
+    static NotTEC
+    checkSingleSign(PreclaimContext const& ctx);
+    static NotTEC
+    checkMultiSign(PreclaimContext const& ctx);
 };
 
 /** Performs early sanity checks on the txid */
@@ -200,12 +207,12 @@ preflight0(PreflightContext const& ctx);
 
 /** Performs early sanity checks on the account and fee fields */
 NotTEC
-preflight1 (PreflightContext const& ctx);
+preflight1(PreflightContext const& ctx);
 
 /** Checks whether the signature appears valid */
 NotTEC
-preflight2 (PreflightContext const& ctx);
+preflight2(PreflightContext const& ctx);
 
-}
+}  // namespace ripple
 
 #endif

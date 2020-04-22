@@ -26,8 +26,8 @@ namespace ripple {
 class OrderBook
 {
 public:
-    using pointer = std::shared_ptr <OrderBook>;
-    using ref = std::shared_ptr <OrderBook> const&;
+    using pointer = std::shared_ptr<OrderBook>;
+    using ref = std::shared_ptr<OrderBook> const&;
     using List = std::vector<pointer>;
 
     /** Construct from a currency specification.
@@ -36,37 +36,43 @@ public:
         @param book in and out currency/issuer pairs.
     */
     // VFALCO NOTE what is the meaning of the index parameter?
-    OrderBook (uint256 const& base, Book const& book)
-            : mBookBase(base), mBook(book)
+    OrderBook(uint256 const& base, Book const& book)
+        : mBookBase(base), mBook(book)
     {
     }
 
-    uint256 const& getBookBase () const
+    uint256 const&
+    getBookBase() const
     {
         return mBookBase;
     }
 
-    Book const& book() const
+    Book const&
+    book() const
     {
         return mBook;
     }
 
-    Currency const& getCurrencyIn () const
+    Currency const&
+    getCurrencyIn() const
     {
         return mBook.in.currency;
     }
 
-    Currency const& getCurrencyOut () const
+    Currency const&
+    getCurrencyOut() const
     {
         return mBook.out.currency;
     }
 
-    AccountID const& getIssuerIn () const
+    AccountID const&
+    getIssuerIn() const
     {
         return mBook.in.account;
     }
 
-    AccountID const& getIssuerOut () const
+    AccountID const&
+    getIssuerOut() const
     {
         return mBook.out.account;
     }
@@ -76,6 +82,6 @@ private:
     Book const mBook;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

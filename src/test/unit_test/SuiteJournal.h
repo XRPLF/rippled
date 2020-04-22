@@ -33,17 +33,17 @@ class SuiteJournalSink : public beast::Journal::Sink
     beast::unit_test::suite& suite_;
 
 public:
-    SuiteJournalSink(std::string const& partition,
-            beast::severities::Severity threshold,
-            beast::unit_test::suite& suite)
-        : Sink (threshold, false)
-        , partition_(partition + " ")
-        , suite_ (suite)
+    SuiteJournalSink(
+        std::string const& partition,
+        beast::severities::Severity threshold,
+        beast::unit_test::suite& suite)
+        : Sink(threshold, false), partition_(partition + " "), suite_(suite)
     {
     }
 
     // For unit testing, always generate logging text.
-    inline bool active(beast::severities::Severity level) const override
+    inline bool
+    active(beast::severities::Severity level) const override
     {
         return true;
     }
@@ -53,22 +53,29 @@ public:
 };
 
 inline void
-SuiteJournalSink::write (
-    beast::severities::Severity level, std::string const& text)
+SuiteJournalSink::write(
+    beast::severities::Severity level,
+    std::string const& text)
 {
     using namespace beast::severities;
 
-    char const* const s = [level]()
-    {
-        switch(level)
+    char const* const s = [level]() {
+        switch (level)
         {
-        case kTrace:    return "TRC:";
-        case kDebug:    return "DBG:";
-        case kInfo:     return "INF:";
-        case kWarning:  return "WRN:";
-        case kError:    return "ERR:";
-        default:        break;
-        case kFatal:    break;
+            case kTrace:
+                return "TRC:";
+            case kDebug:
+                return "DBG:";
+            case kInfo:
+                return "INF:";
+            case kWarning:
+                return "WRN:";
+            case kError:
+                return "ERR:";
+            default:
+                break;
+            case kFatal:
+                break;
         }
         return "FTL:";
     }();
@@ -84,14 +91,17 @@ class SuiteJournal
     beast::Journal journal_;
 
 public:
-    SuiteJournal(std::string const& partition,
-            beast::unit_test::suite& suite,
-            beast::severities::Severity threshold = beast::severities::kFatal)
-        : sink_ (partition, threshold, suite)
-        , journal_ (sink_)
+    SuiteJournal(
+        std::string const& partition,
+        beast::unit_test::suite& suite,
+        beast::severities::Severity threshold = beast::severities::kFatal)
+        : sink_(partition, threshold, suite), journal_(sink_)
     {
     }
-    operator beast::Journal&() { return journal_; }
+    operator beast::Journal &()
+    {
+        return journal_;
+    }
 };
 
 // this sink can be used to create a custom journal
@@ -100,24 +110,30 @@ public:
 class StreamSink : public beast::Journal::Sink
 {
     std::stringstream strm_;
+
 public:
-    StreamSink (
+    StreamSink(
         beast::severities::Severity threshold = beast::severities::kDebug)
-    : Sink (threshold, false) {  }
+        : Sink(threshold, false)
+    {
+    }
 
     void
-    write (beast::severities::Severity level,
-        std::string const& text) override
+    write(beast::severities::Severity level, std::string const& text) override
     {
         if (level < threshold())
             return;
 
         strm_ << text << std::endl;
     }
-    std::stringstream const& messages() const { return strm_ ; }
+    std::stringstream const&
+    messages() const
+    {
+        return strm_;
+    }
 };
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple
 
 #endif

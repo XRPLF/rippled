@@ -20,17 +20,17 @@
 #ifndef RIPPLE_JSON_JSON_READER_H_INCLUDED
 #define RIPPLE_JSON_JSON_READER_H_INCLUDED
 
-# define CPPTL_JSON_READER_H_INCLUDED
+#define CPPTL_JSON_READER_H_INCLUDED
 
 #include <ripple/json/json_forwards.h>
 #include <ripple/json/json_value.h>
 #include <boost/asio/buffer.hpp>
 #include <stack>
 
-namespace Json
-{
+namespace Json {
 
-/** \brief Unserialize a <a HREF="http://www.json.org">JSON</a> document into a Value.
+/** \brief Unserialize a <a HREF="http://www.json.org">JSON</a> document into a
+ * Value.
  *
  */
 class Reader
@@ -42,50 +42,55 @@ public:
     /** \brief Constructs a Reader allowing all features
      * for parsing.
      */
-    Reader () = default;
+    Reader() = default;
 
-    /** \brief Read a Value from a <a HREF="http://www.json.org">JSON</a> document.
-     * \param document UTF-8 encoded string containing the document to read.
-     * \param root [out] Contains the root value of the document if it was
+    /** \brief Read a Value from a <a HREF="http://www.json.org">JSON</a>
+     * document. \param document UTF-8 encoded string containing the document to
+     * read. \param root [out] Contains the root value of the document if it was
      *             successfully parsed.
-     * \return \c true if the document was successfully parsed, \c false if an error occurred.
+     * \return \c true if the document was successfully parsed, \c false if an
+     * error occurred.
      */
-    bool parse ( std::string const& document, Value& root);
+    bool
+    parse(std::string const& document, Value& root);
 
-    /** \brief Read a Value from a <a HREF="http://www.json.org">JSON</a> document.
-     * \param document UTF-8 encoded string containing the document to read.
-     * \param root [out] Contains the root value of the document if it was
+    /** \brief Read a Value from a <a HREF="http://www.json.org">JSON</a>
+     * document. \param document UTF-8 encoded string containing the document to
+     * read. \param root [out] Contains the root value of the document if it was
      *             successfully parsed.
-     * \return \c true if the document was successfully parsed, \c false if an error occurred.
+     * \return \c true if the document was successfully parsed, \c false if an
+     * error occurred.
      */
-    bool parse ( const char* beginDoc, const char* endDoc, Value& root);
+    bool
+    parse(const char* beginDoc, const char* endDoc, Value& root);
 
     /// \brief Parse from input stream.
     /// \see Json::operator>>(std::istream&, Json::Value&).
-    bool parse ( std::istream& is, Value& root);
+    bool
+    parse(std::istream& is, Value& root);
 
-    /** \brief Read a Value from a <a HREF="http://www.json.org">JSON</a> buffer sequence.
-     * \param root [out] Contains the root value of the document if it was
-     *             successfully parsed.
-     * \param UTF-8 encoded buffer sequence.
-     * \return \c true if the buffer was successfully parsed, \c false if an error occurred.
+    /** \brief Read a Value from a <a HREF="http://www.json.org">JSON</a> buffer
+     * sequence. \param root [out] Contains the root value of the document if it
+     * was successfully parsed. \param UTF-8 encoded buffer sequence. \return \c
+     * true if the buffer was successfully parsed, \c false if an error
+     * occurred.
      */
-    template<class BufferSequence>
+    template <class BufferSequence>
     bool
     parse(Value& root, BufferSequence const& bs);
 
-    /** \brief Returns a user friendly string that list errors in the parsed document.
-     * \return Formatted error message with the list of errors with their location in
-     *         the parsed document. An empty string is returned if no error occurred
-     *         during parsing.
+    /** \brief Returns a user friendly string that list errors in the parsed
+     * document. \return Formatted error message with the list of errors with
+     * their location in the parsed document. An empty string is returned if no
+     * error occurred during parsing.
      */
-    std::string getFormatedErrorMessages () const;
+    std::string
+    getFormatedErrorMessages() const;
 
-    static constexpr unsigned nest_limit {25};
+    static constexpr unsigned nest_limit{25};
 
 private:
-    enum TokenType
-    {
+    enum TokenType {
         tokenEndOfStream = 0,
         tokenObjectBegin,
         tokenObjectEnd,
@@ -125,46 +130,71 @@ private:
 
     using Errors = std::deque<ErrorInfo>;
 
-    bool expectToken ( TokenType type, Token& token, const char* message );
-    bool readToken ( Token& token );
-    void skipSpaces ();
-    bool match ( Location pattern,
-                 int patternLength );
-    bool readComment ();
-    bool readCStyleComment ();
-    bool readCppStyleComment ();
-    bool readString ();
-    Reader::TokenType readNumber ();
-    bool readValue(unsigned depth);
-    bool readObject(Token& token, unsigned depth);
-    bool readArray (Token& token, unsigned depth);
-    bool decodeNumber ( Token& token );
-    bool decodeString ( Token& token );
-    bool decodeString ( Token& token, std::string& decoded );
-    bool decodeDouble ( Token& token );
-    bool decodeUnicodeCodePoint ( Token& token,
-                                  Location& current,
-                                  Location end,
-                                  unsigned int& unicode );
-    bool decodeUnicodeEscapeSequence ( Token& token,
-                                       Location& current,
-                                       Location end,
-                                       unsigned int& unicode );
-    bool addError ( std::string const& message,
-                    Token& token,
-                    Location extra = 0 );
-    bool recoverFromError ( TokenType skipUntilToken );
-    bool addErrorAndRecover ( std::string const& message,
-                              Token& token,
-                              TokenType skipUntilToken );
-    void skipUntilSpace ();
-    Value& currentValue ();
-    Char getNextChar ();
-    void getLocationLineAndColumn ( Location location,
-                                    int& line,
-                                    int& column ) const;
-    std::string getLocationLineAndColumn ( Location location ) const;
-    void skipCommentTokens ( Token& token );
+    bool
+    expectToken(TokenType type, Token& token, const char* message);
+    bool
+    readToken(Token& token);
+    void
+    skipSpaces();
+    bool
+    match(Location pattern, int patternLength);
+    bool
+    readComment();
+    bool
+    readCStyleComment();
+    bool
+    readCppStyleComment();
+    bool
+    readString();
+    Reader::TokenType
+    readNumber();
+    bool
+    readValue(unsigned depth);
+    bool
+    readObject(Token& token, unsigned depth);
+    bool
+    readArray(Token& token, unsigned depth);
+    bool
+    decodeNumber(Token& token);
+    bool
+    decodeString(Token& token);
+    bool
+    decodeString(Token& token, std::string& decoded);
+    bool
+    decodeDouble(Token& token);
+    bool
+    decodeUnicodeCodePoint(
+        Token& token,
+        Location& current,
+        Location end,
+        unsigned int& unicode);
+    bool
+    decodeUnicodeEscapeSequence(
+        Token& token,
+        Location& current,
+        Location end,
+        unsigned int& unicode);
+    bool
+    addError(std::string const& message, Token& token, Location extra = 0);
+    bool
+    recoverFromError(TokenType skipUntilToken);
+    bool
+    addErrorAndRecover(
+        std::string const& message,
+        Token& token,
+        TokenType skipUntilToken);
+    void
+    skipUntilSpace();
+    Value&
+    currentValue();
+    Char
+    getNextChar();
+    void
+    getLocationLineAndColumn(Location location, int& line, int& column) const;
+    std::string
+    getLocationLineAndColumn(Location location) const;
+    void
+    skipCommentTokens(Token& token);
 
     using Nodes = std::stack<Value*>;
     Nodes nodes_;
@@ -177,13 +207,13 @@ private:
     Value* lastValue_;
 };
 
-template<class BufferSequence>
+template <class BufferSequence>
 bool
 Reader::parse(Value& root, BufferSequence const& bs)
 {
     using namespace boost::asio;
     std::string s;
-    s.reserve (buffer_size(bs));
+    s.reserve(buffer_size(bs));
     for (auto const& b : bs)
         s.append(buffer_cast<char const*>(b), buffer_size(b));
     return parse(s, root);
@@ -213,8 +243,9 @@ Reader::parse(Value& root, BufferSequence const& bs)
  \throw std::exception on parse error.
  \see Json::operator<<()
 */
-std::istream& operator>> ( std::istream&, Value& );
+std::istream&
+operator>>(std::istream&, Value&);
 
-} // namespace Json
+}  // namespace Json
 
-#endif // CPPTL_JSON_READER_H_INCLUDED
+#endif  // CPPTL_JSON_READER_H_INCLUDED

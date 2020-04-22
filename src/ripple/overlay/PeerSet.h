@@ -48,46 +48,54 @@ namespace ripple {
 class PeerSet
 {
 public:
-    using clock_type = beast::abstract_clock <std::chrono::steady_clock>;
+    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
 
     /** Returns the hash of the data we want. */
-    uint256 const& getHash () const
+    uint256 const&
+    getHash() const
     {
         return mHash;
     }
 
     /** Returns true if we got all the data. */
-    bool isComplete () const
+    bool
+    isComplete() const
     {
         return mComplete;
     }
 
     /** Returns false if we failed to get the data. */
-    bool isFailed () const
+    bool
+    isFailed() const
     {
         return mFailed;
     }
 
     /** Returns the number of times we timed out. */
-    int getTimeouts () const
+    int
+    getTimeouts() const
     {
         return mTimeouts;
     }
 
-    bool isActive ();
+    bool
+    isActive();
 
     /** Called to indicate that forward progress has been made. */
-    void progress ()
+    void
+    progress()
     {
         mProgress = true;
     }
 
-    void touch ()
+    void
+    touch()
     {
         mLastAction = m_clock.now();
     }
 
-    clock_type::time_point getLastAction () const
+    clock_type::time_point
+    getLastAction() const
     {
         return mLastAction;
     }
@@ -96,9 +104,11 @@ public:
         This will call the derived class hook function.
         @return `true` If the peer was added
     */
-    bool insert (std::shared_ptr<Peer> const&);
+    bool
+    insert(std::shared_ptr<Peer> const&);
 
-    virtual bool isDone () const
+    virtual bool
+    isDone() const
     {
         return mComplete || mFailed;
     }
@@ -110,44 +120,62 @@ public:
     }
 
 protected:
-    using ScopedLockType = std::unique_lock <std::recursive_mutex>;
+    using ScopedLockType = std::unique_lock<std::recursive_mutex>;
 
-    PeerSet (Application& app, uint256 const& hash, std::chrono::milliseconds interval,
-        clock_type& clock, beast::Journal journal);
+    PeerSet(
+        Application& app,
+        uint256 const& hash,
+        std::chrono::milliseconds interval,
+        clock_type& clock,
+        beast::Journal journal);
 
     virtual ~PeerSet() = 0;
 
-    virtual void newPeer (std::shared_ptr<Peer> const&) = 0;
+    virtual void
+    newPeer(std::shared_ptr<Peer> const&) = 0;
 
-    virtual void onTimer (bool progress, ScopedLockType&) = 0;
+    virtual void
+    onTimer(bool progress, ScopedLockType&) = 0;
 
-    virtual void execute () = 0;
+    virtual void
+    execute() = 0;
 
-    virtual std::weak_ptr<PeerSet> pmDowncast () = 0;
+    virtual std::weak_ptr<PeerSet>
+    pmDowncast() = 0;
 
-    bool isProgress ()
+    bool
+    isProgress()
     {
         return mProgress;
     }
 
-    void setComplete ()
+    void
+    setComplete()
     {
         mComplete = true;
     }
-    void setFailed ()
+    void
+    setFailed()
     {
         mFailed = true;
     }
 
-    void invokeOnTimer ();
+    void
+    invokeOnTimer();
 
-    void sendRequest (const protocol::TMGetLedger& message);
+    void
+    sendRequest(const protocol::TMGetLedger& message);
 
-    void sendRequest (const protocol::TMGetLedger& message, std::shared_ptr<Peer> const& peer);
+    void
+    sendRequest(
+        const protocol::TMGetLedger& message,
+        std::shared_ptr<Peer> const& peer);
 
-    void setTimer ();
+    void
+    setTimer();
 
-    std::size_t getPeerCount () const;
+    std::size_t
+    getPeerCount() const;
 
 protected:
     Application& app_;
@@ -168,9 +196,9 @@ protected:
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> mTimer;
 
     // The identifiers of the peers we are tracking.
-    std::set <Peer::id_t> mPeers;
+    std::set<Peer::id_t> mPeers;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

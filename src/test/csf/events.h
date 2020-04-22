@@ -19,12 +19,11 @@
 #ifndef RIPPLE_TEST_CSF_EVENTS_H_INCLUDED
 #define RIPPLE_TEST_CSF_EVENTS_H_INCLUDED
 
+#include <chrono>
+#include <test/csf/Proposal.h>
 #include <test/csf/Tx.h>
 #include <test/csf/Validation.h>
 #include <test/csf/ledgers.h>
-#include <test/csf/Proposal.h>
-#include <chrono>
-
 
 namespace ripple {
 namespace test {
@@ -52,8 +51,6 @@ namespace csf {
 //
 // CollectorRef.f defines a type-erased holder for arbitrary Collectors.  If
 // any new events are added, the interface there needs to be updated.
-
-
 
 /** A value to be flooded to all other peers starting from this peer.
  */
@@ -146,7 +143,6 @@ struct FullyValidateLedger
     //! This is a jump if prior.id() != ledger.parentID()
     Ledger prior;
 };
-
 
 }  // namespace csf
 }  // namespace test

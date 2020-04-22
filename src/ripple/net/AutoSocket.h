@@ -22,10 +22,10 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/beast/net/IPAddressConversion.h>
-#include <boost/beast/core/bind_handler.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>
+#include <boost/beast/core/bind_handler.hpp>
 
 // Socket wrapper that supports both SSL and non-SSL connections.
 // Generally, handle it as you would an SSL connection.
@@ -35,96 +35,101 @@
 class AutoSocket
 {
 public:
-    using ssl_socket   = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
-    using endpoint_type     = boost::asio::ip::tcp::socket::endpoint_type;
-    using socket_ptr        = std::unique_ptr<ssl_socket>;
-    using plain_socket      = ssl_socket::next_layer_type;
+    using ssl_socket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
+    using endpoint_type = boost::asio::ip::tcp::socket::endpoint_type;
+    using socket_ptr = std::unique_ptr<ssl_socket>;
+    using plain_socket = ssl_socket::next_layer_type;
     using lowest_layer_type = ssl_socket::lowest_layer_type;
-    using handshake_type    = ssl_socket::handshake_type;
-    using error_code        = boost::system::error_code;
-    using callback          = std::function <void (error_code)>;
+    using handshake_type = ssl_socket::handshake_type;
+    using error_code = boost::system::error_code;
+    using callback = std::function<void(error_code)>;
 
 public:
-    AutoSocket (
-            boost::asio::io_service& s,
-            boost::asio::ssl::context& c,
-            bool secureOnly,
-            bool plainOnly)
-        : mSecure (secureOnly)
-        , mBuffer ((plainOnly || secureOnly) ? 0 : 4)
-        , j_ {beast::Journal::getNullSink()}
+    AutoSocket(
+        boost::asio::io_service& s,
+        boost::asio::ssl::context& c,
+        bool secureOnly,
+        bool plainOnly)
+        : mSecure(secureOnly)
+        , mBuffer((plainOnly || secureOnly) ? 0 : 4)
+        , j_{beast::Journal::getNullSink()}
     {
-        mSocket = std::make_unique<ssl_socket> (s, c);
+        mSocket = std::make_unique<ssl_socket>(s, c);
     }
 
-    AutoSocket (
-            boost::asio::io_service& s,
-            boost::asio::ssl::context& c)
-        : AutoSocket (s, c, false, false)
+    AutoSocket(boost::asio::io_service& s, boost::asio::ssl::context& c)
+        : AutoSocket(s, c, false, false)
     {
     }
 
-    bool            isSecure ()
+    bool
+    isSecure()
     {
         return mSecure;
     }
-    ssl_socket&     SSLSocket ()
+    ssl_socket&
+    SSLSocket()
     {
         return *mSocket;
     }
-    plain_socket&   PlainSocket ()
+    plain_socket&
+    PlainSocket()
     {
-        return mSocket->next_layer ();
+        return mSocket->next_layer();
     }
-    void setSSLOnly ()
+    void
+    setSSLOnly()
     {
         mSecure = true;
     }
-    void setPlainOnly ()
+    void
+    setPlainOnly()
     {
-        mBuffer.clear ();
+        mBuffer.clear();
     }
 
     beast::IP::Endpoint
     local_endpoint()
     {
-        return beast::IP::from_asio(
-            lowest_layer().local_endpoint());
+        return beast::IP::from_asio(lowest_layer().local_endpoint());
     }
 
     beast::IP::Endpoint
     remote_endpoint()
     {
-        return beast::IP::from_asio(
-            lowest_layer().remote_endpoint());
+        return beast::IP::from_asio(lowest_layer().remote_endpoint());
     }
 
-    lowest_layer_type& lowest_layer ()
+    lowest_layer_type&
+    lowest_layer()
     {
-        return mSocket->lowest_layer ();
+        return mSocket->lowest_layer();
     }
 
-    void swap (AutoSocket& s) noexcept
+    void
+    swap(AutoSocket& s) noexcept
     {
-        mBuffer.swap (s.mBuffer);
-        mSocket.swap (s.mSocket);
-        std::swap (mSecure, s.mSecure);
+        mBuffer.swap(s.mBuffer);
+        mSocket.swap(s.mSocket);
+        std::swap(mSecure, s.mSecure);
     }
 
-    boost::system::error_code cancel (boost::system::error_code& ec)
+    boost::system::error_code
+    cancel(boost::system::error_code& ec)
     {
-        return lowest_layer ().cancel (ec);
+        return lowest_layer().cancel(ec);
     }
 
-    void async_handshake (handshake_type type, callback cbFunc)
+    void
+    async_handshake(handshake_type type, callback cbFunc)
     {
         if ((type == ssl_socket::client) || (mSecure))
         {
             // must be ssl
             mSecure = true;
-            mSocket->async_handshake (type, cbFunc);
+            mSocket->async_handshake(type, cbFunc);
         }
-        else if (mBuffer.empty ())
+        else if (mBuffer.empty())
         {
             // must be plain
             mSecure = false;
@@ -135,28 +140,30 @@ public:
         else
         {
             // autodetect
-            mSocket->next_layer ().async_receive (
-                boost::asio::buffer (mBuffer),
+            mSocket->next_layer().async_receive(
+                boost::asio::buffer(mBuffer),
                 boost::asio::socket_base::message_peek,
-                std::bind (
+                std::bind(
                     &AutoSocket::handle_autodetect,
-                    this, cbFunc,
+                    this,
+                    cbFunc,
                     std::placeholders::_1,
                     std::placeholders::_2));
         }
     }
 
     template <typename ShutdownHandler>
-    void async_shutdown (ShutdownHandler handler)
+    void
+    async_shutdown(ShutdownHandler handler)
     {
-        if (isSecure ())
-            mSocket->async_shutdown (handler);
+        if (isSecure())
+            mSocket->async_shutdown(handler);
         else
         {
             error_code ec;
             try
             {
-                lowest_layer ().shutdown (plain_socket::shutdown_both);
+                lowest_layer().shutdown(plain_socket::shutdown_both);
             }
             catch (boost::system::system_error& e)
             {
@@ -169,31 +176,35 @@ public:
     }
 
     template <typename Seq, typename Handler>
-    void async_read_some (const Seq& buffers, Handler handler)
+    void
+    async_read_some(const Seq& buffers, Handler handler)
     {
-        if (isSecure ())
-            mSocket->async_read_some (buffers, handler);
+        if (isSecure())
+            mSocket->async_read_some(buffers, handler);
         else
-            PlainSocket ().async_read_some (buffers, handler);
+            PlainSocket().async_read_some(buffers, handler);
     }
 
     template <typename Seq, typename Condition, typename Handler>
-    void async_read_until(
-        const Seq& buffers, Condition condition, Handler handler)
+    void
+    async_read_until(const Seq& buffers, Condition condition, Handler handler)
     {
         if (isSecure())
             boost::asio::async_read_until(
                 *mSocket, buffers, condition, handler);
         else
             boost::asio::async_read_until(
-                PlainSocket (), buffers, condition, handler);
+                PlainSocket(), buffers, condition, handler);
     }
 
     template <typename Allocator, typename Handler>
-    void async_read_until(boost::asio::basic_streambuf<Allocator>& buffers,
-                          std::string const& delim, Handler handler)
+    void
+    async_read_until(
+        boost::asio::basic_streambuf<Allocator>& buffers,
+        std::string const& delim,
+        Handler handler)
     {
-        if (isSecure ())
+        if (isSecure())
             boost::asio::async_read_until(*mSocket, buffers, delim, handler);
         else
             boost::asio::async_read_until(
@@ -201,10 +212,13 @@ public:
     }
 
     template <typename Allocator, typename MatchCondition, typename Handler>
-    void async_read_until (boost::asio::basic_streambuf<Allocator>& buffers,
-                           MatchCondition cond, Handler handler)
+    void
+    async_read_until(
+        boost::asio::basic_streambuf<Allocator>& buffers,
+        MatchCondition cond,
+        Handler handler)
     {
-        if (isSecure ())
+        if (isSecure())
             boost::asio::async_read_until(*mSocket, buffers, cond, handler);
         else
             boost::asio::async_read_until(
@@ -212,100 +226,112 @@ public:
     }
 
     template <typename Buf, typename Handler>
-    void async_write (const Buf& buffers, Handler handler)
+    void
+    async_write(const Buf& buffers, Handler handler)
     {
-        if (isSecure ())
+        if (isSecure())
             boost::asio::async_write(*mSocket, buffers, handler);
         else
-            boost::asio::async_write(PlainSocket (), buffers, handler);
+            boost::asio::async_write(PlainSocket(), buffers, handler);
     }
 
     template <typename Allocator, typename Handler>
-    void async_write (boost::asio::basic_streambuf<Allocator>& buffers,
-                      Handler handler)
+    void
+    async_write(
+        boost::asio::basic_streambuf<Allocator>& buffers,
+        Handler handler)
     {
-        if (isSecure ())
+        if (isSecure())
             boost::asio::async_write(*mSocket, buffers, handler);
         else
             boost::asio::async_write(PlainSocket(), buffers, handler);
     }
 
     template <typename Buf, typename Condition, typename Handler>
-    void async_read (const Buf& buffers, Condition cond, Handler handler)
+    void
+    async_read(const Buf& buffers, Condition cond, Handler handler)
     {
-        if (isSecure ())
+        if (isSecure())
             boost::asio::async_read(*mSocket, buffers, cond, handler);
         else
             boost::asio::async_read(PlainSocket(), buffers, cond, handler);
     }
 
     template <typename Allocator, typename Condition, typename Handler>
-    void async_read (boost::asio::basic_streambuf<Allocator>& buffers,
-                     Condition cond, Handler handler)
+    void
+    async_read(
+        boost::asio::basic_streambuf<Allocator>& buffers,
+        Condition cond,
+        Handler handler)
     {
-        if (isSecure ())
-            boost::asio::async_read (*mSocket, buffers, cond, handler);
+        if (isSecure())
+            boost::asio::async_read(*mSocket, buffers, cond, handler);
         else
-            boost::asio::async_read (PlainSocket (), buffers, cond, handler);
+            boost::asio::async_read(PlainSocket(), buffers, cond, handler);
     }
 
     template <typename Buf, typename Handler>
-    void async_read (const Buf& buffers, Handler handler)
+    void
+    async_read(const Buf& buffers, Handler handler)
     {
-        if (isSecure ())
-            boost::asio::async_read (*mSocket, buffers, handler);
+        if (isSecure())
+            boost::asio::async_read(*mSocket, buffers, handler);
         else
-            boost::asio::async_read (PlainSocket (), buffers, handler);
+            boost::asio::async_read(PlainSocket(), buffers, handler);
     }
 
     template <typename Seq, typename Handler>
-    void async_write_some (const Seq& buffers, Handler handler)
+    void
+    async_write_some(const Seq& buffers, Handler handler)
     {
-        if (isSecure ())
-            mSocket->async_write_some (buffers, handler);
+        if (isSecure())
+            mSocket->async_write_some(buffers, handler);
         else
-            PlainSocket ().async_write_some (buffers, handler);
+            PlainSocket().async_write_some(buffers, handler);
     }
 
 protected:
-    void handle_autodetect (
-        callback cbFunc, const error_code& ec, size_t bytesTransferred)
+    void
+    handle_autodetect(
+        callback cbFunc,
+        const error_code& ec,
+        size_t bytesTransferred)
     {
         using namespace ripple;
 
         if (ec)
         {
-            JLOG (j_.warn()) <<
-                "Handle autodetect error: " << ec;
-            cbFunc (ec);
+            JLOG(j_.warn()) << "Handle autodetect error: " << ec;
+            cbFunc(ec);
         }
-        else if ((mBuffer[0] < 127) && (mBuffer[0] > 31) &&
-                 ((bytesTransferred < 2)
-                  || ((mBuffer[1] < 127) && (mBuffer[1] > 31))) &&
-                 ((bytesTransferred < 3)
-                  || ((mBuffer[2] < 127) && (mBuffer[2] > 31))) &&
-                 ((bytesTransferred < 4)
-                  || ((mBuffer[3] < 127) && (mBuffer[3] > 31))))
+        else if (
+            (mBuffer[0] < 127) && (mBuffer[0] > 31) &&
+            ((bytesTransferred < 2) ||
+             ((mBuffer[1] < 127) && (mBuffer[1] > 31))) &&
+            ((bytesTransferred < 3) ||
+             ((mBuffer[2] < 127) && (mBuffer[2] > 31))) &&
+            ((bytesTransferred < 4) ||
+             ((mBuffer[3] < 127) && (mBuffer[3] > 31))))
         {
             // not ssl
-            JLOG (j_.trace()) << "non-SSL";
+            JLOG(j_.trace()) << "non-SSL";
             mSecure = false;
-            cbFunc (ec);
+            cbFunc(ec);
         }
         else
         {
             // ssl
-            JLOG (j_.trace()) << "SSL";
+            JLOG(j_.trace()) << "SSL";
             mSecure = true;
-            mSocket->async_handshake (ssl_socket::server, cbFunc);
+            mSocket->async_handshake(ssl_socket::server, cbFunc);
         }
     }
 
 private:
-    socket_ptr          mSocket;
-    bool                mSecure;
-    std::vector<char>   mBuffer;
-    beast::Journal      j_;
+    socket_ptr mSocket;
+    bool mSecure;
+    std::vector<char> mBuffer;
+    beast::Journal j_;
 };
 
 #endif

@@ -38,8 +38,10 @@ class DeferredCredits
 public:
     struct Adjustment
     {
-        Adjustment (STAmount const& d, STAmount const& c, STAmount const& b)
-            : debits (d), credits (c), origBalance (b) {}
+        Adjustment(STAmount const& d, STAmount const& c, STAmount const& b)
+            : debits(d), credits(c), origBalance(b)
+        {
+        }
         STAmount debits;
         STAmount credits;
         STAmount origBalance;
@@ -47,31 +49,34 @@ public:
 
     // Get the adjustments for the balance between main and other.
     // Returns the debits, credits and the original balance
-    boost::optional<Adjustment> adjustments (
+    boost::optional<Adjustment>
+    adjustments(
         AccountID const& main,
         AccountID const& other,
         Currency const& currency) const;
 
-    void credit (AccountID const& sender,
+    void
+    credit(
+        AccountID const& sender,
         AccountID const& receiver,
         STAmount const& amount,
         STAmount const& preCreditSenderBalance);
 
-    void ownerCount (AccountID const& id,
-        std::uint32_t cur,
-            std::uint32_t next);
+    void
+    ownerCount(AccountID const& id, std::uint32_t cur, std::uint32_t next);
 
     // Get the adjusted owner count. Since DeferredCredits is meant to be used
     // in payments, and payments only decrease owner counts, return the max
     // remembered owner count.
     boost::optional<std::uint32_t>
-    ownerCount (AccountID const& id) const;
+    ownerCount(AccountID const& id) const;
 
-    void apply (DeferredCredits& to);
+    void
+    apply(DeferredCredits& to);
+
 private:
     // lowAccount, highAccount
-    using Key = std::tuple<
-        AccountID, AccountID, Currency>;
+    using Key = std::tuple<AccountID, AccountID, Currency>;
     struct Value
     {
         explicit Value() = default;
@@ -81,17 +86,14 @@ private:
         STAmount lowAcctOrigBalance;
     };
 
-    static
-    Key
-    makeKey (AccountID const& a1,
-        AccountID const& a2,
-            Currency const& c);
+    static Key
+    makeKey(AccountID const& a1, AccountID const& a2, Currency const& c);
 
     std::map<Key, Value> credits_;
     std::map<AccountID, std::uint32_t> ownerCounts_;
 };
 
-} // detail
+}  // namespace detail
 
 //------------------------------------------------------------------------------
 
@@ -107,24 +109,24 @@ private:
 
     @note Presented as ApplyView to clients
 */
-class PaymentSandbox final
-    : public detail::ApplyViewBase
+class PaymentSandbox final : public detail::ApplyViewBase
 {
 public:
     PaymentSandbox() = delete;
-    PaymentSandbox (PaymentSandbox const&) = delete;
-    PaymentSandbox& operator= (PaymentSandbox&&) = delete;
-    PaymentSandbox& operator= (PaymentSandbox const&) = delete;
+    PaymentSandbox(PaymentSandbox const&) = delete;
+    PaymentSandbox&
+    operator=(PaymentSandbox&&) = delete;
+    PaymentSandbox&
+    operator=(PaymentSandbox const&) = delete;
 
-    PaymentSandbox (PaymentSandbox&&) = default;
+    PaymentSandbox(PaymentSandbox&&) = default;
 
-    PaymentSandbox (ReadView const* base, ApplyFlags flags)
-        : ApplyViewBase (base, flags)
+    PaymentSandbox(ReadView const* base, ApplyFlags flags)
+        : ApplyViewBase(base, flags)
     {
     }
 
-    PaymentSandbox (ApplyView const* base)
-        : ApplyViewBase (base, base->flags())
+    PaymentSandbox(ApplyView const* base) : ApplyViewBase(base, base->flags())
     {
     }
 
@@ -142,40 +144,39 @@ public:
     //        or a PaymentSandbox-derived class, we MUST go through
     //        one of these constructors or invariants will be broken.
     /** @{ */
-    explicit
-    PaymentSandbox (PaymentSandbox const* base)
-        : ApplyViewBase(base, base->flags())
-        , ps_ (base)
+    explicit PaymentSandbox(PaymentSandbox const* base)
+        : ApplyViewBase(base, base->flags()), ps_(base)
     {
     }
 
-    explicit
-    PaymentSandbox (PaymentSandbox* base)
-        : ApplyViewBase(base, base->flags())
-        , ps_ (base)
+    explicit PaymentSandbox(PaymentSandbox* base)
+        : ApplyViewBase(base, base->flags()), ps_(base)
     {
     }
     /** @} */
 
     STAmount
-    balanceHook (AccountID const& account,
+    balanceHook(
+        AccountID const& account,
         AccountID const& issuer,
-            STAmount const& amount) const override;
+        STAmount const& amount) const override;
 
     void
-    creditHook (AccountID const& from,
+    creditHook(
+        AccountID const& from,
         AccountID const& to,
-            STAmount const& amount,
-                STAmount const& preCreditBalance) override;
+        STAmount const& amount,
+        STAmount const& preCreditBalance) override;
 
     void
-    adjustOwnerCountHook (AccountID const& account,
+    adjustOwnerCountHook(
+        AccountID const& account,
         std::uint32_t cur,
-            std::uint32_t next) override;
+        std::uint32_t next) override;
 
     std::uint32_t
-    ownerCountHook (AccountID const& account,
-        std::uint32_t count) const override;
+    ownerCountHook(AccountID const& account, std::uint32_t count)
+        const override;
 
     /** Apply changes to base view.
 
@@ -184,10 +185,11 @@ public:
         behavior will result.
     */
     /** @{ */
-    void apply (RawView& to);
+    void
+    apply(RawView& to);
 
     void
-    apply (PaymentSandbox& to);
+    apply(PaymentSandbox& to);
     /** @} */
 
     // Return a map of balance changes on trust lines. The low account is the
@@ -195,15 +197,16 @@ public:
     // the total changes in currency regardless of issuer. This is useful to get
     // the total change in XRP balances.
     std::map<std::tuple<AccountID, AccountID, Currency>, STAmount>
-    balanceChanges (ReadView const& view) const;
+    balanceChanges(ReadView const& view) const;
 
-    XRPAmount xrpDestroyed () const;
+    XRPAmount
+    xrpDestroyed() const;
 
 private:
     detail::DeferredCredits tab_;
     PaymentSandbox const* ps_ = nullptr;
 };
 
-}  // ripple
+}  // namespace ripple
 
 #endif

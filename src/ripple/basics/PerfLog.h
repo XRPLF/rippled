@@ -21,15 +21,17 @@
 #define RIPPLE_BASICS_PERFLOG_H
 
 #include <ripple/core/JobTypes.h>
-#include <boost/filesystem.hpp>
 #include <ripple/json/json_value.h>
+#include <boost/filesystem.hpp>
 #include <chrono>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
 
-namespace beast { class Journal; }
+namespace beast {
+class Journal;
+}
 
 namespace ripple {
 namespace perf {
@@ -59,7 +61,7 @@ public:
     {
         boost::filesystem::path perfLog;
         // log_interval is in milliseconds to support faster testing.
-        milliseconds logInterval {seconds(1)};
+        milliseconds logInterval{seconds(1)};
     };
 
     virtual ~PerfLog() = default;
@@ -70,8 +72,8 @@ public:
      * @param method RPC command
      * @param requestId Unique identifier to track command
      */
-    virtual void rpcStart(std::string const& method,
-        std::uint64_t requestId) = 0;
+    virtual void
+    rpcStart(std::string const& method, std::uint64_t requestId) = 0;
 
     /**
      * Log successful finish of RPC call
@@ -79,8 +81,8 @@ public:
      * @param method RPC command
      * @param requestId Unique identifier to track command
      */
-    virtual void rpcFinish(std::string const& method,
-        std::uint64_t requestId) = 0;
+    virtual void
+    rpcFinish(std::string const& method, std::uint64_t requestId) = 0;
 
     /**
      * Log errored RPC call
@@ -88,15 +90,16 @@ public:
      * @param method RPC command
      * @param requestId Unique identifier to track command
      */
-    virtual void rpcError(std::string const& method,
-        std::uint64_t requestId) = 0;
+    virtual void
+    rpcError(std::string const& method, std::uint64_t requestId) = 0;
 
     /**
      * Log queued job
      *
      * @param type Job type
      */
-    virtual void jobQueue(JobType const type) = 0;
+    virtual void
+    jobQueue(JobType const type) = 0;
 
     /**
      * Log job executing
@@ -106,7 +109,9 @@ public:
      * @param startTime Time that execution began
      * @param instance JobQueue worker thread instance
      */
-    virtual void jobStart(JobType const type,
+    virtual void
+    jobStart(
+        JobType const type,
         microseconds dur,
         steady_time_point startTime,
         int instance) = 0;
@@ -118,53 +123,58 @@ public:
      * @param dur Duration running in microseconds
      * @param instance Jobqueue worker thread instance
      */
-    virtual void jobFinish(JobType const type,
-        microseconds dur, int instance) = 0;
+    virtual void
+    jobFinish(JobType const type, microseconds dur, int instance) = 0;
 
     /**
      * Render performance counters in Json
      *
      * @return Counters Json object
      */
-    virtual Json::Value countersJson() const = 0;
+    virtual Json::Value
+    countersJson() const = 0;
 
     /**
      * Render currently executing jobs and RPC calls and durations in Json
      *
      * @return Current executing jobs and RPC calls and durations
      */
-    virtual Json::Value currentJson() const = 0;
+    virtual Json::Value
+    currentJson() const = 0;
 
     /**
      * Ensure enough room to store each currently executing job
      *
      * @param resize Number of JobQueue worker threads
      */
-    virtual void resizeJobs(int const resize) = 0;
+    virtual void
+    resizeJobs(int const resize) = 0;
 
     /**
      * Rotate perf log file
      */
-    virtual void rotate() = 0;
+    virtual void
+    rotate() = 0;
 };
 
-} //perf
+}  // namespace perf
 
 class Section;
 class Stoppable;
 
 namespace perf {
 
-PerfLog::Setup setup_PerfLog(Section const& section,
-    boost::filesystem::path const& configDir);
+PerfLog::Setup
+setup_PerfLog(Section const& section, boost::filesystem::path const& configDir);
 
-std::unique_ptr<PerfLog> make_PerfLog(
+std::unique_ptr<PerfLog>
+make_PerfLog(
     PerfLog::Setup const& setup,
     Stoppable& parent,
     beast::Journal journal,
     std::function<void()>&& signalStop);
 
-} // perf
-} // ripple
+}  // namespace perf
+}  // namespace ripple
 
-#endif //RIPPLE_BASICS_PERFLOG_H
+#endif  // RIPPLE_BASICS_PERFLOG_H

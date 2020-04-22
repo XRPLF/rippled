@@ -37,115 +37,114 @@ namespace ripple {
 //
 // Please only append to this table. Do not "fill-in" gaps and do not re-use
 // or repurpose error code values.
-enum error_code_i
-{
+enum error_code_i {
     // -1 represents codes not listed in this enumeration
-    rpcUNKNOWN               = -1,
+    rpcUNKNOWN = -1,
 
-    rpcSUCCESS               = 0,
+    rpcSUCCESS = 0,
 
-    rpcBAD_SYNTAX            = 1,
-    rpcJSON_RPC              = 2,
-    rpcFORBIDDEN             = 3,
+    rpcBAD_SYNTAX = 1,
+    rpcJSON_RPC = 2,
+    rpcFORBIDDEN = 3,
 
     // Misc failure
     // unused                  4,
     // unused                  5,
-    rpcNO_PERMISSION         = 6,
-    rpcNO_EVENTS             = 7,
+    rpcNO_PERMISSION = 6,
+    rpcNO_EVENTS = 7,
     // unused                  8,
-    rpcTOO_BUSY              = 9,
-    rpcSLOW_DOWN             = 10,
-    rpcHIGH_FEE              = 11,
-    rpcNOT_ENABLED           = 12,
-    rpcNOT_READY             = 13,
-    rpcAMENDMENT_BLOCKED     = 14,
+    rpcTOO_BUSY = 9,
+    rpcSLOW_DOWN = 10,
+    rpcHIGH_FEE = 11,
+    rpcNOT_ENABLED = 12,
+    rpcNOT_READY = 13,
+    rpcAMENDMENT_BLOCKED = 14,
 
     // Networking
-    rpcNO_CLOSED             = 15,
-    rpcNO_CURRENT            = 16,
-    rpcNO_NETWORK            = 17,
+    rpcNO_CLOSED = 15,
+    rpcNO_CURRENT = 16,
+    rpcNO_NETWORK = 17,
 
     // Ledger state
     // unused                  18,
-    rpcACT_NOT_FOUND         = 19,
+    rpcACT_NOT_FOUND = 19,
     // unused                  20,
-    rpcLGR_NOT_FOUND         = 21,
-    rpcLGR_NOT_VALIDATED     = 22,
-    rpcMASTER_DISABLED       = 23,
+    rpcLGR_NOT_FOUND = 21,
+    rpcLGR_NOT_VALIDATED = 22,
+    rpcMASTER_DISABLED = 23,
     // unused                  24,
     // unused                  25,
     // unused                  26,
     // unused                  27,
     // unused                  28,
-    rpcTXN_NOT_FOUND         = 29,
+    rpcTXN_NOT_FOUND = 29,
     // unused                  30,
 
     // Malformed command
-    rpcINVALID_PARAMS        = 31,
-    rpcUNKNOWN_COMMAND       = 32,
-    rpcNO_PF_REQUEST         = 33,
+    rpcINVALID_PARAMS = 31,
+    rpcUNKNOWN_COMMAND = 32,
+    rpcNO_PF_REQUEST = 33,
 
     // Bad parameter
-    rpcACT_BITCOIN           = 34,
-    rpcACT_MALFORMED         = 35,
-    rpcALREADY_MULTISIG      = 36,
-    rpcALREADY_SINGLE_SIG    = 37,
+    rpcACT_BITCOIN = 34,
+    rpcACT_MALFORMED = 35,
+    rpcALREADY_MULTISIG = 36,
+    rpcALREADY_SINGLE_SIG = 37,
     // unused                  38,
     // unused                  39,
-    rpcBAD_FEATURE           = 40,
-    rpcBAD_ISSUER            = 41,
-    rpcBAD_MARKET            = 42,
-    rpcBAD_SECRET            = 43,
-    rpcBAD_SEED              = 44,
-    rpcCHANNEL_MALFORMED     = 45,
+    rpcBAD_FEATURE = 40,
+    rpcBAD_ISSUER = 41,
+    rpcBAD_MARKET = 42,
+    rpcBAD_SECRET = 43,
+    rpcBAD_SEED = 44,
+    rpcCHANNEL_MALFORMED = 45,
     rpcCHANNEL_AMT_MALFORMED = 46,
-    rpcCOMMAND_MISSING       = 47,
-    rpcDST_ACT_MALFORMED     = 48,
-    rpcDST_ACT_MISSING       = 49,
-    rpcDST_ACT_NOT_FOUND     = 50,
-    rpcDST_AMT_MALFORMED     = 51,
-    rpcDST_AMT_MISSING       = 52,
-    rpcDST_ISR_MALFORMED     = 53,
+    rpcCOMMAND_MISSING = 47,
+    rpcDST_ACT_MALFORMED = 48,
+    rpcDST_ACT_MISSING = 49,
+    rpcDST_ACT_NOT_FOUND = 50,
+    rpcDST_AMT_MALFORMED = 51,
+    rpcDST_AMT_MISSING = 52,
+    rpcDST_ISR_MALFORMED = 53,
     // unused                  54,
     // unused                  55,
     // unused                  56,
-    rpcLGR_IDXS_INVALID      = 57,
-    rpcLGR_IDX_MALFORMED     = 58,
+    rpcLGR_IDXS_INVALID = 57,
+    rpcLGR_IDX_MALFORMED = 58,
     // unused                  59,
     // unused                  60,
     // unused                  61,
-    rpcPUBLIC_MALFORMED      = 62,
-    rpcSIGNING_MALFORMED     = 63,
-    rpcSENDMAX_MALFORMED     = 64,
-    rpcSRC_ACT_MALFORMED     = 65,
-    rpcSRC_ACT_MISSING       = 66,
-    rpcSRC_ACT_NOT_FOUND     = 67,
+    rpcPUBLIC_MALFORMED = 62,
+    rpcSIGNING_MALFORMED = 63,
+    rpcSENDMAX_MALFORMED = 64,
+    rpcSRC_ACT_MALFORMED = 65,
+    rpcSRC_ACT_MISSING = 66,
+    rpcSRC_ACT_NOT_FOUND = 67,
     // unused                  68,
-    rpcSRC_CUR_MALFORMED     = 69,
-    rpcSRC_ISR_MALFORMED     = 70,
-    rpcSTREAM_MALFORMED      = 71,
-    rpcATX_DEPRECATED        = 72,
+    rpcSRC_CUR_MALFORMED = 69,
+    rpcSRC_ISR_MALFORMED = 70,
+    rpcSTREAM_MALFORMED = 71,
+    rpcATX_DEPRECATED = 72,
 
     // Internal error (should never happen)
-    rpcINTERNAL              = 73,  // Generic internal error.
-    rpcNOT_IMPL              = 74,
-    rpcNOT_SUPPORTED         = 75,
-    rpcBAD_KEY_TYPE          = 76,
-    rpcDB_DESERIALIZATION    = 77,
-    rpcEXCESSIVE_LGR_RANGE   = 78,
-    rpcINVALID_LGR_RANGE     = 79,
-    rpcLAST = rpcINVALID_LGR_RANGE // rpcLAST should always equal the last code.=
+    rpcINTERNAL = 73,  // Generic internal error.
+    rpcNOT_IMPL = 74,
+    rpcNOT_SUPPORTED = 75,
+    rpcBAD_KEY_TYPE = 76,
+    rpcDB_DESERIALIZATION = 77,
+    rpcEXCESSIVE_LGR_RANGE = 78,
+    rpcINVALID_LGR_RANGE = 79,
+    rpcLAST =
+        rpcINVALID_LGR_RANGE  // rpcLAST should always equal the last code.=
 };
 
 /** Codes returned in the `warnings` array of certain RPC commands.
 
     These values need to remain stable.
 */
-enum warning_code_i
-{
-    warnRPC_UNSUPPORTED_MAJORITY    = 1001,
-    warnRPC_AMENDMENT_BLOCKED       = 1002,
+enum warning_code_i {
+    warnRPC_UNSUPPORTED_MAJORITY = 1001,
+    warnRPC_AMENDMENT_BLOCKED = 1002,
 };
 
 //------------------------------------------------------------------------------
@@ -158,18 +157,18 @@ namespace RPC {
 struct ErrorInfo
 {
     // Default ctor needed to produce an empty std::array during constexpr eval.
-    constexpr ErrorInfo ()
-    : code (rpcUNKNOWN)
-    , token ("unknown")
-    , message ("An unknown error code.")
-    { }
+    constexpr ErrorInfo()
+        : code(rpcUNKNOWN), token("unknown"), message("An unknown error code.")
+    {
+    }
 
-    constexpr ErrorInfo (error_code_i code_, char const* token_,
+    constexpr ErrorInfo(
+        error_code_i code_,
+        char const* token_,
         char const* message_)
-        : code (code_)
-        , token (token_)
-        , message (message_)
-    { }
+        : code(code_), token(token_), message(message_)
+    {
+    }
 
     error_code_i code;
     Json::StaticString token;
@@ -177,139 +176,158 @@ struct ErrorInfo
 };
 
 /** Returns an ErrorInfo that reflects the error code. */
-ErrorInfo const& get_error_info (error_code_i code);
+ErrorInfo const&
+get_error_info(error_code_i code);
 
 /** Add or update the json update to reflect the error code. */
 /** @{ */
 template <class JsonValue>
-void inject_error (error_code_i code, JsonValue& json)
+void
+inject_error(error_code_i code, JsonValue& json)
 {
-    ErrorInfo const& info (get_error_info (code));
-    json [jss::error] = info.token;
-    json [jss::error_code] = info.code;
-    json [jss::error_message] = info.message;
+    ErrorInfo const& info(get_error_info(code));
+    json[jss::error] = info.token;
+    json[jss::error_code] = info.code;
+    json[jss::error_message] = info.message;
 }
 
 template <class JsonValue>
-void inject_error (int code, JsonValue& json)
+void
+inject_error(int code, JsonValue& json)
 {
-    inject_error (error_code_i (code), json);
+    inject_error(error_code_i(code), json);
 }
 
 template <class JsonValue>
-void inject_error (
-    error_code_i code, std::string const& message, JsonValue& json)
+void
+inject_error(error_code_i code, std::string const& message, JsonValue& json)
 {
-    ErrorInfo const& info (get_error_info (code));
-    json [jss::error] = info.token;
-    json [jss::error_code] = info.code;
-    json [jss::error_message] = message;
+    ErrorInfo const& info(get_error_info(code));
+    json[jss::error] = info.token;
+    json[jss::error_code] = info.code;
+    json[jss::error_message] = message;
 }
 
 /** @} */
 
 /** Returns a new json object that reflects the error code. */
 /** @{ */
-Json::Value make_error (error_code_i code);
-Json::Value make_error (error_code_i code, std::string const& message);
+Json::Value
+make_error(error_code_i code);
+Json::Value
+make_error(error_code_i code, std::string const& message);
 /** @} */
 
 /** Returns a new json object that indicates invalid parameters. */
 /** @{ */
-inline Json::Value make_param_error (std::string const& message)
+inline Json::Value
+make_param_error(std::string const& message)
 {
-    return make_error (rpcINVALID_PARAMS, message);
+    return make_error(rpcINVALID_PARAMS, message);
 }
 
-inline std::string missing_field_message (std::string const& name)
+inline std::string
+missing_field_message(std::string const& name)
 {
     return "Missing field '" + name + "'.";
 }
 
-inline Json::Value missing_field_error (std::string const& name)
+inline Json::Value
+missing_field_error(std::string const& name)
 {
-    return make_param_error (missing_field_message (name));
+    return make_param_error(missing_field_message(name));
 }
 
-inline Json::Value missing_field_error (Json::StaticString name)
+inline Json::Value
+missing_field_error(Json::StaticString name)
 {
-    return missing_field_error (std::string (name));
+    return missing_field_error(std::string(name));
 }
 
-inline std::string object_field_message (std::string const& name)
+inline std::string
+object_field_message(std::string const& name)
 {
     return "Invalid field '" + name + "', not object.";
 }
 
-inline Json::Value object_field_error (std::string const& name)
+inline Json::Value
+object_field_error(std::string const& name)
 {
-    return make_param_error (object_field_message (name));
+    return make_param_error(object_field_message(name));
 }
 
-inline Json::Value object_field_error (Json::StaticString name)
+inline Json::Value
+object_field_error(Json::StaticString name)
 {
-    return object_field_error (std::string (name));
+    return object_field_error(std::string(name));
 }
 
-inline std::string invalid_field_message (std::string const& name)
+inline std::string
+invalid_field_message(std::string const& name)
 {
     return "Invalid field '" + name + "'.";
 }
 
-inline std::string invalid_field_message (Json::StaticString name)
+inline std::string
+invalid_field_message(Json::StaticString name)
 {
-    return invalid_field_message (std::string(name));
+    return invalid_field_message(std::string(name));
 }
 
-inline Json::Value invalid_field_error (std::string const& name)
+inline Json::Value
+invalid_field_error(std::string const& name)
 {
-    return make_param_error (invalid_field_message (name));
+    return make_param_error(invalid_field_message(name));
 }
 
-inline Json::Value invalid_field_error (Json::StaticString name)
+inline Json::Value
+invalid_field_error(Json::StaticString name)
 {
-    return invalid_field_error (std::string (name));
+    return invalid_field_error(std::string(name));
 }
 
-inline std::string expected_field_message (
-    std::string const& name, std::string const& type)
+inline std::string
+expected_field_message(std::string const& name, std::string const& type)
 {
     return "Invalid field '" + name + "', not " + type + ".";
 }
 
-inline std::string expected_field_message (
-    Json::StaticString name, std::string const& type)
+inline std::string
+expected_field_message(Json::StaticString name, std::string const& type)
 {
-    return expected_field_message (std::string (name), type);
+    return expected_field_message(std::string(name), type);
 }
 
-inline Json::Value expected_field_error (
-    std::string const& name, std::string const& type)
+inline Json::Value
+expected_field_error(std::string const& name, std::string const& type)
 {
-    return make_param_error (expected_field_message (name, type));
+    return make_param_error(expected_field_message(name, type));
 }
 
-inline Json::Value expected_field_error (
-    Json::StaticString name, std::string const& type)
+inline Json::Value
+expected_field_error(Json::StaticString name, std::string const& type)
 {
-    return expected_field_error (std::string (name), type);
+    return expected_field_error(std::string(name), type);
 }
 
-inline Json::Value not_validator_error ()
+inline Json::Value
+not_validator_error()
 {
-    return make_param_error ("not a validator");
+    return make_param_error("not a validator");
 }
 
 /** @} */
 
 /** Returns `true` if the json contains an rpc error specification. */
-bool contains_error (Json::Value const& json);
+bool
+contains_error(Json::Value const& json);
 
-} // RPC
+}  // namespace RPC
 
 /** Returns a single string with the contents of an RPC error. */
-std::string rpcErrorString(Json::Value const& jv);
+std::string
+rpcErrorString(Json::Value const& jv);
 
-}
+}  // namespace ripple
 
 #endif

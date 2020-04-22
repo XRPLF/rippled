@@ -44,7 +44,7 @@ namespace insight {
 class Collector
 {
 public:
-    using ptr = std::shared_ptr <Collector>;
+    using ptr = std::shared_ptr<Collector>;
 
     virtual ~Collector() = 0;
 
@@ -62,25 +62,29 @@ public:
     */
     /** @{ */
     template <class Handler>
-    Hook make_hook (Handler handler)
+    Hook
+    make_hook(Handler handler)
     {
-        return make_hook (HookImpl::HandlerType (handler));
+        return make_hook(HookImpl::HandlerType(handler));
     }
 
-    virtual Hook make_hook (HookImpl::HandlerType const& handler) = 0;
+    virtual Hook
+    make_hook(HookImpl::HandlerType const& handler) = 0;
     /** @} */
 
     /** Create a counter with the specified name.
         @see Counter
     */
     /** @{ */
-    virtual Counter make_counter (std::string const& name) = 0;
+    virtual Counter
+    make_counter(std::string const& name) = 0;
 
-    Counter make_counter (std::string const& prefix, std::string const& name)
+    Counter
+    make_counter(std::string const& prefix, std::string const& name)
     {
-        if (prefix.empty ())
-            return make_counter (name);
-        return make_counter (prefix + "." + name);
+        if (prefix.empty())
+            return make_counter(name);
+        return make_counter(prefix + "." + name);
     }
     /** @} */
 
@@ -88,13 +92,15 @@ public:
         @see Event
     */
     /** @{ */
-    virtual Event make_event (std::string const& name) = 0;
+    virtual Event
+    make_event(std::string const& name) = 0;
 
-    Event make_event (std::string const& prefix, std::string const& name)
+    Event
+    make_event(std::string const& prefix, std::string const& name)
     {
-        if (prefix.empty ())
-            return make_event (name);
-        return make_event (prefix + "." + name);
+        if (prefix.empty())
+            return make_event(name);
+        return make_event(prefix + "." + name);
     }
     /** @} */
 
@@ -102,13 +108,15 @@ public:
         @see Gauge
     */
     /** @{ */
-    virtual Gauge make_gauge (std::string const& name) = 0;
+    virtual Gauge
+    make_gauge(std::string const& name) = 0;
 
-    Gauge make_gauge (std::string const& prefix, std::string const& name)
+    Gauge
+    make_gauge(std::string const& prefix, std::string const& name)
     {
-        if (prefix.empty ())
-            return make_gauge (name);
-        return make_gauge (prefix + "." + name);
+        if (prefix.empty())
+            return make_gauge(name);
+        return make_gauge(prefix + "." + name);
     }
     /** @} */
 
@@ -116,18 +124,20 @@ public:
         @see Meter
     */
     /** @{ */
-    virtual Meter make_meter (std::string const& name) = 0;
+    virtual Meter
+    make_meter(std::string const& name) = 0;
 
-    Meter make_meter (std::string const& prefix, std::string const& name)
+    Meter
+    make_meter(std::string const& prefix, std::string const& name)
     {
-        if (prefix.empty ())
-            return make_meter (name);
-        return make_meter (prefix + "." + name);
+        if (prefix.empty())
+            return make_meter(name);
+        return make_meter(prefix + "." + name);
     }
     /** @} */
 };
 
-}
-}
+}  // namespace insight
+}  // namespace beast
 
 #endif

@@ -33,23 +33,26 @@ namespace ripple {
 // Note: This algorithm is evolved from std::set_intersection.
 template <class InputIter1, class InputIter2, class Action, class Comp>
 void
-generalized_set_intersection(InputIter1 first1, InputIter1 last1,
-                             InputIter2 first2, InputIter2 last2,
-                             Action action, Comp comp)
+generalized_set_intersection(
+    InputIter1 first1,
+    InputIter1 last1,
+    InputIter2 first2,
+    InputIter2 last2,
+    Action action,
+    Comp comp)
 {
     while (first1 != last1 && first2 != last2)
     {
-        
-        if (comp(*first1, *first2))       // if *first1 < *first2
-            ++first1;                     //     then reduce first range
+        if (comp(*first1, *first2))  // if *first1 < *first2
+            ++first1;                //     then reduce first range
         else
         {
-            if (!comp(*first2, *first1))  // if *first1 == *first2
-            {                             //     then this is an intersection
-                action(*first1, *first2); //     do the action
-                ++first1;                 //     reduce first range
+            if (!comp(*first2, *first1))   // if *first1 == *first2
+            {                              //     then this is an intersection
+                action(*first1, *first2);  //     do the action
+                ++first1;                  //     reduce first range
             }
-            ++first2;        // Reduce second range because *first2 <= *first1
+            ++first2;  // Reduce second range because *first2 <= *first1
         }
     }
 }
@@ -58,22 +61,28 @@ generalized_set_intersection(InputIter1 first1, InputIter1 last1,
 // comp.
 
 // Effects: Eliminates all the elements i in the range [first1, last1) which are
-// equivalent to some value in [first2, last2) or for which pred(i) returns true.
+// equivalent to some value in [first2, last2) or for which pred(i) returns
+// true.
 
 // Returns: A FwdIter1 E such that [first1, E) is the range of elements not
 // removed by this algorithm.
 
-// Note: This algorithm is evolved from std::remove_if and std::set_intersection.
+// Note: This algorithm is evolved from std::remove_if and
+// std::set_intersection.
 template <class FwdIter1, class InputIter2, class Pred, class Comp>
 FwdIter1
-remove_if_intersect_or_match(FwdIter1 first1, FwdIter1 last1,
-                             InputIter2 first2, InputIter2 last2,
-                             Pred pred, Comp comp)
+remove_if_intersect_or_match(
+    FwdIter1 first1,
+    FwdIter1 last1,
+    InputIter2 first2,
+    InputIter2 last2,
+    Pred pred,
+    Comp comp)
 {
     // [original-first1, current-first1) is the set of elements to be preserved.
     // [current-first1, i) is the set of elements that have been removed.
     // [i, last1) is the set of elements not tested yet.
-    
+
     // Test each *i in [first1, last1) against [first2, last2) and pred
     for (auto i = first1; i != last1;)
     {
@@ -105,6 +114,6 @@ remove_if_intersect_or_match(FwdIter1 first1, FwdIter1 last1,
     return first1;
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

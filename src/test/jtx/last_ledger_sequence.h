@@ -28,17 +28,20 @@ namespace jtx {
 
 struct last_ledger_seq
 {
-    private:
-        std::uint32_t num_;
-public:
-    explicit last_ledger_seq(std::uint32_t num) : num_(num) {}
+private:
+    std::uint32_t num_;
 
-void
-operator()(Env&, JTx& jt) const;
+public:
+    explicit last_ledger_seq(std::uint32_t num) : num_(num)
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const;
 };
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

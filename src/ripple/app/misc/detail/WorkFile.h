@@ -31,8 +31,7 @@ namespace ripple {
 namespace detail {
 
 // Work with files
-class WorkFile: public Work
-    , public std::enable_shared_from_this<WorkFile>
+class WorkFile : public Work, public std::enable_shared_from_this<WorkFile>
 {
 protected:
     using error_code = boost::system::error_code;
@@ -42,48 +41,49 @@ protected:
 public:
     using callback_type =
         std::function<void(error_code const&, response_type const&)>;
+
 public:
     WorkFile(
         std::string const& path,
-        boost::asio::io_service& ios, callback_type cb);
+        boost::asio::io_service& ios,
+        callback_type cb);
     ~WorkFile();
 
-    void run() override;
+    void
+    run() override;
 
-    void cancel() override;
+    void
+    cancel() override;
 
 private:
     std::string path_;
     callback_type cb_;
     boost::asio::io_service& ios_;
     boost::asio::io_service::strand strand_;
-
 };
 
 //------------------------------------------------------------------------------
 
 WorkFile::WorkFile(
     std::string const& path,
-    boost::asio::io_service& ios, callback_type cb)
-    : path_(path)
-    , cb_(std::move(cb))
-    , ios_(ios)
-    , strand_(ios)
+    boost::asio::io_service& ios,
+    callback_type cb)
+    : path_(path), cb_(std::move(cb)), ios_(ios), strand_(ios)
 {
 }
 
 WorkFile::~WorkFile()
 {
     if (cb_)
-        cb_ (make_error_code(boost::system::errc::interrupted), {});
+        cb_(make_error_code(boost::system::errc::interrupted), {});
 }
 
 void
 WorkFile::run()
 {
-    if (! strand_.running_in_this_thread())
-        return ios_.post(strand_.wrap (std::bind(
-            &WorkFile::run, shared_from_this())));
+    if (!strand_.running_in_this_thread())
+        return ios_.post(
+            strand_.wrap(std::bind(&WorkFile::run, shared_from_this())));
 
     error_code ec;
     auto const fileContents = getFileContents(ec, path_, megabytes(1));
@@ -99,9 +99,8 @@ WorkFile::cancel()
     // Nothing to do. Either it finished in run, or it didn't start.
 }
 
+}  // namespace detail
 
-} // detail
-
-} // ripple
+}  // namespace ripple
 
 #endif

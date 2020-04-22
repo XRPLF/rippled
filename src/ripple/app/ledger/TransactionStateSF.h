@@ -32,14 +32,17 @@ class TransactionStateSF : public SHAMapSyncFilter
 {
 public:
     TransactionStateSF(NodeStore::Database& db, AbstractFetchPackContainer& fp)
-        : db_(db)
-        , fp_(fp)
-    {}
+        : db_(db), fp_(fp)
+    {
+    }
 
     void
-    gotNode(bool fromFilter, SHAMapHash const& nodeHash,
-        std::uint32_t ledgerSeq, Blob&& nodeData,
-            SHAMapTreeNode::TNType type) const override;
+    gotNode(
+        bool fromFilter,
+        SHAMapHash const& nodeHash,
+        std::uint32_t ledgerSeq,
+        Blob&& nodeData,
+        SHAMapTreeNode::TNType type) const override;
 
     boost::optional<Blob>
     getNode(SHAMapHash const& nodeHash) const override;
@@ -49,6 +52,6 @@ private:
     AbstractFetchPackContainer& fp_;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

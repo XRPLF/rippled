@@ -22,102 +22,101 @@
 namespace ripple {
 namespace NodeStore {
 
-BatchWriter::BatchWriter (Callback& callback, Scheduler& scheduler)
-    : m_callback (callback)
-    , m_scheduler (scheduler)
-    , mWriteLoad (0)
-    , mWritePending (false)
+BatchWriter::BatchWriter(Callback& callback, Scheduler& scheduler)
+    : m_callback(callback)
+    , m_scheduler(scheduler)
+    , mWriteLoad(0)
+    , mWritePending(false)
 {
-    mWriteSet.reserve (batchWritePreallocationSize);
+    mWriteSet.reserve(batchWritePreallocationSize);
 }
 
-BatchWriter::~BatchWriter ()
+BatchWriter::~BatchWriter()
 {
-    waitForWriting ();
+    waitForWriting();
 }
 
 void
-BatchWriter::store (std::shared_ptr<NodeObject> const& object)
+BatchWriter::store(std::shared_ptr<NodeObject> const& object)
 {
-    std::unique_lock<decltype(mWriteMutex)> sl (mWriteMutex);
+    std::unique_lock<decltype(mWriteMutex)> sl(mWriteMutex);
 
     // If the batch has reached its limit, we wait
     // until the batch writer is finished
     while (mWriteSet.size() >= batchWriteLimitSize)
-        mWriteCondition.wait (sl);
+        mWriteCondition.wait(sl);
 
-    mWriteSet.push_back (object);
+    mWriteSet.push_back(object);
 
-    if (! mWritePending)
+    if (!mWritePending)
     {
         mWritePending = true;
 
-        m_scheduler.scheduleTask (*this);
+        m_scheduler.scheduleTask(*this);
     }
 }
 
 int
-BatchWriter::getWriteLoad ()
+BatchWriter::getWriteLoad()
 {
-    std::lock_guard sl (mWriteMutex);
+    std::lock_guard sl(mWriteMutex);
 
-    return std::max (mWriteLoad, static_cast<int> (mWriteSet.size ()));
+    return std::max(mWriteLoad, static_cast<int>(mWriteSet.size()));
 }
 
 void
-BatchWriter::performScheduledTask ()
+BatchWriter::performScheduledTask()
 {
-    writeBatch ();
+    writeBatch();
 }
 
 void
-BatchWriter::writeBatch ()
+BatchWriter::writeBatch()
 {
     for (;;)
     {
-        std::vector< std::shared_ptr<NodeObject> > set;
+        std::vector<std::shared_ptr<NodeObject>> set;
 
-        set.reserve (batchWritePreallocationSize);
+        set.reserve(batchWritePreallocationSize);
 
         {
-            std::lock_guard sl (mWriteMutex);
+            std::lock_guard sl(mWriteMutex);
 
-            mWriteSet.swap (set);
-            assert (mWriteSet.empty ());
-            mWriteLoad = set.size ();
+            mWriteSet.swap(set);
+            assert(mWriteSet.empty());
+            mWriteLoad = set.size();
 
-            if (set.empty ())
+            if (set.empty())
             {
                 mWritePending = false;
-                mWriteCondition.notify_all ();
+                mWriteCondition.notify_all();
 
                 // VFALCO NOTE Fix this function to not return from the middle
                 return;
             }
-
         }
 
         BatchWriteReport report;
         report.writeCount = set.size();
         auto const before = std::chrono::steady_clock::now();
 
-        m_callback.writeBatch (set);
+        m_callback.writeBatch(set);
 
-        report.elapsed = std::chrono::duration_cast <std::chrono::milliseconds>
-            (std::chrono::steady_clock::now() - before);
+        report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - before);
 
-        m_scheduler.onBatchWrite (report);
+        m_scheduler.onBatchWrite(report);
     }
 }
 
 void
-BatchWriter::waitForWriting ()
+BatchWriter::waitForWriting()
 {
-    std::unique_lock <decltype(mWriteMutex)> sl (mWriteMutex);
+    std::unique_lock<decltype(mWriteMutex)> sl(mWriteMutex);
 
     while (mWritePending)
-        mWriteCondition.wait (sl);
+        mWriteCondition.wait(sl);
 }
 
-}
-}
+}  // namespace NodeStore
+}  // namespace ripple

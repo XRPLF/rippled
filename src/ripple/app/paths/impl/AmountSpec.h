@@ -39,16 +39,13 @@ struct AmountSpec
     boost::optional<AccountID> issuer;
     boost::optional<Currency> currency;
 
-    friend
-    std::ostream&
-    operator << (
-        std::ostream& stream,
-        AmountSpec const& amt)
+    friend std::ostream&
+    operator<<(std::ostream& stream, AmountSpec const& amt)
     {
         if (amt.native)
-            stream << to_string (amt.xrp);
+            stream << to_string(amt.xrp);
         else
-            stream << to_string (amt.iou);
+            stream << to_string(amt.iou);
         if (amt.currency)
             stream << "/(" << *amt.currency << ")";
         if (amt.issuer)
@@ -69,11 +66,9 @@ struct EitherAmount
         XRPAmount xrp;
     };
 
-    EitherAmount () = default;
+    EitherAmount() = default;
 
-    explicit
-    EitherAmount (IOUAmount const& a)
-            :iou(a)
+    explicit EitherAmount(IOUAmount const& a) : iou(a)
     {
     }
 
@@ -82,9 +77,7 @@ struct EitherAmount
     // ignore warning about half of iou amount being uninitialized
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
-    explicit
-    EitherAmount (XRPAmount const& a)
-            :xrp(a)
+    explicit EitherAmount(XRPAmount const& a) : xrp(a)
     {
 #ifndef NDEBUG
         native = true;
@@ -94,8 +87,7 @@ struct EitherAmount
 #pragma GCC diagnostic pop
 #endif
 
-    explicit
-    EitherAmount (AmountSpec const& a)
+    explicit EitherAmount(AmountSpec const& a)
     {
 #ifndef NDEBUG
         native = a.native;
@@ -121,74 +113,69 @@ struct EitherAmount
 
 template <class T>
 T&
-get (EitherAmount& amt)
+get(EitherAmount& amt)
 {
     static_assert(sizeof(T) == -1, "Must used specialized function");
     return T(0);
 }
 
 template <>
-inline
-IOUAmount&
-get<IOUAmount> (EitherAmount& amt)
+inline IOUAmount&
+get<IOUAmount>(EitherAmount& amt)
 {
-    assert (!amt.native);
+    assert(!amt.native);
     return amt.iou;
 }
 
 template <>
-inline
-XRPAmount&
-get<XRPAmount> (EitherAmount& amt)
+inline XRPAmount&
+get<XRPAmount>(EitherAmount& amt)
 {
-    assert (amt.native);
+    assert(amt.native);
     return amt.xrp;
 }
 
 template <class T>
 T const&
-get (EitherAmount const& amt)
+get(EitherAmount const& amt)
 {
     static_assert(sizeof(T) == -1, "Must used specialized function");
     return T(0);
 }
 
 template <>
-inline
-IOUAmount const&
-get<IOUAmount> (EitherAmount const& amt)
+inline IOUAmount const&
+get<IOUAmount>(EitherAmount const& amt)
 {
-    assert (!amt.native);
+    assert(!amt.native);
     return amt.iou;
 }
 
 template <>
-inline
-XRPAmount const&
-get<XRPAmount> (EitherAmount const& amt)
+inline XRPAmount const&
+get<XRPAmount>(EitherAmount const& amt)
 {
-    assert (amt.native);
+    assert(amt.native);
     return amt.xrp;
 }
 
-inline
-AmountSpec
-toAmountSpec (STAmount const& amt)
+inline AmountSpec
+toAmountSpec(STAmount const& amt)
 {
-    assert (amt.mantissa () < std::numeric_limits<std::int64_t>::max ());
-    bool const isNeg = amt.negative ();
+    assert(amt.mantissa() < std::numeric_limits<std::int64_t>::max());
+    bool const isNeg = amt.negative();
     std::int64_t const sMant =
-        isNeg ? - std::int64_t (amt.mantissa ()) : amt.mantissa ();
+        isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
     AmountSpec result;
 
-    result.native = isXRP (amt);
+    result.native = isXRP(amt);
     if (result.native)
     {
-        result.xrp = XRPAmount (sMant);
+        result.xrp = XRPAmount(sMant);
     }
     else
     {
-        result.iou = IOUAmount (sMant, amt.exponent ());
+        result.iou = IOUAmount(sMant, amt.exponent());
         result.issuer = amt.issue().account;
         result.currency = amt.issue().currency;
     }
@@ -196,25 +183,21 @@ toAmountSpec (STAmount const& amt)
     return result;
 }
 
-inline
-EitherAmount
-toEitherAmount (STAmount const& amt)
+inline EitherAmount
+toEitherAmount(STAmount const& amt)
 {
-    if (isXRP (amt))
+    if (isXRP(amt))
         return EitherAmount{amt.xrp()};
     return EitherAmount{amt.iou()};
 }
 
-inline
-AmountSpec
-toAmountSpec (
-    EitherAmount const& ea,
-    boost::optional<Currency> const& c)
+inline AmountSpec
+toAmountSpec(EitherAmount const& ea, boost::optional<Currency> const& c)
 {
     AmountSpec r;
-    r.native = (!c || isXRP (*c));
+    r.native = (!c || isXRP(*c));
     r.currency = c;
-    assert (ea.native == r.native);
+    assert(ea.native == r.native);
     if (r.native)
     {
         r.xrp = ea.xrp;
@@ -226,6 +209,6 @@ toAmountSpec (
     return r;
 }
 
-}
+}  // namespace ripple
 
 #endif

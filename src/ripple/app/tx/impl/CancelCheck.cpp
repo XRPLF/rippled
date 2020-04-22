@@ -31,13 +31,13 @@
 namespace ripple {
 
 NotTEC
-CancelCheck::preflight (PreflightContext const& ctx)
+CancelCheck::preflight(PreflightContext const& ctx)
 {
-    if (! ctx.rules.enabled (featureChecks))
+    if (!ctx.rules.enabled(featureChecks))
         return temDISABLED;
 
-    NotTEC const ret {preflight1 (ctx)};
-    if (! isTesSuccess (ret))
+    NotTEC const ret{preflight1(ctx)};
+    if (!isTesSuccess(ret))
         return ret;
 
     if (ctx.tx.getFlags() & tfUniversalMask)
@@ -47,14 +47,14 @@ CancelCheck::preflight (PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    return preflight2 (ctx);
+    return preflight2(ctx);
 }
 
 TER
-CancelCheck::preclaim (PreclaimContext const& ctx)
+CancelCheck::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleCheck = ctx.view.read (keylet::check (ctx.tx[sfCheckID]));
-    if (! sleCheck)
+    auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
+    if (!sleCheck)
     {
         JLOG(ctx.j.warn()) << "Check does not exist.";
         return tecNO_ENTRY;
@@ -68,17 +68,17 @@ CancelCheck::preclaim (PreclaimContext const& ctx)
     // ledger, because we definitively know the time that it closed but
     // we do not know the closing time of the ledger that is under
     // construction.
-    if (! optExpiry ||
-        (ctx.view.parentCloseTime() < timepoint {duration {*optExpiry}}))
+    if (!optExpiry ||
+        (ctx.view.parentCloseTime() < timepoint{duration{*optExpiry}}))
     {
         // If the check is not yet expired, then only the creator or the
         // destination may cancel the check.
-        AccountID const acctId {ctx.tx[sfAccount]};
+        AccountID const acctId{ctx.tx[sfAccount]};
         if (acctId != (*sleCheck)[sfAccount] &&
             acctId != (*sleCheck)[sfDestination])
         {
             JLOG(ctx.j.warn()) << "Check is not expired and canceler is "
-                "neither check source nor destination.";
+                                  "neither check source nor destination.";
             return tecNO_PERMISSION;
         }
     }
@@ -86,35 +86,35 @@ CancelCheck::preclaim (PreclaimContext const& ctx)
 }
 
 TER
-CancelCheck::doApply ()
+CancelCheck::doApply()
 {
-    uint256 const checkId {ctx_.tx[sfCheckID]};
-    auto const sleCheck = view().peek (keylet::check (checkId));
-    if (! sleCheck)
+    uint256 const checkId{ctx_.tx[sfCheckID]};
+    auto const sleCheck = view().peek(keylet::check(checkId));
+    if (!sleCheck)
     {
         // Error should have been caught in preclaim.
         JLOG(j_.warn()) << "Check does not exist.";
         return tecNO_ENTRY;
     }
 
-    AccountID const srcId {sleCheck->getAccountID (sfAccount)};
-    AccountID const dstId {sleCheck->getAccountID (sfDestination)};
-    auto viewJ = ctx_.app.journal ("View");
+    AccountID const srcId{sleCheck->getAccountID(sfAccount)};
+    AccountID const dstId{sleCheck->getAccountID(sfDestination)};
+    auto viewJ = ctx_.app.journal("View");
 
     // If the check is not written to self (and it shouldn't be), remove the
     // check from the destination account root.
     if (srcId != dstId)
     {
-        std::uint64_t const page {(*sleCheck)[sfDestinationNode]};
-        if (! view().dirRemove (keylet::ownerDir(dstId), page, checkId, true))
+        std::uint64_t const page{(*sleCheck)[sfDestinationNode]};
+        if (!view().dirRemove(keylet::ownerDir(dstId), page, checkId, true))
         {
             JLOG(j_.warn()) << "Unable to delete check from destination.";
             return tefBAD_LEDGER;
         }
     }
     {
-        std::uint64_t const page {(*sleCheck)[sfOwnerNode]};
-        if (! view().dirRemove (keylet::ownerDir(srcId), page, checkId, true))
+        std::uint64_t const page{(*sleCheck)[sfOwnerNode]};
+        if (!view().dirRemove(keylet::ownerDir(srcId), page, checkId, true))
         {
             JLOG(j_.warn()) << "Unable to delete check from owner.";
             return tefBAD_LEDGER;
@@ -122,12 +122,12 @@ CancelCheck::doApply ()
     }
 
     // If we succeeded, update the check owner's reserve.
-    auto const sleSrc = view().peek (keylet::account (srcId));
-    adjustOwnerCount (view(), sleSrc, -1, viewJ);
+    auto const sleSrc = view().peek(keylet::account(srcId));
+    adjustOwnerCount(view(), sleSrc, -1, viewJ);
 
     // Remove check from ledger.
-    view().erase (sleCheck);
+    view().erase(sleCheck);
     return tesSUCCESS;
 }
 
-} // namespace ripple
+}  // namespace ripple

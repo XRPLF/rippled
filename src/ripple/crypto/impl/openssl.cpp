@@ -21,115 +21,120 @@
 #include <ripple/crypto/impl/openssl.h>
 #include <openssl/hmac.h>
 
-namespace ripple  {
+namespace ripple {
 namespace openssl {
 
 bignum::bignum()
 {
     ptr = BN_new();
     if (ptr == nullptr)
-        Throw<std::runtime_error> ("BN_new() failed");
+        Throw<std::runtime_error>("BN_new() failed");
 }
 
-void bignum::assign (uint8_t const* data, size_t size)
+void
+bignum::assign(uint8_t const* data, size_t size)
 {
     // This reuses and assigns ptr
-    BIGNUM* bn = BN_bin2bn (data, size, ptr);
+    BIGNUM* bn = BN_bin2bn(data, size, ptr);
     if (bn == nullptr)
-        Throw<std::runtime_error> ("BN_bin2bn() failed");
+        Throw<std::runtime_error>("BN_bin2bn() failed");
 }
 
-void bignum::assign_new (uint8_t const* data, size_t size)
+void
+bignum::assign_new(uint8_t const* data, size_t size)
 {
     // ptr must not be allocated
 
-    ptr = BN_bin2bn (data, size, nullptr);
+    ptr = BN_bin2bn(data, size, nullptr);
     if (ptr == nullptr)
-        Throw<std::runtime_error> ("BN_bin2bn() failed");
+        Throw<std::runtime_error>("BN_bin2bn() failed");
 }
 
 bn_ctx::bn_ctx()
 {
     ptr = BN_CTX_new();
     if (ptr == nullptr)
-        Throw<std::runtime_error> ("BN_CTX_new() failed");
+        Throw<std::runtime_error>("BN_CTX_new() failed");
 }
 
-bignum get_order (EC_GROUP const* group, bn_ctx& ctx)
+bignum
+get_order(EC_GROUP const* group, bn_ctx& ctx)
 {
     bignum result;
-    if (! EC_GROUP_get_order (group, result.get(), ctx.get()))
-        Throw<std::runtime_error> ("EC_GROUP_get_order() failed");
+    if (!EC_GROUP_get_order(group, result.get(), ctx.get()))
+        Throw<std::runtime_error>("EC_GROUP_get_order() failed");
 
     return result;
 }
 
-ec_point::ec_point (EC_GROUP const* group)
+ec_point::ec_point(EC_GROUP const* group)
 {
-    ptr = EC_POINT_new (group);
+    ptr = EC_POINT_new(group);
     if (ptr == nullptr)
-        Throw<std::runtime_error> ("EC_POINT_new() failed");
+        Throw<std::runtime_error>("EC_POINT_new() failed");
 }
 
-void add_to (EC_GROUP const* group,
-             ec_point const& a,
-             ec_point& b,
-             bn_ctx& ctx)
+void
+add_to(EC_GROUP const* group, ec_point const& a, ec_point& b, bn_ctx& ctx)
 {
-    if (!EC_POINT_add (group, b.get(), a.get(), b.get(), ctx.get()))
-        Throw<std::runtime_error> ("EC_POINT_add() failed");
+    if (!EC_POINT_add(group, b.get(), a.get(), b.get(), ctx.get()))
+        Throw<std::runtime_error>("EC_POINT_add() failed");
 }
 
-ec_point multiply (EC_GROUP const* group,
-                   bignum const& n,
-                   bn_ctx& ctx)
+ec_point
+multiply(EC_GROUP const* group, bignum const& n, bn_ctx& ctx)
 {
-    ec_point result (group);
-    if (! EC_POINT_mul (group, result.get(), n.get(), nullptr, nullptr, ctx.get()))
-        Throw<std::runtime_error> ("EC_POINT_mul() failed");
+    ec_point result(group);
+    if (!EC_POINT_mul(
+            group, result.get(), n.get(), nullptr, nullptr, ctx.get()))
+        Throw<std::runtime_error>("EC_POINT_mul() failed");
 
     return result;
 }
 
-ec_point bn2point (EC_GROUP const* group, BIGNUM const* number)
+ec_point
+bn2point(EC_GROUP const* group, BIGNUM const* number)
 {
-    EC_POINT* result = EC_POINT_bn2point (group, number, nullptr, nullptr);
+    EC_POINT* result = EC_POINT_bn2point(group, number, nullptr, nullptr);
     if (result == nullptr)
-        Throw<std::runtime_error> ("EC_POINT_bn2point() failed");
+        Throw<std::runtime_error>("EC_POINT_bn2point() failed");
 
-    return ec_point::acquire (result);
+    return ec_point::acquire(result);
 }
 
-static ec_key ec_key_new_secp256k1_compressed()
+static ec_key
+ec_key_new_secp256k1_compressed()
 {
-    EC_KEY* key = EC_KEY_new_by_curve_name (NID_secp256k1);
+    EC_KEY* key = EC_KEY_new_by_curve_name(NID_secp256k1);
 
-    if (key == nullptr)  Throw<std::runtime_error> ("EC_KEY_new_by_curve_name() failed");
+    if (key == nullptr)
+        Throw<std::runtime_error>("EC_KEY_new_by_curve_name() failed");
 
-    EC_KEY_set_conv_form (key, POINT_CONVERSION_COMPRESSED);
+    EC_KEY_set_conv_form(key, POINT_CONVERSION_COMPRESSED);
 
-    return ec_key((ec_key::pointer_t) key);
+    return ec_key((ec_key::pointer_t)key);
 }
 
-void serialize_ec_point (ec_point const& point, std::uint8_t* ptr)
+void
+serialize_ec_point(ec_point const& point, std::uint8_t* ptr)
 {
     ec_key key = ec_key_new_secp256k1_compressed();
-    if (EC_KEY_set_public_key((EC_KEY*) key.get(), point.get()) <= 0)
-        Throw<std::runtime_error> ("EC_KEY_set_public_key() failed");
+    if (EC_KEY_set_public_key((EC_KEY*)key.get(), point.get()) <= 0)
+        Throw<std::runtime_error>("EC_KEY_set_public_key() failed");
 
-    int const size = i2o_ECPublicKey ((EC_KEY*) key.get(), &ptr);
+    int const size = i2o_ECPublicKey((EC_KEY*)key.get(), &ptr);
 
-    assert (size <= 33);
-    (void) size;
+    assert(size <= 33);
+    (void)size;
 }
 
-} // openssl
-} // ripple
+}  // namespace openssl
+}  // namespace ripple
 
 #include <stdio.h>
 #ifdef _MSC_VER
 FILE _iob[] = {*stdin, *stdout, *stderr};
-extern "C" FILE * __cdecl __iob_func(void)
+extern "C" FILE* __cdecl __iob_func(void)
 {
     return _iob;
 }

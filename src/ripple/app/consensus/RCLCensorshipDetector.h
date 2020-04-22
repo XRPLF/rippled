@@ -37,25 +37,28 @@ public:
         TxID txid;
         Sequence seq;
 
-        TxIDSeq (TxID const& txid_, Sequence const& seq_)
-        : txid (txid_)
-        , seq (seq_)
-        { }
+        TxIDSeq(TxID const& txid_, Sequence const& seq_)
+            : txid(txid_), seq(seq_)
+        {
+        }
     };
 
-    friend bool operator< (TxIDSeq const& lhs, TxIDSeq const& rhs)
+    friend bool
+    operator<(TxIDSeq const& lhs, TxIDSeq const& rhs)
     {
         if (lhs.txid != rhs.txid)
             return lhs.txid < rhs.txid;
         return lhs.seq < rhs.seq;
     }
 
-    friend bool operator< (TxIDSeq const& lhs, TxID const& rhs)
+    friend bool
+    operator<(TxIDSeq const& lhs, TxID const& rhs)
     {
         return lhs.txid < rhs;
     }
 
-    friend bool operator< (TxID const& lhs, TxIDSeq const& rhs)
+    friend bool
+    operator<(TxID const& lhs, TxIDSeq const& rhs)
     {
         return lhs < rhs.txid;
     }
@@ -73,17 +76,21 @@ public:
         @param proposed The set of transactions that we are initially proposing
                         for this round.
     */
-    void propose(TxIDSeqVec proposed)
+    void
+    propose(TxIDSeqVec proposed)
     {
         // We want to remove any entries that we proposed in a previous round
         // that did not make it in yet if we are no longer proposing them.
         // And we also want to preserve the Sequence of entries that we proposed
         // in the last round and want to propose again.
         std::sort(proposed.begin(), proposed.end());
-        generalized_set_intersection(proposed.begin(), proposed.end(),
-            tracker_.cbegin(), tracker_.cend(),
-            [](auto& x, auto const& y) {x.seq = y.seq;},
-            [](auto const& x, auto const& y) {return x.txid < y.txid;});
+        generalized_set_intersection(
+            proposed.begin(),
+            proposed.end(),
+            tracker_.cbegin(),
+            tracker_.cend(),
+            [](auto& x, auto const& y) { x.seq = y.seq; },
+            [](auto const& x, auto const& y) { return x.txid < y.txid; });
         tracker_ = std::move(proposed);
     }
 
@@ -101,9 +108,8 @@ public:
                         It must return true for entries that should be removed.
     */
     template <class Predicate>
-    void check(
-        std::vector<TxID> accepted,
-        Predicate&& pred)
+    void
+    check(std::vector<TxID> accepted, Predicate&& pred)
     {
         auto acceptTxid = accepted.begin();
         auto const ae = accepted.end();
@@ -112,10 +118,13 @@ public:
         // We want to remove all tracking entries for transactions that were
         // accepted as well as those which match the predicate.
 
-        auto i = remove_if_intersect_or_match(tracker_.begin(), tracker_.end(),
-                     accepted.begin(), accepted.end(),
-                     [&pred](auto const& x) {return pred(x.txid, x.seq);},
-                     std::less<void>{});
+        auto i = remove_if_intersect_or_match(
+            tracker_.begin(),
+            tracker_.end(),
+            accepted.begin(),
+            accepted.end(),
+            [&pred](auto const& x) { return pred(x.txid, x.seq); },
+            std::less<void>{});
         tracker_.erase(i, tracker_.end());
     }
 
@@ -124,12 +133,13 @@ public:
         Typically, this function might be called after we reconnect to the
         network following an outage, or after we start tracking the network.
     */
-    void reset()
+    void
+    reset()
     {
         tracker_.clear();
     }
 };
 
-}
+}  // namespace ripple
 
 #endif

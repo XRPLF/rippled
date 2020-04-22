@@ -25,16 +25,17 @@
 
 namespace ripple {
 
-Json::Value doLedgerClosed (RPC::JsonContext& context)
+Json::Value
+doLedgerClosed(RPC::JsonContext& context)
 {
-    auto ledger = context.ledgerMaster.getClosedLedger ();
-    assert (ledger);
+    auto ledger = context.ledgerMaster.getClosedLedger();
+    assert(ledger);
 
     Json::Value jvResult;
     jvResult[jss::ledger_index] = ledger->info().seq;
-    jvResult[jss::ledger_hash] = to_string (ledger->info().hash);
+    jvResult[jss::ledger_hash] = to_string(ledger->info().hash);
 
     return jvResult;
 }
 
-} // ripple
+}  // namespace ripple

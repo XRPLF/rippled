@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PEERFINDER_SLOTIMP_H_INCLUDED
 #define RIPPLE_PEERFINDER_SLOTIMP_H_INCLUDED
 
-#include <ripple/peerfinder/Slot.h>
-#include <ripple/peerfinder/PeerfinderManager.h>
-#include <ripple/beast/container/aged_unordered_map.h>
 #include <ripple/beast/container/aged_container_utility.h>
+#include <ripple/beast/container/aged_unordered_map.h>
+#include <ripple/peerfinder/PeerfinderManager.h>
+#include <ripple/peerfinder/Slot.h>
 #include <boost/optional.hpp>
 #include <atomic>
 
@@ -33,56 +33,68 @@ namespace PeerFinder {
 class SlotImp : public Slot
 {
 private:
-    using recent_type = beast::aged_unordered_map <beast::IP::Endpoint, int>;
+    using recent_type = beast::aged_unordered_map<beast::IP::Endpoint, int>;
 
 public:
-    using ptr = std::shared_ptr <SlotImp>;
+    using ptr = std::shared_ptr<SlotImp>;
 
     // inbound
-    SlotImp (beast::IP::Endpoint const& local_endpoint,
-        beast::IP::Endpoint const& remote_endpoint, bool fixed,
-            clock_type& clock);
+    SlotImp(
+        beast::IP::Endpoint const& local_endpoint,
+        beast::IP::Endpoint const& remote_endpoint,
+        bool fixed,
+        clock_type& clock);
 
     // outbound
-    SlotImp (beast::IP::Endpoint const& remote_endpoint,
-        bool fixed, clock_type& clock);
+    SlotImp(
+        beast::IP::Endpoint const& remote_endpoint,
+        bool fixed,
+        clock_type& clock);
 
-    bool inbound () const override
+    bool
+    inbound() const override
     {
         return m_inbound;
     }
 
-    bool fixed () const override
+    bool
+    fixed() const override
     {
         return m_fixed;
     }
 
-    bool reserved () const override
+    bool
+    reserved() const override
     {
         return m_reserved;
     }
 
-    State state () const override
+    State
+    state() const override
     {
         return m_state;
     }
 
-    beast::IP::Endpoint const& remote_endpoint () const override
+    beast::IP::Endpoint const&
+    remote_endpoint() const override
     {
         return m_remote_endpoint;
     }
 
-    boost::optional <beast::IP::Endpoint> const& local_endpoint () const override
+    boost::optional<beast::IP::Endpoint> const&
+    local_endpoint() const override
     {
         return m_local_endpoint;
     }
 
-    boost::optional <PublicKey> const& public_key () const override
+    boost::optional<PublicKey> const&
+    public_key() const override
     {
         return m_public_key;
     }
 
-    boost::optional<std::uint16_t> listening_port () const override
+    boost::optional<std::uint16_t>
+    listening_port() const override
     {
         std::uint32_t const value = m_listening_port;
         if (value == unknownPort)
@@ -90,36 +102,43 @@ public:
         return value;
     }
 
-    void set_listening_port (std::uint16_t port)
+    void
+    set_listening_port(std::uint16_t port)
     {
         m_listening_port = port;
     }
 
-    void local_endpoint (beast::IP::Endpoint const& endpoint)
+    void
+    local_endpoint(beast::IP::Endpoint const& endpoint)
     {
         m_local_endpoint = endpoint;
     }
 
-    void remote_endpoint (beast::IP::Endpoint const& endpoint)
+    void
+    remote_endpoint(beast::IP::Endpoint const& endpoint)
     {
         m_remote_endpoint = endpoint;
     }
 
-    void public_key (PublicKey const& key)
+    void
+    public_key(PublicKey const& key)
     {
         m_public_key = key;
     }
 
-    void reserved (bool reserved_)
+    void
+    reserved(bool reserved_)
     {
         m_reserved = reserved_;
     }
 
     //--------------------------------------------------------------------------
 
-    void state (State state_);
+    void
+    state(State state_);
 
-    void activate (clock_type::time_point const& now);
+    void
+    activate(clock_type::time_point const& now);
 
     // "Memberspace"
     //
@@ -129,25 +148,29 @@ public:
     class recent_t
     {
     public:
-        explicit recent_t (clock_type& clock);
+        explicit recent_t(clock_type& clock);
 
         /** Called for each valid endpoint received for a slot.
             We also insert messages that we send to the slot to prevent
             sending a slot the same address too frequently.
         */
-        void insert (beast::IP::Endpoint const& ep, int hops);
+        void
+        insert(beast::IP::Endpoint const& ep, int hops);
 
         /** Returns `true` if we should not send endpoint to the slot. */
-        bool filter (beast::IP::Endpoint const& ep, int hops);
+        bool
+        filter(beast::IP::Endpoint const& ep, int hops);
 
     private:
-        void expire ();
+        void
+        expire();
 
         friend class SlotImp;
         recent_type cache;
     } recent;
 
-    void expire()
+    void
+    expire()
     {
         recent.expire();
     }
@@ -158,11 +181,11 @@ private:
     bool m_reserved;
     State m_state;
     beast::IP::Endpoint m_remote_endpoint;
-    boost::optional <beast::IP::Endpoint> m_local_endpoint;
-    boost::optional <PublicKey> m_public_key;
+    boost::optional<beast::IP::Endpoint> m_local_endpoint;
+    boost::optional<PublicKey> m_public_key;
 
     static std::int32_t constexpr unknownPort = -1;
-    std::atomic <std::int32_t> m_listening_port;
+    std::atomic<std::int32_t> m_listening_port;
 
 public:
     // DEPRECATED public data members
@@ -186,7 +209,7 @@ public:
     clock_type::time_point whenAcceptEndpoints;
 };
 
-}
-}
+}  // namespace PeerFinder
+}  // namespace ripple
 
 #endif

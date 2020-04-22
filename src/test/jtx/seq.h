@@ -20,9 +20,9 @@
 #ifndef RIPPLE_TEST_JTX_SEQ_H_INCLUDED
 #define RIPPLE_TEST_JTX_SEQ_H_INCLUDED
 
+#include <boost/optional.hpp>
 #include <test/jtx/Env.h>
 #include <test/jtx/tags.h>
-#include <boost/optional.hpp>
 
 namespace ripple {
 namespace test {
@@ -36,20 +36,15 @@ private:
     boost::optional<std::uint32_t> num_;
 
 public:
-    explicit
-    seq (autofill_t)
-        : manual_(false)
+    explicit seq(autofill_t) : manual_(false)
     {
     }
 
-    explicit
-    seq (none_t)
+    explicit seq(none_t)
     {
     }
 
-    explicit
-    seq (std::uint32_t num)
-        : num_(num)
+    explicit seq(std::uint32_t num) : num_(num)
     {
     }
 
@@ -57,8 +52,8 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

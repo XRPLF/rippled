@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_PROP_H_INCLUDED
 #define RIPPLE_TEST_JTX_PROP_H_INCLUDED
 
-#include <test/jtx/Env.h>
 #include <memory>
+#include <test/jtx/Env.h>
 
 namespace ripple {
 namespace test {
@@ -35,10 +35,7 @@ struct prop
 
     template <class... Args>
     prop(Args&&... args)
-        : p_(std::make_unique<
-            prop_type<Prop>>(
-                std::forward <Args> (
-                    args)...))
+        : p_(std::make_unique<prop_type<Prop>>(std::forward<Args>(args)...))
     {
     }
 
@@ -49,8 +46,8 @@ struct prop
     }
 };
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

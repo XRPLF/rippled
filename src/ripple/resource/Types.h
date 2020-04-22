@@ -26,7 +26,7 @@ namespace Resource {
 struct Key;
 struct Entry;
 
-}
-}
+}  // namespace Resource
+}  // namespace ripple
 
 #endif

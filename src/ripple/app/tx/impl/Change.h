@@ -29,41 +29,38 @@
 
 namespace ripple {
 
-class Change
-    : public Transactor
+class Change : public Transactor
 {
 public:
-    explicit Change (ApplyContext& ctx)
-        : Transactor(ctx)
+    explicit Change(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    static
-    NotTEC
-    preflight (PreflightContext const& ctx);
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-    TER doApply () override;
-    void preCompute() override;
+    TER
+    doApply() override;
+    void
+    preCompute() override;
 
-    static
-    FeeUnit64
-    calculateBaseFee (
-        ReadView const& view,
-        STTx const& tx)
+    static FeeUnit64
+    calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         return FeeUnit64{0};
     }
 
-    static
-    TER
-    preclaim(PreclaimContext const &ctx);
+    static TER
+    preclaim(PreclaimContext const& ctx);
 
 private:
-    TER applyAmendment ();
+    TER
+    applyAmendment();
 
-    TER applyFee ();
+    TER
+    applyFee();
 };
 
-}
+}  // namespace ripple
 
 #endif

@@ -46,7 +46,8 @@ TransactionFeeCheck::finalize(
     // We should never charge a negative fee
     if (fee.drops() < 0)
     {
-        JLOG(j.fatal()) << "Invariant failed: fee paid was negative: " << fee.drops();
+        JLOG(j.fatal()) << "Invariant failed: fee paid was negative: "
+                        << fee.drops();
         return false;
     }
 
@@ -54,7 +55,8 @@ TransactionFeeCheck::finalize(
     // entire XRP supply.
     if (fee >= INITIAL_XRP)
     {
-        JLOG(j.fatal()) << "Invariant failed: fee paid exceeds system limit: " << fee.drops();
+        JLOG(j.fatal()) << "Invariant failed: fee paid exceeds system limit: "
+                        << fee.drops();
         return false;
     }
 
@@ -62,8 +64,8 @@ TransactionFeeCheck::finalize(
     // authorizes. It's possible to charge less in some circumstances.
     if (fee > tx.getFieldAmount(sfFee).xrp())
     {
-        JLOG(j.fatal()) << "Invariant failed: fee paid is " << fee.drops() <<
-            " exceeds fee specified in transaction.";
+        JLOG(j.fatal()) << "Invariant failed: fee paid is " << fee.drops()
+                        << " exceeds fee specified in transaction.";
         return false;
     }
 
@@ -75,8 +77,8 @@ TransactionFeeCheck::finalize(
 void
 XRPNotCreated::visitEntry(
     bool isDelete,
-    std::shared_ptr <SLE const> const& before,
-    std::shared_ptr <SLE const> const& after)
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
 {
     /* We go through all modified ledger entries, looking only at account roots,
      * escrow payments, and payment channels. We remove from the total any
@@ -85,41 +87,44 @@ XRPNotCreated::visitEntry(
      * balance) and deletions are ignored for paychan and escrow because the
      * amount fields have not been adjusted for those in the case of deletion.
      */
-    if(before)
+    if (before)
     {
         switch (before->getType())
         {
-        case ltACCOUNT_ROOT:
-            drops_ -= (*before)[sfBalance].xrp().drops();
-            break;
-        case ltPAYCHAN:
-            drops_ -= ((*before)[sfAmount] - (*before)[sfBalance]).xrp().drops();
-            break;
-        case ltESCROW:
-            drops_ -= (*before)[sfAmount].xrp().drops();
-            break;
-        default:
-            break;
+            case ltACCOUNT_ROOT:
+                drops_ -= (*before)[sfBalance].xrp().drops();
+                break;
+            case ltPAYCHAN:
+                drops_ -=
+                    ((*before)[sfAmount] - (*before)[sfBalance]).xrp().drops();
+                break;
+            case ltESCROW:
+                drops_ -= (*before)[sfAmount].xrp().drops();
+                break;
+            default:
+                break;
         }
     }
 
-    if(after)
+    if (after)
     {
         switch (after->getType())
         {
-        case ltACCOUNT_ROOT:
-            drops_ += (*after)[sfBalance].xrp().drops();
-            break;
-        case ltPAYCHAN:
-            if (! isDelete)
-                drops_ += ((*after)[sfAmount] - (*after)[sfBalance]).xrp().drops();
-            break;
-        case ltESCROW:
-            if (! isDelete)
-                drops_ += (*after)[sfAmount].xrp().drops();
-            break;
-        default:
-            break;
+            case ltACCOUNT_ROOT:
+                drops_ += (*after)[sfBalance].xrp().drops();
+                break;
+            case ltPAYCHAN:
+                if (!isDelete)
+                    drops_ += ((*after)[sfAmount] - (*after)[sfBalance])
+                                  .xrp()
+                                  .drops();
+                break;
+            case ltESCROW:
+                if (!isDelete)
+                    drops_ += (*after)[sfAmount].xrp().drops();
+                break;
+            default:
+                break;
         }
     }
 }
@@ -136,17 +141,16 @@ XRPNotCreated::finalize(
     // transaction created XRP out of thin air. That's not possible.
     if (drops_ > 0)
     {
-        JLOG(j.fatal()) <<
-            "Invariant failed: XRP net change was positive: " << drops_;
+        JLOG(j.fatal()) << "Invariant failed: XRP net change was positive: "
+                        << drops_;
         return false;
     }
 
     // The negative of the net change should be equal to actual fee charged.
     if (-drops_ != fee.drops())
     {
-        JLOG(j.fatal()) <<
-            "Invariant failed: XRP net change of " << drops_ <<
-            " doesn't match fee " << fee.drops();
+        JLOG(j.fatal()) << "Invariant failed: XRP net change of " << drops_
+                        << " doesn't match fee " << fee.drops();
         return false;
     }
 
@@ -158,11 +162,10 @@ XRPNotCreated::finalize(
 void
 XRPBalanceChecks::visitEntry(
     bool,
-    std::shared_ptr <SLE const> const& before,
-    std::shared_ptr <SLE const> const& after)
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
 {
-    auto isBad = [](STAmount const& balance)
-    {
+    auto isBad = [](STAmount const& balance) {
         if (!balance.native())
             return true;
 
@@ -180,11 +183,11 @@ XRPBalanceChecks::visitEntry(
         return false;
     };
 
-    if(before && before->getType() == ltACCOUNT_ROOT)
-        bad_ |= isBad ((*before)[sfBalance]);
+    if (before && before->getType() == ltACCOUNT_ROOT)
+        bad_ |= isBad((*before)[sfBalance]);
 
-    if(after && after->getType() == ltACCOUNT_ROOT)
-        bad_ |= isBad ((*after)[sfBalance]);
+    if (after && after->getType() == ltACCOUNT_ROOT)
+        bad_ |= isBad((*after)[sfBalance]);
 }
 
 bool
@@ -209,11 +212,10 @@ XRPBalanceChecks::finalize(
 void
 NoBadOffers::visitEntry(
     bool isDelete,
-    std::shared_ptr <SLE const> const& before,
-    std::shared_ptr <SLE const> const& after)
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
 {
-    auto isBad = [](STAmount const& pays, STAmount const& gets)
-    {
+    auto isBad = [](STAmount const& pays, STAmount const& gets) {
         // An offer should never be negative
         if (pays < beast::zero)
             return true;
@@ -225,10 +227,10 @@ NoBadOffers::visitEntry(
         return pays.native() && gets.native();
     };
 
-    if(before && before->getType() == ltOFFER)
-        bad_ |= isBad ((*before)[sfTakerPays], (*before)[sfTakerGets]);
+    if (before && before->getType() == ltOFFER)
+        bad_ |= isBad((*before)[sfTakerPays], (*before)[sfTakerGets]);
 
-    if(after && after->getType() == ltOFFER)
+    if (after && after->getType() == ltOFFER)
         bad_ |= isBad((*after)[sfTakerPays], (*after)[sfTakerGets]);
 }
 
@@ -254,11 +256,10 @@ NoBadOffers::finalize(
 void
 NoZeroEscrow::visitEntry(
     bool isDelete,
-    std::shared_ptr <SLE const> const& before,
-    std::shared_ptr <SLE const> const& after)
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
 {
-    auto isBad = [](STAmount const& amount)
-    {
+    auto isBad = [](STAmount const& amount) {
         if (!amount.native())
             return true;
 
@@ -271,10 +272,10 @@ NoZeroEscrow::visitEntry(
         return false;
     };
 
-    if(before && before->getType() == ltESCROW)
+    if (before && before->getType() == ltESCROW)
         bad_ |= isBad((*before)[sfAmount]);
 
-    if(after && after->getType() == ltESCROW)
+    if (after && after->getType() == ltESCROW)
         bad_ |= isBad((*after)[sfAmount]);
 }
 
@@ -300,8 +301,8 @@ NoZeroEscrow::finalize(
 void
 AccountRootsNotDeleted::visitEntry(
     bool isDelete,
-    std::shared_ptr <SLE const> const& before,
-    std::shared_ptr <SLE const> const&)
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const&)
 {
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
         accountsDeleted_++;
@@ -341,8 +342,8 @@ AccountRootsNotDeleted::finalize(
 void
 LedgerEntryTypesMatch::visitEntry(
     bool,
-    std::shared_ptr <SLE const> const& before,
-    std::shared_ptr <SLE const> const& after)
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
 {
     if (before && after && before->getType() != after->getType())
         typeMismatch_ = true;
@@ -351,23 +352,23 @@ LedgerEntryTypesMatch::visitEntry(
     {
         switch (after->getType())
         {
-        case ltACCOUNT_ROOT:
-        case ltDIR_NODE:
-        case ltRIPPLE_STATE:
-        case ltTICKET:
-        case ltSIGNER_LIST:
-        case ltOFFER:
-        case ltLEDGER_HASHES:
-        case ltAMENDMENTS:
-        case ltFEE_SETTINGS:
-        case ltESCROW:
-        case ltPAYCHAN:
-        case ltCHECK:
-        case ltDEPOSIT_PREAUTH:
-            break;
-        default:
-            invalidTypeAdded_ = true;
-            break;
+            case ltACCOUNT_ROOT:
+            case ltDIR_NODE:
+            case ltRIPPLE_STATE:
+            case ltTICKET:
+            case ltSIGNER_LIST:
+            case ltOFFER:
+            case ltLEDGER_HASHES:
+            case ltAMENDMENTS:
+            case ltFEE_SETTINGS:
+            case ltESCROW:
+            case ltPAYCHAN:
+            case ltCHECK:
+            case ltDEPOSIT_PREAUTH:
+                break;
+            default:
+                invalidTypeAdded_ = true;
+                break;
         }
     }
 }
@@ -380,7 +381,7 @@ LedgerEntryTypesMatch::finalize(
     ReadView const&,
     beast::Journal const& j)
 {
-    if ((! typeMismatch_) && (! invalidTypeAdded_))
+    if ((!typeMismatch_) && (!invalidTypeAdded_))
         return true;
 
     if (typeMismatch_)
@@ -401,8 +402,8 @@ LedgerEntryTypesMatch::finalize(
 void
 NoXRPTrustLines::visitEntry(
     bool,
-    std::shared_ptr <SLE const> const&,
-    std::shared_ptr <SLE const> const& after)
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const& after)
 {
     if (after && after->getType() == ltRIPPLE_STATE)
     {
@@ -410,8 +411,8 @@ NoXRPTrustLines::visitEntry(
         // relying on .native() just in case native somehow
         // were systematically incorrect
         xrpTrustLine_ =
-            after->getFieldAmount (sfLowLimit).issue() == xrpIssue() ||
-            after->getFieldAmount (sfHighLimit).issue() == xrpIssue();
+            after->getFieldAmount(sfLowLimit).issue() == xrpIssue() ||
+            after->getFieldAmount(sfHighLimit).issue() == xrpIssue();
     }
 }
 
@@ -423,7 +424,7 @@ NoXRPTrustLines::finalize(
     ReadView const&,
     beast::Journal const& j)
 {
-    if (! xrpTrustLine_)
+    if (!xrpTrustLine_)
         return true;
 
     JLOG(j.fatal()) << "Invariant failed: an XRP trust line was created";
@@ -435,8 +436,8 @@ NoXRPTrustLines::finalize(
 void
 ValidNewAccountRoot::visitEntry(
     bool,
-    std::shared_ptr <SLE const> const& before,
-    std::shared_ptr <SLE const> const& after)
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
 {
     if (!before && after->getType() == ltACCOUNT_ROOT)
     {
@@ -466,7 +467,7 @@ ValidNewAccountRoot::finalize(
     // From this point on we know exactly one account was created.
     if (tx.getTxnType() == ttPAYMENT && result == tesSUCCESS)
     {
-        std::uint32_t const startingSeq {
+        std::uint32_t const startingSeq{
             view.rules().enabled(featureDeletableAccounts) ? view.seq() : 1};
 
         if (accountSeq_ != startingSeq)
@@ -483,5 +484,4 @@ ValidNewAccountRoot::finalize(
     return false;
 }
 
-}  // ripple
-
+}  // namespace ripple

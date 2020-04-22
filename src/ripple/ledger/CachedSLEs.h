@@ -21,8 +21,8 @@
 #define RIPPLE_LEDGER_CACHEDSLES_H_INCLUDED
 
 #include <ripple/basics/chrono.h>
-#include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/beast/container/aged_unordered_map.h>
+#include <ripple/protocol/STLedgerEntry.h>
 #include <memory>
 #include <mutex>
 
@@ -34,18 +34,17 @@ class CachedSLEs
 public:
     using digest_type = uint256;
 
-    using value_type =
-        std::shared_ptr<SLE const>;
+    using value_type = std::shared_ptr<SLE const>;
 
-    CachedSLEs (CachedSLEs const&) = delete;
-    CachedSLEs& operator= (CachedSLEs const&) = delete;
+    CachedSLEs(CachedSLEs const&) = delete;
+    CachedSLEs&
+    operator=(CachedSLEs const&) = delete;
 
     template <class Rep, class Period>
-    CachedSLEs (std::chrono::duration<
-        Rep, Period> const& timeToLive,
-            Stopwatch& clock)
-        : timeToLive_ (timeToLive)
-        , map_ (clock)
+    CachedSLEs(
+        std::chrono::duration<Rep, Period> const& timeToLive,
+        Stopwatch& clock)
+        : timeToLive_(timeToLive), map_(clock)
     {
     }
 
@@ -65,13 +64,11 @@ public:
     */
     template <class Handler>
     value_type
-    fetch (digest_type const& digest,
-        Handler const& h)
+    fetch(digest_type const& digest, Handler const& h)
     {
         {
             std::lock_guard lock(mutex_);
-            auto iter =
-                map_.find(digest);
+            auto iter = map_.find(digest);
             if (iter != map_.end())
             {
                 ++hit_;
@@ -80,7 +77,7 @@ public:
             }
         }
         auto sle = h();
-        if (! sle)
+        if (!sle)
             return nullptr;
         std::lock_guard lock(mutex_);
         ++miss_;
@@ -99,11 +96,14 @@ private:
     std::size_t miss_ = 0;
     std::mutex mutable mutex_;
     Stopwatch::duration timeToLive_;
-    beast::aged_unordered_map <digest_type,
-        value_type, Stopwatch::clock_type,
-            hardened_hash<strong_hash>> map_;
+    beast::aged_unordered_map<
+        digest_type,
+        value_type,
+        Stopwatch::clock_type,
+        hardened_hash<strong_hash>>
+        map_;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

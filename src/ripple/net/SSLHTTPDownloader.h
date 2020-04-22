@@ -40,9 +40,8 @@
 namespace ripple {
 
 /** Provides an asynchronous HTTPS file downloader
-*/
-class SSLHTTPDownloader
-    : public std::enable_shared_from_this <SSLHTTPDownloader>
+ */
+class SSLHTTPDownloader : public std::enable_shared_from_this<SSLHTTPDownloader>
 {
 public:
     using error_code = boost::system::error_code;
@@ -65,11 +64,9 @@ public:
     void
     onStop();
 
-    virtual
-    ~SSLHTTPDownloader() = default;
+    virtual ~SSLHTTPDownloader() = default;
 
 protected:
-
     using parser = boost::beast::http::basic_parser<false>;
 
     beast::Journal const j_;
@@ -85,8 +82,8 @@ protected:
 private:
     HTTPClientSSLContext ssl_ctx_;
     boost::asio::io_service::strand strand_;
-    boost::optional<
-        boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> stream_;
+    boost::optional<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>
+        stream_;
     boost::beast::flat_buffer read_buf_;
     std::atomic<bool> isStopped_;
     bool sessionActive_;
@@ -103,27 +100,22 @@ private:
         std::function<void(boost::filesystem::path)> complete,
         boost::asio::yield_context yield);
 
-    virtual
-    std::shared_ptr<parser>
+    virtual std::shared_ptr<parser>
     getParser(
         boost::filesystem::path dstPath,
         std::function<void(boost::filesystem::path)> complete,
-        boost::system::error_code & ec) = 0;
+        boost::system::error_code& ec) = 0;
 
-    virtual
-    bool
-    checkPath(
-        boost::filesystem::path const& dstPath) = 0;
+    virtual bool
+    checkPath(boost::filesystem::path const& dstPath) = 0;
 
-    virtual
-    void
+    virtual void
     closeBody(std::shared_ptr<parser> p) = 0;
 
-    virtual
-    uint64_t
+    virtual uint64_t
     size(std::shared_ptr<parser> p) = 0;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

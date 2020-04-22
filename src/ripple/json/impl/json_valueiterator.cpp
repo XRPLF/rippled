@@ -31,60 +31,55 @@ namespace Json {
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
 
-ValueIteratorBase::ValueIteratorBase ()
-    : current_ ()
-    , isNull_ ( true )
+ValueIteratorBase::ValueIteratorBase() : current_(), isNull_(true)
 {
 }
 
-ValueIteratorBase::ValueIteratorBase ( const Value::ObjectValues::iterator& current )
-    : current_ ( current )
-    , isNull_ ( false )
+ValueIteratorBase::ValueIteratorBase(
+    const Value::ObjectValues::iterator& current)
+    : current_(current), isNull_(false)
 {
 }
 
 Value&
-ValueIteratorBase::deref () const
+ValueIteratorBase::deref() const
 {
     return current_->second;
 }
 
-
 void
-ValueIteratorBase::increment ()
+ValueIteratorBase::increment()
 {
     ++current_;
 }
 
-
 void
-ValueIteratorBase::decrement ()
+ValueIteratorBase::decrement()
 {
     --current_;
 }
 
-
 ValueIteratorBase::difference_type
-ValueIteratorBase::computeDistance ( const SelfType& other ) const
+ValueIteratorBase::computeDistance(const SelfType& other) const
 {
     // Iterator for null value are initialized using the default
     // constructor, which initialize current_ to the default
     // std::map::iterator. As begin() and end() are two instance
     // of the default std::map::iterator, they can not be compared.
     // To allow this, we handle this comparison specifically.
-    if ( isNull_  &&  other.isNull_ )
+    if (isNull_ && other.isNull_)
     {
         return 0;
     }
 
-
-    // Usage of std::distance is not portable (does not compile with Sun Studio 12 RogueWave STL,
-    // which is the one used by default).
-    // Using a portable hand-made version for non random iterator instead:
+    // Usage of std::distance is not portable (does not compile with Sun Studio
+    // 12 RogueWave STL, which is the one used by default). Using a portable
+    // hand-made version for non random iterator instead:
     //   return difference_type( std::distance( current_, other.current_ ) );
     difference_type myDistance = 0;
 
-    for ( Value::ObjectValues::iterator it = current_; it != other.current_; ++it )
+    for (Value::ObjectValues::iterator it = current_; it != other.current_;
+         ++it)
     {
         ++myDistance;
     }
@@ -92,11 +87,10 @@ ValueIteratorBase::computeDistance ( const SelfType& other ) const
     return myDistance;
 }
 
-
 bool
-ValueIteratorBase::isEqual ( const SelfType& other ) const
+ValueIteratorBase::isEqual(const SelfType& other) const
 {
-    if ( isNull_ )
+    if (isNull_)
     {
         return other.isNull_;
     }
@@ -104,50 +98,45 @@ ValueIteratorBase::isEqual ( const SelfType& other ) const
     return current_ == other.current_;
 }
 
-
 void
-ValueIteratorBase::copy ( const SelfType& other )
+ValueIteratorBase::copy(const SelfType& other)
 {
     current_ = other.current_;
 }
 
-
 Value
-ValueIteratorBase::key () const
+ValueIteratorBase::key() const
 {
     const Value::CZString czstring = (*current_).first;
 
-    if ( czstring.c_str () )
+    if (czstring.c_str())
     {
-        if ( czstring.isStaticString () )
-            return Value ( StaticString ( czstring.c_str () ) );
+        if (czstring.isStaticString())
+            return Value(StaticString(czstring.c_str()));
 
-        return Value ( czstring.c_str () );
+        return Value(czstring.c_str());
     }
 
-    return Value ( czstring.index () );
+    return Value(czstring.index());
 }
 
-
 UInt
-ValueIteratorBase::index () const
+ValueIteratorBase::index() const
 {
     const Value::CZString czstring = (*current_).first;
 
-    if ( !czstring.c_str () )
-        return czstring.index ();
+    if (!czstring.c_str())
+        return czstring.index();
 
-    return Value::UInt ( -1 );
+    return Value::UInt(-1);
 }
-
 
 const char*
-ValueIteratorBase::memberName () const
+ValueIteratorBase::memberName() const
 {
-    const char* name = (*current_).first.c_str ();
+    const char* name = (*current_).first.c_str();
     return name ? name : "";
 }
-
 
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
@@ -157,19 +146,18 @@ ValueIteratorBase::memberName () const
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
 
-
-ValueConstIterator::ValueConstIterator ( const Value::ObjectValues::iterator& current )
-    : ValueIteratorBase ( current )
+ValueConstIterator::ValueConstIterator(
+    const Value::ObjectValues::iterator& current)
+    : ValueIteratorBase(current)
 {
 }
 
 ValueConstIterator&
-ValueConstIterator::operator = ( const ValueIteratorBase& other )
+ValueConstIterator::operator=(const ValueIteratorBase& other)
 {
-    copy ( other );
+    copy(other);
     return *this;
 }
-
 
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
@@ -179,27 +167,26 @@ ValueConstIterator::operator = ( const ValueIteratorBase& other )
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
 
-
-ValueIterator::ValueIterator ( const Value::ObjectValues::iterator& current )
-    : ValueIteratorBase ( current )
+ValueIterator::ValueIterator(const Value::ObjectValues::iterator& current)
+    : ValueIteratorBase(current)
 {
 }
 
-ValueIterator::ValueIterator ( const ValueConstIterator& other )
-    : ValueIteratorBase ( other )
+ValueIterator::ValueIterator(const ValueConstIterator& other)
+    : ValueIteratorBase(other)
 {
 }
 
-ValueIterator::ValueIterator ( const ValueIterator& other )
-    : ValueIteratorBase ( other )
+ValueIterator::ValueIterator(const ValueIterator& other)
+    : ValueIteratorBase(other)
 {
 }
 
 ValueIterator&
-ValueIterator::operator = ( const SelfType& other )
+ValueIterator::operator=(const SelfType& other)
 {
-    copy ( other );
+    copy(other);
     return *this;
 }
 
-} // Json
+}  // namespace Json

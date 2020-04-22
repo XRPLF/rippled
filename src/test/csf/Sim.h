@@ -20,17 +20,17 @@
 #ifndef RIPPLE_TEST_CSF_SIM_H_INCLUDED
 #define RIPPLE_TEST_CSF_SIM_H_INCLUDED
 
-#include <test/csf/Digraph.h>
-#include <test/csf/SimTime.h>
 #include <test/csf/BasicNetwork.h>
-#include <test/csf/Scheduler.h>
+#include <test/csf/CollectorRef.h>
+#include <test/csf/Digraph.h>
 #include <test/csf/Peer.h>
 #include <test/csf/PeerGroup.h>
+#include <test/csf/Scheduler.h>
+#include <test/csf/SimTime.h>
 #include <test/csf/TrustGraph.h>
-#include <test/csf/CollectorRef.h>
 
-#include <iostream>
 #include <deque>
+#include <iostream>
 #include <random>
 
 namespace ripple {
@@ -40,17 +40,16 @@ namespace csf {
 /** Sink that prepends simulation time to messages */
 class BasicSink : public beast::Journal::Sink
 {
-    Scheduler::clock_type const & clock_;
+    Scheduler::clock_type const& clock_;
+
 public:
-    BasicSink (Scheduler::clock_type const & clock)
-        : Sink (beast::severities::kDisabled, false)
-        , clock_{clock}
+    BasicSink(Scheduler::clock_type const& clock)
+        : Sink(beast::severities::kDisabled, false), clock_{clock}
     {
     }
 
     void
-    write (beast::severities::Severity level,
-        std::string const& text) override
+    write(beast::severities::Severity level, std::string const& text) override
     {
         if (level < threshold())
             return;
@@ -90,7 +89,8 @@ public:
     /** Create a new group of peers.
 
         Creates a new group of peers. The peers do not have any trust relations
-        or network connections by default. Those must be configured by the client.
+        or network connections by default. Those must be configured by the
+       client.
 
         @param numPeers The number of peers in the group
         @return PeerGroup representing these new peers
@@ -148,7 +148,7 @@ public:
     synchronized(PeerGroup const& g) const;
 
     /** Check whether all peers in the network are synchronized
-    */
+     */
     bool
     synchronized() const;
 
@@ -161,10 +161,9 @@ public:
     branches(PeerGroup const& g) const;
 
     /** Calculate the number  of branches in the network
-    */
+     */
     std::size_t
     branches() const;
-
 };
 
 }  // namespace csf

@@ -37,24 +37,21 @@ TODO
 //------------------------------------------------------------------------------
 
 LoadMonitor::Stats::Stats()
-    : count (0)
-    , latencyAvg (0)
-    , latencyPeak (0)
-    , isOverloaded (false)
+    : count(0), latencyAvg(0), latencyPeak(0), isOverloaded(false)
 {
 }
 
 //------------------------------------------------------------------------------
 
-LoadMonitor::LoadMonitor (beast::Journal j)
-    : mCounts (0)
-    , mLatencyEvents (0)
-    , mLatencyMSAvg (0)
-    , mLatencyMSPeak (0)
-    , mTargetLatencyAvg (0)
-    , mTargetLatencyPk (0)
-    , mLastUpdate (UptimeClock::now())
-    , j_ (j)
+LoadMonitor::LoadMonitor(beast::Journal j)
+    : mCounts(0)
+    , mLatencyEvents(0)
+    , mLatencyMSAvg(0)
+    , mLatencyMSPeak(0)
+    , mTargetLatencyAvg(0)
+    , mTargetLatencyPk(0)
+    , mLastUpdate(UptimeClock::now())
+    , j_(j)
 {
 }
 
@@ -64,11 +61,12 @@ LoadMonitor::LoadMonitor (beast::Journal j)
 //         It's not clear exactly which data needs to be protected.
 //
 // call with the mutex
-void LoadMonitor::update ()
+void
+LoadMonitor::update()
 {
     using namespace std::chrono_literals;
     auto now = UptimeClock::now();
-    if (now == mLastUpdate) // current
+    if (now == mLastUpdate)  // current
         return;
 
     // VFALCO TODO Why 8?
@@ -99,11 +97,11 @@ void LoadMonitor::update ()
         mLatencyEvents -= ((mLatencyEvents + 3) / 4);
         mLatencyMSAvg -= (mLatencyMSAvg / 4);
         mLatencyMSPeak -= (mLatencyMSPeak / 4);
-    }
-    while (mLastUpdate < now);
+    } while (mLastUpdate < now);
 }
 
-void LoadMonitor::addLoadSample (LoadEvent const& s)
+void
+LoadMonitor::addLoadSample(LoadEvent const& s)
 {
     using namespace std::chrono;
 
@@ -114,24 +112,26 @@ void LoadMonitor::addLoadSample (LoadEvent const& s)
     if (latency > 500ms)
     {
         auto mj = (latency > 1s) ? j_.warn() : j_.info();
-        JLOG (mj) << "Job: " << s.name() <<
-            " run: " << date::round<milliseconds>(s.runTime()).count() <<
-            "ms" << " wait: " <<
-            date::round<milliseconds>(s.waitTime()).count() << "ms";
+        JLOG(mj) << "Job: " << s.name()
+                 << " run: " << date::round<milliseconds>(s.runTime()).count()
+                 << "ms"
+                 << " wait: " << date::round<milliseconds>(s.waitTime()).count()
+                 << "ms";
     }
 
-    addSamples (1, latency);
+    addSamples(1, latency);
 }
 
 /* Add multiple samples
    @param count The number of samples to add
    @param latencyMS The total number of milliseconds
 */
-void LoadMonitor::addSamples (int count, std::chrono::milliseconds latency)
+void
+LoadMonitor::addSamples(int count, std::chrono::milliseconds latency)
 {
-    std::lock_guard sl (mutex_);
+    std::lock_guard sl(mutex_);
 
-    update ();
+    update();
     mCounts += count;
     mLatencyEvents += count;
     mLatencyMSAvg += latency;
@@ -143,41 +143,49 @@ void LoadMonitor::addSamples (int count, std::chrono::milliseconds latency)
         mLatencyMSPeak = latencyPeak;
 }
 
-void LoadMonitor::setTargetLatency (std::chrono::milliseconds avg,
-                                    std::chrono::milliseconds pk)
+void
+LoadMonitor::setTargetLatency(
+    std::chrono::milliseconds avg,
+    std::chrono::milliseconds pk)
 {
-    mTargetLatencyAvg  = avg;
+    mTargetLatencyAvg = avg;
     mTargetLatencyPk = pk;
 }
 
-bool LoadMonitor::isOverTarget (std::chrono::milliseconds avg,
-                                std::chrono::milliseconds peak)
+bool
+LoadMonitor::isOverTarget(
+    std::chrono::milliseconds avg,
+    std::chrono::milliseconds peak)
 {
     using namespace std::chrono_literals;
     return (mTargetLatencyPk > 0ms && (peak > mTargetLatencyPk)) ||
-           (mTargetLatencyAvg > 0ms && (avg > mTargetLatencyAvg));
+        (mTargetLatencyAvg > 0ms && (avg > mTargetLatencyAvg));
 }
 
-bool LoadMonitor::isOver ()
+bool
+LoadMonitor::isOver()
 {
-    std::lock_guard sl (mutex_);
+    std::lock_guard sl(mutex_);
 
-    update ();
+    update();
 
     if (mLatencyEvents == 0)
         return 0;
 
-    return isOverTarget (mLatencyMSAvg / (mLatencyEvents * 4), mLatencyMSPeak / (mLatencyEvents * 4));
+    return isOverTarget(
+        mLatencyMSAvg / (mLatencyEvents * 4),
+        mLatencyMSPeak / (mLatencyEvents * 4));
 }
 
-LoadMonitor::Stats LoadMonitor::getStats ()
+LoadMonitor::Stats
+LoadMonitor::getStats()
 {
     using namespace std::chrono_literals;
     Stats stats;
 
-    std::lock_guard sl (mutex_);
+    std::lock_guard sl(mutex_);
 
-    update ();
+    update();
 
     stats.count = mCounts / 4;
 
@@ -192,9 +200,9 @@ LoadMonitor::Stats LoadMonitor::getStats ()
         stats.latencyPeak = mLatencyMSPeak / (mLatencyEvents * 4);
     }
 
-    stats.isOverloaded = isOverTarget (stats.latencyAvg, stats.latencyPeak);
+    stats.isOverloaded = isOverTarget(stats.latencyAvg, stats.latencyPeak);
 
     return stats;
 }
 
-} // ripple
+}  // namespace ripple

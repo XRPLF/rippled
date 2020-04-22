@@ -20,11 +20,11 @@
 #ifndef RIPPLE_LEDGER_OPENVIEW_H_INCLUDED
 #define RIPPLE_LEDGER_OPENVIEW_H_INCLUDED
 
+#include <ripple/basics/XRPAmount.h>
+#include <ripple/basics/qalloc.h>
 #include <ripple/ledger/RawView.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/detail/RawStateTable.h>
-#include <ripple/basics/qalloc.h>
-#include <ripple/basics/XRPAmount.h>
 #include <functional>
 #include <utility>
 
@@ -49,20 +49,25 @@ extern open_ledger_t const open_ledger;
 
     @note Presented as ReadView to clients.
 */
-class OpenView final
-    : public ReadView
-    , public TxsRawView
+class OpenView final : public ReadView, public TxsRawView
 {
 private:
     class txs_iter_impl;
 
     // List of tx, key order
-    using txs_map = std::map<key_type,
-        std::pair<std::shared_ptr<Serializer const>,
-        std::shared_ptr<Serializer const>>,
-        std::less<key_type>, qalloc_type<std::pair<key_type const,
-        std::pair<std::shared_ptr<Serializer const>,
-        std::shared_ptr<Serializer const>>>, false>>;
+    using txs_map = std::map<
+        key_type,
+        std::pair<
+            std::shared_ptr<Serializer const>,
+            std::shared_ptr<Serializer const>>,
+        std::less<key_type>,
+        qalloc_type<
+            std::pair<
+                key_type const,
+                std::pair<
+                    std::shared_ptr<Serializer const>,
+                    std::shared_ptr<Serializer const>>>,
+            false>>;
 
     Rules rules_;
     txs_map txs_;
@@ -74,10 +79,12 @@ private:
 
 public:
     OpenView() = delete;
-    OpenView& operator= (OpenView&&) = delete;
-    OpenView& operator= (OpenView const&) = delete;
+    OpenView&
+    operator=(OpenView&&) = delete;
+    OpenView&
+    operator=(OpenView const&) = delete;
 
-    OpenView (OpenView&&) = default;
+    OpenView(OpenView&&) = default;
 
     /** Construct a shallow copy.
 
@@ -91,7 +98,7 @@ public:
         Since the SLEs are immutable, calls on the
         RawView interface cannot break invariants.
     */
-    OpenView (OpenView const&) = default;
+    OpenView(OpenView const&) = default;
 
     /** Construct an open ledger view.
 
@@ -114,13 +121,17 @@ public:
         all newly inserted tx.
     */
     /** @{ */
-    OpenView (open_ledger_t,
-        ReadView const* base, Rules const& rules,
-            std::shared_ptr<void const> hold = nullptr);
+    OpenView(
+        open_ledger_t,
+        ReadView const* base,
+        Rules const& rules,
+        std::shared_ptr<void const> hold = nullptr);
 
-    OpenView (open_ledger_t, Rules const& rules,
-            std::shared_ptr<ReadView const> const& base)
-        : OpenView (open_ledger, &*base, rules, base)
+    OpenView(
+        open_ledger_t,
+        Rules const& rules,
+        std::shared_ptr<ReadView const> const& base)
+        : OpenView(open_ledger, &*base, rules, base)
     {
     }
     /** @} */
@@ -136,8 +147,7 @@ public:
         The tx list starts empty and will contain
         all newly inserted tx.
     */
-    OpenView (ReadView const* base,
-        std::shared_ptr<void const> hold = nullptr);
+    OpenView(ReadView const* base, std::shared_ptr<void const> hold = nullptr);
 
     /** Returns true if this reflects an open ledger. */
     bool
@@ -156,7 +166,7 @@ public:
 
     /** Apply changes. */
     void
-    apply (TxsRawView& to) const;
+    apply(TxsRawView& to) const;
 
     // ReadView
 
@@ -170,14 +180,15 @@ public:
     rules() const override;
 
     bool
-    exists (Keylet const& k) const override;
+    exists(Keylet const& k) const override;
 
     boost::optional<key_type>
-    succ (key_type const& key, boost::optional<
-        key_type> const& last = boost::none) const override;
+    succ(
+        key_type const& key,
+        boost::optional<key_type> const& last = boost::none) const override;
 
     std::shared_ptr<SLE const>
-    read (Keylet const& k) const override;
+    read(Keylet const& k) const override;
 
     std::unique_ptr<sles_type::iter_base>
     slesBegin() const override;
@@ -195,39 +206,34 @@ public:
     txsEnd() const override;
 
     bool
-    txExists (key_type const& key) const override;
+    txExists(key_type const& key) const override;
 
     tx_type
-    txRead (key_type const& key) const override;
+    txRead(key_type const& key) const override;
 
     // RawView
 
     void
-    rawErase (std::shared_ptr<
-        SLE> const& sle) override;
+    rawErase(std::shared_ptr<SLE> const& sle) override;
 
     void
-    rawInsert (std::shared_ptr<
-        SLE> const& sle) override;
+    rawInsert(std::shared_ptr<SLE> const& sle) override;
 
     void
-    rawReplace (std::shared_ptr<
-        SLE> const& sle) override;
+    rawReplace(std::shared_ptr<SLE> const& sle) override;
 
     void
-    rawDestroyXRP(
-        XRPAmount const& fee) override;
+    rawDestroyXRP(XRPAmount const& fee) override;
 
     // TxsRawView
 
     void
-    rawTxInsert (key_type const& key,
-        std::shared_ptr<Serializer const>
-            const& txn, std::shared_ptr<
-                Serializer const>
-                    const& metaData) override;
+    rawTxInsert(
+        key_type const& key,
+        std::shared_ptr<Serializer const> const& txn,
+        std::shared_ptr<Serializer const> const& metaData) override;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

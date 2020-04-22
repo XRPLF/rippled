@@ -34,9 +34,7 @@ private:
     std::uint32_t value_;
 
 public:
-    explicit
-    dtag (std::uint32_t value)
-        : value_ (value)
+    explicit dtag(std::uint32_t value) : value_(value)
     {
     }
 
@@ -51,9 +49,7 @@ private:
     std::uint32_t value_;
 
 public:
-    explicit
-    stag (std::uint32_t value)
-        : value_ (value)
+    explicit stag(std::uint32_t value) : value_(value)
     {
     }
 
@@ -61,9 +57,9 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-} // jtx
+}  // namespace jtx
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple
 
 #endif

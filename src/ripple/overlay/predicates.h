@@ -34,13 +34,14 @@ struct send_always
 
     std::shared_ptr<Message> const& msg;
 
-    send_always(std::shared_ptr<Message> const& m)
-        : msg(m)
-    { }
-
-    void operator()(std::shared_ptr<Peer> const& peer) const
+    send_always(std::shared_ptr<Message> const& m) : msg(m)
     {
-        peer->send (msg);
+    }
+
+    void
+    operator()(std::shared_ptr<Peer> const& peer) const
+    {
+        peer->send(msg);
     }
 };
 
@@ -56,21 +57,22 @@ struct send_if_pred
     Predicate const& predicate;
 
     send_if_pred(std::shared_ptr<Message> const& m, Predicate const& p)
-    : msg(m), predicate(p)
-    { }
-
-    void operator()(std::shared_ptr<Peer> const& peer) const
+        : msg(m), predicate(p)
     {
-        if (predicate (peer))
-            peer->send (msg);
+    }
+
+    void
+    operator()(std::shared_ptr<Peer> const& peer) const
+    {
+        if (predicate(peer))
+            peer->send(msg);
     }
 };
 
 /** Helper function to aid in type deduction */
 template <typename Predicate>
-send_if_pred<Predicate> send_if (
-    std::shared_ptr<Message> const& m,
-        Predicate const &f)
+send_if_pred<Predicate>
+send_if(std::shared_ptr<Message> const& m, Predicate const& f)
 {
     return send_if_pred<Predicate>(m, f);
 }
@@ -88,20 +90,21 @@ struct send_if_not_pred
 
     send_if_not_pred(std::shared_ptr<Message> const& m, Predicate const& p)
         : msg(m), predicate(p)
-    { }
-
-    void operator()(std::shared_ptr<Peer> const& peer) const
     {
-        if (!predicate (peer))
-            peer->send (msg);
+    }
+
+    void
+    operator()(std::shared_ptr<Peer> const& peer) const
+    {
+        if (!predicate(peer))
+            peer->send(msg);
     }
 };
 
 /** Helper function to aid in type deduction */
 template <typename Predicate>
-send_if_not_pred<Predicate> send_if_not (
-    std::shared_ptr<Message> const& m,
-        Predicate const &f)
+send_if_not_pred<Predicate>
+send_if_not(std::shared_ptr<Message> const& m, Predicate const& f)
 {
     return send_if_not_pred<Predicate>(m, f);
 }
@@ -113,13 +116,14 @@ struct match_peer
 {
     Peer const* matchPeer;
 
-    match_peer (Peer const* match = nullptr)
-        : matchPeer (match)
-    { }
-
-    bool operator() (std::shared_ptr<Peer> const& peer) const
+    match_peer(Peer const* match = nullptr) : matchPeer(match)
     {
-        if(matchPeer && (peer.get () == matchPeer))
+    }
+
+    bool
+    operator()(std::shared_ptr<Peer> const& peer) const
+    {
+        if (matchPeer && (peer.get() == matchPeer))
             return true;
 
         return false;
@@ -133,16 +137,17 @@ struct peer_in_cluster
 {
     match_peer skipPeer;
 
-    peer_in_cluster (Peer const* skip = nullptr)
-        : skipPeer (skip)
-    { }
-
-    bool operator() (std::shared_ptr<Peer> const& peer) const
+    peer_in_cluster(Peer const* skip = nullptr) : skipPeer(skip)
     {
-        if (skipPeer (peer))
+    }
+
+    bool
+    operator()(std::shared_ptr<Peer> const& peer) const
+    {
+        if (skipPeer(peer))
             return false;
 
-        if (! peer->cluster())
+        if (!peer->cluster())
             return false;
 
         return true;
@@ -154,21 +159,22 @@ struct peer_in_cluster
 /** Select all peers that are in the specified set */
 struct peer_in_set
 {
-    std::set <Peer::id_t> const& peerSet;
+    std::set<Peer::id_t> const& peerSet;
 
-    peer_in_set (std::set<Peer::id_t> const& peers)
-        : peerSet (peers)
-    { }
-
-    bool operator() (std::shared_ptr<Peer> const& peer) const
+    peer_in_set(std::set<Peer::id_t> const& peers) : peerSet(peers)
     {
-        if (peerSet.count (peer->id ()) == 0)
+    }
+
+    bool
+    operator()(std::shared_ptr<Peer> const& peer) const
+    {
+        if (peerSet.count(peer->id()) == 0)
             return false;
 
         return true;
     }
 };
 
-}
+}  // namespace ripple
 
 #endif

@@ -20,75 +20,77 @@
 
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/jss.h>
 #include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/jss.h>
 
 namespace ripple {
 
 class OwnerInfo_test : public beast::unit_test::suite
 {
     void
-    testBadInput ()
+    testBadInput()
     {
-        testcase ("Bad input to owner_info");
+        testcase("Bad input to owner_info");
 
         using namespace test::jtx;
-        Env env {*this};
+        Env env{*this};
 
-        auto const alice = Account {"alice"};
-        env.fund (XRP(10000), alice);
-        env.close ();
+        auto const alice = Account{"alice"};
+        env.fund(XRP(10000), alice);
+        env.close();
 
-        { // missing account field
+        {  // missing account field
             auto const result =
-                env.rpc ("json", "owner_info", "{}") [jss::result];
-            BEAST_EXPECT (result[jss::error] == "invalidParams");
-            BEAST_EXPECT (result[jss::error_message] ==
-                "Missing field 'account'.");
+                env.rpc("json", "owner_info", "{}")[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                result[jss::error_message] == "Missing field 'account'.");
         }
 
-        { // ask for empty account
+        {  // ask for empty account
             Json::Value params;
             params[jss::account] = "";
-            auto const result = env.rpc ("json", "owner_info",
-                to_string(params)) [jss::result];
-            if (BEAST_EXPECT (
-                result.isMember(jss::accepted) &&
-                result.isMember(jss::current)))
+            auto const result =
+                env.rpc("json", "owner_info", to_string(params))[jss::result];
+            if (BEAST_EXPECT(
+                    result.isMember(jss::accepted) &&
+                    result.isMember(jss::current)))
             {
-                BEAST_EXPECT (result[jss::accepted][jss::error] == "badSeed");
-                BEAST_EXPECT (result[jss::accepted][jss::error_message] ==
+                BEAST_EXPECT(result[jss::accepted][jss::error] == "badSeed");
+                BEAST_EXPECT(
+                    result[jss::accepted][jss::error_message] ==
                     "Disallowed seed.");
-                BEAST_EXPECT (result[jss::current][jss::error] == "badSeed");
-                BEAST_EXPECT (result[jss::current][jss::error_message] ==
+                BEAST_EXPECT(result[jss::current][jss::error] == "badSeed");
+                BEAST_EXPECT(
+                    result[jss::current][jss::error_message] ==
                     "Disallowed seed.");
             }
         }
 
-        { // ask for nonexistent account
-          // this seems like it should be an error, but current impl
-          // (deprecated) does not return an error, just empty fields.
+        {  // ask for nonexistent account
+           // this seems like it should be an error, but current impl
+           // (deprecated) does not return an error, just empty fields.
             Json::Value params;
             params[jss::account] = Account{"bob"}.human();
-            auto const result = env.rpc ("json", "owner_info",
-                to_string(params)) [jss::result];
-            BEAST_EXPECT (result[jss::accepted] == Json::objectValue);
-            BEAST_EXPECT (result[jss::current] == Json::objectValue);
-            BEAST_EXPECT (result[jss::status] == "success");
+            auto const result =
+                env.rpc("json", "owner_info", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::accepted] == Json::objectValue);
+            BEAST_EXPECT(result[jss::current] == Json::objectValue);
+            BEAST_EXPECT(result[jss::status] == "success");
         }
     }
 
     void
-    testBasic ()
+    testBasic()
     {
-        testcase ("Basic request for owner_info");
+        testcase("Basic request for owner_info");
 
         using namespace test::jtx;
-        Env env {*this};
+        Env env{*this};
 
-        auto const alice = Account {"alice"};
-        auto const gw = Account {"gateway"};
-        env.fund (XRP(10000), alice, gw);
+        auto const alice = Account{"alice"};
+        auto const gw = Account{"gateway"};
+        env.fund(XRP(10000), alice, gw);
         auto const USD = gw["USD"];
         auto const CNY = gw["CNY"];
         env(trust(alice, USD(1000)));
@@ -102,9 +104,9 @@ class OwnerInfo_test : public beast::unit_test::suite
 
         Json::Value params;
         params[jss::account] = alice.human();
-        auto const result = env.rpc ("json", "owner_info",
-            to_string(params)) [jss::result];
-        if (! BEAST_EXPECT (
+        auto const result =
+            env.rpc("json", "owner_info", to_string(params))[jss::result];
+        if (!BEAST_EXPECT(
                 result.isMember(jss::accepted) &&
                 result.isMember(jss::current)))
         {
@@ -112,107 +114,107 @@ class OwnerInfo_test : public beast::unit_test::suite
         }
 
         // accepted ledger entry
-        if (! BEAST_EXPECT (result[jss::accepted].isMember(jss::ripple_lines)))
+        if (!BEAST_EXPECT(result[jss::accepted].isMember(jss::ripple_lines)))
             return;
         auto lines = result[jss::accepted][jss::ripple_lines];
-        if (! BEAST_EXPECT (lines.isArray() && lines.size() == 2))
+        if (!BEAST_EXPECT(lines.isArray() && lines.size() == 2))
             return;
 
-        BEAST_EXPECT (
+        BEAST_EXPECT(
             lines[0u][sfBalance.fieldName] ==
             (STAmount{Issue{to_currency("CNY"), noAccount()}, 0}
-                 .value().getJson(JsonOptions::none)));
-        BEAST_EXPECT (
+                 .value()
+                 .getJson(JsonOptions::none)));
+        BEAST_EXPECT(
             lines[0u][sfHighLimit.fieldName] ==
             alice["CNY"](1000).value().getJson(JsonOptions::none));
-        BEAST_EXPECT (
+        BEAST_EXPECT(
             lines[0u][sfLowLimit.fieldName] ==
             gw["CNY"](0).value().getJson(JsonOptions::none));
 
-        BEAST_EXPECT (
+        BEAST_EXPECT(
             lines[1u][sfBalance.fieldName] ==
             (STAmount{Issue{to_currency("USD"), noAccount()}, 0}
-                .value().getJson(JsonOptions::none)));
-        BEAST_EXPECT (
+                 .value()
+                 .getJson(JsonOptions::none)));
+        BEAST_EXPECT(
             lines[1u][sfHighLimit.fieldName] ==
             alice["USD"](1000).value().getJson(JsonOptions::none));
-        BEAST_EXPECT (
+        BEAST_EXPECT(
             lines[1u][sfLowLimit.fieldName] ==
             USD(0).value().getJson(JsonOptions::none));
 
-        if (! BEAST_EXPECT (result[jss::accepted].isMember(jss::offers)))
+        if (!BEAST_EXPECT(result[jss::accepted].isMember(jss::offers)))
             return;
         auto offers = result[jss::accepted][jss::offers];
-        if (! BEAST_EXPECT (offers.isArray() && offers.size() == 1))
+        if (!BEAST_EXPECT(offers.isArray() && offers.size() == 1))
             return;
 
-        BEAST_EXPECT (
-            offers[0u][jss::Account] == alice.human());
-        BEAST_EXPECT (
+        BEAST_EXPECT(offers[0u][jss::Account] == alice.human());
+        BEAST_EXPECT(
             offers[0u][sfTakerGets.fieldName] ==
             XRP(1000).value().getJson(JsonOptions::none));
-        BEAST_EXPECT (
+        BEAST_EXPECT(
             offers[0u][sfTakerPays.fieldName] ==
             USD(1).value().getJson(JsonOptions::none));
 
-
         // current ledger entry
-        if (! BEAST_EXPECT (result[jss::current].isMember(jss::ripple_lines)))
+        if (!BEAST_EXPECT(result[jss::current].isMember(jss::ripple_lines)))
             return;
         lines = result[jss::current][jss::ripple_lines];
-        if (! BEAST_EXPECT (lines.isArray() && lines.size() == 2))
+        if (!BEAST_EXPECT(lines.isArray() && lines.size() == 2))
             return;
 
-        BEAST_EXPECT (
+        BEAST_EXPECT(
             lines[0u][sfBalance.fieldName] ==
             (STAmount{Issue{to_currency("CNY"), noAccount()}, -50}
-                 .value().getJson(JsonOptions::none)));
-        BEAST_EXPECT (
+                 .value()
+                 .getJson(JsonOptions::none)));
+        BEAST_EXPECT(
             lines[0u][sfHighLimit.fieldName] ==
             alice["CNY"](1000).value().getJson(JsonOptions::none));
-        BEAST_EXPECT (
+        BEAST_EXPECT(
             lines[0u][sfLowLimit.fieldName] ==
             gw["CNY"](0).value().getJson(JsonOptions::none));
 
-        BEAST_EXPECT (
+        BEAST_EXPECT(
             lines[1u][sfBalance.fieldName] ==
             (STAmount{Issue{to_currency("USD"), noAccount()}, -50}
-                .value().getJson(JsonOptions::none)));
-        BEAST_EXPECT (
+                 .value()
+                 .getJson(JsonOptions::none)));
+        BEAST_EXPECT(
             lines[1u][sfHighLimit.fieldName] ==
             alice["USD"](1000).value().getJson(JsonOptions::none));
-        BEAST_EXPECT (
+        BEAST_EXPECT(
             lines[1u][sfLowLimit.fieldName] ==
             gw["USD"](0).value().getJson(JsonOptions::none));
 
-        if (! BEAST_EXPECT (result[jss::current].isMember(jss::offers)))
+        if (!BEAST_EXPECT(result[jss::current].isMember(jss::offers)))
             return;
         offers = result[jss::current][jss::offers];
         // 1 additional offer in current, (2 total)
-        if (! BEAST_EXPECT (offers.isArray() && offers.size() == 2))
+        if (!BEAST_EXPECT(offers.isArray() && offers.size() == 2))
             return;
 
-        BEAST_EXPECT (
-            offers[1u] == result[jss::accepted][jss::offers][0u]);
-        BEAST_EXPECT (
-            offers[0u][jss::Account] == alice.human());
-        BEAST_EXPECT (
+        BEAST_EXPECT(offers[1u] == result[jss::accepted][jss::offers][0u]);
+        BEAST_EXPECT(offers[0u][jss::Account] == alice.human());
+        BEAST_EXPECT(
             offers[0u][sfTakerGets.fieldName] ==
             XRP(1000).value().getJson(JsonOptions::none));
-        BEAST_EXPECT (
+        BEAST_EXPECT(
             offers[0u][sfTakerPays.fieldName] ==
             CNY(2).value().getJson(JsonOptions::none));
     }
 
 public:
-    void run () override
+    void
+    run() override
     {
-        testBadInput ();
-        testBasic ();
+        testBadInput();
+        testBasic();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(OwnerInfo,app,ripple);
+BEAST_DEFINE_TESTSUITE(OwnerInfo, app, ripple);
 
-} // ripple
-
+}  // namespace ripple

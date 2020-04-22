@@ -30,10 +30,11 @@ namespace NodeStore {
 // VFALCO DEPRECATED Use std::function instead
 struct VisitCallback
 {
-    virtual void visitObject (NodeObject::Ptr const& object) = 0;
+    virtual void
+    visitObject(NodeObject::Ptr const& object) = 0;
 };
 
-}
-}
+}  // namespace NodeStore
+}  // namespace ripple
 
 #endif

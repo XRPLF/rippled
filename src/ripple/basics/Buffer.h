@@ -44,10 +44,8 @@ public:
     Buffer() = default;
 
     /** Create an uninitialized buffer with the given size. */
-    explicit
-    Buffer (std::size_t size)
-        : p_ (size ? new std::uint8_t[size] : nullptr)
-        , size_ (size)
+    explicit Buffer(std::size_t size)
+        : p_(size ? new std::uint8_t[size] : nullptr), size_(size)
     {
     }
 
@@ -57,26 +55,25 @@ public:
                     size is non-zero, it must not be null.
         @param size size of the existing memory block.
     */
-    Buffer (void const* data, std::size_t size)
-        : Buffer (size)
+    Buffer(void const* data, std::size_t size) : Buffer(size)
     {
         if (size)
             std::memcpy(p_.get(), data, size);
     }
 
     /** Copy-construct */
-    Buffer (Buffer const& other)
-        : Buffer (other.p_.get(), other.size_)
+    Buffer(Buffer const& other) : Buffer(other.p_.get(), other.size_)
     {
     }
 
     /** Copy assign */
-    Buffer& operator= (Buffer const& other)
+    Buffer&
+    operator=(Buffer const& other)
     {
         if (this != &other)
         {
-            if (auto p = alloc (other.size_))
-                std::memcpy (p, other.p_.get(), size_);
+            if (auto p = alloc(other.size_))
+                std::memcpy(p, other.p_.get(), size_);
         }
         return *this;
     }
@@ -84,9 +81,8 @@ public:
     /** Move-construct.
         The other buffer is reset.
     */
-    Buffer (Buffer&& other) noexcept
-        : p_ (std::move(other.p_))
-        , size_ (other.size_)
+    Buffer(Buffer&& other) noexcept
+        : p_(std::move(other.p_)), size_(other.size_)
     {
         other.size_ = 0;
     }
@@ -94,7 +90,8 @@ public:
     /** Move-assign.
         The other buffer is reset.
     */
-    Buffer& operator= (Buffer&& other) noexcept
+    Buffer&
+    operator=(Buffer&& other) noexcept
     {
         if (this != &other)
         {
@@ -106,22 +103,21 @@ public:
     }
 
     /** Construct from a slice */
-    explicit
-    Buffer (Slice s)
-        : Buffer (s.data(), s.size())
+    explicit Buffer(Slice s) : Buffer(s.data(), s.size())
     {
     }
 
     /** Assign from slice */
-    Buffer& operator= (Slice s)
+    Buffer&
+    operator=(Slice s)
     {
         // Ensure the slice isn't a subset of the buffer.
-        assert (s.size() == 0 || size_ == 0 ||
-            s.data() < p_.get() ||
+        assert(
+            s.size() == 0 || size_ == 0 || s.data() < p_.get() ||
             s.data() >= p_.get() + size_);
 
-        if (auto p = alloc (s.size()))
-            std::memcpy (p, s.data(), s.size());
+        if (auto p = alloc(s.size()))
+            std::memcpy(p, s.data(), s.size());
         return *this;
     }
 
@@ -133,16 +129,16 @@ public:
     }
 
     bool
-    empty () const noexcept
+    empty() const noexcept
     {
         return 0 == size_;
     }
 
     operator Slice() const noexcept
     {
-        if (! size_)
+        if (!size_)
             return Slice{};
-        return Slice{ p_.get(), size_ };
+        return Slice{p_.get(), size_};
     }
 
     /** Return a pointer to beginning of the storage.
@@ -177,7 +173,7 @@ public:
         Existing data, if any, is discarded.
     */
     std::uint8_t*
-    alloc (std::size_t n)
+    alloc(std::size_t n)
     {
         if (n != size_)
         {
@@ -219,7 +215,8 @@ public:
     }
 };
 
-inline bool operator==(Buffer const& lhs, Buffer const& rhs) noexcept
+inline bool
+operator==(Buffer const& lhs, Buffer const& rhs) noexcept
 {
     if (lhs.size() != rhs.size())
         return false;
@@ -230,11 +227,12 @@ inline bool operator==(Buffer const& lhs, Buffer const& rhs) noexcept
     return std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;
 }
 
-inline bool operator!=(Buffer const& lhs, Buffer const& rhs) noexcept
+inline bool
+operator!=(Buffer const& lhs, Buffer const& rhs) noexcept
 {
     return !(lhs == rhs);
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

@@ -119,14 +119,15 @@ class Validations_test : public beast::unit_test::suite
             NetClock::duration seenOffset,
             bool full) const
         {
-            Validation v{id,
-                         seq,
-                         now() + signOffset,
-                         now() + seenOffset,
-                         currKey(),
-                         nodeID_,
-                         full,
-                         loadFee_};
+            Validation v{
+                id,
+                seq,
+                now() + signOffset,
+                now() + seenOffset,
+                currKey(),
+                nodeID_,
+                full,
+                loadFee_};
             if (trusted_)
                 v.setTrusted();
             return v;
@@ -189,8 +190,7 @@ class Validations_test : public beast::unit_test::suite
         using Validation = csf::Validation;
         using Ledger = csf::Ledger;
 
-        Adaptor(clock_type& c, LedgerOracle& o)
-            : c_{c}, oracle_{o}
+        Adaptor(clock_type& c, LedgerOracle& o) : c_{c}, oracle_{o}
         {
         }
 
@@ -220,8 +220,7 @@ class Validations_test : public beast::unit_test::suite
         PeerID nextNodeId_{0};
 
     public:
-        explicit TestHarness(LedgerOracle& o)
-            : tv_(p_, clock_, clock_, o)
+        explicit TestHarness(LedgerOracle& o) : tv_(p_, clock_, clock_, o)
         {
         }
 

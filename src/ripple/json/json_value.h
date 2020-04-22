@@ -28,21 +28,19 @@
 
 /** \brief JSON (JavaScript Object Notation).
  */
-namespace Json
-{
+namespace Json {
 
 /** \brief Type of the value held by a Value object.
  */
-enum ValueType
-{
-    nullValue = 0, ///< 'null' value
-    intValue,      ///< signed integer value
-    uintValue,     ///< unsigned integer value
-    realValue,     ///< double value
-    stringValue,   ///< UTF-8 string value
-    booleanValue,  ///< bool value
-    arrayValue,    ///< array value (ordered list)
-    objectValue    ///< object value (collection of name/value pairs).
+enum ValueType {
+    nullValue = 0,  ///< 'null' value
+    intValue,       ///< signed integer value
+    uintValue,      ///< unsigned integer value
+    realValue,      ///< double value
+    stringValue,    ///< UTF-8 string value
+    booleanValue,   ///< bool value
+    arrayValue,     ///< array value (ordered list)
+    objectValue     ///< object value (collection of name/value pairs).
 };
 
 /** \brief Lightweight wrapper to tag static string.
@@ -62,17 +60,17 @@ enum ValueType
 class StaticString
 {
 public:
-    constexpr explicit StaticString ( const char* czstring )
-        : str_ ( czstring )
+    constexpr explicit StaticString(const char* czstring) : str_(czstring)
     {
     }
 
-    constexpr operator const char* () const
+    constexpr operator const char*() const
     {
         return str_;
     }
 
-    constexpr const char* c_str () const
+    constexpr const char*
+    c_str() const
     {
         return str_;
     }
@@ -81,34 +79,40 @@ private:
     const char* str_;
 };
 
-inline bool operator== (StaticString x, StaticString y)
-{
-    return strcmp (x.c_str(), y.c_str()) == 0;
-}
-
-inline bool operator!= (StaticString x, StaticString y)
-{
-    return ! (x == y);
-}
-
-inline bool operator== (std::string const& x, StaticString y)
+inline bool
+operator==(StaticString x, StaticString y)
 {
     return strcmp(x.c_str(), y.c_str()) == 0;
 }
 
-inline bool operator!= (std::string const& x, StaticString y)
+inline bool
+operator!=(StaticString x, StaticString y)
 {
-    return ! (x == y);
+    return !(x == y);
 }
 
-inline bool operator== (StaticString x, std::string const& y)
+inline bool
+operator==(std::string const& x, StaticString y)
+{
+    return strcmp(x.c_str(), y.c_str()) == 0;
+}
+
+inline bool
+operator!=(std::string const& x, StaticString y)
+{
+    return !(x == y);
+}
+
+inline bool
+operator==(StaticString x, std::string const& y)
 {
     return y == x;
 }
 
-inline bool operator!= (StaticString x, std::string const& y)
+inline bool
+operator!=(StaticString x, std::string const& y)
 {
-    return ! (y == x);
+    return !(y == x);
 }
 
 /** \brief Represents a <a HREF="http://www.json.org">JSON</a> value.
@@ -126,14 +130,14 @@ inline bool operator!= (StaticString x, std::string const& y)
  * The type of the held value is represented by a #ValueType and
  * can be obtained using type().
  *
- * values of an #objectValue or #arrayValue can be accessed using operator[]() methods.
- * Non const methods will automatically create the a #nullValue element
+ * values of an #objectValue or #arrayValue can be accessed using operator[]()
+ * methods. Non const methods will automatically create the a #nullValue element
  * if it does not exist.
  * The sequence of an #arrayValue will be automatically resize and initialized
  * with #nullValue. resize() can be used to enlarge or truncate an #arrayValue.
  *
- * The get() methods can be used to obtanis default value in the case the required element
- * does not exist.
+ * The get() methods can be used to obtanis default value in the case the
+ * required element does not exist.
  *
  * It is possible to iterate over the list of a #objectValue values using
  * the getMemberNames() method.
@@ -159,22 +163,28 @@ private:
     class CZString
     {
     public:
-        enum DuplicationPolicy
-        {
+        enum DuplicationPolicy {
             noDuplication = 0,
             duplicate,
             duplicateOnCopy
         };
-        CZString ( int index );
-        CZString ( const char* cstr, DuplicationPolicy allocate );
-        CZString ( const CZString& other );
-        ~CZString ();
-        CZString& operator = ( const CZString& other ) = delete;
-        bool operator< ( const CZString& other ) const;
-        bool operator== ( const CZString& other ) const;
-        int index () const;
-        const char* c_str () const;
-        bool isStaticString () const;
+        CZString(int index);
+        CZString(const char* cstr, DuplicationPolicy allocate);
+        CZString(const CZString& other);
+        ~CZString();
+        CZString&
+        operator=(const CZString& other) = delete;
+        bool
+        operator<(const CZString& other) const;
+        bool
+        operator==(const CZString& other) const;
+        int
+        index() const;
+        const char*
+        c_str() const;
+        bool
+        isStaticString() const;
+
     private:
         const char* cstr_;
         int index_;
@@ -199,109 +209,149 @@ public:
     Json::Value obj_value(Json::objectValue); // {}
     \endcode
          */
-    Value ( ValueType type = nullValue );
-    Value ( Int value );
-    Value ( UInt value );
-    Value ( double value );
-    Value ( const char* value );
+    Value(ValueType type = nullValue);
+    Value(Int value);
+    Value(UInt value);
+    Value(double value);
+    Value(const char* value);
     /** \brief Constructs a value from a static string.
 
      * Like other value string constructor but do not duplicate the string for
-     * internal storage. The given string must remain alive after the call to this
+     * internal storage. The given string must remain alive after the call to
+     this
      * constructor.
      * Example of usage:
      * \code
      * Json::Value aValue( StaticString("some text") );
      * \endcode
      */
-    Value ( const StaticString& value );
-    Value ( std::string const& value );
-    Value ( bool value );
-    Value ( const Value& other );
-    ~Value ();
+    Value(const StaticString& value);
+    Value(std::string const& value);
+    Value(bool value);
+    Value(const Value& other);
+    ~Value();
 
-    Value& operator= ( Value const& other );
-    Value& operator= ( Value&& other );
+    Value&
+    operator=(Value const& other);
+    Value&
+    operator=(Value&& other);
 
-    Value ( Value&& other ) noexcept;
+    Value(Value&& other) noexcept;
 
     /// Swap values.
-    void swap ( Value& other ) noexcept;
+    void
+    swap(Value& other) noexcept;
 
-    ValueType type () const;
+    ValueType
+    type() const;
 
-    const char* asCString () const;
+    const char*
+    asCString() const;
     /** Returns the unquoted string value. */
-    std::string asString () const;
-    Int asInt () const;
-    UInt asUInt () const;
-    double asDouble () const;
-    bool asBool () const;
+    std::string
+    asString() const;
+    Int
+    asInt() const;
+    UInt
+    asUInt() const;
+    double
+    asDouble() const;
+    bool
+    asBool() const;
 
     // TODO: What is the "empty()" method this docstring mentions?
     /** isNull() tests to see if this field is null.  Don't use this method to
         test for emptiness: use empty(). */
-    bool isNull () const;
-    bool isBool () const;
-    bool isInt () const;
-    bool isUInt () const;
-    bool isIntegral () const;
-    bool isDouble () const;
-    bool isNumeric () const;
-    bool isString () const;
-    bool isArray() const;
-    bool isArrayOrNull () const;
-    bool isObject() const;
-    bool isObjectOrNull () const;
+    bool
+    isNull() const;
+    bool
+    isBool() const;
+    bool
+    isInt() const;
+    bool
+    isUInt() const;
+    bool
+    isIntegral() const;
+    bool
+    isDouble() const;
+    bool
+    isNumeric() const;
+    bool
+    isString() const;
+    bool
+    isArray() const;
+    bool
+    isArrayOrNull() const;
+    bool
+    isObject() const;
+    bool
+    isObjectOrNull() const;
 
-    bool isConvertibleTo ( ValueType other ) const;
+    bool
+    isConvertibleTo(ValueType other) const;
 
     /// Number of values in array or object
-    UInt size () const;
+    UInt
+    size() const;
 
     /** Returns false if this is an empty array, empty object, empty string,
         or null. */
-    explicit
-    operator bool() const;
+    explicit operator bool() const;
 
     /// Remove all object members and array elements.
     /// \pre type() is arrayValue, objectValue, or nullValue
     /// \post type() is unchanged
-    void clear ();
+    void
+    clear();
 
     /// Access an array element (zero based index ).
-    /// If the array contains less than index element, then null value are inserted
-    /// in the array so that its size is index+1.
-    /// (You may need to say 'value[0u]' to get your compiler to distinguish
+    /// If the array contains less than index element, then null value are
+    /// inserted in the array so that its size is index+1. (You may need to say
+    /// 'value[0u]' to get your compiler to distinguish
     ///  this from the operator[] which takes a string.)
-    Value& operator[] ( UInt index );
+    Value&
+    operator[](UInt index);
     /// Access an array element (zero based index )
     /// (You may need to say 'value[0u]' to get your compiler to distinguish
     ///  this from the operator[] which takes a string.)
-    const Value& operator[] ( UInt index ) const;
-    /// If the array contains at least index+1 elements, returns the element value,
-    /// otherwise returns defaultValue.
-    Value get ( UInt index,
-                const Value& defaultValue ) const;
+    const Value&
+    operator[](UInt index) const;
+    /// If the array contains at least index+1 elements, returns the element
+    /// value, otherwise returns defaultValue.
+    Value
+    get(UInt index, const Value& defaultValue) const;
     /// Return true if index < size().
-    bool isValidIndex ( UInt index ) const;
+    bool
+    isValidIndex(UInt index) const;
     /// \brief Append value to array at the end.
     ///
     /// Equivalent to jsonvalue[jsonvalue.size()] = value;
-    Value& append ( const Value& value );
-    Value& append ( Value&& value );
+    Value&
+    append(const Value& value);
+    Value&
+    append(Value&& value);
 
-    /// Access an object value by name, create a null member if it does not exist.
-    Value& operator[] ( const char* key );
-    /// Access an object value by name, returns null if there is no member with that name.
-    const Value& operator[] ( const char* key ) const;
-    /// Access an object value by name, create a null member if it does not exist.
-    Value& operator[] ( std::string const& key );
-    /// Access an object value by name, returns null if there is no member with that name.
-    const Value& operator[] ( std::string const& key ) const;
-    /** \brief Access an object value by name, create a null member if it does not exist.
+    /// Access an object value by name, create a null member if it does not
+    /// exist.
+    Value&
+    operator[](const char* key);
+    /// Access an object value by name, returns null if there is no member with
+    /// that name.
+    const Value&
+    operator[](const char* key) const;
+    /// Access an object value by name, create a null member if it does not
+    /// exist.
+    Value&
+    operator[](std::string const& key);
+    /// Access an object value by name, returns null if there is no member with
+    /// that name.
+    const Value&
+    operator[](std::string const& key) const;
+    /** \brief Access an object value by name, create a null member if it does
+     not exist.
 
-     * If the object as no entry for that name, then the member name used to store
+     * If the object as no entry for that name, then the member name used to
+     store
      * the new entry is not duplicated.
      * Example of use:
      * \code
@@ -310,14 +360,15 @@ public:
      * object[code] = 1234;
      * \endcode
      */
-    Value& operator[] ( const StaticString& key );
+    Value&
+    operator[](const StaticString& key);
 
     /// Return the member named key if it exist, defaultValue otherwise.
-    Value get ( const char* key,
-                const Value& defaultValue ) const;
+    Value
+    get(const char* key, const Value& defaultValue) const;
     /// Return the member named key if it exist, defaultValue otherwise.
-    Value get ( std::string const& key,
-                const Value& defaultValue ) const;
+    Value
+    get(std::string const& key, const Value& defaultValue) const;
 
     /// \brief Remove and return the named member.
     ///
@@ -325,36 +376,48 @@ public:
     /// \return the removed Value, or null.
     /// \pre type() is objectValue or nullValue
     /// \post type() is unchanged
-    Value removeMember ( const char* key );
+    Value
+    removeMember(const char* key);
     /// Same as removeMember(const char*)
-    Value removeMember ( std::string const& key );
+    Value
+    removeMember(std::string const& key);
 
     /// Return true if the object has a member named key.
-    bool isMember ( const char* key ) const;
+    bool
+    isMember(const char* key) const;
     /// Return true if the object has a member named key.
-    bool isMember ( std::string const& key ) const;
+    bool
+    isMember(std::string const& key) const;
 
     /// \brief Return a list of the member names.
     ///
     /// If null, return an empty list.
     /// \pre type() is objectValue or nullValue
     /// \post if type() was nullValue, it remains nullValue
-    Members getMemberNames () const;
+    Members
+    getMemberNames() const;
 
-    std::string toStyledString () const;
+    std::string
+    toStyledString() const;
 
-    const_iterator begin () const;
-    const_iterator end () const;
+    const_iterator
+    begin() const;
+    const_iterator
+    end() const;
 
-    iterator begin ();
-    iterator end ();
+    iterator
+    begin();
+    iterator
+    end();
 
-    friend bool operator== (const Value&, const Value&);
-    friend bool operator< (const Value&, const Value&);
+    friend bool
+    operator==(const Value&, const Value&);
+    friend bool
+    operator<(const Value&, const Value&);
 
 private:
-    Value& resolveReference ( const char* key,
-                              bool isStatic );
+    Value&
+    resolveReference(const char* key, bool isStatic);
 
 private:
     union ValueHolder
@@ -364,59 +427,65 @@ private:
         double real_;
         bool bool_;
         char* string_;
-        ObjectValues* map_ {nullptr};
+        ObjectValues* map_{nullptr};
     } value_;
     ValueType type_ : 8;
-    int allocated_ : 1;     // Notes: if declared as bool, bitfield is useless.
+    int allocated_ : 1;  // Notes: if declared as bool, bitfield is useless.
 };
 
-bool operator== (const Value&, const Value&);
+bool
+operator==(const Value&, const Value&);
 
-inline
-bool operator!= (const Value& x, const Value& y)
+inline bool
+operator!=(const Value& x, const Value& y)
 {
-    return ! (x == y);
+    return !(x == y);
 }
 
-bool operator< (const Value&, const Value&);
+bool
+operator<(const Value&, const Value&);
 
-inline
-bool operator<= (const Value& x, const Value& y)
+inline bool
+operator<=(const Value& x, const Value& y)
 {
-    return ! (y < x);
+    return !(y < x);
 }
 
-inline
-bool operator> (const Value& x, const Value& y)
+inline bool
+operator>(const Value& x, const Value& y)
 {
     return y < x;
 }
 
-inline
-bool operator>= (const Value& x, const Value& y)
+inline bool
+operator>=(const Value& x, const Value& y)
 {
-    return ! (x < y);
+    return !(x < y);
 }
 
-/** \brief Experimental do not use: Allocator to customize member name and string value memory management done by Value.
+/** \brief Experimental do not use: Allocator to customize member name and
+ * string value memory management done by Value.
  *
- * - makeMemberName() and releaseMemberName() are called to respectively duplicate and
- *   free an Json::objectValue member name.
+ * - makeMemberName() and releaseMemberName() are called to respectively
+ * duplicate and free an Json::objectValue member name.
  * - duplicateStringValue() and releaseStringValue() are called similarly to
  *   duplicate and free a Json::stringValue value.
  */
 class ValueAllocator
 {
 public:
-    enum { unknown = (unsigned) - 1 };
+    enum { unknown = (unsigned)-1 };
 
-    virtual ~ValueAllocator () = default;
+    virtual ~ValueAllocator() = default;
 
-    virtual char* makeMemberName ( const char* memberName ) = 0;
-    virtual void releaseMemberName ( char* memberName ) = 0;
-    virtual char* duplicateStringValue ( const char* value,
-                                         unsigned int length = unknown ) = 0;
-    virtual void releaseStringValue ( char* value ) = 0;
+    virtual char*
+    makeMemberName(const char* memberName) = 0;
+    virtual void
+    releaseMemberName(char* memberName) = 0;
+    virtual char*
+    duplicateStringValue(const char* value, unsigned int length = unknown) = 0;
+    virtual void
+    releaseStringValue(char* value) = 0;
 };
 
 /** \brief base class for Value iterators.
@@ -429,41 +498,54 @@ public:
     using difference_type = int;
     using SelfType = ValueIteratorBase;
 
-    ValueIteratorBase ();
+    ValueIteratorBase();
 
-    explicit ValueIteratorBase ( const Value::ObjectValues::iterator& current );
+    explicit ValueIteratorBase(const Value::ObjectValues::iterator& current);
 
-    bool operator == ( const SelfType& other ) const
+    bool
+    operator==(const SelfType& other) const
     {
-        return isEqual ( other );
+        return isEqual(other);
     }
 
-    bool operator != ( const SelfType& other ) const
+    bool
+    operator!=(const SelfType& other) const
     {
-        return !isEqual ( other );
+        return !isEqual(other);
     }
 
-    /// Return either the index or the member name of the referenced value as a Value.
-    Value key () const;
+    /// Return either the index or the member name of the referenced value as a
+    /// Value.
+    Value
+    key() const;
 
     /// Return the index of the referenced Value. -1 if it is not an arrayValue.
-    UInt index () const;
+    UInt
+    index() const;
 
-    /// Return the member name of the referenced Value. "" if it is not an objectValue.
-    const char* memberName () const;
+    /// Return the member name of the referenced Value. "" if it is not an
+    /// objectValue.
+    const char*
+    memberName() const;
 
 protected:
-    Value& deref () const;
+    Value&
+    deref() const;
 
-    void increment ();
+    void
+    increment();
 
-    void decrement ();
+    void
+    decrement();
 
-    difference_type computeDistance ( const SelfType& other ) const;
+    difference_type
+    computeDistance(const SelfType& other) const;
 
-    bool isEqual ( const SelfType& other ) const;
+    bool
+    isEqual(const SelfType& other) const;
 
-    void copy ( const SelfType& other );
+    void
+    copy(const SelfType& other);
 
 private:
     Value::ObjectValues::iterator current_;
@@ -477,6 +559,7 @@ private:
 class ValueConstIterator : public ValueIteratorBase
 {
     friend class Value;
+
 public:
     using size_t = unsigned int;
     using difference_type = int;
@@ -484,52 +567,60 @@ public:
     using pointer = const Value*;
     using SelfType = ValueConstIterator;
 
-    ValueConstIterator () = default;
+    ValueConstIterator() = default;
+
 private:
     /*! \internal Use by Value to create an iterator.
      */
-    explicit ValueConstIterator ( const Value::ObjectValues::iterator& current );
-public:
-    SelfType& operator = ( const ValueIteratorBase& other );
+    explicit ValueConstIterator(const Value::ObjectValues::iterator& current);
 
-    SelfType operator++ ( int )
+public:
+    SelfType&
+    operator=(const ValueIteratorBase& other);
+
+    SelfType
+    operator++(int)
     {
-        SelfType temp ( *this );
+        SelfType temp(*this);
         ++*this;
         return temp;
     }
 
-    SelfType operator-- ( int )
+    SelfType
+    operator--(int)
     {
-        SelfType temp ( *this );
+        SelfType temp(*this);
         --*this;
         return temp;
     }
 
-    SelfType& operator-- ()
+    SelfType&
+    operator--()
     {
-        decrement ();
+        decrement();
         return *this;
     }
 
-    SelfType& operator++ ()
+    SelfType&
+    operator++()
     {
-        increment ();
+        increment();
         return *this;
     }
 
-    reference operator * () const
+    reference
+    operator*() const
     {
-        return deref ();
+        return deref();
     }
 };
-
 
 /** \brief Iterator for object and array value.
  */
 class ValueIterator : public ValueIteratorBase
 {
     friend class Value;
+
 public:
     using size_t = unsigned int;
     using difference_type = int;
@@ -537,50 +628,56 @@ public:
     using pointer = Value*;
     using SelfType = ValueIterator;
 
-    ValueIterator () = default;
-    ValueIterator ( const ValueConstIterator& other );
-    ValueIterator ( const ValueIterator& other );
+    ValueIterator() = default;
+    ValueIterator(const ValueConstIterator& other);
+    ValueIterator(const ValueIterator& other);
+
 private:
     /*! \internal Use by Value to create an iterator.
      */
-    explicit ValueIterator ( const Value::ObjectValues::iterator& current );
+    explicit ValueIterator(const Value::ObjectValues::iterator& current);
+
 public:
+    SelfType&
+    operator=(const SelfType& other);
 
-    SelfType& operator = ( const SelfType& other );
-
-    SelfType operator++ ( int )
+    SelfType
+    operator++(int)
     {
-        SelfType temp ( *this );
+        SelfType temp(*this);
         ++*this;
         return temp;
     }
 
-    SelfType operator-- ( int )
+    SelfType
+    operator--(int)
     {
-        SelfType temp ( *this );
+        SelfType temp(*this);
         --*this;
         return temp;
     }
 
-    SelfType& operator-- ()
+    SelfType&
+    operator--()
     {
-        decrement ();
+        decrement();
         return *this;
     }
 
-    SelfType& operator++ ()
+    SelfType&
+    operator++()
     {
-        increment ();
+        increment();
         return *this;
     }
 
-    reference operator * () const
+    reference
+    operator*() const
     {
-        return deref ();
+        return deref();
     }
 };
 
-} // namespace Json
+}  // namespace Json
 
-
-#endif // CPPTL_JSON_H_INCLUDED
+#endif  // CPPTL_JSON_H_INCLUDED

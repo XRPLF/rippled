@@ -16,52 +16,51 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <test/jtx/JSONRPCClient.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/server/Port.h>
-#include <boost/beast/http/message.hpp>
-#include <boost/beast/http/dynamic_body.hpp>
-#include <boost/beast/http/string_body.hpp>
-#include <boost/beast/http/read.hpp>
-#include <boost/beast/http/write.hpp>
 #include <boost/asio.hpp>
+#include <boost/beast/http/dynamic_body.hpp>
+#include <boost/beast/http/message.hpp>
+#include <boost/beast/http/read.hpp>
+#include <boost/beast/http/string_body.hpp>
+#include <boost/beast/http/write.hpp>
 #include <string>
+#include <test/jtx/JSONRPCClient.h>
 
 namespace ripple {
 namespace test {
 
 class JSONRPCClient : public AbstractClient
 {
-    static
-    boost::asio::ip::tcp::endpoint
+    static boost::asio::ip::tcp::endpoint
     getEndpoint(BasicConfig const& cfg)
     {
         auto& log = std::cerr;
         ParsedPort common;
-        parse_Port (common, cfg["server"], log);
+        parse_Port(common, cfg["server"], log);
         for (auto const& name : cfg.section("server").values())
         {
-            if (! cfg.exists(name))
+            if (!cfg.exists(name))
                 continue;
             ParsedPort pp;
             parse_Port(pp, cfg[name], log);
-            if(pp.protocol.count("http") == 0)
+            if (pp.protocol.count("http") == 0)
                 continue;
             using namespace boost::asio::ip;
-            if(pp.ip && pp.ip->is_unspecified())
-               *pp.ip = pp.ip->is_v6() ? address{address_v6::loopback()} : address{address_v4::loopback()};
-            return { *pp.ip, *pp.port };
+            if (pp.ip && pp.ip->is_unspecified())
+                *pp.ip = pp.ip->is_v6() ? address{address_v6::loopback()}
+                                        : address{address_v4::loopback()};
+            return {*pp.ip, *pp.port};
         }
         Throw<std::runtime_error>("Missing HTTP port");
-        return {}; // Silence compiler control paths return value warning
+        return {};  // Silence compiler control paths return value warning
     }
 
     template <class ConstBufferSequence>
-    static
-    std::string
-    buffer_string (ConstBufferSequence const& b)
+    static std::string
+    buffer_string(ConstBufferSequence const& b)
     {
         using namespace boost::asio;
         std::string s;
@@ -78,19 +77,16 @@ class JSONRPCClient : public AbstractClient
     unsigned rpc_version_;
 
 public:
-    explicit
-    JSONRPCClient(Config const& cfg, unsigned rpc_version)
-        : ep_(getEndpoint(cfg))
-        , stream_(ios_)
-        , rpc_version_(rpc_version)
+    explicit JSONRPCClient(Config const& cfg, unsigned rpc_version)
+        : ep_(getEndpoint(cfg)), stream_(ios_), rpc_version_(rpc_version)
     {
         stream_.connect(ep_);
     }
 
     ~JSONRPCClient() override
     {
-        //stream_.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
-        //stream_.close();
+        // stream_.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
+        // stream_.close();
     }
 
     /*
@@ -100,8 +96,7 @@ public:
             result
     */
     Json::Value
-    invoke(std::string const& cmd,
-        Json::Value const& params) override
+    invoke(std::string const& cmd, Json::Value const& params) override
     {
         using namespace boost::beast::http;
         using namespace boost::asio;
@@ -122,7 +117,7 @@ public:
                 jr[jss::ripplerpc] = "2.0";
                 jr[jss::id] = 5;
             }
-            if(params)
+            if (params)
             {
                 Json::Value& ja = jr[jss::params] = Json::arrayValue;
                 ja.append(params);
@@ -138,14 +133,15 @@ public:
         Json::Reader jr;
         Json::Value jv;
         jr.parse(buffer_string(res.body().data()), jv);
-        if(jv["result"].isMember("error"))
+        if (jv["result"].isMember("error"))
             jv["error"] = jv["result"]["error"];
-        if(jv["result"].isMember("status"))
+        if (jv["result"].isMember("status"))
             jv["status"] = jv["result"]["status"];
         return jv;
     }
 
-    unsigned version() const override
+    unsigned
+    version() const override
     {
         return rpc_version_;
     }
@@ -157,5 +153,5 @@ makeJSONRPCClient(Config const& cfg, unsigned rpc_version)
     return std::make_unique<JSONRPCClient>(cfg, rpc_version);
 }
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple

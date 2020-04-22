@@ -28,7 +28,8 @@ namespace RPC {
 namespace Tuning {
 
 /** Represents RPC limit parameter values that have a min, default and max. */
-struct LimitRange {
+struct LimitRange
+{
     unsigned int rmin, rdefault, rmax;
 };
 
@@ -55,7 +56,7 @@ static int constexpr defaultAutoFillFeeDivisor = 1;
 static int constexpr maxPathfindsInProgress = 2;
 static int constexpr maxPathfindJobCount = 50;
 static int constexpr maxJobQueueClients = 500;
-auto constexpr maxValidatedLedgerAge = std::chrono::minutes {2};
+auto constexpr maxValidatedLedgerAge = std::chrono::minutes{2};
 static int constexpr maxRequestSize = 1000000;
 
 /** Maximum number of pages in one response from a binary LedgerData request. */
@@ -76,10 +77,10 @@ static int constexpr max_src_cur = 18;
 /** Maximum number of auto source currencies in a path find request. */
 static int constexpr max_auto_src_cur = 88;
 
-} // Tuning
+}  // namespace Tuning
 /** @} */
 
-} // RPC
-} // ripple
+}  // namespace RPC
+}  // namespace ripple
 
 #endif

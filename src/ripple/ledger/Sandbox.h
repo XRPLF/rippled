@@ -31,34 +31,33 @@ namespace ripple {
 
     @note Presented as ApplyView to clients.
 */
-class Sandbox
-    : public detail::ApplyViewBase
+class Sandbox : public detail::ApplyViewBase
 {
 public:
     Sandbox() = delete;
-    Sandbox (Sandbox const&) = delete;
-    Sandbox& operator= (Sandbox&&) = delete;
-    Sandbox& operator= (Sandbox const&) = delete;
+    Sandbox(Sandbox const&) = delete;
+    Sandbox&
+    operator=(Sandbox&&) = delete;
+    Sandbox&
+    operator=(Sandbox const&) = delete;
 
-    Sandbox (Sandbox&&) = default;
+    Sandbox(Sandbox&&) = default;
 
-    Sandbox (ReadView const* base, ApplyFlags flags)
-        : ApplyViewBase (base, flags)
+    Sandbox(ReadView const* base, ApplyFlags flags) : ApplyViewBase(base, flags)
     {
     }
 
-    Sandbox (ApplyView const* base)
-        : Sandbox(base, base->flags())
+    Sandbox(ApplyView const* base) : Sandbox(base, base->flags())
     {
     }
 
     void
-    apply (RawView& to)
+    apply(RawView& to)
     {
         items_.apply(to);
     }
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

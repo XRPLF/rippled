@@ -39,11 +39,10 @@ class CheckDeliveredAmount
     // Number of payments with no `delivered_amount` field
     int numExpectedNotSet_ = 0;
 
-    // Increment one of the expected numExpected{Available_, Unavailable_, NotSet_} values.
-    // Which value to increment depends on:
-    // 1) If the ledger is before or after the switch time
-    // 2) If the tx is a partial payment
-    // 3) If the payment is successful or not
+    // Increment one of the expected numExpected{Available_, Unavailable_,
+    // NotSet_} values. Which value to increment depends on: 1) If the ledger is
+    // before or after the switch time 2) If the tx is a partial payment 3) If
+    // the payment is successful or not
     void
     adjCounters(bool success, bool partial)
     {

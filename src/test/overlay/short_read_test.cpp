@@ -20,7 +20,6 @@
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/beast/unit_test.h>
-#include <test/jtx/envconfig.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/optional.hpp>
@@ -29,6 +28,7 @@
 #include <condition_variable>
 #include <functional>
 #include <memory>
+#include <test/jtx/envconfig.h>
 #include <thread>
 #include <utility>
 
@@ -50,8 +50,8 @@ class short_read_test : public beast::unit_test::suite
 private:
     using io_context_type = boost::asio::io_context;
     using strand_type = boost::asio::io_context::strand;
-    using timer_type = boost::asio::basic_waitable_timer<
-        std::chrono::steady_clock>;
+    using timer_type =
+        boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
     using acceptor_type = boost::asio::ip::tcp::acceptor;
     using socket_type = boost::asio::ip::tcp::socket;
     using stream_type = boost::asio::ssl::stream<socket_type&>;
@@ -60,13 +60,13 @@ private:
     using address_type = boost::asio::ip::address;
 
     io_context_type io_context_;
-    boost::optional<boost::asio::executor_work_guard<boost::asio::executor>> work_;
+    boost::optional<boost::asio::executor_work_guard<boost::asio::executor>>
+        work_;
     std::thread thread_;
     std::shared_ptr<boost::asio::ssl::context> context_;
 
     template <class Streambuf>
-    static
-    void
+    static void
     write(Streambuf& sb, std::string const& s)
     {
         using boost::asio::buffer;
@@ -87,8 +87,7 @@ private:
             Base& base_;
 
         public:
-            explicit Child(Base& base)
-                : base_(base)
+            explicit Child(Base& base) : base_(base)
             {
             }
 
@@ -97,7 +96,8 @@ private:
                 base_.remove(this);
             }
 
-            virtual void close() = 0;
+            virtual void
+            close() = 0;
         };
 
     private:
@@ -114,14 +114,14 @@ private:
         }
 
         void
-        add (std::shared_ptr<Child> const& child)
+        add(std::shared_ptr<Child> const& child)
         {
             std::lock_guard lock(mutex_);
             list_.emplace(child.get(), child);
         }
 
         void
-        remove (Child* child)
+        remove(Child* child)
         {
             std::lock_guard lock(mutex_);
             list_.erase(child);
@@ -139,9 +139,9 @@ private:
                 if (closed_)
                     return;
                 closed_ = true;
-                for(auto const& c : list_)
+                for (auto const& c : list_)
                 {
-                    if(auto p = c.second.lock())
+                    if (auto p = c.second.lock())
                     {
                         p->close();
                         // Must destroy shared_ptr outside the
@@ -157,7 +157,7 @@ private:
         wait()
         {
             std::unique_lock<std::mutex> lock(mutex_);
-            while(! list_.empty())
+            while (!list_.empty())
                 cond_.wait(lock);
         }
     };
@@ -170,8 +170,7 @@ private:
         short_read_test& test_;
         endpoint_type endpoint_;
 
-        struct Acceptor
-            : Child, std::enable_shared_from_this<Acceptor>
+        struct Acceptor : Child, std::enable_shared_from_this<Acceptor>
         {
             Server& server_;
             short_read_test& test_;
@@ -183,24 +182,28 @@ private:
                 : Child(server)
                 , server_(server)
                 , test_(server_.test_)
-                , acceptor_(test_.io_context_,
-                    endpoint_type(beast::IP::Address::from_string(
-                        test::getEnvLocalhostAddr()), 0))
+                , acceptor_(
+                      test_.io_context_,
+                      endpoint_type(
+                          beast::IP::Address::from_string(
+                              test::getEnvLocalhostAddr()),
+                          0))
                 , socket_(test_.io_context_)
                 , strand_(test_.io_context_)
             {
                 acceptor_.listen();
                 server_.endpoint_ = acceptor_.local_endpoint();
-                test_.log << "[server] up on port: " <<
-                    server_.endpoint_.port() << std::endl;
+                test_.log << "[server] up on port: " << server_.endpoint_.port()
+                          << std::endl;
             }
 
             void
             close() override
             {
-                if(! strand_.running_in_this_thread())
-                    return post(strand_, std::bind(&Acceptor::close,
-                        shared_from_this()));
+                if (!strand_.running_in_this_thread())
+                    return post(
+                        strand_,
+                        std::bind(&Acceptor::close, shared_from_this()));
                 acceptor_.close();
             }
 
@@ -218,13 +221,12 @@ private:
             }
 
             void
-            fail (std::string const& what, error_code ec)
+            fail(std::string const& what, error_code ec)
             {
                 if (acceptor_.is_open())
                 {
                     if (ec != boost::asio::error::operation_aborted)
-                        test_.log << what <<
-                            ": " << ec.message() << std::endl;
+                        test_.log << what << ": " << ec.message() << std::endl;
                     acceptor_.close();
                 }
             }
@@ -233,9 +235,9 @@ private:
             on_accept(error_code ec)
             {
                 if (ec)
-                    return fail ("accept", ec);
-                auto const p = std::make_shared<Connection>(
-                    server_, std::move(socket_));
+                    return fail("accept", ec);
+                auto const p =
+                    std::make_shared<Connection>(server_, std::move(socket_));
                 server_.add(p);
                 p->run();
                 acceptor_.async_accept(
@@ -249,8 +251,7 @@ private:
             }
         };
 
-        struct Connection
-            : Child, std::enable_shared_from_this<Connection>
+        struct Connection : Child, std::enable_shared_from_this<Connection>
         {
             Server& server_;
             short_read_test& test_;
@@ -260,7 +261,7 @@ private:
             timer_type timer_;
             boost::asio::streambuf buf_;
 
-            Connection (Server& server, socket_type&& socket)
+            Connection(Server& server, socket_type&& socket)
                 : Child(server)
                 , server_(server)
                 , test_(server_.test_)
@@ -274,9 +275,10 @@ private:
             void
             close() override
             {
-                if(! strand_.running_in_this_thread())
-                    return post(strand_, std::bind(&Connection::close,
-                        shared_from_this()));
+                if (!strand_.running_in_this_thread())
+                    return post(
+                        strand_,
+                        std::bind(&Connection::close, shared_from_this()));
                 if (socket_.is_open())
                 {
                     socket_.close();
@@ -305,13 +307,13 @@ private:
             }
 
             void
-            fail (std::string const& what, error_code ec)
+            fail(std::string const& what, error_code ec)
             {
                 if (socket_.is_open())
                 {
                     if (ec != boost::asio::error::operation_aborted)
-                        test_.log << "[server] " << what <<
-                            ": " << ec.message() << std::endl;
+                        test_.log << "[server] " << what << ": " << ec.message()
+                                  << std::endl;
                     socket_.close();
                     timer_.cancel();
                 }
@@ -406,8 +408,7 @@ private:
         };
 
     public:
-        explicit Server(short_read_test& test)
-            : test_(test)
+        explicit Server(short_read_test& test) : test_(test)
         {
             auto const p = std::make_shared<Acceptor>(*this);
             add(p);
@@ -421,7 +422,7 @@ private:
         }
 
         endpoint_type const&
-        endpoint () const
+        endpoint() const
         {
             return endpoint_;
         }
@@ -434,8 +435,7 @@ private:
     private:
         short_read_test& test_;
 
-        struct Connection
-            : Child, std::enable_shared_from_this<Connection>
+        struct Connection : Child, std::enable_shared_from_this<Connection>
         {
             Client& client_;
             short_read_test& test_;
@@ -446,7 +446,7 @@ private:
             boost::asio::streambuf buf_;
             endpoint_type const& ep_;
 
-            Connection (Client& client, endpoint_type const& ep)
+            Connection(Client& client, endpoint_type const& ep)
                 : Child(client)
                 , client_(client)
                 , test_(client_.test_)
@@ -461,7 +461,7 @@ private:
             void
             close() override
             {
-                if(! strand_.running_in_this_thread())
+                if (!strand_.running_in_this_thread())
                     return post(
                         strand_,
                         std::bind(&Connection::close, shared_from_this()));
@@ -493,13 +493,13 @@ private:
             }
 
             void
-            fail (std::string const& what, error_code ec)
+            fail(std::string const& what, error_code ec)
             {
                 if (socket_.is_open())
                 {
                     if (ec != boost::asio::error::operation_aborted)
-                        test_.log << "[client] " << what <<
-                            ": " << ec.message() << std::endl;
+                        test_.log << "[client] " << what << ": " << ec.message()
+                                  << std::endl;
                     socket_.close();
                     timer_.cancel();
                 }
@@ -604,7 +604,6 @@ private:
             void
             on_shutdown(error_code ec)
             {
-
                 if (ec)
                     return fail("shutdown", ec);
                 socket_.close();
@@ -613,8 +612,7 @@ private:
         };
 
     public:
-        Client(short_read_test& test, endpoint_type const& ep)
-            : test_(test)
+        Client(short_read_test& test, endpoint_type const& ep) : test_(test)
         {
             auto const p = std::make_shared<Connection>(*this, ep);
             add(p);
@@ -645,7 +643,8 @@ public:
         thread_.join();
     }
 
-    void run() override
+    void
+    run() override
     {
         Server s(*this);
         Client c(*this, s.endpoint());
@@ -654,6 +653,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(short_read,overlay,ripple);
+BEAST_DEFINE_TESTSUITE(short_read, overlay, ripple);
 
-}
+}  // namespace ripple

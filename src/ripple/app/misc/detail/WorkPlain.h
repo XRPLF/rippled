@@ -27,16 +27,18 @@ namespace ripple {
 namespace detail {
 
 // Work over TCP/IP
-class WorkPlain : public WorkBase<WorkPlain>
-    , public std::enable_shared_from_this<WorkPlain>
+class WorkPlain : public WorkBase<WorkPlain>,
+                  public std::enable_shared_from_this<WorkPlain>
 {
     friend class WorkBase<WorkPlain>;
 
 public:
     WorkPlain(
         std::string const& host,
-        std::string const& path, std::string const& port,
-        boost::asio::io_service& ios, callback_type cb);
+        std::string const& path,
+        std::string const& port,
+        boost::asio::io_service& ios,
+        callback_type cb);
     ~WorkPlain() = default;
 
 private:
@@ -54,9 +56,11 @@ private:
 
 WorkPlain::WorkPlain(
     std::string const& host,
-    std::string const& path, std::string const& port,
-    boost::asio::io_service& ios, callback_type cb)
-    : WorkBase (host, path, port, ios, cb)
+    std::string const& path,
+    std::string const& port,
+    boost::asio::io_service& ios,
+    callback_type cb)
+    : WorkBase(host, path, port, ios, cb)
 {
 }
 
@@ -66,11 +70,11 @@ WorkPlain::onConnect(error_code const& ec)
     if (ec)
         return fail(ec);
 
-    onStart ();
+    onStart();
 }
 
-} // detail
+}  // namespace detail
 
-} // ripple
+}  // namespace ripple
 
 #endif

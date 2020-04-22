@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <test/jtx/check.h>
-#include <ripple/protocol/jss.h>
 #include <ripple/protocol/TxFlags.h>
+#include <ripple/protocol/jss.h>
+#include <test/jtx/check.h>
 
 namespace ripple {
 namespace test {
@@ -29,8 +29,10 @@ namespace check {
 
 // Create a check.
 Json::Value
-create (jtx::Account const& account,
-    jtx::Account const& dest, STAmount const& sendMax)
+create(
+    jtx::Account const& account,
+    jtx::Account const& dest,
+    STAmount const& sendMax)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
@@ -43,13 +45,12 @@ create (jtx::Account const& account,
 
 // Cash a check requiring that a specific amount be delivered.
 Json::Value
-cash (jtx::Account const& dest,
-    uint256 const& checkId, STAmount const& amount)
+cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = dest.human();
-    jv[sfAmount.jsonName]  = amount.getJson(JsonOptions::none);
-    jv[sfCheckID.jsonName] = to_string (checkId);
+    jv[sfAmount.jsonName] = amount.getJson(JsonOptions::none);
+    jv[sfCheckID.jsonName] = to_string(checkId);
     jv[sfTransactionType.jsonName] = jss::CheckCash;
     jv[sfFlags.jsonName] = tfUniversal;
     return jv;
@@ -57,13 +58,15 @@ cash (jtx::Account const& dest,
 
 // Cash a check requiring that at least a minimum amount be delivered.
 Json::Value
-cash (jtx::Account const& dest,
-    uint256 const& checkId, DeliverMin const& atLeast)
+cash(
+    jtx::Account const& dest,
+    uint256 const& checkId,
+    DeliverMin const& atLeast)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = dest.human();
-    jv[sfDeliverMin.jsonName]  = atLeast.value.getJson(JsonOptions::none);
-    jv[sfCheckID.jsonName] = to_string (checkId);
+    jv[sfDeliverMin.jsonName] = atLeast.value.getJson(JsonOptions::none);
+    jv[sfCheckID.jsonName] = to_string(checkId);
     jv[sfTransactionType.jsonName] = jss::CheckCash;
     jv[sfFlags.jsonName] = tfUniversal;
     return jv;
@@ -71,18 +74,18 @@ cash (jtx::Account const& dest,
 
 // Cancel a check.
 Json::Value
-cancel (jtx::Account const& dest, uint256 const& checkId)
+cancel(jtx::Account const& dest, uint256 const& checkId)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = dest.human();
-    jv[sfCheckID.jsonName] = to_string (checkId);
+    jv[sfCheckID.jsonName] = to_string(checkId);
     jv[sfTransactionType.jsonName] = jss::CheckCancel;
     jv[sfFlags.jsonName] = tfUniversal;
     return jv;
 }
 
-} // check
+}  // namespace check
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple

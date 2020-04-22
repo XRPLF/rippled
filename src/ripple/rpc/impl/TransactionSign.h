@@ -21,8 +21,8 @@
 #define RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
 
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/rpc/Role.h>
 #include <ripple/ledger/ApplyView.h>
+#include <ripple/rpc/Role.h>
 
 namespace ripple {
 
@@ -61,7 +61,8 @@ namespace RPC {
 
     @return         A JSON object containing the error results, if any
 */
-Json::Value checkFee (
+Json::Value
+checkFee(
     Json::Value& request,
     Role const role,
     bool doAutoFill,
@@ -71,21 +72,27 @@ Json::Value checkFee (
     std::shared_ptr<OpenView const> const& ledger);
 
 // Return a std::function<> that calls NetworkOPs::processTransaction.
-using ProcessTransactionFn =
-    std::function<void (std::shared_ptr<Transaction>& transaction,
-        bool bUnlimited, bool bLocal, NetworkOPs::FailHard failType)>;
+using ProcessTransactionFn = std::function<void(
+    std::shared_ptr<Transaction>& transaction,
+    bool bUnlimited,
+    bool bLocal,
+    NetworkOPs::FailHard failType)>;
 
-inline ProcessTransactionFn getProcessTxnFn (NetworkOPs& netOPs)
+inline ProcessTransactionFn
+getProcessTxnFn(NetworkOPs& netOPs)
 {
-    return [&netOPs](std::shared_ptr<Transaction>& transaction,
-        bool bUnlimited, bool bLocal, NetworkOPs::FailHard failType)
-    {
+    return [&netOPs](
+               std::shared_ptr<Transaction>& transaction,
+               bool bUnlimited,
+               bool bLocal,
+               NetworkOPs::FailHard failType) {
         netOPs.processTransaction(transaction, bUnlimited, bLocal, failType);
     };
 }
 
 /** Returns a Json::objectValue. */
-Json::Value transactionSign (
+Json::Value
+transactionSign(
     Json::Value params,  // Passed by value so it can be modified locally.
     NetworkOPs::FailHard failType,
     Role role,
@@ -93,7 +100,8 @@ Json::Value transactionSign (
     Application& app);
 
 /** Returns a Json::objectValue. */
-Json::Value transactionSubmit (
+Json::Value
+transactionSubmit(
     Json::Value params,  // Passed by value so it can be modified locally.
     NetworkOPs::FailHard failType,
     Role role,
@@ -102,7 +110,8 @@ Json::Value transactionSubmit (
     ProcessTransactionFn const& processTransaction);
 
 /** Returns a Json::objectValue. */
-Json::Value transactionSignFor (
+Json::Value
+transactionSignFor(
     Json::Value params,  // Passed by value so it can be modified locally.
     NetworkOPs::FailHard failType,
     Role role,
@@ -110,7 +119,8 @@ Json::Value transactionSignFor (
     Application& app);
 
 /** Returns a Json::objectValue. */
-Json::Value transactionSubmitMultiSigned (
+Json::Value
+transactionSubmitMultiSigned(
     Json::Value params,  // Passed by value so it can be modified locally.
     NetworkOPs::FailHard failType,
     Role role,
@@ -118,7 +128,7 @@ Json::Value transactionSubmitMultiSigned (
     Application& app,
     ProcessTransactionFn const& processTransaction);
 
-} // RPC
-} // ripple
+}  // namespace RPC
+}  // namespace ripple
 
 #endif

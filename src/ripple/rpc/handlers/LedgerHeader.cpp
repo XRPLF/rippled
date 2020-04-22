@@ -29,24 +29,24 @@ namespace ripple {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value doLedgerHeader (RPC::JsonContext& context)
+Json::Value
+doLedgerHeader(RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;
-    auto jvResult = RPC::lookupLedger (lpLedger, context);
+    auto jvResult = RPC::lookupLedger(lpLedger, context);
 
     if (!lpLedger)
         return jvResult;
 
-    Serializer  s;
-    addRaw (lpLedger->info(), s);
-    jvResult[jss::ledger_data] = strHex (s.peekData ());
+    Serializer s;
+    addRaw(lpLedger->info(), s);
+    jvResult[jss::ledger_data] = strHex(s.peekData());
 
     // This information isn't verified: they should only use it if they trust
     // us.
-    addJson (jvResult, {*lpLedger, 0});
+    addJson(jvResult, {*lpLedger, 0});
 
     return jvResult;
 }
 
-
-} // ripple
+}  // namespace ripple

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/beast/core/LexicalCast.h>
+#include <ripple/beast/core/SemanticVersion.h>
 
 #include <algorithm>
 #include <cassert>
@@ -26,13 +26,14 @@
 
 namespace beast {
 
-std::string print_identifiers (SemanticVersion::identifier_list const& list)
+std::string
+print_identifiers(SemanticVersion::identifier_list const& list)
 {
     std::string ret;
 
     for (auto const& x : list)
     {
-        if (!ret.empty ())
+        if (!ret.empty())
             ret += ".";
         ret += x;
     }
@@ -40,215 +41,222 @@ std::string print_identifiers (SemanticVersion::identifier_list const& list)
     return ret;
 }
 
-bool isNumeric (std::string const& s)
+bool
+isNumeric(std::string const& s)
 {
     int n;
 
     // Must be convertible to an integer
-    if (!lexicalCastChecked (n, s))
+    if (!lexicalCastChecked(n, s))
         return false;
 
     // Must not have leading zeroes
-    return std::to_string (n) == s;
+    return std::to_string(n) == s;
 }
 
-bool chop (std::string const& what, std::string& input)
+bool
+chop(std::string const& what, std::string& input)
 {
-    auto ret = input.find (what);
+    auto ret = input.find(what);
 
     if (ret != 0)
         return false;
 
-    input.erase (0, what.size ());
+    input.erase(0, what.size());
     return true;
 }
 
-bool chopUInt (int& value, int limit, std::string& input)
+bool
+chopUInt(int& value, int limit, std::string& input)
 {
     // Must not be empty
-    if (input.empty ())
+    if (input.empty())
         return false;
 
-    auto left_iter = std::find_if_not (input.begin (), input.end (),
-        [](std::string::value_type c)
-        {
-            return std::isdigit (c, std::locale::classic());
+    auto left_iter = std::find_if_not(
+        input.begin(), input.end(), [](std::string::value_type c) {
+            return std::isdigit(c, std::locale::classic());
         });
 
-    std::string item (input.begin (), left_iter);
+    std::string item(input.begin(), left_iter);
 
     // Must not be empty
-    if (item.empty ())
+    if (item.empty())
         return false;
 
     int n;
 
     // Must be convertible to an integer
-    if (!lexicalCastChecked (n, item))
+    if (!lexicalCastChecked(n, item))
         return false;
 
     // Must not have leading zeroes
-    if (std::to_string (n) != item)
+    if (std::to_string(n) != item)
         return false;
 
     // Must not be out of range
     if (n < 0 || n > limit)
         return false;
 
-    input.erase (input.begin (), left_iter);
+    input.erase(input.begin(), left_iter);
     value = n;
 
     return true;
 }
 
-bool extract_identifier (
-    std::string& value, bool allowLeadingZeroes, std::string& input)
+bool
+extract_identifier(
+    std::string& value,
+    bool allowLeadingZeroes,
+    std::string& input)
 {
     // Must not be empty
-    if (input.empty ())
+    if (input.empty())
         return false;
 
     // Must not have a leading 0
-    if (!allowLeadingZeroes && input [0] == '0')
+    if (!allowLeadingZeroes && input[0] == '0')
         return false;
 
-    auto last = input.find_first_not_of (
+    auto last = input.find_first_not_of(
         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-");
 
     // Must not be empty
     if (last == 0)
         return false;
 
-    value = input.substr (0, last);
-    input.erase (0, last);
+    value = input.substr(0, last);
+    input.erase(0, last);
     return true;
 }
 
-bool extract_identifiers (
+bool
+extract_identifiers(
     SemanticVersion::identifier_list& identifiers,
     bool allowLeadingZeroes,
     std::string& input)
 {
-    if (input.empty ())
+    if (input.empty())
         return false;
 
-    do {
+    do
+    {
         std::string s;
 
-        if (!extract_identifier (s, allowLeadingZeroes, input))
+        if (!extract_identifier(s, allowLeadingZeroes, input))
             return false;
-        identifiers.push_back (s);
-    } while (chop (".", input));
+        identifiers.push_back(s);
+    } while (chop(".", input));
 
     return true;
 }
 
 //------------------------------------------------------------------------------
 
-SemanticVersion::SemanticVersion ()
-    : majorVersion (0)
-    , minorVersion (0)
-    , patchVersion (0)
+SemanticVersion::SemanticVersion()
+    : majorVersion(0), minorVersion(0), patchVersion(0)
 {
 }
 
-SemanticVersion::SemanticVersion (std::string const& version)
-    : SemanticVersion ()
+SemanticVersion::SemanticVersion(std::string const& version) : SemanticVersion()
 {
-    if (!parse (version))
-        throw std::invalid_argument ("invalid version string");
+    if (!parse(version))
+        throw std::invalid_argument("invalid version string");
 }
 
-bool SemanticVersion::parse (std::string const& input)
+bool
+SemanticVersion::parse(std::string const& input)
 {
     // May not have leading or trailing whitespace
-    auto left_iter = std::find_if_not (input.begin (), input.end (),
-        [](std::string::value_type c)
-        {
-            return std::isspace (c, std::locale::classic());
+    auto left_iter = std::find_if_not(
+        input.begin(), input.end(), [](std::string::value_type c) {
+            return std::isspace(c, std::locale::classic());
         });
 
-    auto right_iter = std::find_if_not (input.rbegin (), input.rend (),
-        [](std::string::value_type c)
-        {
-            return std::isspace (c, std::locale::classic());
-        }).base ();
+    auto right_iter = std::find_if_not(
+                          input.rbegin(),
+                          input.rend(),
+                          [](std::string::value_type c) {
+                              return std::isspace(c, std::locale::classic());
+                          })
+                          .base();
 
     // Must not be empty!
     if (left_iter >= right_iter)
         return false;
 
-    std::string version (left_iter, right_iter);
+    std::string version(left_iter, right_iter);
 
     // May not have leading or trailing whitespace
     if (version != input)
         return false;
 
     // Must have major version number
-    if (! chopUInt (majorVersion, std::numeric_limits <int>::max (), version))
+    if (!chopUInt(majorVersion, std::numeric_limits<int>::max(), version))
         return false;
-    if (! chop (".", version))
+    if (!chop(".", version))
         return false;
 
     // Must have minor version number
-    if (! chopUInt (minorVersion, std::numeric_limits <int>::max (), version))
+    if (!chopUInt(minorVersion, std::numeric_limits<int>::max(), version))
         return false;
-    if (! chop (".", version))
+    if (!chop(".", version))
         return false;
 
     // Must have patch version number
-    if (! chopUInt (patchVersion, std::numeric_limits <int>::max (), version))
+    if (!chopUInt(patchVersion, std::numeric_limits<int>::max(), version))
         return false;
 
     // May have pre-release identifier list
-    if (chop ("-", version))
+    if (chop("-", version))
     {
-        if (!extract_identifiers (preReleaseIdentifiers, false, version))
+        if (!extract_identifiers(preReleaseIdentifiers, false, version))
             return false;
 
         // Must not be empty
-        if (preReleaseIdentifiers.empty ())
+        if (preReleaseIdentifiers.empty())
             return false;
     }
 
     // May have metadata identifier list
-    if (chop ("+", version))
+    if (chop("+", version))
     {
-        if (!extract_identifiers (metaData, true, version))
+        if (!extract_identifiers(metaData, true, version))
             return false;
 
         // Must not be empty
-        if (metaData.empty ())
+        if (metaData.empty())
             return false;
     }
 
-    return version.empty ();
+    return version.empty();
 }
 
-std::string SemanticVersion::print () const
+std::string
+SemanticVersion::print() const
 {
     std::string s;
 
-    s = std::to_string (majorVersion) + "." +
-        std::to_string (minorVersion) + "." +
-        std::to_string (patchVersion);
+    s = std::to_string(majorVersion) + "." + std::to_string(minorVersion) +
+        "." + std::to_string(patchVersion);
 
-    if (!preReleaseIdentifiers.empty ())
+    if (!preReleaseIdentifiers.empty())
     {
         s += "-";
-        s += print_identifiers (preReleaseIdentifiers);
+        s += print_identifiers(preReleaseIdentifiers);
     }
 
-    if (!metaData.empty ())
+    if (!metaData.empty())
     {
         s += "+";
-        s += print_identifiers (metaData);
+        s += print_identifiers(metaData);
     }
 
     return s;
 }
 
-int compare (SemanticVersion const& lhs, SemanticVersion const& rhs)
+int
+compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
 {
     if (lhs.majorVersion > rhs.majorVersion)
         return 1;
@@ -265,38 +273,41 @@ int compare (SemanticVersion const& lhs, SemanticVersion const& rhs)
     else if (lhs.patchVersion < rhs.patchVersion)
         return -1;
 
-    if (lhs.isPreRelease () || rhs.isPreRelease ())
+    if (lhs.isPreRelease() || rhs.isPreRelease())
     {
         // Pre-releases have a lower precedence
-        if (lhs.isRelease () && rhs.isPreRelease ())
+        if (lhs.isRelease() && rhs.isPreRelease())
             return 1;
-        else if (lhs.isPreRelease () && rhs.isRelease ())
+        else if (lhs.isPreRelease() && rhs.isRelease())
             return -1;
 
         // Compare pre-release identifiers
-        for (int i = 0; i < std::max (lhs.preReleaseIdentifiers.size (), rhs.preReleaseIdentifiers.size ()); ++i)
+        for (int i = 0; i <
+             std::max(lhs.preReleaseIdentifiers.size(),
+                      rhs.preReleaseIdentifiers.size());
+             ++i)
         {
             // A larger list of identifiers has a higher precedence
-            if (i >= rhs.preReleaseIdentifiers.size ())
+            if (i >= rhs.preReleaseIdentifiers.size())
                 return 1;
-            else if (i >= lhs.preReleaseIdentifiers.size ())
+            else if (i >= lhs.preReleaseIdentifiers.size())
                 return -1;
 
-            std::string const& left (lhs.preReleaseIdentifiers [i]);
-            std::string const& right (rhs.preReleaseIdentifiers [i]);
+            std::string const& left(lhs.preReleaseIdentifiers[i]);
+            std::string const& right(rhs.preReleaseIdentifiers[i]);
 
             // Numeric identifiers have lower precedence
-            if (! isNumeric (left) && isNumeric (right))
+            if (!isNumeric(left) && isNumeric(right))
                 return 1;
-            else if (isNumeric (left) && ! isNumeric (right))
+            else if (isNumeric(left) && !isNumeric(right))
                 return -1;
 
-            if (isNumeric (left))
+            if (isNumeric(left))
             {
-                assert(isNumeric (right));
+                assert(isNumeric(right));
 
-                int const iLeft (lexicalCastThrow <int> (left));
-                int const iRight (lexicalCastThrow <int> (right));
+                int const iLeft(lexicalCastThrow<int>(left));
+                int const iRight(lexicalCastThrow<int>(right));
 
                 if (iLeft > iRight)
                     return 1;
@@ -305,9 +316,9 @@ int compare (SemanticVersion const& lhs, SemanticVersion const& rhs)
             }
             else
             {
-                assert (! isNumeric (right));
+                assert(!isNumeric(right));
 
-                int result = left.compare (right);
+                int result = left.compare(right);
 
                 if (result != 0)
                     return result;
@@ -320,4 +331,4 @@ int compare (SemanticVersion const& lhs, SemanticVersion const& rhs)
     return 0;
 }
 
-} // beast
+}  // namespace beast

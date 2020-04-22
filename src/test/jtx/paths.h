@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_PATHS_H_INCLUDED
 #define RIPPLE_TEST_JTX_PATHS_H_INCLUDED
 
-#include <test/jtx/Env.h>
 #include <ripple/protocol/Issue.h>
+#include <test/jtx/Env.h>
 #include <type_traits>
 
 namespace ripple {
@@ -37,11 +37,8 @@ private:
     unsigned int limit_;
 
 public:
-    paths (Issue const& in,
-            int depth = 7, unsigned int limit = 4)
-        : in_(in)
-        , depth_(depth)
-        , limit_(limit)
+    paths(Issue const& in, int depth = 7, unsigned int limit = 4)
+        : in_(in), depth_(depth), limit_(limit)
     {
     }
 
@@ -64,8 +61,7 @@ public:
     path();
 
     template <class T, class... Args>
-    explicit
-    path (T const& t, Args const&... args);
+    explicit path(T const& t, Args const&... args);
 
     void
     operator()(Env&, JTx& jt) const;
@@ -78,11 +74,10 @@ private:
     append_one(Account const& account);
 
     template <class T>
-    std::enable_if_t<
-        std::is_constructible<Account, T>::value>
+    std::enable_if_t<std::is_constructible<Account, T>::value>
     append_one(T const& t)
     {
-        append_one(Account{ t });
+        append_one(Account{t});
     }
 
     void
@@ -93,27 +88,26 @@ private:
 
     template <class T, class... Args>
     void
-    append (T const& t, Args const&... args);
+    append(T const& t, Args const&... args);
 };
 
 template <class T, class... Args>
-path::path (T const& t, Args const&... args)
-    : jv_(Json::arrayValue)
+path::path(T const& t, Args const&... args) : jv_(Json::arrayValue)
 {
     append(t, args...);
 }
 
 template <class T, class... Args>
 void
-path::append (T const& t, Args const&... args)
+path::append(T const& t, Args const&... args)
 {
     append_one(t);
     if constexpr (sizeof...(args) > 0)
         append(args...);
 }
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

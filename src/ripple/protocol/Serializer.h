@@ -20,12 +20,12 @@
 #ifndef RIPPLE_PROTOCOL_SERIALIZER_H_INCLUDED
 #define RIPPLE_PROTOCOL_SERIALIZER_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
 #include <ripple/basics/Blob.h>
-#include <ripple/basics/contract.h>
 #include <ripple/basics/Buffer.h>
-#include <ripple/basics/safe_cast.h>
 #include <ripple/basics/Slice.h>
+#include <ripple/basics/base_uint.h>
+#include <ripple/basics/contract.h>
+#include <ripple/basics/safe_cast.h>
 #include <ripple/beast/crypto/secure_erase.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/SField.h>
@@ -38,7 +38,7 @@
 
 namespace ripple {
 
-class CKey; // forward declaration
+class CKey;  // forward declaration
 
 class Serializer
 {
@@ -47,13 +47,12 @@ private:
     Blob mData;
 
 public:
-    explicit
-    Serializer (int n = 256)
+    explicit Serializer(int n = 256)
     {
-        mData.reserve (n);
+        mData.reserve(n);
     }
 
-    Serializer (void const* data, std::size_t size)
+    Serializer(void const* data, std::size_t size)
     {
         mData.resize(size);
 
@@ -64,7 +63,8 @@ public:
         }
     }
 
-    Slice slice() const noexcept
+    Slice
+    slice() const noexcept
     {
         return Slice(mData.data(), mData.size());
     }
@@ -82,50 +82,68 @@ public:
     }
 
     // assemble functions
-    int add8 (unsigned char byte);
-    int add16 (std::uint16_t);
-    int add32 (std::uint32_t);      // ledger indexes, account sequence, timestamps
-    int add32 (HashPrefix);
-    int add64 (std::uint64_t);      // native currency amounts
-    int add128 (const uint128&);    // private key generators
-    int add256 (uint256 const& );       // transaction and ledger hashes
+    int
+    add8(unsigned char byte);
+    int add16(std::uint16_t);
+    int add32(std::uint32_t);  // ledger indexes, account sequence, timestamps
+    int add32(HashPrefix);
+    int add64(std::uint64_t);  // native currency amounts
+    int
+    add128(const uint128&);  // private key generators
+    int
+    add256(uint256 const&);  // transaction and ledger hashes
 
     template <typename Integer>
     int addInteger(Integer);
 
     template <int Bits, class Tag>
-    int addBitString(base_uint<Bits, Tag> const& v) {
-        int ret = mData.size ();
-        mData.insert (mData.end (), v.begin (), v.end ());
+    int
+    addBitString(base_uint<Bits, Tag> const& v)
+    {
+        int ret = mData.size();
+        mData.insert(mData.end(), v.begin(), v.end());
         return ret;
     }
 
     // TODO(tom): merge with add128 and add256.
     template <class Tag>
-    int add160 (base_uint<160, Tag> const& i)
+    int
+    add160(base_uint<160, Tag> const& i)
     {
         return addBitString<160, Tag>(i);
     }
 
-    int addRaw (Blob const& vector);
-    int addRaw (const void* ptr, int len);
-    int addRaw (const Serializer& s);
-    int addZeros (size_t uBytes);
+    int
+    addRaw(Blob const& vector);
+    int
+    addRaw(const void* ptr, int len);
+    int
+    addRaw(const Serializer& s);
+    int
+    addZeros(size_t uBytes);
 
-    int addVL (Blob const& vector);
-    int addVL (Slice const& slice);
-    template<class Iter>
-    int addVL (Iter begin, Iter end, int len);
-    int addVL (const void* ptr, int len);
+    int
+    addVL(Blob const& vector);
+    int
+    addVL(Slice const& slice);
+    template <class Iter>
+    int
+    addVL(Iter begin, Iter end, int len);
+    int
+    addVL(const void* ptr, int len);
 
     // disassemble functions
-    bool get8 (int&, int offset) const;
-    bool get256 (uint256&, int offset) const;
+    bool
+    get8(int&, int offset) const;
+    bool
+    get256(uint256&, int offset) const;
 
     template <typename Integer>
-    bool getInteger(Integer& number, int offset) {
+    bool
+    getInteger(Integer& number, int offset)
+    {
         static const auto bytes = sizeof(Integer);
-        if ((offset + bytes) > mData.size ())
+        if ((offset + bytes) > mData.size())
             return false;
         number = 0;
 
@@ -140,157 +158,196 @@ public:
     }
 
     template <int Bits, typename Tag = void>
-    bool getBitString(base_uint<Bits, Tag>& data, int offset) const {
-        auto success = (offset + (Bits / 8)) <= mData.size ();
+    bool
+    getBitString(base_uint<Bits, Tag>& data, int offset) const
+    {
+        auto success = (offset + (Bits / 8)) <= mData.size();
         if (success)
-            memcpy (data.begin (), & (mData.front ()) + offset, (Bits / 8));
+            memcpy(data.begin(), &(mData.front()) + offset, (Bits / 8));
         return success;
     }
 
     // TODO(tom): merge with get128 and get256.
     template <class Tag>
-    bool get160 (base_uint<160, Tag>& o, int offset) const
+    bool
+    get160(base_uint<160, Tag>& o, int offset) const
     {
         return getBitString<160, Tag>(o, offset);
     }
 
-    bool getRaw (Blob&, int offset, int length) const;
-    Blob getRaw (int offset, int length) const;
+    bool
+    getRaw(Blob&, int offset, int length) const;
+    Blob
+    getRaw(int offset, int length) const;
 
-    bool getVL (Blob& objectVL, int offset, int& length) const;
-    bool getVLLength (int& length, int offset) const;
+    bool
+    getVL(Blob& objectVL, int offset, int& length) const;
+    bool
+    getVLLength(int& length, int offset) const;
 
-    int addFieldID (int type, int name);
-    int addFieldID (SerializedTypeID type, int name)
+    int
+    addFieldID(int type, int name);
+    int
+    addFieldID(SerializedTypeID type, int name)
     {
-        return addFieldID (safe_cast<int> (type), name);
+        return addFieldID(safe_cast<int>(type), name);
     }
 
     // DEPRECATED
-    uint256 getSHA512Half() const;
+    uint256
+    getSHA512Half() const;
 
     // totality functions
-    Blob const& peekData () const
+    Blob const&
+    peekData() const
     {
         return mData;
     }
-    Blob getData () const
+    Blob
+    getData() const
     {
         return mData;
     }
-    Blob& modData ()
+    Blob&
+    modData()
     {
         return mData;
     }
 
-    int getDataLength () const
+    int
+    getDataLength() const
     {
-        return mData.size ();
+        return mData.size();
     }
-    const void* getDataPtr () const
-    {
-        return mData.data();
-    }
-    void* getDataPtr ()
+    const void*
+    getDataPtr() const
     {
         return mData.data();
     }
-    int getLength () const
+    void*
+    getDataPtr()
     {
-        return mData.size ();
+        return mData.data();
     }
-    std::string getString () const
+    int
+    getLength() const
     {
-        return std::string (static_cast<const char*> (getDataPtr ()), size ());
+        return mData.size();
     }
-    void secureErase ()
+    std::string
+    getString() const
+    {
+        return std::string(static_cast<const char*>(getDataPtr()), size());
+    }
+    void
+    secureErase()
     {
         beast::secure_erase(mData.data(), mData.size());
-        mData.clear ();
+        mData.clear();
     }
-    void erase ()
+    void
+    erase()
     {
-        mData.clear ();
+        mData.clear();
     }
-    bool chop (int num);
+    bool
+    chop(int num);
 
     // vector-like functions
-    Blob ::iterator begin ()
+    Blob ::iterator
+    begin()
     {
-        return mData.begin ();
+        return mData.begin();
     }
-    Blob ::iterator end ()
+    Blob ::iterator
+    end()
     {
-        return mData.end ();
+        return mData.end();
     }
-    Blob ::const_iterator begin () const
+    Blob ::const_iterator
+    begin() const
     {
-        return mData.begin ();
+        return mData.begin();
     }
-    Blob ::const_iterator end () const
+    Blob ::const_iterator
+    end() const
     {
-        return mData.end ();
+        return mData.end();
     }
-    void reserve (size_t n)
+    void
+    reserve(size_t n)
     {
-        mData.reserve (n);
+        mData.reserve(n);
     }
-    void resize (size_t n)
+    void
+    resize(size_t n)
     {
-        mData.resize (n);
+        mData.resize(n);
     }
-    size_t capacity () const
+    size_t
+    capacity() const
     {
-        return mData.capacity ();
+        return mData.capacity();
     }
 
-    bool operator== (Blob const& v)
+    bool
+    operator==(Blob const& v)
     {
         return v == mData;
     }
-    bool operator!= (Blob const& v)
+    bool
+    operator!=(Blob const& v)
     {
         return v != mData;
     }
-    bool operator== (const Serializer& v)
+    bool
+    operator==(const Serializer& v)
     {
         return v.mData == mData;
     }
-    bool operator!= (const Serializer& v)
+    bool
+    operator!=(const Serializer& v)
     {
         return v.mData != mData;
     }
 
-    std::string getHex () const
+    std::string
+    getHex() const
     {
         std::stringstream h;
 
         for (unsigned char const& element : mData)
         {
-            h <<
-                std::setw (2) <<
-                std::hex <<
-                std::setfill ('0') <<
-                safe_cast<unsigned int>(element);
+            h << std::setw(2) << std::hex << std::setfill('0')
+              << safe_cast<unsigned int>(element);
         }
-        return h.str ();
+        return h.str();
     }
 
-    static int decodeLengthLength (int b1);
-    static int decodeVLLength (int b1);
-    static int decodeVLLength (int b1, int b2);
-    static int decodeVLLength (int b1, int b2, int b3);
+    static int
+    decodeLengthLength(int b1);
+    static int
+    decodeVLLength(int b1);
+    static int
+    decodeVLLength(int b1, int b2);
+    static int
+    decodeVLLength(int b1, int b2, int b3);
+
 private:
-    static int lengthVL (int length)
+    static int
+    lengthVL(int length)
     {
-        return length + encodeLengthLength (length);
+        return length + encodeLengthLength(length);
     }
-    static int encodeLengthLength (int length); // length to encode length
-    int addEncoded (int length);
+    static int
+    encodeLengthLength(int length);  // length to encode length
+    int
+    addEncoded(int length);
 };
 
-template<class Iter>
-int Serializer::addVL(Iter begin, Iter end, int len)
+template <class Iter>
+int
+Serializer::addVL(Iter begin, Iter end, int len)
 {
     int ret = addEncoded(len);
     for (; begin != end; ++begin)
@@ -316,20 +373,17 @@ private:
     std::size_t used_ = 0;
 
 public:
-    SerialIter (void const* data,
-            std::size_t size) noexcept;
+    SerialIter(void const* data, std::size_t size) noexcept;
 
-    SerialIter (Slice const& slice)
-        : SerialIter(slice.data(), slice.size())
+    SerialIter(Slice const& slice) : SerialIter(slice.data(), slice.size())
     {
     }
 
     // Infer the size of the data based on the size of the passed array.
-    template<int N>
-    explicit SerialIter (std::uint8_t const (&data)[N])
-        : SerialIter(&data[0], N)
+    template <int N>
+    explicit SerialIter(std::uint8_t const (&data)[N]) : SerialIter(&data[0], N)
     {
-        static_assert (N > 0, "");
+        static_assert(N > 0, "");
     }
 
     std::size_t
@@ -383,33 +437,34 @@ public:
     }
 
     void
-    getFieldID (int& type, int& name);
+    getFieldID(int& type, int& name);
 
     // Returns the size of the VL if the
     // next object is a VL. Advances the iterator
     // to the beginning of the VL.
     int
-    getVLDataLength ();
+    getVLDataLength();
 
     Slice
-    getSlice (std::size_t bytes);
+    getSlice(std::size_t bytes);
 
     // VFALCO DEPRECATED Returns a copy
     Blob
-    getRaw (int size);
+    getRaw(int size);
 
     // VFALCO DEPRECATED Returns a copy
     Blob
     getVL();
 
     void
-    skip (int num);
+    skip(int num);
 
     Buffer
     getVLBuffer();
 
-    template<class T>
-    T getRawHelper (int size);
+    template <class T>
+    T
+    getRawHelper(int size);
 };
 
 template <int Bits, class Tag>
@@ -417,17 +472,16 @@ base_uint<Bits, Tag>
 SerialIter::getBitString()
 {
     base_uint<Bits, Tag> u;
-    auto const n = Bits/8;
+    auto const n = Bits / 8;
     if (remain_ < n)
-        Throw<std::runtime_error> (
-            "invalid SerialIter getBitString");
-    std::memcpy (u.begin(), p_, n);
+        Throw<std::runtime_error>("invalid SerialIter getBitString");
+    std::memcpy(u.begin(), p_, n);
     p_ += n;
     used_ += n;
     remain_ -= n;
     return u;
 }
 
-} // ripple
+}  // namespace ripple
 
 #endif

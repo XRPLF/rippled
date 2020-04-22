@@ -39,13 +39,18 @@ class DecodedBlob
 {
 public:
     /** Construct the decoded blob from raw data. */
-    DecodedBlob (void const* key, void const* value, int valueBytes);
+    DecodedBlob(void const* key, void const* value, int valueBytes);
 
     /** Determine if the decoding was successful. */
-    bool wasOk () const noexcept { return m_success; }
+    bool
+    wasOk() const noexcept
+    {
+        return m_success;
+    }
 
     /** Create a NodeObject from this data. */
-    std::shared_ptr<NodeObject> createObject ();
+    std::shared_ptr<NodeObject>
+    createObject();
 
 private:
     bool m_success;
@@ -56,7 +61,7 @@ private:
     int m_dataBytes;
 };
 
-}
-}
+}  // namespace NodeStore
+}  // namespace ripple
 
 #endif

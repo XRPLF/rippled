@@ -16,8 +16,8 @@ ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/beast/unit_test.h>
 #include <ripple/beast/core/SemanticVersion.h>
+#include <ripple/beast/unit_test.h>
 namespace beast {
 
 class SemanticVersion_test : public unit_test::suite
@@ -25,7 +25,8 @@ class SemanticVersion_test : public unit_test::suite
     using identifier_list = SemanticVersion::identifier_list;
 
 public:
-    void checkPass(std::string const& input, bool shouldPass = true)
+    void
+    checkPass(std::string const& input, bool shouldPass = true)
     {
         SemanticVersion v;
 
@@ -40,13 +41,15 @@ public:
         }
     }
 
-    void checkFail(std::string const& input)
+    void
+    checkFail(std::string const& input)
     {
         checkPass(input, false);
     }
 
     // check input and input with appended metadata
-    void checkMeta(std::string const& input, bool shouldPass)
+    void
+    checkMeta(std::string const& input, bool shouldPass)
     {
         checkPass(input, shouldPass);
 
@@ -63,7 +66,8 @@ public:
         checkFail(input + "+a.!");
     }
 
-    void checkMetaFail(std::string const& input)
+    void
+    checkMetaFail(std::string const& input)
     {
         checkMeta(input, false);
     }
@@ -72,7 +76,8 @@ public:
     // input with appended metadata, and input with both
     // appended release data and appended metadata
     //
-    void checkRelease(std::string const& input, bool shouldPass = true)
+    void
+    checkRelease(std::string const& input, bool shouldPass = true)
     {
         checkMeta(input, shouldPass);
 
@@ -95,25 +100,28 @@ public:
     // Checks the major.minor.version string alone and with all
     // possible combinations of release identifiers and metadata.
     //
-    void check(std::string const& input, bool shouldPass = true)
+    void
+    check(std::string const& input, bool shouldPass = true)
     {
         checkRelease(input, shouldPass);
     }
 
-    void negcheck(std::string const& input)
+    void
+    negcheck(std::string const& input)
     {
         check(input, false);
     }
 
-    void testParse()
+    void
+    testParse()
     {
         testcase("parsing");
 
         check("0.0.0");
         check("1.2.3");
-        check("2147483647.2147483647.2147483647"); // max int
+        check("2147483647.2147483647.2147483647");  // max int
 
-                                                   // negative values
+        // negative values
         negcheck("-1.2.3");
         negcheck("1.-2.3");
         negcheck("1.2.-3");
@@ -138,21 +146,22 @@ public:
         negcheck("1.2.03");
     }
 
-    static identifier_list ids()
+    static identifier_list
+    ids()
     {
         return identifier_list();
     }
 
-    static identifier_list ids(
-        std::string const& s1)
+    static identifier_list
+    ids(std::string const& s1)
     {
         identifier_list v;
         v.push_back(s1);
         return v;
     }
 
-    static identifier_list ids(
-        std::string const& s1, std::string const& s2)
+    static identifier_list
+    ids(std::string const& s1, std::string const& s2)
     {
         identifier_list v;
         v.push_back(s1);
@@ -160,8 +169,8 @@ public:
         return v;
     }
 
-    static identifier_list ids(
-        std::string const& s1, std::string const& s2, std::string const& s3)
+    static identifier_list
+    ids(std::string const& s1, std::string const& s2, std::string const& s3)
     {
         identifier_list v;
         v.push_back(s1);
@@ -171,7 +180,9 @@ public:
     }
 
     // Checks the decomposition of the input into appropriate values
-    void checkValues(std::string const& input,
+    void
+    checkValues(
+        std::string const& input,
         int majorVersion,
         int minorVersion,
         int patchVersion,
@@ -190,7 +201,8 @@ public:
         BEAST_EXPECT(v.metaData == metaData);
     }
 
-    void testValues()
+    void
+    testValues()
     {
         testcase("values");
 
@@ -201,13 +213,20 @@ public:
         checkValues("1.2.3-rc1.debug.asm", 1, 2, 3, ids("rc1", "debug", "asm"));
         checkValues("1.2.3+full", 1, 2, 3, ids(), ids("full"));
         checkValues("1.2.3+full.prod", 1, 2, 3, ids(), ids("full", "prod"));
-        checkValues("1.2.3+full.prod.x86", 1, 2, 3, ids(), ids("full", "prod", "x86"));
-        checkValues("1.2.3-rc1.debug.asm+full.prod.x86", 1, 2, 3,
-            ids("rc1", "debug", "asm"), ids("full", "prod", "x86"));
+        checkValues(
+            "1.2.3+full.prod.x86", 1, 2, 3, ids(), ids("full", "prod", "x86"));
+        checkValues(
+            "1.2.3-rc1.debug.asm+full.prod.x86",
+            1,
+            2,
+            3,
+            ids("rc1", "debug", "asm"),
+            ids("full", "prod", "x86"));
     }
 
     // makes sure the left version is less than the right
-    void checkLessInternal(std::string const& lhs, std::string const& rhs)
+    void
+    checkLessInternal(std::string const& lhs, std::string const& rhs)
     {
         SemanticVersion left;
         SemanticVersion right;
@@ -226,7 +245,8 @@ public:
         BEAST_EXPECT(right == right);
     }
 
-    void checkLess(std::string const& lhs, std::string const& rhs)
+    void
+    checkLess(std::string const& lhs, std::string const& rhs)
     {
         checkLessInternal(lhs, rhs);
         checkLessInternal(lhs + "+meta", rhs);
@@ -234,7 +254,8 @@ public:
         checkLessInternal(lhs + "+meta", rhs + "+meta");
     }
 
-    void testCompare()
+    void
+    testCompare()
     {
         testcase("comparisons");
 
@@ -248,7 +269,8 @@ public:
         checkLess("0.9.9", "1.0.0");
     }
 
-    void run() override
+    void
+    run() override
     {
         testParse();
         testValues();
@@ -257,4 +279,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(SemanticVersion, beast_core, beast);
-}
+}  // namespace beast

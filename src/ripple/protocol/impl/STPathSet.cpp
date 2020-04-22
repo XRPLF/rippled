@@ -17,68 +17,66 @@
 */
 //==============================================================================
 
+#include <ripple/basics/Log.h>
+#include <ripple/basics/StringUtilities.h>
+#include <ripple/basics/contract.h>
+#include <ripple/basics/strHex.h>
 #include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/jss.h>
-#include <ripple/basics/contract.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/strHex.h>
-#include <ripple/basics/StringUtilities.h>
 #include <cstddef>
 
 namespace ripple {
 
 std::size_t
-STPathElement::get_hash (STPathElement const& element)
+STPathElement::get_hash(STPathElement const& element)
 {
-    std::size_t hash_account  = 2654435761;
+    std::size_t hash_account = 2654435761;
     std::size_t hash_currency = 2654435761;
-    std::size_t hash_issuer   = 2654435761;
+    std::size_t hash_issuer = 2654435761;
 
     // NIKB NOTE: This doesn't have to be a secure hash as speed is more
     //            important. We don't even really need to fully hash the whole
     //            base_uint here, as a few bytes would do for our use.
 
-    for (auto const x : element.getAccountID ())
+    for (auto const x : element.getAccountID())
         hash_account += (hash_account * 257) ^ x;
 
-    for (auto const x : element.getCurrency ())
+    for (auto const x : element.getCurrency())
         hash_currency += (hash_currency * 509) ^ x;
 
-    for (auto const x : element.getIssuerID ())
+    for (auto const x : element.getIssuerID())
         hash_issuer += (hash_issuer * 911) ^ x;
 
     return (hash_account ^ hash_currency ^ hash_issuer);
 }
 
-STPathSet::STPathSet (SerialIter& sit, SField const& name)
-    : STBase(name)
+STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
 {
     std::vector<STPathElement> path;
-    for(;;)
+    for (;;)
     {
-        int iType = sit.get8 ();
+        int iType = sit.get8();
 
         if (iType == STPathElement::typeNone ||
             iType == STPathElement::typeBoundary)
         {
-            if (path.empty ())
+            if (path.empty())
             {
-                JLOG (debugLog().error())
-                    << "Empty path in pathset";
-                Throw<std::runtime_error> ("empty path");
+                JLOG(debugLog().error()) << "Empty path in pathset";
+                Throw<std::runtime_error>("empty path");
             }
 
-            push_back (path);
-            path.clear ();
+            push_back(path);
+            path.clear();
 
             if (iType == STPathElement::typeNone)
                 return;
         }
         else if (iType & ~STPathElement::typeAll)
         {
-            JLOG (debugLog().error())
+            JLOG(debugLog().error())
                 << "Bad path element " << iType << " in pathset";
-            Throw<std::runtime_error> ("bad path element");
+            Throw<std::runtime_error>("bad path element");
         }
         else
         {
@@ -99,26 +97,26 @@ STPathSet::STPathSet (SerialIter& sit, SField const& name)
             if (hasIssuer)
                 issuer = sit.get160();
 
-            path.emplace_back (account, currency, issuer, hasCurrency);
+            path.emplace_back(account, currency, issuer, hasCurrency);
         }
     }
 }
 
 bool
 STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
-{ // assemble base+tail and add it to the set if it's not a duplicate
-    value.push_back (base);
+{  // assemble base+tail and add it to the set if it's not a duplicate
+    value.push_back(base);
 
-    std::vector<STPath>::reverse_iterator it = value.rbegin ();
+    std::vector<STPath>::reverse_iterator it = value.rbegin();
 
     STPath& newPath = *it;
-    newPath.push_back (tail);
+    newPath.push_back(tail);
 
-    while (++it != value.rend ())
+    while (++it != value.rend())
     {
         if (*it == newPath)
         {
-            value.pop_back ();
+            value.pop_back();
             return false;
         }
     }
@@ -126,98 +124,97 @@ STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
 }
 
 bool
-STPathSet::isEquivalent (const STBase& t) const
+STPathSet::isEquivalent(const STBase& t) const
 {
-    const STPathSet* v = dynamic_cast<const STPathSet*> (&t);
+    const STPathSet* v = dynamic_cast<const STPathSet*>(&t);
     return v && (value == v->value);
 }
 
 bool
-STPath::hasSeen (
-    AccountID const& account, Currency const& currency,
+STPath::hasSeen(
+    AccountID const& account,
+    Currency const& currency,
     AccountID const& issuer) const
 {
-    for (auto& p: mPath)
+    for (auto& p : mPath)
     {
-        if (p.getAccountID () == account
-            && p.getCurrency () == currency
-            && p.getIssuerID () == issuer)
+        if (p.getAccountID() == account && p.getCurrency() == currency &&
+            p.getIssuerID() == issuer)
             return true;
     }
 
     return false;
 }
 
-Json::Value
-STPath::getJson (JsonOptions) const
+Json::Value STPath::getJson(JsonOptions) const
 {
-    Json::Value ret (Json::arrayValue);
+    Json::Value ret(Json::arrayValue);
 
-    for (auto it: mPath)
+    for (auto it : mPath)
     {
-        Json::Value elem (Json::objectValue);
-        auto const iType   = it.getNodeType ();
+        Json::Value elem(Json::objectValue);
+        auto const iType = it.getNodeType();
 
-        elem[jss::type]      = iType;
-        elem[jss::type_hex]  = strHex (iType);
+        elem[jss::type] = iType;
+        elem[jss::type_hex] = strHex(iType);
 
         if (iType & STPathElement::typeAccount)
-            elem[jss::account]  = to_string (it.getAccountID ());
+            elem[jss::account] = to_string(it.getAccountID());
 
         if (iType & STPathElement::typeCurrency)
-            elem[jss::currency] = to_string (it.getCurrency ());
+            elem[jss::currency] = to_string(it.getCurrency());
 
         if (iType & STPathElement::typeIssuer)
-            elem[jss::issuer]   = to_string (it.getIssuerID ());
+            elem[jss::issuer] = to_string(it.getIssuerID());
 
-        ret.append (elem);
+        ret.append(elem);
     }
 
     return ret;
 }
 
 Json::Value
-STPathSet::getJson (JsonOptions options) const
+STPathSet::getJson(JsonOptions options) const
 {
-    Json::Value ret (Json::arrayValue);
-    for (auto it: value)
-        ret.append (it.getJson (options));
+    Json::Value ret(Json::arrayValue);
+    for (auto it : value)
+        ret.append(it.getJson(options));
 
     return ret;
 }
 
 void
-STPathSet::add (Serializer& s) const
+STPathSet::add(Serializer& s) const
 {
-    assert (fName->isBinary ());
-    assert (fName->fieldType == STI_PATHSET);
+    assert(fName->isBinary());
+    assert(fName->fieldType == STI_PATHSET);
     bool first = true;
 
     for (auto const& spPath : value)
     {
         if (!first)
-            s.add8 (STPathElement::typeBoundary);
+            s.add8(STPathElement::typeBoundary);
 
         for (auto const& speElement : spPath)
         {
-            int iType = speElement.getNodeType ();
+            int iType = speElement.getNodeType();
 
-            s.add8 (iType);
+            s.add8(iType);
 
             if (iType & STPathElement::typeAccount)
-                s.add160 (speElement.getAccountID ());
+                s.add160(speElement.getAccountID());
 
             if (iType & STPathElement::typeCurrency)
-                s.add160 (speElement.getCurrency ());
+                s.add160(speElement.getCurrency());
 
             if (iType & STPathElement::typeIssuer)
-                s.add160 (speElement.getIssuerID ());
+                s.add160(speElement.getIssuerID());
         }
 
         first = false;
     }
 
-    s.add8 (STPathElement::typeNone);
+    s.add8(STPathElement::typeNone);
 }
 
-} // ripple
+}  // namespace ripple

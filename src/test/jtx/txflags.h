@@ -33,9 +33,7 @@ private:
     std::uint32_t v_;
 
 public:
-    explicit
-    txflags (std::uint32_t v)
-        : v_(v)
+    explicit txflags(std::uint32_t v) : v_(v)
     {
     }
 
@@ -43,8 +41,8 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

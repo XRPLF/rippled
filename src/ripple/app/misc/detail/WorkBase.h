@@ -22,19 +22,18 @@
 
 #include <ripple/app/misc/detail/Work.h>
 #include <ripple/protocol/BuildInfo.h>
+#include <boost/asio.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/empty_body.hpp>
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/write.hpp>
-#include <boost/asio.hpp>
 
 namespace ripple {
 
 namespace detail {
 
 template <class Impl>
-class WorkBase
-    : public Work
+class WorkBase : public Work
 {
 protected:
     using error_code = boost::system::error_code;
@@ -42,6 +41,7 @@ protected:
 public:
     using callback_type =
         std::function<void(error_code const&, response_type&&)>;
+
 protected:
     using socket_type = boost::asio::ip::tcp::socket;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
@@ -64,9 +64,11 @@ protected:
 
 public:
     WorkBase(
-        std::string const& host, std::string const& path,
+        std::string const& host,
+        std::string const& path,
         std::string const& port,
-        boost::asio::io_service& ios, callback_type cb);
+        boost::asio::io_service& ios,
+        callback_type cb);
     ~WorkBase();
 
     Impl&
@@ -75,9 +77,11 @@ public:
         return *static_cast<Impl*>(this);
     }
 
-    void run() override;
+    void
+    run() override;
 
-    void cancel() override;
+    void
+    cancel() override;
 
     void
     fail(error_code const& ec);
@@ -97,10 +101,13 @@ public:
 
 //------------------------------------------------------------------------------
 
-template<class Impl>
-WorkBase<Impl>::WorkBase(std::string const& host,
-    std::string const& path, std::string const& port,
-    boost::asio::io_service& ios, callback_type cb)
+template <class Impl>
+WorkBase<Impl>::WorkBase(
+    std::string const& host,
+    std::string const& path,
+    std::string const& port,
+    boost::asio::io_service& ios,
+    callback_type cb)
     : host_(host)
     , path_(path)
     , port_(port)
@@ -112,45 +119,47 @@ WorkBase<Impl>::WorkBase(std::string const& host,
 {
 }
 
-template<class Impl>
+template <class Impl>
 WorkBase<Impl>::~WorkBase()
 {
     if (cb_)
-        cb_ (make_error_code(boost::system::errc::not_a_socket),
+        cb_(make_error_code(boost::system::errc::not_a_socket),
             std::move(res_));
 }
 
-template<class Impl>
+template <class Impl>
 void
 WorkBase<Impl>::run()
 {
-    if (! strand_.running_in_this_thread())
-        return ios_.post(strand_.wrap (std::bind(
-            &WorkBase::run, impl().shared_from_this())));
+    if (!strand_.running_in_this_thread())
+        return ios_.post(
+            strand_.wrap(std::bind(&WorkBase::run, impl().shared_from_this())));
 
     resolver_.async_resolve(
         query_type{host_, port_},
-        strand_.wrap (std::bind(&WorkBase::onResolve, impl().shared_from_this(),
+        strand_.wrap(std::bind(
+            &WorkBase::onResolve,
+            impl().shared_from_this(),
             std::placeholders::_1,
-                std::placeholders::_2)));
+            std::placeholders::_2)));
 }
 
-template<class Impl>
+template <class Impl>
 void
 WorkBase<Impl>::cancel()
 {
-    if (! strand_.running_in_this_thread())
+    if (!strand_.running_in_this_thread())
     {
-        return ios_.post(strand_.wrap (std::bind(
-            &WorkBase::cancel, impl().shared_from_this())));
+        return ios_.post(strand_.wrap(
+            std::bind(&WorkBase::cancel, impl().shared_from_this())));
     }
 
     error_code ec;
     resolver_.cancel();
-    socket_.cancel (ec);
+    socket_.cancel(ec);
 }
 
-template<class Impl>
+template <class Impl>
 void
 WorkBase<Impl>::fail(error_code const& ec)
 {
@@ -161,47 +170,58 @@ WorkBase<Impl>::fail(error_code const& ec)
     }
 }
 
-template<class Impl>
+template <class Impl>
 void
 WorkBase<Impl>::onResolve(error_code const& ec, resolver_type::iterator it)
 {
     if (ec)
         return fail(ec);
 
-    socket_.async_connect(*it,
-        strand_.wrap (std::bind(&Impl::onConnect, impl().shared_from_this(),
+    socket_.async_connect(
+        *it,
+        strand_.wrap(std::bind(
+            &Impl::onConnect,
+            impl().shared_from_this(),
             std::placeholders::_1)));
 }
 
-template<class Impl>
+template <class Impl>
 void
 WorkBase<Impl>::onStart()
 {
     req_.method(boost::beast::http::verb::get);
     req_.target(path_.empty() ? "/" : path_);
     req_.version(11);
-    req_.set (
-        "Host", host_ + ":" + port_);
-    req_.set ("User-Agent", BuildInfo::getFullVersionString());
+    req_.set("Host", host_ + ":" + port_);
+    req_.set("User-Agent", BuildInfo::getFullVersionString());
     req_.prepare_payload();
-    boost::beast::http::async_write(impl().stream(), req_,
-        strand_.wrap (std::bind (&WorkBase::onRequest,
-            impl().shared_from_this(), std::placeholders::_1)));
+    boost::beast::http::async_write(
+        impl().stream(),
+        req_,
+        strand_.wrap(std::bind(
+            &WorkBase::onRequest,
+            impl().shared_from_this(),
+            std::placeholders::_1)));
 }
 
-template<class Impl>
+template <class Impl>
 void
 WorkBase<Impl>::onRequest(error_code const& ec)
 {
     if (ec)
         return fail(ec);
 
-    boost::beast::http::async_read (impl().stream(), read_buf_, res_,
-        strand_.wrap (std::bind (&WorkBase::onResponse,
-            impl().shared_from_this(), std::placeholders::_1)));
+    boost::beast::http::async_read(
+        impl().stream(),
+        read_buf_,
+        res_,
+        strand_.wrap(std::bind(
+            &WorkBase::onResponse,
+            impl().shared_from_this(),
+            std::placeholders::_1)));
 }
 
-template<class Impl>
+template <class Impl>
 void
 WorkBase<Impl>::onResponse(error_code const& ec)
 {
@@ -213,8 +233,8 @@ WorkBase<Impl>::onResponse(error_code const& ec)
     cb_ = nullptr;
 }
 
-} // detail
+}  // namespace detail
 
-} // ripple
+}  // namespace ripple
 
 #endif

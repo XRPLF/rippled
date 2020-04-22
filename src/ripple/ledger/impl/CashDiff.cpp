@@ -22,7 +22,7 @@
 #include <ripple/protocol/st.h>
 #include <boost/container/static_vector.hpp>
 #include <cassert>
-#include <cstdlib>                                  // std::abs()
+#include <cstdlib>  // std::abs()
 
 namespace ripple {
 namespace detail {
@@ -33,43 +33,43 @@ struct CashSummary
     explicit CashSummary() = default;
 
     // Sorted vectors.  All of the vectors fill in for std::maps.
-    std::vector<std::pair<
-        AccountID, XRPAmount>> xrpChanges;
+    std::vector<std::pair<AccountID, XRPAmount>> xrpChanges;
 
-    std::vector<std::pair<
-        std::tuple<AccountID, AccountID, Currency>, STAmount>> trustChanges;
+    std::vector<std::pair<std::tuple<AccountID, AccountID, Currency>, STAmount>>
+        trustChanges;
 
-    std::vector<std::pair<
-        std::tuple<AccountID, AccountID, Currency>, bool>> trustDeletions;
+    std::vector<std::pair<std::tuple<AccountID, AccountID, Currency>, bool>>
+        trustDeletions;
 
-    std::vector<std::pair<
-        std::tuple<AccountID, std::uint32_t>,
-        CashDiff::OfferAmounts>> offerChanges;
+    std::vector<
+        std::pair<std::tuple<AccountID, std::uint32_t>, CashDiff::OfferAmounts>>
+        offerChanges;
 
     // Note that the OfferAmounts hold the amount *prior* to deletion.
-    std::vector<std::pair<
-        std::tuple<AccountID, std::uint32_t>,
-        CashDiff::OfferAmounts>> offerDeletions;
+    std::vector<
+        std::pair<std::tuple<AccountID, std::uint32_t>, CashDiff::OfferAmounts>>
+        offerDeletions;
 
-    bool hasDiff () const
+    bool
+    hasDiff() const
     {
-        return !xrpChanges.empty()
-            || !trustChanges.empty()
-            || !trustDeletions.empty()
-            || !offerChanges.empty()
-            || !offerDeletions.empty();
+        return !xrpChanges.empty() || !trustChanges.empty() ||
+            !trustDeletions.empty() || !offerChanges.empty() ||
+            !offerDeletions.empty();
     }
 
-    void reserve (size_t newCap)
+    void
+    reserve(size_t newCap)
     {
-        xrpChanges.reserve (newCap);
-        trustChanges.reserve (newCap);
-        trustDeletions.reserve (newCap);
-        offerChanges.reserve (newCap);
-        offerDeletions.reserve (newCap);
+        xrpChanges.reserve(newCap);
+        trustChanges.reserve(newCap);
+        trustDeletions.reserve(newCap);
+        offerChanges.reserve(newCap);
+        offerDeletions.reserve(newCap);
     }
 
-    void shrink_to_fit()
+    void
+    shrink_to_fit()
     {
         xrpChanges.shrink_to_fit();
         trustChanges.shrink_to_fit();
@@ -78,13 +78,14 @@ struct CashSummary
         offerDeletions.shrink_to_fit();
     }
 
-    void sort()
+    void
+    sort()
     {
-        std::sort (xrpChanges.begin(), xrpChanges.end());
-        std::sort (trustChanges.begin(), trustChanges.end());
-        std::sort (trustDeletions.begin(), trustDeletions.end());
-        std::sort (offerChanges.begin(), offerChanges.end());
-        std::sort (offerDeletions.begin(), offerDeletions.end());
+        std::sort(xrpChanges.begin(), xrpChanges.end());
+        std::sort(trustChanges.begin(), trustChanges.end());
+        std::sort(trustDeletions.begin(), trustDeletions.end());
+        std::sort(offerChanges.begin(), offerChanges.end());
+        std::sort(offerDeletions.begin(), offerDeletions.end());
     }
 };
 
@@ -105,7 +106,10 @@ struct CashSummary
 //
 // The returned bool indicates whether the passed in data was handled.
 // This allows the caller to avoid further handling.
-static bool treatZeroOfferAsDeletion (CashSummary& result, bool isDelete,
+static bool
+treatZeroOfferAsDeletion(
+    CashSummary& result,
+    bool isDelete,
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
@@ -118,8 +122,8 @@ static bool treatZeroOfferAsDeletion (CashSummary& result, bool isDelete,
 
     if (isDelete)
     {
-        if (prev.getType() == ltOFFER &&
-            prev[sfTakerPays] == zero && prev[sfTakerGets] == zero)
+        if (prev.getType() == ltOFFER && prev[sfTakerPays] == zero &&
+            prev[sfTakerGets] == zero)
         {
             // Offer was previously treated as deleted when it was zeroed.
             return true;
@@ -132,18 +136,17 @@ static bool treatZeroOfferAsDeletion (CashSummary& result, bool isDelete,
             return false;
 
         auto const& cur = *after;
-        if (cur.getType() == ltOFFER &&
-            cur[sfTakerPays] == zero && cur[sfTakerGets] == zero)
+        if (cur.getType() == ltOFFER && cur[sfTakerPays] == zero &&
+            cur[sfTakerGets] == zero)
         {
             // Either ignore or treat as delete.
             auto const oldTakerPays = prev[sfTakerPays];
             auto const oldTakerGets = prev[sfTakerGets];
             if (oldTakerPays != zero && oldTakerGets != zero)
             {
-                result.offerDeletions.push_back (
-                    std::make_pair (
-                        std::make_tuple (prev[sfAccount], prev[sfSequence]),
-                    CashDiff::OfferAmounts {{oldTakerPays, oldTakerGets}}));
+                result.offerDeletions.push_back(std::make_pair(
+                    std::make_tuple(prev[sfAccount], prev[sfSequence]),
+                    CashDiff::OfferAmounts{{oldTakerPays, oldTakerGets}}));
                 return true;
             }
         }
@@ -151,7 +154,10 @@ static bool treatZeroOfferAsDeletion (CashSummary& result, bool isDelete,
     return false;
 }
 
-static bool getBasicCashFlow (CashSummary& result, bool isDelete,
+static bool
+getBasicCashFlow(
+    CashSummary& result,
+    bool isDelete,
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
@@ -161,33 +167,31 @@ static bool getBasicCashFlow (CashSummary& result, bool isDelete,
             return false;
 
         auto const& prev = *before;
-        switch(prev.getType())
+        switch (prev.getType())
         {
-        case ltACCOUNT_ROOT:
-            result.xrpChanges.push_back (
-                std::make_pair (prev[sfAccount], XRPAmount {0}));
-            return true;
+            case ltACCOUNT_ROOT:
+                result.xrpChanges.push_back(
+                    std::make_pair(prev[sfAccount], XRPAmount{0}));
+                return true;
 
-        case ltRIPPLE_STATE:
-            result.trustDeletions.push_back(
-                std::make_pair (
-                    std::make_tuple (
+            case ltRIPPLE_STATE:
+                result.trustDeletions.push_back(std::make_pair(
+                    std::make_tuple(
                         prev[sfLowLimit].getIssuer(),
                         prev[sfHighLimit].getIssuer(),
-                        prev[sfBalance].getCurrency()), false));
-            return true;
+                        prev[sfBalance].getCurrency()),
+                    false));
+                return true;
 
-        case ltOFFER:
-            result.offerDeletions.push_back (
-                std::make_pair (
-                    std::make_tuple (prev[sfAccount], prev[sfSequence]),
-                CashDiff::OfferAmounts {{
-                    prev[sfTakerPays],
-                    prev[sfTakerGets]}}));
-            return true;
+            case ltOFFER:
+                result.offerDeletions.push_back(std::make_pair(
+                    std::make_tuple(prev[sfAccount], prev[sfSequence]),
+                    CashDiff::OfferAmounts{
+                        {prev[sfTakerPays], prev[sfTakerGets]}}));
+                return true;
 
-        default:
-            return false;
+            default:
+                return false;
         }
     }
     else
@@ -195,50 +199,45 @@ static bool getBasicCashFlow (CashSummary& result, bool isDelete,
         // insert or modify
         if (!after)
         {
-            assert (after);
+            assert(after);
             return false;
         }
 
         auto const& cur = *after;
-        switch(cur.getType())
+        switch (cur.getType())
         {
-        case ltACCOUNT_ROOT:
-        {
-            auto const curXrp = cur[sfBalance].xrp();
-            if (!before || (*before)[sfBalance].xrp() != curXrp)
-                result.xrpChanges.push_back (
-                    std::make_pair (cur[sfAccount], curXrp));
-            return true;
-        }
-        case ltRIPPLE_STATE:
-        {
-            auto const curBalance = cur[sfBalance];
-            if (!before || (*before)[sfBalance] != curBalance)
-                result.trustChanges.push_back (
-                    std::make_pair (
-                        std::make_tuple (
+            case ltACCOUNT_ROOT: {
+                auto const curXrp = cur[sfBalance].xrp();
+                if (!before || (*before)[sfBalance].xrp() != curXrp)
+                    result.xrpChanges.push_back(
+                        std::make_pair(cur[sfAccount], curXrp));
+                return true;
+            }
+            case ltRIPPLE_STATE: {
+                auto const curBalance = cur[sfBalance];
+                if (!before || (*before)[sfBalance] != curBalance)
+                    result.trustChanges.push_back(std::make_pair(
+                        std::make_tuple(
                             cur[sfLowLimit].getIssuer(),
                             cur[sfHighLimit].getIssuer(),
                             curBalance.getCurrency()),
                         curBalance));
-            return true;
-        }
-        case ltOFFER:
-        {
-            auto const curTakerPays = cur[sfTakerPays];
-            auto const curTakerGets = cur[sfTakerGets];
-            if (!before || (*before)[sfTakerGets] != curTakerGets ||
-                (*before)[sfTakerPays] != curTakerPays)
-            {
-                result.offerChanges.push_back (
-                    std::make_pair (
-                        std::make_tuple (cur[sfAccount], cur[sfSequence]),
-                    CashDiff::OfferAmounts {{curTakerPays, curTakerGets}}));
+                return true;
             }
-            return true;
-        }
-        default:
-            break;
+            case ltOFFER: {
+                auto const curTakerPays = cur[sfTakerPays];
+                auto const curTakerGets = cur[sfTakerGets];
+                if (!before || (*before)[sfTakerGets] != curTakerGets ||
+                    (*before)[sfTakerPays] != curTakerPays)
+                {
+                    result.offerChanges.push_back(std::make_pair(
+                        std::make_tuple(cur[sfAccount], cur[sfSequence]),
+                        CashDiff::OfferAmounts{{curTakerPays, curTakerGets}}));
+                }
+                return true;
+            }
+            default:
+                break;
         }
     }
     return false;
@@ -246,38 +245,41 @@ static bool getBasicCashFlow (CashSummary& result, bool isDelete,
 
 // Extract the final cash state from an ApplyStateTable.
 static CashSummary
-getCashFlow (ReadView const& view, CashFilter f, ApplyStateTable const& table)
+getCashFlow(ReadView const& view, CashFilter f, ApplyStateTable const& table)
 {
     CashSummary result;
-    result.reserve (table.size());
+    result.reserve(table.size());
 
     // Make a container of filters based on the passed in filter flags.
-    using FuncType = decltype (&getBasicCashFlow);
+    using FuncType = decltype(&getBasicCashFlow);
     boost::container::static_vector<FuncType, 2> filters;
 
     if ((f & CashFilter::treatZeroOfferAsDeletion) != CashFilter::none)
-        filters.push_back (treatZeroOfferAsDeletion);
+        filters.push_back(treatZeroOfferAsDeletion);
 
-    filters.push_back (&getBasicCashFlow);
+    filters.push_back(&getBasicCashFlow);
 
-    auto each = [&result, &filters](uint256 const& key, bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) {
-        auto discarded =
-            std::find_if (filters.begin(), filters.end(),
-                [&result, isDelete, &before, &after] (FuncType func) {
-                    return func (result, isDelete, before, after);
-        });
-        (void) discarded;
+    auto each = [&result, &filters](
+                    uint256 const& key,
+                    bool isDelete,
+                    std::shared_ptr<SLE const> const& before,
+                    std::shared_ptr<SLE const> const& after) {
+        auto discarded = std::find_if(
+            filters.begin(),
+            filters.end(),
+            [&result, isDelete, &before, &after](FuncType func) {
+                return func(result, isDelete, before, after);
+            });
+        (void)discarded;
     };
 
-    table.visit (view, each);
+    table.visit(view, each);
     result.sort();
     result.shrink_to_fit();
     return result;
 }
 
-} // detail
+}  // namespace detail
 
 //------------------------------------------------------------------------------
 
@@ -303,50 +305,63 @@ private:
 
 public:
     // Constructor.
-    Impl (ReadView const& view,
-          CashFilter lhsFilter, detail::ApplyStateTable const& lhs,
-          CashFilter rhsFilter, detail::ApplyStateTable const& rhs)
-    : view_ (view)
+    Impl(
+        ReadView const& view,
+        CashFilter lhsFilter,
+        detail::ApplyStateTable const& lhs,
+        CashFilter rhsFilter,
+        detail::ApplyStateTable const& rhs)
+        : view_(view)
     {
-        findDiffs (lhsFilter, lhs, rhsFilter, rhs);
+        findDiffs(lhsFilter, lhs, rhsFilter, rhs);
     }
 
-    std::size_t commonCount() const
+    std::size_t
+    commonCount() const
     {
         return commonKeys_;
     }
 
-    std::size_t lhsOnlyCount() const
+    std::size_t
+    lhsOnlyCount() const
     {
         return lhsKeys_;
     }
 
-    std::size_t rhsOnlyCount () const
+    std::size_t
+    rhsOnlyCount() const
     {
         return rhsKeys_;
     }
 
-    bool hasDiff () const
+    bool
+    hasDiff() const
     {
-        return dropsGone_ != boost::none
-            || lhsDiffs_.hasDiff()
-            || rhsDiffs_.hasDiff();
+        return dropsGone_ != boost::none || lhsDiffs_.hasDiff() ||
+            rhsDiffs_.hasDiff();
     }
 
-    int xrpRoundToZero () const;
+    int
+    xrpRoundToZero() const;
 
     // Filter out differences that are small enough to be in the floating
     // point noise.
-    bool rmDust ();
+    bool
+    rmDust();
 
     // Remove offer deletion differences from a given side
-    bool rmLhsDeletedOffers();
-    bool rmRhsDeletedOffers();
+    bool
+    rmLhsDeletedOffers();
+    bool
+    rmRhsDeletedOffers();
 
 private:
-    void findDiffs (
-        CashFilter lhsFilter, detail::ApplyStateTable const& lhs,
-        CashFilter rhsFilter, detail::ApplyStateTable const& rhs);
+    void
+    findDiffs(
+        CashFilter lhsFilter,
+        detail::ApplyStateTable const& lhs,
+        CashFilter rhsFilter,
+        detail::ApplyStateTable const& rhs);
 };
 
 // Template function to count difference types in individual CashDiff vectors.
@@ -357,11 +372,12 @@ private:
 //  [1] count of keys present in lhs only.
 //  [2] count of keys present in rhs only.
 template <typename T, typename U>
-static std::array<std::size_t, 3> countKeys (
+static std::array<std::size_t, 3>
+countKeys(
     std::vector<std::pair<T, U>> const& lhs,
     std::vector<std::pair<T, U>> const& rhs)
 {
-    std::array<std::size_t, 3> ret {};  // Zero initialize;
+    std::array<std::size_t, 3> ret{};  // Zero initialize;
 
     auto lhsItr = lhs.cbegin();
     auto rhsItr = rhs.cbegin();
@@ -411,36 +427,40 @@ static std::array<std::size_t, 3> countKeys (
 //  [1] count of keys present in lhs only.
 //  [2] count of keys present in rhs only.
 static std::array<std::size_t, 3>
-countKeys (detail::CashSummary const& lhs, detail::CashSummary const& rhs)
+countKeys(detail::CashSummary const& lhs, detail::CashSummary const& rhs)
 {
-    std::array<std::size_t, 3> ret {};  // Zero initialize;
+    std::array<std::size_t, 3> ret{};  // Zero initialize;
 
     // Lambda to add in new results.
-    auto addIn = [&ret] (std::array<std::size_t, 3> const& a)
-    {
-        std::transform (a.cbegin(), a.cend(),
-            ret.cbegin(), ret.begin(), std::plus<std::size_t>());
+    auto addIn = [&ret](std::array<std::size_t, 3> const& a) {
+        std::transform(
+            a.cbegin(),
+            a.cend(),
+            ret.cbegin(),
+            ret.begin(),
+            std::plus<std::size_t>());
     };
-    addIn (countKeys(lhs.xrpChanges,     rhs.xrpChanges));
-    addIn (countKeys(lhs.trustChanges,   rhs.trustChanges));
-    addIn (countKeys(lhs.trustDeletions, rhs.trustDeletions));
-    addIn (countKeys(lhs.offerChanges,   rhs.offerChanges));
-    addIn (countKeys(lhs.offerDeletions, rhs.offerDeletions));
+    addIn(countKeys(lhs.xrpChanges, rhs.xrpChanges));
+    addIn(countKeys(lhs.trustChanges, rhs.trustChanges));
+    addIn(countKeys(lhs.trustDeletions, rhs.trustDeletions));
+    addIn(countKeys(lhs.offerChanges, rhs.offerChanges));
+    addIn(countKeys(lhs.offerDeletions, rhs.offerDeletions));
     return ret;
 }
 
-int CashDiff::Impl::xrpRoundToZero () const
+int
+CashDiff::Impl::xrpRoundToZero() const
 {
     // The case has one OfferChange that is present on both lhs_ and rhs_.
     // That OfferChange should have XRP for TakerGets.  There should be a 1
     // drop difference between the TakerGets of lhsDiffs_ and rhsDiffs_.
     if (lhsDiffs_.offerChanges.size() != 1 ||
         rhsDiffs_.offerChanges.size() != 1)
-            return 0;
+        return 0;
 
-    if (! lhsDiffs_.offerChanges[0].second.takerGets().native() ||
-        ! rhsDiffs_.offerChanges[0].second.takerGets().native())
-            return 0;
+    if (!lhsDiffs_.offerChanges[0].second.takerGets().native() ||
+        !rhsDiffs_.offerChanges[0].second.takerGets().native())
+        return 0;
 
     bool const lhsBigger =
         lhsDiffs_.offerChanges[0].second.takerGets().mantissa() >
@@ -449,21 +469,22 @@ int CashDiff::Impl::xrpRoundToZero () const
     detail::CashSummary const& bigger = lhsBigger ? lhsDiffs_ : rhsDiffs_;
     detail::CashSummary const& smaller = lhsBigger ? rhsDiffs_ : lhsDiffs_;
     if (bigger.offerChanges[0].second.takerGets().mantissa() -
-        smaller.offerChanges[0].second.takerGets().mantissa() != 1)
-           return 0;
+            smaller.offerChanges[0].second.takerGets().mantissa() !=
+        1)
+        return 0;
 
     // The side with the smaller XRP balance in the OfferChange should have
     // two XRP differences.  The other side should have no XRP differences.
     if (smaller.xrpChanges.size() != 2)
         return 0;
-    if (! bigger.xrpChanges.empty())
+    if (!bigger.xrpChanges.empty())
         return 0;
 
     // There should be no other differences.
-    if (!smaller.trustChanges.empty()   || !bigger.trustChanges.empty()   ||
+    if (!smaller.trustChanges.empty() || !bigger.trustChanges.empty() ||
         !smaller.trustDeletions.empty() || !bigger.trustDeletions.empty() ||
         !smaller.offerDeletions.empty() || !bigger.offerDeletions.empty())
-            return 0;
+        return 0;
 
     // Return which side exhibited the problem.
     return lhsBigger ? -1 : 1;
@@ -471,12 +492,12 @@ int CashDiff::Impl::xrpRoundToZero () const
 
 // Function that compares two CashDiff::OfferAmounts and returns true if
 // the difference is dust-sized.
-static bool diffIsDust (
-    CashDiff::OfferAmounts const& lhs, CashDiff::OfferAmounts const& rhs)
+static bool
+diffIsDust(CashDiff::OfferAmounts const& lhs, CashDiff::OfferAmounts const& rhs)
 {
     for (auto i = 0; i < lhs.count(); ++i)
     {
-        if (!diffIsDust (lhs[i], rhs[i]))
+        if (!diffIsDust(lhs[i], rhs[i]))
             return false;
     }
     return true;
@@ -485,14 +506,14 @@ static bool diffIsDust (
 // Template function to remove dust from individual CashDiff vectors.
 template <typename T, typename U, typename L>
 static bool
-rmVecDust (
+rmVecDust(
     std::vector<std::pair<T, U>>& lhs,
     std::vector<std::pair<T, U>>& rhs,
     L&& justDust)
 {
-    static_assert (
-        std::is_same<bool,
-        decltype (justDust (lhs[0].second, rhs[0].second))>::value,
+    static_assert(
+        std::is_same<bool, decltype(justDust(lhs[0].second, rhs[0].second))>::
+            value,
         "Invalid lambda passed to rmVecDust");
 
     bool dustWasRemoved = false;
@@ -500,9 +521,11 @@ rmVecDust (
     while (lhsItr != lhs.end())
     {
         using value_t = std::pair<T, U>;
-        auto const found = std::equal_range (rhs.begin(), rhs.end(), *lhsItr,
-            [] (value_t const& a, value_t const& b)
-            {
+        auto const found = std::equal_range(
+            rhs.begin(),
+            rhs.end(),
+            *lhsItr,
+            [](value_t const& a, value_t const& b) {
                 return a.first < b.first;
             });
 
@@ -510,12 +533,12 @@ rmVecDust (
         {
             // The same entry changed for both lhs and rhs.  Check whether
             // the differences are small enough to be removed.
-            if (justDust (lhsItr->second, found.first->second))
+            if (justDust(lhsItr->second, found.first->second))
             {
                 dustWasRemoved = true;
-                rhs.erase (found.first);
+                rhs.erase(found.first);
                 // Dodge an invalid iterator by using erase's return value.
-                lhsItr = lhs.erase (lhsItr);
+                lhsItr = lhs.erase(lhsItr);
                 continue;
             }
         }
@@ -524,7 +547,8 @@ rmVecDust (
     return dustWasRemoved;
 }
 
-bool CashDiff::Impl::rmDust ()
+bool
+CashDiff::Impl::rmDust()
 {
     bool removedDust = false;
 
@@ -534,38 +558,40 @@ bool CashDiff::Impl::rmDust ()
     // entries that are _almost_ the same between lhs and rhs.
 
     // xrpChanges.  We call a difference of 2 drops or less dust.
-    removedDust |= rmVecDust (lhsDiffs_.xrpChanges, rhsDiffs_.xrpChanges,
-        [](XRPAmount const& lhs, XRPAmount const& rhs)
-        {
-            return diffIsDust (lhs, rhs);
+    removedDust |= rmVecDust(
+        lhsDiffs_.xrpChanges,
+        rhsDiffs_.xrpChanges,
+        [](XRPAmount const& lhs, XRPAmount const& rhs) {
+            return diffIsDust(lhs, rhs);
         });
 
     // trustChanges.
-    removedDust |= rmVecDust (lhsDiffs_.trustChanges, rhsDiffs_.trustChanges,
-        [](STAmount const& lhs, STAmount const& rhs)
-        {
-            return diffIsDust (lhs, rhs);
+    removedDust |= rmVecDust(
+        lhsDiffs_.trustChanges,
+        rhsDiffs_.trustChanges,
+        [](STAmount const& lhs, STAmount const& rhs) {
+            return diffIsDust(lhs, rhs);
         });
 
     // offerChanges.
-    removedDust |= rmVecDust (lhsDiffs_.offerChanges, rhsDiffs_.offerChanges,
-        [](CashDiff::OfferAmounts const& lhs, CashDiff::OfferAmounts const& rhs)
-        {
-            return diffIsDust (lhs, rhs);
-        });
+    removedDust |= rmVecDust(
+        lhsDiffs_.offerChanges,
+        rhsDiffs_.offerChanges,
+        [](CashDiff::OfferAmounts const& lhs,
+           CashDiff::OfferAmounts const& rhs) { return diffIsDust(lhs, rhs); });
 
     // offerDeletions.
-    removedDust |= rmVecDust (
-        lhsDiffs_.offerDeletions, rhsDiffs_.offerDeletions,
-        [](CashDiff::OfferAmounts const& lhs, CashDiff::OfferAmounts const& rhs)
-        {
-            return diffIsDust (lhs, rhs);
-        });
+    removedDust |= rmVecDust(
+        lhsDiffs_.offerDeletions,
+        rhsDiffs_.offerDeletions,
+        [](CashDiff::OfferAmounts const& lhs,
+           CashDiff::OfferAmounts const& rhs) { return diffIsDust(lhs, rhs); });
 
     return removedDust;
 }
 
-bool CashDiff::Impl::rmLhsDeletedOffers()
+bool
+CashDiff::Impl::rmLhsDeletedOffers()
 {
     bool const ret = !lhsDiffs_.offerDeletions.empty();
     if (ret)
@@ -573,7 +599,8 @@ bool CashDiff::Impl::rmLhsDeletedOffers()
     return ret;
 }
 
-bool CashDiff::Impl::rmRhsDeletedOffers()
+bool
+CashDiff::Impl::rmRhsDeletedOffers()
 {
     bool const ret = !rhsDiffs_.offerDeletions.empty();
     if (ret)
@@ -583,17 +610,24 @@ bool CashDiff::Impl::rmRhsDeletedOffers()
 
 // Deposits differences between two sorted vectors into a destination.
 template <typename T>
-static void setDiff (
-    std::vector<T> const& a, std::vector<T> const& b, std::vector<T>& dest)
+static void
+setDiff(std::vector<T> const& a, std::vector<T> const& b, std::vector<T>& dest)
 {
     dest.clear();
-    std::set_difference (a.cbegin(), a.cend(),
-        b.cbegin(), b.cend(), std::inserter (dest, dest.end()));
+    std::set_difference(
+        a.cbegin(),
+        a.cend(),
+        b.cbegin(),
+        b.cend(),
+        std::inserter(dest, dest.end()));
 }
 
-void CashDiff::Impl::findDiffs (
-        CashFilter lhsFilter, detail::ApplyStateTable const& lhs,
-        CashFilter rhsFilter, detail::ApplyStateTable const& rhs)
+void
+CashDiff::Impl::findDiffs(
+    CashFilter lhsFilter,
+    detail::ApplyStateTable const& lhs,
+    CashFilter rhsFilter,
+    detail::ApplyStateTable const& rhs)
 {
     // If dropsDestroyed_ is different, note that.
     if (lhs.dropsDestroyed() != rhs.dropsDestroyed())
@@ -602,90 +636,116 @@ void CashDiff::Impl::findDiffs (
     }
 
     // Extract cash flow changes from the state tables
-    auto lhsDiffs = getCashFlow (view_, lhsFilter, lhs);
-    auto rhsDiffs = getCashFlow (view_, rhsFilter, rhs);
+    auto lhsDiffs = getCashFlow(view_, lhsFilter, lhs);
+    auto rhsDiffs = getCashFlow(view_, rhsFilter, rhs);
 
     // Get statistics on keys.
-    auto const counts = countKeys (lhsDiffs, rhsDiffs);
+    auto const counts = countKeys(lhsDiffs, rhsDiffs);
     commonKeys_ = counts[0];
-    lhsKeys_    = counts[1];
-    rhsKeys_    = counts[2];
+    lhsKeys_ = counts[1];
+    rhsKeys_ = counts[2];
 
     // Save only the differences between the results.
     // xrpChanges:
-    setDiff (lhsDiffs.xrpChanges, rhsDiffs.xrpChanges, lhsDiffs_.xrpChanges);
-    setDiff (rhsDiffs.xrpChanges, lhsDiffs.xrpChanges, rhsDiffs_.xrpChanges);
+    setDiff(lhsDiffs.xrpChanges, rhsDiffs.xrpChanges, lhsDiffs_.xrpChanges);
+    setDiff(rhsDiffs.xrpChanges, lhsDiffs.xrpChanges, rhsDiffs_.xrpChanges);
 
     // trustChanges:
-    setDiff (lhsDiffs.trustChanges, rhsDiffs.trustChanges, lhsDiffs_.trustChanges);
-    setDiff (rhsDiffs.trustChanges, lhsDiffs.trustChanges, rhsDiffs_.trustChanges);
+    setDiff(
+        lhsDiffs.trustChanges, rhsDiffs.trustChanges, lhsDiffs_.trustChanges);
+    setDiff(
+        rhsDiffs.trustChanges, lhsDiffs.trustChanges, rhsDiffs_.trustChanges);
 
     // trustDeletions:
-    setDiff (lhsDiffs.trustDeletions, rhsDiffs.trustDeletions, lhsDiffs_.trustDeletions);
-    setDiff (rhsDiffs.trustDeletions, lhsDiffs.trustDeletions, rhsDiffs_.trustDeletions);
+    setDiff(
+        lhsDiffs.trustDeletions,
+        rhsDiffs.trustDeletions,
+        lhsDiffs_.trustDeletions);
+    setDiff(
+        rhsDiffs.trustDeletions,
+        lhsDiffs.trustDeletions,
+        rhsDiffs_.trustDeletions);
 
     // offerChanges:
-    setDiff (lhsDiffs.offerChanges, rhsDiffs.offerChanges, lhsDiffs_.offerChanges);
-    setDiff (rhsDiffs.offerChanges, lhsDiffs.offerChanges, rhsDiffs_.offerChanges);
+    setDiff(
+        lhsDiffs.offerChanges, rhsDiffs.offerChanges, lhsDiffs_.offerChanges);
+    setDiff(
+        rhsDiffs.offerChanges, lhsDiffs.offerChanges, rhsDiffs_.offerChanges);
 
     // offerDeletions:
-    setDiff (lhsDiffs.offerDeletions, rhsDiffs.offerDeletions, lhsDiffs_.offerDeletions);
-    setDiff (rhsDiffs.offerDeletions, lhsDiffs.offerDeletions, rhsDiffs_.offerDeletions);
+    setDiff(
+        lhsDiffs.offerDeletions,
+        rhsDiffs.offerDeletions,
+        lhsDiffs_.offerDeletions);
+    setDiff(
+        rhsDiffs.offerDeletions,
+        lhsDiffs.offerDeletions,
+        rhsDiffs_.offerDeletions);
 }
 
 //------------------------------------------------------------------------------
 
 // Locates differences between two ApplyStateTables.
-CashDiff::CashDiff (CashDiff&& other) noexcept
-: impl_ (std::move (other.impl_))
+CashDiff::CashDiff(CashDiff&& other) noexcept : impl_(std::move(other.impl_))
 {
 }
 
 CashDiff::~CashDiff() = default;
 
-CashDiff::CashDiff (ReadView const& view,
-    CashFilter lhsFilter, detail::ApplyStateTable const& lhs,
-    CashFilter rhsFilter, detail::ApplyStateTable const& rhs)
-: impl_ (new Impl (view, lhsFilter, lhs, rhsFilter, rhs))
+CashDiff::CashDiff(
+    ReadView const& view,
+    CashFilter lhsFilter,
+    detail::ApplyStateTable const& lhs,
+    CashFilter rhsFilter,
+    detail::ApplyStateTable const& rhs)
+    : impl_(new Impl(view, lhsFilter, lhs, rhsFilter, rhs))
 {
 }
 
-std::size_t CashDiff::commonCount () const
+std::size_t
+CashDiff::commonCount() const
 {
     return impl_->commonCount();
 }
 
-std::size_t CashDiff::rhsOnlyCount () const
+std::size_t
+CashDiff::rhsOnlyCount() const
 {
     return impl_->rhsOnlyCount();
 }
 
-std::size_t CashDiff::lhsOnlyCount () const
+std::size_t
+CashDiff::lhsOnlyCount() const
 {
     return impl_->lhsOnlyCount();
 }
 
-bool CashDiff::hasDiff() const
+bool
+CashDiff::hasDiff() const
 {
     return impl_->hasDiff();
 }
 
-int CashDiff::xrpRoundToZero() const
+int
+CashDiff::xrpRoundToZero() const
 {
     return impl_->xrpRoundToZero();
 }
 
-bool CashDiff::rmDust()
+bool
+CashDiff::rmDust()
 {
     return impl_->rmDust();
 }
 
-bool CashDiff::rmLhsDeletedOffers()
+bool
+CashDiff::rmLhsDeletedOffers()
 {
     return impl_->rmLhsDeletedOffers();
 }
 
-bool CashDiff::rmRhsDeletedOffers()
+bool
+CashDiff::rmRhsDeletedOffers()
 {
     return impl_->rmRhsDeletedOffers();
 }
@@ -694,11 +754,13 @@ bool CashDiff::rmRhsDeletedOffers()
 
 // Function that compares two STAmounts and returns true if the difference
 // is dust-sized.
-bool diffIsDust (STAmount const& v1, STAmount const& v2, std::uint8_t e10)
+bool
+diffIsDust(STAmount const& v1, STAmount const& v2, std::uint8_t e10)
 {
     // If one value is positive and the other negative then there's something
     // odd afoot.
-    if (v1 != beast::zero && v2 != beast::zero && (v1.negative() != v2.negative()))
+    if (v1 != beast::zero && v2 != beast::zero &&
+        (v1.negative() != v2.negative()))
         return false;
 
     // v1 and v2 must be the same Issue for their difference to make sense.
@@ -725,38 +787,39 @@ bool diffIsDust (STAmount const& v1, STAmount const& v2, std::uint8_t e10)
         if (l - s <= 2)
             return true;
 
-        static_assert (sizeof (1ULL) == sizeof (std::uint64_t), "");
+        static_assert(sizeof(1ULL) == sizeof(std::uint64_t), "");
         std::uint64_t const ratio = s / (l - s);
-        static constexpr std::uint64_t e10Lookup[]
-        {
-                                     1ULL,
-                                    10ULL,
-                                   100ULL,
-                                 1'000ULL,
-                                10'000ULL,
-                               100'000ULL,
-                             1'000'000ULL,
-                            10'000'000ULL,
-                           100'000'000ULL,
-                         1'000'000'000ULL,
-                        10'000'000'000ULL,
-                       100'000'000'000ULL,
-                     1'000'000'000'000ULL,
-                    10'000'000'000'000ULL,
-                   100'000'000'000'000ULL,
-                 1'000'000'000'000'000ULL,
-                10'000'000'000'000'000ULL,
-               100'000'000'000'000'000ULL,
-             1'000'000'000'000'000'000ULL,
+        static constexpr std::uint64_t e10Lookup[]{
+            1ULL,
+            10ULL,
+            100ULL,
+            1'000ULL,
+            10'000ULL,
+            100'000ULL,
+            1'000'000ULL,
+            10'000'000ULL,
+            100'000'000ULL,
+            1'000'000'000ULL,
+            10'000'000'000ULL,
+            100'000'000'000ULL,
+            1'000'000'000'000ULL,
+            10'000'000'000'000ULL,
+            100'000'000'000'000ULL,
+            1'000'000'000'000'000ULL,
+            10'000'000'000'000'000ULL,
+            100'000'000'000'000'000ULL,
+            1'000'000'000'000'000'000ULL,
             10'000'000'000'000'000'000ULL,
         };
         static std::size_t constexpr maxIndex =
-            sizeof (e10Lookup) / sizeof e10Lookup[0];
+            sizeof(e10Lookup) / sizeof e10Lookup[0];
 
         // Make sure the table is big enough.
-        static_assert (
+        static_assert(
             std::numeric_limits<std::uint64_t>::max() /
-            e10Lookup[maxIndex - 1] < 10, "Table too small");
+                    e10Lookup[maxIndex - 1] <
+                10,
+            "Table too small");
 
         if (e10 >= maxIndex)
             return false;
@@ -772,11 +835,11 @@ bool diffIsDust (STAmount const& v1, STAmount const& v2, std::uint8_t e10)
     if (diff == beast::zero)
         return true;
 
-    STAmount const ratio = divide (small, diff, v1.issue());
-    STAmount const one (v1.issue(), 1);
+    STAmount const ratio = divide(small, diff, v1.issue());
+    STAmount const one(v1.issue(), 1);
     int const ratioExp = ratio.exponent() - one.exponent();
 
     return ratioExp >= e10;
 };
 
-} // ripple
+}  // namespace ripple

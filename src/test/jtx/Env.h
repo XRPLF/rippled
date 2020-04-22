@@ -20,21 +20,13 @@
 #ifndef RIPPLE_TEST_JTX_ENV_H_INCLUDED
 #define RIPPLE_TEST_JTX_ENV_H_INCLUDED
 
-#include <test/jtx/Account.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/envconfig.h>
-#include <test/jtx/JTx.h>
-#include <test/jtx/require.h>
-#include <test/jtx/tags.h>
-#include <test/jtx/AbstractClient.h>
-#include <test/jtx/ManualTimeKeeper.h>
-#include <test/unit_test/SuiteJournal.h>
-#include <ripple/app/main/Application.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/OpenLedger.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/app/paths/Pathfinder.h>
-#include <ripple/basics/chrono.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/chrono.h>
+#include <ripple/beast/cxx17/type_traits.h>  // <type_traits>
 #include <ripple/core/Config.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
@@ -47,12 +39,19 @@
 #include <ripple/protocol/STTx.h>
 #include <functional>
 #include <string>
+#include <test/jtx/AbstractClient.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/ManualTimeKeeper.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/require.h>
+#include <test/jtx/tags.h>
+#include <test/unit_test/SuiteJournal.h>
 #include <tuple>
-#include <ripple/beast/cxx17/type_traits.h> // <type_traits>
-#include <utility>
 #include <unordered_map>
+#include <utility>
 #include <vector>
-
 
 namespace ripple {
 namespace test {
@@ -61,16 +60,15 @@ namespace jtx {
 /** Designate accounts as no-ripple in Env::fund */
 template <class... Args>
 std::array<Account, 1 + sizeof...(Args)>
-noripple (Account const& account, Args const&... args)
+noripple(Account const& account, Args const&... args)
 {
     return {{account, args...}};
 }
 
-inline
-FeatureBitset
+inline FeatureBitset
 supported_amendments()
 {
-    static const FeatureBitset ids = []{
+    static const FeatureBitset ids = [] {
         auto const& sa = ripple::detail::supportedAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
@@ -79,7 +77,8 @@ supported_amendments()
             if (auto const f = getRegisteredFeature(s))
                 feats.push_back(*f);
             else
-                Throw<std::runtime_error> ("Unknown feature: " + s + "  in supportedAmendments.");
+                Throw<std::runtime_error>(
+                    "Unknown feature: " + s + "  in supportedAmendments.");
         }
         return FeatureBitset(feats);
     }();
@@ -93,21 +92,19 @@ class SuiteLogs : public Logs
     beast::unit_test::suite& suite_;
 
 public:
-    explicit
-    SuiteLogs(beast::unit_test::suite& suite)
-        : Logs (beast::severities::kError)
-        , suite_(suite)
+    explicit SuiteLogs(beast::unit_test::suite& suite)
+        : Logs(beast::severities::kError), suite_(suite)
     {
     }
 
     ~SuiteLogs() override = default;
 
     std::unique_ptr<beast::Journal::Sink>
-    makeSink(std::string const& partition,
+    makeSink(
+        std::string const& partition,
         beast::severities::Severity threshold) override
     {
-        return std::make_unique<SuiteJournalSink>(
-            partition, threshold, suite_);
+        return std::make_unique<SuiteJournalSink>(partition, threshold, suite_);
     }
 };
 
@@ -131,7 +128,8 @@ private:
         std::unique_ptr<AbstractClient> client;
 
         AppBundle() = default;
-        AppBundle (beast::unit_test::suite& suite,
+        AppBundle(
+            beast::unit_test::suite& suite,
             std::unique_ptr<Config> config,
             std::unique_ptr<Logs> logs);
         ~AppBundle();
@@ -143,8 +141,9 @@ public:
     beast::Journal const journal;
 
     Env() = delete;
-    Env& operator= (Env const&) = delete;
-    Env (Env const&) = delete;
+    Env&
+    operator=(Env const&) = delete;
+    Env(Env const&) = delete;
 
     /**
      * @brief Create Env using suite, Config pointer, and explicit features.
@@ -155,26 +154,27 @@ public:
      *
      * @param suite_ the current unit_test::suite
      * @param config The desired Config - ownership will be taken by moving
-     * the pointer. See envconfig and related functions for common config tweaks.
+     * the pointer. See envconfig and related functions for common config
+     * tweaks.
      * @param args with_only_features() to explicitly enable or
      * supported_features_except() to enable all and disable specific features.
      */
     // VFALCO Could wrap the suite::log in a Journal here
-    Env (beast::unit_test::suite& suite_,
-            std::unique_ptr<Config> config,
-            FeatureBitset features,
-            std::unique_ptr<Logs> logs = nullptr)
-        : test (suite_)
-        , bundle_ (
-            suite_,
-            std::move(config),
-            logs ? std::move(logs) : std::make_unique<SuiteLogs>(suite_))
-        , journal {bundle_.app->journal ("Env")}
+    Env(beast::unit_test::suite& suite_,
+        std::unique_ptr<Config> config,
+        FeatureBitset features,
+        std::unique_ptr<Logs> logs = nullptr)
+        : test(suite_)
+        , bundle_(
+              suite_,
+              std::move(config),
+              logs ? std::move(logs) : std::make_unique<SuiteLogs>(suite_))
+        , journal{bundle_.app->journal("Env")}
     {
         memoize(Account::master);
         Pathfinder::initPathTable();
         foreachFeature(
-            features, [& appFeats = app().config().features](uint256 const& f) {
+            features, [&appFeats = app().config().features](uint256 const& f) {
                 appFeats.insert(f);
             });
     }
@@ -192,8 +192,7 @@ public:
      * @param args collection of features
      *
      */
-    Env (beast::unit_test::suite& suite_,
-            FeatureBitset features)
+    Env(beast::unit_test::suite& suite_, FeatureBitset features)
         : Env(suite_, envconfig(), features)
     {
     }
@@ -207,13 +206,16 @@ public:
      *
      * @param suite_ the current unit_test::suite
      * @param config The desired Config - ownership will be taken by moving
-     * the pointer. See envconfig and related functions for common config tweaks.
+     * the pointer. See envconfig and related functions for common config
+     * tweaks.
      */
-    Env (beast::unit_test::suite& suite_,
+    Env(beast::unit_test::suite& suite_,
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs = nullptr)
-        : Env(suite_, std::move(config),
-            supported_amendments(), std::move(logs))
+        : Env(suite_,
+              std::move(config),
+              supported_amendments(),
+              std::move(logs))
     {
     }
 
@@ -226,8 +228,7 @@ public:
      *
      * @param suite_ the current unit_test::suite
      */
-    Env (beast::unit_test::suite& suite_)
-        : Env(suite_, envconfig())
+    Env(beast::unit_test::suite& suite_) : Env(suite_, envconfig())
     {
     }
 
@@ -274,13 +275,13 @@ public:
         The command is examined and used to build
         the correct JSON as per the arguments.
     */
-    template<class... Args>
+    template <class... Args>
     Json::Value
     rpc(std::unordered_map<std::string, std::string> const& headers,
         std::string const& cmd,
         Args&&... args);
 
-    template<class... Args>
+    template <class... Args>
     Json::Value
     rpc(std::string const& cmd, Args&&... args);
 
@@ -326,8 +327,10 @@ public:
             the close time of the resulting ledger.
     */
     void
-    close (NetClock::time_point closeTime,
-        boost::optional<std::chrono::milliseconds> consensusDelay = boost::none);
+    close(
+        NetClock::time_point closeTime,
+        boost::optional<std::chrono::milliseconds> consensusDelay =
+            boost::none);
 
     /** Close and advance the ledger.
 
@@ -336,11 +339,10 @@ public:
     */
     template <class Rep, class Period>
     void
-    close (std::chrono::duration<
-        Rep, Period> const& elapsed)
+    close(std::chrono::duration<Rep, Period> const& elapsed)
     {
         // VFALCO Is this the correct time?
-        close (now() + elapsed);
+        close(now() + elapsed);
     }
 
     /** Close and advance the ledger.
@@ -352,21 +354,21 @@ public:
     close()
     {
         // VFALCO Is this the correct time?
-        close (std::chrono::seconds(5));
+        close(std::chrono::seconds(5));
     }
 
     /** Turn on JSON tracing.
         With no arguments, trace all
     */
     void
-    trace (int howMany = -1)
+    trace(int howMany = -1)
     {
         trace_ = howMany;
     }
 
     /** Turn off JSON tracing. */
     void
-    notrace ()
+    notrace()
     {
         trace_ = 0;
     }
@@ -380,55 +382,53 @@ public:
 
     /** Associate AccountID with account. */
     void
-    memoize (Account const& account);
+    memoize(Account const& account);
 
     /** Returns the Account given the AccountID. */
     /** @{ */
     Account const&
-    lookup (AccountID const& id) const;
+    lookup(AccountID const& id) const;
 
     Account const&
-    lookup (std::string const& base58ID) const;
+    lookup(std::string const& base58ID) const;
     /** @} */
 
     /** Returns the XRP balance on an account.
         Returns 0 if the account does not exist.
     */
     PrettyAmount
-    balance (Account const& account) const;
+    balance(Account const& account) const;
 
     /** Returns the next sequence number on account.
         Exceptions:
             Throws if the account does not exist
     */
     std::uint32_t
-    seq (Account const& account) const;
+    seq(Account const& account) const;
 
     /** Return the balance on an account.
         Returns 0 if the trust line does not exist.
     */
     // VFALCO NOTE This should return a unit-less amount
     PrettyAmount
-    balance (Account const& account,
-        Issue const& issue) const;
+    balance(Account const& account, Issue const& issue) const;
 
     /** Return an account root.
         @return empty if the account does not exist.
     */
     std::shared_ptr<SLE const>
-    le (Account const& account) const;
+    le(Account const& account) const;
 
     /** Return a ledger entry.
         @return empty if the ledger entry does not exist
     */
     std::shared_ptr<SLE const>
-    le (Keylet const& k) const;
+    le(Keylet const& k) const;
 
     /** Create a JTx from parameters. */
-    template <class JsonValue,
-        class... FN>
+    template <class JsonValue, class... FN>
     JTx
-    jt (JsonValue&& jv, FN const&... fN)
+    jt(JsonValue&& jv, FN const&... fN)
     {
         JTx jt(std::forward<JsonValue>(jv));
         invoke(jt, fN...);
@@ -440,14 +440,11 @@ public:
     /** Create JSON from parameters.
         This will apply funclets and autofill.
     */
-    template <class JsonValue,
-        class... FN>
+    template <class JsonValue, class... FN>
     Json::Value
-    json (JsonValue&&jv, FN const&... fN)
+    json(JsonValue&& jv, FN const&... fN)
     {
-        auto tj = jt(
-            std::forward<JsonValue>(jv),
-                fN...);
+        auto tj = jt(std::forward<JsonValue>(jv), fN...);
         return std::move(tj.jv);
     }
 
@@ -458,23 +455,21 @@ public:
     */
     template <class... Args>
     void
-    require (Args const&... args)
+    require(Args const&... args)
     {
         jtx::required(args...)(*this);
     }
 
     /** Gets the TER result and `didApply` flag from a RPC Json result object.
-    */
-    static
-    std::pair<TER, bool>
+     */
+    static std::pair<TER, bool>
     parseResult(Json::Value const& jr);
 
     /** Submit an existing JTx.
         This calls postconditions.
     */
-    virtual
-    void
-    submit (JTx const& jt);
+    virtual void
+    submit(JTx const& jt);
 
     /** Use the submit RPC command with a provided JTx object.
         This calls postconditions.
@@ -492,19 +487,16 @@ public:
     /** @{ */
     template <class JsonValue, class... FN>
     void
-    apply (JsonValue&& jv, FN const&... fN)
+    apply(JsonValue&& jv, FN const&... fN)
     {
-        submit(jt(std::forward<
-            JsonValue>(jv), fN...));
+        submit(jt(std::forward<JsonValue>(jv), fN...));
     }
 
-    template <class JsonValue,
-        class... FN>
+    template <class JsonValue, class... FN>
     void
     operator()(JsonValue&& jv, FN const&... fN)
     {
-        apply(std::forward<
-            JsonValue>(jv), fN...);
+        apply(std::forward<JsonValue>(jv), fN...);
     }
     /** @} */
 
@@ -545,27 +537,23 @@ public:
 
 private:
     void
-    fund (bool setDefaultRipple,
-        STAmount const& amount,
-            Account const& account);
+    fund(bool setDefaultRipple, STAmount const& amount, Account const& account);
 
     void
-    fund_arg (STAmount const& amount,
-        Account const& account)
+    fund_arg(STAmount const& amount, Account const& account)
     {
-        fund (true, amount, account);
+        fund(true, amount, account);
     }
 
     template <std::size_t N>
     void
-    fund_arg (STAmount const& amount,
-        std::array<Account, N> const& list)
+    fund_arg(STAmount const& amount, std::array<Account, N> const& list)
     {
         for (auto const& account : list)
-            fund (false, amount, account);
+            fund(false, amount, account);
     }
-public:
 
+public:
     /** Create a new account with some XRP.
 
         These convenience functions are for easy set-up
@@ -592,12 +580,11 @@ public:
                     or calls to noripple with lists of accounts
                     to fund.
     */
-    template<class Arg, class... Args>
+    template <class Arg, class... Args>
     void
-    fund (STAmount const& amount,
-        Arg const& arg, Args const&... args)
+    fund(STAmount const& amount, Arg const& arg, Args const&... args)
     {
-        fund_arg (amount, arg);
+        fund_arg(amount, arg);
         if constexpr (sizeof...(args) > 0)
             fund(amount, args...);
     }
@@ -621,13 +608,15 @@ public:
     */
     /** @{ */
     void
-    trust (STAmount const& amount,
-        Account const& account);
+    trust(STAmount const& amount, Account const& account);
 
-    template<class... Accounts>
+    template <class... Accounts>
     void
-    trust (STAmount const& amount, Account const& to0,
-        Account const& to1, Accounts const&... toN)
+    trust(
+        STAmount const& amount,
+        Account const& to0,
+        Account const& to1,
+        Accounts const&... toN)
     {
         trust(amount, to0);
         trust(amount, to1, toN...);
@@ -641,15 +630,15 @@ protected:
     TER ter_ = tesSUCCESS;
 
     Json::Value
-    do_rpc(std::vector<std::string> const& args,
+    do_rpc(
+        std::vector<std::string> const& args,
         std::unordered_map<std::string, std::string> const& headers = {});
 
     void
-    autofill_sig (JTx& jt);
+    autofill_sig(JTx& jt);
 
-    virtual
-    void
-    autofill (JTx& jt);
+    virtual void
+    autofill(JTx& jt);
 
     /** Create a STTx from a JTx
         The framework requires that JSON is valid.
@@ -659,50 +648,52 @@ protected:
             parse_error
     */
     std::shared_ptr<STTx const>
-    st (JTx const& jt);
+    st(JTx const& jt);
 
     // Invoke funclets on stx
     // Note: The STTx may not be modified
     template <class... FN>
     void
-    invoke (STTx& stx, FN const&... fN)
+    invoke(STTx& stx, FN const&... fN)
     {
-        (fN(*this, stx),...);
+        (fN(*this, stx), ...);
     }
 
     // Invoke funclets on jt
     template <class... FN>
     void
-    invoke (JTx& jt, FN const&... fN)
+    invoke(JTx& jt, FN const&... fN)
     {
-        (fN(*this, jt),...);
+        (fN(*this, jt), ...);
     }
 
     // Map of account IDs to Account
-    std::unordered_map<
-        AccountID, Account> map_;
+    std::unordered_map<AccountID, Account> map_;
 };
 
-template<class... Args>
+template <class... Args>
 Json::Value
-Env::rpc(std::unordered_map<std::string, std::string> const& headers,
+Env::rpc(
+    std::unordered_map<std::string, std::string> const& headers,
     std::string const& cmd,
     Args&&... args)
 {
-    return do_rpc(std::vector<std::string>{cmd, std::forward<Args>(args)...},
-        headers);
+    return do_rpc(
+        std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
 }
 
-template<class... Args>
+template <class... Args>
 Json::Value
 Env::rpc(std::string const& cmd, Args&&... args)
 {
-    return rpc(std::unordered_map<std::string, std::string>(), cmd,
+    return rpc(
+        std::unordered_map<std::string, std::string>(),
+        cmd,
         std::forward<Args>(args)...);
 }
 
-} // jtx
-} // test
-} // ripple
+}  // namespace jtx
+}  // namespace test
+}  // namespace ripple
 
 #endif

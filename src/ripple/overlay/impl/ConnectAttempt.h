@@ -26,9 +26,8 @@
 namespace ripple {
 
 /** Manages an outbound connection attempt. */
-class ConnectAttempt
-    : public OverlayImpl::Child
-    , public std::enable_shared_from_this<ConnectAttempt>
+class ConnectAttempt : public OverlayImpl::Child,
+                       public std::enable_shared_from_this<ConnectAttempt>
 {
 private:
     using error_code = boost::system::error_code;
@@ -43,7 +42,7 @@ private:
 
     using socket_type = boost::asio::ip::tcp::socket;
     using middle_type = boost::beast::tcp_stream;
-    using stream_type = boost::beast::ssl_stream <middle_type>;
+    using stream_type = boost::beast::ssl_stream<middle_type>;
     using shared_context = std::shared_ptr<boost::asio::ssl::context>;
 
     Application& app_;
@@ -63,11 +62,16 @@ private:
     request_type req_;
 
 public:
-    ConnectAttempt (Application& app, boost::asio::io_service& io_service,
-        endpoint_type const& remote_endpoint, Resource::Consumer usage,
-            shared_context const& context,
-                std::uint32_t id, std::shared_ptr<PeerFinder::Slot> const& slot,
-                    beast::Journal journal, OverlayImpl& overlay);
+    ConnectAttempt(
+        Application& app,
+        boost::asio::io_service& io_service,
+        endpoint_type const& remote_endpoint,
+        Resource::Consumer usage,
+        shared_context const& context,
+        std::uint32_t id,
+        std::shared_ptr<PeerFinder::Slot> const& slot,
+        beast::Journal journal,
+        OverlayImpl& overlay);
 
     ~ConnectAttempt();
 
@@ -78,29 +82,38 @@ public:
     run();
 
 private:
+    void
+    close();
+    void
+    fail(std::string const& reason);
+    void
+    fail(std::string const& name, error_code ec);
+    void
+    setTimer();
+    void
+    cancelTimer();
+    void
+    onTimer(error_code ec);
+    void
+    onConnect(error_code ec);
+    void
+    onHandshake(error_code ec);
+    void
+    onWrite(error_code ec);
+    void
+    onRead(error_code ec);
+    void
+    onShutdown(error_code ec);
 
-    void close();
-    void fail (std::string const& reason);
-    void fail (std::string const& name, error_code ec);
-    void setTimer();
-    void cancelTimer();
-    void onTimer (error_code ec);
-    void onConnect (error_code ec);
-    void onHandshake (error_code ec);
-    void onWrite (error_code ec);
-    void onRead (error_code ec);
-    void onShutdown (error_code ec);
+    static request_type
+    makeRequest(bool crawl, bool compressionEnabled);
 
-    static
-    request_type
-    makeRequest (bool crawl, bool compressionEnabled);
-
-    void processResponse();
+    void
+    processResponse();
 
     template <class = void>
-    static
-    boost::asio::ip::tcp::endpoint
-    parse_endpoint (std::string const& s, boost::system::error_code& ec)
+    static boost::asio::ip::tcp::endpoint
+    parse_endpoint(std::string const& s, boost::system::error_code& ec)
     {
         beast::IP::Endpoint bep;
         std::istringstream is(s);
@@ -116,6 +129,6 @@ private:
     }
 };
 
-}
+}  // namespace ripple
 
 #endif

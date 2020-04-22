@@ -22,22 +22,26 @@
 #include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
-#include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/Indexes.h>
 #include <cassert>
 
 namespace ripple {
 
-ApplyContext::ApplyContext(Application& app_,
-    OpenView& base, STTx const& tx_, TER preclaimResult_,
-        FeeUnit64 baseFee_, ApplyFlags flags,
-            beast::Journal journal_)
+ApplyContext::ApplyContext(
+    Application& app_,
+    OpenView& base,
+    STTx const& tx_,
+    TER preclaimResult_,
+    FeeUnit64 baseFee_,
+    ApplyFlags flags,
+    beast::Journal journal_)
     : app(app_)
     , tx(tx_)
     , preclaimResult(preclaimResult_)
     , baseFee(baseFee_)
     , journal(journal_)
-    , base_ (base)
+    , base_(base)
     , flags_(flags)
 {
     view_.emplace(&base_, flags_);
@@ -62,16 +66,17 @@ ApplyContext::size()
 }
 
 void
-ApplyContext::visit (std::function <void (
-    uint256 const&, bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)> const& func)
+ApplyContext::visit(std::function<void(
+                        uint256 const&,
+                        bool,
+                        std::shared_ptr<SLE const> const&,
+                        std::shared_ptr<SLE const> const&)> const& func)
 {
     view_->visit(base_, func);
 }
 
 TER
-ApplyContext::failInvariantCheck (TER const result)
+ApplyContext::failInvariantCheck(TER const result)
 {
     // If we already failed invariant checks before and we are now attempting to
     // only charge a fee, and even that fails the invariant checks something is
@@ -83,7 +88,7 @@ ApplyContext::failInvariantCheck (TER const result)
         : TER{tecINVARIANT_FAILED};
 }
 
-template<std::size_t... Is>
+template <std::size_t... Is>
 TER
 ApplyContext::checkInvariantsHelper(
     TER const result,
@@ -95,15 +100,13 @@ ApplyContext::checkInvariantsHelper(
         auto checkers = getInvariantChecks();
 
         // call each check's per-entry method
-        visit (
-            [&checkers](
-                uint256 const& index,
-                bool isDelete,
-                std::shared_ptr <SLE const> const& before,
-                std::shared_ptr <SLE const> const& after)
-            {
-                (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
-            });
+        visit([&checkers](
+                  uint256 const& index,
+                  bool isDelete,
+                  std::shared_ptr<SLE const> const& before,
+                  std::shared_ptr<SLE const> const& after) {
+            (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
+        });
 
         // Note: do not replace this logic with a `...&&` fold expression.
         // The fold expression will only run until the first check fails (it
@@ -111,28 +114,30 @@ ApplyContext::checkInvariantsHelper(
         // message won't be. Every failed invariant should write to the log,
         // not just the first one.
         std::array<bool, sizeof...(Is)> finalizers{
-            {std::get<Is>(
-                checkers).finalize(tx, result, fee, *view_, journal)...}};
+            {std::get<Is>(checkers).finalize(
+                tx, result, fee, *view_, journal)...}};
 
         // call each check's finalizer to see that it passes
-        if (! std::all_of( finalizers.cbegin(), finalizers.cend(),
-                [](auto const& b) { return b; }))
+        if (!std::all_of(
+                finalizers.cbegin(), finalizers.cend(), [](auto const& b) {
+                    return b;
+                }))
         {
-            JLOG(journal.fatal()) <<
-                "Transaction has failed one or more invariants: " <<
-                to_string(tx.getJson (JsonOptions::none));
+            JLOG(journal.fatal())
+                << "Transaction has failed one or more invariants: "
+                << to_string(tx.getJson(JsonOptions::none));
 
-            return failInvariantCheck (result);
+            return failInvariantCheck(result);
         }
     }
-    catch(std::exception const& ex)
+    catch (std::exception const& ex)
     {
-        JLOG(journal.fatal()) <<
-            "Transaction caused an exception in an invariant" <<
-            ", ex: " << ex.what() <<
-            ", tx: " << to_string(tx.getJson (JsonOptions::none));
+        JLOG(journal.fatal())
+            << "Transaction caused an exception in an invariant"
+            << ", ex: " << ex.what()
+            << ", tx: " << to_string(tx.getJson(JsonOptions::none));
 
-        return failInvariantCheck (result);
+        return failInvariantCheck(result);
     }
 
     return result;
@@ -141,10 +146,12 @@ ApplyContext::checkInvariantsHelper(
 TER
 ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
 {
-    assert (isTesSuccess(result) || isTecClaim(result));
+    assert(isTesSuccess(result) || isTecClaim(result));
 
-    return checkInvariantsHelper(result, fee,
+    return checkInvariantsHelper(
+        result,
+        fee,
         std::make_index_sequence<std::tuple_size<InvariantChecks>::value>{});
 }
 
-} // ripple
+}  // namespace ripple

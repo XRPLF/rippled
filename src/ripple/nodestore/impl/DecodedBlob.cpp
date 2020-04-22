@@ -25,7 +25,7 @@
 namespace ripple {
 namespace NodeStore {
 
-DecodedBlob::DecodedBlob (void const* key, void const* value, int valueBytes)
+DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
 {
     /*  Data format:
 
@@ -41,38 +41,39 @@ DecodedBlob::DecodedBlob (void const* key, void const* value, int valueBytes)
     // VFALCO NOTE Ledger indexes should have started at 1
     m_objectType = hotUNKNOWN;
     m_objectData = nullptr;
-    m_dataBytes = std::max (0, valueBytes - 9);
+    m_dataBytes = std::max(0, valueBytes - 9);
 
     // VFALCO NOTE What about bytes 4 through 7 inclusive?
 
     if (valueBytes > 8)
     {
-        unsigned char const* byte = static_cast <unsigned char const*> (value);
-        m_objectType = safe_cast <NodeObjectType> (byte [8]);
+        unsigned char const* byte = static_cast<unsigned char const*>(value);
+        m_objectType = safe_cast<NodeObjectType>(byte[8]);
     }
 
     if (valueBytes > 9)
     {
-        m_objectData = static_cast <unsigned char const*> (value) + 9;
+        m_objectData = static_cast<unsigned char const*>(value) + 9;
 
         switch (m_objectType)
         {
-        default:
-            break;
+            default:
+                break;
 
-        case hotUNKNOWN:
-        case hotLEDGER:
-        case hotACCOUNT_NODE:
-        case hotTRANSACTION_NODE:
-            m_success = true;
-            break;
+            case hotUNKNOWN:
+            case hotLEDGER:
+            case hotACCOUNT_NODE:
+            case hotTRANSACTION_NODE:
+                m_success = true;
+                break;
         }
     }
 }
 
-std::shared_ptr<NodeObject> DecodedBlob::createObject ()
+std::shared_ptr<NodeObject>
+DecodedBlob::createObject()
 {
-    assert (m_success);
+    assert(m_success);
 
     std::shared_ptr<NodeObject> object;
 
@@ -80,12 +81,12 @@ std::shared_ptr<NodeObject> DecodedBlob::createObject ()
     {
         Blob data(m_objectData, m_objectData + m_dataBytes);
 
-        object = NodeObject::createObject (
+        object = NodeObject::createObject(
             m_objectType, std::move(data), uint256::fromVoid(m_key));
     }
 
     return object;
 }
 
-}
-}
+}  // namespace NodeStore
+}  // namespace ripple

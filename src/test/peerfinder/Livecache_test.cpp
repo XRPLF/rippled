@@ -17,22 +17,22 @@
 */
 //==============================================================================
 
-#include <ripple/peerfinder/impl/Livecache.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/safe_cast.h>
-#include <ripple/beast/unit_test.h>
 #include <ripple/beast/clock/manual_clock.h>
+#include <ripple/beast/unit_test.h>
+#include <ripple/peerfinder/impl/Livecache.h>
+#include <boost/algorithm/string.hpp>
 #include <test/beast/IPEndpointCommon.h>
 #include <test/unit_test/SuiteJournal.h>
-#include <boost/algorithm/string.hpp>
 
 namespace ripple {
 namespace PeerFinder {
 
-bool operator== (Endpoint const& a, Endpoint const& b)
+bool
+operator==(Endpoint const& a, Endpoint const& b)
 {
-    return (a.hops == b.hops &&
-            a.address == b.address);
+    return (a.hops == b.hops && a.address == b.address);
 }
 
 class Livecache_test : public beast::unit_test::suite
@@ -41,76 +41,80 @@ class Livecache_test : public beast::unit_test::suite
     test::SuiteJournal journal_;
 
 public:
-    Livecache_test()
-    : journal_ ("Livecache_test", *this)
-    { }
+    Livecache_test() : journal_("Livecache_test", *this)
+    {
+    }
 
     // Add the address as an endpoint
     template <class C>
-    inline void add (beast::IP::Endpoint ep, C& c, int hops = 0)
+    inline void
+    add(beast::IP::Endpoint ep, C& c, int hops = 0)
     {
-        Endpoint cep {ep, hops};
-        c.insert (cep);
+        Endpoint cep{ep, hops};
+        c.insert(cep);
     }
 
-    void testBasicInsert ()
+    void
+    testBasicInsert()
     {
-        testcase ("Basic Insert");
-        Livecache <> c (clock_, journal_);
+        testcase("Basic Insert");
+        Livecache<> c(clock_, journal_);
         BEAST_EXPECT(c.empty());
 
         for (auto i = 0; i < 10; ++i)
             add(beast::IP::randomEP(true), c);
 
-        BEAST_EXPECT(! c.empty());
+        BEAST_EXPECT(!c.empty());
         BEAST_EXPECT(c.size() == 10);
 
         for (auto i = 0; i < 10; ++i)
             add(beast::IP::randomEP(false), c);
 
-        BEAST_EXPECT(! c.empty());
+        BEAST_EXPECT(!c.empty());
         BEAST_EXPECT(c.size() == 20);
     }
 
-    void testInsertUpdate ()
+    void
+    testInsertUpdate()
     {
-        testcase ("Insert/Update");
-        Livecache <> c (clock_, journal_);
+        testcase("Insert/Update");
+        Livecache<> c(clock_, journal_);
 
-        auto ep1 = Endpoint {beast::IP::randomEP(), 2};
+        auto ep1 = Endpoint{beast::IP::randomEP(), 2};
         c.insert(ep1);
         BEAST_EXPECT(c.size() == 1);
         // third position list will contain the entry
-        BEAST_EXPECT((c.hops.begin()+2)->begin()->hops == 2);
+        BEAST_EXPECT((c.hops.begin() + 2)->begin()->hops == 2);
 
-        auto ep2 = Endpoint {ep1.address, 4};
+        auto ep2 = Endpoint{ep1.address, 4};
         // this will not change the entry has higher hops
         c.insert(ep2);
         BEAST_EXPECT(c.size() == 1);
         // still in third position list
-        BEAST_EXPECT((c.hops.begin()+2)->begin()->hops == 2);
+        BEAST_EXPECT((c.hops.begin() + 2)->begin()->hops == 2);
 
-        auto ep3 = Endpoint {ep1.address, 2};
+        auto ep3 = Endpoint{ep1.address, 2};
         // this will not change the entry has the same hops as existing
         c.insert(ep3);
         BEAST_EXPECT(c.size() == 1);
         // still in third position list
-        BEAST_EXPECT((c.hops.begin()+2)->begin()->hops == 2);
+        BEAST_EXPECT((c.hops.begin() + 2)->begin()->hops == 2);
 
-        auto ep4 = Endpoint {ep1.address, 1};
+        auto ep4 = Endpoint{ep1.address, 1};
         c.insert(ep4);
         BEAST_EXPECT(c.size() == 1);
         // now at second position list
-        BEAST_EXPECT((c.hops.begin()+1)->begin()->hops == 1);
+        BEAST_EXPECT((c.hops.begin() + 1)->begin()->hops == 1);
     }
 
-    void testExpire ()
+    void
+    testExpire()
     {
-        testcase ("Expire");
+        testcase("Expire");
         using namespace std::chrono_literals;
-        Livecache <> c (clock_, journal_);
+        Livecache<> c(clock_, journal_);
 
-        auto ep1 = Endpoint {beast::IP::randomEP(), 1};
+        auto ep1 = Endpoint{beast::IP::randomEP(), 1};
         c.insert(ep1);
         BEAST_EXPECT(c.size() == 1);
         c.expire();
@@ -126,21 +130,21 @@ public:
         BEAST_EXPECT(c.empty());
     }
 
-    void testHistogram ()
+    void
+    testHistogram()
     {
-        testcase ("Histogram");
+        testcase("Histogram");
         constexpr auto num_eps = 40;
-        Livecache <> c (clock_, journal_);
+        Livecache<> c(clock_, journal_);
         for (auto i = 0; i < num_eps; ++i)
-            add(
-                beast::IP::randomEP(true),
+            add(beast::IP::randomEP(true),
                 c,
                 ripple::rand_int(0, safe_cast<int>(Tuning::maxHops + 1)));
         auto h = c.hops.histogram();
-        if(! BEAST_EXPECT(! h.empty()))
+        if (!BEAST_EXPECT(!h.empty()))
             return;
-        std::vector <std::string> v;
-        boost::split (v, h, boost::algorithm::is_any_of (","));
+        std::vector<std::string> v;
+        boost::split(v, h, boost::algorithm::is_any_of(","));
         auto sum = 0;
         for (auto const& n : v)
         {
@@ -151,32 +155,37 @@ public:
         BEAST_EXPECT(sum == num_eps);
     }
 
-
-    void testShuffle ()
+    void
+    testShuffle()
     {
-        testcase ("Shuffle");
-        Livecache <> c (clock_, journal_);
+        testcase("Shuffle");
+        Livecache<> c(clock_, journal_);
         for (auto i = 0; i < 100; ++i)
-            add(
-                beast::IP::randomEP(true),
+            add(beast::IP::randomEP(true),
                 c,
                 ripple::rand_int(0, safe_cast<int>(Tuning::maxHops + 1)));
 
-        using at_hop = std::vector <ripple::PeerFinder::Endpoint>;
-        using all_hops = std::array <at_hop, 1 + Tuning::maxHops + 1>;
+        using at_hop = std::vector<ripple::PeerFinder::Endpoint>;
+        using all_hops = std::array<at_hop, 1 + Tuning::maxHops + 1>;
 
         auto cmp_EP = [](Endpoint const& a, Endpoint const& b) {
-            return (b.hops < a.hops || (b.hops == a.hops && b.address < a.address));
+            return (
+                b.hops < a.hops || (b.hops == a.hops && b.address < a.address));
         };
         all_hops before;
         all_hops before_sorted;
         for (auto i = std::make_pair(0, c.hops.begin());
-                i.second != c.hops.end(); ++i.first, ++i.second)
+             i.second != c.hops.end();
+             ++i.first, ++i.second)
         {
-            std::copy ((*i.second).begin(), (*i.second).end(),
-                std::back_inserter (before[i.first]));
-            std::copy ((*i.second).begin(), (*i.second).end(),
-                std::back_inserter (before_sorted[i.first]));
+            std::copy(
+                (*i.second).begin(),
+                (*i.second).end(),
+                std::back_inserter(before[i.first]));
+            std::copy(
+                (*i.second).begin(),
+                (*i.second).end(),
+                std::back_inserter(before_sorted[i.first]));
             std::sort(
                 before_sorted[i.first].begin(),
                 before_sorted[i.first].end(),
@@ -188,12 +197,17 @@ public:
         all_hops after;
         all_hops after_sorted;
         for (auto i = std::make_pair(0, c.hops.begin());
-                i.second != c.hops.end(); ++i.first, ++i.second)
+             i.second != c.hops.end();
+             ++i.first, ++i.second)
         {
-            std::copy ((*i.second).begin(), (*i.second).end(),
-                std::back_inserter (after[i.first]));
-            std::copy ((*i.second).begin(), (*i.second).end(),
-                std::back_inserter (after_sorted[i.first]));
+            std::copy(
+                (*i.second).begin(),
+                (*i.second).end(),
+                std::back_inserter(after[i.first]));
+            std::copy(
+                (*i.second).begin(),
+                (*i.second).end(),
+                std::back_inserter(after_sorted[i.first]));
             std::sort(
                 after_sorted[i.first].begin(),
                 after_sorted[i.first].end(),
@@ -209,20 +223,21 @@ public:
             all_match = all_match && (before[i] == after[i]);
             BEAST_EXPECT(before_sorted[i] == after_sorted[i]);
         }
-        BEAST_EXPECT(! all_match);
+        BEAST_EXPECT(!all_match);
     }
 
-    void run () override
+    void
+    run() override
     {
-        testBasicInsert ();
-        testInsertUpdate ();
-        testExpire ();
-        testHistogram ();
-        testShuffle ();
+        testBasicInsert();
+        testInsertUpdate();
+        testExpire();
+        testHistogram();
+        testShuffle();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Livecache,peerfinder,ripple);
+BEAST_DEFINE_TESTSUITE(Livecache, peerfinder, ripple);
 
-}
-}
+}  // namespace PeerFinder
+}  // namespace ripple

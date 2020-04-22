@@ -58,7 +58,7 @@ class HashRouter_test : public beast::unit_test::suite
         ++stopwatch;
 
         // t=3
-        router.setFlags(key3,33333); // force expiration
+        router.setFlags(key3, 33333);  // force expiration
         BEAST_EXPECT(router.getFlags(key1) == 11111);
         BEAST_EXPECT(router.getFlags(key2) == 0);
     }
@@ -74,9 +74,7 @@ class HashRouter_test : public beast::unit_test::suite
         uint256 const key2(2);
         uint256 const key3(3);
         uint256 const key4(4);
-        BEAST_EXPECT(key1 != key2 &&
-            key2 != key3 &&
-            key3 != key4);
+        BEAST_EXPECT(key1 != key2 && key2 != key3 && key3 != key4);
 
         // t=0
         router.setFlags(key1, 12345);
@@ -142,7 +140,8 @@ class HashRouter_test : public beast::unit_test::suite
         // key4 : 6
     }
 
-    void testSuppression()
+    void
+    testSuppression()
     {
         // Normal HashRouter
         using namespace std::chrono_literals;
@@ -153,9 +152,7 @@ class HashRouter_test : public beast::unit_test::suite
         uint256 const key2(2);
         uint256 const key3(3);
         uint256 const key4(4);
-        BEAST_EXPECT(key1 != key2 &&
-            key2 != key3 &&
-            key3 != key4);
+        BEAST_EXPECT(key1 != key2 && key2 != key3 && key3 != key4);
 
         int flags = 12345;  // This value is ignored
         router.addSuppression(key1);
@@ -274,15 +271,13 @@ class HashRouter_test : public beast::unit_test::suite
         int flags;
 
         BEAST_EXPECT(router.shouldProcess(key, peer, flags, 1s));
-        BEAST_EXPECT(! router.shouldProcess(key, peer, flags, 1s));
+        BEAST_EXPECT(!router.shouldProcess(key, peer, flags, 1s));
         ++stopwatch;
         ++stopwatch;
         BEAST_EXPECT(router.shouldProcess(key, peer, flags, 1s));
     }
 
-
 public:
-
     void
     run() override
     {
@@ -298,5 +293,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(HashRouter, app, ripple);
 
-}
-}
+}  // namespace test
+}  // namespace ripple

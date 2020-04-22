@@ -17,28 +17,27 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/STBlob.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/protocol/STBlob.h>
 
 namespace ripple {
 
-STBlob::STBlob (SerialIter& st, SField const& name)
-    : STBase (name)
-    , value_ (st.getVLBuffer ())
+STBlob::STBlob(SerialIter& st, SField const& name)
+    : STBase(name), value_(st.getVLBuffer())
 {
 }
 
 std::string
-STBlob::getText () const
+STBlob::getText() const
 {
-    return strHex (value_);
+    return strHex(value_);
 }
 
 bool
-STBlob::isEquivalent (const STBase& t) const
+STBlob::isEquivalent(const STBase& t) const
 {
-    const STBlob* v = dynamic_cast<const STBlob*> (&t);
+    const STBlob* v = dynamic_cast<const STBlob*>(&t);
     return v && (value_ == v->value_);
 }
 
-} // ripple
+}  // namespace ripple

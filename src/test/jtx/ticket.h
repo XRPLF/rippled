@@ -20,11 +20,11 @@
 #ifndef RIPPLE_TEST_JTX_TICKET_H_INCLUDED
 #define RIPPLE_TEST_JTX_TICKET_H_INCLUDED
 
-#include <test/jtx/Env.h>
-#include <test/jtx/Account.h>
-#include <test/jtx/owners.h>
 #include <boost/optional.hpp>
 #include <cstdint>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/owners.h>
 
 namespace ripple {
 namespace test {
@@ -42,67 +42,68 @@ namespace ticket {
 namespace detail {
 
 Json::Value
-create (Account const& account,
+create(
+    Account const& account,
     boost::optional<Account> const& target,
-        boost::optional<std::uint32_t> const& expire);
+    boost::optional<std::uint32_t> const& expire);
 
-inline
-void
-create_arg (boost::optional<Account>& opt,
+inline void
+create_arg(
+    boost::optional<Account>& opt,
     boost::optional<std::uint32_t>&,
-        Account const& value)
+    Account const& value)
 {
     opt = value;
 }
 
-inline
-void
-create_arg (boost::optional<Account>&,
+inline void
+create_arg(
+    boost::optional<Account>&,
     boost::optional<std::uint32_t>& opt,
-        std::uint32_t value)
+    std::uint32_t value)
 {
     opt = value;
 }
 
-template<class Arg, class... Args>
+template <class Arg, class... Args>
 void
-create_args(boost::optional<Account>& account_opt,
+create_args(
+    boost::optional<Account>& account_opt,
     boost::optional<std::uint32_t>& expire_opt,
-        Arg const& arg, Args const&... args)
+    Arg const& arg,
+    Args const&... args)
 {
     create_arg(account_opt, expire_opt, arg);
     if constexpr (sizeof...(args))
         create_args(account_opt, expire_opt, args...);
 }
 
-} // detail
+}  // namespace detail
 
 /** Create a ticket */
 template <class... Args>
 Json::Value
-create (Account const& account,
-    Args const&... args)
+create(Account const& account, Args const&... args)
 {
     boost::optional<Account> target;
     boost::optional<std::uint32_t> expire;
     if constexpr (sizeof...(args) > 0)
         detail::create_args(target, expire, args...);
-    return detail::create(
-        account, target, expire);
+    return detail::create(account, target, expire);
 }
 
 /** Cancel a ticket */
 Json::Value
-cancel(Account const& account, std::string const & ticketId);
+cancel(Account const& account, std::string const& ticketId);
 
-} // ticket
+}  // namespace ticket
 
 /** Match the number of tickets on the account. */
 using tickets = owner_count<ltTICKET>;
 
-} // jtx
+}  // namespace jtx
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple
 
 #endif

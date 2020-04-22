@@ -17,14 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/ledger/detail/RawStateTable.h>
 #include <ripple/basics/contract.h>
+#include <ripple/ledger/detail/RawStateTable.h>
 
 namespace ripple {
 namespace detail {
 
-class RawStateTable::sles_iter_impl
-    : public ReadView::sles_type::iter_base
+class RawStateTable::sles_iter_impl : public ReadView::sles_type::iter_base
 {
 private:
     std::shared_ptr<SLE const> sle0_;
@@ -35,23 +34,21 @@ private:
     items_t::const_iterator end1_;
 
 public:
-    sles_iter_impl (sles_iter_impl const&) = default;
+    sles_iter_impl(sles_iter_impl const&) = default;
 
-    sles_iter_impl (items_t::const_iterator iter1,
+    sles_iter_impl(
+        items_t::const_iterator iter1,
         items_t::const_iterator end1,
-            ReadView::sles_type::iterator iter0,
-                ReadView::sles_type::iterator end0)
-        : iter0_ (iter0)
-        , end0_ (end0)
-        , iter1_ (iter1)
-        , end1_ (end1)
+        ReadView::sles_type::iterator iter0,
+        ReadView::sles_type::iterator end0)
+        : iter0_(iter0), end0_(end0), iter1_(iter1), end1_(end1)
     {
         if (iter0_ != end0_)
             sle0_ = *iter0_;
         if (iter1_ != end1)
         {
             sle1_ = iter1_->second.second;
-            skip ();
+            skip();
         }
     }
 
@@ -62,20 +59,17 @@ public:
     }
 
     bool
-    equal (base_type const& impl) const override
+    equal(base_type const& impl) const override
     {
-        auto const& other = dynamic_cast<
-            sles_iter_impl const&>(impl);
-        assert(end1_ == other.end1_ &&
-            end0_ == other.end0_);
-        return iter1_ == other.iter1_ &&
-            iter0_ == other.iter0_;
+        auto const& other = dynamic_cast<sles_iter_impl const&>(impl);
+        assert(end1_ == other.end1_ && end0_ == other.end0_);
+        return iter1_ == other.iter1_ && iter0_ == other.iter0_;
     }
 
     void
     increment() override
     {
-        assert (sle1_ || sle0_);
+        assert(sle1_ || sle0_);
 
         if (sle1_ && !sle0_)
         {
@@ -89,12 +83,12 @@ public:
             return;
         }
 
-        if (sle1_->key () == sle0_->key())
+        if (sle1_->key() == sle0_->key())
         {
             inc1();
             inc0();
         }
-        else if (sle1_->key () < sle0_->key())
+        else if (sle1_->key() < sle0_->key())
         {
             inc1();
         }
@@ -108,16 +102,18 @@ public:
     value_type
     dereference() const override
     {
-        if (! sle1_)
+        if (!sle1_)
             return sle0_;
-        else if (! sle0_)
+        else if (!sle0_)
             return sle1_;
         if (sle1_->key() <= sle0_->key())
             return sle1_;
         return sle0_;
     }
+
 private:
-    void inc0()
+    void
+    inc0()
     {
         ++iter0_;
         if (iter0_ == end0_)
@@ -125,8 +121,9 @@ private:
         else
             sle0_ = *iter0_;
     }
-    
-    void inc1()
+
+    void
+    inc1()
     {
         ++iter1_;
         if (iter1_ == end1_)
@@ -134,16 +131,16 @@ private:
         else
             sle1_ = iter1_->second.second;
     }
-    
-    void skip()
+
+    void
+    skip()
     {
-        while (iter1_ != end1_ &&
-            iter1_->second.first == Action::erase &&
+        while (iter1_ != end1_ && iter1_->second.first == Action::erase &&
                sle0_->key() == sle1_->key())
         {
             inc1();
             inc0();
-            if (! sle0_)
+            if (!sle0_)
                 return;
         }
     }
@@ -154,30 +151,29 @@ private:
 // Base invariants are checked by the base during apply()
 
 void
-RawStateTable::apply (RawView& to) const
+RawStateTable::apply(RawView& to) const
 {
     to.rawDestroyXRP(dropsDestroyed_);
     for (auto const& elem : items_)
     {
         auto const& item = elem.second;
-        switch(item.first)
+        switch (item.first)
         {
-        case Action::erase:
-            to.rawErase(item.second);
-            break;
-        case Action::insert:
-            to.rawInsert(item.second);
-            break;
-        case Action::replace:
-            to.rawReplace(item.second);
-            break;
+            case Action::erase:
+                to.rawErase(item.second);
+                break;
+            case Action::insert:
+                to.rawInsert(item.second);
+                break;
+            case Action::replace:
+                to.rawReplace(item.second);
+                break;
         }
     }
 }
 
 bool
-RawStateTable::exists (ReadView const& base,
-    Keylet const& k) const
+RawStateTable::exists(ReadView const& base, Keylet const& k) const
 {
     assert(k.key.isNonZero());
     auto const iter = items_.find(k.key);
@@ -186,7 +182,7 @@ RawStateTable::exists (ReadView const& base,
     auto const& item = iter->second;
     if (item.first == Action::erase)
         return false;
-    if (! k.check(*item.second))
+    if (!k.check(*item.second))
         return false;
     return true;
 }
@@ -196,10 +192,10 @@ RawStateTable::exists (ReadView const& base,
     the lower of the two.
 */
 auto
-RawStateTable::succ (ReadView const& base,
-    key_type const& key, boost::optional<
-        key_type> const& last) const ->
-            boost::optional<key_type>
+RawStateTable::succ(
+    ReadView const& base,
+    key_type const& key,
+    boost::optional<key_type> const& last) const -> boost::optional<key_type>
 {
     boost::optional<key_type> next = key;
     items_t::const_iterator iter;
@@ -208,20 +204,17 @@ RawStateTable::succ (ReadView const& base,
     do
     {
         next = base.succ(*next, last);
-        if (! next)
+        if (!next)
             break;
         iter = items_.find(*next);
-    }
-    while (iter != items_.end() &&
-        iter->second.first == Action::erase);
+    } while (iter != items_.end() && iter->second.first == Action::erase);
     // Find non-deleted successor in our list
-    for (iter = items_.upper_bound(key);
-        iter != items_.end (); ++iter)
+    for (iter = items_.upper_bound(key); iter != items_.end(); ++iter)
     {
         if (iter->second.first != Action::erase)
         {
             // Found both, return the lower key
-            if (! next || next > iter->first)
+            if (!next || next > iter->first)
                 next = iter->first;
             break;
         }
@@ -234,99 +227,90 @@ RawStateTable::succ (ReadView const& base,
 }
 
 void
-RawStateTable::erase(
-    std::shared_ptr<SLE> const& sle)
+RawStateTable::erase(std::shared_ptr<SLE> const& sle)
 {
     // The base invariant is checked during apply
     auto const result = items_.emplace(
         std::piecewise_construct,
-            std::forward_as_tuple(sle->key()),
-                std::forward_as_tuple(
-                    Action::erase, sle));
+        std::forward_as_tuple(sle->key()),
+        std::forward_as_tuple(Action::erase, sle));
     if (result.second)
         return;
     auto& item = result.first->second;
-    switch(item.first)
+    switch (item.first)
     {
-    case Action::erase:
-        LogicError("RawStateTable::erase: already erased");
-        break;
-    case Action::insert:
-        items_.erase(result.first);
-        break;
-    case Action::replace:
-        item.first = Action::erase;
-        item.second = sle;
-        break;
+        case Action::erase:
+            LogicError("RawStateTable::erase: already erased");
+            break;
+        case Action::insert:
+            items_.erase(result.first);
+            break;
+        case Action::replace:
+            item.first = Action::erase;
+            item.second = sle;
+            break;
     }
 }
 
 void
-RawStateTable::insert(
-    std::shared_ptr<SLE> const& sle)
+RawStateTable::insert(std::shared_ptr<SLE> const& sle)
 {
     auto const result = items_.emplace(
         std::piecewise_construct,
-            std::forward_as_tuple(sle->key()),
-                std::forward_as_tuple(
-                    Action::insert, sle));
+        std::forward_as_tuple(sle->key()),
+        std::forward_as_tuple(Action::insert, sle));
     if (result.second)
         return;
     auto& item = result.first->second;
-    switch(item.first)
+    switch (item.first)
     {
-    case Action::erase:
-        item.first = Action::replace;
-        item.second = sle;
-        break;
-    case Action::insert:
-        LogicError("RawStateTable::insert: already inserted");
-        break;
-    case Action::replace:
-        LogicError("RawStateTable::insert: already exists");
-        break;
+        case Action::erase:
+            item.first = Action::replace;
+            item.second = sle;
+            break;
+        case Action::insert:
+            LogicError("RawStateTable::insert: already inserted");
+            break;
+        case Action::replace:
+            LogicError("RawStateTable::insert: already exists");
+            break;
     }
 }
 
 void
-RawStateTable::replace(
-    std::shared_ptr<SLE> const& sle)
+RawStateTable::replace(std::shared_ptr<SLE> const& sle)
 {
     auto const result = items_.emplace(
         std::piecewise_construct,
-            std::forward_as_tuple(sle->key()),
-                std::forward_as_tuple(
-                    Action::replace, sle));
+        std::forward_as_tuple(sle->key()),
+        std::forward_as_tuple(Action::replace, sle));
     if (result.second)
         return;
     auto& item = result.first->second;
-    switch(item.first)
+    switch (item.first)
     {
-    case Action::erase:
-        LogicError("RawStateTable::replace: was erased");
-        break;
-    case Action::insert:
-    case Action::replace:
-        item.second = sle;
-        break;
+        case Action::erase:
+            LogicError("RawStateTable::replace: was erased");
+            break;
+        case Action::insert:
+        case Action::replace:
+            item.second = sle;
+            break;
     }
 }
 
 std::shared_ptr<SLE const>
-RawStateTable::read (ReadView const& base,
-    Keylet const& k) const
+RawStateTable::read(ReadView const& base, Keylet const& k) const
 {
-    auto const iter =
-        items_.find(k.key);
+    auto const iter = items_.find(k.key);
     if (iter == items_.end())
         return base.read(k);
     auto const& item = iter->second;
     if (item.first == Action::erase)
         return nullptr;
     // Convert to SLE const
-    std::shared_ptr<
-        SLE const> sle = item.second;
-    if (! k.check(*sle))
+    std::shared_ptr<SLE const> sle = item.second;
+    if (!k.check(*sle))
         return nullptr;
     return sle;
 }
@@ -338,28 +322,28 @@ RawStateTable::destroyXRP(XRPAmount const& fee)
 }
 
 std::unique_ptr<ReadView::sles_type::iter_base>
-RawStateTable::slesBegin (ReadView const& base) const
+RawStateTable::slesBegin(ReadView const& base) const
 {
     return std::make_unique<sles_iter_impl>(
-        items_.begin(), items_.end(),
-            base.sles.begin(), base.sles.end());
+        items_.begin(), items_.end(), base.sles.begin(), base.sles.end());
 }
 
 std::unique_ptr<ReadView::sles_type::iter_base>
-RawStateTable::slesEnd (ReadView const& base) const
+RawStateTable::slesEnd(ReadView const& base) const
 {
     return std::make_unique<sles_iter_impl>(
-        items_.end(), items_.end(),
-            base.sles.end(), base.sles.end());
+        items_.end(), items_.end(), base.sles.end(), base.sles.end());
 }
 
 std::unique_ptr<ReadView::sles_type::iter_base>
-RawStateTable::slesUpperBound (ReadView const& base, uint256 const& key) const
+RawStateTable::slesUpperBound(ReadView const& base, uint256 const& key) const
 {
     return std::make_unique<sles_iter_impl>(
-            items_.upper_bound(key), items_.end(),
-                base.sles.upper_bound(key), base.sles.end());
+        items_.upper_bound(key),
+        items_.end(),
+        base.sles.upper_bound(key),
+        base.sles.end());
 }
 
-} // detail
-} // ripple
+}  // namespace detail
+}  // namespace ripple

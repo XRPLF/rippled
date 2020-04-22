@@ -23,19 +23,17 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/DecayingSample.h>
 #include <ripple/basics/Log.h>
+#include <ripple/beast/container/aged_map.h>
+#include <ripple/beast/core/LexicalCast.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/protocol/jss.h>
-#include <ripple/beast/core/LexicalCast.h>
-#include <ripple/beast/container/aged_map.h>
 #include <memory>
 #include <mutex>
 
 namespace ripple {
 
-class InboundLedgersImp
-    : public InboundLedgers
-    , public Stoppable
+class InboundLedgersImp : public InboundLedgers, public Stoppable
 {
 private:
     Application& app_;
@@ -45,32 +43,36 @@ private:
     beast::Journal const j_;
 
 public:
-    using u256_acq_pair = std::pair<
-        uint256,
-        std::shared_ptr <InboundLedger>>;
+    using u256_acq_pair = std::pair<uint256, std::shared_ptr<InboundLedger>>;
 
     // How long before we try again to acquire the same ledger
     static const std::chrono::minutes kReacquireInterval;
 
-    InboundLedgersImp (Application& app, clock_type& clock, Stoppable& parent,
-                       beast::insight::Collector::ptr const& collector)
-        : Stoppable ("InboundLedgers", parent)
-        , app_ (app)
+    InboundLedgersImp(
+        Application& app,
+        clock_type& clock,
+        Stoppable& parent,
+        beast::insight::Collector::ptr const& collector)
+        : Stoppable("InboundLedgers", parent)
+        , app_(app)
         , fetchRate_(clock.now())
-        , j_ (app.journal ("InboundLedger"))
-        , m_clock (clock)
-        , mRecentFailures (clock)
+        , j_(app.journal("InboundLedger"))
+        , m_clock(clock)
+        , mRecentFailures(clock)
         , mCounter(collector->make_counter("ledger_fetches"))
     {
     }
 
     /** @callgraph */
     std::shared_ptr<Ledger const>
-    acquire(uint256 const& hash, std::uint32_t seq,
+    acquire(
+        uint256 const& hash,
+        std::uint32_t seq,
         InboundLedger::Reason reason) override
     {
         assert(hash.isNonZero());
-        assert(reason != InboundLedger::Reason::SHARD ||
+        assert(
+            reason != InboundLedger::Reason::SHARD ||
             (seq != 0 && app_.getShardStore()));
         if (isStopping())
             return {};
@@ -87,7 +89,7 @@ public:
             }
             else
             {
-                inbound = std::make_shared <InboundLedger>(
+                inbound = std::make_shared<InboundLedger>(
                     app_, hash, seq, reason, std::ref(m_clock));
                 mLedgers.emplace(hash, inbound);
                 inbound->init(sl);
@@ -98,10 +100,10 @@ public:
         if (inbound->isFailed())
             return {};
 
-        if (! isNew)
+        if (!isNew)
             inbound->update(seq);
 
-        if (! inbound->isComplete())
+        if (!inbound->isComplete())
             return {};
 
         if (reason == InboundLedger::Reason::HISTORY)
@@ -114,8 +116,8 @@ public:
             auto shardStore = app_.getShardStore();
             if (!shardStore)
             {
-                JLOG(j_.error()) <<
-                    "Acquiring shard with no shard store available";
+                JLOG(j_.error())
+                    << "Acquiring shard with no shard store available";
                 return {};
             }
             if (inbound->getLedger()->stateMap().family().isShardBacked())
@@ -126,17 +128,18 @@ public:
         return inbound->getLedger();
     }
 
-    std::shared_ptr<InboundLedger> find (uint256 const& hash) override
+    std::shared_ptr<InboundLedger>
+    find(uint256 const& hash) override
     {
-        assert (hash.isNonZero ());
+        assert(hash.isNonZero());
 
         std::shared_ptr<InboundLedger> ret;
 
         {
-            ScopedLockType sl (mLock);
+            ScopedLockType sl(mLock);
 
-            auto it = mLedgers.find (hash);
-            if (it != mLedgers.end ())
+            auto it = mLedgers.find(hash);
+            if (it != mLedgers.end())
             {
                 ret = it->second;
             }
@@ -158,31 +161,32 @@ public:
 
     // VFALCO TODO Remove the dependency on the Peer object.
     /** We received a TMLedgerData from a peer.
-    */
-    bool gotLedgerData (LedgerHash const& hash,
-            std::shared_ptr<Peer> peer,
-            std::shared_ptr<protocol::TMLedgerData> packet_ptr) override
+     */
+    bool
+    gotLedgerData(
+        LedgerHash const& hash,
+        std::shared_ptr<Peer> peer,
+        std::shared_ptr<protocol::TMLedgerData> packet_ptr) override
     {
         protocol::TMLedgerData& packet = *packet_ptr;
 
-        JLOG (j_.trace())
-            << "Got data (" << packet.nodes ().size ()
-            << ") for acquiring ledger: " << hash;
+        JLOG(j_.trace()) << "Got data (" << packet.nodes().size()
+                         << ") for acquiring ledger: " << hash;
 
-        auto ledger = find (hash);
+        auto ledger = find(hash);
 
         if (!ledger)
         {
-            JLOG (j_.trace())
-                << "Got data for ledger we're no longer acquiring";
+            JLOG(j_.trace()) << "Got data for ledger we're no longer acquiring";
 
             // If it's state node data, stash it because it still might be
             // useful.
-            if (packet.type () == protocol::liAS_NODE)
+            if (packet.type() == protocol::liAS_NODE)
             {
                 app_.getJobQueue().addJob(
-                    jtLEDGER_DATA, "gotStaleData",
-                    [this, packet_ptr] (Job&) { gotStaleData(packet_ptr); });
+                    jtLEDGER_DATA, "gotStaleData", [this, packet_ptr](Job&) {
+                        gotStaleData(packet_ptr);
+                    });
             }
 
             return false;
@@ -190,14 +194,16 @@ public:
 
         // Stash the data for later processing and see if we need to dispatch
         if (ledger->gotData(std::weak_ptr<Peer>(peer), packet_ptr))
-            app_.getJobQueue().addJob (
-                jtLEDGER_DATA, "processLedgerData",
-                [this, hash] (Job&) { doLedgerData(hash); });
+            app_.getJobQueue().addJob(
+                jtLEDGER_DATA, "processLedgerData", [this, hash](Job&) {
+                    doLedgerData(hash);
+                });
 
         return true;
     }
 
-    int getFetchCount (int& timeoutCount) override
+    int
+    getFetchCount(int& timeoutCount) override
     {
         timeoutCount = 0;
         int ret = 0;
@@ -205,7 +211,7 @@ public:
         std::vector<u256_acq_pair> inboundLedgers;
 
         {
-            ScopedLockType sl (mLock);
+            ScopedLockType sl(mLock);
 
             inboundLedgers.reserve(mLedgers.size());
             for (auto const& it : mLedgers)
@@ -216,34 +222,37 @@ public:
 
         for (auto const& it : inboundLedgers)
         {
-            if (it.second->isActive ())
+            if (it.second->isActive())
             {
                 ++ret;
-                timeoutCount += it.second->getTimeouts ();
+                timeoutCount += it.second->getTimeouts();
             }
         }
         return ret;
     }
 
-    void logFailure (uint256 const& h, std::uint32_t seq) override
+    void
+    logFailure(uint256 const& h, std::uint32_t seq) override
     {
-        ScopedLockType sl (mLock);
+        ScopedLockType sl(mLock);
 
         mRecentFailures.emplace(h, seq);
     }
 
-    bool isFailure (uint256 const& h) override
+    bool
+    isFailure(uint256 const& h) override
     {
-        ScopedLockType sl (mLock);
+        ScopedLockType sl(mLock);
 
-        beast::expire (mRecentFailures, kReacquireInterval);
-        return mRecentFailures.find (h) != mRecentFailures.end();
+        beast::expire(mRecentFailures, kReacquireInterval);
+        return mRecentFailures.find(h) != mRecentFailures.end();
     }
 
-    void doLedgerData (LedgerHash hash) override
+    void
+    doLedgerData(LedgerHash hash) override
     {
-        if (auto ledger = find (hash))
-            ledger->runData ();
+        if (auto ledger = find(hash))
+            ledger->runData();
     }
 
     /** We got some data for a ledger we are no longer acquiring Since we paid
@@ -252,23 +261,28 @@ public:
         Nodes are received in wire format and must be stashed/hashed in prefix
         format
     */
-    void gotStaleData (std::shared_ptr<protocol::TMLedgerData> packet_ptr) override
+    void
+    gotStaleData(std::shared_ptr<protocol::TMLedgerData> packet_ptr) override
     {
         const uint256 uZero;
         Serializer s;
         try
         {
-            for (int i = 0; i < packet_ptr->nodes ().size (); ++i)
+            for (int i = 0; i < packet_ptr->nodes().size(); ++i)
             {
-                auto const& node = packet_ptr->nodes (i);
+                auto const& node = packet_ptr->nodes(i);
 
-                if (!node.has_nodeid () || !node.has_nodedata ())
+                if (!node.has_nodeid() || !node.has_nodedata())
                     return;
 
                 auto id_string = node.nodeid();
                 auto newNode = SHAMapAbstractNode::make(
                     makeSlice(node.nodedata()),
-                    0, snfWIRE, SHAMapHash{uZero}, false, app_.journal ("SHAMapNodeID"),
+                    0,
+                    snfWIRE,
+                    SHAMapHash{uZero},
+                    false,
+                    app_.journal("SHAMapNodeID"),
                     SHAMapNodeID(id_string.data(), id_string.size()));
 
                 if (!newNode)
@@ -277,7 +291,7 @@ public:
                 s.erase();
                 newNode->addRaw(s, snfPREFIX);
 
-                auto blob = std::make_shared<Blob> (s.begin(), s.end());
+                auto blob = std::make_shared<Blob>(s.begin(), s.end());
 
                 app_.getLedgerMaster().addFetchPack(
                     newNode->getNodeHash().as_uint256(), blob);
@@ -288,50 +302,53 @@ public:
         }
     }
 
-    void clearFailures () override
+    void
+    clearFailures() override
     {
-        ScopedLockType sl (mLock);
+        ScopedLockType sl(mLock);
 
         mRecentFailures.clear();
         mLedgers.clear();
     }
 
-    std::size_t fetchRate() override
+    std::size_t
+    fetchRate() override
     {
         std::lock_guard lock(fetchRateMutex_);
-        return 60 * fetchRate_.value(
-            m_clock.now());
+        return 60 * fetchRate_.value(m_clock.now());
     }
 
     // Should only be called with an inboundledger that has
     // a reason of history or shard
-    void onLedgerFetched() override
+    void
+    onLedgerFetched() override
     {
         std::lock_guard lock(fetchRateMutex_);
         fetchRate_.add(1, m_clock.now());
     }
 
-    Json::Value getInfo() override
+    Json::Value
+    getInfo() override
     {
         Json::Value ret(Json::objectValue);
 
         std::vector<u256_acq_pair> acquires;
         {
-            ScopedLockType sl (mLock);
+            ScopedLockType sl(mLock);
 
-            acquires.reserve (mLedgers.size ());
+            acquires.reserve(mLedgers.size());
             for (auto const& it : mLedgers)
             {
-                assert (it.second);
-                acquires.push_back (it);
+                assert(it.second);
+                acquires.push_back(it);
             }
             for (auto const& it : mRecentFailures)
             {
                 if (it.second > 1)
-                    ret[beast::lexicalCastThrow <std::string>(
-                        it.second)][jss::failed] = true;
+                    ret[beast::lexicalCastThrow<std::string>(it.second)]
+                       [jss::failed] = true;
                 else
-                    ret[to_string (it.first)][jss::failed] = true;
+                    ret[to_string(it.first)][jss::failed] = true;
             }
         }
 
@@ -342,59 +359,62 @@ public:
             if (seq > 1)
                 ret[std::to_string(seq)] = it.second->getJson(0);
             else
-                ret[to_string (it.first)] = it.second->getJson(0);
+                ret[to_string(it.first)] = it.second->getJson(0);
         }
 
         return ret;
     }
 
-    void gotFetchPack () override
+    void
+    gotFetchPack() override
     {
         std::vector<std::shared_ptr<InboundLedger>> acquires;
         {
-            ScopedLockType sl (mLock);
+            ScopedLockType sl(mLock);
 
-            acquires.reserve (mLedgers.size ());
+            acquires.reserve(mLedgers.size());
             for (auto const& it : mLedgers)
             {
-                assert (it.second);
-                acquires.push_back (it.second);
+                assert(it.second);
+                acquires.push_back(it.second);
             }
         }
 
         for (auto const& acquire : acquires)
         {
-            acquire->checkLocal ();
+            acquire->checkLocal();
         }
     }
 
-    void sweep () override
+    void
+    sweep() override
     {
-        clock_type::time_point const now (m_clock.now());
+        clock_type::time_point const now(m_clock.now());
 
         // Make a list of things to sweep, while holding the lock
-        std::vector <MapType::mapped_type> stuffToSweep;
+        std::vector<MapType::mapped_type> stuffToSweep;
         std::size_t total;
         {
-            ScopedLockType sl (mLock);
-            MapType::iterator it (mLedgers.begin ());
-            total = mLedgers.size ();
-            stuffToSweep.reserve (total);
+            ScopedLockType sl(mLock);
+            MapType::iterator it(mLedgers.begin());
+            total = mLedgers.size();
+            stuffToSweep.reserve(total);
 
-            while (it != mLedgers.end ())
+            while (it != mLedgers.end())
             {
-                if (it->second->getLastAction () > now)
+                if (it->second->getLastAction() > now)
                 {
-                    it->second->touch ();
+                    it->second->touch();
                     ++it;
                 }
-                else if ((it->second->getLastAction () +
-                          std::chrono::minutes (1)) < now)
+                else if (
+                    (it->second->getLastAction() + std::chrono::minutes(1)) <
+                    now)
                 {
-                    stuffToSweep.push_back (it->second);
+                    stuffToSweep.push_back(it->second);
                     // shouldn't cause the actual final delete
                     // since we are holding a reference in the vector.
-                    it = mLedgers.erase (it);
+                    it = mLedgers.erase(it);
                 }
                 else
                 {
@@ -402,18 +422,17 @@ public:
                 }
             }
 
-            beast::expire (mRecentFailures, kReacquireInterval);
-
+            beast::expire(mRecentFailures, kReacquireInterval);
         }
 
-        JLOG (j_.debug()) <<
-            "Swept " << stuffToSweep.size () <<
-            " out of " << total << " inbound ledgers.";
+        JLOG(j_.debug()) << "Swept " << stuffToSweep.size() << " out of "
+                         << total << " inbound ledgers.";
     }
 
-    void onStop () override
+    void
+    onStop() override
     {
-        ScopedLockType lock (mLock);
+        ScopedLockType lock(mLock);
 
         mLedgers.clear();
         mRecentFailures.clear();
@@ -424,13 +443,13 @@ public:
 private:
     clock_type& m_clock;
 
-    using ScopedLockType = std::unique_lock <std::recursive_mutex>;
+    using ScopedLockType = std::unique_lock<std::recursive_mutex>;
     std::recursive_mutex mLock;
 
-    using MapType = hash_map <uint256, std::shared_ptr<InboundLedger>>;
+    using MapType = hash_map<uint256, std::shared_ptr<InboundLedger>>;
     MapType mLedgers;
 
-    beast::aged_map <uint256, std::uint32_t> mRecentFailures;
+    beast::aged_map<uint256, std::uint32_t> mRecentFailures;
 
     beast::insight::Counter mCounter;
 };
@@ -438,16 +457,18 @@ private:
 //------------------------------------------------------------------------------
 
 decltype(InboundLedgersImp::kReacquireInterval)
-InboundLedgersImp::kReacquireInterval{5};
+    InboundLedgersImp::kReacquireInterval{5};
 
 InboundLedgers::~InboundLedgers() = default;
 
 std::unique_ptr<InboundLedgers>
-make_InboundLedgers (Application& app,
-    InboundLedgers::clock_type& clock, Stoppable& parent,
+make_InboundLedgers(
+    Application& app,
+    InboundLedgers::clock_type& clock,
+    Stoppable& parent,
     beast::insight::Collector::ptr const& collector)
 {
-    return std::make_unique<InboundLedgersImp> (app, clock, parent, collector);
+    return std::make_unique<InboundLedgersImp>(app, clock, parent, collector);
 }
 
-} // ripple
+}  // namespace ripple

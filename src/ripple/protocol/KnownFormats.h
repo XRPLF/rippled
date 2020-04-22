@@ -40,40 +40,42 @@ class KnownFormats
 {
 public:
     /** A known format.
-    */
+     */
     class Item
     {
     public:
-        Item (char const* name,
+        Item(
+            char const* name,
             KeyType type,
             std::initializer_list<SOElement> uniqueFields,
             std::initializer_list<SOElement> commonFields)
-            : soTemplate_ (uniqueFields, commonFields)
-            , name_ (name)
-            , type_ (type)
+            : soTemplate_(uniqueFields, commonFields), name_(name), type_(type)
         {
             // Verify that KeyType is appropriate.
-            static_assert (
+            static_assert(
                 std::is_enum<KeyType>::value ||
-                std::is_integral<KeyType>::value,
+                    std::is_integral<KeyType>::value,
                 "KnownFormats KeyType must be integral or enum.");
         }
 
         /** Retrieve the name of the format.
-        */
-        std::string const& getName () const
+         */
+        std::string const&
+        getName() const
         {
             return name_;
         }
 
         /** Retrieve the transaction type this format represents.
-        */
-        KeyType getType () const
+         */
+        KeyType
+        getType() const
         {
             return type_;
         }
 
-        SOTemplate const& getSOTemplate() const
+        SOTemplate const&
+        getSOTemplate() const
         {
             return soTemplate_;
         }
@@ -88,15 +90,16 @@ public:
 
         Derived classes will load the object with all the known formats.
     */
-    KnownFormats () = default;
+    KnownFormats() = default;
 
     /** Destroy the known formats object.
 
         The defined formats are deleted.
     */
-    virtual ~KnownFormats () = default;
+    virtual ~KnownFormats() = default;
     KnownFormats(KnownFormats const&) = delete;
-    KnownFormats& operator=(KnownFormats const&) = delete;
+    KnownFormats&
+    operator=(KnownFormats const&) = delete;
 
     /** Retrieve the type for a format specified by name.
 
@@ -105,21 +108,23 @@ public:
         @param  name The name of the type.
         @return      The type.
     */
-    KeyType findTypeByName (std::string const& name) const
+    KeyType
+    findTypeByName(std::string const& name) const
     {
-        Item const* const result = findByName (name);
+        Item const* const result = findByName(name);
 
         if (result != nullptr)
-            return result->getType ();
-        Throw<std::runtime_error> ("Unknown format name");
-        return {}; // Silence compiler warning.
+            return result->getType();
+        Throw<std::runtime_error>("Unknown format name");
+        return {};  // Silence compiler warning.
     }
 
     /** Retrieve a format based on its type.
-    */
-    Item const* findByType (KeyType type) const
+     */
+    Item const*
+    findByType(KeyType type) const
     {
-        auto const itr = types_.find (type);
+        auto const itr = types_.find(type);
         if (itr == types_.end())
             return nullptr;
         return itr->second;
@@ -127,10 +132,11 @@ public:
 
 protected:
     /** Retrieve a format based on its name.
-    */
-    Item const* findByName (std::string const& name) const
+     */
+    Item const*
+    findByName(std::string const& name) const
     {
-        auto const itr = names_.find (name);
+        auto const itr = names_.find(name);
         if (itr == names_.end())
             return nullptr;
         return itr->second;
@@ -145,12 +151,14 @@ protected:
 
         @return The created format.
     */
-    Item const& add (char const* name, KeyType type,
+    Item const&
+    add(char const* name,
+        KeyType type,
         std::initializer_list<SOElement> uniqueFields,
         std::initializer_list<SOElement> commonFields = {})
     {
-        formats_.emplace_front (name, type, uniqueFields, commonFields);
-        Item const& item {formats_.front()};
+        formats_.emplace_front(name, type, uniqueFields, commonFields);
+        Item const& item{formats_.front()};
 
         names_[name] = &item;
         types_[type] = &item;
@@ -168,6 +176,6 @@ private:
     boost::container::flat_map<KeyType, Item const*> types_;
 };
 
-} // ripple
+}  // namespace ripple
 
 #endif

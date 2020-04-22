@@ -27,9 +27,9 @@
 #include <boost/utility/string_ref.hpp>
 #include <algorithm>
 #include <cctype>
-#include <string>
 #include <iterator>
-#include <tuple> // for std::tie, remove ASAP
+#include <string>
+#include <tuple>  // for std::tie, remove ASAP
 #include <utility>
 #include <vector>
 
@@ -48,71 +48,82 @@ struct ci_equal_pred
 {
     explicit ci_equal_pred() = default;
 
-    bool operator()(char c1, char c2)
+    bool
+    operator()(char c1, char c2)
     {
         // VFALCO TODO Use a table lookup here
         return std::tolower(static_cast<unsigned char>(c1)) ==
-               std::tolower(static_cast<unsigned char>(c2));
+            std::tolower(static_cast<unsigned char>(c2));
     }
 };
 
-} // detail
+}  // namespace detail
 
 /** Returns `true` if `c` is linear white space.
 
     This excludes the CRLF sequence allowed for line continuations.
 */
-inline
-bool
+inline bool
 is_lws(char c)
 {
     return c == ' ' || c == '\t';
 }
 
 /** Returns `true` if `c` is any whitespace character. */
-inline
-bool
+inline bool
 is_white(char c)
 {
     switch (c)
     {
-    case ' ':  case '\f': case '\n':
-    case '\r': case '\t': case '\v':
-        return true;
+        case ' ':
+        case '\f':
+        case '\n':
+        case '\r':
+        case '\t':
+        case '\v':
+            return true;
     };
     return false;
 }
 
 /** Returns `true` if `c` is a control character. */
-inline
-bool
+inline bool
 is_control(char c)
 {
     return c <= 31 || c >= 127;
 }
 
 /** Returns `true` if `c` is a separator. */
-inline
-bool
+inline bool
 is_separator(char c)
 {
     // VFALCO Could use a static table
     switch (c)
     {
-    case '(': case ')': case '<': case '>':  case '@':
-    case ',': case ';': case ':': case '\\': case '"':
-    case '{': case '}': case ' ': case '\t':
-        return true;
+        case '(':
+        case ')':
+        case '<':
+        case '>':
+        case '@':
+        case ',':
+        case ';':
+        case ':':
+        case '\\':
+        case '"':
+        case '{':
+        case '}':
+        case ' ':
+        case '\t':
+            return true;
     };
     return false;
 }
 
 /** Returns `true` if `c` is a character. */
-inline
-bool
+inline bool
 is_char(char c)
 {
-#ifdef __CHAR_UNSIGNED__  /* -funsigned-char */
+#ifdef __CHAR_UNSIGNED__ /* -funsigned-char */
     return c >= 0 && c <= 127;
 #else
     return c >= 0;
@@ -121,75 +132,70 @@ is_char(char c)
 
 template <class FwdIter>
 FwdIter
-trim_left (FwdIter first, FwdIter last)
+trim_left(FwdIter first, FwdIter last)
 {
-    return std::find_if_not (first, last,
-        is_white);
+    return std::find_if_not(first, last, is_white);
 }
 
 template <class FwdIter>
 FwdIter
-trim_right (FwdIter first, FwdIter last)
+trim_right(FwdIter first, FwdIter last)
 {
     if (first == last)
         return last;
     do
     {
         --last;
-        if (! is_white (*last))
+        if (!is_white(*last))
             return ++last;
-    }
-    while (last != first);
+    } while (last != first);
     return first;
 }
 
 template <class CharT, class Traits, class Allocator>
 void
-trim_right_in_place (std::basic_string <
-    CharT, Traits, Allocator>& s)
+trim_right_in_place(std::basic_string<CharT, Traits, Allocator>& s)
 {
-    s.resize (std::distance (s.begin(),
-        trim_right (s.begin(), s.end())));
+    s.resize(std::distance(s.begin(), trim_right(s.begin(), s.end())));
 }
 
 template <class FwdIter>
-std::pair <FwdIter, FwdIter>
-trim (FwdIter first, FwdIter last)
+std::pair<FwdIter, FwdIter>
+trim(FwdIter first, FwdIter last)
 {
-    first = trim_left (first, last);
-    last = trim_right (first, last);
-    return std::make_pair (first, last);
+    first = trim_left(first, last);
+    last = trim_right(first, last);
+    return std::make_pair(first, last);
 }
 
 template <class String>
 String
-trim (String const& s)
+trim(String const& s)
 {
     using std::begin;
     using std::end;
     auto first = begin(s);
     auto last = end(s);
-    std::tie (first, last) = trim (first, last);
-    return { first, last };
+    std::tie(first, last) = trim(first, last);
+    return {first, last};
 }
 
 template <class String>
 String
-trim_right (String const& s)
+trim_right(String const& s)
 {
     using std::begin;
     using std::end;
-    auto first (begin(s));
-    auto last (end(s));
-    last = trim_right (first, last);
-    return { first, last };
+    auto first(begin(s));
+    auto last(end(s));
+    last = trim_right(first, last);
+    return {first, last};
 }
 
-inline
-std::string
-trim (std::string const& s)
+inline std::string
+trim(std::string const& s)
 {
-    return trim <std::string> (s);
+    return trim<std::string>(s);
 }
 
 /** Parse a character sequence of values separated by commas.
@@ -200,11 +206,11 @@ trim (std::string const& s)
     Reference:
         http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2
 */
-template <class FwdIt,
+template <
+    class FwdIt,
     class Result = std::vector<
-        std::basic_string<typename
-            std::iterator_traits<FwdIt>::value_type>>,
-                class Char>
+        std::basic_string<typename std::iterator_traits<FwdIt>::value_type>>,
+    class Char>
 Result
 split(FwdIt first, FwdIt last, Char delim)
 {
@@ -231,15 +237,15 @@ split(FwdIt first, FwdIt last, Char delim)
                     // quoted-pair
                     ++iter;
                     if (iter != last)
-                        e.append (1, *iter++);
+                        e.append(1, *iter++);
                 }
                 else
                 {
                     // qdtext
-                    e.append (1, *iter++);
+                    e.append(1, *iter++);
                 }
             }
-            if (! e.empty())
+            if (!e.empty())
             {
                 result.emplace_back(std::move(e));
                 e.clear();
@@ -247,37 +253,37 @@ split(FwdIt first, FwdIt last, Char delim)
         }
         else if (*iter == delim)
         {
-            e = trim_right (e);
-            if (! e.empty())
+            e = trim_right(e);
+            if (!e.empty())
             {
                 result.emplace_back(std::move(e));
                 e.clear();
             }
             ++iter;
         }
-        else if (is_lws (*iter))
+        else if (is_lws(*iter))
         {
             ++iter;
         }
         else
         {
-            e.append (1, *iter++);
+            e.append(1, *iter++);
         }
     }
 
-    if (! e.empty())
+    if (!e.empty())
     {
-        e = trim_right (e);
-        if (! e.empty())
+        e = trim_right(e);
+        if (!e.empty())
             result.emplace_back(std::move(e));
     }
     return result;
 }
 
-template <class FwdIt,
+template <
+    class FwdIt,
     class Result = std::vector<
-        std::basic_string<typename std::iterator_traits<
-            FwdIt>::value_type>>>
+        std::basic_string<typename std::iterator_traits<FwdIt>::value_type>>>
 Result
 split_commas(FwdIt first, FwdIt last)
 {
@@ -314,22 +320,19 @@ public:
     using pointer = value_type const*;
     using reference = value_type const&;
     using difference_type = std::ptrdiff_t;
-    using iterator_category =
-        std::forward_iterator_tag;
+    using iterator_category = std::forward_iterator_tag;
 
-    list_iterator(iter_type begin, iter_type end)
-        : it_(begin)
-        , end_(end)
+    list_iterator(iter_type begin, iter_type end) : it_(begin), end_(end)
     {
-        if(it_ != end_)
+        if (it_ != end_)
             increment();
     }
 
     bool
     operator==(list_iterator const& other) const
     {
-        return other.it_ == it_ && other.end_ == end_
-            && other.value_.size() == value_.size();
+        return other.it_ == it_ && other.end_ == end_ &&
+            other.value_.size() == value_.size();
     }
 
     bool
@@ -366,37 +369,37 @@ public:
     }
 
 private:
-    template<class = void>
+    template <class = void>
     void
     increment();
 };
 
-template<class>
+template <class>
 void
 list_iterator::increment()
 {
     value_.clear();
-    while(it_ != end_)
+    while (it_ != end_)
     {
-        if(*it_ == '"')
+        if (*it_ == '"')
         {
             // quoted-string
             ++it_;
-            if(it_ == end_)
+            if (it_ == end_)
                 return;
-            if(*it_ != '"')
+            if (*it_ != '"')
             {
                 auto start = it_;
-                for(;;)
+                for (;;)
                 {
                     ++it_;
-                    if(it_ == end_)
+                    if (it_ == end_)
                     {
                         value_ = boost::string_ref(
                             &*start, std::distance(start, it_));
                         return;
                     }
-                    if(*it_ == '"')
+                    if (*it_ == '"')
                     {
                         value_ = boost::string_ref(
                             &*start, std::distance(start, it_));
@@ -407,12 +410,12 @@ list_iterator::increment()
             }
             ++it_;
         }
-        else if(*it_ == ',')
+        else if (*it_ == ',')
         {
             it_++;
             continue;
         }
-        else if(is_lws(*it_))
+        else if (is_lws(*it_))
         {
             ++it_;
             continue;
@@ -420,15 +423,13 @@ list_iterator::increment()
         else
         {
             auto start = it_;
-            for(;;)
+            for (;;)
             {
                 ++it_;
-                if(it_ == end_ ||
-                    *it_ == ',' ||
-                        is_lws(*it_))
+                if (it_ == end_ || *it_ == ',' || is_lws(*it_))
                 {
-                    value_ = boost::string_ref(
-                        &*start, std::distance(start, it_));
+                    value_ =
+                        boost::string_ref(&*start, std::distance(start, it_));
                     return;
                 }
             }
@@ -440,51 +441,49 @@ list_iterator::increment()
 
     A case-insensitive comparison is used.
 */
-inline
-bool
+inline bool
 ci_equal(boost::string_ref s1, boost::string_ref s2)
 {
-    return boost::range::equal(s1, s2,
-        detail::ci_equal_pred{});
+    return boost::range::equal(s1, s2, detail::ci_equal_pred{});
 }
 
 /** Returns a range representing the list. */
-inline
-boost::iterator_range<list_iterator>
+inline boost::iterator_range<list_iterator>
 make_list(boost::string_ref const& field)
 {
     return boost::iterator_range<list_iterator>{
         list_iterator{field.begin(), field.end()},
-            list_iterator{field.end(), field.end()}};
+        list_iterator{field.end(), field.end()}};
 }
 
 /** Returns true if the specified token exists in the list.
 
     A case-insensitive comparison is used.
 */
-template<class = void>
+template <class = void>
 bool
-token_in_list(boost::string_ref const& value,
-    boost::string_ref const& token)
+token_in_list(boost::string_ref const& value, boost::string_ref const& token)
 {
-    for(auto const& item : make_list(value))
-        if(ci_equal(item, token))
+    for (auto const& item : make_list(value))
+        if (ci_equal(item, token))
             return true;
     return false;
 }
 
-template<bool isRequest, class Body, class Fields>
+template <bool isRequest, class Body, class Fields>
 bool
 is_keep_alive(boost::beast::http::message<isRequest, Body, Fields> const& m)
 {
-    if(m.version() <= 10)
+    if (m.version() <= 10)
         return boost::beast::http::token_list{
-            m[boost::beast::http::field::connection]}.exists("keep-alive");
-    return ! boost::beast::http::token_list{
-        m[boost::beast::http::field::connection]}.exists("close");
+            m[boost::beast::http::field::connection]}
+            .exists("keep-alive");
+    return !boost::beast::http::token_list{
+        m[boost::beast::http::field::connection]}
+                .exists("close");
 }
 
-} // rfc2616
-} // beast
+}  // namespace rfc2616
+}  // namespace beast
 
 #endif

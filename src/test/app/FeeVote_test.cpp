@@ -17,17 +17,17 @@
 */
 //==============================================================================
 
-#include <test/jtx.h>
 #include <ripple/app/misc/FeeVote.h>
 #include <ripple/basics/BasicConfig.h>
+#include <test/jtx.h>
 
 namespace ripple {
 namespace test {
 
-class FeeVote_test :
-    public beast::unit_test::suite
+class FeeVote_test : public beast::unit_test::suite
 {
-    void testSetup()
+    void
+    testSetup()
     {
         {
             // defaults
@@ -39,11 +39,10 @@ class FeeVote_test :
         }
         {
             Section config;
-            config.append({
-                "reference_fee = 50",
-                "account_reserve = 1234567",
-                "owner_reserve = 1234"
-                });
+            config.append(
+                {"reference_fee = 50",
+                 "account_reserve = 1234567",
+                 "owner_reserve = 1234"});
             auto setup = setup_FeeVote(config);
             BEAST_EXPECT(setup.reference_fee == 50);
             BEAST_EXPECT(setup.account_reserve == 1234567);
@@ -51,11 +50,10 @@ class FeeVote_test :
         }
         {
             Section config;
-            config.append({
-                "reference_fee = blah",
-                "account_reserve = yada",
-                "owner_reserve = foo"
-                });
+            config.append(
+                {"reference_fee = blah",
+                 "account_reserve = yada",
+                 "owner_reserve = foo"});
             // Illegal values are ignored, and the defaults left unchanged
             auto setup = setup_FeeVote(config);
             BEAST_EXPECT(setup.reference_fee == 10);
@@ -64,26 +62,28 @@ class FeeVote_test :
         }
         {
             Section config;
-            config.append({
-                "reference_fee = -50",
-                "account_reserve = -1234567",
-                "owner_reserve = -1234"
-                });
+            config.append(
+                {"reference_fee = -50",
+                 "account_reserve = -1234567",
+                 "owner_reserve = -1234"});
             // Illegal values are ignored, and the defaults left unchanged
             auto setup = setup_FeeVote(config);
             BEAST_EXPECT(setup.reference_fee == 10);
-            BEAST_EXPECT(setup.account_reserve == static_cast<std::uint32_t>(-1234567));
-            BEAST_EXPECT(setup.owner_reserve == static_cast<std::uint32_t>(-1234));
+            BEAST_EXPECT(
+                setup.account_reserve == static_cast<std::uint32_t>(-1234567));
+            BEAST_EXPECT(
+                setup.owner_reserve == static_cast<std::uint32_t>(-1234));
         }
         {
-            const auto big64 = std::to_string(static_cast<std::uint64_t>(
-                std::numeric_limits<XRPAmount::value_type>::max()) + 1);
+            const auto big64 = std::to_string(
+                static_cast<std::uint64_t>(
+                    std::numeric_limits<XRPAmount::value_type>::max()) +
+                1);
             Section config;
-            config.append({
-                "reference_fee = " + big64,
-                "account_reserve = " + big64,
-                "owner_reserve = " + big64
-                });
+            config.append(
+                {"reference_fee = " + big64,
+                 "account_reserve = " + big64,
+                 "owner_reserve = " + big64});
             // Illegal values are ignored, and the defaults left unchanged
             auto setup = setup_FeeVote(config);
             BEAST_EXPECT(setup.reference_fee == 10);
@@ -92,7 +92,8 @@ class FeeVote_test :
         }
     }
 
-    void run() override
+    void
+    run() override
     {
         testSetup();
     }
@@ -100,5 +101,5 @@ class FeeVote_test :
 
 BEAST_DEFINE_TESTSUITE(FeeVote, server, ripple);
 
-} // test
-} // ripple
+}  // namespace test
+}  // namespace ripple

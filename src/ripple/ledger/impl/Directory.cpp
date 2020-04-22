@@ -1,4 +1,5 @@
-//------------  ------------------------------------------------------------------
+//------------
+//------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012, 2015 Ripple Labs Inc.
@@ -23,25 +24,21 @@ namespace ripple {
 
 using const_iterator = Dir::const_iterator;
 
-Dir::Dir(ReadView const& view,
-        Keylet const& key)
-    : view_(&view)
-    , root_(key)
-    , sle_(view_->read(root_))
+Dir::Dir(ReadView const& view, Keylet const& key)
+    : view_(&view), root_(key), sle_(view_->read(root_))
 {
     if (sle_ != nullptr)
         indexes_ = &sle_->getFieldV256(sfIndexes);
 }
 
 auto
-Dir::begin() const ->
-    const_iterator
+Dir::begin() const -> const_iterator
 {
     auto it = const_iterator(*view_, root_, root_);
     if (sle_ != nullptr)
     {
         it.sle_ = sle_;
-        if (! indexes_->empty())
+        if (!indexes_->empty())
         {
             it.indexes_ = indexes_;
             it.it_ = std::begin(*indexes_);
@@ -53,8 +50,7 @@ Dir::begin() const ->
 }
 
 auto
-Dir::end() const  ->
-    const_iterator
+Dir::end() const -> const_iterator
 {
     return const_iterator(*view_, root_, root_);
 }
@@ -73,7 +69,7 @@ const_iterator::reference
 const_iterator::operator*() const
 {
     assert(index_ != beast::zero);
-    if (! cache_)
+    if (!cache_)
         cache_ = view_->read(keylet::child(index_));
     return *cache_;
 }
@@ -88,8 +84,7 @@ const_iterator::operator++()
     }
     else
     {
-        auto const next =
-            sle_->getFieldU64(sfIndexNext);
+        auto const next = sle_->getFieldU64(sfIndexNext);
         if (next == 0)
         {
             page_.key = root_.key;
@@ -126,4 +121,4 @@ const_iterator::operator++(int)
     return tmp;
 }
 
-} // ripple
+}  // namespace ripple

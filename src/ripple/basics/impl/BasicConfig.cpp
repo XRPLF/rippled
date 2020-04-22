@@ -24,43 +24,41 @@
 
 namespace ripple {
 
-Section::Section (std::string const& name)
-    : name_(name)
+Section::Section(std::string const& name) : name_(name)
 {
 }
 
 void
-Section::set (std::string const& key, std::string const& value)
+Section::set(std::string const& key, std::string const& value)
 {
-    auto const result = cont().emplace (key, value);
-    if (! result.second)
+    auto const result = cont().emplace(key, value);
+    if (!result.second)
         result.first->second = value;
 }
 
 void
-Section::append (std::vector <std::string> const& lines)
+Section::append(std::vector<std::string> const& lines)
 {
     // <key> '=' <value>
-    static boost::regex const re1 (
-        "^"                         // start of line
-        "(?:\\s*)"                  // whitespace (optonal)
-        "([a-zA-Z][_a-zA-Z0-9]*)"   // <key>
-        "(?:\\s*)"                  // whitespace (optional)
-        "(?:=)"                     // '='
-        "(?:\\s*)"                  // whitespace (optional)
-        "(.*\\S+)"                  // <value>
-        "(?:\\s*)"                  // whitespace (optional)
-        , boost::regex_constants::optimize
-    );
+    static boost::regex const re1(
+        "^"                        // start of line
+        "(?:\\s*)"                 // whitespace (optonal)
+        "([a-zA-Z][_a-zA-Z0-9]*)"  // <key>
+        "(?:\\s*)"                 // whitespace (optional)
+        "(?:=)"                    // '='
+        "(?:\\s*)"                 // whitespace (optional)
+        "(.*\\S+)"                 // <value>
+        "(?:\\s*)"                 // whitespace (optional)
+        ,
+        boost::regex_constants::optimize);
 
-    lines_.reserve (lines_.size() + lines.size());
+    lines_.reserve(lines_.size() + lines.size());
     for (auto line : lines)
     {
-        auto remove_comment = [](std::string& val)->bool
-        {
+        auto remove_comment = [](std::string& val) -> bool {
             bool removed_trailing = false;
             auto comment = val.find('#');
-            while(comment != std::string::npos)
+            while (comment != std::string::npos)
             {
                 if (comment == 0)
                 {
@@ -69,11 +67,11 @@ Section::append (std::vector <std::string> const& lines)
                     val = "";
                     break;
                 }
-                else if (val.at(comment-1) == '\\')
+                else if (val.at(comment - 1) == '\\')
                 {
                     // we have an escaped comment char. Erase the escape char
                     // and keep looking
-                    val.erase(comment-1,1);
+                    val.erase(comment - 1, 1);
                 }
                 else
                 {
@@ -96,32 +94,32 @@ Section::append (std::vector <std::string> const& lines)
             continue;
 
         boost::smatch match;
-        if (boost::regex_match (line, match, re1))
-            set (match[1], match[2]);
+        if (boost::regex_match(line, match, re1))
+            set(match[1], match[2]);
         else
-            values_.push_back (line);
+            values_.push_back(line);
 
-        lines_.push_back (std::move(line));
+        lines_.push_back(std::move(line));
     }
 }
 
 bool
-Section::exists (std::string const& name) const
+Section::exists(std::string const& name) const
 {
-    return cont().find (name) != cont().end();
+    return cont().find(name) != cont().end();
 }
 
-std::pair <std::string, bool>
-Section::find (std::string const& name) const
+std::pair<std::string, bool>
+Section::find(std::string const& name) const
 {
-    auto const iter = cont().find (name);
+    auto const iter = cont().find(name);
     if (iter == cont().end())
         return {{}, false};
     return {iter->second, true};
 }
 
 std::ostream&
-operator<< (std::ostream& os, Section const& section)
+operator<<(std::ostream& os, Section const& section)
 {
     for (auto const& [k, v] : section.cont())
         os << k << "=" << v << "\n";
@@ -131,38 +129,42 @@ operator<< (std::ostream& os, Section const& section)
 //------------------------------------------------------------------------------
 
 bool
-BasicConfig::exists (std::string const& name) const
+BasicConfig::exists(std::string const& name) const
 {
     return map_.find(name) != map_.end();
 }
 
 Section&
-BasicConfig::section (std::string const& name)
+BasicConfig::section(std::string const& name)
 {
     return map_[name];
 }
 
 Section const&
-BasicConfig::section (std::string const& name) const
+BasicConfig::section(std::string const& name) const
 {
     static Section none("");
-    auto const iter = map_.find (name);
+    auto const iter = map_.find(name);
     if (iter == map_.end())
         return none;
     return iter->second;
 }
 
 void
-BasicConfig::overwrite (std::string const& section, std::string const& key,
+BasicConfig::overwrite(
+    std::string const& section,
+    std::string const& key,
     std::string const& value)
 {
-    auto const result = map_.emplace (std::piecewise_construct,
-        std::make_tuple(section), std::make_tuple(section));
-    result.first->second.set (key, value);
+    auto const result = map_.emplace(
+        std::piecewise_construct,
+        std::make_tuple(section),
+        std::make_tuple(section));
+    result.first->second.set(key, value);
 }
 
 void
-BasicConfig::deprecatedClearSection (std::string const& section)
+BasicConfig::deprecatedClearSection(std::string const& section)
 {
     auto i = map_.find(section);
     if (i != map_.end())
@@ -178,26 +180,28 @@ BasicConfig::legacy(std::string const& section, std::string value)
 std::string
 BasicConfig::legacy(std::string const& sectionName) const
 {
-    return section (sectionName).legacy ();
+    return section(sectionName).legacy();
 }
 
 void
-BasicConfig::build (IniFileSections const& ifs)
+BasicConfig::build(IniFileSections const& ifs)
 {
     for (auto const& entry : ifs)
     {
-        auto const result = map_.emplace (std::piecewise_construct,
-            std::make_tuple(entry.first), std::make_tuple(entry.first));
-        result.first->second.append (entry.second);
+        auto const result = map_.emplace(
+            std::piecewise_construct,
+            std::make_tuple(entry.first),
+            std::make_tuple(entry.first));
+        result.first->second.append(entry.second);
     }
 }
 
 std::ostream&
-operator<< (std::ostream& ss, BasicConfig const& c)
+operator<<(std::ostream& ss, BasicConfig const& c)
 {
     for (auto const& [k, v] : c.map_)
         ss << "[" << k << "]\n" << v;
     return ss;
 }
 
-} // ripple
+}  // namespace ripple
