@@ -26,15 +26,6 @@ namespace ripple {
 
 using namespace std::chrono_literals;
 
-class InboundLedger;
-
-// VFALCO NOTE The txnData constructor parameter is a code smell.
-//             It is true if we are the base of a TransactionAcquire,
-//             or false if we are base of InboundLedger. All it does
-//             is change the behavior of the timer depending on the
-//             derived class. Why not just make the timer callback
-//             function pure virtual?
-//
 PeerSet::PeerSet(
     Application& app,
     uint256 const& hash,
