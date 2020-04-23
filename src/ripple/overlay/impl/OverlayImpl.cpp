@@ -751,10 +751,9 @@ OverlayImpl::onManifests(
 
                 auto const toSkip = hashRouter.shouldRelay(hash);
                 if (toSkip)
-                    foreach (send_if_not(
+                    foreach(send_if_not(
                         std::make_shared<Message>(o, protocol::mtMANIFESTS),
-                        peer_in_set(*toSkip)))
-                        ;
+                        peer_in_set(*toSkip)));
             }
             else
             {
@@ -812,9 +811,8 @@ OverlayImpl::crawlShards(bool pubKey, std::uint32_t hops)
                 // Relay request to active peers
                 protocol::TMGetPeerShardInfo tmGPS;
                 tmGPS.set_hops(hops);
-                foreach (send_always(std::make_shared<Message>(
-                    tmGPS, protocol::mtGET_PEER_SHARD_INFO)))
-                    ;
+                foreach(send_always(std::make_shared<Message>(
+                    tmGPS, protocol::mtGET_PEER_SHARD_INFO)));
 
                 if (csCV_.wait_for(l, timeout) == std::cv_status::timeout)
                 {
@@ -1036,7 +1034,7 @@ OverlayImpl::getUnlInfo()
 Json::Value
 OverlayImpl::json()
 {
-    return foreach (get_peer_json());
+    return foreach(get_peer_json());
 }
 
 bool

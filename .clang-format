@@ -18,7 +18,7 @@ AlwaysBreakBeforeMultilineStrings: true
 AlwaysBreakTemplateDeclarations: true
 BinPackArguments: false
 BinPackParameters: false
-BraceWrapping:   
+BraceWrapping:
   AfterClass:      true
   AfterControlStatement: true
   AfterEnum:       false
@@ -43,8 +43,8 @@ Cpp11BracedListStyle: true
 DerivePointerAlignment: false
 DisableFormat:   false
 ExperimentalAutoDetectBinPacking: false
-ForEachMacros:   [ foreach,   Q_FOREACH,  BOOST_FOREACH ]
-IncludeCategories: 
+ForEachMacros:   [ Q_FOREACH,  BOOST_FOREACH ]
+IncludeCategories:
   - Regex:           '^<(BeastConfig)'
     Priority:        0
   - Regex:           '^<(ripple)/'

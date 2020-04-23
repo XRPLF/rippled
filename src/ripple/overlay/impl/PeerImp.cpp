@@ -1203,7 +1203,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetPeerShardInfo> const& m)
         m->add_peerchain()->set_nodepubkey(
             publicKey_.data(), publicKey_.size());
 
-        overlay_.foreach (send_if_not(
+        overlay_.foreach(send_if_not(
             std::make_shared<Message>(*m, protocol::mtGET_PEER_SHARD_INFO),
             match_peer(this)));
     }
