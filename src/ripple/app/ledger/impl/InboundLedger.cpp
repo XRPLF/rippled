@@ -452,8 +452,7 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
 void
 InboundLedger::addPeers()
 {
-    app_.overlay().selectPeers(
-        *this,
+    PeerSet::addPeers(
         (getPeerCount() == 0) ? peerCountStart : peerCountAdd,
         ScoreHasLedger(mHash, mSeq));
 }

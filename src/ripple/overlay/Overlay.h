@@ -107,7 +107,7 @@ public:
         handshake and are using the peer protocol.
     */
     virtual std::size_t
-    size() = 0;
+    size() const = 0;
 
     /** Return diagnostics on the status of all peers.
         @deprecated This is superceded by PropertyStream
@@ -119,7 +119,7 @@ public:
         The snapshot is made at the time of the call.
     */
     virtual PeerSequence
-    getActivePeers() = 0;
+    getActivePeers() const = 0;
 
     /** Calls the checkSanity function on each peer
         @param index the value to pass to the peer's checkSanity function
@@ -156,70 +156,20 @@ public:
     virtual void
     relay(protocol::TMValidation& m, uint256 const& uid) = 0;
 
-    /** Visit every active peer and return a value
-        The functor must:
-        - Be callable as:
-            void operator()(std::shared_ptr<Peer> const& peer);
-         - Must have the following type alias:
-            using return_type = void;
-         - Be callable as:
-            Function::return_type operator()() const;
-
-        @param f the functor to call with every peer
-        @returns `f()`
-
-        @note The functor is passed by value!
-    */
-    template <typename UnaryFunc>
-    std::enable_if_t<
-        !std::is_void<typename UnaryFunc::return_type>::value,
-        typename UnaryFunc::return_type> foreach (UnaryFunc f)
-    {
-        for (auto const& p : getActivePeers())
-            f(p);
-        return f();
-    }
-
-    /** Visit every active peer
-        The visitor functor must:
-         - Be callable as:
-            void operator()(std::shared_ptr<Peer> const& peer);
-         - Must have the following type alias:
-            using return_type = void;
-
-        @param f the functor to call with every peer
-    */
+    /** Visit every active peer.
+     *
+     * The visitor must be invocable as:
+     *     Function(std::shared_ptr<Peer> const& peer);
+     *
+     * @param f the invocable to call with every peer
+     */
     template <class Function>
-    std::enable_if_t<
-        std::is_void<typename Function::return_type>::value,
-        typename Function::return_type> foreach (Function f)
+    void
+    foreach(Function f) const
     {
         for (auto const& p : getActivePeers())
             f(p);
     }
-
-    /** Select from active peers
-
-        Scores all active peers.
-        Tries to accept the highest scoring peers, up to the requested count,
-        Returns the number of selected peers accepted.
-
-        The score function must:
-        - Be callable as:
-           bool (PeerImp::ptr)
-        - Return a true if the peer is prefered
-
-        The accept function must:
-        - Be callable as:
-           bool (PeerImp::ptr)
-        - Return a true if the peer is accepted
-
-    */
-    virtual std::size_t
-    selectPeers(
-        PeerSet& set,
-        std::size_t limit,
-        std::function<bool(std::shared_ptr<Peer> const&)> score) = 0;
 
     /** Increment and retrieve counter for transaction job queue overflows. */
     virtual void

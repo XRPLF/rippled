@@ -41,28 +41,6 @@
 
 namespace ripple {
 
-/** A functor to visit all active peers and retrieve their JSON data */
-struct get_peer_json
-{
-    using return_type = Json::Value;
-
-    Json::Value json;
-
-    get_peer_json() = default;
-
-    void
-    operator()(std::shared_ptr<Peer> const& peer)
-    {
-        json.append(peer->json());
-    }
-
-    Json::Value
-    operator()()
-    {
-        return json;
-    }
-};
-
 namespace CrawlOptions {
 enum {
     Disabled = 0,
@@ -873,41 +851,12 @@ OverlayImpl::lastLink(std::uint32_t id)
         csCV_.notify_all();
 }
 
-std::size_t
-OverlayImpl::selectPeers(
-    PeerSet& set,
-    std::size_t limit,
-    std::function<bool(std::shared_ptr<Peer> const&)> score)
-{
-    using item = std::pair<int, std::shared_ptr<PeerImp>>;
-
-    std::vector<item> v;
-    v.reserve(size());
-
-    for_each([&](std::shared_ptr<PeerImp>&& e) {
-        auto const s = e->getScore(score(e));
-        v.emplace_back(s, std::move(e));
-    });
-
-    std::sort(v.begin(), v.end(), [](item const& lhs, item const& rhs) {
-        return lhs.first > rhs.first;
-    });
-
-    std::size_t accepted = 0;
-    for (auto const& e : v)
-    {
-        if (set.insert(e.second) && ++accepted >= limit)
-            break;
-    }
-    return accepted;
-}
-
 /** The number of active peers on the network
     Active peers are only those peers that have completed the handshake
     and are running the Ripple protocol.
 */
 std::size_t
-OverlayImpl::size()
+OverlayImpl::size() const
 {
     std::lock_guard lock(mutex_);
     return ids_.size();
@@ -1034,7 +983,12 @@ OverlayImpl::getUnlInfo()
 Json::Value
 OverlayImpl::json()
 {
-    return foreach(get_peer_json());
+    Json::Value json;
+    for (auto const& peer : getActivePeers())
+    {
+        json.append(peer->json());
+    }
+    return json;
 }
 
 bool
@@ -1129,7 +1083,7 @@ OverlayImpl::processRequest(http_request_type const& req, Handoff& handoff)
 }
 
 Overlay::PeerSequence
-OverlayImpl::getActivePeers()
+OverlayImpl::getActivePeers() const
 {
     Overlay::PeerSequence ret;
     ret.reserve(size());

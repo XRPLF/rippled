@@ -244,9 +244,9 @@ TransactionAcquire::takeNodes(
 }
 
 void
-TransactionAcquire::addPeers(int numPeers)
+TransactionAcquire::addPeers(std::size_t limit)
 {
-    app_.overlay().selectPeers(*this, numPeers, ScoreHasTxSet(mHash));
+    PeerSet::addPeers(limit, ScoreHasTxSet(mHash));
 }
 
 void

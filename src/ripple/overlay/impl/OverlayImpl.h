@@ -98,7 +98,7 @@ private:
     boost::asio::io_service& io_service_;
     boost::optional<boost::asio::io_service::work> work_;
     boost::asio::io_service::strand strand_;
-    std::recursive_mutex mutex_;  // VFALCO use std::mutex
+    mutable std::recursive_mutex mutex_;  // VFALCO use std::mutex
     std::condition_variable_any cond_;
     std::weak_ptr<Timer> timer_;
     boost::container::flat_map<Child*, std::weak_ptr<Child>> list_;
@@ -183,13 +183,13 @@ public:
     limit() override;
 
     std::size_t
-    size() override;
+    size() const override;
 
     Json::Value
     json() override;
 
     PeerSequence
-    getActivePeers() override;
+    getActivePeers() const override;
 
     void
     check() override;
@@ -242,7 +242,7 @@ public:
     //
     template <class UnaryFunc>
     void
-    for_each(UnaryFunc&& f)
+    for_each(UnaryFunc&& f) const
     {
         std::vector<std::weak_ptr<PeerImp>> wp;
         {
@@ -262,12 +262,6 @@ public:
                 f(std::move(p));
         }
     }
-
-    std::size_t
-    selectPeers(
-        PeerSet& set,
-        std::size_t limit,
-        std::function<bool(std::shared_ptr<Peer> const&)> score) override;
 
     // Called when TMManifests is received from a peer
     void

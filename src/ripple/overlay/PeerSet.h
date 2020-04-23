@@ -69,14 +69,6 @@ public:
         return mTimeouts;
     }
 
-    /** Insert a peer to the managed set.
-        Calls the hook function newPeer().
-
-        @return `true` if the peer was added
-    */
-    bool
-    insert(std::shared_ptr<Peer> const&);
-
 protected:
     using ScopedLockType = std::unique_lock<std::recursive_mutex>;
 
@@ -88,9 +80,17 @@ protected:
 
     virtual ~PeerSet() = 0;
 
-    virtual void
-    newPeer(std::shared_ptr<Peer> const&) = 0;
+    /** Add at most `limit` peers to this set from the overlay. */
+    void
+    addPeers(
+        std::size_t limit,
+        std::function<bool(std::shared_ptr<Peer> const&)> score);
 
+    /** Hook called from addPeers(). */
+    virtual void
+    newPeer (std::shared_ptr<Peer> const&) = 0;
+
+    /** Hook called from invokeOnTimer(). */
     virtual void
     onTimer(bool progress, ScopedLockType&) = 0;
 
@@ -98,6 +98,7 @@ protected:
     virtual void
     execute() = 0;
 
+    /** Return a weak pointer to this. */
     virtual std::weak_ptr<PeerSet>
     pmDowncast() = 0;
 
@@ -111,6 +112,7 @@ protected:
     void
     invokeOnTimer();
 
+    /** Send a GetLedger message to one or all peers. */
     void
     sendRequest(
         const protocol::TMGetLedger& message,

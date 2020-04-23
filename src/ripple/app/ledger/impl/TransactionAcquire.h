@@ -84,9 +84,8 @@ private:
     void
     done();
 
-    // Tries to add the specified number of peers
     void
-    addPeers(int num);
+    addPeers(std::size_t limit);
 
     void
     trigger(std::shared_ptr<Peer> const&);
