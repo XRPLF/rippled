@@ -397,7 +397,7 @@ public:
 
     /* JobQueue uses this method for Job counting. */
     JobCounter&
-    rootJobCounter()
+    jobCounter()
     {
         return jobCounter_;
     }
@@ -435,7 +435,7 @@ private:
 JobCounter&
 Stoppable::jobCounter()
 {
-    return m_root.rootJobCounter();
+    return m_root.jobCounter();
 }
 
 //------------------------------------------------------------------------------

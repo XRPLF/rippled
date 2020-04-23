@@ -65,13 +65,11 @@ public:
 
     InboundTransactionsImp(
         Application& app,
-        clock_type& clock,
         Stoppable& parent,
         beast::insight::Collector::ptr const& collector,
         std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet)
         : Stoppable("InboundTransactions", parent)
         , app_(app)
-        , m_clock(clock)
         , m_seq(0)
         , m_zeroSet(m_map[uint256()])
         , m_gotSet(std::move(gotSet))
@@ -121,7 +119,7 @@ public:
             if (!acquire || isStopping())
                 return std::shared_ptr<SHAMap>();
 
-            ta = std::make_shared<TransactionAcquire>(app_, hash, m_clock);
+            ta = std::make_shared<TransactionAcquire>(app_, hash);
 
             auto& obj = m_map[hash];
             obj.mAcquire = ta;
@@ -206,34 +204,6 @@ public:
             m_gotSet(set, fromAcquire);
     }
 
-    Json::Value
-    getInfo() override
-    {
-        Json::Value ret(Json::objectValue);
-
-        Json::Value& sets = (ret["sets"] = Json::arrayValue);
-
-        {
-            std::lock_guard sl(mLock);
-
-            ret["seq"] = m_seq;
-
-            for (auto const& it : m_map)
-            {
-                Json::Value& set = sets[to_string(it.first)];
-                set["seq"] = it.second.mSeq;
-                if (it.second.mSet)
-                    set["state"] = "complete";
-                else if (it.second.mAcquire)
-                    set["state"] = "acquiring";
-                else
-                    set["state"] = "dead";
-            }
-        }
-
-        return ret;
-    }
-
     void
     newRound(std::uint32_t seq) override
     {
@@ -273,8 +243,6 @@ public:
     }
 
 private:
-    clock_type& m_clock;
-
     using MapType = hash_map<uint256, InboundTransactionSet>;
 
     std::recursive_mutex mLock;
@@ -295,13 +263,12 @@ InboundTransactions::~InboundTransactions() = default;
 std::unique_ptr<InboundTransactions>
 make_InboundTransactions(
     Application& app,
-    InboundLedgers::clock_type& clock,
     Stoppable& parent,
     beast::insight::Collector::ptr const& collector,
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet)
 {
     return std::make_unique<InboundTransactionsImp>(
-        app, clock, parent, collector, std::move(gotSet));
+        app, parent, collector, std::move(gotSet));
 }
 
 }  // namespace ripple

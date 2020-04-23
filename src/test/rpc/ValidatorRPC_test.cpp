@@ -153,18 +153,12 @@ public:
         for (auto const& val : validators)
             expectedKeys.insert(toStr(val.masterPublic));
 
-        // Manage single thread io_service for server
-        struct Worker : BasicApp
-        {
-            Worker() : BasicApp(1)
-            {
-            }
-        };
-        Worker w;
+        // Manage single-thread io_service for server.
+        BasicApp worker{1};
         using namespace std::chrono_literals;
         NetClock::time_point const expiration{3600s};
         TrustedPublisherServer server{
-            w.get_io_service(), validators, expiration, false, 1, false};
+            worker.get_io_service(), validators, expiration, false, 1, false};
 
         //----------------------------------------------------------------------
         // Publisher list site unavailable

@@ -55,13 +55,7 @@ public:
         std::shared_ptr<protocol::TMLedgerData>) = 0;
 
     virtual void
-    doLedgerData(LedgerHash hash) = 0;
-
-    virtual void
     gotStaleData(std::shared_ptr<protocol::TMLedgerData> packet) = 0;
-
-    virtual int
-    getFetchCount(int& timeoutCount) = 0;
 
     virtual void
     logFailure(uint256 const& h, std::uint32_t seq) = 0;

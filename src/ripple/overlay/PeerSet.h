@@ -47,78 +47,6 @@ namespace ripple {
 */
 class PeerSet
 {
-public:
-    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
-
-    /** Returns the hash of the data we want. */
-    uint256 const&
-    getHash() const
-    {
-        return mHash;
-    }
-
-    /** Returns true if we got all the data. */
-    bool
-    isComplete() const
-    {
-        return mComplete;
-    }
-
-    /** Returns false if we failed to get the data. */
-    bool
-    isFailed() const
-    {
-        return mFailed;
-    }
-
-    /** Returns the number of times we timed out. */
-    int
-    getTimeouts() const
-    {
-        return mTimeouts;
-    }
-
-    bool
-    isActive();
-
-    /** Called to indicate that forward progress has been made. */
-    void
-    progress()
-    {
-        mProgress = true;
-    }
-
-    void
-    touch()
-    {
-        mLastAction = m_clock.now();
-    }
-
-    clock_type::time_point
-    getLastAction() const
-    {
-        return mLastAction;
-    }
-
-    /** Insert a peer to the managed set.
-        This will call the derived class hook function.
-        @return `true` If the peer was added
-    */
-    bool
-    insert(std::shared_ptr<Peer> const&);
-
-    virtual bool
-    isDone() const
-    {
-        return mComplete || mFailed;
-    }
-
-    Application&
-    app()
-    {
-        return app_;
-    }
-
 protected:
     using ScopedLockType = std::unique_lock<std::recursive_mutex>;
 
@@ -126,77 +54,76 @@ protected:
         Application& app,
         uint256 const& hash,
         std::chrono::milliseconds interval,
-        clock_type& clock,
         beast::Journal journal);
 
     virtual ~PeerSet() = 0;
 
-    virtual void
-    newPeer(std::shared_ptr<Peer> const&) = 0;
+    /** Add at most `limit` peers to this set from the overlay. */
+    void
+    addPeers(
+        std::size_t limit,
+        std::function<bool(std::shared_ptr<Peer> const&)> score);
 
+    /** Hook called from addPeers(). */
+    virtual void
+    onPeerAdded(std::shared_ptr<Peer> const&) = 0;
+
+    /** Hook called from invokeOnTimer(). */
     virtual void
     onTimer(bool progress, ScopedLockType&) = 0;
 
+    /** Queue a job to call invokeOnTimer(). */
     virtual void
-    execute() = 0;
+    queueJob() = 0;
 
+    /** Return a weak pointer to this. */
     virtual std::weak_ptr<PeerSet>
     pmDowncast() = 0;
 
     bool
-    isProgress()
+    isDone() const
     {
-        return mProgress;
+        return mComplete || mFailed;
     }
 
-    void
-    setComplete()
-    {
-        mComplete = true;
-    }
-    void
-    setFailed()
-    {
-        mFailed = true;
-    }
-
+    /** Calls onTimer() if in the right state. */
     void
     invokeOnTimer();
 
-    void
-    sendRequest(const protocol::TMGetLedger& message);
-
+    /** Send a GetLedger message to one or all peers. */
     void
     sendRequest(
         const protocol::TMGetLedger& message,
         std::shared_ptr<Peer> const& peer);
 
+    /** Schedule a call to queueJob() after mTimerInterval. */
     void
     setTimer();
 
-    std::size_t
-    getPeerCount() const;
-
-protected:
+    // Used in this class for access to boost::asio::io_service and
+    // ripple::Overlay. Used in subtypes for the kitchen sink.
     Application& app_;
     beast::Journal m_journal;
-    clock_type& m_clock;
 
     std::recursive_mutex mLock;
 
-    uint256 mHash;
-    std::chrono::milliseconds mTimerInterval;
+    /** The hash of the object (in practice, always a ledger) we are trying to
+     * fetch. */
+    uint256 const mHash;
     int mTimeouts;
     bool mComplete;
     bool mFailed;
-    clock_type::time_point mLastAction;
+    /** Whether forward progress has been made. */
     bool mProgress;
 
+    /** The identifiers of the peers we are tracking. */
+    std::set<Peer::id_t> mPeers;
+
+private:
+    /** The minimum time to wait between calls to execute(). */
+    std::chrono::milliseconds mTimerInterval;
     // VFALCO TODO move the responsibility for the timer to a higher level
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> mTimer;
-
-    // The identifiers of the peers we are tracking.
-    std::set<Peer::id_t> mPeers;
 };
 
 }  // namespace ripple

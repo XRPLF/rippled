@@ -202,35 +202,6 @@ public:
         return true;
     }
 
-    int
-    getFetchCount(int& timeoutCount) override
-    {
-        timeoutCount = 0;
-        int ret = 0;
-
-        std::vector<u256_acq_pair> inboundLedgers;
-
-        {
-            ScopedLockType sl(mLock);
-
-            inboundLedgers.reserve(mLedgers.size());
-            for (auto const& it : mLedgers)
-            {
-                inboundLedgers.push_back(it);
-            }
-        }
-
-        for (auto const& it : inboundLedgers)
-        {
-            if (it.second->isActive())
-            {
-                ++ret;
-                timeoutCount += it.second->getTimeouts();
-            }
-        }
-        return ret;
-    }
-
     void
     logFailure(uint256 const& h, std::uint32_t seq) override
     {
@@ -248,8 +219,9 @@ public:
         return mRecentFailures.find(h) != mRecentFailures.end();
     }
 
+    /** Called (indirectly) only by gotLedgerData(). */
     void
-    doLedgerData(LedgerHash hash) override
+    doLedgerData(LedgerHash hash)
     {
         if (auto ledger = find(hash))
             ledger->runData();

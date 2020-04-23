@@ -31,11 +31,13 @@
 namespace ripple {
 
 // A ledger we are trying to acquire
-class InboundLedger : public PeerSet,
-                      public std::enable_shared_from_this<InboundLedger>,
-                      public CountedObject<InboundLedger>
+class InboundLedger final : public PeerSet,
+                            public std::enable_shared_from_this<InboundLedger>,
+                            public CountedObject<InboundLedger>
 {
 public:
+    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+
     static char const*
     getCountedObjectName()
     {
@@ -62,13 +64,23 @@ public:
 
     ~InboundLedger();
 
-    // Called when the PeerSet timer expires
-    void
-    execute() override;
-
     // Called when another attempt is made to fetch this same ledger
     void
     update(std::uint32_t seq);
+
+    /** Returns true if we got all the data. */
+    bool
+    isComplete() const
+    {
+        return mComplete;
+    }
+
+    /** Returns false if we failed to get the data. */
+    bool
+    isFailed() const
+    {
+        return mFailed;
+    }
 
     std::shared_ptr<Ledger const>
     getLedger() const
@@ -80,12 +92,6 @@ public:
     getSeq() const
     {
         return mSeq;
-    }
-
-    Reason
-    getReason() const
-    {
-        return mReason;
     }
 
     bool
@@ -108,8 +114,17 @@ public:
     void
     runData();
 
-    static LedgerInfo
-    deserializeHeader(Slice data, bool hasPrefix);
+    void
+    touch()
+    {
+        mLastAction = m_clock.now();
+    }
+
+    clock_type::time_point
+    getLastAction() const
+    {
+        return mLastAction;
+    }
 
 private:
     enum class TriggerReason { added, reply, timeout };
@@ -137,13 +152,19 @@ private:
     onTimer(bool progress, ScopedLockType& peerSetLock) override;
 
     void
-    newPeer(std::shared_ptr<Peer> const& peer) override
+    queueJob() override;
+
+    void
+    onPeerAdded(std::shared_ptr<Peer> const& peer) override
     {
         // For historical nodes, do not trigger too soon
         // since a fetch pack is probably coming
         if (mReason != Reason::HISTORY)
             trigger(peer, TriggerReason::added);
     }
+
+    std::size_t
+    getPeerCount() const;
 
     std::weak_ptr<PeerSet>
     pmDowncast() override;
@@ -179,6 +200,9 @@ private:
     std::vector<uint256>
     neededStateHashes(int max, SHAMapSyncFilter* filter) const;
 
+    clock_type& m_clock;
+    clock_type::time_point mLastAction;
+
     std::shared_ptr<Ledger> mLedger;
     bool mHaveHeader;
     bool mHaveState;
@@ -197,6 +221,14 @@ private:
     std::vector<PeerDataPairType> mReceivedData;
     bool mReceiveDispatched;
 };
+
+/** Deserialize a ledger header from a byte array. */
+LedgerInfo
+deserializeHeader(Slice data);
+
+/** Deserialize a ledger header (prefixed with 4 bytes) from a byte array. */
+LedgerInfo
+deserializePrefixedHeader(Slice data);
 
 }  // namespace ripple
 

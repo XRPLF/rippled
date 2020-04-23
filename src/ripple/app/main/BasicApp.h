@@ -33,11 +33,10 @@ private:
     std::vector<std::thread> threads_;
     boost::asio::io_service io_service_;
 
-protected:
+public:
     BasicApp(std::size_t numberOfThreads);
     ~BasicApp();
 
-public:
     boost::asio::io_service&
     get_io_service()
     {

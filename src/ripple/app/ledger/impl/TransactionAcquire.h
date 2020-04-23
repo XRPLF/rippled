@@ -28,7 +28,7 @@ namespace ripple {
 
 // VFALCO TODO rename to PeerTxRequest
 // A transaction set we are trying to acquire
-class TransactionAcquire
+class TransactionAcquire final
     : public PeerSet,
       public std::enable_shared_from_this<TransactionAcquire>,
       public CountedObject<TransactionAcquire>
@@ -43,17 +43,8 @@ public:
     using pointer = std::shared_ptr<TransactionAcquire>;
 
 public:
-    TransactionAcquire(
-        Application& app,
-        uint256 const& hash,
-        clock_type& clock);
+    TransactionAcquire(Application& app, uint256 const& hash);
     ~TransactionAcquire() = default;
-
-    std::shared_ptr<SHAMap> const&
-    getMap()
-    {
-        return mMap;
-    }
 
     SHAMapAddNode
     takeNodes(
@@ -70,16 +61,15 @@ public:
 private:
     std::shared_ptr<SHAMap> mMap;
     bool mHaveRoot;
-    beast::Journal j_;
 
     void
-    execute() override;
+    queueJob() override;
 
     void
     onTimer(bool progress, ScopedLockType& peerSetLock) override;
 
     void
-    newPeer(std::shared_ptr<Peer> const& peer) override
+    onPeerAdded(std::shared_ptr<Peer> const& peer) override
     {
         trigger(peer);
     }
@@ -87,9 +77,8 @@ private:
     void
     done();
 
-    // Tries to add the specified number of peers
     void
-    addPeers(int num);
+    addPeers(std::size_t limit);
 
     void
     trigger(std::shared_ptr<Peer> const&);

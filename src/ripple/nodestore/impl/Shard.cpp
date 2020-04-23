@@ -516,7 +516,7 @@ Shard::finalize(const bool writeSQLite)
             return fail("invalid ledger");
 
         ledger = std::make_shared<Ledger>(
-            InboundLedger::deserializeHeader(makeSlice(nObj->getData()), true),
+            deserializePrefixedHeader(makeSlice(nObj->getData())),
             app_.config(),
             *app_.shardFamily());
         if (ledger->info().seq != seq)

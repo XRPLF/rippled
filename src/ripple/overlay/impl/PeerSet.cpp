@@ -26,61 +26,74 @@ namespace ripple {
 
 using namespace std::chrono_literals;
 
-class InboundLedger;
-
-// VFALCO NOTE The txnData constructor parameter is a code smell.
-//             It is true if we are the base of a TransactionAcquire,
-//             or false if we are base of InboundLedger. All it does
-//             is change the behavior of the timer depending on the
-//             derived class. Why not just make the timer callback
-//             function pure virtual?
-//
 PeerSet::PeerSet(
     Application& app,
     uint256 const& hash,
     std::chrono::milliseconds interval,
-    clock_type& clock,
     beast::Journal journal)
     : app_(app)
     , m_journal(journal)
-    , m_clock(clock)
     , mHash(hash)
-    , mTimerInterval(interval)
     , mTimeouts(0)
     , mComplete(false)
     , mFailed(false)
     , mProgress(false)
+    , mTimerInterval(interval)
     , mTimer(app_.getIOService())
 {
-    mLastAction = m_clock.now();
     assert((mTimerInterval > 10ms) && (mTimerInterval < 30s));
 }
 
 PeerSet::~PeerSet() = default;
 
-bool
-PeerSet::insert(std::shared_ptr<Peer> const& ptr)
+void
+PeerSet::addPeers(
+    std::size_t limit,
+    std::function<bool(std::shared_ptr<Peer> const&)> hasItem)
 {
+    using ScoredPeer = std::pair<int, std::shared_ptr<Peer>>;
+
+    auto const& overlay = app_.overlay();
+
+    std::vector<ScoredPeer> pairs;
+    pairs.reserve(overlay.size());
+
+    overlay.foreach([&](auto const& peer) {
+        auto const score = peer->getScore(hasItem(peer));
+        pairs.emplace_back(score, std::move(peer));
+    });
+
+    std::sort(
+        pairs.begin(),
+        pairs.end(),
+        [](ScoredPeer const& lhs, ScoredPeer const& rhs) {
+            return lhs.first > rhs.first;
+        });
+
+    std::size_t accepted = 0;
     ScopedLockType sl(mLock);
-
-    if (!mPeers.insert(ptr->id()).second)
-        return false;
-
-    newPeer(ptr);
-    return true;
+    for (auto const& pair : pairs)
+    {
+        auto const peer = pair.second;
+        if (!mPeers.insert(peer->id()).second)
+            continue;
+        onPeerAdded(peer);
+        if (++accepted >= limit)
+            break;
+    }
 }
 
 void
 PeerSet::setTimer()
 {
-    mTimer.expires_from_now(mTimerInterval);
+    mTimer.expires_after(mTimerInterval);
     mTimer.async_wait(
         [wptr = pmDowncast()](boost::system::error_code const& ec) {
             if (ec == boost::asio::error::operation_aborted)
                 return;
 
             if (auto ptr = wptr.lock())
-                ptr->execute();
+                ptr->queueJob();
         });
 }
 
@@ -92,7 +105,7 @@ PeerSet::invokeOnTimer()
     if (isDone())
         return;
 
-    if (!isProgress())
+    if (!mProgress)
     {
         ++mTimeouts;
         JLOG(m_journal.debug())
@@ -110,53 +123,26 @@ PeerSet::invokeOnTimer()
         setTimer();
 }
 
-bool
-PeerSet::isActive()
-{
-    ScopedLockType sl(mLock);
-    return !isDone();
-}
-
 void
 PeerSet::sendRequest(
     const protocol::TMGetLedger& tmGL,
     std::shared_ptr<Peer> const& peer)
 {
-    if (!peer)
-        sendRequest(tmGL);
-    else
-        peer->send(std::make_shared<Message>(tmGL, protocol::mtGET_LEDGER));
-}
-
-void
-PeerSet::sendRequest(const protocol::TMGetLedger& tmGL)
-{
-    ScopedLockType sl(mLock);
-
-    if (mPeers.empty())
-        return;
-
     auto packet = std::make_shared<Message>(tmGL, protocol::mtGET_LEDGER);
 
-    for (auto id : mPeers)
+    if (peer)
     {
-        if (auto peer = app_.overlay().findPeerByShortID(id))
-            peer->send(packet);
+        peer->send(packet);
+        return;
     }
-}
 
-std::size_t
-PeerSet::getPeerCount() const
-{
-    std::size_t ret(0);
+    ScopedLockType sl(mLock);
 
     for (auto id : mPeers)
     {
-        if (app_.overlay().findPeerByShortID(id))
-            ++ret;
+        if (auto p = app_.overlay().findPeerByShortID(id))
+            p->send(packet);
     }
-
-    return ret;
 }
 
 }  // namespace ripple

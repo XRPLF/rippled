@@ -454,7 +454,7 @@ DatabaseShardImp::fetchLedger(uint256 const& hash, std::uint32_t seq)
     };
 
     auto ledger{std::make_shared<Ledger>(
-        InboundLedger::deserializeHeader(makeSlice(nObj->getData()), true),
+        deserializePrefixedHeader(makeSlice(nObj->getData())),
         app_.config(),
         *app_.shardFamily())};
 
@@ -1238,7 +1238,7 @@ DatabaseShardImp::finalizeShard(
             PublicKey const& publicKey{app_.nodeIdentity().first};
             message.set_nodepubkey(publicKey.data(), publicKey.size());
             message.set_shardindexes(std::to_string(shardIndex));
-            app_.overlay().foreach (send_always(std::make_shared<Message>(
+            app_.overlay().foreach(send_always(std::make_shared<Message>(
                 message, protocol::mtPEER_SHARD_INFO)));
         }
     });

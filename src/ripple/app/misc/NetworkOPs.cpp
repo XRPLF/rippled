@@ -1070,7 +1070,7 @@ NetworkOPsImp::processClusterTimer()
         node.set_name(to_string(item.address));
         node.set_cost(item.balance);
     }
-    app_.overlay().foreach (send_if(
+    app_.overlay().foreach(send_if(
         std::make_shared<Message>(cluster, protocol::mtCLUSTER),
         peer_in_cluster()));
     setClusterTimer();
@@ -1449,7 +1449,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                         app_.timeKeeper().now().time_since_epoch().count());
                     tx.set_deferred(e.result == terQUEUED);
                     // FIXME: This should be when we received it
-                    app_.overlay().foreach (send_if_not(
+                    app_.overlay().foreach(send_if_not(
                         std::make_shared<Message>(tx, protocol::mtTRANSACTION),
                         peer_in_set(*toSkip)));
                     e.transaction->setBroadcast();
@@ -1718,7 +1718,7 @@ NetworkOPsImp::switchLastClosedLedger(
         newLCL->info().parentHash.begin(), newLCL->info().parentHash.size());
     s.set_ledgerhash(newLCL->info().hash.begin(), newLCL->info().hash.size());
 
-    app_.overlay().foreach (
+    app_.overlay().foreach(
         send_always(std::make_shared<Message>(s, protocol::mtSTATUS_CHANGE)));
 }
 
@@ -1804,7 +1804,7 @@ NetworkOPsImp::mapComplete(std::shared_ptr<SHAMap> const& map, bool fromAcquire)
     protocol::TMHaveTransactionSet msg;
     msg.set_hash(map->getHash().as_uint256().begin(), 256 / 8);
     msg.set_status(protocol::tsHAVE);
-    app_.overlay().foreach (
+    app_.overlay().foreach(
         send_always(std::make_shared<Message>(msg, protocol::mtHAVE_SET)));
 
     // We acquired it because consensus asked us to
