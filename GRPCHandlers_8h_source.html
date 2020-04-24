@@ -106,33 +106,38 @@ $(function() {
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="comment"> */</span></div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::GetAccountInfoResponse, grpc::Status&gt;</a></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<a class="code" href="namespaceripple.html#a7c091ce8a9ace1966047ee4c03bdbb77">doAccountInfoGrpc</a>(RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetAccountInfoRequest&gt;&amp; context);</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::GetFeeResponse, grpc::Status&gt;</a></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<a class="code" href="namespaceripple.html#abb7dc11b05e68f3cf6dd27d0c842361b">doFeeGrpc</a>(RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetFeeRequest&gt;&amp; context);</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::SubmitTransactionResponse, grpc::Status&gt;</a></div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<a class="code" href="namespaceripple.html#a52cc6f13e59ec58b28ff371df22e5960">doSubmitGrpc</a>(RPC::GRPCContext&lt;org::xrpl::rpc::v1::SubmitTransactionRequest&gt;&amp; context);</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="comment">// NOTE, this only supports Payment transactions at this time</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::GetTransactionResponse, grpc::Status&gt;</a></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<a class="code" href="namespaceripple.html#a812bb657b23383ad7e08e497f799170a">doTxGrpc</a>(RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetTransactionRequest&gt;&amp; context);</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse, grpc::Status&gt;</a></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<a class="code" href="namespaceripple.html#a2257dffc273a7e4207dd94ed9c752d32">doAccountTxGrpc</a>(</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest&gt;&amp; context);</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<a class="code" href="namespaceripple.html#a7c091ce8a9ace1966047ee4c03bdbb77">doAccountInfoGrpc</a>(</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetAccountInfoRequest&gt;&amp; context);</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::GetFeeResponse, grpc::Status&gt;</a></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<a class="code" href="namespaceripple.html#abb7dc11b05e68f3cf6dd27d0c842361b">doFeeGrpc</a>(RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetFeeRequest&gt;&amp; context);</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::SubmitTransactionResponse, grpc::Status&gt;</a></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<a class="code" href="namespaceripple.html#a52cc6f13e59ec58b28ff371df22e5960">doSubmitGrpc</a>(</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    RPC::GRPCContext&lt;org::xrpl::rpc::v1::SubmitTransactionRequest&gt;&amp; context);</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="comment">// NOTE, this only supports Payment transactions at this time</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::GetTransactionResponse, grpc::Status&gt;</a></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<a class="code" href="namespaceripple.html#a812bb657b23383ad7e08e497f799170a">doTxGrpc</a>(RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetTransactionRequest&gt;&amp; context);</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse,</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    grpc::Status&gt;</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<a class="code" href="namespaceripple.html#a2257dffc273a7e4207dd94ed9c752d32">doAccountTxGrpc</a>(</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest&gt;&amp;</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        context);</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="apair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a2257dffc273a7e4207dd94ed9c752d32"><div class="ttname"><a href="namespaceripple.html#a2257dffc273a7e4207dd94ed9c752d32">ripple::doAccountTxGrpc</a></div><div class="ttdeci">std::pair&lt; org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse, grpc::Status &gt; doAccountTxGrpc(RPC::GRPCContext&lt; org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest &gt; &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="AccountTx_8cpp_source.html#l00569">AccountTx.cpp:569</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a812bb657b23383ad7e08e497f799170a"><div class="ttname"><a href="namespaceripple.html#a812bb657b23383ad7e08e497f799170a">ripple::doTxGrpc</a></div><div class="ttdeci">std::pair&lt; org::xrpl::rpc::v1::GetTransactionResponse, grpc::Status &gt; doTxGrpc(RPC::GRPCContext&lt; org::xrpl::rpc::v1::GetTransactionRequest &gt; &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="Tx_8cpp_source.html#l00394">Tx.cpp:394</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a812bb657b23383ad7e08e497f799170a"><div class="ttname"><a href="namespaceripple.html#a812bb657b23383ad7e08e497f799170a">ripple::doTxGrpc</a></div><div class="ttdeci">std::pair&lt; org::xrpl::rpc::v1::GetTransactionResponse, grpc::Status &gt; doTxGrpc(RPC::GRPCContext&lt; org::xrpl::rpc::v1::GetTransactionRequest &gt; &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="Tx_8cpp_source.html#l00389">Tx.cpp:389</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="anamespaceripple_html_abb7dc11b05e68f3cf6dd27d0c842361b"><div class="ttname"><a href="namespaceripple.html#abb7dc11b05e68f3cf6dd27d0c842361b">ripple::doFeeGrpc</a></div><div class="ttdeci">std::pair&lt; org::xrpl::rpc::v1::GetFeeResponse, grpc::Status &gt; doFeeGrpc(RPC::GRPCContext&lt; org::xrpl::rpc::v1::GetFeeRequest &gt; &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="Fee1_8cpp_source.html#l00042">Fee1.cpp:42</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a7c091ce8a9ace1966047ee4c03bdbb77"><div class="ttname"><a href="namespaceripple.html#a7c091ce8a9ace1966047ee4c03bdbb77">ripple::doAccountInfoGrpc</a></div><div class="ttdeci">std::pair&lt; org::xrpl::rpc::v1::GetAccountInfoResponse, grpc::Status &gt; doAccountInfoGrpc(RPC::GRPCContext&lt; org::xrpl::rpc::v1::GetAccountInfoRequest &gt; &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="AccountInfo_8cpp_source.html#l00189">AccountInfo.cpp:189</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a52cc6f13e59ec58b28ff371df22e5960"><div class="ttname"><a href="namespaceripple.html#a52cc6f13e59ec58b28ff371df22e5960">ripple::doSubmitGrpc</a></div><div class="ttdeci">std::pair&lt; org::xrpl::rpc::v1::SubmitTransactionResponse, grpc::Status &gt; doSubmitGrpc(RPC::GRPCContext&lt; org::xrpl::rpc::v1::SubmitTransactionRequest &gt; &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="Submit_8cpp_source.html#l00188">Submit.cpp:188</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a52cc6f13e59ec58b28ff371df22e5960"><div class="ttname"><a href="namespaceripple.html#a52cc6f13e59ec58b28ff371df22e5960">ripple::doSubmitGrpc</a></div><div class="ttdeci">std::pair&lt; org::xrpl::rpc::v1::SubmitTransactionResponse, grpc::Status &gt; doSubmitGrpc(RPC::GRPCContext&lt; org::xrpl::rpc::v1::SubmitTransactionRequest &gt; &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="Submit_8cpp_source.html#l00198">Submit.cpp:198</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

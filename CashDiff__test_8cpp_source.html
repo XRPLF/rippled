@@ -88,9 +88,9 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/ledger/CashDiff.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STAmount.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/unit_test.h&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/unit_test.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/ledger/CashDiff.h&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STAmount.h&gt;</span></div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/type_traits.html">type_traits</a>&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
@@ -106,24 +106,24 @@ $(function() {
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="comment">// Exercise diffIsDust (STAmount, STAmount)</span></div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1CashDiff__test.html#a04a175da34a81dda330d66c7242c3de7">   38</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1CashDiff__test.html#a04a175da34a81dda330d66c7242c3de7">testDust</a> ()</div>
+<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1CashDiff__test.html#a04a175da34a81dda330d66c7242c3de7">   38</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1CashDiff__test.html#a04a175da34a81dda330d66c7242c3de7">testDust</a>()</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    {</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        testcase (<span class="stringliteral">&quot;diffIsDust (STAmount, STAmount)&quot;</span>);</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        testcase(<span class="stringliteral">&quot;diffIsDust (STAmount, STAmount)&quot;</span>);</div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span> usd (<a class="code" href="classripple_1_1base__uint.html">Currency</a> (0x5553440000000000), <a class="code" href="classripple_1_1base__uint.html">AccountID</a> (0x4985601));</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span> usf (<a class="code" href="classripple_1_1base__uint.html">Currency</a> (0x5553460000000000), <a class="code" href="classripple_1_1base__uint.html">AccountID</a> (0x4985601));</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span> usd(<a class="code" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a>(0x5553440000000000), <a class="code" href="classripple_1_1base__uint.html">AccountID</a>(0x4985601));</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <a class="code" href="classripple_1_1Issue.html">Issue</a> <span class="keyword">const</span> usf(<a class="code" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a>(0x5553460000000000), <a class="code" href="classripple_1_1base__uint.html">AccountID</a>(0x4985601));</div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <span class="comment">// Positive and negative are never dust.</span></div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        expect (!<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a> (<a class="code" href="classripple_1_1STAmount.html">STAmount</a>{usd, 1}, <a class="code" href="classripple_1_1STAmount.html">STAmount</a>{usd, -1}));</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        expect(!<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a>(<a class="code" href="classripple_1_1STAmount.html">STAmount</a>{usd, 1}, <a class="code" href="classripple_1_1STAmount.html">STAmount</a>{usd, -1}));</div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="comment">// Different issues are never dust.</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        expect (!<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a> (<a class="code" href="classripple_1_1STAmount.html">STAmount</a>{usd, 1}, <a class="code" href="classripple_1_1STAmount.html">STAmount</a>{usf, 1}));</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        expect(!<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a>(<a class="code" href="classripple_1_1STAmount.html">STAmount</a>{usd, 1}, <a class="code" href="classripple_1_1STAmount.html">STAmount</a>{usf, 1}));</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="comment">// Native and non-native are never dust.</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        expect (!<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a> (<a class="code" href="classripple_1_1STAmount.html">STAmount</a>{usd, 1}, <a class="code" href="classripple_1_1STAmount.html">STAmount</a>{1}));</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        expect(!<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a>(<a class="code" href="classripple_1_1STAmount.html">STAmount</a>{usd, 1}, <a class="code" href="classripple_1_1STAmount.html">STAmount</a>{1}));</div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        <span class="comment">// Equal values are always dust.</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        expect (<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a> (<a class="code" href="classripple_1_1STAmount.html">STAmount</a>{0}, <a class="code" href="classripple_1_1STAmount.html">STAmount</a>{0}));</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        expect(<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a>(<a class="code" href="classripple_1_1STAmount.html">STAmount</a>{0}, <a class="code" href="classripple_1_1STAmount.html">STAmount</a>{0}));</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        {</div>
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            <span class="comment">// Test IOU.</span></div>
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> oldProbe = 0;</div>
@@ -131,22 +131,22 @@ $(function() {
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> e10 = 1;</div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            <span class="keywordflow">do</span></div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            {</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;                <a class="code" href="classripple_1_1STAmount.html">STAmount</a> large (usd, newProbe + 1);</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;                <a class="code" href="classripple_1_1STAmount.html">STAmount</a> small (usd, newProbe);</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;                <a class="code" href="classripple_1_1STAmount.html">STAmount</a> large(usd, newProbe + 1);</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;                <a class="code" href="classripple_1_1STAmount.html">STAmount</a> small(usd, newProbe);</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;                expect (<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a> (large, small, e10));</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;                expect (<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a> (large, small, e10+1) == (e10 &gt; 13));</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;                expect(<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a>(large, small, e10));</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;                expect(<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a>(large, small, e10 + 1) == (e10 &gt; 13));</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;                oldProbe = newProbe;</div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;                newProbe = oldProbe * 10;</div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;                e10 += 1;</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            } <span class="keywordflow">while</span> (newProbe &gt; oldProbe &amp;&amp;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;                newProbe &lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits&lt;std::int64_t&gt;::max</a>());</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;                     newProbe &lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits&lt;std::int64_t&gt;::max</a>());</div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        }</div>
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        {</div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;            <span class="comment">// Test XRP.</span></div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <span class="comment">// A delta of 2 or less is always dust.</span></div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            expect (<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a> (<a class="code" href="classripple_1_1STAmount.html">STAmount</a>{2}, <a class="code" href="classripple_1_1STAmount.html">STAmount</a>{0}));</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            expect(<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a>(<a class="code" href="classripple_1_1STAmount.html">STAmount</a>{2}, <a class="code" href="classripple_1_1STAmount.html">STAmount</a>{0}));</div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> oldProbe = 0;</div>
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> newProbe = 10;</div>
@@ -155,46 +155,48 @@ $(function() {
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            {</div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;                <span class="comment">// Differences of 2 of fewer drops are always treated as dust,</span></div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;                <span class="comment">// so use a delta of 3.</span></div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                <a class="code" href="classripple_1_1STAmount.html">STAmount</a> large (newProbe + 3);</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;                <a class="code" href="classripple_1_1STAmount.html">STAmount</a> small (newProbe);</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                <a class="code" href="classripple_1_1STAmount.html">STAmount</a> large(newProbe + 3);</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;                <a class="code" href="classripple_1_1STAmount.html">STAmount</a> small(newProbe);</div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;                expect (<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a> (large, small, e10));</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;                expect (<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a> (large, small, e10+1) == (e10 &gt;= 20));</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;                expect(<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a>(large, small, e10));</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;                expect(<a class="code" href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">diffIsDust</a>(large, small, e10 + 1) == (e10 &gt;= 20));</div>
 <div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;                oldProbe = newProbe;</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                newProbe = oldProbe * 10;</div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                e10 += 1;</div>
 <div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;            } <span class="keywordflow">while</span> (newProbe &gt; oldProbe &amp;&amp;</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;                newProbe &lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits&lt;std::int64_t&gt;::max</a>());</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;                     newProbe &lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits&lt;std::int64_t&gt;::max</a>());</div>
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        }</div>
 <div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    }</div>
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
 <div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00102"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1CashDiff__test.html#a391c228ac95bca3845b7fecc6a6184cd">  102</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1test_1_1CashDiff__test.html#a391c228ac95bca3845b7fecc6a6184cd">run</a> ()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        <a class="code" href="classripple_1_1test_1_1CashDiff__test.html#a04a175da34a81dda330d66c7242c3de7">testDust</a>();</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    }</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;};</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">BEAST_DEFINE_TESTSUITE</a> (<a class="code" href="classripple_1_1CashDiff.html">CashDiff</a>, ledger, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;}  <span class="comment">// test</span></div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;}  <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00103"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1CashDiff__test.html#a391c228ac95bca3845b7fecc6a6184cd">  103</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1CashDiff__test.html#a391c228ac95bca3845b7fecc6a6184cd">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;        <a class="code" href="classripple_1_1test_1_1CashDiff__test.html#a04a175da34a81dda330d66c7242c3de7">testDust</a>();</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    }</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;};</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">BEAST_DEFINE_TESTSUITE</a>(<a class="code" href="classripple_1_1CashDiff.html">CashDiff</a>, ledger, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160; </div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1Issue_html"><div class="ttname"><a href="classripple_1_1Issue.html">ripple::Issue</a></div><div class="ttdoc">A currency issued by an account.</div><div class="ttdef"><b>Definition:</b> <a href="Issue_8h_source.html#l00034">Issue.h:34</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_html_a52909fdbfa7f29626f24005ed12e6ef4"><div class="ttname"><a href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">ripple::test::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(AccountDelete, app, ripple)</div></div>
-<div class="ttc" id="anamespaceripple_html_a5022744d40cb97c6d3608043ab876710"><div class="ttname"><a href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">ripple::diffIsDust</a></div><div class="ttdeci">bool diffIsDust(STAmount const &amp;v1, STAmount const &amp;v2, std::uint8_t e10=6)</div><div class="ttdef"><b>Definition:</b> <a href="CashDiff_8cpp_source.html#l00697">CashDiff.cpp:697</a></div></div>
-<div class="ttc" id="aclassripple_1_1CashDiff_html"><div class="ttname"><a href="classripple_1_1CashDiff.html">ripple::CashDiff</a></div><div class="ttdef"><b>Definition:</b> <a href="CashDiff_8h_source.html#l00061">CashDiff.h:61</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a5022744d40cb97c6d3608043ab876710"><div class="ttname"><a href="namespaceripple.html#a5022744d40cb97c6d3608043ab876710">ripple::diffIsDust</a></div><div class="ttdeci">bool diffIsDust(STAmount const &amp;v1, STAmount const &amp;v2, std::uint8_t e10=6)</div><div class="ttdef"><b>Definition:</b> <a href="CashDiff_8cpp_source.html#l00758">CashDiff.cpp:758</a></div></div>
+<div class="ttc" id="aclassripple_1_1CashDiff_html"><div class="ttname"><a href="classripple_1_1CashDiff.html">ripple::CashDiff</a></div><div class="ttdef"><b>Definition:</b> <a href="CashDiff_8h_source.html#l00060">CashDiff.h:60</a></div></div>
 <div class="ttc" id="ais_default_constructible_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_default_constructible.html">std::is_default_constructible</a></div></div>
 <div class="ttc" id="ais_move_constructible_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_move_constructible.html">std::is_nothrow_move_constructible</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1CashDiff__test_html"><div class="ttname"><a href="classripple_1_1test_1_1CashDiff__test.html">ripple::test::CashDiff_test</a></div><div class="ttdef"><b>Definition:</b> <a href="CashDiff__test_8cpp_source.html#l00028">CashDiff_test.cpp:28</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1CashDiff__test_html_a04a175da34a81dda330d66c7242c3de7"><div class="ttname"><a href="classripple_1_1test_1_1CashDiff__test.html#a04a175da34a81dda330d66c7242c3de7">ripple::test::CashDiff_test::testDust</a></div><div class="ttdeci">void testDust()</div><div class="ttdef"><b>Definition:</b> <a href="CashDiff__test_8cpp_source.html#l00038">CashDiff_test.cpp:38</a></div></div>
-<div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 160, detail::CurrencyTag &gt;</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1CashDiff__test_html_a391c228ac95bca3845b7fecc6a6184cd"><div class="ttname"><a href="classripple_1_1test_1_1CashDiff__test.html#a391c228ac95bca3845b7fecc6a6184cd">ripple::test::CashDiff_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="CashDiff__test_8cpp_source.html#l00102">CashDiff_test.cpp:102</a></div></div>
+<div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 160, detail::AccountIDTag &gt;</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1CashDiff__test_html_a391c228ac95bca3845b7fecc6a6184cd"><div class="ttname"><a href="classripple_1_1test_1_1CashDiff__test.html#a391c228ac95bca3845b7fecc6a6184cd">ripple::test::CashDiff_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="CashDiff__test_8cpp_source.html#l00103">CashDiff_test.cpp:103</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html"><div class="ttname"><a href="classripple_1_1STAmount.html">ripple::STAmount</a></div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00042">STAmount.h:42</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a></div></div>
 <div class="ttc" id="ais_copy_constructible_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_copy_constructible.html">std::is_copy_constructible</a></div></div>
 <div class="ttc" id="ais_move_assignable_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_move_assignable.html">std::is_move_assignable</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a8792cc3f99463ceba4e96dde34fe17a4"><div class="ttname"><a href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">ripple::Currency</a></div><div class="ttdeci">base_uint&lt; 160, detail::CurrencyTag &gt; Currency</div><div class="ttdoc">Currency is a hash representing a specific currency.</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8h_source.html#l00056">UintTypes.h:56</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="ais_copy_assignable_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_copy_assignable.html">std::is_copy_assignable</a></div></div>
 <div class="ttc" id="anumeric_limits_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits</a></div></div>

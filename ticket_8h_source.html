@@ -91,11 +91,11 @@ $(function() {
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_TEST_JTX_TICKET_H_INCLUDED</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_TEST_JTX_TICKET_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;test/jtx/Env.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;test/jtx/Account.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;test/jtx/owners.h&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;boost/optional.hpp&gt;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a>&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;boost/optional.hpp&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a>&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;test/jtx/Account.h&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;test/jtx/Env.h&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;test/jtx/owners.h&gt;</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">namespace </span>test {</div>
@@ -112,80 +112,81 @@ $(function() {
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="keyword">namespace </span>detail {</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#a733d878af1a26158e6eae063074a9b98">create</a> (Account <span class="keyword">const</span>&amp; account,</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    boost::optional&lt;Account&gt; <span class="keyword">const</span>&amp; target,</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        boost::optional&lt;std::uint32_t&gt; <span class="keyword">const</span>&amp; expire);</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="keyword">inline</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#a17d553ab5dd811a64e2fedfcf0120b76">   51</a></span>&#160;<a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#a17d553ab5dd811a64e2fedfcf0120b76">create_arg</a> (boost::optional&lt;Account&gt;&amp; opt,</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    boost::optional&lt;std::uint32_t&gt;&amp;,</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span>&amp; value)</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;{</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    opt = value;</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;}</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="keyword">inline</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00060"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#af40dda792077b9b60a8a212bf1166d31">   60</a></span>&#160;<a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#a17d553ab5dd811a64e2fedfcf0120b76">create_arg</a> (boost::optional&lt;Account&gt;&amp;,</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    boost::optional&lt;std::uint32_t&gt;&amp; opt,</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> value)</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;{</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    opt = value;</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;}</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">class </span>Arg, <span class="keyword">class</span>... Args&gt;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00069"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#ae8ec7b7de6fb7a01e1ab5904909f836f">   69</a></span>&#160;<a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#ae8ec7b7de6fb7a01e1ab5904909f836f">create_args</a>(boost::optional&lt;Account&gt;&amp; account_opt,</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    boost::optional&lt;std::uint32_t&gt;&amp; expire_opt,</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        Arg <span class="keyword">const</span>&amp; arg, Args <span class="keyword">const</span>&amp;... args)</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;{</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#a17d553ab5dd811a64e2fedfcf0120b76">create_arg</a>(account_opt, expire_opt, arg);</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keywordflow">if</span> constexpr (<span class="keyword">sizeof</span>...(args))</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#ae8ec7b7de6fb7a01e1ab5904909f836f">create_args</a>(account_opt, expire_opt, args...);</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;}</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;} <span class="comment">// detail</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span>... Args&gt;</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00083"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1ticket.html#a75ed175feb9074c14b5a810e30639ea2">   83</a></span>&#160;<a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket.html#a75ed175feb9074c14b5a810e30639ea2">create</a> (<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span>&amp; account,</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    Args <span class="keyword">const</span>&amp;... args)</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;{</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    boost::optional&lt;Account&gt; target;</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    boost::optional&lt;std::uint32_t&gt; expire;</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="keywordflow">if</span> constexpr (<span class="keyword">sizeof</span>...(args) &gt; 0)</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        <a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#ae8ec7b7de6fb7a01e1ab5904909f836f">detail::create_args</a>(target, expire, args...);</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#a733d878af1a26158e6eae063074a9b98">detail::create</a>(</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        account, target, expire);</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;}</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket.html#a5162b583cff4f2f815a67a8011fd55c4">cancel</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span>&amp; account, <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> &amp; ticketId);</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;} <span class="comment">// ticket</span></div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
-<div class="line"><a name="l00101"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx.html#ae64f812b5cb3805c184e07d6b1b643de">  101</a></span>&#160;<span class="keyword">using</span> <a class="code" href="classripple_1_1test_1_1jtx_1_1owner__count.html">tickets</a> = <a class="code" href="classripple_1_1test_1_1jtx_1_1owner__count.html">owner_count&lt;ltTICKET&gt;</a>;</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;} <span class="comment">// jtx</span></div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;} <span class="comment">// test</span></div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;} <span class="comment">// ripple</span></div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#a733d878af1a26158e6eae063074a9b98">create</a>(</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    Account <span class="keyword">const</span>&amp; account,</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    boost::optional&lt;Account&gt; <span class="keyword">const</span>&amp; target,</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    boost::optional&lt;std::uint32_t&gt; <span class="keyword">const</span>&amp; expire);</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#a17d553ab5dd811a64e2fedfcf0120b76">   51</a></span>&#160;<a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#a17d553ab5dd811a64e2fedfcf0120b76">create_arg</a>(</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    boost::optional&lt;Account&gt;&amp; opt,</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    boost::optional&lt;std::uint32_t&gt;&amp;,</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span>&amp; value)</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;{</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    opt = value;</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;}</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#af40dda792077b9b60a8a212bf1166d31">   60</a></span>&#160;<a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#a17d553ab5dd811a64e2fedfcf0120b76">create_arg</a>(</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    boost::optional&lt;Account&gt;&amp;,</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    boost::optional&lt;std::uint32_t&gt;&amp; opt,</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> value)</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;{</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    opt = value;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;}</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class </span>Arg, <span class="keyword">class</span>... Args&gt;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#ae8ec7b7de6fb7a01e1ab5904909f836f">   70</a></span>&#160;<a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#ae8ec7b7de6fb7a01e1ab5904909f836f">create_args</a>(</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    boost::optional&lt;Account&gt;&amp; account_opt,</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    boost::optional&lt;std::uint32_t&gt;&amp; expire_opt,</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    Arg <span class="keyword">const</span>&amp; arg,</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    Args <span class="keyword">const</span>&amp;... args)</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;{</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#a17d553ab5dd811a64e2fedfcf0120b76">create_arg</a>(account_opt, expire_opt, arg);</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keywordflow">if</span> constexpr (<span class="keyword">sizeof</span>...(args))</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#ae8ec7b7de6fb7a01e1ab5904909f836f">create_args</a>(account_opt, expire_opt, args...);</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;}</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;}  <span class="comment">// namespace detail</span></div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span>... Args&gt;</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00086"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1ticket.html#a75ed175feb9074c14b5a810e30639ea2">   86</a></span>&#160;<a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket.html#a75ed175feb9074c14b5a810e30639ea2">create</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span>&amp; account, Args <span class="keyword">const</span>&amp;... args)</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;{</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    boost::optional&lt;Account&gt; target;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    boost::optional&lt;std::uint32_t&gt; expire;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="keywordflow">if</span> constexpr (<span class="keyword">sizeof</span>...(args) &gt; 0)</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        <a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#ae8ec7b7de6fb7a01e1ab5904909f836f">detail::create_args</a>(target, expire, args...);</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#a733d878af1a26158e6eae063074a9b98">detail::create</a>(account, target, expire);</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;}</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<a class="code" href="namespaceripple_1_1test_1_1jtx_1_1ticket.html#a494cd4eaeaa52c36d83e9f96c3dec511">cancel</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span>&amp; account, <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; ticketId);</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;}  <span class="comment">// namespace ticket</span></div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
+<div class="line"><a name="l00102"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx.html#ae64f812b5cb3805c184e07d6b1b643de">  102</a></span>&#160;<span class="keyword">using</span> <a class="code" href="classripple_1_1test_1_1jtx_1_1owner__count.html">tickets</a> = <a class="code" href="classripple_1_1test_1_1jtx_1_1owner__count.html">owner_count&lt;ltTICKET&gt;</a>;</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;}  <span class="comment">// namespace jtx</span></div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail_html_a17d553ab5dd811a64e2fedfcf0120b76"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#a17d553ab5dd811a64e2fedfcf0120b76">ripple::test::jtx::ticket::detail::create_arg</a></div><div class="ttdeci">void create_arg(boost::optional&lt; Account &gt; &amp;opt, boost::optional&lt; std::uint32_t &gt; &amp;, Account const &amp;value)</div><div class="ttdef"><b>Definition:</b> <a href="ticket_8h_source.html#l00051">ticket.h:51</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1ticket_html_a5162b583cff4f2f815a67a8011fd55c4"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1ticket.html#a5162b583cff4f2f815a67a8011fd55c4">ripple::test::jtx::ticket::cancel</a></div><div class="ttdeci">Json::Value cancel(Account const &amp;account, std::string const &amp;ticketId)</div><div class="ttdoc">Cancel a ticket.</div><div class="ttdef"><b>Definition:</b> <a href="ticket_8cpp_source.html#l00049">ticket.cpp:49</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail_html_a733d878af1a26158e6eae063074a9b98"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#a733d878af1a26158e6eae063074a9b98">ripple::test::jtx::ticket::detail::create</a></div><div class="ttdeci">Json::Value create(Account const &amp;account, boost::optional&lt; Account &gt; const &amp;target, boost::optional&lt; std::uint32_t &gt; const &amp;expire)</div><div class="ttdef"><b>Definition:</b> <a href="ticket_8cpp_source.html#l00032">ticket.cpp:32</a></div></div>
 <div class="ttc" id="acstdint_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1ticket_html_a494cd4eaeaa52c36d83e9f96c3dec511"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1ticket.html#a494cd4eaeaa52c36d83e9f96c3dec511">ripple::test::jtx::ticket::cancel</a></div><div class="ttdeci">Json::Value cancel(Account const &amp;account, std::string const &amp;ticketId)</div><div class="ttdoc">Cancel a ticket.</div><div class="ttdef"><b>Definition:</b> <a href="ticket_8cpp_source.html#l00050">ticket.cpp:50</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1ticket_html_a75ed175feb9074c14b5a810e30639ea2"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1ticket.html#a75ed175feb9074c14b5a810e30639ea2">ripple::test::jtx::ticket::create</a></div><div class="ttdeci">Json::Value create(Account const &amp;account, Args const &amp;... args)</div><div class="ttdoc">Create a ticket.</div><div class="ttdef"><b>Definition:</b> <a href="ticket_8h_source.html#l00083">ticket.h:83</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1ticket_html_a75ed175feb9074c14b5a810e30639ea2"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1ticket.html#a75ed175feb9074c14b5a810e30639ea2">ripple::test::jtx::ticket::create</a></div><div class="ttdeci">Json::Value create(Account const &amp;account, Args const &amp;... args)</div><div class="ttdoc">Create a ticket.</div><div class="ttdef"><b>Definition:</b> <a href="ticket_8h_source.html#l00086">ticket.h:86</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Account_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Account.html">ripple::test::jtx::Account</a></div><div class="ttdoc">Immutable cryptographic account descriptor.</div><div class="ttdef"><b>Definition:</b> <a href="Account_8h_source.html#l00037">Account.h:37</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail_html_ae8ec7b7de6fb7a01e1ab5904909f836f"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#ae8ec7b7de6fb7a01e1ab5904909f836f">ripple::test::jtx::ticket::detail::create_args</a></div><div class="ttdeci">void create_args(boost::optional&lt; Account &gt; &amp;account_opt, boost::optional&lt; std::uint32_t &gt; &amp;expire_opt, Arg const &amp;arg, Args const &amp;... args)</div><div class="ttdef"><b>Definition:</b> <a href="ticket_8h_source.html#l00069">ticket.h:69</a></div></div>
-<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00141">json_value.h:141</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1owner__count_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1owner__count.html">ripple::test::jtx::owner_count</a></div><div class="ttdef"><b>Definition:</b> <a href="owners_8h_source.html#l00050">owners.h:50</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail_html_ae8ec7b7de6fb7a01e1ab5904909f836f"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1ticket_1_1detail.html#ae8ec7b7de6fb7a01e1ab5904909f836f">ripple::test::jtx::ticket::detail::create_args</a></div><div class="ttdeci">void create_args(boost::optional&lt; Account &gt; &amp;account_opt, boost::optional&lt; std::uint32_t &gt; &amp;expire_opt, Arg const &amp;arg, Args const &amp;... args)</div><div class="ttdef"><b>Definition:</b> <a href="ticket_8h_source.html#l00070">ticket.h:70</a></div></div>
+<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00145">json_value.h:145</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1owner__count_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1owner__count.html">ripple::test::jtx::owner_count</a></div><div class="ttdef"><b>Definition:</b> <a href="owners_8h_source.html#l00049">owners.h:49</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

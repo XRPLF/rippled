@@ -88,297 +88,294 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/app/paths/PathRequests.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/app/ledger/LedgerMaster.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/app/main/Application.h&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/app/ledger/LedgerMaster.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/app/main/Application.h&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/app/paths/PathRequests.h&gt;</span></div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/Log.h&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/core/JobQueue.h&gt;</span></div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/net/RPCErr.h&gt;</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/ErrorCodes.h&gt;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;ripple/resource/Fees.h&gt;</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/jss.h&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/jss.h&gt;</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;ripple/resource/Fees.h&gt;</span></div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a>&gt;</span></div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;RippleLineCache&gt;</a></div>
-<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="classripple_1_1PathRequests.html#a64a0b811c9416a7d0b7e8626ac797988">   37</a></span>&#160;<a class="code" href="classripple_1_1PathRequests.html#a64a0b811c9416a7d0b7e8626ac797988">PathRequests::getLineCache</a> (</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr &lt;ReadView const&gt;</a> <span class="keyword">const</span>&amp; ledger,</div>
+<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="classripple_1_1PathRequests.html#a64a0b811c9416a7d0b7e8626ac797988">   37</a></span>&#160;<a class="code" href="classripple_1_1PathRequests.html#a64a0b811c9416a7d0b7e8626ac797988">PathRequests::getLineCache</a>(</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> <span class="keyword">const</span>&amp; ledger,</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keywordtype">bool</span> authoritative)</div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;{</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> sl (<a class="code" href="classripple_1_1PathRequests.html#a68ee0429f702b083830f982b98518aad">mLock</a>);</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> sl(<a class="code" href="classripple_1_1PathRequests.html#a68ee0429f702b083830f982b98518aad">mLock</a>);</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> lineSeq = <a class="code" href="classripple_1_1PathRequests.html#a8f0fe9996c8a483043110c02a6e7ffd2">mLineCache</a> ? <a class="code" href="classripple_1_1PathRequests.html#a8f0fe9996c8a483043110c02a6e7ffd2">mLineCache</a>-&gt;getLedger()-&gt;seq() : 0;</div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> lgrSeq = ledger-&gt;seq();</div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keywordflow">if</span> ( (lineSeq == 0) ||                                 <span class="comment">// no ledger</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;         (authoritative &amp;&amp; (lgrSeq &gt; lineSeq)) ||          <span class="comment">// newer authoritative ledger</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;         (authoritative &amp;&amp; ((lgrSeq + 8)  &lt; lineSeq)) ||   <span class="comment">// we jumped way back for some reason</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;         (lgrSeq &gt; (lineSeq + 8)))                         <span class="comment">// we jumped way forward for some reason</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    {</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <a class="code" href="classripple_1_1PathRequests.html#a8f0fe9996c8a483043110c02a6e7ffd2">mLineCache</a> = std::make_shared&lt;RippleLineCache&gt; (ledger);</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    }</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classripple_1_1PathRequests.html#a8f0fe9996c8a483043110c02a6e7ffd2">mLineCache</a>;</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;}</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno"><a class="line" href="classripple_1_1PathRequests.html#a3cfce7f0a24bb682ea2bfd44904fefce">   56</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classripple_1_1PathRequests.html#a3cfce7f0a24bb682ea2bfd44904fefce">PathRequests::updateAll</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr &lt;ReadView const&gt;</a> <span class="keyword">const</span>&amp; inLedger,</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;                              <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">Job::CancelCallback</a> shouldCancel)</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;{</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keyword">auto</span> <span class="keyword">event</span> =</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>.<a class="code" href="classripple_1_1Application.html#a860be08979e27d8c6f37f722f996ba6c">getJobQueue</a>().<a class="code" href="classripple_1_1JobQueue.html#aaacda2b13f6602a6db919fdc2a8bcdec">makeLoadEvent</a>(</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            <a class="code" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17aa45d646c1a9b70027d5f9f46458203942">jtPATH_FIND</a>, <span class="stringliteral">&quot;PathRequest::updateAll&quot;</span>);</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;PathRequest::wptr&gt;</a> requests;</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;RippleLineCache&gt;</a> cache;</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="comment">// Get the ledger and cache we should be using</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    {</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> sl (<a class="code" href="classripple_1_1PathRequests.html#a68ee0429f702b083830f982b98518aad">mLock</a>);</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        requests = <a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>;</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        cache = <a class="code" href="classripple_1_1PathRequests.html#a64a0b811c9416a7d0b7e8626ac797988">getLineCache</a> (inLedger, <span class="keyword">true</span>);</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    }</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keywordtype">bool</span> newRequests = <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>.<a class="code" href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">getLedgerMaster</a>().<a class="code" href="classripple_1_1LedgerMaster.html#a415ac9258f2c2e1158d5f421b1742647">isNewPathRequest</a>();</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keywordtype">bool</span> mustBreak = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    JLOG (<a class="code" href="classripple_1_1PathRequests.html#a080d6496fd6e6ed848fd11351f5021cf">mJournal</a>.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <span class="stringliteral">&quot;updateAll seq=&quot;</span> &lt;&lt; cache-&gt;getLedger()-&gt;seq() &lt;&lt;</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="stringliteral">&quot;, &quot;</span> &lt;&lt; requests.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>() &lt;&lt; <span class="stringliteral">&quot; requests&quot;</span>;</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keywordtype">int</span> processed = 0, removed = 0;</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keywordflow">do</span></div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    {</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; wr : requests)</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        {</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            <span class="keywordflow">if</span> (shouldCancel())</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            <span class="keyword">auto</span> request = wr.lock ();</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            <span class="keywordtype">bool</span> remove = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            <span class="keywordflow">if</span> (request)</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            {</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                <span class="keywordflow">if</span> (!request-&gt;needsUpdate (newRequests, cache-&gt;getLedger()-&gt;seq()))</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                    remove = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;                {</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;                    <span class="keywordflow">if</span> (<span class="keyword">auto</span> ipSub = request-&gt;getSubscriber ())</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                    {</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;                        <span class="keywordflow">if</span> (!ipSub-&gt;getConsumer ().warn ())</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;                        {</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;                            <a class="code" href="classJson_1_1Value.html">Json::Value</a> update = request-&gt;doUpdate (cache, <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;                            request-&gt;updateComplete ();</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;                            update[jss::type] = <span class="stringliteral">&quot;path_find&quot;</span>;</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;                            ipSub-&gt;send (update, <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                            remove = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;                            ++processed;</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                        }</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                    }</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (request-&gt;hasCompletion ())</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;                    {</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                        <span class="comment">// One-shot request with completion function</span></div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;                        request-&gt;doUpdate (cache, <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;                        request-&gt;updateComplete();</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;                        ++processed;</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;                    }</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;                }</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            }</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160; </div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            <span class="keywordflow">if</span> (remove)</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            {</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> sl (<a class="code" href="classripple_1_1PathRequests.html#a68ee0429f702b083830f982b98518aad">mLock</a>);</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160; </div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;                <span class="comment">// Remove any dangling weak pointers or weak</span></div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;                <span class="comment">// pointers that refer to this path request.</span></div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;                <span class="keyword">auto</span> ret = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/remove.html">std::remove_if</a> (</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;                    <a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>.begin(), <a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>.end(),</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;                    [&amp;removed,&amp;request](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; wl)</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;                    {</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;                        auto r = wl.lock();</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;                        if (r &amp;&amp; r != request)</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                            return false;</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                        ++removed;</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;                        return true;</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;                    });</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160; </div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                <a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>.erase (ret, <a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>.end());</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;            }</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keywordflow">if</span> ((lineSeq == 0) ||                         <span class="comment">// no ledger</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        (authoritative &amp;&amp; (lgrSeq &gt; lineSeq)) ||  <span class="comment">// newer authoritative ledger</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        (authoritative &amp;&amp;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;         ((lgrSeq + 8) &lt; lineSeq)) ||  <span class="comment">// we jumped way back for some reason</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        (lgrSeq &gt; (lineSeq + 8)))      <span class="comment">// we jumped way forward for some reason</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    {</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <a class="code" href="classripple_1_1PathRequests.html#a8f0fe9996c8a483043110c02a6e7ffd2">mLineCache</a> = std::make_shared&lt;RippleLineCache&gt;(ledger);</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    }</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classripple_1_1PathRequests.html#a8f0fe9996c8a483043110c02a6e7ffd2">mLineCache</a>;</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;}</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="classripple_1_1PathRequests.html#a3cfce7f0a24bb682ea2bfd44904fefce">   58</a></span>&#160;<a class="code" href="classripple_1_1PathRequests.html#a3cfce7f0a24bb682ea2bfd44904fefce">PathRequests::updateAll</a>(</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> <span class="keyword">const</span>&amp; inLedger,</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">Job::CancelCallback</a> shouldCancel)</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;{</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keyword">auto</span> <span class="keyword">event</span> =</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>.<a class="code" href="classripple_1_1Application.html#a860be08979e27d8c6f37f722f996ba6c">getJobQueue</a>().<a class="code" href="classripple_1_1JobQueue.html#aaacda2b13f6602a6db919fdc2a8bcdec">makeLoadEvent</a>(<a class="code" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17aa45d646c1a9b70027d5f9f46458203942">jtPATH_FIND</a>, <span class="stringliteral">&quot;PathRequest::updateAll&quot;</span>);</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;PathRequest::wptr&gt;</a> requests;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;RippleLineCache&gt;</a> cache;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="comment">// Get the ledger and cache we should be using</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    {</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> sl(<a class="code" href="classripple_1_1PathRequests.html#a68ee0429f702b083830f982b98518aad">mLock</a>);</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        requests = <a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        cache = <a class="code" href="classripple_1_1PathRequests.html#a64a0b811c9416a7d0b7e8626ac797988">getLineCache</a>(inLedger, <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    }</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keywordtype">bool</span> newRequests = <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>.<a class="code" href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">getLedgerMaster</a>().<a class="code" href="classripple_1_1LedgerMaster.html#a415ac9258f2c2e1158d5f421b1742647">isNewPathRequest</a>();</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keywordtype">bool</span> mustBreak = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    JLOG(<a class="code" href="classripple_1_1PathRequests.html#a080d6496fd6e6ed848fd11351f5021cf">mJournal</a>.<a class="code" href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">trace</a>()) &lt;&lt; <span class="stringliteral">&quot;updateAll seq=&quot;</span> &lt;&lt; cache-&gt;getLedger()-&gt;seq()</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;                           &lt;&lt; <span class="stringliteral">&quot;, &quot;</span> &lt;&lt; requests.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>() &lt;&lt; <span class="stringliteral">&quot; requests&quot;</span>;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keywordtype">int</span> processed = 0, removed = 0;</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keywordflow">do</span></div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    {</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; wr : requests)</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        {</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;            <span class="keywordflow">if</span> (shouldCancel())</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;                <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            <span class="keyword">auto</span> request = wr.lock();</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            <span class="keywordtype">bool</span> remove = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            <span class="keywordflow">if</span> (request)</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;            {</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                <span class="keywordflow">if</span> (!request-&gt;needsUpdate(</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                        newRequests, cache-&gt;getLedger()-&gt;seq()))</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;                    remove = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;                <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                {</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;                    <span class="keywordflow">if</span> (<span class="keyword">auto</span> ipSub = request-&gt;getSubscriber())</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;                    {</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;                        <span class="keywordflow">if</span> (!ipSub-&gt;getConsumer().warn())</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;                        {</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;                            <a class="code" href="classJson_1_1Value.html">Json::Value</a> update =</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;                                request-&gt;doUpdate(cache, <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                            request-&gt;updateComplete();</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;                            update[jss::type] = <span class="stringliteral">&quot;path_find&quot;</span>;</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                            ipSub-&gt;send(update, <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                            remove = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                            ++processed;</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;                        }</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                    }</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;                    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (request-&gt;hasCompletion())</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;                    {</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;                        <span class="comment">// One-shot request with completion function</span></div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;                        request-&gt;doUpdate(cache, <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;                        request-&gt;updateComplete();</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;                        ++processed;</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;                    }</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;                }</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            }</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160; </div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            <span class="keywordflow">if</span> (remove)</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            {</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> sl(<a class="code" href="classripple_1_1PathRequests.html#a68ee0429f702b083830f982b98518aad">mLock</a>);</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160; </div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;                <span class="comment">// Remove any dangling weak pointers or weak</span></div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;                <span class="comment">// pointers that refer to this path request.</span></div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;                <span class="keyword">auto</span> ret = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/remove.html">std::remove_if</a>(</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;                    <a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>.begin(),</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;                    <a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>.end(),</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;                    [&amp;removed, &amp;request](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; wl) {</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                        auto r = wl.lock();</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160; </div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;                        if (r &amp;&amp; r != request)</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;                            return false;</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                        ++removed;</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                        return true;</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;                    });</div>
 <div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160; </div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;            mustBreak = !newRequests &amp;&amp;</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>.<a class="code" href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">getLedgerMaster</a>().<a class="code" href="classripple_1_1LedgerMaster.html#a415ac9258f2c2e1158d5f421b1742647">isNewPathRequest</a>();</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                <a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>.erase(ret, <a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>.end());</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;            }</div>
 <div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160; </div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;            <span class="comment">// We weren&#39;t handling new requests and then</span></div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;            <span class="comment">// there was a new request</span></div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;            <span class="keywordflow">if</span> (mustBreak)</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160; </div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        }</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160; </div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        <span class="keywordflow">if</span> (mustBreak)</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        { <span class="comment">// a new request came in while we were working</span></div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            newRequests = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        }</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (newRequests)</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        { <span class="comment">// we only did new requests, so we always need a last pass</span></div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;            newRequests = <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>.<a class="code" href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">getLedgerMaster</a>().<a class="code" href="classripple_1_1LedgerMaster.html#a415ac9258f2c2e1158d5f421b1742647">isNewPathRequest</a>();</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;        }</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;        { <span class="comment">// if there are no new requests, we are done</span></div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;            newRequests = <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>.<a class="code" href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">getLedgerMaster</a>().<a class="code" href="classripple_1_1LedgerMaster.html#a415ac9258f2c2e1158d5f421b1742647">isNewPathRequest</a>();</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;            <span class="keywordflow">if</span> (!newRequests)</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;                <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        }</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160; </div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;        {</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;            <span class="comment">// Get the latest requests, cache, and ledger for next pass</span></div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> sl (<a class="code" href="classripple_1_1PathRequests.html#a68ee0429f702b083830f982b98518aad">mLock</a>);</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160; </div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;            <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>.empty())</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;                <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;            requests = <a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>;</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;            cache = <a class="code" href="classripple_1_1PathRequests.html#a64a0b811c9416a7d0b7e8626ac797988">getLineCache</a> (cache-&gt;getLedger(), <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;        }</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    }</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;    <span class="keywordflow">while</span> (!shouldCancel ());</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160; </div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    JLOG (<a class="code" href="classripple_1_1PathRequests.html#a080d6496fd6e6ed848fd11351f5021cf">mJournal</a>.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt;</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;        <span class="stringliteral">&quot;updateAll complete: &quot;</span> &lt;&lt; processed &lt;&lt; <span class="stringliteral">&quot; processed and &quot;</span> &lt;&lt;</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        removed &lt;&lt; <span class="stringliteral">&quot; removed&quot;</span>;</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;            mustBreak =</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;                !newRequests &amp;&amp; <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>.<a class="code" href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">getLedgerMaster</a>().<a class="code" href="classripple_1_1LedgerMaster.html#a415ac9258f2c2e1158d5f421b1742647">isNewPathRequest</a>();</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160; </div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;            <span class="comment">// We weren&#39;t handling new requests and then</span></div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;            <span class="comment">// there was a new request</span></div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;            <span class="keywordflow">if</span> (mustBreak)</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        }</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160; </div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;        <span class="keywordflow">if</span> (mustBreak)</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        {  <span class="comment">// a new request came in while we were working</span></div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;            newRequests = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        }</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (newRequests)</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;        {  <span class="comment">// we only did new requests, so we always need a last pass</span></div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;            newRequests = <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>.<a class="code" href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">getLedgerMaster</a>().<a class="code" href="classripple_1_1LedgerMaster.html#a415ac9258f2c2e1158d5f421b1742647">isNewPathRequest</a>();</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;        }</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        {  <span class="comment">// if there are no new requests, we are done</span></div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;            newRequests = <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>.<a class="code" href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">getLedgerMaster</a>().<a class="code" href="classripple_1_1LedgerMaster.html#a415ac9258f2c2e1158d5f421b1742647">isNewPathRequest</a>();</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;            <span class="keywordflow">if</span> (!newRequests)</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;                <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;        }</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160; </div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;        {</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;            <span class="comment">// Get the latest requests, cache, and ledger for next pass</span></div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> sl(<a class="code" href="classripple_1_1PathRequests.html#a68ee0429f702b083830f982b98518aad">mLock</a>);</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160; </div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;            <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>.empty())</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;                <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;            requests = <a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>;</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;            cache = <a class="code" href="classripple_1_1PathRequests.html#a64a0b811c9416a7d0b7e8626ac797988">getLineCache</a>(cache-&gt;getLedger(), <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        }</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    } <span class="keywordflow">while</span> (!shouldCancel());</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160; </div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    JLOG(<a class="code" href="classripple_1_1PathRequests.html#a080d6496fd6e6ed848fd11351f5021cf">mJournal</a>.<a class="code" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;updateAll complete: &quot;</span> &lt;&lt; processed</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;                           &lt;&lt; <span class="stringliteral">&quot; processed and &quot;</span> &lt;&lt; removed &lt;&lt; <span class="stringliteral">&quot; removed&quot;</span>;</div>
 <div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;}</div>
 <div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160; </div>
-<div class="line"><a name="l00183"></a><span class="lineno"><a class="line" href="classripple_1_1PathRequests.html#a24fd90cae36b8e167747c784fe1edee1">  183</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classripple_1_1PathRequests.html#a24fd90cae36b8e167747c784fe1edee1">PathRequests::insertPathRequest</a> (</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">PathRequest::pointer</a> <span class="keyword">const</span>&amp; req)</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00184"></a><span class="lineno"><a class="line" href="classripple_1_1PathRequests.html#a24fd90cae36b8e167747c784fe1edee1">  184</a></span>&#160;<a class="code" href="classripple_1_1PathRequests.html#a24fd90cae36b8e167747c784fe1edee1">PathRequests::insertPathRequest</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">PathRequest::pointer</a> <span class="keyword">const</span>&amp; req)</div>
 <div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;{</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> sl (<a class="code" href="classripple_1_1PathRequests.html#a68ee0429f702b083830f982b98518aad">mLock</a>);</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> sl(<a class="code" href="classripple_1_1PathRequests.html#a68ee0429f702b083830f982b98518aad">mLock</a>);</div>
 <div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160; </div>
 <div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    <span class="comment">// Insert after any older unserviced requests but before</span></div>
 <div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    <span class="comment">// any serviced requests</span></div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <span class="keyword">auto</span> ret = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find_if</a> (</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;        <a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>.begin(), <a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>.end(),</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;        [](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; wl)</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;        {</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;            auto r = wl.lock();</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160; </div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;            <span class="comment">// We come before handled requests</span></div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;            return r &amp;&amp; !r-&gt;isNew();</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;        });</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160; </div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;    <a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>.emplace (ret, req);</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;}</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160; </div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;<span class="comment">// Make a new-style path_find request</span></div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00205"></a><span class="lineno"><a class="line" href="classripple_1_1PathRequests.html#ae228eae659934054c57398942f84b8de">  205</a></span>&#160;<a class="code" href="classripple_1_1PathRequests.html#ae228eae659934054c57398942f84b8de">PathRequests::makePathRequest</a>(</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr &lt;InfoSub&gt;</a> <span class="keyword">const</span>&amp; subscriber,</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> <span class="keyword">const</span>&amp; inLedger,</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; requestJson)</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;{</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    <span class="keyword">auto</span> req = std::make_shared&lt;PathRequest&gt; (</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>, subscriber, ++<a class="code" href="classripple_1_1PathRequests.html#a9609fcd5db4a93b58fada556eb8e0b21">mLastIdentifier</a>, *<span class="keyword">this</span>, <a class="code" href="classripple_1_1PathRequests.html#a080d6496fd6e6ed848fd11351f5021cf">mJournal</a>);</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160; </div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;    <span class="keyword">auto</span> [valid, jvRes] = req-&gt;doCreate (</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;        <a class="code" href="classripple_1_1PathRequests.html#a64a0b811c9416a7d0b7e8626ac797988">getLineCache</a> (inLedger, <span class="keyword">false</span>), requestJson);</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160; </div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    <span class="keywordflow">if</span> (valid)</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;    {</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;        subscriber-&gt;setPathRequest (req);</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;        <a class="code" href="classripple_1_1PathRequests.html#a24fd90cae36b8e167747c784fe1edee1">insertPathRequest</a> (req);</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;        <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>.<a class="code" href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">getLedgerMaster</a>().<a class="code" href="classripple_1_1LedgerMaster.html#ac705ef7b40ff1e783ad35bce97f0694e">newPathRequest</a>();</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;    }</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;    <span class="keywordflow">return</span> std::move (jvRes);</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;}</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160; </div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;<span class="comment">// Make an old-style ripple_path_find request</span></div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00227"></a><span class="lineno"><a class="line" href="classripple_1_1PathRequests.html#a23ebbccfd572bef7bf7f88792c0eb165">  227</a></span>&#160;<a class="code" href="classripple_1_1PathRequests.html#a23ebbccfd572bef7bf7f88792c0eb165">PathRequests::makeLegacyPathRequest</a>(</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">PathRequest::pointer</a>&amp; req,</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a> &lt;<span class="keywordtype">void</span> (<span class="keywordtype">void</span>)&gt; completion,</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    <a class="code" href="classripple_1_1Resource_1_1Consumer.html">Resource::Consumer</a>&amp; consumer,</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> <span class="keyword">const</span>&amp; inLedger,</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; request)</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;{</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    <span class="comment">// This assignment must take place before the</span></div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    <span class="comment">// completion function is called</span></div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    req = std::make_shared&lt;PathRequest&gt; (</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>, completion, consumer, ++<a class="code" href="classripple_1_1PathRequests.html#a9609fcd5db4a93b58fada556eb8e0b21">mLastIdentifier</a>,</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;            *<span class="keyword">this</span>, <a class="code" href="classripple_1_1PathRequests.html#a080d6496fd6e6ed848fd11351f5021cf">mJournal</a>);</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160; </div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    <span class="keyword">auto</span> [valid, jvRes] = req-&gt;doCreate(<a class="code" href="classripple_1_1PathRequests.html#a64a0b811c9416a7d0b7e8626ac797988">getLineCache</a>(inLedger, <span class="keyword">false</span>), request);</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160; </div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;    <span class="keywordflow">if</span> (!valid)</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;    {</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;        req.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr/reset.html">reset</a>();</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    }</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    {</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;        <a class="code" href="classripple_1_1PathRequests.html#a24fd90cae36b8e167747c784fe1edee1">insertPathRequest</a> (req);</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;        <span class="keywordflow">if</span> (! <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>.<a class="code" href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">getLedgerMaster</a>().<a class="code" href="classripple_1_1LedgerMaster.html#ac705ef7b40ff1e783ad35bce97f0694e">newPathRequest</a>())</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        {</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;            <span class="comment">// The newPathRequest failed.  Tell the caller.</span></div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;            jvRes = <a class="code" href="namespaceripple.html#ab114d40490d1a6a0ab2fa6053167d461">rpcError</a> (<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a41779a85a65f6faeb648c960e77f388f">rpcTOO_BUSY</a>);</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;            req.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr/reset.html">reset</a>();</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        }</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    }</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <span class="keyword">auto</span> ret =</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find_if</a>(<a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>.begin(), <a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>.end(), [](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; wl) {</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;            auto r = wl.lock();</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160; </div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;            <span class="comment">// We come before handled requests</span></div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;            return r &amp;&amp; !r-&gt;isNew();</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;        });</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160; </div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;    <a class="code" href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">requests_</a>.emplace(ret, req);</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;}</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160; </div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;<span class="comment">// Make a new-style path_find request</span></div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00203"></a><span class="lineno"><a class="line" href="classripple_1_1PathRequests.html#ae228eae659934054c57398942f84b8de">  203</a></span>&#160;<a class="code" href="classripple_1_1PathRequests.html#ae228eae659934054c57398942f84b8de">PathRequests::makePathRequest</a>(</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;InfoSub&gt;</a> <span class="keyword">const</span>&amp; subscriber,</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> <span class="keyword">const</span>&amp; inLedger,</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; requestJson)</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;{</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    <span class="keyword">auto</span> req = std::make_shared&lt;PathRequest&gt;(</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;        <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>, subscriber, ++<a class="code" href="classripple_1_1PathRequests.html#a9609fcd5db4a93b58fada556eb8e0b21">mLastIdentifier</a>, *<span class="keyword">this</span>, <a class="code" href="classripple_1_1PathRequests.html#a080d6496fd6e6ed848fd11351f5021cf">mJournal</a>);</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160; </div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;    <span class="keyword">auto</span> [valid, jvRes] =</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;        req-&gt;doCreate(<a class="code" href="classripple_1_1PathRequests.html#a64a0b811c9416a7d0b7e8626ac797988">getLineCache</a>(inLedger, <span class="keyword">false</span>), requestJson);</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160; </div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    <span class="keywordflow">if</span> (valid)</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    {</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;        subscriber-&gt;setPathRequest(req);</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;        <a class="code" href="classripple_1_1PathRequests.html#a24fd90cae36b8e167747c784fe1edee1">insertPathRequest</a>(req);</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;        <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>.<a class="code" href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">getLedgerMaster</a>().<a class="code" href="classripple_1_1LedgerMaster.html#ac705ef7b40ff1e783ad35bce97f0694e">newPathRequest</a>();</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;    }</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;    <span class="keywordflow">return</span> std::move(jvRes);</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;}</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160; </div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;<span class="comment">// Make an old-style ripple_path_find request</span></div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00225"></a><span class="lineno"><a class="line" href="classripple_1_1PathRequests.html#a23ebbccfd572bef7bf7f88792c0eb165">  225</a></span>&#160;<a class="code" href="classripple_1_1PathRequests.html#a23ebbccfd572bef7bf7f88792c0eb165">PathRequests::makeLegacyPathRequest</a>(</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">PathRequest::pointer</a>&amp; req,</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;<span class="keywordtype">void</span>(<span class="keywordtype">void</span>)&gt; completion,</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;    <a class="code" href="classripple_1_1Resource_1_1Consumer.html">Resource::Consumer</a>&amp; consumer,</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> <span class="keyword">const</span>&amp; inLedger,</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; request)</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;{</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    <span class="comment">// This assignment must take place before the</span></div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;    <span class="comment">// completion function is called</span></div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    req = std::make_shared&lt;PathRequest&gt;(</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;        <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>, completion, consumer, ++<a class="code" href="classripple_1_1PathRequests.html#a9609fcd5db4a93b58fada556eb8e0b21">mLastIdentifier</a>, *<span class="keyword">this</span>, <a class="code" href="classripple_1_1PathRequests.html#a080d6496fd6e6ed848fd11351f5021cf">mJournal</a>);</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160; </div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    <span class="keyword">auto</span> [valid, jvRes] = req-&gt;doCreate(<a class="code" href="classripple_1_1PathRequests.html#a64a0b811c9416a7d0b7e8626ac797988">getLineCache</a>(inLedger, <span class="keyword">false</span>), request);</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160; </div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    <span class="keywordflow">if</span> (!valid)</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    {</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;        req.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr/reset.html">reset</a>();</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;    }</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;    {</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;        <a class="code" href="classripple_1_1PathRequests.html#a24fd90cae36b8e167747c784fe1edee1">insertPathRequest</a>(req);</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>.<a class="code" href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">getLedgerMaster</a>().<a class="code" href="classripple_1_1LedgerMaster.html#ac705ef7b40ff1e783ad35bce97f0694e">newPathRequest</a>())</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        {</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;            <span class="comment">// The newPathRequest failed.  Tell the caller.</span></div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;            jvRes = <a class="code" href="namespaceripple.html#ab114d40490d1a6a0ab2fa6053167d461">rpcError</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a41779a85a65f6faeb648c960e77f388f">rpcTOO_BUSY</a>);</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;            req.<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr/reset.html">reset</a>();</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        }</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    }</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    <span class="keywordflow">return</span> std::move(jvRes);</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;}</div>
 <div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160; </div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    <span class="keywordflow">return</span> std::move (jvRes);</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;}</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160; </div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00261"></a><span class="lineno"><a class="line" href="classripple_1_1PathRequests.html#a3362fa140c79ff1c4daeee1b680ba401">  261</a></span>&#160;<a class="code" href="classripple_1_1PathRequests.html#a3362fa140c79ff1c4daeee1b680ba401">PathRequests::doLegacyPathRequest</a> (</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;        <a class="code" href="classripple_1_1Resource_1_1Consumer.html">Resource::Consumer</a>&amp; consumer,</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> <span class="keyword">const</span>&amp; inLedger,</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; request)</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;{</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;    <span class="keyword">auto</span> cache = std::make_shared&lt;RippleLineCache&gt; (inLedger);</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00258"></a><span class="lineno"><a class="line" href="classripple_1_1PathRequests.html#a3362fa140c79ff1c4daeee1b680ba401">  258</a></span>&#160;<a class="code" href="classripple_1_1PathRequests.html#a3362fa140c79ff1c4daeee1b680ba401">PathRequests::doLegacyPathRequest</a>(</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;    <a class="code" href="classripple_1_1Resource_1_1Consumer.html">Resource::Consumer</a>&amp; consumer,</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> <span class="keyword">const</span>&amp; inLedger,</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; request)</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;{</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    <span class="keyword">auto</span> cache = std::make_shared&lt;RippleLineCache&gt;(inLedger);</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160; </div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    <span class="keyword">auto</span> req = std::make_shared&lt;PathRequest&gt;(</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;        <a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>, [] {}, consumer, ++<a class="code" href="classripple_1_1PathRequests.html#a9609fcd5db4a93b58fada556eb8e0b21">mLastIdentifier</a>, *<span class="keyword">this</span>, <a class="code" href="classripple_1_1PathRequests.html#a080d6496fd6e6ed848fd11351f5021cf">mJournal</a>);</div>
 <div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160; </div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    <span class="keyword">auto</span> req = std::make_shared&lt;PathRequest&gt; (<a class="code" href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">app_</a>, []{},</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;        consumer, ++<a class="code" href="classripple_1_1PathRequests.html#a9609fcd5db4a93b58fada556eb8e0b21">mLastIdentifier</a>, *<span class="keyword">this</span>, <a class="code" href="classripple_1_1PathRequests.html#a080d6496fd6e6ed848fd11351f5021cf">mJournal</a>);</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160; </div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <span class="keyword">auto</span> [valid, jvRes] = req-&gt;doCreate (cache, request);</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    <span class="keywordflow">if</span> (valid)</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;        jvRes = req-&gt;doUpdate (cache, <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <span class="keywordflow">return</span> std::move (jvRes);</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;}</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160; </div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    <span class="keyword">auto</span> [valid, jvRes] = req-&gt;doCreate(cache, request);</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;    <span class="keywordflow">if</span> (valid)</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;        jvRes = req-&gt;doUpdate(cache, <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <span class="keywordflow">return</span> std::move(jvRes);</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;}</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160; </div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1PathRequests_html_a3362fa140c79ff1c4daeee1b680ba401"><div class="ttname"><a href="classripple_1_1PathRequests.html#a3362fa140c79ff1c4daeee1b680ba401">ripple::PathRequests::doLegacyPathRequest</a></div><div class="ttdeci">Json::Value doLegacyPathRequest(Resource::Consumer &amp;consumer, std::shared_ptr&lt; ReadView const &gt; const &amp;inLedger, Json::Value const &amp;request)</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8cpp_source.html#l00261">PathRequests.cpp:261</a></div></div>
+<div class="ttc" id="aclassripple_1_1PathRequests_html_a3362fa140c79ff1c4daeee1b680ba401"><div class="ttname"><a href="classripple_1_1PathRequests.html#a3362fa140c79ff1c4daeee1b680ba401">ripple::PathRequests::doLegacyPathRequest</a></div><div class="ttdeci">Json::Value doLegacyPathRequest(Resource::Consumer &amp;consumer, std::shared_ptr&lt; ReadView const &gt; const &amp;inLedger, Json::Value const &amp;request)</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8cpp_source.html#l00258">PathRequests.cpp:258</a></div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="aclassripple_1_1PathRequests_html_ae228eae659934054c57398942f84b8de"><div class="ttname"><a href="classripple_1_1PathRequests.html#ae228eae659934054c57398942f84b8de">ripple::PathRequests::makePathRequest</a></div><div class="ttdeci">Json::Value makePathRequest(std::shared_ptr&lt; InfoSub &gt; const &amp;subscriber, std::shared_ptr&lt; ReadView const &gt; const &amp;ledger, Json::Value const &amp;request)</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8cpp_source.html#l00205">PathRequests.cpp:205</a></div></div>
-<div class="ttc" id="aclassbeast_1_1Journal_html_abbe082bd27ca0f1d1365af2824e4f85b"><div class="ttname"><a href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">beast::Journal::trace</a></div><div class="ttdeci">Stream trace() const</div><div class="ttdoc">Severity stream access functions.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00287">Journal.h:287</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ae0f54f8ce649d639bf3e2b295347e17aa45d646c1a9b70027d5f9f46458203942"><div class="ttname"><a href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17aa45d646c1a9b70027d5f9f46458203942">ripple::jtPATH_FIND</a></div><div class="ttdeci">@ jtPATH_FIND</div><div class="ttdef"><b>Definition:</b> <a href="Job_8h_source.html#l00072">Job.h:72</a></div></div>
+<div class="ttc" id="aclassripple_1_1PathRequests_html_ae228eae659934054c57398942f84b8de"><div class="ttname"><a href="classripple_1_1PathRequests.html#ae228eae659934054c57398942f84b8de">ripple::PathRequests::makePathRequest</a></div><div class="ttdeci">Json::Value makePathRequest(std::shared_ptr&lt; InfoSub &gt; const &amp;subscriber, std::shared_ptr&lt; ReadView const &gt; const &amp;ledger, Json::Value const &amp;request)</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8cpp_source.html#l00203">PathRequests.cpp:203</a></div></div>
+<div class="ttc" id="aclassbeast_1_1Journal_html_abbe082bd27ca0f1d1365af2824e4f85b"><div class="ttname"><a href="classbeast_1_1Journal.html#abbe082bd27ca0f1d1365af2824e4f85b">beast::Journal::trace</a></div><div class="ttdeci">Stream trace() const</div><div class="ttdoc">Severity stream access functions.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00309">Journal.h:309</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ae0f54f8ce649d639bf3e2b295347e17aa45d646c1a9b70027d5f9f46458203942"><div class="ttname"><a href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17aa45d646c1a9b70027d5f9f46458203942">ripple::jtPATH_FIND</a></div><div class="ttdeci">@ jtPATH_FIND</div><div class="ttdef"><b>Definition:</b> <a href="Job_8h_source.html#l00071">Job.h:71</a></div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="afind_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find_if</a></div><div class="ttdeci">T find_if(T... args)</div></div>
 <div class="ttc" id="asize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/size.html">std::vector::size</a></div><div class="ttdeci">T size(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1PathRequests_html_a23ebbccfd572bef7bf7f88792c0eb165"><div class="ttname"><a href="classripple_1_1PathRequests.html#a23ebbccfd572bef7bf7f88792c0eb165">ripple::PathRequests::makeLegacyPathRequest</a></div><div class="ttdeci">Json::Value makeLegacyPathRequest(PathRequest::pointer &amp;req, std::function&lt; void(void)&gt; completion, Resource::Consumer &amp;consumer, std::shared_ptr&lt; ReadView const &gt; const &amp;inLedger, Json::Value const &amp;request)</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8cpp_source.html#l00227">PathRequests.cpp:227</a></div></div>
+<div class="ttc" id="aclassripple_1_1PathRequests_html_a23ebbccfd572bef7bf7f88792c0eb165"><div class="ttname"><a href="classripple_1_1PathRequests.html#a23ebbccfd572bef7bf7f88792c0eb165">ripple::PathRequests::makeLegacyPathRequest</a></div><div class="ttdeci">Json::Value makeLegacyPathRequest(PathRequest::pointer &amp;req, std::function&lt; void(void)&gt; completion, Resource::Consumer &amp;consumer, std::shared_ptr&lt; ReadView const &gt; const &amp;inLedger, Json::Value const &amp;request)</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8cpp_source.html#l00225">PathRequests.cpp:225</a></div></div>
 <div class="ttc" id="alock_guard_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a41779a85a65f6faeb648c960e77f388f"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a41779a85a65f6faeb648c960e77f388f">ripple::rpcTOO_BUSY</a></div><div class="ttdeci">@ rpcTOO_BUSY</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00057">ErrorCodes.h:57</a></div></div>
-<div class="ttc" id="aclassripple_1_1LedgerMaster_html_a415ac9258f2c2e1158d5f421b1742647"><div class="ttname"><a href="classripple_1_1LedgerMaster.html#a415ac9258f2c2e1158d5f421b1742647">ripple::LedgerMaster::isNewPathRequest</a></div><div class="ttdeci">bool isNewPathRequest()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster_8cpp_source.html#l01457">LedgerMaster.cpp:1457</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a41779a85a65f6faeb648c960e77f388f"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a41779a85a65f6faeb648c960e77f388f">ripple::rpcTOO_BUSY</a></div><div class="ttdeci">@ rpcTOO_BUSY</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00056">ErrorCodes.h:56</a></div></div>
+<div class="ttc" id="aclassripple_1_1LedgerMaster_html_a415ac9258f2c2e1158d5f421b1742647"><div class="ttname"><a href="classripple_1_1LedgerMaster.html#a415ac9258f2c2e1158d5f421b1742647">ripple::LedgerMaster::isNewPathRequest</a></div><div class="ttdeci">bool isNewPathRequest()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster_8cpp_source.html#l01446">LedgerMaster.cpp:1446</a></div></div>
 <div class="ttc" id="afunction_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a></div></div>
 <div class="ttc" id="areset_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr/reset.html">std::shared_ptr::reset</a></div><div class="ttdeci">T reset(T... args)</div></div>
 <div class="ttc" id="aalgorithm_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a></div></div>
-<div class="ttc" id="aclassripple_1_1PathRequests_html_a9609fcd5db4a93b58fada556eb8e0b21"><div class="ttname"><a href="classripple_1_1PathRequests.html#a9609fcd5db4a93b58fada556eb8e0b21">ripple::PathRequests::mLastIdentifier</a></div><div class="ttdeci">std::atomic&lt; int &gt; mLastIdentifier</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8h_source.html#l00107">PathRequests.h:107</a></div></div>
-<div class="ttc" id="aclassripple_1_1PathRequests_html_ae9a92de5ba230841cfb57470d56908c6"><div class="ttname"><a href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">ripple::PathRequests::app_</a></div><div class="ttdeci">Application &amp; app_</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8h_source.html#l00095">PathRequests.h:95</a></div></div>
+<div class="ttc" id="aclassripple_1_1PathRequests_html_a9609fcd5db4a93b58fada556eb8e0b21"><div class="ttname"><a href="classripple_1_1PathRequests.html#a9609fcd5db4a93b58fada556eb8e0b21">ripple::PathRequests::mLastIdentifier</a></div><div class="ttdeci">std::atomic&lt; int &gt; mLastIdentifier</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8h_source.html#l00117">PathRequests.h:117</a></div></div>
+<div class="ttc" id="aclassripple_1_1PathRequests_html_ae9a92de5ba230841cfb57470d56908c6"><div class="ttname"><a href="classripple_1_1PathRequests.html#ae9a92de5ba230841cfb57470d56908c6">ripple::PathRequests::app_</a></div><div class="ttdeci">Application &amp; app_</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8h_source.html#l00105">PathRequests.h:105</a></div></div>
 <div class="ttc" id="aclassripple_1_1Application_html_a57929fa83c551514e364fe6981b0c104"><div class="ttname"><a href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">ripple::Application::getLedgerMaster</a></div><div class="ttdeci">virtual LedgerMaster &amp; getLedgerMaster()=0</div></div>
-<div class="ttc" id="aclassripple_1_1PathRequests_html_a24fd90cae36b8e167747c784fe1edee1"><div class="ttname"><a href="classripple_1_1PathRequests.html#a24fd90cae36b8e167747c784fe1edee1">ripple::PathRequests::insertPathRequest</a></div><div class="ttdeci">void insertPathRequest(PathRequest::pointer const &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8cpp_source.html#l00183">PathRequests.cpp:183</a></div></div>
+<div class="ttc" id="aclassripple_1_1PathRequests_html_a24fd90cae36b8e167747c784fe1edee1"><div class="ttname"><a href="classripple_1_1PathRequests.html#a24fd90cae36b8e167747c784fe1edee1">ripple::PathRequests::insertPathRequest</a></div><div class="ttdeci">void insertPathRequest(PathRequest::pointer const &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8cpp_source.html#l00184">PathRequests.cpp:184</a></div></div>
 <div class="ttc" id="aclassripple_1_1Application_html_a860be08979e27d8c6f37f722f996ba6c"><div class="ttname"><a href="classripple_1_1Application.html#a860be08979e27d8c6f37f722f996ba6c">ripple::Application::getJobQueue</a></div><div class="ttdeci">virtual JobQueue &amp; getJobQueue()=0</div></div>
 <div class="ttc" id="aclassripple_1_1PathRequests_html_a64a0b811c9416a7d0b7e8626ac797988"><div class="ttname"><a href="classripple_1_1PathRequests.html#a64a0b811c9416a7d0b7e8626ac797988">ripple::PathRequests::getLineCache</a></div><div class="ttdeci">std::shared_ptr&lt; RippleLineCache &gt; getLineCache(std::shared_ptr&lt; ReadView const &gt; const &amp;ledger, bool authoritative)</div><div class="ttdoc">Get the current RippleLineCache, updating it if necessary.</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8cpp_source.html#l00037">PathRequests.cpp:37</a></div></div>
-<div class="ttc" id="aclassripple_1_1LedgerMaster_html_ac705ef7b40ff1e783ad35bce97f0694e"><div class="ttname"><a href="classripple_1_1LedgerMaster.html#ac705ef7b40ff1e783ad35bce97f0694e">ripple::LedgerMaster::newPathRequest</a></div><div class="ttdeci">bool newPathRequest()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster_8cpp_source.html#l01449">LedgerMaster.cpp:1449</a></div></div>
-<div class="ttc" id="aclassripple_1_1PathRequests_html_a080d6496fd6e6ed848fd11351f5021cf"><div class="ttname"><a href="classripple_1_1PathRequests.html#a080d6496fd6e6ed848fd11351f5021cf">ripple::PathRequests::mJournal</a></div><div class="ttdeci">beast::Journal mJournal</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8h_source.html#l00096">PathRequests.h:96</a></div></div>
+<div class="ttc" id="aclassripple_1_1LedgerMaster_html_ac705ef7b40ff1e783ad35bce97f0694e"><div class="ttname"><a href="classripple_1_1LedgerMaster.html#ac705ef7b40ff1e783ad35bce97f0694e">ripple::LedgerMaster::newPathRequest</a></div><div class="ttdeci">bool newPathRequest()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster_8cpp_source.html#l01438">LedgerMaster.cpp:1438</a></div></div>
+<div class="ttc" id="aclassripple_1_1PathRequests_html_a080d6496fd6e6ed848fd11351f5021cf"><div class="ttname"><a href="classripple_1_1PathRequests.html#a080d6496fd6e6ed848fd11351f5021cf">ripple::PathRequests::mJournal</a></div><div class="ttdeci">beast::Journal mJournal</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8h_source.html#l00106">PathRequests.h:106</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
 <div class="ttc" id="aremove_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/remove.html">std::remove_if</a></div><div class="ttdeci">T remove_if(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1PathRequests_html_a68ee0429f702b083830f982b98518aad"><div class="ttname"><a href="classripple_1_1PathRequests.html#a68ee0429f702b083830f982b98518aad">ripple::PathRequests::mLock</a></div><div class="ttdeci">std::recursive_mutex mLock</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8h_source.html#l00109">PathRequests.h:109</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ab114d40490d1a6a0ab2fa6053167d461"><div class="ttname"><a href="namespaceripple.html#ab114d40490d1a6a0ab2fa6053167d461">ripple::rpcError</a></div><div class="ttdeci">Json::Value rpcError(int iError, Json::Value jvResult)</div><div class="ttdef"><b>Definition:</b> <a href="RPCErr_8cpp_source.html#l00028">RPCErr.cpp:28</a></div></div>
+<div class="ttc" id="aclassripple_1_1PathRequests_html_a68ee0429f702b083830f982b98518aad"><div class="ttname"><a href="classripple_1_1PathRequests.html#a68ee0429f702b083830f982b98518aad">ripple::PathRequests::mLock</a></div><div class="ttdeci">std::recursive_mutex mLock</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8h_source.html#l00119">PathRequests.h:119</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ab114d40490d1a6a0ab2fa6053167d461"><div class="ttname"><a href="namespaceripple.html#ab114d40490d1a6a0ab2fa6053167d461">ripple::rpcError</a></div><div class="ttdeci">Json::Value rpcError(int iError, Json::Value jvResult)</div><div class="ttdef"><b>Definition:</b> <a href="RPCErr_8cpp_source.html#l00029">RPCErr.cpp:29</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1Resource_1_1Consumer_html"><div class="ttname"><a href="classripple_1_1Resource_1_1Consumer.html">ripple::Resource::Consumer</a></div><div class="ttdoc">An endpoint that consumes resources.</div><div class="ttdef"><b>Definition:</b> <a href="Consumer_8h_source.html#l00033">Consumer.h:33</a></div></div>
-<div class="ttc" id="aclassripple_1_1PathRequests_html_a8f0fe9996c8a483043110c02a6e7ffd2"><div class="ttname"><a href="classripple_1_1PathRequests.html#a8f0fe9996c8a483043110c02a6e7ffd2">ripple::PathRequests::mLineCache</a></div><div class="ttdeci">std::shared_ptr&lt; RippleLineCache &gt; mLineCache</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8h_source.html#l00105">PathRequests.h:105</a></div></div>
-<div class="ttc" id="aclassbeast_1_1Journal_html_a556228cb60bcf405c225d3f64b7b01ae"><div class="ttname"><a href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">beast::Journal::debug</a></div><div class="ttdeci">Stream debug() const</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00292">Journal.h:292</a></div></div>
-<div class="ttc" id="aclassripple_1_1PathRequests_html_a3cfce7f0a24bb682ea2bfd44904fefce"><div class="ttname"><a href="classripple_1_1PathRequests.html#a3cfce7f0a24bb682ea2bfd44904fefce">ripple::PathRequests::updateAll</a></div><div class="ttdeci">void updateAll(std::shared_ptr&lt; ReadView const &gt; const &amp;ledger, Job::CancelCallback shouldCancel)</div><div class="ttdoc">Update all of the contained PathRequest instances.</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8cpp_source.html#l00056">PathRequests.cpp:56</a></div></div>
+<div class="ttc" id="aclassripple_1_1PathRequests_html_a8f0fe9996c8a483043110c02a6e7ffd2"><div class="ttname"><a href="classripple_1_1PathRequests.html#a8f0fe9996c8a483043110c02a6e7ffd2">ripple::PathRequests::mLineCache</a></div><div class="ttdeci">std::shared_ptr&lt; RippleLineCache &gt; mLineCache</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8h_source.html#l00115">PathRequests.h:115</a></div></div>
+<div class="ttc" id="aclassbeast_1_1Journal_html_a556228cb60bcf405c225d3f64b7b01ae"><div class="ttname"><a href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">beast::Journal::debug</a></div><div class="ttdeci">Stream debug() const</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00315">Journal.h:315</a></div></div>
+<div class="ttc" id="aclassripple_1_1PathRequests_html_a3cfce7f0a24bb682ea2bfd44904fefce"><div class="ttname"><a href="classripple_1_1PathRequests.html#a3cfce7f0a24bb682ea2bfd44904fefce">ripple::PathRequests::updateAll</a></div><div class="ttdeci">void updateAll(std::shared_ptr&lt; ReadView const &gt; const &amp;ledger, Job::CancelCallback shouldCancel)</div><div class="ttdoc">Update all of the contained PathRequest instances.</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8cpp_source.html#l00058">PathRequests.cpp:58</a></div></div>
 <div class="ttc" id="aclassripple_1_1JobQueue_html_aaacda2b13f6602a6db919fdc2a8bcdec"><div class="ttname"><a href="classripple_1_1JobQueue.html#aaacda2b13f6602a6db919fdc2a8bcdec">ripple::JobQueue::makeLoadEvent</a></div><div class="ttdeci">std::unique_ptr&lt; LoadEvent &gt; makeLoadEvent(JobType t, std::string const &amp;name)</div><div class="ttdoc">Return a scoped LoadEvent.</div><div class="ttdef"><b>Definition:</b> <a href="JobQueue_8cpp_source.html#l00181">JobQueue.cpp:181</a></div></div>
-<div class="ttc" id="aclassripple_1_1PathRequests_html_ae4719bfd8f413be43af4ac6db8bf895d"><div class="ttname"><a href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">ripple::PathRequests::requests_</a></div><div class="ttdeci">std::vector&lt; PathRequest::wptr &gt; requests_</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8h_source.html#l00102">PathRequests.h:102</a></div></div>
-<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00141">json_value.h:141</a></div></div>
+<div class="ttc" id="aclassripple_1_1PathRequests_html_ae4719bfd8f413be43af4ac6db8bf895d"><div class="ttname"><a href="classripple_1_1PathRequests.html#ae4719bfd8f413be43af4ac6db8bf895d">ripple::PathRequests::requests_</a></div><div class="ttdeci">std::vector&lt; PathRequest::wptr &gt; requests_</div><div class="ttdef"><b>Definition:</b> <a href="PathRequests_8h_source.html#l00112">PathRequests.h:112</a></div></div>
+<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00145">json_value.h:145</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

@@ -182,8 +182,8 @@ Private Types</h2></td></tr>
 <tr class="separator:a25587e81dcab145c3392aee7f1c58277"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a192f32252df569c2e1578bfe22e063d1"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConnectAttempt.html#a192f32252df569c2e1578bfe22e063d1">middle_type</a> = boost::beast::tcp_stream</td></tr>
 <tr class="separator:a192f32252df569c2e1578bfe22e063d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aff5ca4f4e0215d6a22dac3f33a2a2e24"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConnectAttempt.html#aff5ca4f4e0215d6a22dac3f33a2a2e24">stream_type</a> = boost::beast::ssl_stream&lt; <a class="el" href="classripple_1_1ConnectAttempt.html#a192f32252df569c2e1578bfe22e063d1">middle_type</a> &gt;</td></tr>
-<tr class="separator:aff5ca4f4e0215d6a22dac3f33a2a2e24"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0ca6cfc1e2622ca615a5579d5aae141"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConnectAttempt.html#ac0ca6cfc1e2622ca615a5579d5aae141">stream_type</a> = boost::beast::ssl_stream&lt; <a class="el" href="classripple_1_1ConnectAttempt.html#a192f32252df569c2e1578bfe22e063d1">middle_type</a> &gt;</td></tr>
+<tr class="separator:ac0ca6cfc1e2622ca615a5579d5aae141"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a95d8870c340dd0e22544d7c8c156ae11"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConnectAttempt.html#a95d8870c340dd0e22544d7c8c156ae11">shared_context</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; boost::asio::ssl::context &gt;</td></tr>
 <tr class="separator:a95d8870c340dd0e22544d7c8c156ae11"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -240,11 +240,11 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a2b410ff2d6433fcee1d5ada37d67da07"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afbbbebb7967570f0295e0c2960367d1d"><td class="memItemLeft" align="right" valign="top">boost::asio::basic_waitable_timer&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConnectAttempt.html#afbbbebb7967570f0295e0c2960367d1d">timer_</a></td></tr>
 <tr class="separator:afbbbebb7967570f0295e0c2960367d1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3fa5430b0c02e245933c979b27ab4022"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1ConnectAttempt.html#aff5ca4f4e0215d6a22dac3f33a2a2e24">stream_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConnectAttempt.html#a3fa5430b0c02e245933c979b27ab4022">stream_ptr_</a></td></tr>
+<tr class="memitem:a3fa5430b0c02e245933c979b27ab4022"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1ConnectAttempt.html#ac0ca6cfc1e2622ca615a5579d5aae141">stream_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConnectAttempt.html#a3fa5430b0c02e245933c979b27ab4022">stream_ptr_</a></td></tr>
 <tr class="separator:a3fa5430b0c02e245933c979b27ab4022"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ef879770a2826cc01cc0d2c8923957a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1ConnectAttempt.html#a25587e81dcab145c3392aee7f1c58277">socket_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConnectAttempt.html#a4ef879770a2826cc01cc0d2c8923957a">socket_</a></td></tr>
 <tr class="separator:a4ef879770a2826cc01cc0d2c8923957a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a91d5cadc35fbfe0854fff84134cef666"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1ConnectAttempt.html#aff5ca4f4e0215d6a22dac3f33a2a2e24">stream_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConnectAttempt.html#a91d5cadc35fbfe0854fff84134cef666">stream_</a></td></tr>
+<tr class="memitem:a91d5cadc35fbfe0854fff84134cef666"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1ConnectAttempt.html#ac0ca6cfc1e2622ca615a5579d5aae141">stream_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConnectAttempt.html#a91d5cadc35fbfe0854fff84134cef666">stream_</a></td></tr>
 <tr class="separator:a91d5cadc35fbfe0854fff84134cef666"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac28902665c0db123ffba1bc05cfe439c"><td class="memItemLeft" align="right" valign="top">boost::beast::multi_buffer&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ConnectAttempt.html#ac28902665c0db123ffba1bc05cfe439c">read_buf_</a></td></tr>
 <tr class="separator:ac28902665c0db123ffba1bc05cfe439c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -280,7 +280,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00034">34</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00033">33</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -304,7 +304,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00036">36</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00035">35</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -328,7 +328,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00039">39</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00038">38</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -352,7 +352,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00042">42</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00041">41</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -376,7 +376,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00044">44</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00043">43</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -400,12 +400,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00045">45</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00044">44</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
-<a id="aff5ca4f4e0215d6a22dac3f33a2a2e24"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aff5ca4f4e0215d6a22dac3f33a2a2e24">&#9670;&nbsp;</a></span>stream_type</h2>
+<a id="ac0ca6cfc1e2622ca615a5579d5aae141"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac0ca6cfc1e2622ca615a5579d5aae141">&#9670;&nbsp;</a></span>stream_type</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -414,7 +414,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1ConnectAttempt.html#aff5ca4f4e0215d6a22dac3f33a2a2e24">ripple::ConnectAttempt::stream_type</a> =  boost::beast::ssl_stream &lt;<a class="el" href="classripple_1_1ConnectAttempt.html#a192f32252df569c2e1578bfe22e063d1">middle_type</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1ConnectAttempt.html#ac0ca6cfc1e2622ca615a5579d5aae141">ripple::ConnectAttempt::stream_type</a> =  boost::beast::ssl_stream&lt;<a class="el" href="classripple_1_1ConnectAttempt.html#a192f32252df569c2e1578bfe22e063d1">middle_type</a>&gt;</td>
         </tr>
       </table>
   </td>
@@ -424,7 +424,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00046">46</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00045">45</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -448,7 +448,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00047">47</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00046">46</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -540,7 +540,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00052">52</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00057">57</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
 
 </div>
 </div>
@@ -570,7 +570,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1OverlayImpl_1_1Child.html#ac4493bf690681e0f2aa3b597235f0361">ripple::OverlayImpl::Child</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00061">61</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00065">65</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
 
 </div>
 </div>
@@ -589,7 +589,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00075">75</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00078">78</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
 
 </div>
 </div>
@@ -616,7 +616,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00085">85</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00091">91</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
 
 </div>
 </div>
@@ -644,7 +644,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00098">98</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00104">104</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
 
 </div>
 </div>
@@ -682,7 +682,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00105">105</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00111">111</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
 
 </div>
 </div>
@@ -709,7 +709,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00112">112</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00118">118</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
 
 </div>
 </div>
@@ -736,7 +736,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00129">129</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00133">133</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
 
 </div>
 </div>
@@ -764,7 +764,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00136">136</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00140">140</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
 
 </div>
 </div>
@@ -792,7 +792,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00153">153</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00156">156</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
 
 </div>
 </div>
@@ -820,7 +820,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00177">177</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00182">182</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
 
 </div>
 </div>
@@ -848,7 +848,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00212">212</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00226">226</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
 
 </div>
 </div>
@@ -876,7 +876,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00227">227</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00246">246</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
 
 </div>
 </div>
@@ -904,7 +904,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00250">250</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00269">269</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
 
 </div>
 </div>
@@ -942,7 +942,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00267">267</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00285">285</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
 
 </div>
 </div>
@@ -969,7 +969,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00284">284</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8cpp_source.html#l00302">302</a> of file <a class="el" href="ConnectAttempt_8cpp_source.html">ConnectAttempt.cpp</a>.</p>
 
 </div>
 </div>
@@ -1009,7 +1009,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00103">103</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00116">116</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -1034,7 +1034,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00049">49</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00048">48</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -1058,7 +1058,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00050">50</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00049">49</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -1082,7 +1082,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00051">51</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00050">50</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -1106,7 +1106,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00052">52</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00051">51</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -1130,7 +1130,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00053">53</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00052">52</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -1154,7 +1154,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00054">54</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00053">53</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -1178,7 +1178,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00055">55</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00054">54</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -1202,7 +1202,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00056">56</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00055">55</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -1216,7 +1216,7 @@ template&lt;class  = void&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt;<a class="el" href="classripple_1_1ConnectAttempt.html#aff5ca4f4e0215d6a22dac3f33a2a2e24">stream_type</a>&gt; ripple::ConnectAttempt::stream_ptr_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt;<a class="el" href="classripple_1_1ConnectAttempt.html#ac0ca6cfc1e2622ca615a5579d5aae141">stream_type</a>&gt; ripple::ConnectAttempt::stream_ptr_</td>
         </tr>
       </table>
   </td>
@@ -1226,7 +1226,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00057">57</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00056">56</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -1250,7 +1250,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00058">58</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00057">57</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -1264,7 +1264,7 @@ template&lt;class  = void&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1ConnectAttempt.html#aff5ca4f4e0215d6a22dac3f33a2a2e24">stream_type</a>&amp; ripple::ConnectAttempt::stream_</td>
+          <td class="memname"><a class="el" href="classripple_1_1ConnectAttempt.html#ac0ca6cfc1e2622ca615a5579d5aae141">stream_type</a>&amp; ripple::ConnectAttempt::stream_</td>
         </tr>
       </table>
   </td>
@@ -1274,7 +1274,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00059">59</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00058">58</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -1298,7 +1298,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00060">60</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00059">59</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -1322,7 +1322,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00061">61</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00060">60</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -1346,7 +1346,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00062">62</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00061">61</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>
@@ -1370,7 +1370,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00063">63</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConnectAttempt_8h_source.html#l00062">62</a> of file <a class="el" href="ConnectAttempt_8h_source.html">ConnectAttempt.h</a>.</p>
 
 </div>
 </div>

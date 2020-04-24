@@ -88,15 +88,15 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/ledger/ApplyView.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/contract.h&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/contract.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/ledger/ApplyView.h&gt;</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/Protocol.h&gt;</span></div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cassert.html">cassert</a>&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;boost::optional&lt;std::uint64_t&gt;</div>
-<div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="classripple_1_1ApplyView.html#a080612d2b57bd395c73290aea671b551">   28</a></span>&#160;<a class="code" href="classripple_1_1ApplyView.html#a080612d2b57bd395c73290aea671b551">ApplyView::dirAdd</a> (</div>
+<div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="classripple_1_1ApplyView.html#a080612d2b57bd395c73290aea671b551">   28</a></span>&#160;<a class="code" href="classripple_1_1ApplyView.html#a080612d2b57bd395c73290aea671b551">ApplyView::dirAdd</a>(</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="keywordtype">bool</span> preserveOrder,</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <a class="code" href="structripple_1_1Keylet.html">Keylet</a> <span class="keyword">const</span>&amp; directory,</div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key,</div>
@@ -104,18 +104,18 @@ $(function() {
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;{</div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keyword">auto</span> root = <a class="code" href="classripple_1_1ApplyView.html#aad9fb1233dec10dcc10c2e3b1da6a723">peek</a>(directory);</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keywordflow">if</span> (! root)</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keywordflow">if</span> (!root)</div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    {</div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <span class="comment">// No root, make it.</span></div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        root = std::make_shared&lt;SLE&gt;(directory);</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        root-&gt;setFieldH256 (<a class="code" href="namespaceripple.html#a1e94eaf7bff76b10fa0b8c3e96d1406e">sfRootIndex</a>, directory.<a class="code" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>);</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        describe (root);</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        root-&gt;setFieldH256(<a class="code" href="namespaceripple.html#a1e94eaf7bff76b10fa0b8c3e96d1406e">sfRootIndex</a>, directory.<a class="code" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>);</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        describe(root);</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <a class="code" href="classripple_1_1STVector256.html">STVector256</a> v;</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        v.<a class="code" href="classripple_1_1STVector256.html#a6bd443eec0924c8b8f95e6c6d812117c">push_back</a> (key);</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        root-&gt;setFieldV256 (<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>, v);</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        v.<a class="code" href="classripple_1_1STVector256.html#a6bd443eec0924c8b8f95e6c6d812117c">push_back</a>(key);</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        root-&gt;setFieldV256(<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>, v);</div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <a class="code" href="classripple_1_1ApplyView.html#aa3c5b5cd9dca5f906be4b36640706e3c">insert</a> (root);</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <a class="code" href="classripple_1_1ApplyView.html#aa3c5b5cd9dca5f906be4b36640706e3c">insert</a>(root);</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>{0};</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    }</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
@@ -125,20 +125,20 @@ $(function() {
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordflow">if</span> (page)</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    {</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        node = <a class="code" href="classripple_1_1ApplyView.html#aad9fb1233dec10dcc10c2e3b1da6a723">peek</a> (<a class="code" href="namespaceripple_1_1keylet.html#a7fed9808de2218dfe38198c055f87663">keylet::page</a>(directory, page));</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        node = <a class="code" href="classripple_1_1ApplyView.html#aad9fb1233dec10dcc10c2e3b1da6a723">peek</a>(<a class="code" href="namespaceripple_1_1keylet.html#a7fed9808de2218dfe38198c055f87663">keylet::page</a>(directory, page));</div>
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        <span class="keywordflow">if</span> (!node)</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a> (<span class="stringliteral">&quot;Directory chain: root back-pointer broken.&quot;</span>);</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Directory chain: root back-pointer broken.&quot;</span>);</div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    }</div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keyword">auto</span> indexes = node-&gt;getFieldV256(<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>);</div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="comment">// If there&#39;s space, we use it:</span></div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordflow">if</span> (indexes.size () &lt; <a class="code" href="namespaceripple.html#aa92d4d5c77691ea9bf8a848d84187e39">dirNodeMaxEntries</a>)</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordflow">if</span> (indexes.size() &lt; <a class="code" href="namespaceripple.html#aa92d4d5c77691ea9bf8a848d84187e39">dirNodeMaxEntries</a>)</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    {</div>
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="keywordflow">if</span> (preserveOrder)</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        {</div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            <span class="keywordflow">if</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find</a>(indexes.begin(), indexes.end(), key) != indexes.end())</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;                <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a> (<span class="stringliteral">&quot;dirInsert: double insertion&quot;</span>);</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;                <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;dirInsert: double insertion&quot;</span>);</div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            indexes.push_back(key);</div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        }</div>
@@ -147,17 +147,17 @@ $(function() {
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;            <span class="comment">// We can&#39;t be sure if this page is already sorted because</span></div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <span class="comment">// it may be a legacy page we haven&#39;t yet touched. Take</span></div>
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            <span class="comment">// the time to sort it.</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/sort.html">std::sort</a> (indexes.begin(), indexes.end());</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/sort.html">std::sort</a>(indexes.begin(), indexes.end());</div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            <span class="keyword">auto</span> pos = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/lower_bound.html">std::lower_bound</a>(indexes.begin(), indexes.end(), key);</div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            <span class="keywordflow">if</span> (pos != indexes.end() &amp;&amp; key == *pos)</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a> (<span class="stringliteral">&quot;dirInsert: double insertion&quot;</span>);</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;dirInsert: double insertion&quot;</span>);</div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            indexes.insert (pos, key);</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            indexes.insert(pos, key);</div>
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        }</div>
 <div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        node-&gt;setFieldV256 (<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>, indexes);</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        node-&gt;setFieldV256(<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>, indexes);</div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a>(node);</div>
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        <span class="keywordflow">return</span> page;</div>
 <div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    }</div>
@@ -168,26 +168,26 @@ $(function() {
 <div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <span class="comment">// We are about to create a new node; we&#39;ll link it to</span></div>
 <div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="comment">// the chain first:</span></div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    node-&gt;setFieldU64 (<a class="code" href="namespaceripple.html#a64d5f22fb89001653b7bcadad3c439f8">sfIndexNext</a>, page);</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    node-&gt;setFieldU64(<a class="code" href="namespaceripple.html#a64d5f22fb89001653b7bcadad3c439f8">sfIndexNext</a>, page);</div>
 <div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a>(node);</div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    root-&gt;setFieldU64 (<a class="code" href="namespaceripple.html#a10924290886398d9747dac78ba256553">sfIndexPrevious</a>, page);</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    root-&gt;setFieldU64(<a class="code" href="namespaceripple.html#a10924290886398d9747dac78ba256553">sfIndexPrevious</a>, page);</div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a>(root);</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="comment">// Insert the new key:</span></div>
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    indexes.clear();</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    indexes.push_back (key);</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    indexes.push_back(key);</div>
 <div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
 <div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    node = std::make_shared&lt;SLE&gt;(<a class="code" href="namespaceripple_1_1keylet.html#a7fed9808de2218dfe38198c055f87663">keylet::page</a>(directory, page));</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    node-&gt;setFieldH256 (<a class="code" href="namespaceripple.html#a1e94eaf7bff76b10fa0b8c3e96d1406e">sfRootIndex</a>, directory.<a class="code" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>);</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    node-&gt;setFieldV256 (<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>, indexes);</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    node-&gt;setFieldH256(<a class="code" href="namespaceripple.html#a1e94eaf7bff76b10fa0b8c3e96d1406e">sfRootIndex</a>, directory.<a class="code" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>);</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    node-&gt;setFieldV256(<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>, indexes);</div>
 <div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160; </div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <span class="comment">// Save some space by not specifying the value 0 since</span></div>
 <div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <span class="comment">// it&#39;s the default.</span></div>
 <div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <span class="keywordflow">if</span> (page != 1)</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        node-&gt;setFieldU64 (<a class="code" href="namespaceripple.html#a10924290886398d9747dac78ba256553">sfIndexPrevious</a>, page - 1);</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    describe (node);</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <a class="code" href="classripple_1_1ApplyView.html#aa3c5b5cd9dca5f906be4b36640706e3c">insert</a> (node);</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        node-&gt;setFieldU64(<a class="code" href="namespaceripple.html#a10924290886398d9747dac78ba256553">sfIndexPrevious</a>, page - 1);</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    describe(node);</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <a class="code" href="classripple_1_1ApplyView.html#aa3c5b5cd9dca5f906be4b36640706e3c">insert</a>(node);</div>
 <div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160; </div>
 <div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="keywordflow">return</span> page;</div>
 <div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;}</div>
@@ -204,7 +204,7 @@ $(function() {
 <div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <span class="keywordflow">if</span> (directory.<a class="code" href="structripple_1_1Keylet.html#a194d83c488eaa909ae4bcf816d8f4cb0">type</a> != <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba1ca6f5da9e86f814af3d6f8b3631ebe8">ltDIR_NODE</a> ||</div>
 <div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        node-&gt;getFieldH256(<a class="code" href="namespaceripple.html#a1e94eaf7bff76b10fa0b8c3e96d1406e">sfRootIndex</a>) != directory.<a class="code" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>)</div>
 <div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    {</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;        assert (!<span class="stringliteral">&quot;emptyDirDelete() called with wrong node type&quot;</span>);</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;        assert(!<span class="stringliteral">&quot;emptyDirDelete() called with wrong node type&quot;</span>);</div>
 <div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
 <div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    }</div>
 <div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160; </div>
@@ -217,10 +217,10 @@ $(function() {
 <div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    <span class="keyword">auto</span> nextPage = node-&gt;getFieldU64(<a class="code" href="namespaceripple.html#a64d5f22fb89001653b7bcadad3c439f8">sfIndexNext</a>);</div>
 <div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160; </div>
 <div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <span class="keywordflow">if</span> (nextPage == rootPage &amp;&amp; prevPage != rootPage)</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a> (<span class="stringliteral">&quot;Directory chain: fwd link broken&quot;</span>);</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Directory chain: fwd link broken&quot;</span>);</div>
 <div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160; </div>
 <div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    <span class="keywordflow">if</span> (prevPage == rootPage &amp;&amp; nextPage != rootPage)</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a> (<span class="stringliteral">&quot;Directory chain: rev link broken&quot;</span>);</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Directory chain: rev link broken&quot;</span>);</div>
 <div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160; </div>
 <div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    <span class="comment">// Older versions of the code would, in some cases, allow the last</span></div>
 <div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    <span class="comment">// page to be empty. Remove such pages:</span></div>
@@ -229,15 +229,15 @@ $(function() {
 <div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;        <span class="keyword">auto</span> last = <a class="code" href="classripple_1_1ApplyView.html#aad9fb1233dec10dcc10c2e3b1da6a723">peek</a>(<a class="code" href="namespaceripple_1_1keylet.html#a7fed9808de2218dfe38198c055f87663">keylet::page</a>(directory, nextPage));</div>
 <div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160; </div>
 <div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;        <span class="keywordflow">if</span> (!last)</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a> (<span class="stringliteral">&quot;Directory chain: fwd link broken.&quot;</span>);</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Directory chain: fwd link broken.&quot;</span>);</div>
 <div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160; </div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;        <span class="keywordflow">if</span> (!last-&gt;getFieldV256 (<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>).empty())</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;        <span class="keywordflow">if</span> (!last-&gt;getFieldV256(<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>).empty())</div>
 <div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
 <div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160; </div>
 <div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;        <span class="comment">// Update the first page&#39;s linked list and</span></div>
 <div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;        <span class="comment">// mark it as updated.</span></div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;        node-&gt;setFieldU64 (<a class="code" href="namespaceripple.html#a64d5f22fb89001653b7bcadad3c439f8">sfIndexNext</a>, rootPage);</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;        node-&gt;setFieldU64 (<a class="code" href="namespaceripple.html#a10924290886398d9747dac78ba256553">sfIndexPrevious</a>, rootPage);</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;        node-&gt;setFieldU64(<a class="code" href="namespaceripple.html#a64d5f22fb89001653b7bcadad3c439f8">sfIndexNext</a>, rootPage);</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;        node-&gt;setFieldU64(<a class="code" href="namespaceripple.html#a10924290886398d9747dac78ba256553">sfIndexPrevious</a>, rootPage);</div>
 <div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;        <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a>(node);</div>
 <div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160; </div>
 <div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;        <span class="comment">// And erase the empty last page:</span></div>
@@ -257,7 +257,7 @@ $(function() {
 <div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;}</div>
 <div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160; </div>
 <div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00189"></a><span class="lineno"><a class="line" href="classripple_1_1ApplyView.html#a5a06441ef4fdb9b7f6e51437ce4a959f">  189</a></span>&#160;<a class="code" href="classripple_1_1ApplyView.html#a5a06441ef4fdb9b7f6e51437ce4a959f">ApplyView::dirRemove</a> (</div>
+<div class="line"><a name="l00189"></a><span class="lineno"><a class="line" href="classripple_1_1ApplyView.html#a5a06441ef4fdb9b7f6e51437ce4a959f">  189</a></span>&#160;<a class="code" href="classripple_1_1ApplyView.html#a5a06441ef4fdb9b7f6e51437ce4a959f">ApplyView::dirRemove</a>(</div>
 <div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <a class="code" href="structripple_1_1Keylet.html">Keylet</a> <span class="keyword">const</span>&amp; directory,</div>
 <div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> page,</div>
 <div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key,</div>
@@ -275,7 +275,7 @@ $(function() {
 <div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160; </div>
 <div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;        <span class="keyword">auto</span> it = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find</a>(entries.begin(), entries.end(), key);</div>
 <div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160; </div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;        <span class="keywordflow">if</span> (entries.end () == it)</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;        <span class="keywordflow">if</span> (entries.end() == it)</div>
 <div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
 <div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160; </div>
 <div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;        <span class="comment">// We always preserve the relative order when we remove.</span></div>
@@ -301,10 +301,10 @@ $(function() {
 <div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    <span class="keywordflow">if</span> (page == rootPage)</div>
 <div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    {</div>
 <div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;        <span class="keywordflow">if</span> (nextPage == page &amp;&amp; prevPage != page)</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a> (<span class="stringliteral">&quot;Directory chain: fwd link broken&quot;</span>);</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Directory chain: fwd link broken&quot;</span>);</div>
 <div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160; </div>
 <div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;        <span class="keywordflow">if</span> (prevPage == page &amp;&amp; nextPage != page)</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a> (<span class="stringliteral">&quot;Directory chain: rev link broken&quot;</span>);</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Directory chain: rev link broken&quot;</span>);</div>
 <div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160; </div>
 <div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;        <span class="comment">// Older versions of the code would, in some cases,</span></div>
 <div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;        <span class="comment">// allow the last page to be empty. Remove such</span></div>
@@ -313,14 +313,14 @@ $(function() {
 <div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;        {</div>
 <div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;            <span class="keyword">auto</span> last = <a class="code" href="classripple_1_1ApplyView.html#aad9fb1233dec10dcc10c2e3b1da6a723">peek</a>(<a class="code" href="namespaceripple_1_1keylet.html#a7fed9808de2218dfe38198c055f87663">keylet::page</a>(directory, nextPage));</div>
 <div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;            <span class="keywordflow">if</span> (!last)</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;                <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a> (<span class="stringliteral">&quot;Directory chain: fwd link broken.&quot;</span>);</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;                <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Directory chain: fwd link broken.&quot;</span>);</div>
 <div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160; </div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;            <span class="keywordflow">if</span> (last-&gt;getFieldV256 (<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>).empty())</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;            <span class="keywordflow">if</span> (last-&gt;getFieldV256(<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>).empty())</div>
 <div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;            {</div>
 <div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;                <span class="comment">// Update the first page&#39;s linked list and</span></div>
 <div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;                <span class="comment">// mark it as updated.</span></div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;                node-&gt;setFieldU64 (<a class="code" href="namespaceripple.html#a64d5f22fb89001653b7bcadad3c439f8">sfIndexNext</a>, page);</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;                node-&gt;setFieldU64 (<a class="code" href="namespaceripple.html#a10924290886398d9747dac78ba256553">sfIndexPrevious</a>, page);</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;                node-&gt;setFieldU64(<a class="code" href="namespaceripple.html#a64d5f22fb89001653b7bcadad3c439f8">sfIndexNext</a>, page);</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;                node-&gt;setFieldU64(<a class="code" href="namespaceripple.html#a10924290886398d9747dac78ba256553">sfIndexPrevious</a>, page);</div>
 <div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;                <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a>(node);</div>
 <div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160; </div>
 <div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;                <span class="comment">// And erase the empty last page:</span></div>
@@ -345,10 +345,10 @@ $(function() {
 <div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160; </div>
 <div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    <span class="comment">// This can never happen for nodes other than the root:</span></div>
 <div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    <span class="keywordflow">if</span> (nextPage == page)</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a> (<span class="stringliteral">&quot;Directory chain: fwd link broken&quot;</span>);</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Directory chain: fwd link broken&quot;</span>);</div>
 <div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160; </div>
 <div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <span class="keywordflow">if</span> (prevPage == page)</div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a> (<span class="stringliteral">&quot;Directory chain: rev link broken&quot;</span>);</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Directory chain: rev link broken&quot;</span>);</div>
 <div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160; </div>
 <div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    <span class="comment">// This node isn&#39;t the root, so it can either be in the</span></div>
 <div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    <span class="comment">// middle of the list, or at the end. Unlink it first</span></div>
@@ -356,14 +356,14 @@ $(function() {
 <div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    <span class="comment">// root:</span></div>
 <div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;    <span class="keyword">auto</span> prev = <a class="code" href="classripple_1_1ApplyView.html#aad9fb1233dec10dcc10c2e3b1da6a723">peek</a>(<a class="code" href="namespaceripple_1_1keylet.html#a7fed9808de2218dfe38198c055f87663">keylet::page</a>(directory, prevPage));</div>
 <div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    <span class="keywordflow">if</span> (!prev)</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a> (<span class="stringliteral">&quot;Directory chain: fwd link broken.&quot;</span>);</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Directory chain: fwd link broken.&quot;</span>);</div>
 <div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;    <span class="comment">// Fix previous to point to its new next.</span></div>
 <div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;    prev-&gt;setFieldU64(<a class="code" href="namespaceripple.html#a64d5f22fb89001653b7bcadad3c439f8">sfIndexNext</a>, nextPage);</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;    <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a> (prev);</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;    <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a>(prev);</div>
 <div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160; </div>
 <div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;    <span class="keyword">auto</span> next = <a class="code" href="classripple_1_1ApplyView.html#aad9fb1233dec10dcc10c2e3b1da6a723">peek</a>(<a class="code" href="namespaceripple_1_1keylet.html#a7fed9808de2218dfe38198c055f87663">keylet::page</a>(directory, nextPage));</div>
 <div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    <span class="keywordflow">if</span> (!next)</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a> (<span class="stringliteral">&quot;Directory chain: rev link broken.&quot;</span>);</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;        <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Directory chain: rev link broken.&quot;</span>);</div>
 <div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;    <span class="comment">// Fix next to point to its new previous.</span></div>
 <div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;    next-&gt;setFieldU64(<a class="code" href="namespaceripple.html#a10924290886398d9747dac78ba256553">sfIndexPrevious</a>, prevPage);</div>
 <div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;    <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a>(next);</div>
@@ -373,71 +373,70 @@ $(function() {
 <div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160; </div>
 <div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    <span class="comment">// Check whether the next page is the last page and, if</span></div>
 <div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;    <span class="comment">// so, whether it&#39;s empty. If it is, delete it.</span></div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    <span class="keywordflow">if</span> (nextPage != rootPage &amp;&amp;</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;        next-&gt;getFieldU64 (<a class="code" href="namespaceripple.html#a64d5f22fb89001653b7bcadad3c439f8">sfIndexNext</a>) == rootPage &amp;&amp;</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;        next-&gt;getFieldV256 (<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>).empty())</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    {</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;        <span class="comment">// Since next doesn&#39;t point to the root, it</span></div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;        <span class="comment">// can&#39;t be pointing to prev.</span></div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;        <a class="code" href="classripple_1_1ApplyView.html#afda9c12acbda605becf20f54d45587d4">erase</a>(next);</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160; </div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        <span class="comment">// The previous page is now the last page:</span></div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;        prev-&gt;setFieldU64(<a class="code" href="namespaceripple.html#a64d5f22fb89001653b7bcadad3c439f8">sfIndexNext</a>, rootPage);</div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;        <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a> (prev);</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160; </div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;        <span class="comment">// And the root points to the the last page:</span></div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        <span class="keyword">auto</span> root = <a class="code" href="classripple_1_1ApplyView.html#aad9fb1233dec10dcc10c2e3b1da6a723">peek</a>(<a class="code" href="namespaceripple_1_1keylet.html#a7fed9808de2218dfe38198c055f87663">keylet::page</a>(directory, rootPage));</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;        <span class="keywordflow">if</span> (!root)</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a> (<span class="stringliteral">&quot;Directory chain: root link broken.&quot;</span>);</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;        root-&gt;setFieldU64(<a class="code" href="namespaceripple.html#a10924290886398d9747dac78ba256553">sfIndexPrevious</a>, prevPage);</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;        <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a> (root);</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160; </div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;        nextPage = rootPage;</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;    }</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160; </div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;    <span class="comment">// If we&#39;re not keeping the root, then check to see if</span></div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    <span class="comment">// it&#39;s left empty. If so, delete it as well.</span></div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    <span class="keywordflow">if</span> (!keepRoot &amp;&amp; nextPage == rootPage &amp;&amp; prevPage == rootPage)</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;    {</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;        <span class="keywordflow">if</span> (prev-&gt;getFieldV256 (<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>).empty())</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;            <a class="code" href="classripple_1_1ApplyView.html#afda9c12acbda605becf20f54d45587d4">erase</a>(prev);</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;    }</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160; </div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;}</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160; </div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    <span class="keywordflow">if</span> (nextPage != rootPage &amp;&amp; next-&gt;getFieldU64(<a class="code" href="namespaceripple.html#a64d5f22fb89001653b7bcadad3c439f8">sfIndexNext</a>) == rootPage &amp;&amp;</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;        next-&gt;getFieldV256(<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>).empty())</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    {</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;        <span class="comment">// Since next doesn&#39;t point to the root, it</span></div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;        <span class="comment">// can&#39;t be pointing to prev.</span></div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;        <a class="code" href="classripple_1_1ApplyView.html#afda9c12acbda605becf20f54d45587d4">erase</a>(next);</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160; </div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;        <span class="comment">// The previous page is now the last page:</span></div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        prev-&gt;setFieldU64(<a class="code" href="namespaceripple.html#a64d5f22fb89001653b7bcadad3c439f8">sfIndexNext</a>, rootPage);</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;        <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a>(prev);</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160; </div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;        <span class="comment">// And the root points to the the last page:</span></div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;        <span class="keyword">auto</span> root = <a class="code" href="classripple_1_1ApplyView.html#aad9fb1233dec10dcc10c2e3b1da6a723">peek</a>(<a class="code" href="namespaceripple_1_1keylet.html#a7fed9808de2218dfe38198c055f87663">keylet::page</a>(directory, rootPage));</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        <span class="keywordflow">if</span> (!root)</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<span class="stringliteral">&quot;Directory chain: root link broken.&quot;</span>);</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        root-&gt;setFieldU64(<a class="code" href="namespaceripple.html#a10924290886398d9747dac78ba256553">sfIndexPrevious</a>, prevPage);</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;        <a class="code" href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">update</a>(root);</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160; </div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;        nextPage = rootPage;</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;    }</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160; </div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;    <span class="comment">// If we&#39;re not keeping the root, then check to see if</span></div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;    <span class="comment">// it&#39;s left empty. If so, delete it as well.</span></div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    <span class="keywordflow">if</span> (!keepRoot &amp;&amp; nextPage == rootPage &amp;&amp; prevPage == rootPage)</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    {</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;        <span class="keywordflow">if</span> (prev-&gt;getFieldV256(<a class="code" href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">sfIndexes</a>).empty())</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;            <a class="code" href="classripple_1_1ApplyView.html#afda9c12acbda605becf20f54d45587d4">erase</a>(prev);</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;    }</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160; </div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;}</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160; </div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="astructripple_1_1Keylet_html"><div class="ttname"><a href="structripple_1_1Keylet.html">ripple::Keylet</a></div><div class="ttdoc">A pair of SHAMap key and LedgerEntryType.</div><div class="ttdef"><b>Definition:</b> <a href="Keylet_8h_source.html#l00038">Keylet.h:38</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a64d5f22fb89001653b7bcadad3c439f8"><div class="ttname"><a href="namespaceripple.html#a64d5f22fb89001653b7bcadad3c439f8">ripple::sfIndexNext</a></div><div class="ttdeci">const SF_U64 sfIndexNext(access, STI_UINT64, 1, &quot;IndexNext&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00379">SField.h:379</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a64d5f22fb89001653b7bcadad3c439f8"><div class="ttname"><a href="namespaceripple.html#a64d5f22fb89001653b7bcadad3c439f8">ripple::sfIndexNext</a></div><div class="ttdeci">const SF_U64 sfIndexNext(access, STI_UINT64, 1, &quot;IndexNext&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00394">SField.h:394</a></div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1ApplyView_html_aad9fb1233dec10dcc10c2e3b1da6a723"><div class="ttname"><a href="classripple_1_1ApplyView.html#aad9fb1233dec10dcc10c2e3b1da6a723">ripple::ApplyView::peek</a></div><div class="ttdeci">virtual std::shared_ptr&lt; SLE &gt; peek(Keylet const &amp;k)=0</div><div class="ttdoc">Prepare to modify the SLE associated with key.</div></div>
 <div class="ttc" id="aclassripple_1_1ApplyView_html_afda9c12acbda605becf20f54d45587d4"><div class="ttname"><a href="classripple_1_1ApplyView.html#afda9c12acbda605becf20f54d45587d4">ripple::ApplyView::erase</a></div><div class="ttdeci">virtual void erase(std::shared_ptr&lt; SLE &gt; const &amp;sle)=0</div><div class="ttdoc">Remove a peeked SLE.</div></div>
 <div class="ttc" id="afind_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find</a></div><div class="ttdeci">T find(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1STVector256_html_a6bd443eec0924c8b8f95e6c6d812117c"><div class="ttname"><a href="classripple_1_1STVector256.html#a6bd443eec0924c8b8f95e6c6d812117c">ripple::STVector256::push_back</a></div><div class="ttdeci">void push_back(uint256 const &amp;v)</div><div class="ttdef"><b>Definition:</b> <a href="STVector256_8h_source.html#l00160">STVector256.h:160</a></div></div>
+<div class="ttc" id="aclassripple_1_1STVector256_html_a6bd443eec0924c8b8f95e6c6d812117c"><div class="ttname"><a href="classripple_1_1STVector256.html#a6bd443eec0924c8b8f95e6c6d812117c">ripple::STVector256::push_back</a></div><div class="ttdeci">void push_back(uint256 const &amp;v)</div><div class="ttdef"><b>Definition:</b> <a href="STVector256_8h_source.html#l00158">STVector256.h:158</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ac258349be8397bcc873d4eb789c70a6c"><div class="ttname"><a href="namespaceripple.html#ac258349be8397bcc873d4eb789c70a6c">ripple::dirNodeMaxPages</a></div><div class="ttdeci">constexpr std::uint64_t dirNodeMaxPages</div><div class="ttdoc">The maximum number of pages allowed in a directory.</div><div class="ttdef"><b>Definition:</b> <a href="Protocol_8h_source.html#l00054">Protocol.h:54</a></div></div>
 <div class="ttc" id="aclassripple_1_1ApplyView_html_a542437b9b59a623e755979acdc075af5"><div class="ttname"><a href="classripple_1_1ApplyView.html#a542437b9b59a623e755979acdc075af5">ripple::ApplyView::update</a></div><div class="ttdeci">virtual void update(std::shared_ptr&lt; SLE &gt; const &amp;sle)=0</div><div class="ttdoc">Indicate changes to a peeked SLE.</div></div>
 <div class="ttc" id="afunction_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a></div></div>
 <div class="ttc" id="asort_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/sort.html">std::sort</a></div><div class="ttdeci">T sort(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1ApplyView_html_a080612d2b57bd395c73290aea671b551"><div class="ttname"><a href="classripple_1_1ApplyView.html#a080612d2b57bd395c73290aea671b551">ripple::ApplyView::dirAdd</a></div><div class="ttdeci">boost::optional&lt; std::uint64_t &gt; dirAdd(bool preserveOrder, Keylet const &amp;directory, uint256 const &amp;key, std::function&lt; void(std::shared_ptr&lt; SLE &gt; const &amp;)&gt; const &amp;describe)</div><div class="ttdoc">Add an entry to a directory using the specified insert strategy.</div><div class="ttdef"><b>Definition:</b> <a href="ApplyView_8cpp_source.html#l00028">ApplyView.cpp:28</a></div></div>
 <div class="ttc" id="aclassripple_1_1ApplyView_html_a5a06441ef4fdb9b7f6e51437ce4a959f"><div class="ttname"><a href="classripple_1_1ApplyView.html#a5a06441ef4fdb9b7f6e51437ce4a959f">ripple::ApplyView::dirRemove</a></div><div class="ttdeci">bool dirRemove(Keylet const &amp;directory, std::uint64_t page, uint256 const &amp;key, bool keepRoot)</div><div class="ttdoc">Remove an entry from a directory.</div><div class="ttdef"><b>Definition:</b> <a href="ApplyView_8cpp_source.html#l00189">ApplyView.cpp:189</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a10924290886398d9747dac78ba256553"><div class="ttname"><a href="namespaceripple.html#a10924290886398d9747dac78ba256553">ripple::sfIndexPrevious</a></div><div class="ttdeci">const SF_U64 sfIndexPrevious(access, STI_UINT64, 2, &quot;IndexPrevious&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00380">SField.h:380</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a10924290886398d9747dac78ba256553"><div class="ttname"><a href="namespaceripple.html#a10924290886398d9747dac78ba256553">ripple::sfIndexPrevious</a></div><div class="ttdeci">const SF_U64 sfIndexPrevious(access, STI_UINT64, 2, &quot;IndexPrevious&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00395">SField.h:395</a></div></div>
 <div class="ttc" id="astructripple_1_1Keylet_html_a482983062843a8682fcea76a309c73db"><div class="ttname"><a href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">ripple::Keylet::key</a></div><div class="ttdeci">uint256 key</div><div class="ttdef"><b>Definition:</b> <a href="Keylet_8h_source.html#l00041">Keylet.h:41</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 256 &gt;</a></div></div>
 <div class="ttc" id="astructripple_1_1Keylet_html_a194d83c488eaa909ae4bcf816d8f4cb0"><div class="ttname"><a href="structripple_1_1Keylet.html#a194d83c488eaa909ae4bcf816d8f4cb0">ripple::Keylet::type</a></div><div class="ttdeci">LedgerEntryType type</div><div class="ttdef"><b>Definition:</b> <a href="Keylet_8h_source.html#l00040">Keylet.h:40</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a7a057a09039ceedfe09aa311644c91b9"><div class="ttname"><a href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">ripple::sfIndexes</a></div><div class="ttdeci">const SF_Vec256 sfIndexes(access, STI_VECTOR256, 1, &quot;Indexes&quot;, SField::sMD_Never)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00473">SField.h:473</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a7a057a09039ceedfe09aa311644c91b9"><div class="ttname"><a href="namespaceripple.html#a7a057a09039ceedfe09aa311644c91b9">ripple::sfIndexes</a></div><div class="ttdeci">const SF_Vec256 sfIndexes(access, STI_VECTOR256, 1, &quot;Indexes&quot;, SField::sMD_Never)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00487">SField.h:487</a></div></div>
 <div class="ttc" id="aclassripple_1_1ApplyView_html_aa3c5b5cd9dca5f906be4b36640706e3c"><div class="ttname"><a href="classripple_1_1ApplyView.html#aa3c5b5cd9dca5f906be4b36640706e3c">ripple::ApplyView::insert</a></div><div class="ttdeci">virtual void insert(std::shared_ptr&lt; SLE &gt; const &amp;sle)=0</div><div class="ttdoc">Insert a new state SLE.</div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="alower_bound_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/lower_bound.html">std::lower_bound</a></div><div class="ttdeci">T lower_bound(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1ApplyView_html_a68f2bcf1204498ac968947005ef9c3de"><div class="ttname"><a href="classripple_1_1ApplyView.html#a68f2bcf1204498ac968947005ef9c3de">ripple::ApplyView::emptyDirDelete</a></div><div class="ttdeci">bool emptyDirDelete(Keylet const &amp;directory)</div><div class="ttdoc">Remove the specified directory, if it is empty.</div><div class="ttdef"><b>Definition:</b> <a href="ApplyView_8cpp_source.html#l00125">ApplyView.cpp:125</a></div></div>
-<div class="ttc" id="anamespaceripple_html_aefd2f77338ce3c9a2fffc4f0b289b483"><div class="ttname"><a href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">ripple::LogicError</a></div><div class="ttdeci">void LogicError(std::string const &amp;how) noexcept</div><div class="ttdoc">Called when faulty logic causes a broken invariant.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00050">contract.cpp:50</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aefd2f77338ce3c9a2fffc4f0b289b483"><div class="ttname"><a href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">ripple::LogicError</a></div><div class="ttdeci">void LogicError(std::string const &amp;how) noexcept</div><div class="ttdoc">Called when faulty logic causes a broken invariant.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00048">contract.cpp:48</a></div></div>
 <div class="ttc" id="acassert_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cassert.html">cassert</a></div></div>
 <div class="ttc" id="aclassripple_1_1STVector256_html"><div class="ttname"><a href="classripple_1_1STVector256.html">ripple::STVector256</a></div><div class="ttdef"><b>Definition:</b> <a href="STVector256_8h_source.html#l00029">STVector256.h:29</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a1e94eaf7bff76b10fa0b8c3e96d1406e"><div class="ttname"><a href="namespaceripple.html#a1e94eaf7bff76b10fa0b8c3e96d1406e">ripple::sfRootIndex</a></div><div class="ttdeci">const SF_U256 sfRootIndex(access, STI_HASH256, 8, &quot;RootIndex&quot;, SField::sMD_Always)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00408">SField.h:408</a></div></div>
-<div class="ttc" id="anamespaceripple_html_af6e0324b257fc9992b83ecf827c2a07ba1ca6f5da9e86f814af3d6f8b3631ebe8"><div class="ttname"><a href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba1ca6f5da9e86f814af3d6f8b3631ebe8">ripple::ltDIR_NODE</a></div><div class="ttdeci">@ ltDIR_NODE</div><div class="ttdoc">Directory node.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerFormats_8h_source.html#l00065">LedgerFormats.h:65</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a1e94eaf7bff76b10fa0b8c3e96d1406e"><div class="ttname"><a href="namespaceripple.html#a1e94eaf7bff76b10fa0b8c3e96d1406e">ripple::sfRootIndex</a></div><div class="ttdeci">const SF_U256 sfRootIndex(access, STI_HASH256, 8, &quot;RootIndex&quot;, SField::sMD_Always)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00422">SField.h:422</a></div></div>
+<div class="ttc" id="anamespaceripple_html_af6e0324b257fc9992b83ecf827c2a07ba1ca6f5da9e86f814af3d6f8b3631ebe8"><div class="ttname"><a href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba1ca6f5da9e86f814af3d6f8b3631ebe8">ripple::ltDIR_NODE</a></div><div class="ttdeci">@ ltDIR_NODE</div><div class="ttdoc">Directory node.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerFormats_8h_source.html#l00064">LedgerFormats.h:64</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa92d4d5c77691ea9bf8a848d84187e39"><div class="ttname"><a href="namespaceripple.html#aa92d4d5c77691ea9bf8a848d84187e39">ripple::dirNodeMaxEntries</a></div><div class="ttdeci">constexpr std::size_t dirNodeMaxEntries</div><div class="ttdoc">The maximum number of entries per directory page.</div><div class="ttdef"><b>Definition:</b> <a href="Protocol_8h_source.html#l00051">Protocol.h:51</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1keylet_html_a7fed9808de2218dfe38198c055f87663"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a7fed9808de2218dfe38198c055f87663">ripple::keylet::page</a></div><div class="ttdeci">Keylet page(uint256 const &amp;key, std::uint64_t index)</div><div class="ttdoc">A page in a directory.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00324">Indexes.cpp:324</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1keylet_html_a7fed9808de2218dfe38198c055f87663"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a7fed9808de2218dfe38198c055f87663">ripple::keylet::page</a></div><div class="ttdeci">Keylet page(uint256 const &amp;key, std::uint64_t index)</div><div class="ttdoc">A page in a directory.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00302">Indexes.cpp:302</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

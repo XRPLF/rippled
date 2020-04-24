@@ -131,18 +131,18 @@ Collaboration diagram for ripple::TransactionAcquire:</div>
 Public Types</h2></td></tr>
 <tr class="memitem:a40bfa431149aed22de8ea7abd678629c"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a40bfa431149aed22de8ea7abd678629c">pointer</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1TransactionAcquire.html">TransactionAcquire</a> &gt;</td></tr>
 <tr class="separator:a40bfa431149aed22de8ea7abd678629c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae147b69aac46508c5134297465e09bcc"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#ae147b69aac46508c5134297465e09bcc">clock_type</a> = <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a> &gt;</td></tr>
-<tr class="separator:ae147b69aac46508c5134297465e09bcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a207a1e289a2129e8993947e2df8e2d74"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a207a1e289a2129e8993947e2df8e2d74">clock_type</a> = <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a> &gt;</td></tr>
+<tr class="separator:a207a1e289a2129e8993947e2df8e2d74"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a4a8fefd944c49d1b6d2f9133a00efbdf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a4a8fefd944c49d1b6d2f9133a00efbdf">TransactionAcquire</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;<a class="el" href="classripple_1_1PeerSet.html#a1e14dc0ccaba1b137081db5ac45731b6">app</a>, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="el" href="classripple_1_1PeerSet.html#ae147b69aac46508c5134297465e09bcc">clock_type</a> &amp;clock)</td></tr>
+<tr class="memitem:a4a8fefd944c49d1b6d2f9133a00efbdf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a4a8fefd944c49d1b6d2f9133a00efbdf">TransactionAcquire</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;<a class="el" href="classripple_1_1PeerSet.html#a1e14dc0ccaba1b137081db5ac45731b6">app</a>, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="el" href="classripple_1_1PeerSet.html#a207a1e289a2129e8993947e2df8e2d74">clock_type</a> &amp;clock)</td></tr>
 <tr class="separator:a4a8fefd944c49d1b6d2f9133a00efbdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06a996f9c8f481e4c81fc6a86a254e91"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a06a996f9c8f481e4c81fc6a86a254e91">~TransactionAcquire</a> ()=default</td></tr>
 <tr class="separator:a06a996f9c8f481e4c81fc6a86a254e91"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad6a3fc30e3a7396dca498d277cce3c4f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMap.html">SHAMap</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#ad6a3fc30e3a7396dca498d277cce3c4f">getMap</a> ()</td></tr>
 <tr class="separator:ad6a3fc30e3a7396dca498d277cce3c4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d0001518ae50ed99f26b905ca6a0197"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a2d0001518ae50ed99f26b905ca6a0197">takeNodes</a> (const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/list.html">std::list</a>&lt; <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> &gt; &amp;IDs, const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/list.html">std::list</a>&lt; <a class="el" href="namespaceripple.html#a33f2e976cb41ee4a52c5df14695377ec">Blob</a> &gt; &amp;data, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; const &amp;)</td></tr>
+<tr class="memitem:a2d0001518ae50ed99f26b905ca6a0197"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a2d0001518ae50ed99f26b905ca6a0197">takeNodes</a> (const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/list.html">std::list</a>&lt; <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> &gt; &amp;IDs, const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/list.html">std::list</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt; &amp;data, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; const &amp;)</td></tr>
 <tr class="separator:a2d0001518ae50ed99f26b905ca6a0197"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6bb370b7cd8b82c130d0e58acda42064"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a6bb370b7cd8b82c130d0e58acda42064">init</a> (int <a class="el" href="namespaceripple.html#a6fb8bd4df2c5490143227e364868e46aab8652ba790968033ade1e2732478d440">startPeers</a>)</td></tr>
 <tr class="separator:a6bb370b7cd8b82c130d0e58acda42064"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -188,8 +188,8 @@ Static Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-types"></a>
 Protected Types</h2></td></tr>
-<tr class="memitem:ad09235538e0c16ca8c22fef97bf53390"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#ad09235538e0c16ca8c22fef97bf53390">ScopedLockType</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a> &gt;</td></tr>
-<tr class="separator:ad09235538e0c16ca8c22fef97bf53390"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90a3672f3016e5d1c6128061879ec41e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a90a3672f3016e5d1c6128061879ec41e">ScopedLockType</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a> &gt;</td></tr>
+<tr class="separator:a90a3672f3016e5d1c6128061879ec41e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -216,7 +216,7 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a706a011ba681781598055237f2d7fdaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63e0e407163a2e3f9fcd9135f519b5d1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a63e0e407163a2e3f9fcd9135f519b5d1">m_journal</a></td></tr>
 <tr class="separator:a63e0e407163a2e3f9fcd9135f519b5d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2948d22daac5896d15ba248073378d7e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1PeerSet.html#ae147b69aac46508c5134297465e09bcc">clock_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a2948d22daac5896d15ba248073378d7e">m_clock</a></td></tr>
+<tr class="memitem:a2948d22daac5896d15ba248073378d7e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1PeerSet.html#a207a1e289a2129e8993947e2df8e2d74">clock_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a2948d22daac5896d15ba248073378d7e">m_clock</a></td></tr>
 <tr class="separator:a2948d22daac5896d15ba248073378d7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab4fa0ea92f95d96e69d2149e23d02ea4"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#ab4fa0ea92f95d96e69d2149e23d02ea4">mLock</a></td></tr>
 <tr class="separator:ab4fa0ea92f95d96e69d2149e23d02ea4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -243,7 +243,7 @@ Protected Attributes</h2></td></tr>
 Private Member Functions</h2></td></tr>
 <tr class="memitem:ad00323d6a9fc4fd657c0618be508c25d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#ad00323d6a9fc4fd657c0618be508c25d">execute</a> () override</td></tr>
 <tr class="separator:ad00323d6a9fc4fd657c0618be508c25d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3c478137ad5621d4290f242c6de834ba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a3c478137ad5621d4290f242c6de834ba">onTimer</a> (bool <a class="el" href="classripple_1_1PeerSet.html#ad7733986159c48a56d6e5049817a7c66">progress</a>, <a class="el" href="classripple_1_1PeerSet.html#ad09235538e0c16ca8c22fef97bf53390">ScopedLockType</a> &amp;peerSetLock) override</td></tr>
+<tr class="memitem:a3c478137ad5621d4290f242c6de834ba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#a3c478137ad5621d4290f242c6de834ba">onTimer</a> (bool <a class="el" href="classripple_1_1PeerSet.html#ad7733986159c48a56d6e5049817a7c66">progress</a>, <a class="el" href="classripple_1_1PeerSet.html#a90a3672f3016e5d1c6128061879ec41e">ScopedLockType</a> &amp;peerSetLock) override</td></tr>
 <tr class="separator:a3c478137ad5621d4290f242c6de834ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aab4a4a9c9727ad718ce32ff70cfca7a7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionAcquire.html#aab4a4a9c9727ad718ce32ff70cfca7a7">newPeer</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; const &amp;peer) override</td></tr>
 <tr class="separator:aab4a4a9c9727ad718ce32ff70cfca7a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -286,12 +286,12 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00039">39</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00043">43</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
 
 </div>
 </div>
-<a id="ae147b69aac46508c5134297465e09bcc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae147b69aac46508c5134297465e09bcc">&#9670;&nbsp;</a></span>clock_type</h2>
+<a id="a207a1e289a2129e8993947e2df8e2d74"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a207a1e289a2129e8993947e2df8e2d74">&#9670;&nbsp;</a></span>clock_type</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -300,7 +300,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1PeerSet.html#ae147b69aac46508c5134297465e09bcc">ripple::PeerSet::clock_type</a> =  <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a> &lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1PeerSet.html#a207a1e289a2129e8993947e2df8e2d74">ripple::PeerSet::clock_type</a> =  <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a>&gt;</td>
         </tr>
       </table>
   </td>
@@ -314,8 +314,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="ad09235538e0c16ca8c22fef97bf53390"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad09235538e0c16ca8c22fef97bf53390">&#9670;&nbsp;</a></span>ScopedLockType</h2>
+<a id="a90a3672f3016e5d1c6128061879ec41e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a90a3672f3016e5d1c6128061879ec41e">&#9670;&nbsp;</a></span>ScopedLockType</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -324,7 +324,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1PeerSet.html#ad09235538e0c16ca8c22fef97bf53390">ripple::PeerSet::ScopedLockType</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a> &lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1PeerSet.html#a90a3672f3016e5d1c6128061879ec41e">ripple::PeerSet::ScopedLockType</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a>&gt;</td>
         </tr>
       </table>
   </td>
@@ -334,7 +334,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00113">113</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00123">123</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -360,7 +360,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1PeerSet.html#ae147b69aac46508c5134297465e09bcc">clock_type</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1PeerSet.html#a207a1e289a2129e8993947e2df8e2d74">clock_type</a> &amp;&#160;</td>
           <td class="paramname"><em>clock</em>&#160;</td>
         </tr>
         <tr>
@@ -371,7 +371,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00043">43</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00042">42</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -424,7 +424,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00037">37</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00038">38</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
 
 </div>
 </div>
@@ -443,7 +443,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00045">45</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00053">53</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
 
 </div>
 </div>
@@ -462,7 +462,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/list.html">std::list</a>&lt; <a class="el" href="namespaceripple.html#a33f2e976cb41ee4a52c5df14695377ec">Blob</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/list.html">std::list</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>data</em>, </td>
         </tr>
         <tr>
@@ -479,7 +479,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00185">185</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00193">193</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -499,7 +499,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00251">251</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00268">268</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -518,7 +518,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00260">260</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00278">278</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -547,7 +547,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1PeerSet.html#afde43ea124398d0a0ab9ff95afaf85c2">ripple::PeerSet</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00054">54</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00061">61</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -569,7 +569,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1PeerSet.html#ad09235538e0c16ca8c22fef97bf53390">ScopedLockType</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1PeerSet.html#a90a3672f3016e5d1c6128061879ec41e">ScopedLockType</a> &amp;&#160;</td>
           <td class="paramname"><em>peerSetLock</em>&#160;</td>
         </tr>
         <tr>
@@ -587,7 +587,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1PeerSet.html#ac0416d2dcd2e5eb8801f55b03f4875e1">ripple::PeerSet</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00095">95</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00099">99</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -617,7 +617,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1PeerSet.html#acaa7bf55178186d405eed580f4641cc1">ripple::PeerSet</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00068">68</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00082">82</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
 
 </div>
 </div>
@@ -644,7 +644,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00064">64</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00070">70</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -672,7 +672,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00246">246</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00262">262</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -700,7 +700,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00122">122</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00128">128</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -729,7 +729,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1PeerSet.html#af1c64f5cd21f67f9e232c42195aed820">ripple::PeerSet</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00117">117</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8cpp_source.html#l00122">122</a> of file <a class="el" href="TransactionAcquire_8cpp_source.html">TransactionAcquire.cpp</a>.</p>
 
 </div>
 </div>
@@ -758,7 +758,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns the hash of the data we want. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00054">54</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00055">55</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -787,7 +787,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns true if we got all the data. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00060">60</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00062">62</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -816,7 +816,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns false if we failed to get the data. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00066">66</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00069">69</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -845,7 +845,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns the number of times we timed out. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00072">72</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00076">76</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -872,7 +872,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00107">107</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00114">114</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
 
 </div>
 </div>
@@ -901,7 +901,7 @@ Private Attributes</h2></td></tr>
 
 <p>Called to indicate that forward progress has been made. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00080">80</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00086">86</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -928,7 +928,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00085">85</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00092">92</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -955,7 +955,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00090">90</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00098">98</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -986,7 +986,7 @@ Private Attributes</h2></td></tr>
 <p>Insert a peer to the managed set. </p>
 <p>This will call the derived class hook function. </p><dl class="section return"><dt>Returns</dt><dd><code>true</code> If the peer was added </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00058">58</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00062">62</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
 
 </div>
 </div>
@@ -1013,7 +1013,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00101">101</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00111">111</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1040,7 +1040,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00107">107</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00117">117</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1067,7 +1067,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00128">128</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00147">147</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1094,7 +1094,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00133">133</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00153">153</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1121,7 +1121,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00137">137</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00158">158</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1148,7 +1148,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00083">83</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00088">88</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
 
 </div>
 </div>
@@ -1176,7 +1176,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00121">121</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00132">132</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
 
 </div>
 </div>
@@ -1214,7 +1214,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00113">113</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00121">121</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
 
 </div>
 </div>
@@ -1241,7 +1241,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00069">69</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00074">74</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
 
 </div>
 </div>
@@ -1268,7 +1268,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00137">137</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00149">149</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
 
 </div>
 </div>
@@ -1292,7 +1292,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00137">137</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00153">153</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
 
 </div>
 </div>
@@ -1317,7 +1317,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00059">59</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00071">71</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
 
 </div>
 </div>
@@ -1341,7 +1341,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00060">60</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00072">72</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
 
 </div>
 </div>
@@ -1365,7 +1365,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00061">61</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionAcquire_8h_source.html#l00073">73</a> of file <a class="el" href="TransactionAcquire_8h_source.html">TransactionAcquire.h</a>.</p>
 
 </div>
 </div>
@@ -1389,7 +1389,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00153">153</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00181">181</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1413,7 +1413,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00154">154</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00182">182</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1427,7 +1427,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1PeerSet.html#ae147b69aac46508c5134297465e09bcc">clock_type</a>&amp; ripple::PeerSet::m_clock</td>
+          <td class="memname"><a class="el" href="classripple_1_1PeerSet.html#a207a1e289a2129e8993947e2df8e2d74">clock_type</a>&amp; ripple::PeerSet::m_clock</td>
         </tr>
       </table>
   </td>
@@ -1437,7 +1437,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00155">155</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00183">183</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1461,7 +1461,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00157">157</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00185">185</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1485,7 +1485,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00159">159</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00187">187</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1509,7 +1509,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00160">160</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00188">188</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1533,7 +1533,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00161">161</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00189">189</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1557,7 +1557,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00162">162</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00190">190</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1581,7 +1581,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00163">163</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00191">191</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1605,7 +1605,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00164">164</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00192">192</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1629,7 +1629,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00165">165</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00193">193</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1653,7 +1653,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00168">168</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00196">196</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1677,7 +1677,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00171">171</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00199">199</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>

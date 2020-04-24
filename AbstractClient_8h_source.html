@@ -107,18 +107,18 @@ $(function() {
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classripple_1_1test_1_1AbstractClient.html#a38e2e35183e342c84a332666f30574ee">~AbstractClient</a>() = <span class="keywordflow">default</span>;</div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <a class="code" href="classripple_1_1test_1_1AbstractClient.html#a3721f0d6e504c6ffba3a1284992fceb3">AbstractClient</a>() = <span class="keywordflow">default</span>;</div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="code" href="classripple_1_1test_1_1AbstractClient.html#a3721f0d6e504c6ffba3a1284992fceb3">AbstractClient</a>(<a class="code" href="classripple_1_1test_1_1AbstractClient.html">AbstractClient</a> <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <a class="code" href="classripple_1_1test_1_1AbstractClient.html">AbstractClient</a>&amp; <a class="code" href="classripple_1_1test_1_1AbstractClient.html#a24611a95a19e99344ee63ce161220997">operator=</a>(<a class="code" href="classripple_1_1test_1_1AbstractClient.html">AbstractClient</a> <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <a class="code" href="classripple_1_1test_1_1AbstractClient.html#a48e55a0ee80a76c782d40f1d055f0d55">invoke</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; cmd,</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; params = {}) = 0;</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">unsigned</span> <a class="code" href="classripple_1_1test_1_1AbstractClient.html#a3245f799f5c542b353b61b94292d6ad9">version</a>() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <a class="code" href="classripple_1_1test_1_1AbstractClient.html">AbstractClient</a>&amp;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <a class="code" href="classripple_1_1test_1_1AbstractClient.html#a24611a95a19e99344ee63ce161220997">operator=</a>(<a class="code" href="classripple_1_1test_1_1AbstractClient.html">AbstractClient</a> <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <a class="code" href="classripple_1_1test_1_1AbstractClient.html#a48e55a0ee80a76c782d40f1d055f0d55">invoke</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; cmd, <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; params = {}) = 0;</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">unsigned</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <a class="code" href="classripple_1_1test_1_1AbstractClient.html#a3245f799f5c542b353b61b94292d6ad9">version</a>() <span class="keyword">const</span> = 0;</div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;};</div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;} <span class="comment">// test</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
@@ -130,7 +130,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1AbstractClient_html_a24611a95a19e99344ee63ce161220997"><div class="ttname"><a href="classripple_1_1test_1_1AbstractClient.html#a24611a95a19e99344ee63ce161220997">ripple::test::AbstractClient::operator=</a></div><div class="ttdeci">AbstractClient &amp; operator=(AbstractClient const &amp;)=delete</div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1AbstractClient_html_a3721f0d6e504c6ffba3a1284992fceb3"><div class="ttname"><a href="classripple_1_1test_1_1AbstractClient.html#a3721f0d6e504c6ffba3a1284992fceb3">ripple::test::AbstractClient::AbstractClient</a></div><div class="ttdeci">AbstractClient()=default</div></div>
-<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00141">json_value.h:141</a></div></div>
+<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00145">json_value.h:145</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

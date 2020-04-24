@@ -103,26 +103,32 @@ $(function() {
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keyword">class </span>Key,</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keyword">class </span>T,</div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keyword">class </span>Clock = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a>,</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keyword">class </span>Hash = <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/hash.html">std::hash &lt;Key&gt;</a>,</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keyword">class </span>KeyEqual = <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/equal_to.html">std::equal_to &lt;Key&gt;</a>,</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keyword">class </span>Allocator = <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/allocator.html">std::allocator &lt;std::pair &lt;Key const, T&gt;</a>&gt;</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;&gt;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="keyword">using</span> <a class="code" href="namespacebeast.html#a9376ecd8365129e06c75dcc9f92afc89">aged_unordered_multimap</a> = detail::aged_unordered_container &lt;</div>
-<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="namespacebeast.html#a9376ecd8365129e06c75dcc9f92afc89">   40</a></span>&#160;    <span class="keyword">true</span>, <span class="keyword">true</span>, Key, T, Clock, Hash, KeyEqual, Allocator&gt;;</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;}</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keyword">class </span>Hash = <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/hash.html">std::hash&lt;Key&gt;</a>,</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keyword">class </span>KeyEqual = <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/equal_to.html">std::equal_to&lt;Key&gt;</a>,</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keyword">class </span>Allocator = <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/allocator.html">std::allocator&lt;std::pair&lt;Key const, T&gt;</a>&gt;&gt;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="keyword">using</span> <a class="code" href="namespacebeast.html#a7754609d295ab2a8b90c9600e304afbd">aged_unordered_multimap</a> = detail::aged_unordered_container&lt;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    Key,</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    T,</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    Clock,</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    Hash,</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    KeyEqual,</div>
+<div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="namespacebeast.html#a7754609d295ab2a8b90c9600e304afbd">   46</a></span>&#160;    Allocator&gt;;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;}</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="asteady_clock_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a></div></div>
 <div class="ttc" id="afunctional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/functional.html">functional</a></div></div>
 <div class="ttc" id="achrono_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/chrono.html">chrono</a></div></div>
-<div class="ttc" id="anamespacebeast_html_a9376ecd8365129e06c75dcc9f92afc89"><div class="ttname"><a href="namespacebeast.html#a9376ecd8365129e06c75dcc9f92afc89">beast::aged_unordered_multimap</a></div><div class="ttdeci">detail::aged_unordered_container&lt; true, true, Key, T, Clock, Hash, KeyEqual, Allocator &gt; aged_unordered_multimap</div><div class="ttdef"><b>Definition:</b> <a href="aged__unordered__multimap_8h_source.html#l00040">aged_unordered_multimap.h:40</a></div></div>
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
 <div class="ttc" id="aequal_to_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/functional/equal_to.html">std::equal_to</a></div></div>
+<div class="ttc" id="anamespacebeast_html_a7754609d295ab2a8b90c9600e304afbd"><div class="ttname"><a href="namespacebeast.html#a7754609d295ab2a8b90c9600e304afbd">beast::aged_unordered_multimap</a></div><div class="ttdeci">detail::aged_unordered_container&lt; true, true, Key, T, Clock, Hash, KeyEqual, Allocator &gt; aged_unordered_multimap</div><div class="ttdef"><b>Definition:</b> <a href="aged__unordered__multimap_8h_source.html#l00046">aged_unordered_multimap.h:46</a></div></div>
 <div class="ttc" id="aallocator_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/allocator.html">std::allocator</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="ahash_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/hash.html">std::hash</a></div></div>
-<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00582">base_uint.h:582</a></div></div>
+<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00646">base_uint.h:646</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

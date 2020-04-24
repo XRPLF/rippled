@@ -103,26 +103,26 @@ $(function() {
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;{</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="keyword">public</span>:</div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">class</span> Clock&gt;</div>
-<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="classbeast_1_1abstract__clock__test.html#a5a2ad22174d0d4d69b120f2c2f6f5f6c">   35</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classbeast_1_1abstract__clock__test.html#a5a2ad22174d0d4d69b120f2c2f6f5f6c">test</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> name, <a class="code" href="classbeast_1_1abstract__clock.html">abstract_clock&lt;Clock&gt;</a>&amp; c)</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    {</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        testcase (name);</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> t1 (c.<a class="code" href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">now</a> ());</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/sleep_for.html">std::this_thread::sleep_for</a> (</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> (1500));</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> t2 (c.<a class="code" href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">now</a> ());</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="classbeast_1_1abstract__clock__test.html#a5a2ad22174d0d4d69b120f2c2f6f5f6c">   36</a></span>&#160;    <a class="code" href="classbeast_1_1abstract__clock__test.html#a5a2ad22174d0d4d69b120f2c2f6f5f6c">test</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> name, <a class="code" href="classbeast_1_1abstract__clock.html">abstract_clock&lt;Clock&gt;</a>&amp; c)</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    {</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        testcase(name);</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> t1(c.<a class="code" href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">now</a>());</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/sleep_for.html">std::this_thread::sleep_for</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>(1500));</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> t2(c.<a class="code" href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">now</a>());</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        log &lt;&lt;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            <span class="stringliteral">&quot;t1= &quot;</span> &lt;&lt; t1.time_since_epoch().count() &lt;&lt;</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;            <span class="stringliteral">&quot;, t2= &quot;</span> &lt;&lt; t2.time_since_epoch().count() &lt;&lt;</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;            <span class="stringliteral">&quot;, elapsed= &quot;</span> &lt;&lt; (t2 - t1).count() &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a>;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        pass ();</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    }</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="classbeast_1_1abstract__clock__test.html#adc187fc84f2b167414bb69e901db1546">   52</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classbeast_1_1abstract__clock__test.html#adc187fc84f2b167414bb69e901db1546">test_manual</a> ()</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        log &lt;&lt; <span class="stringliteral">&quot;t1= &quot;</span> &lt;&lt; t1.time_since_epoch().count()</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            &lt;&lt; <span class="stringliteral">&quot;, t2= &quot;</span> &lt;&lt; t2.time_since_epoch().count()</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;            &lt;&lt; <span class="stringliteral">&quot;, elapsed= &quot;</span> &lt;&lt; (t2 - t1).count() &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a>;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        pass();</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    }</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="classbeast_1_1abstract__clock__test.html#adc187fc84f2b167414bb69e901db1546">   52</a></span>&#160;    <a class="code" href="classbeast_1_1abstract__clock__test.html#adc187fc84f2b167414bb69e901db1546">test_manual</a>()</div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    {</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        testcase (<span class="stringliteral">&quot;manual&quot;</span>);</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        testcase(<span class="stringliteral">&quot;manual&quot;</span>);</div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keyword">using</span> clock_type = <a class="code" href="classbeast_1_1manual__clock.html">manual_clock&lt;std::chrono::steady_clock&gt;</a>;</div>
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        clock_type c;</div>
@@ -130,55 +130,50 @@ $(function() {
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> ss;</div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="keyword">auto</span> c1 = c.now().time_since_epoch();</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        c.set (clock_type::time_point (<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>(1)));</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        c.set(clock_type::time_point(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>(1)));</div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="keyword">auto</span> c2 = c.now().time_since_epoch();</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        c.set (clock_type::time_point (<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>(2)));</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        c.set(clock_type::time_point(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>(2)));</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="keyword">auto</span> c3 = c.now().time_since_epoch();</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        log &lt;&lt;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            <span class="stringliteral">&quot;[&quot;</span> &lt;&lt; c1.count () &lt;&lt; <span class="stringliteral">&quot;,&quot;</span> &lt;&lt; c2.count () &lt;&lt;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            <span class="stringliteral">&quot;,&quot;</span> &lt;&lt; c3.count () &lt;&lt; <span class="stringliteral">&quot;]&quot;</span> &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a>;</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        pass ();</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    }</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
-<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="classbeast_1_1abstract__clock__test.html#a4c17ccb7d4bcee9d3212fcb36e9f6f2d">   74</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classbeast_1_1abstract__clock__test.html#a4c17ccb7d4bcee9d3212fcb36e9f6f2d">run</a> ()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        log &lt;&lt; <span class="stringliteral">&quot;[&quot;</span> &lt;&lt; c1.count() &lt;&lt; <span class="stringliteral">&quot;,&quot;</span> &lt;&lt; c2.count() &lt;&lt; <span class="stringliteral">&quot;,&quot;</span> &lt;&lt; c3.count()</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            &lt;&lt; <span class="stringliteral">&quot;]&quot;</span> &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a>;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        pass();</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    }</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="classbeast_1_1abstract__clock__test.html#a4c17ccb7d4bcee9d3212fcb36e9f6f2d">   74</a></span>&#160;    <a class="code" href="classbeast_1_1abstract__clock__test.html#a4c17ccb7d4bcee9d3212fcb36e9f6f2d">run</a>()<span class="keyword"> override</span></div>
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <a class="code" href="classbeast_1_1abstract__clock__test.html#a5a2ad22174d0d4d69b120f2c2f6f5f6c">test</a> (<span class="stringliteral">&quot;steady_clock&quot;</span>, <a class="code" href="namespacebeast.html#a4ac75429da667d3b818a083ee007f116">get_abstract_clock</a>&lt;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a>&gt;());</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <a class="code" href="classbeast_1_1abstract__clock__test.html#a5a2ad22174d0d4d69b120f2c2f6f5f6c">test</a> (<span class="stringliteral">&quot;system_clock&quot;</span>, <a class="code" href="namespacebeast.html#a4ac75429da667d3b818a083ee007f116">get_abstract_clock</a>&lt;</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock.html">std::chrono::system_clock</a>&gt;());</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <a class="code" href="classbeast_1_1abstract__clock__test.html#a5a2ad22174d0d4d69b120f2c2f6f5f6c">test</a> (<span class="stringliteral">&quot;high_resolution_clock&quot;</span>, <a class="code" href="namespacebeast.html#a4ac75429da667d3b818a083ee007f116">get_abstract_clock</a>&lt;</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/high_resolution_clock.html">std::chrono::high_resolution_clock</a>&gt;());</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        <a class="code" href="classbeast_1_1abstract__clock__test.html#adc187fc84f2b167414bb69e901db1546">test_manual</a> ();</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    }</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;};</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<a class="code" href="namespacebeast.html#aa83b48cf9fff1a5bcd5c18fee13ab4d4">BEAST_DEFINE_TESTSUITE_MANUAL</a>(abstract_clock,chrono,<a class="code" href="namespacebeast.html">beast</a>);</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;}</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <a class="code" href="classbeast_1_1abstract__clock__test.html#a5a2ad22174d0d4d69b120f2c2f6f5f6c">test</a>(<span class="stringliteral">&quot;steady_clock&quot;</span>, get_abstract_clock&lt;std::chrono::steady_clock&gt;());</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <a class="code" href="classbeast_1_1abstract__clock__test.html#a5a2ad22174d0d4d69b120f2c2f6f5f6c">test</a>(<span class="stringliteral">&quot;system_clock&quot;</span>, get_abstract_clock&lt;std::chrono::system_clock&gt;());</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <a class="code" href="classbeast_1_1abstract__clock__test.html#a5a2ad22174d0d4d69b120f2c2f6f5f6c">test</a>(</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            <span class="stringliteral">&quot;high_resolution_clock&quot;</span>,</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            get_abstract_clock&lt;std::chrono::high_resolution_clock&gt;());</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <a class="code" href="classbeast_1_1abstract__clock__test.html#adc187fc84f2b167414bb69e901db1546">test_manual</a>();</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    }</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;};</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<a class="code" href="namespacebeast.html#aa83b48cf9fff1a5bcd5c18fee13ab4d4">BEAST_DEFINE_TESTSUITE_MANUAL</a>(abstract_clock, chrono, <a class="code" href="namespacebeast.html">beast</a>);</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;}  <span class="comment">// namespace beast</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="asystem_clock_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/system_clock.html">std::chrono::system_clock</a></div></div>
 <div class="ttc" id="asstream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/sstream.html">sstream</a></div></div>
-<div class="ttc" id="asteady_clock_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a></div></div>
 <div class="ttc" id="asleep_for_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/sleep_for.html">std::this_thread::sleep_for</a></div><div class="ttdeci">T sleep_for(T... args)</div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="aclassbeast_1_1abstract__clock__test_html_a5a2ad22174d0d4d69b120f2c2f6f5f6c"><div class="ttname"><a href="classbeast_1_1abstract__clock__test.html#a5a2ad22174d0d4d69b120f2c2f6f5f6c">beast::abstract_clock_test::test</a></div><div class="ttdeci">void test(std::string name, abstract_clock&lt; Clock &gt; &amp;c)</div><div class="ttdef"><b>Definition:</b> <a href="beast__abstract__clock__test_8cpp_source.html#l00035">beast_abstract_clock_test.cpp:35</a></div></div>
+<div class="ttc" id="aclassbeast_1_1abstract__clock__test_html_a5a2ad22174d0d4d69b120f2c2f6f5f6c"><div class="ttname"><a href="classbeast_1_1abstract__clock__test.html#a5a2ad22174d0d4d69b120f2c2f6f5f6c">beast::abstract_clock_test::test</a></div><div class="ttdeci">void test(std::string name, abstract_clock&lt; Clock &gt; &amp;c)</div><div class="ttdef"><b>Definition:</b> <a href="beast__abstract__clock__test_8cpp_source.html#l00036">beast_abstract_clock_test.cpp:36</a></div></div>
 <div class="ttc" id="aduration_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a></div></div>
 <div class="ttc" id="abasic_stringstream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassbeast_1_1abstract__clock_html_ac9a577663353bfea66a096f12cb85293"><div class="ttname"><a href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">beast::abstract_clock::now</a></div><div class="ttdeci">virtual time_point now() const =0</div><div class="ttdoc">Returns the current time.</div></div>
-<div class="ttc" id="ahigh_resolution_clock_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/high_resolution_clock.html">std::chrono::high_resolution_clock</a></div></div>
 <div class="ttc" id="athread_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/thread.html">thread</a></div></div>
 <div class="ttc" id="aclassbeast_1_1abstract__clock__test_html_a4c17ccb7d4bcee9d3212fcb36e9f6f2d"><div class="ttname"><a href="classbeast_1_1abstract__clock__test.html#a4c17ccb7d4bcee9d3212fcb36e9f6f2d">beast::abstract_clock_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="beast__abstract__clock__test_8cpp_source.html#l00074">beast_abstract_clock_test.cpp:74</a></div></div>
 <div class="ttc" id="aclassbeast_1_1abstract__clock__test_html"><div class="ttname"><a href="classbeast_1_1abstract__clock__test.html">beast::abstract_clock_test</a></div><div class="ttdef"><b>Definition:</b> <a href="beast__abstract__clock__test_8cpp_source.html#l00031">beast_abstract_clock_test.cpp:31</a></div></div>
-<div class="ttc" id="anamespacebeast_html_a4ac75429da667d3b818a083ee007f116"><div class="ttname"><a href="namespacebeast.html#a4ac75429da667d3b818a083ee007f116">beast::get_abstract_clock</a></div><div class="ttdeci">abstract_clock&lt; Facade &gt; &amp; get_abstract_clock()</div><div class="ttdoc">Returns a global instance of an abstract clock.</div><div class="ttdef"><b>Definition:</b> <a href="abstract__clock_8h_source.html#l00107">abstract_clock.h:107</a></div></div>
 <div class="ttc" id="aclassbeast_1_1abstract__clock_html"><div class="ttname"><a href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a></div><div class="ttdoc">Abstract interface to a clock.</div><div class="ttdef"><b>Definition:</b> <a href="abstract__clock_8h_source.html#l00057">abstract_clock.h:57</a></div></div>
 <div class="ttc" id="aendl_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a></div><div class="ttdeci">T endl(T... args)</div></div>
 <div class="ttc" id="aclassbeast_1_1manual__clock_html"><div class="ttname"><a href="classbeast_1_1manual__clock.html">beast::manual_clock&lt; std::chrono::steady_clock &gt;</a></div></div>
 <div class="ttc" id="anamespacebeast_html_aa83b48cf9fff1a5bcd5c18fee13ab4d4"><div class="ttname"><a href="namespacebeast.html#aa83b48cf9fff1a5bcd5c18fee13ab4d4">beast::BEAST_DEFINE_TESTSUITE_MANUAL</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE_MANUAL(abstract_clock, chrono, beast)</div></div>
 <div class="ttc" id="aclassbeast_1_1abstract__clock__test_html_adc187fc84f2b167414bb69e901db1546"><div class="ttname"><a href="classbeast_1_1abstract__clock__test.html#adc187fc84f2b167414bb69e901db1546">beast::abstract_clock_test::test_manual</a></div><div class="ttdeci">void test_manual()</div><div class="ttdef"><b>Definition:</b> <a href="beast__abstract__clock__test_8cpp_source.html#l00052">beast_abstract_clock_test.cpp:52</a></div></div>
-<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00582">base_uint.h:582</a></div></div>
+<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00646">base_uint.h:646</a></div></div>
 <div class="ttc" id="astring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/string.html">string</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

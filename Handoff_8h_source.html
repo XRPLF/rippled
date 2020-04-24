@@ -92,8 +92,8 @@ $(function() {
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_SERVER_HANDOFF_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/server/Writer.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;boost/beast/http/message.hpp&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;boost/beast/http/dynamic_body.hpp&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;boost/beast/http/dynamic_body.hpp&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;boost/beast/http/message.hpp&gt;</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a>&gt;</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
@@ -116,15 +116,16 @@ $(function() {
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="comment">// When set, this will be sent back</span></div>
 <div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="structripple_1_1Handoff.html#a808daa7fd8b0b6f64aec56b83ce5fe85">   47</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Writer&gt;</a> <a class="code" href="structripple_1_1Handoff.html#a808daa7fd8b0b6f64aec56b83ce5fe85">response</a>;</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="structripple_1_1Handoff.html#ab1477119f0015c9fee06bfcbd77da40b">   49</a></span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="structripple_1_1Handoff.html#ab1477119f0015c9fee06bfcbd77da40b">handled</a>()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="structripple_1_1Handoff.html#aaa0aa2a937dec4a692870365b7a4ad3d">moved</a> || <a class="code" href="structripple_1_1Handoff.html#a808daa7fd8b0b6f64aec56b83ce5fe85">response</a>;</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    }</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;};</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;} <span class="comment">// ripple</span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="structripple_1_1Handoff.html#ab1477119f0015c9fee06bfcbd77da40b">   50</a></span>&#160;    <a class="code" href="structripple_1_1Handoff.html#ab1477119f0015c9fee06bfcbd77da40b">handled</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="structripple_1_1Handoff.html#aaa0aa2a937dec4a692870365b7a4ad3d">moved</a> || <a class="code" href="structripple_1_1Handoff.html#a808daa7fd8b0b6f64aec56b83ce5fe85">response</a>;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    }</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;};</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_html_ae1899ff3d7d0a3000dff5b755a951381"><div class="ttname"><a href="namespaceripple.html#ae1899ff3d7d0a3000dff5b755a951381">ripple::http_request_type</a></div><div class="ttdeci">boost::beast::http::request&lt; boost::beast::http::dynamic_body &gt; http_request_type</div><div class="ttdef"><b>Definition:</b> <a href="Handoff_8h_source.html#l00031">Handoff.h:31</a></div></div>
@@ -132,7 +133,7 @@ $(function() {
 <div class="ttc" id="astructripple_1_1Handoff_html_aaa0aa2a937dec4a692870365b7a4ad3d"><div class="ttname"><a href="structripple_1_1Handoff.html#aaa0aa2a937dec4a692870365b7a4ad3d">ripple::Handoff::moved</a></div><div class="ttdeci">bool moved</div><div class="ttdef"><b>Definition:</b> <a href="Handoff_8h_source.html#l00041">Handoff.h:41</a></div></div>
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="astructripple_1_1Handoff_html_ab1477119f0015c9fee06bfcbd77da40b"><div class="ttname"><a href="structripple_1_1Handoff.html#ab1477119f0015c9fee06bfcbd77da40b">ripple::Handoff::handled</a></div><div class="ttdeci">bool handled() const</div><div class="ttdef"><b>Definition:</b> <a href="Handoff_8h_source.html#l00049">Handoff.h:49</a></div></div>
+<div class="ttc" id="astructripple_1_1Handoff_html_ab1477119f0015c9fee06bfcbd77da40b"><div class="ttname"><a href="structripple_1_1Handoff.html#ab1477119f0015c9fee06bfcbd77da40b">ripple::Handoff::handled</a></div><div class="ttdeci">bool handled() const</div><div class="ttdef"><b>Definition:</b> <a href="Handoff_8h_source.html#l00050">Handoff.h:50</a></div></div>
 <div class="ttc" id="astructripple_1_1Handoff_html"><div class="ttname"><a href="structripple_1_1Handoff.html">ripple::Handoff</a></div><div class="ttdoc">Used to indicate the result of a server connection handoff.</div><div class="ttdef"><b>Definition:</b> <a href="Handoff_8h_source.html#l00037">Handoff.h:37</a></div></div>
 <div class="ttc" id="astructripple_1_1Handoff_html_a808daa7fd8b0b6f64aec56b83ce5fe85"><div class="ttname"><a href="structripple_1_1Handoff.html#a808daa7fd8b0b6f64aec56b83ce5fe85">ripple::Handoff::response</a></div><div class="ttdeci">std::shared_ptr&lt; Writer &gt; response</div><div class="ttdef"><b>Definition:</b> <a href="Handoff_8h_source.html#l00047">Handoff.h:47</a></div></div>
 <div class="ttc" id="astructripple_1_1Handoff_html_a1200155ab6c4ac3ba14702a950c363cf"><div class="ttname"><a href="structripple_1_1Handoff.html#a1200155ab6c4ac3ba14702a950c363cf">ripple::Handoff::keep_alive</a></div><div class="ttdeci">bool keep_alive</div><div class="ttdef"><b>Definition:</b> <a href="Handoff_8h_source.html#l00044">Handoff.h:44</a></div></div>

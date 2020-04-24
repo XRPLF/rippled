@@ -92,9 +92,9 @@ $(function() {
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_APP_PENDINGSAVES_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/Protocol.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/map.html">map</a>&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/mutex.html">mutex</a>&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/condition_variable.html">condition_variable</a>&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/condition_variable.html">condition_variable</a>&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/map.html">map</a>&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/mutex.html">mutex</a>&gt;</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
@@ -102,103 +102,101 @@ $(function() {
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;{</div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="keyword">private</span>:</div>
 <div class="line"><a name="l00039"></a><span class="lineno"><a class="line" href="classripple_1_1PendingSaves.html#a42af5d3f85c5c19f1ef0a0bfb0eb0499">   39</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> <span class="keyword">mutable</span> <a class="code" href="classripple_1_1PendingSaves.html#a42af5d3f85c5c19f1ef0a0bfb0eb0499">mutex_</a>;</div>
-<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">   40</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map &lt;LedgerIndex, bool&gt;</a> <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>;</div>
+<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">   40</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map&lt;LedgerIndex, bool&gt;</a> <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>;</div>
 <div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="classripple_1_1PendingSaves.html#adddd84077db2028ee3e973f952918f05">   41</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/condition_variable.html">std::condition_variable</a> <a class="code" href="classripple_1_1PendingSaves.html#adddd84077db2028ee3e973f952918f05">await_</a>;</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="classripple_1_1PendingSaves.html#a9c7ac1e9824096756225e77ed14244c1">   52</a></span>&#160;    <a class="code" href="classripple_1_1PendingSaves.html#a9c7ac1e9824096756225e77ed14244c1">startWork</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a> seq)</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    {</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1PendingSaves.html#a42af5d3f85c5c19f1ef0a0bfb0eb0499">mutex_</a>);</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keyword">auto</span> it = <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>.find (seq);</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        <span class="keywordflow">if</span> ((it == <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>.end()) || it-&gt;second)</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        {</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            <span class="comment">// Work done or another thread is doing it</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        }</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        it-&gt;second = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    }</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00075"></a><span class="lineno"><a class="line" href="classripple_1_1PendingSaves.html#a50e49f47a9b7bbc2e7875918708b0624">   75</a></span>&#160;    <a class="code" href="classripple_1_1PendingSaves.html#a50e49f47a9b7bbc2e7875918708b0624">finishWork</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a> seq)</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    {</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1PendingSaves.html#a42af5d3f85c5c19f1ef0a0bfb0eb0499">mutex_</a>);</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>.erase (seq);</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <a class="code" href="classripple_1_1PendingSaves.html#adddd84077db2028ee3e973f952918f05">await_</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/condition_variable/notify_all.html">notify_all</a>();</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    }</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno"><a class="line" href="classripple_1_1PendingSaves.html#aeb28ec1977b7ac30071426b9170c7345">   85</a></span>&#160;    <a class="code" href="classripple_1_1PendingSaves.html#aeb28ec1977b7ac30071426b9170c7345">pending</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a> seq)</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    {</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1PendingSaves.html#a42af5d3f85c5c19f1ef0a0bfb0eb0499">mutex_</a>);</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>.find(seq) != <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>.end();</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    }</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00100"></a><span class="lineno"><a class="line" href="classripple_1_1PendingSaves.html#ab5e9e105f7d12575bc2025468b4cc1f8">  100</a></span>&#160;    <a class="code" href="classripple_1_1PendingSaves.html#ab5e9e105f7d12575bc2025468b4cc1f8">shouldWork</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a> seq, <span class="keywordtype">bool</span> isSynchronous)</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    {</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock &lt;std::mutex&gt;</a> lock(<a class="code" href="classripple_1_1PendingSaves.html#a42af5d3f85c5c19f1ef0a0bfb0eb0499">mutex_</a>);</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        <span class="keywordflow">do</span></div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        {</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            <span class="keyword">auto</span> it = <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>.find (seq);</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            <span class="keywordflow">if</span> (it == <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>.end())</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;            {</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>.emplace(seq, <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;            }</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160; </div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            <span class="keywordflow">if</span> (! isSynchronous)</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            {</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;                <span class="comment">// Already dispatched</span></div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            }</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            <span class="keywordflow">if</span> (! it-&gt;second)</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            {</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;                <span class="comment">// Scheduled, but not dispatched</span></div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            }</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            <span class="comment">// Already in progress, just need to wait</span></div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;            <a class="code" href="classripple_1_1PendingSaves.html#adddd84077db2028ee3e973f952918f05">await_</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/condition_variable/wait.html">wait</a> (lock);</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;        } <span class="keywordflow">while</span> (<span class="keyword">true</span>);</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    }</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160; </div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map &lt;LedgerIndex, bool&gt;</a></div>
-<div class="line"><a name="l00138"></a><span class="lineno"><a class="line" href="classripple_1_1PendingSaves.html#abc46a0811de3b7dbcca4ea7bcb217ffd">  138</a></span>&#160;    <a class="code" href="classripple_1_1PendingSaves.html#abc46a0811de3b7dbcca4ea7bcb217ffd">getSnapshot</a> ()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1PendingSaves.html#a42af5d3f85c5c19f1ef0a0bfb0eb0499">mutex_</a>);</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160; </div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>;</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    }</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="classripple_1_1PendingSaves.html#a9c7ac1e9824096756225e77ed14244c1">   51</a></span>&#160;    <a class="code" href="classripple_1_1PendingSaves.html#a9c7ac1e9824096756225e77ed14244c1">startWork</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a> seq)</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    {</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1PendingSaves.html#a42af5d3f85c5c19f1ef0a0bfb0eb0499">mutex_</a>);</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <span class="keyword">auto</span> it = <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>.find(seq);</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        <span class="keywordflow">if</span> ((it == <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>.end()) || it-&gt;second)</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        {</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;            <span class="comment">// Work done or another thread is doing it</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        }</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        it-&gt;second = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    }</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="classripple_1_1PendingSaves.html#a50e49f47a9b7bbc2e7875918708b0624">   74</a></span>&#160;    <a class="code" href="classripple_1_1PendingSaves.html#a50e49f47a9b7bbc2e7875918708b0624">finishWork</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a> seq)</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    {</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1PendingSaves.html#a42af5d3f85c5c19f1ef0a0bfb0eb0499">mutex_</a>);</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>.erase(seq);</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <a class="code" href="classripple_1_1PendingSaves.html#adddd84077db2028ee3e973f952918f05">await_</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/condition_variable/notify_all.html">notify_all</a>();</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    }</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00084"></a><span class="lineno"><a class="line" href="classripple_1_1PendingSaves.html#aeb28ec1977b7ac30071426b9170c7345">   84</a></span>&#160;    <a class="code" href="classripple_1_1PendingSaves.html#aeb28ec1977b7ac30071426b9170c7345">pending</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a> seq)</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    {</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1PendingSaves.html#a42af5d3f85c5c19f1ef0a0bfb0eb0499">mutex_</a>);</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>.find(seq) != <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>.end();</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    }</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00099"></a><span class="lineno"><a class="line" href="classripple_1_1PendingSaves.html#ab5e9e105f7d12575bc2025468b4cc1f8">   99</a></span>&#160;    <a class="code" href="classripple_1_1PendingSaves.html#ab5e9e105f7d12575bc2025468b4cc1f8">shouldWork</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a> seq, <span class="keywordtype">bool</span> isSynchronous)</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    {</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock&lt;std::mutex&gt;</a> lock(<a class="code" href="classripple_1_1PendingSaves.html#a42af5d3f85c5c19f1ef0a0bfb0eb0499">mutex_</a>);</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        <span class="keywordflow">do</span></div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        {</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;            <span class="keyword">auto</span> it = <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>.find(seq);</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            <span class="keywordflow">if</span> (it == <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>.end())</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            {</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>.emplace(seq, <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;            }</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            <span class="keywordflow">if</span> (!isSynchronous)</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            {</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;                <span class="comment">// Already dispatched</span></div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            }</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160; </div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            <span class="keywordflow">if</span> (!it-&gt;second)</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            {</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;                <span class="comment">// Scheduled, but not dispatched</span></div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            }</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160; </div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            <span class="comment">// Already in progress, just need to wait</span></div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            <a class="code" href="classripple_1_1PendingSaves.html#adddd84077db2028ee3e973f952918f05">await_</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/condition_variable/wait.html">wait</a>(lock);</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160; </div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;        } <span class="keywordflow">while</span> (<span class="keyword">true</span>);</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    }</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160; </div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map&lt;LedgerIndex, bool&gt;</a></div>
+<div class="line"><a name="l00137"></a><span class="lineno"><a class="line" href="classripple_1_1PendingSaves.html#abc46a0811de3b7dbcca4ea7bcb217ffd">  137</a></span>&#160;    <a class="code" href="classripple_1_1PendingSaves.html#abc46a0811de3b7dbcca4ea7bcb217ffd">getSnapshot</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1PendingSaves.html#a42af5d3f85c5c19f1ef0a0bfb0eb0499">mutex_</a>);</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160; </div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1PendingSaves.html#acb8d10f1fa8733953b4aca317408a69c">map_</a>;</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;    }</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;};</div>
 <div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160; </div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;};</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 <div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160; </div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;}</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160; </div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1PendingSaves_html_aeb28ec1977b7ac30071426b9170c7345"><div class="ttname"><a href="classripple_1_1PendingSaves.html#aeb28ec1977b7ac30071426b9170c7345">ripple::PendingSaves::pending</a></div><div class="ttdeci">bool pending(LedgerIndex seq)</div><div class="ttdoc">Return true if a ledger is in the progress of being saved.</div><div class="ttdef"><b>Definition:</b> <a href="PendingSaves_8h_source.html#l00085">PendingSaves.h:85</a></div></div>
+<div class="ttc" id="aclassripple_1_1PendingSaves_html_aeb28ec1977b7ac30071426b9170c7345"><div class="ttname"><a href="classripple_1_1PendingSaves.html#aeb28ec1977b7ac30071426b9170c7345">ripple::PendingSaves::pending</a></div><div class="ttdeci">bool pending(LedgerIndex seq)</div><div class="ttdoc">Return true if a ledger is in the progress of being saved.</div><div class="ttdef"><b>Definition:</b> <a href="PendingSaves_8h_source.html#l00084">PendingSaves.h:84</a></div></div>
 <div class="ttc" id="alock_guard_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1PendingSaves_html"><div class="ttname"><a href="classripple_1_1PendingSaves.html">ripple::PendingSaves</a></div><div class="ttdoc">Keeps track of which ledgers haven't been fully saved.</div><div class="ttdef"><b>Definition:</b> <a href="PendingSaves_8h_source.html#l00036">PendingSaves.h:36</a></div></div>
 <div class="ttc" id="aclassripple_1_1PendingSaves_html_a42af5d3f85c5c19f1ef0a0bfb0eb0499"><div class="ttname"><a href="classripple_1_1PendingSaves.html#a42af5d3f85c5c19f1ef0a0bfb0eb0499">ripple::PendingSaves::mutex_</a></div><div class="ttdeci">std::mutex mutex_</div><div class="ttdef"><b>Definition:</b> <a href="PendingSaves_8h_source.html#l00039">PendingSaves.h:39</a></div></div>
-<div class="ttc" id="aclassripple_1_1PendingSaves_html_a9c7ac1e9824096756225e77ed14244c1"><div class="ttname"><a href="classripple_1_1PendingSaves.html#a9c7ac1e9824096756225e77ed14244c1">ripple::PendingSaves::startWork</a></div><div class="ttdeci">bool startWork(LedgerIndex seq)</div><div class="ttdoc">Start working on a ledger.</div><div class="ttdef"><b>Definition:</b> <a href="PendingSaves_8h_source.html#l00052">PendingSaves.h:52</a></div></div>
+<div class="ttc" id="aclassripple_1_1PendingSaves_html_a9c7ac1e9824096756225e77ed14244c1"><div class="ttname"><a href="classripple_1_1PendingSaves.html#a9c7ac1e9824096756225e77ed14244c1">ripple::PendingSaves::startWork</a></div><div class="ttdeci">bool startWork(LedgerIndex seq)</div><div class="ttdoc">Start working on a ledger.</div><div class="ttdef"><b>Definition:</b> <a href="PendingSaves_8h_source.html#l00051">PendingSaves.h:51</a></div></div>
 <div class="ttc" id="aunique_lock_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1PendingSaves_html_adddd84077db2028ee3e973f952918f05"><div class="ttname"><a href="classripple_1_1PendingSaves.html#adddd84077db2028ee3e973f952918f05">ripple::PendingSaves::await_</a></div><div class="ttdeci">std::condition_variable await_</div><div class="ttdef"><b>Definition:</b> <a href="PendingSaves_8h_source.html#l00041">PendingSaves.h:41</a></div></div>
-<div class="ttc" id="aclassripple_1_1PendingSaves_html_a50e49f47a9b7bbc2e7875918708b0624"><div class="ttname"><a href="classripple_1_1PendingSaves.html#a50e49f47a9b7bbc2e7875918708b0624">ripple::PendingSaves::finishWork</a></div><div class="ttdeci">void finishWork(LedgerIndex seq)</div><div class="ttdoc">Finish working on a ledger.</div><div class="ttdef"><b>Definition:</b> <a href="PendingSaves_8h_source.html#l00075">PendingSaves.h:75</a></div></div>
+<div class="ttc" id="aclassripple_1_1PendingSaves_html_a50e49f47a9b7bbc2e7875918708b0624"><div class="ttname"><a href="classripple_1_1PendingSaves.html#a50e49f47a9b7bbc2e7875918708b0624">ripple::PendingSaves::finishWork</a></div><div class="ttdeci">void finishWork(LedgerIndex seq)</div><div class="ttdoc">Finish working on a ledger.</div><div class="ttdef"><b>Definition:</b> <a href="PendingSaves_8h_source.html#l00074">PendingSaves.h:74</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
 <div class="ttc" id="await_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/condition_variable/wait.html">std::condition_variable::wait</a></div><div class="ttdeci">T wait(T... args)</div></div>
 <div class="ttc" id="amap_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/map.html">map</a></div></div>
-<div class="ttc" id="aclassripple_1_1PendingSaves_html_ab5e9e105f7d12575bc2025468b4cc1f8"><div class="ttname"><a href="classripple_1_1PendingSaves.html#ab5e9e105f7d12575bc2025468b4cc1f8">ripple::PendingSaves::shouldWork</a></div><div class="ttdeci">bool shouldWork(LedgerIndex seq, bool isSynchronous)</div><div class="ttdoc">Check if a ledger should be dispatched.</div><div class="ttdef"><b>Definition:</b> <a href="PendingSaves_8h_source.html#l00100">PendingSaves.h:100</a></div></div>
-<div class="ttc" id="aclassripple_1_1PendingSaves_html_abc46a0811de3b7dbcca4ea7bcb217ffd"><div class="ttname"><a href="classripple_1_1PendingSaves.html#abc46a0811de3b7dbcca4ea7bcb217ffd">ripple::PendingSaves::getSnapshot</a></div><div class="ttdeci">std::map&lt; LedgerIndex, bool &gt; getSnapshot() const</div><div class="ttdoc">Get a snapshot of the pending saves.</div><div class="ttdef"><b>Definition:</b> <a href="PendingSaves_8h_source.html#l00138">PendingSaves.h:138</a></div></div>
+<div class="ttc" id="aclassripple_1_1PendingSaves_html_ab5e9e105f7d12575bc2025468b4cc1f8"><div class="ttname"><a href="classripple_1_1PendingSaves.html#ab5e9e105f7d12575bc2025468b4cc1f8">ripple::PendingSaves::shouldWork</a></div><div class="ttdeci">bool shouldWork(LedgerIndex seq, bool isSynchronous)</div><div class="ttdoc">Check if a ledger should be dispatched.</div><div class="ttdef"><b>Definition:</b> <a href="PendingSaves_8h_source.html#l00099">PendingSaves.h:99</a></div></div>
+<div class="ttc" id="aclassripple_1_1PendingSaves_html_abc46a0811de3b7dbcca4ea7bcb217ffd"><div class="ttname"><a href="classripple_1_1PendingSaves.html#abc46a0811de3b7dbcca4ea7bcb217ffd">ripple::PendingSaves::getSnapshot</a></div><div class="ttdeci">std::map&lt; LedgerIndex, bool &gt; getSnapshot() const</div><div class="ttdoc">Get a snapshot of the pending saves.</div><div class="ttdef"><b>Definition:</b> <a href="PendingSaves_8h_source.html#l00137">PendingSaves.h:137</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="acondition_variable_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/condition_variable.html">condition_variable</a></div></div>
 <div class="ttc" id="amutex_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/mutex.html">mutex</a></div></div>

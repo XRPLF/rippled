@@ -91,9 +91,9 @@ $(function() {
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_RPC_REQUEST_H_INCLUDED</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_RPC_REQUEST_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/resource/Charge.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/resource/Fees.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/json/json_value.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/json/json_value.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/resource/Charge.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/resource/Fees.h&gt;</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;beast/utility/Journal.h&gt;</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
@@ -104,16 +104,16 @@ $(function() {
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
 <div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="structripple_1_1RPC_1_1Request.html">   34</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1RPC_1_1Request.html">Request</a></div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;{</div>
-<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="structripple_1_1RPC_1_1Request.html#a1bb1813baac74d8882154cc0cb528b87">   36</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structripple_1_1RPC_1_1Request.html#a1bb1813baac74d8882154cc0cb528b87">Request</a> (</div>
+<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="structripple_1_1RPC_1_1Request.html#a1bb1813baac74d8882154cc0cb528b87">   36</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structripple_1_1RPC_1_1Request.html#a1bb1813baac74d8882154cc0cb528b87">Request</a>(</div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal_,</div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; method_,</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; params_,</div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <a class="code" href="classripple_1_1Application.html">Application</a>&amp; app_)</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        : <a class="code" href="structripple_1_1RPC_1_1Request.html#a82b4c91f38a81476b39f3bbab2f8fa57">journal</a> (journal_)</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        , <a class="code" href="structripple_1_1RPC_1_1Request.html#a118293dcc0507f0cf5170105b73d29cf">method</a> (method_)</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        , <a class="code" href="structripple_1_1RPC_1_1Request.html#aa3d94ffcaa73640e8131fec9596727f2">params</a> (params_)</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        , <a class="code" href="structripple_1_1RPC_1_1Request.html#a201195475bd256d47d98efa53967ff8f">fee</a> (Resource::feeReferenceRPC)</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        , <a class="code" href="structripple_1_1RPC_1_1Request.html#aa0675686695b0b1b9c8026c5df822324">app</a> (app_)</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        : <a class="code" href="structripple_1_1RPC_1_1Request.html#a82b4c91f38a81476b39f3bbab2f8fa57">journal</a>(journal_)</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        , <a class="code" href="structripple_1_1RPC_1_1Request.html#a118293dcc0507f0cf5170105b73d29cf">method</a>(method_)</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        , <a class="code" href="structripple_1_1RPC_1_1Request.html#aa3d94ffcaa73640e8131fec9596727f2">params</a>(params_)</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        , <a class="code" href="structripple_1_1RPC_1_1Request.html#a201195475bd256d47d98efa53967ff8f">fee</a>(Resource::feeReferenceRPC)</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        , <a class="code" href="structripple_1_1RPC_1_1Request.html#aa0675686695b0b1b9c8026c5df822324">app</a>(app_)</div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    {</div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    }</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
@@ -136,28 +136,29 @@ $(function() {
 <div class="line"><a name="l00065"></a><span class="lineno"><a class="line" href="structripple_1_1RPC_1_1Request.html#aa0675686695b0b1b9c8026c5df822324">   65</a></span>&#160;    <a class="code" href="classripple_1_1Application.html">Application</a>&amp; <a class="code" href="structripple_1_1RPC_1_1Request.html#aa0675686695b0b1b9c8026c5df822324">app</a>;</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <a class="code" href="structripple_1_1RPC_1_1Request.html">Request</a>&amp; <a class="code" href="structripple_1_1RPC_1_1Request.html#a9460b3a85563b0fda15819db5207f07c">operator= </a>(<a class="code" href="structripple_1_1RPC_1_1Request.html">Request</a> <span class="keyword">const</span>&amp;);</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;};</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;}</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;}</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <a class="code" href="structripple_1_1RPC_1_1Request.html">Request</a>&amp;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <a class="code" href="structripple_1_1RPC_1_1Request.html#a9460b3a85563b0fda15819db5207f07c">operator=</a>(<a class="code" href="structripple_1_1RPC_1_1Request.html">Request</a> <span class="keyword">const</span>&amp;);</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;};</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;}  <span class="comment">// namespace RPC</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1Application_html"><div class="ttname"><a href="classripple_1_1Application.html">ripple::Application</a></div><div class="ttdef"><b>Definition:</b> <a href="Application_8h_source.html#l00085">Application.h:85</a></div></div>
+<div class="ttc" id="aclassripple_1_1Application_html"><div class="ttname"><a href="classripple_1_1Application.html">ripple::Application</a></div><div class="ttdef"><b>Definition:</b> <a href="Application_8h_source.html#l00094">Application.h:94</a></div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Request_html_a9460b3a85563b0fda15819db5207f07c"><div class="ttname"><a href="structripple_1_1RPC_1_1Request.html#a9460b3a85563b0fda15819db5207f07c">ripple::RPC::Request::operator=</a></div><div class="ttdeci">Request &amp; operator=(Request const &amp;)</div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Request_html_a82b4c91f38a81476b39f3bbab2f8fa57"><div class="ttname"><a href="structripple_1_1RPC_1_1Request.html#a82b4c91f38a81476b39f3bbab2f8fa57">ripple::RPC::Request::journal</a></div><div class="ttdeci">const beast::Journal journal</div><div class="ttdef"><b>Definition:</b> <a href="Request_8h_source.html#l00050">Request.h:50</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Request_html_a1bb1813baac74d8882154cc0cb528b87"><div class="ttname"><a href="structripple_1_1RPC_1_1Request.html#a1bb1813baac74d8882154cc0cb528b87">ripple::RPC::Request::Request</a></div><div class="ttdeci">Request(beast::Journal journal_, std::string const &amp;method_, Json::Value &amp;params_, Application &amp;app_)</div><div class="ttdef"><b>Definition:</b> <a href="Request_8h_source.html#l00036">Request.h:36</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Request_html_aa3d94ffcaa73640e8131fec9596727f2"><div class="ttname"><a href="structripple_1_1RPC_1_1Request.html#aa3d94ffcaa73640e8131fec9596727f2">ripple::RPC::Request::params</a></div><div class="ttdeci">Json::Value params</div><div class="ttdef"><b>Definition:</b> <a href="Request_8h_source.html#l00056">Request.h:56</a></div></div>
-<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00060">Journal.h:60</a></div></div>
+<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00058">Journal.h:58</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Request_html_a118293dcc0507f0cf5170105b73d29cf"><div class="ttname"><a href="structripple_1_1RPC_1_1Request.html#a118293dcc0507f0cf5170105b73d29cf">ripple::RPC::Request::method</a></div><div class="ttdeci">std::string method</div><div class="ttdef"><b>Definition:</b> <a href="Request_8h_source.html#l00053">Request.h:53</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Request_html_aa0675686695b0b1b9c8026c5df822324"><div class="ttname"><a href="structripple_1_1RPC_1_1Request.html#aa0675686695b0b1b9c8026c5df822324">ripple::RPC::Request::app</a></div><div class="ttdeci">Application &amp; app</div><div class="ttdef"><b>Definition:</b> <a href="Request_8h_source.html#l00065">Request.h:65</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Request_html"><div class="ttname"><a href="structripple_1_1RPC_1_1Request.html">ripple::RPC::Request</a></div><div class="ttdef"><b>Definition:</b> <a href="Request_8h_source.html#l00034">Request.h:34</a></div></div>
 <div class="ttc" id="aclassripple_1_1Resource_1_1Charge_html"><div class="ttname"><a href="classripple_1_1Resource_1_1Charge.html">ripple::Resource::Charge</a></div><div class="ttdoc">A consumption charge.</div><div class="ttdef"><b>Definition:</b> <a href="Charge_8h_source.html#l00030">Charge.h:30</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Request_html_a201195475bd256d47d98efa53967ff8f"><div class="ttname"><a href="structripple_1_1RPC_1_1Request.html#a201195475bd256d47d98efa53967ff8f">ripple::RPC::Request::fee</a></div><div class="ttdeci">Resource::Charge fee</div><div class="ttdef"><b>Definition:</b> <a href="Request_8h_source.html#l00059">Request.h:59</a></div></div>
-<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00141">json_value.h:141</a></div></div>
+<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00145">json_value.h:145</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Request_html_ad3f7568eca724668e6a2562d3eff7ee9"><div class="ttname"><a href="structripple_1_1RPC_1_1Request.html#ad3f7568eca724668e6a2562d3eff7ee9">ripple::RPC::Request::result</a></div><div class="ttdeci">Json::Value result</div><div class="ttdef"><b>Definition:</b> <a href="Request_8h_source.html#l00062">Request.h:62</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

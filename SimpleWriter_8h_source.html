@@ -105,9 +105,9 @@ $(function() {
 <div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="classripple_1_1SimpleWriter.html#ad36f903844689be92f92253dcea08955">   35</a></span>&#160;    boost::beast::multi_buffer <a class="code" href="classripple_1_1SimpleWriter.html#ad36f903844689be92f92253dcea08955">sb_</a>;</div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keyword">template</span>&lt;<span class="keywordtype">bool</span> isRequest, <span class="keyword">class</span> Body, <span class="keyword">class</span> Fields&gt;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keyword">explicit</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="classripple_1_1SimpleWriter.html#a8370606c186d94c383701d44a5e3f777">   40</a></span>&#160;    <a class="code" href="classripple_1_1SimpleWriter.html#a8370606c186d94c383701d44a5e3f777">SimpleWriter</a>(boost::beast::http::message&lt;isRequest, Body, Fields&gt; <span class="keyword">const</span>&amp; msg)</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keyword">template</span> &lt;<span class="keywordtype">bool</span> isRequest, <span class="keyword">class</span> Body, <span class="keyword">class</span> Fields&gt;</div>
+<div class="line"><a name="l00039"></a><span class="lineno"><a class="line" href="classripple_1_1SimpleWriter.html#a8370606c186d94c383701d44a5e3f777">   39</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="classripple_1_1SimpleWriter.html#a8370606c186d94c383701d44a5e3f777">SimpleWriter</a>(</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        boost::beast::http::message&lt;isRequest, Body, Fields&gt; <span class="keyword">const</span>&amp; msg)</div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    {</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        boost::beast::ostream(<a class="code" href="classripple_1_1SimpleWriter.html#ad36f903844689be92f92253dcea08955">sb_</a>) &lt;&lt; msg;</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    }</div>
@@ -119,40 +119,39 @@ $(function() {
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    }</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="classripple_1_1SimpleWriter.html#aa60007a776c86d8f6d667b61b2c32c9d">   52</a></span>&#160;    <a class="code" href="classripple_1_1SimpleWriter.html#aa60007a776c86d8f6d667b61b2c32c9d">consume</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> bytes)<span class="keyword"> override</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="classripple_1_1SimpleWriter.html#aa60007a776c86d8f6d667b61b2c32c9d">   52</a></span>&#160;    <a class="code" href="classripple_1_1SimpleWriter.html#aa60007a776c86d8f6d667b61b2c32c9d">consume</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> bytes)<span class="keyword"> override</span></div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="keyword">    </span>{</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        <a class="code" href="classripple_1_1SimpleWriter.html#ad36f903844689be92f92253dcea08955">sb_</a>.consume(bytes);</div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    }</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="classripple_1_1SimpleWriter.html#aab58cb9243a4f45472fb467ce2ef0d6d">   58</a></span>&#160;    <a class="code" href="classripple_1_1SimpleWriter.html#aab58cb9243a4f45472fb467ce2ef0d6d">prepare</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> bytes,</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;<span class="keywordtype">void</span>(<span class="keywordtype">void</span>)&gt;)<span class="keyword"> override</span></div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    }</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;boost::asio::const_buffer&gt;</a></div>
-<div class="line"><a name="l00065"></a><span class="lineno"><a class="line" href="classripple_1_1SimpleWriter.html#a9b830d6ae27bee342d597e9696552bff">   65</a></span>&#160;    <a class="code" href="classripple_1_1SimpleWriter.html#a9b830d6ae27bee342d597e9696552bff">data</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; buf = <a class="code" href="classripple_1_1SimpleWriter.html#ad36f903844689be92f92253dcea08955">sb_</a>.data();</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;boost::asio::const_buffer&gt;</a> result;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a>(buf.begin(), buf.end()));</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; b : buf)</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(b);</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    }</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;};</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;} <span class="comment">// ripple</span></div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="classripple_1_1SimpleWriter.html#aab58cb9243a4f45472fb467ce2ef0d6d">   58</a></span>&#160;    <a class="code" href="classripple_1_1SimpleWriter.html#aab58cb9243a4f45472fb467ce2ef0d6d">prepare</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> bytes, <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;<span class="keywordtype">void</span>(<span class="keywordtype">void</span>)&gt;)<span class="keyword"> override</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    }</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;boost::asio::const_buffer&gt;</a></div>
+<div class="line"><a name="l00064"></a><span class="lineno"><a class="line" href="classripple_1_1SimpleWriter.html#a9b830d6ae27bee342d597e9696552bff">   64</a></span>&#160;    <a class="code" href="classripple_1_1SimpleWriter.html#a9b830d6ae27bee342d597e9696552bff">data</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; buf = <a class="code" href="classripple_1_1SimpleWriter.html#ad36f903844689be92f92253dcea08955">sb_</a>.data();</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;boost::asio::const_buffer&gt;</a> result;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a>(buf.begin(), buf.end()));</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; b : buf)</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(b);</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    }</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;};</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1SimpleWriter_html_a9b830d6ae27bee342d597e9696552bff"><div class="ttname"><a href="classripple_1_1SimpleWriter.html#a9b830d6ae27bee342d597e9696552bff">ripple::SimpleWriter::data</a></div><div class="ttdeci">std::vector&lt; boost::asio::const_buffer &gt; data() override</div><div class="ttdoc">Returns a ConstBufferSequence representing the input sequence.</div><div class="ttdef"><b>Definition:</b> <a href="SimpleWriter_8h_source.html#l00065">SimpleWriter.h:65</a></div></div>
+<div class="ttc" id="aclassripple_1_1SimpleWriter_html_a9b830d6ae27bee342d597e9696552bff"><div class="ttname"><a href="classripple_1_1SimpleWriter.html#a9b830d6ae27bee342d597e9696552bff">ripple::SimpleWriter::data</a></div><div class="ttdeci">std::vector&lt; boost::asio::const_buffer &gt; data() override</div><div class="ttdoc">Returns a ConstBufferSequence representing the input sequence.</div><div class="ttdef"><b>Definition:</b> <a href="SimpleWriter_8h_source.html#l00064">SimpleWriter.h:64</a></div></div>
 <div class="ttc" id="autility_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/utility.html">utility</a></div></div>
 <div class="ttc" id="areserve_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">std::vector::reserve</a></div><div class="ttdeci">T reserve(T... args)</div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="adistance_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a></div><div class="ttdeci">T distance(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1SimpleWriter_html_a8370606c186d94c383701d44a5e3f777"><div class="ttname"><a href="classripple_1_1SimpleWriter.html#a8370606c186d94c383701d44a5e3f777">ripple::SimpleWriter::SimpleWriter</a></div><div class="ttdeci">SimpleWriter(boost::beast::http::message&lt; isRequest, Body, Fields &gt; const &amp;msg)</div><div class="ttdef"><b>Definition:</b> <a href="SimpleWriter_8h_source.html#l00040">SimpleWriter.h:40</a></div></div>
+<div class="ttc" id="aclassripple_1_1SimpleWriter_html_a8370606c186d94c383701d44a5e3f777"><div class="ttname"><a href="classripple_1_1SimpleWriter.html#a8370606c186d94c383701d44a5e3f777">ripple::SimpleWriter::SimpleWriter</a></div><div class="ttdeci">SimpleWriter(boost::beast::http::message&lt; isRequest, Body, Fields &gt; const &amp;msg)</div><div class="ttdef"><b>Definition:</b> <a href="SimpleWriter_8h_source.html#l00039">SimpleWriter.h:39</a></div></div>
 <div class="ttc" id="afunction_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a></div></div>
 <div class="ttc" id="apush_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">std::vector::push_back</a></div><div class="ttdeci">T push_back(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1Writer_html"><div class="ttname"><a href="classripple_1_1Writer.html">ripple::Writer</a></div><div class="ttdef"><b>Definition:</b> <a href="server_2Writer_8h_source.html#l00029">server/Writer.h:29</a></div></div>

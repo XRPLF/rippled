@@ -140,9 +140,9 @@ Collaboration diagram for ripple::OpenLedger:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a6d27d60cdd789d632e8d5cc2a9ff9324"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenLedger.html#a6d27d60cdd789d632e8d5cc2a9ff9324">modify_type</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(<a class="el" href="classripple_1_1OpenView.html">OpenView</a> &amp;, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>)&gt;</td></tr>
-<tr class="memdesc:a6d27d60cdd789d632e8d5cc2a9ff9324"><td class="mdescLeft">&#160;</td><td class="mdescRight">Signature for modification functions.  <a href="classripple_1_1OpenLedger.html#a6d27d60cdd789d632e8d5cc2a9ff9324">More...</a><br /></td></tr>
-<tr class="separator:a6d27d60cdd789d632e8d5cc2a9ff9324"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9b51d1693c06f31e919061cc1b5f7ed"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenLedger.html#ad9b51d1693c06f31e919061cc1b5f7ed">modify_type</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(<a class="el" href="classripple_1_1OpenView.html">OpenView</a> &amp;, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>)&gt;</td></tr>
+<tr class="memdesc:ad9b51d1693c06f31e919061cc1b5f7ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Signature for modification functions.  <a href="classripple_1_1OpenLedger.html#ad9b51d1693c06f31e919061cc1b5f7ed">More...</a><br /></td></tr>
+<tr class="separator:ad9b51d1693c06f31e919061cc1b5f7ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -161,10 +161,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:abb724d61223be6a608b28947bd2e2236"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1OpenView.html">OpenView</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenLedger.html#abb724d61223be6a608b28947bd2e2236">current</a> () const</td></tr>
 <tr class="memdesc:abb724d61223be6a608b28947bd2e2236"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a view to the current open ledger.  <a href="classripple_1_1OpenLedger.html#abb724d61223be6a608b28947bd2e2236">More...</a><br /></td></tr>
 <tr class="separator:abb724d61223be6a608b28947bd2e2236"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a05ada40b015a008ffd28668b8daf5808"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenLedger.html#a05ada40b015a008ffd28668b8daf5808">modify</a> (<a class="el" href="classripple_1_1OpenLedger.html#a6d27d60cdd789d632e8d5cc2a9ff9324">modify_type</a> const &amp;f)</td></tr>
+<tr class="memitem:a05ada40b015a008ffd28668b8daf5808"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenLedger.html#a05ada40b015a008ffd28668b8daf5808">modify</a> (<a class="el" href="classripple_1_1OpenLedger.html#ad9b51d1693c06f31e919061cc1b5f7ed">modify_type</a> const &amp;f)</td></tr>
 <tr class="memdesc:a05ada40b015a008ffd28668b8daf5808"><td class="mdescLeft">&#160;</td><td class="mdescRight">Modify the open ledger.  <a href="classripple_1_1OpenLedger.html#a05ada40b015a008ffd28668b8daf5808">More...</a><br /></td></tr>
 <tr class="separator:a05ada40b015a008ffd28668b8daf5808"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3b20a6007626da5a1d79d1213924cb72"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenLedger.html#a3b20a6007626da5a1d79d1213924cb72">accept</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const &gt; const &amp;ledger, <a class="el" href="namespaceripple.html#aff5a6e33cede2a8fa7303d84cce996ac">OrderedTxs</a> const &amp;locals, bool retriesFirst, <a class="el" href="namespaceripple.html#aff5a6e33cede2a8fa7303d84cce996ac">OrderedTxs</a> &amp;retries, <a class="el" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a> flags, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;suffix=&quot;&quot;, <a class="el" href="classripple_1_1OpenLedger.html#a6d27d60cdd789d632e8d5cc2a9ff9324">modify_type</a> const &amp;f={})</td></tr>
+<tr class="memitem:a3b20a6007626da5a1d79d1213924cb72"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1OpenLedger.html#a3b20a6007626da5a1d79d1213924cb72">accept</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const &gt; const &amp;ledger, <a class="el" href="namespaceripple.html#aff5a6e33cede2a8fa7303d84cce996ac">OrderedTxs</a> const &amp;locals, bool retriesFirst, <a class="el" href="namespaceripple.html#aff5a6e33cede2a8fa7303d84cce996ac">OrderedTxs</a> &amp;retries, <a class="el" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a> flags, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;suffix=&quot;&quot;, <a class="el" href="classripple_1_1OpenLedger.html#ad9b51d1693c06f31e919061cc1b5f7ed">modify_type</a> const &amp;f={})</td></tr>
 <tr class="memdesc:a3b20a6007626da5a1d79d1213924cb72"><td class="mdescLeft">&#160;</td><td class="mdescRight">Accept a new ledger.  <a href="classripple_1_1OpenLedger.html#a3b20a6007626da5a1d79d1213924cb72">More...</a><br /></td></tr>
 <tr class="separator:a3b20a6007626da5a1d79d1213924cb72"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -208,14 +208,14 @@ Private Attributes</h2></td></tr>
 
 <p class="definition">Definition at line <a class="el" href="OpenLedger_8h_source.html#l00049">49</a> of file <a class="el" href="OpenLedger_8h_source.html">OpenLedger.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a6d27d60cdd789d632e8d5cc2a9ff9324"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6d27d60cdd789d632e8d5cc2a9ff9324">&#9670;&nbsp;</a></span>modify_type</h2>
+<a id="ad9b51d1693c06f31e919061cc1b5f7ed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9b51d1693c06f31e919061cc1b5f7ed">&#9670;&nbsp;</a></span>modify_type</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1OpenLedger.html#a6d27d60cdd789d632e8d5cc2a9ff9324">ripple::OpenLedger::modify_type</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(<a class="el" href="classripple_1_1OpenView.html">OpenView</a>&amp;, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>)&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1OpenLedger.html#ad9b51d1693c06f31e919061cc1b5f7ed">ripple::OpenLedger::modify_type</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;bool(<a class="el" href="classripple_1_1OpenView.html">OpenView</a>&amp;, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>)&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -224,7 +224,7 @@ Private Attributes</h2></td></tr>
 <p>The modification function is called during apply and modify with an <a class="el" href="classripple_1_1OpenView.html" title="Writable ledger view that accumulates state and tx changes.">OpenView</a> to accumulate changes and the Journal to use for logging.</p>
 <p>A return value of <code>true</code> informs <a class="el" href="classripple_1_1OpenLedger.html" title="Represents the open ledger.">OpenLedger</a> that changes were made. Always returning <code>true</code> won't cause harm, but it may be sub-optimal. </p>
 
-<p class="definition">Definition at line <a class="el" href="OpenLedger_8h_source.html#l00071">71</a> of file <a class="el" href="OpenLedger_8h_source.html">OpenLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenLedger_8h_source.html#l00070">70</a> of file <a class="el" href="OpenLedger_8h_source.html">OpenLedger.h</a>.</p>
 
 </div>
 </div>
@@ -254,7 +254,7 @@ Private Attributes</h2></td></tr>
 <tr><td class="fieldname"><a id="a96bb5c3c9dfae39b054eedc8d6026a97abd936aff81db9087051d25a3e30e6e54"></a>retry&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="OpenLedger_8h_source.html#l00185">185</a> of file <a class="el" href="OpenLedger_8h_source.html">OpenLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenLedger_8h_source.html#l00191">191</a> of file <a class="el" href="OpenLedger_8h_source.html">OpenLedger.h</a>.</p>
 
 </div>
 </div>
@@ -408,7 +408,7 @@ Private Attributes</h2></td></tr>
 <p>The behavior of ledger closing can be different depending on whether or not transactions exist in the open ledger.</p>
 <dl class="section note"><dt>Note</dt><dd>The value returned is only meaningful for that specific instant in time. An open, empty ledger can become non empty from subsequent modifications. Caller is responsible for synchronizing the meaning of the return value. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="OpenLedger_8cpp_source.html#l00045">45</a> of file <a class="el" href="OpenLedger_8cpp_source.html">OpenLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenLedger_8cpp_source.html#l00043">43</a> of file <a class="el" href="OpenLedger_8cpp_source.html">OpenLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -431,7 +431,7 @@ Private Attributes</h2></td></tr>
 <p>Thread safety: Can be called concurrently from any thread.</p>
 <p>Effects: The caller is given ownership of a non-modifiable snapshot of the open ledger at the time of the call. </p>
 
-<p class="definition">Definition at line <a class="el" href="OpenLedger_8cpp_source.html#l00052">52</a> of file <a class="el" href="OpenLedger_8cpp_source.html">OpenLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenLedger_8cpp_source.html#l00050">50</a> of file <a class="el" href="OpenLedger_8cpp_source.html">OpenLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -444,7 +444,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="memname">bool ripple::OpenLedger::modify </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1OpenLedger.html#a6d27d60cdd789d632e8d5cc2a9ff9324">modify_type</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1OpenLedger.html#ad9b51d1693c06f31e919061cc1b5f7ed">modify_type</a> const &amp;&#160;</td>
           <td class="paramname"><em>f</em></td><td>)</td>
           <td></td>
         </tr>
@@ -456,7 +456,7 @@ Private Attributes</h2></td></tr>
 <p>If <code>f</code> returns <code>true</code>, the changes made in the <a class="el" href="classripple_1_1OpenView.html" title="Writable ledger view that accumulates state and tx changes.">OpenView</a> will be published to the open ledger.</p>
 <dl class="section return"><dt>Returns</dt><dd><code>true</code> if the open view was changed </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="OpenLedger_8cpp_source.html#l00059">59</a> of file <a class="el" href="OpenLedger_8cpp_source.html">OpenLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenLedger_8cpp_source.html#l00057">57</a> of file <a class="el" href="OpenLedger_8cpp_source.html">OpenLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -517,7 +517,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1OpenLedger.html#a6d27d60cdd789d632e8d5cc2a9ff9324">modify_type</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1OpenLedger.html#ad9b51d1693c06f31e919061cc1b5f7ed">modify_type</a> const &amp;&#160;</td>
           <td class="paramname"><em>f</em> = <code>{}</code>&#160;</td>
         </tr>
         <tr>
@@ -560,7 +560,7 @@ new open view.
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="OpenLedger_8cpp_source.html#l00074">74</a> of file <a class="el" href="OpenLedger_8cpp_source.html">OpenLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenLedger_8cpp_source.html#l00071">71</a> of file <a class="el" href="OpenLedger_8cpp_source.html">OpenLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -639,7 +639,7 @@ template&lt;class FwdRange &gt; </div>
 <p>Algorithm for applying transactions. </p>
 <p>This has the retry logic and ordering semantics used for consensus and building the open ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="OpenLedger_8h_source.html#l00208">208</a> of file <a class="el" href="OpenLedger_8h_source.html">OpenLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenLedger_8h_source.html#l00211">211</a> of file <a class="el" href="OpenLedger_8h_source.html">OpenLedger.h</a>.</p>
 
 </div>
 </div>
@@ -745,7 +745,7 @@ template&lt;class FwdRange &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="OpenLedger_8cpp_source.html#l00177">177</a> of file <a class="el" href="OpenLedger_8cpp_source.html">OpenLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OpenLedger_8cpp_source.html#l00178">178</a> of file <a class="el" href="OpenLedger_8cpp_source.html">OpenLedger.cpp</a>.</p>
 
 </div>
 </div>

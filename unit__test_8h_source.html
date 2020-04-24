@@ -105,11 +105,12 @@ $(function() {
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="preprocessor">#ifndef BEAST_EXPECT</span></div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">#define BEAST_EXPECT_S1(x) #x</span></div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="preprocessor">#define BEAST_EXPECT_S2(x) BEAST_EXPECT_S1(x)</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="comment">//#define BEAST_EXPECT(cond) {expect(cond, __FILE__ &quot;:&quot; ## __LINE__);}while(false){}</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="preprocessor">#define BEAST_EXPECT(cond) expect(cond, __FILE__ &quot;:&quot; BEAST_EXPECT_S2(__LINE__))</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="comment">//#define BEAST_EXPECT(cond) {expect(cond, __FILE__ &quot;:&quot; ##</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="comment">//__LINE__);}while(false){}</span></div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="preprocessor">#define BEAST_EXPECT(cond) expect(cond, __FILE__ &quot;:&quot; BEAST_EXPECT_S2(__LINE__))</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

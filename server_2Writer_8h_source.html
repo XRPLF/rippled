@@ -102,27 +102,22 @@ $(function() {
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">public</span>:</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classripple_1_1Writer.html#a173844e6daa9f39ecaf275e785267ea7">~Writer</a>() = <span class="keywordflow">default</span>;</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <a class="code" href="classripple_1_1Writer.html#a9e5d614e955a0d73bb1f95014eca5ad5">complete</a>() = 0;</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <a class="code" href="classripple_1_1Writer.html#af3877b4bdeed64a4dc396a9810b6dec2">consume</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> bytes) = 0;</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <a class="code" href="classripple_1_1Writer.html#aacd6a7817a08ed6b57968154c198db55">prepare</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> bytes,</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;<span class="keywordtype">void</span>(<span class="keywordtype">void</span>)&gt; resume) = 0;</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;boost::asio::const_buffer&gt;</a></div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <a class="code" href="classripple_1_1Writer.html#ad948a03d6bd2dc0ac53d7f6504106fda">data</a>() = 0;</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;};</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;} <span class="comment">// ripple</span></div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <a class="code" href="classripple_1_1Writer.html#a9e5d614e955a0d73bb1f95014eca5ad5">complete</a>() = 0;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <a class="code" href="classripple_1_1Writer.html#af3877b4bdeed64a4dc396a9810b6dec2">consume</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> bytes) = 0;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <a class="code" href="classripple_1_1Writer.html#aacd6a7817a08ed6b57968154c198db55">prepare</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> bytes, <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;<span class="keywordtype">void</span>(<span class="keywordtype">void</span>)&gt; resume) = 0;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;boost::asio::const_buffer&gt;</a></div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <a class="code" href="classripple_1_1Writer.html#ad948a03d6bd2dc0ac53d7f6504106fda">data</a>() = 0;</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;};</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1Writer_html_a173844e6daa9f39ecaf275e785267ea7"><div class="ttname"><a href="classripple_1_1Writer.html#a173844e6daa9f39ecaf275e785267ea7">ripple::Writer::~Writer</a></div><div class="ttdeci">virtual ~Writer()=default</div></div>
 <div class="ttc" id="afunctional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/functional.html">functional</a></div></div>

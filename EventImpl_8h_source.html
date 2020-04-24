@@ -99,18 +99,18 @@ $(function() {
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">class </span>Event;</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
-<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="classbeast_1_1insight_1_1EventImpl.html">   31</a></span>&#160;<span class="keyword">class </span><a class="code" href="classbeast_1_1insight_1_1EventImpl.html">EventImpl</a></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    : <span class="keyword">public</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html">std::enable_shared_from_this</a> &lt;EventImpl&gt;</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;{</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="classbeast_1_1insight_1_1EventImpl.html#abb840f537602809ff28d7fda1cea1152">   35</a></span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">value_type</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>;</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classbeast_1_1insight_1_1EventImpl.html#a0e94cc76f51d76ddfd564eb9439185c8">~EventImpl</a> () = 0;</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="classbeast_1_1insight_1_1EventImpl.html#a4ed3592a489f99a323a53e791a40e6b6">notify</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">value_type</a> <span class="keyword">const</span>&amp; value) = 0;</div>
+<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="classbeast_1_1insight_1_1EventImpl.html">   31</a></span>&#160;<span class="keyword">class </span><a class="code" href="classbeast_1_1insight_1_1EventImpl.html">EventImpl</a> : <span class="keyword">public</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html">std::enable_shared_from_this</a>&lt;EventImpl&gt;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;{</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="classbeast_1_1insight_1_1EventImpl.html#abb840f537602809ff28d7fda1cea1152">   34</a></span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">value_type</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classbeast_1_1insight_1_1EventImpl.html#a0e94cc76f51d76ddfd564eb9439185c8">~EventImpl</a>() = 0;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="code" href="classbeast_1_1insight_1_1EventImpl.html#a4ed3592a489f99a323a53e791a40e6b6">notify</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">value_type</a> <span class="keyword">const</span>&amp; value) = 0;</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;};</div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;}</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;}</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;}  <span class="comment">// namespace insight</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;}  <span class="comment">// namespace beast</span></div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
@@ -121,7 +121,7 @@ $(function() {
 <div class="ttc" id="aclassbeast_1_1insight_1_1EventImpl_html_a0e94cc76f51d76ddfd564eb9439185c8"><div class="ttname"><a href="classbeast_1_1insight_1_1EventImpl.html#a0e94cc76f51d76ddfd564eb9439185c8">beast::insight::EventImpl::~EventImpl</a></div><div class="ttdeci">virtual ~EventImpl()=0</div></div>
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
 <div class="ttc" id="aclassbeast_1_1insight_1_1EventImpl_html"><div class="ttname"><a href="classbeast_1_1insight_1_1EventImpl.html">beast::insight::EventImpl</a></div><div class="ttdef"><b>Definition:</b> <a href="EventImpl_8h_source.html#l00031">EventImpl.h:31</a></div></div>
-<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00582">base_uint.h:582</a></div></div>
+<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00646">base_uint.h:646</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

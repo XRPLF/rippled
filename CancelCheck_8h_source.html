@@ -95,37 +95,34 @@ $(function() {
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="classripple_1_1CancelCheck.html">   27</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1CancelCheck.html">CancelCheck</a></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    : <span class="keyword">public</span> <a class="code" href="classripple_1_1Transactor.html">Transactor</a></div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;{</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="classripple_1_1CancelCheck.html#ac18bc23a6b1fdfd63720dabe30c620bd">   31</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="classripple_1_1CancelCheck.html#ac18bc23a6b1fdfd63720dabe30c620bd">CancelCheck</a> (<a class="code" href="classripple_1_1ApplyContext.html">ApplyContext</a>&amp; ctx)</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        : <a class="code" href="classripple_1_1Transactor.html">Transactor</a> (ctx)</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    {</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    }</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keyword">static</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <a class="code" href="classripple_1_1TERSubset.html">NotTEC</a></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="code" href="classripple_1_1CancelCheck.html#a3b481bddc781480a067162db44e06ff2">preflight</a> (<a class="code" href="structripple_1_1PreflightContext.html">PreflightContext</a> <span class="keyword">const</span>&amp; ctx);</div>
+<div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="classripple_1_1CancelCheck.html">   27</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1CancelCheck.html">CancelCheck</a> : <span class="keyword">public</span> <a class="code" href="classripple_1_1Transactor.html">Transactor</a></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;{</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="classripple_1_1CancelCheck.html#ac18bc23a6b1fdfd63720dabe30c620bd">   30</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="classripple_1_1CancelCheck.html#ac18bc23a6b1fdfd63720dabe30c620bd">CancelCheck</a>(<a class="code" href="classripple_1_1ApplyContext.html">ApplyContext</a>&amp; ctx) : <a class="code" href="classripple_1_1Transactor.html">Transactor</a>(ctx)</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    {</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    }</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keyword">static</span> <a class="code" href="classripple_1_1TERSubset.html">NotTEC</a></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <a class="code" href="classripple_1_1CancelCheck.html#a3b481bddc781480a067162db44e06ff2">preflight</a>(<a class="code" href="structripple_1_1PreflightContext.html">PreflightContext</a> <span class="keyword">const</span>&amp; ctx);</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keyword">static</span> <a class="code" href="classripple_1_1TERSubset.html">TER</a></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="code" href="classripple_1_1CancelCheck.html#a2caf675b461eb820c97e9e4b5bb2f6e4">preclaim</a>(<a class="code" href="structripple_1_1PreclaimContext.html">PreclaimContext</a> <span class="keyword">const</span>&amp; ctx);</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keyword">static</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <a class="code" href="classripple_1_1TERSubset.html">TER</a></div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <a class="code" href="classripple_1_1CancelCheck.html#a2caf675b461eb820c97e9e4b5bb2f6e4">preclaim</a> (<a class="code" href="structripple_1_1PreclaimContext.html">PreclaimContext</a> <span class="keyword">const</span>&amp; ctx);</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <a class="code" href="classripple_1_1TERSubset.html">TER</a></div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <a class="code" href="classripple_1_1CancelCheck.html#aac3ad460901bc9c750d15b28af4f3d6c">doApply</a>() <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;};</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <a class="code" href="classripple_1_1TERSubset.html">TER</a> <a class="code" href="classripple_1_1CancelCheck.html#aac3ad460901bc9c750d15b28af4f3d6c">doApply</a> () <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;};</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;}</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1CancelCheck_html_a2caf675b461eb820c97e9e4b5bb2f6e4"><div class="ttname"><a href="classripple_1_1CancelCheck.html#a2caf675b461eb820c97e9e4b5bb2f6e4">ripple::CancelCheck::preclaim</a></div><div class="ttdeci">static TER preclaim(PreclaimContext const &amp;ctx)</div><div class="ttdef"><b>Definition:</b> <a href="CancelCheck_8cpp_source.html#l00054">CancelCheck.cpp:54</a></div></div>
-<div class="ttc" id="aclassripple_1_1Transactor_html"><div class="ttname"><a href="classripple_1_1Transactor.html">ripple::Transactor</a></div><div class="ttdef"><b>Definition:</b> <a href="Transactor_8h_source.html#l00078">Transactor.h:78</a></div></div>
-<div class="ttc" id="aclassripple_1_1TERSubset_html"><div class="ttname"><a href="classripple_1_1TERSubset.html">ripple::TERSubset</a></div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00311">TER.h:311</a></div></div>
+<div class="ttc" id="aclassripple_1_1Transactor_html"><div class="ttname"><a href="classripple_1_1Transactor.html">ripple::Transactor</a></div><div class="ttdef"><b>Definition:</b> <a href="Transactor_8h_source.html#l00086">Transactor.h:86</a></div></div>
+<div class="ttc" id="aclassripple_1_1TERSubset_html"><div class="ttname"><a href="classripple_1_1TERSubset.html">ripple::TERSubset</a></div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00322">TER.h:322</a></div></div>
 <div class="ttc" id="aclassripple_1_1CancelCheck_html_aac3ad460901bc9c750d15b28af4f3d6c"><div class="ttname"><a href="classripple_1_1CancelCheck.html#aac3ad460901bc9c750d15b28af4f3d6c">ripple::CancelCheck::doApply</a></div><div class="ttdeci">TER doApply() override</div><div class="ttdef"><b>Definition:</b> <a href="CancelCheck_8cpp_source.html#l00089">CancelCheck.cpp:89</a></div></div>
 <div class="ttc" id="aclassripple_1_1ApplyContext_html"><div class="ttname"><a href="classripple_1_1ApplyContext.html">ripple::ApplyContext</a></div><div class="ttdoc">State information when applying a tx.</div><div class="ttdef"><b>Definition:</b> <a href="ApplyContext_8h_source.html#l00035">ApplyContext.h:35</a></div></div>
-<div class="ttc" id="aclassripple_1_1CancelCheck_html_ac18bc23a6b1fdfd63720dabe30c620bd"><div class="ttname"><a href="classripple_1_1CancelCheck.html#ac18bc23a6b1fdfd63720dabe30c620bd">ripple::CancelCheck::CancelCheck</a></div><div class="ttdeci">CancelCheck(ApplyContext &amp;ctx)</div><div class="ttdef"><b>Definition:</b> <a href="CancelCheck_8h_source.html#l00031">CancelCheck.h:31</a></div></div>
-<div class="ttc" id="astructripple_1_1PreclaimContext_html"><div class="ttname"><a href="structripple_1_1PreclaimContext.html">ripple::PreclaimContext</a></div><div class="ttdoc">State information when determining if a tx is likely to claim a fee.</div><div class="ttdef"><b>Definition:</b> <a href="Transactor_8h_source.html#l00049">Transactor.h:49</a></div></div>
+<div class="ttc" id="aclassripple_1_1CancelCheck_html_ac18bc23a6b1fdfd63720dabe30c620bd"><div class="ttname"><a href="classripple_1_1CancelCheck.html#ac18bc23a6b1fdfd63720dabe30c620bd">ripple::CancelCheck::CancelCheck</a></div><div class="ttdeci">CancelCheck(ApplyContext &amp;ctx)</div><div class="ttdef"><b>Definition:</b> <a href="CancelCheck_8h_source.html#l00030">CancelCheck.h:30</a></div></div>
+<div class="ttc" id="astructripple_1_1PreclaimContext_html"><div class="ttname"><a href="structripple_1_1PreclaimContext.html">ripple::PreclaimContext</a></div><div class="ttdoc">State information when determining if a tx is likely to claim a fee.</div><div class="ttdef"><b>Definition:</b> <a href="Transactor_8h_source.html#l00053">Transactor.h:53</a></div></div>
 <div class="ttc" id="aclassripple_1_1CancelCheck_html"><div class="ttname"><a href="classripple_1_1CancelCheck.html">ripple::CancelCheck</a></div><div class="ttdef"><b>Definition:</b> <a href="CancelCheck_8h_source.html#l00027">CancelCheck.h:27</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="astructripple_1_1PreflightContext_html"><div class="ttname"><a href="structripple_1_1PreflightContext.html">ripple::PreflightContext</a></div><div class="ttdoc">State information when preflighting a tx.</div><div class="ttdef"><b>Definition:</b> <a href="Transactor_8h_source.html#l00032">Transactor.h:32</a></div></div>

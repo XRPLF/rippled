@@ -150,9 +150,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a3351e0244f921234d5ba005a07ddf539"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">read</a> (<a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;k) const =0</td></tr>
 <tr class="memdesc:a3351e0244f921234d5ba005a07ddf539"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the state item associated with a key.  <a href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">More...</a><br /></td></tr>
 <tr class="separator:a3351e0244f921234d5ba005a07ddf539"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a81e1b7628e44e758a0359061c4b17c96"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1STAmount.html">STAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a81e1b7628e44e758a0359061c4b17c96">balanceHook</a> (<a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> const &amp;account, <a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> const &amp;issuer, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;amount) const</td></tr>
+<tr class="memitem:a81e1b7628e44e758a0359061c4b17c96"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1STAmount.html">STAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a81e1b7628e44e758a0359061c4b17c96">balanceHook</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;issuer, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;amount) const</td></tr>
 <tr class="separator:a81e1b7628e44e758a0359061c4b17c96"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6989ce9f6240d5c600d3a4f526f89d29"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a6989ce9f6240d5c600d3a4f526f89d29">ownerCountHook</a> (<a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> const &amp;account, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> count) const</td></tr>
+<tr class="memitem:a6989ce9f6240d5c600d3a4f526f89d29"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a6989ce9f6240d5c600d3a4f526f89d29">ownerCountHook</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> count) const</td></tr>
 <tr class="separator:a6989ce9f6240d5c600d3a4f526f89d29"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a70b1654cf02d2af0c3d34faf6be218ac"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1detail_1_1ReadViewFwdRange.html#ad0e2a978fcfc47b2a937b536f1ed948f">sles_type::iter_base</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ReadView.html#a70b1654cf02d2af0c3d34faf6be218ac">slesBegin</a> () const =0</td></tr>
 <tr class="separator:a70b1654cf02d2af0c3d34faf6be218ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -182,7 +182,7 @@ Public Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p><a class="el" href="classripple_1_1ReadView.html" title="A view into a ledger.">ReadView</a> that associates keys with digests. </p>
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00407">407</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00392">392</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a1ec6ee4c2f796ba0dfecf983dfb95178"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1ec6ee4c2f796ba0dfecf983dfb95178">&#9670;&nbsp;</a></span>digest_type</h2>
@@ -196,7 +196,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00411">411</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00395">395</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>
@@ -220,7 +220,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00191">191</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00192">192</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>
@@ -244,7 +244,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00193">193</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00194">194</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>
@@ -410,7 +410,7 @@ Public Attributes</h2></td></tr>
 
 <p>Returns true if this reflects an open ledger. </p>
 
-<p>Implemented in <a class="el" href="classripple_1_1Ledger.html#a131fb72a0a470e6b493865f9a06762c4">ripple::Ledger</a>, <a class="el" href="classripple_1_1OpenView.html#aea54a965aa77bcd1f3cdb34c24176cb6">ripple::OpenView</a>, <a class="el" href="classripple_1_1detail_1_1CachedViewImpl.html#afb1c7f57990c69df15950a4d83babc4c">ripple::detail::CachedViewImpl</a>, and <a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#a4af2aa917f94d3f031d8e53c3211f9e1">ripple::detail::ApplyViewBase</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1OpenView.html#aea54a965aa77bcd1f3cdb34c24176cb6">ripple::OpenView</a>, <a class="el" href="classripple_1_1Ledger.html#a131fb72a0a470e6b493865f9a06762c4">ripple::Ledger</a>, <a class="el" href="classripple_1_1detail_1_1CachedViewImpl.html#afb1c7f57990c69df15950a4d83babc4c">ripple::detail::CachedViewImpl</a>, and <a class="el" href="classripple_1_1detail_1_1ApplyViewBase.html#a4af2aa917f94d3f031d8e53c3211f9e1">ripple::detail::ApplyViewBase</a>.</p>
 
 </div>
 </div>
@@ -439,7 +439,7 @@ Public Attributes</h2></td></tr>
 
 <p>Returns the close time of the previous ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00251">251</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00249">249</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>
@@ -468,7 +468,7 @@ Public Attributes</h2></td></tr>
 
 <p>Returns the sequence number of the base ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00258">258</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00256">256</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>
@@ -649,13 +649,13 @@ Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">virtual <a class="el" href="classripple_1_1STAmount.html">STAmount</a> ripple::ReadView::balanceHook </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
           <td class="paramname"><em>account</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
           <td class="paramname"><em>issuer</em>, </td>
         </tr>
         <tr>
@@ -679,7 +679,7 @@ Public Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classripple_1_1PaymentSandbox.html#a96457b37722d895c585bcd260dd08a0f">ripple::PaymentSandbox</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00323">323</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00316">316</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>
@@ -695,7 +695,7 @@ Public Attributes</h2></td></tr>
         <tr>
           <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::ReadView::ownerCountHook </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
           <td class="paramname"><em>account</em>, </td>
         </tr>
         <tr>
@@ -719,7 +719,7 @@ Public Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classripple_1_1PaymentSandbox.html#a0e77b6bdc540075e1c8e5a6f447c4b13">ripple::PaymentSandbox</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00337">337</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00330">330</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>
@@ -946,7 +946,7 @@ Public Attributes</h2></td></tr>
 <p>Iterable range of ledger state items. </p>
 <dl class="section note"><dt>Note</dt><dd>Visiting each state entry in the ledger can become quite expensive as the ledger grows. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00398">398</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00383">383</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>
@@ -970,7 +970,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00401">401</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ReadView_8h_source.html#l00386">386</a> of file <a class="el" href="ReadView_8h_source.html">ReadView.h</a>.</p>
 
 </div>
 </div>

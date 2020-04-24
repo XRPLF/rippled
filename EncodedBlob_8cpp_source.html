@@ -95,36 +95,33 @@ $(function() {
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="keyword">namespace </span>NodeStore {</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="structripple_1_1NodeStore_1_1EncodedBlob.html#a1b3f76ab2c8935a08fb71f77e2100ba4">   27</a></span>&#160;<a class="code" href="structripple_1_1NodeStore_1_1EncodedBlob.html#a1b3f76ab2c8935a08fb71f77e2100ba4">EncodedBlob::prepare</a> (</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;NodeObject&gt;</a> <span class="keyword">const</span>&amp; <span class="keywordtype">object</span>)</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;{</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <a class="code" href="structripple_1_1NodeStore_1_1EncodedBlob.html#adcf74402099226d78d3a94e92ccac80d">m_key</a> = <span class="keywordtype">object</span>-&gt;getHash().begin ();</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keyword">auto</span> ret = <a class="code" href="structripple_1_1NodeStore_1_1EncodedBlob.html#aa6af4ac37c23417a3fc82359fd0f71ba">m_data</a>.<a class="code" href="classripple_1_1Buffer.html#ae15e22643d29f11fd43d715bf6169c6d">alloc</a>(object-&gt;getData ().size () + 9);</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="comment">// the first 8 bytes are unused</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memset.html">std::memset</a> (ret, 0, 8);</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    ret[8] = <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a><span class="keyword">&gt;</span> (<span class="keywordtype">object</span>-&gt;getType ());</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a> (ret + 9,</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        object-&gt;getData ().data(),</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        object-&gt;getData ().size());</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;}</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;}</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;}</div>
+<div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="structripple_1_1NodeStore_1_1EncodedBlob.html#a1b3f76ab2c8935a08fb71f77e2100ba4">   27</a></span>&#160;<a class="code" href="structripple_1_1NodeStore_1_1EncodedBlob.html#a1b3f76ab2c8935a08fb71f77e2100ba4">EncodedBlob::prepare</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;NodeObject&gt;</a> <span class="keyword">const</span>&amp; <span class="keywordtype">object</span>)</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;{</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <a class="code" href="structripple_1_1NodeStore_1_1EncodedBlob.html#adcf74402099226d78d3a94e92ccac80d">m_key</a> = <span class="keywordtype">object</span>-&gt;getHash().begin();</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">auto</span> ret = <a class="code" href="structripple_1_1NodeStore_1_1EncodedBlob.html#aa6af4ac37c23417a3fc82359fd0f71ba">m_data</a>.<a class="code" href="classripple_1_1Buffer.html#ae15e22643d29f11fd43d715bf6169c6d">alloc</a>(object-&gt;getData().size() + 9);</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="comment">// the first 8 bytes are unused</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memset.html">std::memset</a>(ret, 0, 8);</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    ret[8] = <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a><span class="keyword">&gt;</span>(<span class="keywordtype">object</span>-&gt;getType());</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(ret + 9, object-&gt;getData().data(), object-&gt;getData().size());</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;}</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;}  <span class="comment">// namespace NodeStore</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt; NodeObject &gt;</a></div></div>
 <div class="ttc" id="acstring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstring.html">cstring</a></div></div>
-<div class="ttc" id="astructripple_1_1NodeStore_1_1EncodedBlob_html_adcf74402099226d78d3a94e92ccac80d"><div class="ttname"><a href="structripple_1_1NodeStore_1_1EncodedBlob.html#adcf74402099226d78d3a94e92ccac80d">ripple::NodeStore::EncodedBlob::m_key</a></div><div class="ttdeci">void const  * m_key</div><div class="ttdef"><b>Definition:</b> <a href="EncodedBlob_8h_source.html#l00055">EncodedBlob.h:55</a></div></div>
+<div class="ttc" id="astructripple_1_1NodeStore_1_1EncodedBlob_html_adcf74402099226d78d3a94e92ccac80d"><div class="ttname"><a href="structripple_1_1NodeStore_1_1EncodedBlob.html#adcf74402099226d78d3a94e92ccac80d">ripple::NodeStore::EncodedBlob::m_key</a></div><div class="ttdeci">void const  * m_key</div><div class="ttdef"><b>Definition:</b> <a href="EncodedBlob_8h_source.html#l00059">EncodedBlob.h:59</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="amemcpy_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a></div><div class="ttdeci">T memcpy(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1Buffer_html_ae15e22643d29f11fd43d715bf6169c6d"><div class="ttname"><a href="classripple_1_1Buffer.html#ae15e22643d29f11fd43d715bf6169c6d">ripple::Buffer::alloc</a></div><div class="ttdeci">std::uint8_t * alloc(std::size_t n)</div><div class="ttdoc">Reallocate the storage.</div><div class="ttdef"><b>Definition:</b> <a href="Buffer_8h_source.html#l00180">Buffer.h:180</a></div></div>
+<div class="ttc" id="aclassripple_1_1Buffer_html_ae15e22643d29f11fd43d715bf6169c6d"><div class="ttname"><a href="classripple_1_1Buffer.html#ae15e22643d29f11fd43d715bf6169c6d">ripple::Buffer::alloc</a></div><div class="ttdeci">std::uint8_t * alloc(std::size_t n)</div><div class="ttdoc">Reallocate the storage.</div><div class="ttdef"><b>Definition:</b> <a href="Buffer_8h_source.html#l00176">Buffer.h:176</a></div></div>
 <div class="ttc" id="amemset_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/byte/memset.html">std::memset</a></div><div class="ttdeci">T memset(T... args)</div></div>
 <div class="ttc" id="astructripple_1_1NodeStore_1_1EncodedBlob_html_a1b3f76ab2c8935a08fb71f77e2100ba4"><div class="ttname"><a href="structripple_1_1NodeStore_1_1EncodedBlob.html#a1b3f76ab2c8935a08fb71f77e2100ba4">ripple::NodeStore::EncodedBlob::prepare</a></div><div class="ttdeci">void prepare(std::shared_ptr&lt; NodeObject &gt; const &amp;object)</div><div class="ttdef"><b>Definition:</b> <a href="EncodedBlob_8cpp_source.html#l00027">EncodedBlob.cpp:27</a></div></div>
-<div class="ttc" id="astructripple_1_1NodeStore_1_1EncodedBlob_html_aa6af4ac37c23417a3fc82359fd0f71ba"><div class="ttname"><a href="structripple_1_1NodeStore_1_1EncodedBlob.html#aa6af4ac37c23417a3fc82359fd0f71ba">ripple::NodeStore::EncodedBlob::m_data</a></div><div class="ttdeci">Buffer m_data</div><div class="ttdef"><b>Definition:</b> <a href="EncodedBlob_8h_source.html#l00056">EncodedBlob.h:56</a></div></div>
+<div class="ttc" id="astructripple_1_1NodeStore_1_1EncodedBlob_html_aa6af4ac37c23417a3fc82359fd0f71ba"><div class="ttname"><a href="structripple_1_1NodeStore_1_1EncodedBlob.html#aa6af4ac37c23417a3fc82359fd0f71ba">ripple::NodeStore::EncodedBlob::m_data</a></div><div class="ttdeci">Buffer m_data</div><div class="ttdef"><b>Definition:</b> <a href="EncodedBlob_8h_source.html#l00060">EncodedBlob.h:60</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

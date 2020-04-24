@@ -90,7 +90,7 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:a0e9c10efac85947eb2e4e830725e7d3a"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1NodeStore_1_1varint__traits_3_01T_00_01true_01_4.html#a0e9c10efac85947eb2e4e830725e7d3a">max</a></td></tr>
+<tr class="memitem:a0e9c10efac85947eb2e4e830725e7d3a"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1NodeStore_1_1varint__traits_3_01T_00_01true_01_4.html#a0e9c10efac85947eb2e4e830725e7d3a">max</a> = (8 * sizeof(T) + 6) / 7</td></tr>
 <tr class="separator:a0e9c10efac85947eb2e4e830725e7d3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -98,7 +98,7 @@ Static Public Attributes</h2></td></tr>
 struct ripple::NodeStore::varint_traits&lt; T, true &gt;</h3>
 
 
-<p class="definition">Definition at line <a class="el" href="varint_8h_source.html#l00045">45</a> of file <a class="el" href="varint_8h_source.html">varint.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="varint_8h_source.html#l00044">44</a> of file <a class="el" href="varint_8h_source.html">varint.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a30c1c8932925bf73605ac65823ae1533"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a30c1c8932925bf73605ac65823ae1533">&#9670;&nbsp;</a></span>varint_traits()</h2>
@@ -140,7 +140,7 @@ template&lt;class T &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <a class="el" href="structripple_1_1NodeStore_1_1varint__traits.html">ripple::NodeStore::varint_traits</a>&lt; T, true &gt;::max</td>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <a class="el" href="structripple_1_1NodeStore_1_1varint__traits.html">ripple::NodeStore::varint_traits</a>&lt; T, true &gt;::max = (8 * sizeof(T) + 6) / 7</td>
         </tr>
       </table>
   </td>
@@ -149,10 +149,8 @@ template&lt;class T &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">=</div>
-<div class="line">        (8 * <span class="keyword">sizeof</span>(T) + 6) / 7</div>
-</div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="varint_8h_source.html#l00049">49</a> of file <a class="el" href="varint_8h_source.html">varint.h</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="varint_8h_source.html#l00048">48</a> of file <a class="el" href="varint_8h_source.html">varint.h</a>.</p>
 
 </div>
 </div>

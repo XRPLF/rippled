@@ -91,8 +91,8 @@ $(function() {
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_RESOURCE_IMPORT_H_INCLUDED</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_RESOURCE_IMPORT_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/resource/impl/Entry.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/resource/Consumer.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/resource/Consumer.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/resource/impl/Entry.h&gt;</span></div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keyword">namespace </span>Resource {</div>
@@ -108,22 +108,21 @@ $(function() {
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    };</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="comment">// Dummy argument required for zero-copy construction</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="structripple_1_1Resource_1_1Import.html#a527971b2d0fa797451caa8115069b824">   41</a></span>&#160;    <a class="code" href="structripple_1_1Resource_1_1Import.html#a527971b2d0fa797451caa8115069b824">Import</a> (<span class="keywordtype">int</span> = 0)</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        : <a class="code" href="structripple_1_1Resource_1_1Import.html#aea7cc5f53d609fcf9507cc9cd2ac03de">whenExpires</a> ()</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    {</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    }</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="comment">// When the imported data expires</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="structripple_1_1Resource_1_1Import.html#aea7cc5f53d609fcf9507cc9cd2ac03de">   47</a></span>&#160;    <a class="code" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">clock_type::time_point</a> <a class="code" href="structripple_1_1Resource_1_1Import.html#aea7cc5f53d609fcf9507cc9cd2ac03de">whenExpires</a>;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="comment">// List of remote entries</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="structripple_1_1Resource_1_1Import.html#a24407aead5c02447020ec73c3d88a379">   50</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector &lt;Item&gt;</a> <a class="code" href="structripple_1_1Resource_1_1Import.html#a24407aead5c02447020ec73c3d88a379">items</a>;</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;};</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;}</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;}</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="structripple_1_1Resource_1_1Import.html#a527971b2d0fa797451caa8115069b824">   41</a></span>&#160;    <a class="code" href="structripple_1_1Resource_1_1Import.html#a527971b2d0fa797451caa8115069b824">Import</a>(<span class="keywordtype">int</span> = 0) : <a class="code" href="structripple_1_1Resource_1_1Import.html#aea7cc5f53d609fcf9507cc9cd2ac03de">whenExpires</a>()</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    {</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    }</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="comment">// When the imported data expires</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="structripple_1_1Resource_1_1Import.html#aea7cc5f53d609fcf9507cc9cd2ac03de">   46</a></span>&#160;    <a class="code" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">clock_type::time_point</a> <a class="code" href="structripple_1_1Resource_1_1Import.html#aea7cc5f53d609fcf9507cc9cd2ac03de">whenExpires</a>;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="comment">// List of remote entries</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="structripple_1_1Resource_1_1Import.html#a24407aead5c02447020ec73c3d88a379">   49</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;Item&gt;</a> <a class="code" href="structripple_1_1Resource_1_1Import.html#a24407aead5c02447020ec73c3d88a379">items</a>;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;};</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;}  <span class="comment">// namespace Resource</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="astructripple_1_1Resource_1_1Import_html"><div class="ttname"><a href="structripple_1_1Resource_1_1Import.html">ripple::Resource::Import</a></div><div class="ttdoc">A set of imported consumer data from a gossip origin.</div><div class="ttdef"><b>Definition:</b> <a href="Import_8h_source.html#l00030">Import.h:30</a></div></div>
 <div class="ttc" id="astructripple_1_1Resource_1_1Import_html_a527971b2d0fa797451caa8115069b824"><div class="ttname"><a href="structripple_1_1Resource_1_1Import.html#a527971b2d0fa797451caa8115069b824">ripple::Resource::Import::Import</a></div><div class="ttdeci">Import(int=0)</div><div class="ttdef"><b>Definition:</b> <a href="Import_8h_source.html#l00041">Import.h:41</a></div></div>
@@ -134,9 +133,9 @@ $(function() {
 <div class="ttc" id="astructripple_1_1Resource_1_1Import_1_1Item_html_a57c30c59038c92c9cff4b3d291dd38e5"><div class="ttname"><a href="structripple_1_1Resource_1_1Import_1_1Item.html#a57c30c59038c92c9cff4b3d291dd38e5">ripple::Resource::Import::Item::balance</a></div><div class="ttdeci">int balance</div><div class="ttdef"><b>Definition:</b> <a href="Import_8h_source.html#l00036">Import.h:36</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1Resource_1_1Consumer_html"><div class="ttname"><a href="classripple_1_1Resource_1_1Consumer.html">ripple::Resource::Consumer</a></div><div class="ttdoc">An endpoint that consumes resources.</div><div class="ttdef"><b>Definition:</b> <a href="Consumer_8h_source.html#l00033">Consumer.h:33</a></div></div>
-<div class="ttc" id="astructripple_1_1Resource_1_1Import_html_aea7cc5f53d609fcf9507cc9cd2ac03de"><div class="ttname"><a href="structripple_1_1Resource_1_1Import.html#aea7cc5f53d609fcf9507cc9cd2ac03de">ripple::Resource::Import::whenExpires</a></div><div class="ttdeci">clock_type::time_point whenExpires</div><div class="ttdef"><b>Definition:</b> <a href="Import_8h_source.html#l00047">Import.h:47</a></div></div>
+<div class="ttc" id="astructripple_1_1Resource_1_1Import_html_aea7cc5f53d609fcf9507cc9cd2ac03de"><div class="ttname"><a href="structripple_1_1Resource_1_1Import.html#aea7cc5f53d609fcf9507cc9cd2ac03de">ripple::Resource::Import::whenExpires</a></div><div class="ttdeci">clock_type::time_point whenExpires</div><div class="ttdef"><b>Definition:</b> <a href="Import_8h_source.html#l00046">Import.h:46</a></div></div>
 <div class="ttc" id="aclassbeast_1_1abstract__clock_html_a4e16832b0bdf9392c5138bbbde024d8e"><div class="ttname"><a href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">beast::abstract_clock&lt; std::chrono::steady_clock &gt;::time_point</a></div><div class="ttdeci">typename std::chrono::steady_clock ::time_point time_point</div><div class="ttdef"><b>Definition:</b> <a href="abstract__clock_8h_source.html#l00063">abstract_clock.h:63</a></div></div>
-<div class="ttc" id="astructripple_1_1Resource_1_1Import_html_a24407aead5c02447020ec73c3d88a379"><div class="ttname"><a href="structripple_1_1Resource_1_1Import.html#a24407aead5c02447020ec73c3d88a379">ripple::Resource::Import::items</a></div><div class="ttdeci">std::vector&lt; Item &gt; items</div><div class="ttdef"><b>Definition:</b> <a href="Import_8h_source.html#l00050">Import.h:50</a></div></div>
+<div class="ttc" id="astructripple_1_1Resource_1_1Import_html_a24407aead5c02447020ec73c3d88a379"><div class="ttname"><a href="structripple_1_1Resource_1_1Import.html#a24407aead5c02447020ec73c3d88a379">ripple::Resource::Import::items</a></div><div class="ttdeci">std::vector&lt; Item &gt; items</div><div class="ttdef"><b>Definition:</b> <a href="Import_8h_source.html#l00049">Import.h:49</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

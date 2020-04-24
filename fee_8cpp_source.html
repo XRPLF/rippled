@@ -88,8 +88,8 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;test/jtx/fee.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/jss.h&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/jss.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;test/jtx/fee.h&gt;</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="keyword">namespace </span>test {</div>
@@ -98,17 +98,16 @@ $(function() {
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keywordtype">void</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1fee.html#ac04bdec3533093516a24178dc1b8c683">   28</a></span>&#160;<a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#ac04bdec3533093516a24178dc1b8c683">fee::operator()</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a>&amp;, <a class="code" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a>&amp; jt)<span class="keyword"> const</span></div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keywordflow">if</span> (! <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#a942d31864e207cc6a2851b5a3a426ab3">manual_</a>)</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keywordflow">if</span> (!<a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#a942d31864e207cc6a2851b5a3a426ab3">manual_</a>)</div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    jt.<a class="code" href="structripple_1_1test_1_1jtx_1_1JTx.html#a98069e0239b1a4dca64e69d811778403">fill_fee</a> = <span class="keyword">false</span>;</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#a1c76620f655af2775ad6645e8ad6656d">amount_</a>)</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        jt[jss::Fee] =</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#a1c76620f655af2775ad6645e8ad6656d">amount_</a>-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>);</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;}</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;} <span class="comment">// jtx</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;} <span class="comment">// test</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        jt[jss::Fee] = <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#a1c76620f655af2775ad6645e8ad6656d">amount_</a>-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>);</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;}</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;}  <span class="comment">// namespace jtx</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1fee_html_a942d31864e207cc6a2851b5a3a426ab3"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1fee.html#a942d31864e207cc6a2851b5a3a426ab3">ripple::test::jtx::fee::manual_</a></div><div class="ttdeci">bool manual_</div><div class="ttdef"><b>Definition:</b> <a href="fee_8h_source.html#l00037">fee.h:37</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1fee_html_a1c76620f655af2775ad6645e8ad6656d"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1fee.html#a1c76620f655af2775ad6645e8ad6656d">ripple::test::jtx::fee::amount_</a></div><div class="ttdeci">boost::optional&lt; STAmount &gt; amount_</div><div class="ttdef"><b>Definition:</b> <a href="fee_8h_source.html#l00038">fee.h:38</a></div></div>
@@ -117,7 +116,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1fee_html_ac04bdec3533093516a24178dc1b8c683"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1fee.html#ac04bdec3533093516a24178dc1b8c683">ripple::test::jtx::fee::operator()</a></div><div class="ttdeci">void operator()(Env &amp;, JTx &amp;jt) const</div><div class="ttdef"><b>Definition:</b> <a href="fee_8cpp_source.html#l00028">fee.cpp:28</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1jtx_1_1JTx_html_a98069e0239b1a4dca64e69d811778403"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1JTx.html#a98069e0239b1a4dca64e69d811778403">ripple::test::jtx::JTx::fill_fee</a></div><div class="ttdeci">bool fill_fee</div><div class="ttdef"><b>Definition:</b> <a href="JTx_8h_source.html#l00046">JTx.h:46</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00117">Env.h:117</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00114">Env.h:114</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

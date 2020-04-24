@@ -129,7 +129,7 @@ Collaboration diagram for ripple::SSLWSPeer&lt; Handler &gt;:</div>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a2abe9169c22d273c36d040b24b835311"><td class="memTemplParams" colspan="2">template&lt;class Body , class Headers &gt; </td></tr>
-<tr class="memitem:a2abe9169c22d273c36d040b24b835311"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLWSPeer.html#a2abe9169c22d273c36d040b24b835311">SSLWSPeer</a> (<a class="el" href="structripple_1_1Port.html">Port</a> const &amp;<a class="el" href="classripple_1_1BaseWSPeer.html#a897618f37f9b01fa4d4811aeafb63e22">port</a>, Handler &amp;handler, <a class="el" href="classripple_1_1SSLWSPeer.html#a81f6c16a826a0889e7491b3e7f3d9d74">endpoint_type</a> <a class="el" href="classripple_1_1BaseWSPeer.html#a8a6edb475f753507ccf4721af10025ec">remote_endpoint</a>, boost::beast::http::request&lt; Body, Headers &gt; &amp;&amp;<a class="el" href="classripple_1_1BaseWSPeer.html#aa4d378cf640b42d55b0dba41193a8ec4">request</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1SSLWSPeer.html#a403a691a225bc5da45a51b5ce052e636">stream_type</a> &gt; &amp;&amp;stream_ptr, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
+<tr class="memitem:a2abe9169c22d273c36d040b24b835311"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLWSPeer.html#a2abe9169c22d273c36d040b24b835311">SSLWSPeer</a> (<a class="el" href="structripple_1_1Port.html">Port</a> const &amp;<a class="el" href="classripple_1_1BaseWSPeer.html#a897618f37f9b01fa4d4811aeafb63e22">port</a>, Handler &amp;handler, <a class="el" href="classripple_1_1SSLWSPeer.html#a81f6c16a826a0889e7491b3e7f3d9d74">endpoint_type</a> <a class="el" href="classripple_1_1BaseWSPeer.html#a8a6edb475f753507ccf4721af10025ec">remote_endpoint</a>, boost::beast::http::request&lt; Body, Headers &gt; &amp;&amp;<a class="el" href="classripple_1_1BaseWSPeer.html#aa4d378cf640b42d55b0dba41193a8ec4">request</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1SSLWSPeer.html#a37ef59f3ed9883a9019577cad57debd9">stream_type</a> &gt; &amp;&amp;stream_ptr, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
 <tr class="separator:a2abe9169c22d273c36d040b24b835311"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abfcbf7e3a0537770be7001d581f7098f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BaseWSPeer.html#abfcbf7e3a0537770be7001d581f7098f">run</a> () override</td></tr>
 <tr class="separator:abfcbf7e3a0537770be7001d581f7098f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -226,10 +226,10 @@ Private Types</h2></td></tr>
 <tr class="separator:a81f6c16a826a0889e7491b3e7f3d9d74"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a67d555feb28ca52e3afb48a4b8e3fbf4"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLWSPeer.html#a67d555feb28ca52e3afb48a4b8e3fbf4">socket_type</a> = boost::beast::tcp_stream</td></tr>
 <tr class="separator:a67d555feb28ca52e3afb48a4b8e3fbf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a403a691a225bc5da45a51b5ce052e636"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLWSPeer.html#a403a691a225bc5da45a51b5ce052e636">stream_type</a> = boost::beast::ssl_stream&lt; <a class="el" href="classripple_1_1SSLWSPeer.html#a67d555feb28ca52e3afb48a4b8e3fbf4">socket_type</a> &gt;</td></tr>
-<tr class="separator:a403a691a225bc5da45a51b5ce052e636"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab4cc9cbf05b77e8389a2303efba85bd8"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLWSPeer.html#ab4cc9cbf05b77e8389a2303efba85bd8">waitable_timer</a> = boost::asio::basic_waitable_timer&lt; <a class="el" href="classripple_1_1SSLWSPeer.html#ab378343cf70bf35c248762d31cf6094d">clock_type</a> &gt;</td></tr>
-<tr class="separator:ab4cc9cbf05b77e8389a2303efba85bd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a37ef59f3ed9883a9019577cad57debd9"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLWSPeer.html#a37ef59f3ed9883a9019577cad57debd9">stream_type</a> = boost::beast::ssl_stream&lt; <a class="el" href="classripple_1_1SSLWSPeer.html#a67d555feb28ca52e3afb48a4b8e3fbf4">socket_type</a> &gt;</td></tr>
+<tr class="separator:a37ef59f3ed9883a9019577cad57debd9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae24e8b72e2546b308ae12045474e35a2"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLWSPeer.html#ae24e8b72e2546b308ae12045474e35a2">waitable_timer</a> = boost::asio::basic_waitable_timer&lt; <a class="el" href="classripple_1_1SSLWSPeer.html#ab378343cf70bf35c248762d31cf6094d">clock_type</a> &gt;</td></tr>
+<tr class="separator:ae24e8b72e2546b308ae12045474e35a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -239,9 +239,9 @@ Private Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a52ec3f49deca43ee1d5edaf220f4786a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1SSLWSPeer.html#a403a691a225bc5da45a51b5ce052e636">stream_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLWSPeer.html#a52ec3f49deca43ee1d5edaf220f4786a">stream_ptr_</a></td></tr>
+<tr class="memitem:a52ec3f49deca43ee1d5edaf220f4786a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1SSLWSPeer.html#a37ef59f3ed9883a9019577cad57debd9">stream_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLWSPeer.html#a52ec3f49deca43ee1d5edaf220f4786a">stream_ptr_</a></td></tr>
 <tr class="separator:a52ec3f49deca43ee1d5edaf220f4786a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0dea5585c59f8ca910f53d7f9906939c"><td class="memItemLeft" align="right" valign="top">boost::beast::websocket::stream&lt; <a class="el" href="classripple_1_1SSLWSPeer.html#a403a691a225bc5da45a51b5ce052e636">stream_type</a> &amp; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLWSPeer.html#a0dea5585c59f8ca910f53d7f9906939c">ws_</a></td></tr>
+<tr class="memitem:a0dea5585c59f8ca910f53d7f9906939c"><td class="memItemLeft" align="right" valign="top">boost::beast::websocket::stream&lt; <a class="el" href="classripple_1_1SSLWSPeer.html#a37ef59f3ed9883a9019577cad57debd9">stream_type</a> &amp; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLWSPeer.html#a0dea5585c59f8ca910f53d7f9906939c">ws_</a></td></tr>
 <tr class="separator:a0dea5585c59f8ca910f53d7f9906939c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a55db665752370720603dd49e3fe7b72a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#ae1899ff3d7d0a3000dff5b755a951381">http_request_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BaseWSPeer.html#a55db665752370720603dd49e3fe7b72a">request_</a></td></tr>
 <tr class="separator:a55db665752370720603dd49e3fe7b72a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -255,7 +255,7 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a4f8fad887b045e6afb48940cb1a2e955"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9567f3a7c6c0a75cc7aa54c9b0d05e9a"><td class="memItemLeft" align="right" valign="top">boost::beast::websocket::close_reason&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BaseWSPeer.html#a9567f3a7c6c0a75cc7aa54c9b0d05e9a">cr_</a></td></tr>
 <tr class="separator:a9567f3a7c6c0a75cc7aa54c9b0d05e9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af5ff3fd75b27eaeb5adbe47ab1d0b1e0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SSLWSPeer.html#ab4cc9cbf05b77e8389a2303efba85bd8">waitable_timer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BaseWSPeer.html#af5ff3fd75b27eaeb5adbe47ab1d0b1e0">timer_</a></td></tr>
+<tr class="memitem:af5ff3fd75b27eaeb5adbe47ab1d0b1e0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SSLWSPeer.html#ae24e8b72e2546b308ae12045474e35a2">waitable_timer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BaseWSPeer.html#af5ff3fd75b27eaeb5adbe47ab1d0b1e0">timer_</a></td></tr>
 <tr class="separator:af5ff3fd75b27eaeb5adbe47ab1d0b1e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6822ba8d4c2b518461cd9e4da0224a0c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BaseWSPeer.html#a6822ba8d4c2b518461cd9e4da0224a0c">close_on_timer_</a></td></tr>
 <tr class="separator:a6822ba8d4c2b518461cd9e4da0224a0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -265,8 +265,8 @@ Private Attributes</h2></td></tr>
 <tr class="separator:af6f92a60e54f6cf8f5e776450b2c47a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adb50776c5675b1eab8e871188582b159"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SSLWSPeer.html#aa6f2bccfec303c52d590d422cfb8d71c">error_code</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BaseWSPeer.html#adb50776c5675b1eab8e871188582b159">ec_</a></td></tr>
 <tr class="separator:adb50776c5675b1eab8e871188582b159"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6ee84c8d90561b736ebfd7d35d11e610"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(boost::beast::websocket::frame_type, boost::beast::string_view)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BaseWSPeer.html#a6ee84c8d90561b736ebfd7d35d11e610">control_callback_</a></td></tr>
-<tr class="separator:a6ee84c8d90561b736ebfd7d35d11e610"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a282cb89602536b27fae3cf4a10a008c3"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(boost::beast::websocket::frame_type, boost::beast::string_view)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BaseWSPeer.html#a282cb89602536b27fae3cf4a10a008c3">control_callback_</a></td></tr>
+<tr class="separator:a282cb89602536b27fae3cf4a10a008c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a72a5b3899fd35be82c4775a69d61e33e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1io__list.html">io_list</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1io__list_1_1work.html#a72a5b3899fd35be82c4775a69d61e33e">ios_</a> = nullptr</td></tr>
 <tr class="separator:a72a5b3899fd35be82c4775a69d61e33e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -306,7 +306,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00043">43</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00042">42</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -332,7 +332,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00044">44</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00043">43</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -358,7 +358,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00045">45</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00044">44</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -384,12 +384,12 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00046">46</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00045">45</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
 
 </div>
 </div>
-<a id="a403a691a225bc5da45a51b5ce052e636"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a403a691a225bc5da45a51b5ce052e636">&#9670;&nbsp;</a></span>stream_type</h2>
+<a id="a37ef59f3ed9883a9019577cad57debd9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a37ef59f3ed9883a9019577cad57debd9">&#9670;&nbsp;</a></span>stream_type</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -400,7 +400,33 @@ template&lt;class Handler &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1SSLWSPeer.html">ripple::SSLWSPeer</a>&lt; Handler &gt;::<a class="el" href="classripple_1_1SSLWSPeer.html#a403a691a225bc5da45a51b5ce052e636">stream_type</a> =  boost::beast::ssl_stream &lt;<a class="el" href="classripple_1_1SSLWSPeer.html#a67d555feb28ca52e3afb48a4b8e3fbf4">socket_type</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1SSLWSPeer.html">ripple::SSLWSPeer</a>&lt; Handler &gt;::<a class="el" href="classripple_1_1SSLWSPeer.html#a37ef59f3ed9883a9019577cad57debd9">stream_type</a> =  boost::beast::ssl_stream&lt;<a class="el" href="classripple_1_1SSLWSPeer.html#a67d555feb28ca52e3afb48a4b8e3fbf4">socket_type</a>&gt;</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00046">46</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
+
+</div>
+</div>
+<a id="ae24e8b72e2546b308ae12045474e35a2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae24e8b72e2546b308ae12045474e35a2">&#9670;&nbsp;</a></span>waitable_timer</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Handler &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classripple_1_1SSLWSPeer.html">ripple::SSLWSPeer</a>&lt; Handler &gt;::<a class="el" href="classripple_1_1SSLWSPeer.html#ae24e8b72e2546b308ae12045474e35a2">waitable_timer</a> =  boost::asio::basic_waitable_timer&lt;<a class="el" href="classripple_1_1SSLWSPeer.html#ab378343cf70bf35c248762d31cf6094d">clock_type</a>&gt;</td>
         </tr>
       </table>
   </td>
@@ -411,32 +437,6 @@ template&lt;class Handler &gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00047">47</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
-
-</div>
-</div>
-<a id="ab4cc9cbf05b77e8389a2303efba85bd8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab4cc9cbf05b77e8389a2303efba85bd8">&#9670;&nbsp;</a></span>waitable_timer</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class Handler &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1SSLWSPeer.html">ripple::SSLWSPeer</a>&lt; Handler &gt;::<a class="el" href="classripple_1_1SSLWSPeer.html#ab4cc9cbf05b77e8389a2303efba85bd8">waitable_timer</a> =  boost::asio::basic_waitable_timer &lt;<a class="el" href="classripple_1_1SSLWSPeer.html#ab378343cf70bf35c248762d31cf6094d">clock_type</a>&gt;</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00049">49</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -478,7 +478,7 @@ template&lt;class Body , class Headers &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1SSLWSPeer.html#a403a691a225bc5da45a51b5ce052e636">stream_type</a> &gt; &amp;&amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1SSLWSPeer.html#a37ef59f3ed9883a9019577cad57debd9">stream_type</a> &gt; &amp;&amp;&#160;</td>
           <td class="paramname"><em>stream_ptr</em>, </td>
         </tr>
         <tr>
@@ -495,7 +495,7 @@ template&lt;class Body , class Headers &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00069">69</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00067">67</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -522,7 +522,7 @@ template&lt;class Body , class Headers &gt; </div>
 
 <p>Implements <a class="el" href="structripple_1_1WSSession.html#a8d8ff14085fd9951038f860a4a08939f">ripple::WSSession</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00189">189</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00185">185</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -546,7 +546,7 @@ template&lt;class Body , class Headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00084">84</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00085">85</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -597,7 +597,7 @@ template&lt;class Body , class Headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00090">90</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00091">91</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -648,7 +648,7 @@ template&lt;class Body , class Headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00096">96</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00097">97</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -707,7 +707,7 @@ template&lt;class Body , class Headers &gt; </div>
 
 <p>Implements <a class="el" href="structripple_1_1WSSession.html#a8e7e0b568ae4bcced108341224dec263">ripple::WSSession</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00219">219</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00218">218</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -733,7 +733,7 @@ template&lt;class Body , class Headers &gt; </div>
 
 <p>Implements <a class="el" href="structripple_1_1WSSession.html#a17da7bcecda1540505b77c4bab0a5b93">ripple::WSSession</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00245">245</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00244">244</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -763,7 +763,7 @@ template&lt;class Body , class Headers &gt; </div>
 
 <p>Implements <a class="el" href="structripple_1_1WSSession.html#aa3b2298b56bf9e479c89df60e32215b9">ripple::WSSession</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00252">252</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00251">251</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -792,7 +792,7 @@ template&lt;class Body , class Headers &gt; </div>
 
 <p>Implements <a class="el" href="structripple_1_1WSSession.html#ad95020dc99b4322736f342c9427f6445">ripple::WSSession</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00280">280</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00278">278</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -816,7 +816,7 @@ template&lt;class Body , class Headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00115">115</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00116">116</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -844,7 +844,7 @@ template&lt;class Body , class Headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00292">292</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00289">289</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -868,7 +868,7 @@ template&lt;class Body , class Headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00303">303</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00299">299</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -896,7 +896,7 @@ template&lt;class Body , class Headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00315">315</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00310">310</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -924,7 +924,7 @@ template&lt;class Body , class Headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00351">351</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00344">344</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -948,7 +948,7 @@ template&lt;class Body , class Headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00372">372</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00364">364</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -976,7 +976,7 @@ template&lt;class Body , class Headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00391">391</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00382">382</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1004,7 +1004,7 @@ template&lt;class Body , class Headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00409">409</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00398">398</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1028,7 +1028,7 @@ template&lt;class Body , class Headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00417">417</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00405">405</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1052,7 +1052,7 @@ template&lt;class Body , class Headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00440">440</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00426">426</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1080,7 +1080,7 @@ template&lt;class Body , class Headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00449">449</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00434">434</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1118,7 +1118,7 @@ template&lt;class Body , class Headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00462">462</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00446">446</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1146,7 +1146,7 @@ template&lt;class Body , class Headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00485">485</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00467">467</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1184,7 +1184,7 @@ template&lt;class Body , class Headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00521">521</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00500">500</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1213,7 +1213,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00180">180</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00182">182</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 
 </div>
 </div>
@@ -1243,7 +1243,7 @@ template&lt;class  = void&gt; </div>
 <p>Return the <a class="el" href="classripple_1_1io__list.html" title="Manages a set of objects performing asynchronous I/O.">io_list</a> associated with the work. </p>
 <p>Requirements: The call to <a class="el" href="classripple_1_1io__list.html#ab3e889d40f86fc527ad71c5b3f7c0e91" title="Create associated work if not closed.">io_list::emplace</a> to create the work has already returned. </p>
 
-<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00059">59</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00060">60</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 
 </div>
 </div>
@@ -1270,7 +1270,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00040">40</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00039">39</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1296,7 +1296,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00041">41</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00040">40</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1313,7 +1313,7 @@ template&lt;class Handler &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt;<a class="el" href="classripple_1_1SSLWSPeer.html#a403a691a225bc5da45a51b5ce052e636">stream_type</a>&gt; <a class="el" href="classripple_1_1SSLWSPeer.html">ripple::SSLWSPeer</a>&lt; Handler &gt;::stream_ptr_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt;<a class="el" href="classripple_1_1SSLWSPeer.html#a37ef59f3ed9883a9019577cad57debd9">stream_type</a>&gt; <a class="el" href="classripple_1_1SSLWSPeer.html">ripple::SSLWSPeer</a>&lt; Handler &gt;::stream_ptr_</td>
         </tr>
       </table>
   </td>
@@ -1323,7 +1323,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00051">51</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00049">49</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1339,7 +1339,7 @@ template&lt;class Handler &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::beast::websocket::stream&lt;<a class="el" href="classripple_1_1SSLWSPeer.html#a403a691a225bc5da45a51b5ce052e636">stream_type</a>&amp;&gt; <a class="el" href="classripple_1_1SSLWSPeer.html">ripple::SSLWSPeer</a>&lt; Handler &gt;::ws_</td>
+          <td class="memname">boost::beast::websocket::stream&lt;<a class="el" href="classripple_1_1SSLWSPeer.html#a37ef59f3ed9883a9019577cad57debd9">stream_type</a>&amp;&gt; <a class="el" href="classripple_1_1SSLWSPeer.html">ripple::SSLWSPeer</a>&lt; Handler &gt;::ws_</td>
         </tr>
       </table>
   </td>
@@ -1349,7 +1349,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00052">52</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLWSPeer_8h_source.html#l00050">50</a> of file <a class="el" href="SSLWSPeer_8h_source.html">SSLWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1373,7 +1373,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00053">53</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00051">51</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1397,7 +1397,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00054">54</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00052">52</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1421,7 +1421,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00055">55</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00053">53</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1445,7 +1445,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00056">56</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00054">54</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1469,7 +1469,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00057">57</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00055">55</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1493,7 +1493,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00058">58</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00056">56</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1507,7 +1507,7 @@ template&lt;class Handler &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1SSLWSPeer.html#ab4cc9cbf05b77e8389a2303efba85bd8">waitable_timer</a> <a class="el" href="classripple_1_1BaseWSPeer.html">ripple::BaseWSPeer</a>&lt; Handler, <a class="el" href="classripple_1_1SSLWSPeer.html">SSLWSPeer</a>&lt; Handler &gt;  &gt;::timer_</td>
+          <td class="memname"><a class="el" href="classripple_1_1SSLWSPeer.html#ae24e8b72e2546b308ae12045474e35a2">waitable_timer</a> <a class="el" href="classripple_1_1BaseWSPeer.html">ripple::BaseWSPeer</a>&lt; Handler, <a class="el" href="classripple_1_1SSLWSPeer.html">SSLWSPeer</a>&lt; Handler &gt;  &gt;::timer_</td>
         </tr>
       </table>
   </td>
@@ -1517,7 +1517,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00059">59</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00057">57</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1541,7 +1541,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00060">60</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00058">58</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1565,7 +1565,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00061">61</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00059">59</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1589,7 +1589,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00062">62</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00060">60</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
@@ -1613,12 +1613,12 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00063">63</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseWSPeer_8h_source.html#l00061">61</a> of file <a class="el" href="BaseWSPeer_8h_source.html">BaseWSPeer.h</a>.</p>
 
 </div>
 </div>
-<a id="a6ee84c8d90561b736ebfd7d35d11e610"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6ee84c8d90561b736ebfd7d35d11e610">&#9670;&nbsp;</a></span>control_callback_</h2>
+<a id="a282cb89602536b27fae3cf4a10a008c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a282cb89602536b27fae3cf4a10a008c3">&#9670;&nbsp;</a></span>control_callback_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1627,7 +1627,7 @@ template&lt;class Handler &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;void (boost::beast::websocket::frame_type , boost::beast::string_view)&gt; <a class="el" href="classripple_1_1BaseWSPeer.html">ripple::BaseWSPeer</a>&lt; Handler, <a class="el" href="classripple_1_1SSLWSPeer.html">SSLWSPeer</a>&lt; Handler &gt;  &gt;::control_callback_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(boost::beast::websocket::frame_type, boost::beast::string_view)&gt; <a class="el" href="classripple_1_1BaseWSPeer.html">ripple::BaseWSPeer</a>&lt; Handler, <a class="el" href="classripple_1_1SSLWSPeer.html">SSLWSPeer</a>&lt; Handler &gt;  &gt;::control_callback_</td>
         </tr>
       </table>
   </td>
@@ -1661,7 +1661,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasePeer_8h_source.html#l00046">46</a> of file <a class="el" href="BasePeer_8h_source.html">BasePeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasePeer_8h_source.html#l00045">45</a> of file <a class="el" href="BasePeer_8h_source.html">BasePeer.h</a>.</p>
 
 </div>
 </div>
@@ -1685,7 +1685,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasePeer_8h_source.html#l00047">47</a> of file <a class="el" href="BasePeer_8h_source.html">BasePeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasePeer_8h_source.html#l00046">46</a> of file <a class="el" href="BasePeer_8h_source.html">BasePeer.h</a>.</p>
 
 </div>
 </div>
@@ -1709,7 +1709,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasePeer_8h_source.html#l00048">48</a> of file <a class="el" href="BasePeer_8h_source.html">BasePeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasePeer_8h_source.html#l00047">47</a> of file <a class="el" href="BasePeer_8h_source.html">BasePeer.h</a>.</p>
 
 </div>
 </div>
@@ -1733,7 +1733,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasePeer_8h_source.html#l00049">49</a> of file <a class="el" href="BasePeer_8h_source.html">BasePeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasePeer_8h_source.html#l00048">48</a> of file <a class="el" href="BasePeer_8h_source.html">BasePeer.h</a>.</p>
 
 </div>
 </div>
@@ -1757,7 +1757,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasePeer_8h_source.html#l00050">50</a> of file <a class="el" href="BasePeer_8h_source.html">BasePeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasePeer_8h_source.html#l00049">49</a> of file <a class="el" href="BasePeer_8h_source.html">BasePeer.h</a>.</p>
 
 </div>
 </div>
@@ -1781,7 +1781,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasePeer_8h_source.html#l00052">52</a> of file <a class="el" href="BasePeer_8h_source.html">BasePeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasePeer_8h_source.html#l00051">51</a> of file <a class="el" href="BasePeer_8h_source.html">BasePeer.h</a>.</p>
 
 </div>
 </div>
@@ -1805,7 +1805,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasePeer_8h_source.html#l00053">53</a> of file <a class="el" href="BasePeer_8h_source.html">BasePeer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasePeer_8h_source.html#l00052">52</a> of file <a class="el" href="BasePeer_8h_source.html">BasePeer.h</a>.</p>
 
 </div>
 </div>
@@ -1829,7 +1829,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00044">44</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00045">45</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 
 </div>
 </div>
@@ -1853,7 +1853,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WSSession_8h_source.html#l00114">114</a> of file <a class="el" href="WSSession_8h_source.html">WSSession.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WSSession_8h_source.html#l00109">109</a> of file <a class="el" href="WSSession_8h_source.html">WSSession.h</a>.</p>
 
 </div>
 </div>

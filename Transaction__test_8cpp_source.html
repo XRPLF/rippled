@@ -88,31 +88,31 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;test/jtx.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;test/jtx/Env.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;test/jtx/envconfig.h&gt;</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/jss.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/core/DatabaseCon.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/ErrorCodes.h&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/core/DatabaseCon.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/ErrorCodes.h&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/jss.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;test/jtx.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;test/jtx/Env.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;test/jtx/envconfig.h&gt;</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
 <div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="classripple_1_1Transaction__test.html">   29</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1Transaction__test.html">Transaction_test</a> : <span class="keyword">public</span> beast::unit_test::suite</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;{</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="classripple_1_1Transaction__test.html#a2d2b3512977503e700b900bd0b427611">   33</a></span>&#160;    <a class="code" href="classripple_1_1Transaction__test.html#a2d2b3512977503e700b900bd0b427611">testRangeRequest</a>()</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    {</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        testcase(<span class="stringliteral">&quot;Test Range Request&quot;</span>);</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">char</span>* COMMAND   = jss::tx.c_str();</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">char</span>* BINARY    = jss::binary.c_str();</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">char</span>* NOT_FOUND = <a class="code" href="namespaceripple_1_1RPC.html#aa01c09044342d3707e231b3ede5086f0">RPC::get_error_info</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a34422dc324e558835f6b63c7f430729a">rpcTXN_NOT_FOUND</a>).<a class="code" href="structripple_1_1RPC_1_1ErrorInfo.html#a8e9f8835d2e92985ab09e927ef569c76">token</a>;</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code" href="namespaceripple.html#a2e97c395a5e1ef4ed1052299e0e60843af8c5e3e10d98fcbda2c4d43d50d712a2">INVALID</a>   = <a class="code" href="namespaceripple_1_1RPC.html#aa01c09044342d3707e231b3ede5086f0">RPC::get_error_info</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a2a99d997786c15b8688fdcd6242d386f">rpcINVALID_LGR_RANGE</a>).<a class="code" href="structripple_1_1RPC_1_1ErrorInfo.html#a8e9f8835d2e92985ab09e927ef569c76">token</a>;</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">char</span>* EXCESSIVE = <a class="code" href="namespaceripple_1_1RPC.html#aa01c09044342d3707e231b3ede5086f0">RPC::get_error_info</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a17eb7d1bbf2edda8e901174203e1e824">rpcEXCESSIVE_LGR_RANGE</a>).<a class="code" href="structripple_1_1RPC_1_1ErrorInfo.html#a8e9f8835d2e92985ab09e927ef569c76">token</a>;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="classripple_1_1Transaction__test.html#a2d2b3512977503e700b900bd0b427611">   32</a></span>&#160;    <a class="code" href="classripple_1_1Transaction__test.html#a2d2b3512977503e700b900bd0b427611">testRangeRequest</a>()</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    {</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        testcase(<span class="stringliteral">&quot;Test Range Request&quot;</span>);</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">char</span>* COMMAND = jss::tx.c_str();</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">char</span>* BINARY = jss::binary.c_str();</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">char</span>* NOT_FOUND = <a class="code" href="namespaceripple_1_1RPC.html#aa01c09044342d3707e231b3ede5086f0">RPC::get_error_info</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a34422dc324e558835f6b63c7f430729a">rpcTXN_NOT_FOUND</a>).<a class="code" href="structripple_1_1RPC_1_1ErrorInfo.html#a8e9f8835d2e92985ab09e927ef569c76">token</a>;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">char</span>* <a class="code" href="namespaceripple.html#a2e97c395a5e1ef4ed1052299e0e60843af8c5e3e10d98fcbda2c4d43d50d712a2">INVALID</a> = <a class="code" href="namespaceripple_1_1RPC.html#aa01c09044342d3707e231b3ede5086f0">RPC::get_error_info</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a2a99d997786c15b8688fdcd6242d386f">rpcINVALID_LGR_RANGE</a>).<a class="code" href="structripple_1_1RPC_1_1ErrorInfo.html#a8e9f8835d2e92985ab09e927ef569c76">token</a>;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">char</span>* EXCESSIVE =</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#aa01c09044342d3707e231b3ede5086f0">RPC::get_error_info</a>(<a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a17eb7d1bbf2edda8e901174203e1e824">rpcEXCESSIVE_LGR_RANGE</a>).<a class="code" href="structripple_1_1RPC_1_1ErrorInfo.html#a8e9f8835d2e92985ab09e927ef569c76">token</a>;</div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        Env env(*<span class="keyword">this</span>);</div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> alice = Account(<span class="stringliteral">&quot;alice&quot;</span>);</div>
@@ -310,64 +310,62 @@ $(function() {
 <div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;        <span class="comment">// Provide an invalid range: (only one value)</span></div>
 <div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;        {</div>
 <div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;                COMMAND,</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;                <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(tx-&gt;getTransactionID()),</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;                <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(20));</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160; </div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;            <span class="comment">// Since we only provided one value for the range,</span></div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;            <span class="comment">// the interface parses it as a false binary flag,</span></div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;            <span class="comment">// as single-value ranges are not accepted. Since</span></div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;            <span class="comment">// the error this causes differs depending on the platform</span></div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;            <span class="comment">// we don&#39;t call out a specific error here.</span></div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;            BEAST_EXPECT(result[jss::result][jss::status] == jss::error);</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160; </div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::searched_all));</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        }</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160; </div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;        <span class="comment">// Provide an invalid range: (max - min &gt; 1000)</span></div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        {</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;                COMMAND,</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;                <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(tx-&gt;getTransactionID()),</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;                BINARY,</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;                <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(startLegSeq),</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;                <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(startLegSeq + 1001));</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160; </div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;                result[jss::result][jss::status] == jss::error &amp;&amp;</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;                result[jss::result][jss::error] == EXCESSIVE);</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160; </div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::searched_all));</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;        }</div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160; </div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    }</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160; </div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00275"></a><span class="lineno"><a class="line" href="classripple_1_1Transaction__test.html#a3b5240c3100c62e2f33cfcd10f784c09">  275</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1Transaction__test.html#a3b5240c3100c62e2f33cfcd10f784c09">run</a> ()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;        <a class="code" href="classripple_1_1Transaction__test.html#a2d2b3512977503e700b900bd0b427611">testRangeRequest</a>();</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    }</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;};</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;                COMMAND, <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(tx-&gt;getTransactionID()), <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(20));</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160; </div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;            <span class="comment">// Since we only provided one value for the range,</span></div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;            <span class="comment">// the interface parses it as a false binary flag,</span></div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;            <span class="comment">// as single-value ranges are not accepted. Since</span></div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;            <span class="comment">// the error this causes differs depending on the platform</span></div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;            <span class="comment">// we don&#39;t call out a specific error here.</span></div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;            BEAST_EXPECT(result[jss::result][jss::status] == jss::error);</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160; </div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::searched_all));</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        }</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        <span class="comment">// Provide an invalid range: (max - min &gt; 1000)</span></div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;        {</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;                COMMAND,</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;                <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(tx-&gt;getTransactionID()),</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;                BINARY,</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;                <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(startLegSeq),</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;                <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(startLegSeq + 1001));</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160; </div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;                result[jss::result][jss::status] == jss::error &amp;&amp;</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;                result[jss::result][jss::error] == EXCESSIVE);</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160; </div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::searched_all));</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;        }</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;    }</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160; </div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00273"></a><span class="lineno"><a class="line" href="classripple_1_1Transaction__test.html#a3b5240c3100c62e2f33cfcd10f784c09">  273</a></span>&#160;    <a class="code" href="classripple_1_1Transaction__test.html#a3b5240c3100c62e2f33cfcd10f784c09">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;        <a class="code" href="classripple_1_1Transaction__test.html#a2d2b3512977503e700b900bd0b427611">testRangeRequest</a>();</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    }</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;};</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160; </div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(Transaction, rpc, <a class="code" href="namespaceripple.html">ripple</a>);</div>
 <div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160; </div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a> (Transaction, rpc, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160; </div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;}  <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_html_a2701412a11b118c19256a4c901db2938"><div class="ttname"><a href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">ripple::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(AccountTxPaging, app, ripple)</div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_aa01c09044342d3707e231b3ede5086f0"><div class="ttname"><a href="namespaceripple_1_1RPC.html#aa01c09044342d3707e231b3ede5086f0">ripple::RPC::get_error_info</a></div><div class="ttdeci">ErrorInfo const  &amp; get_error_info(error_code_i code)</div><div class="ttdoc">Returns an ErrorInfo that reflects the error code.</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8cpp_source.html#l00175">ErrorCodes.cpp:175</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_aa01c09044342d3707e231b3ede5086f0"><div class="ttname"><a href="namespaceripple_1_1RPC.html#aa01c09044342d3707e231b3ede5086f0">ripple::RPC::get_error_info</a></div><div class="ttdeci">ErrorInfo const  &amp; get_error_info(error_code_i code)</div><div class="ttdoc">Returns an ErrorInfo that reflects the error code.</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8cpp_source.html#l00194">ErrorCodes.cpp:194</a></div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a17eb7d1bbf2edda8e901174203e1e824"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a17eb7d1bbf2edda8e901174203e1e824">ripple::rpcEXCESSIVE_LGR_RANGE</a></div><div class="ttdeci">@ rpcEXCESSIVE_LGR_RANGE</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00136">ErrorCodes.h:136</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a17eb7d1bbf2edda8e901174203e1e824"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a17eb7d1bbf2edda8e901174203e1e824">ripple::rpcEXCESSIVE_LGR_RANGE</a></div><div class="ttdeci">@ rpcEXCESSIVE_LGR_RANGE</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00135">ErrorCodes.h:135</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a96888695e8d79474e080c334f149e30a"><div class="ttname"><a href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">ripple::to_string</a></div><div class="ttdeci">std::string to_string(ListDisposition disposition)</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorList_8cpp_source.html#l00041">ValidatorList.cpp:41</a></div></div>
-<div class="ttc" id="aclassripple_1_1Transaction__test_html_a3b5240c3100c62e2f33cfcd10f784c09"><div class="ttname"><a href="classripple_1_1Transaction__test.html#a3b5240c3100c62e2f33cfcd10f784c09">ripple::Transaction_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="Transaction__test_8cpp_source.html#l00275">Transaction_test.cpp:275</a></div></div>
+<div class="ttc" id="aclassripple_1_1Transaction__test_html_a3b5240c3100c62e2f33cfcd10f784c09"><div class="ttname"><a href="classripple_1_1Transaction__test.html#a3b5240c3100c62e2f33cfcd10f784c09">ripple::Transaction_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="Transaction__test_8cpp_source.html#l00273">Transaction_test.cpp:273</a></div></div>
 <div class="ttc" id="aclassripple_1_1Transaction__test_html"><div class="ttname"><a href="classripple_1_1Transaction__test.html">ripple::Transaction_test</a></div><div class="ttdef"><b>Definition:</b> <a href="Transaction__test_8cpp_source.html#l00029">Transaction_test.cpp:29</a></div></div>
 <div class="ttc" id="ato_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a></div><div class="ttdeci">T to_string(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a34422dc324e558835f6b63c7f430729a"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a34422dc324e558835f6b63c7f430729a">ripple::rpcTXN_NOT_FOUND</a></div><div class="ttdeci">@ rpcTXN_NOT_FOUND</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00081">ErrorCodes.h:81</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a34422dc324e558835f6b63c7f430729a"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a34422dc324e558835f6b63c7f430729a">ripple::rpcTXN_NOT_FOUND</a></div><div class="ttdeci">@ rpcTXN_NOT_FOUND</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00080">ErrorCodes.h:80</a></div></div>
 <div class="ttc" id="aemplace_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">std::vector::emplace_back</a></div><div class="ttdeci">T emplace_back(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a2e97c395a5e1ef4ed1052299e0e60843af8c5e3e10d98fcbda2c4d43d50d712a2"><div class="ttname"><a href="namespaceripple.html#a2e97c395a5e1ef4ed1052299e0e60843af8c5e3e10d98fcbda2c4d43d50d712a2">ripple::INVALID</a></div><div class="ttdeci">@ INVALID</div><div class="ttdef"><b>Definition:</b> <a href="Transaction_8h_source.html#l00046">Transaction.h:46</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a2a99d997786c15b8688fdcd6242d386f"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a2a99d997786c15b8688fdcd6242d386f">ripple::rpcINVALID_LGR_RANGE</a></div><div class="ttdeci">@ rpcINVALID_LGR_RANGE</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00137">ErrorCodes.h:137</a></div></div>
-<div class="ttc" id="astructripple_1_1RPC_1_1ErrorInfo_html_a8e9f8835d2e92985ab09e927ef569c76"><div class="ttname"><a href="structripple_1_1RPC_1_1ErrorInfo.html#a8e9f8835d2e92985ab09e927ef569c76">ripple::RPC::ErrorInfo::token</a></div><div class="ttdeci">Json::StaticString token</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00175">ErrorCodes.h:175</a></div></div>
-<div class="ttc" id="aclassripple_1_1Transaction__test_html_a2d2b3512977503e700b900bd0b427611"><div class="ttname"><a href="classripple_1_1Transaction__test.html#a2d2b3512977503e700b900bd0b427611">ripple::Transaction_test::testRangeRequest</a></div><div class="ttdeci">void testRangeRequest()</div><div class="ttdef"><b>Definition:</b> <a href="Transaction__test_8cpp_source.html#l00033">Transaction_test.cpp:33</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a2e97c395a5e1ef4ed1052299e0e60843af8c5e3e10d98fcbda2c4d43d50d712a2"><div class="ttname"><a href="namespaceripple.html#a2e97c395a5e1ef4ed1052299e0e60843af8c5e3e10d98fcbda2c4d43d50d712a2">ripple::INVALID</a></div><div class="ttdeci">@ INVALID</div><div class="ttdef"><b>Definition:</b> <a href="Transaction_8h_source.html#l00045">Transaction.h:45</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a2a99d997786c15b8688fdcd6242d386f"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a2a99d997786c15b8688fdcd6242d386f">ripple::rpcINVALID_LGR_RANGE</a></div><div class="ttdeci">@ rpcINVALID_LGR_RANGE</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00136">ErrorCodes.h:136</a></div></div>
+<div class="ttc" id="astructripple_1_1RPC_1_1ErrorInfo_html_a8e9f8835d2e92985ab09e927ef569c76"><div class="ttname"><a href="structripple_1_1RPC_1_1ErrorInfo.html#a8e9f8835d2e92985ab09e927ef569c76">ripple::RPC::ErrorInfo::token</a></div><div class="ttdeci">Json::StaticString token</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00174">ErrorCodes.h:174</a></div></div>
+<div class="ttc" id="aclassripple_1_1Transaction__test_html_a2d2b3512977503e700b900bd0b427611"><div class="ttname"><a href="classripple_1_1Transaction__test.html#a2d2b3512977503e700b900bd0b427611">ripple::Transaction_test::testRangeRequest</a></div><div class="ttdeci">void testRangeRequest()</div><div class="ttdef"><b>Definition:</b> <a href="Transaction__test_8cpp_source.html#l00032">Transaction_test.cpp:32</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

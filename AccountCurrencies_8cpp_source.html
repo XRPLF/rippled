@@ -92,89 +92,91 @@ $(function() {
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
-<div class="line"><a name="l00024"></a><span class="lineno"><a class="line" href="namespaceripple.html#a3c5f274e7acff7630f3e7a544f90c109">   24</a></span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set.html">hash_set&lt;Currency&gt;</a> <a class="code" href="namespaceripple.html#a3c5f274e7acff7630f3e7a544f90c109">accountSourceCurrencies</a> (</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account,</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;RippleLineCache&gt;</a> <span class="keyword">const</span>&amp; lrCache,</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keywordtype">bool</span> includeXRP)</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;{</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set.html">hash_set&lt;Currency&gt;</a> currencies;</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="comment">// YYY Only bother if they are above reserve</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keywordflow">if</span> (includeXRP)</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        currencies.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set/insert.html">insert</a> (<a class="code" href="namespaceripple.html#a91af9326e7f471001066b6b59f24599c">xrpCurrency</a>());</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="comment">// List of ripple lines.</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keyword">auto</span>&amp; rippleLines = lrCache-&gt;<a class="code" href="classripple_1_1RippleLineCache.html#a14f081e641e7202c2851231565ab7433">getRippleLines</a> (account);</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; item : rippleLines)</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    {</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="keyword">auto</span> rspEntry = (<a class="code" href="classripple_1_1RippleState.html">RippleState</a>*) item.get ();</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        assert (rspEntry);</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keywordflow">if</span> (!rspEntry)</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <span class="keyword">auto</span>&amp; saBalance = rspEntry-&gt;getBalance ();</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="comment">// Filter out non</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="keywordflow">if</span> (saBalance &gt; beast::zero</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;            <span class="comment">// Have IOUs to send.</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            || (rspEntry-&gt;getLimitPeer ()</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;                <span class="comment">// Peer extends credit.</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                &amp;&amp; ((-saBalance) &lt; rspEntry-&gt;getLimitPeer ()))) <span class="comment">// Credit left.</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        {</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;            currencies.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set/insert.html">insert</a> (saBalance.getCurrency ());</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        }</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    }</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    currencies.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set/erase.html">erase</a> (<a class="code" href="namespaceripple.html#a0d78fe5b5eff36774b5be525cbcc3972">badCurrency</a>());</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keywordflow">return</span> currencies;</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;}</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
-<div class="line"><a name="l00062"></a><span class="lineno"><a class="line" href="namespaceripple.html#a37173963b40ddf6c4e4245d821125ffb">   62</a></span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set.html">hash_set&lt;Currency&gt;</a> <a class="code" href="namespaceripple.html#a37173963b40ddf6c4e4245d821125ffb">accountDestCurrencies</a> (</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account,</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;RippleLineCache&gt;</a> <span class="keyword">const</span>&amp; lrCache,</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordtype">bool</span> includeXRP)</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;{</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set.html">hash_set&lt;Currency&gt;</a> currencies;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordflow">if</span> (includeXRP)</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        currencies.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set/insert.html">insert</a> (<a class="code" href="namespaceripple.html#a91af9326e7f471001066b6b59f24599c">xrpCurrency</a>());</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="comment">// Even if account doesn&#39;t exist</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="comment">// List of ripple lines.</span></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keyword">auto</span>&amp; rippleLines = lrCache-&gt;<a class="code" href="classripple_1_1RippleLineCache.html#a14f081e641e7202c2851231565ab7433">getRippleLines</a> (account);</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; item : rippleLines)</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    {</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="keyword">auto</span> rspEntry = (<a class="code" href="classripple_1_1RippleState.html">RippleState</a>*) item.get ();</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        assert (rspEntry);</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="keywordflow">if</span> (!rspEntry)</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        <span class="keyword">auto</span>&amp; saBalance  = rspEntry-&gt;getBalance ();</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;hash_set&lt;Currency&gt;</div>
+<div class="line"><a name="l00025"></a><span class="lineno"><a class="line" href="namespaceripple.html#a3c5f274e7acff7630f3e7a544f90c109">   25</a></span>&#160;<a class="code" href="namespaceripple.html#a3c5f274e7acff7630f3e7a544f90c109">accountSourceCurrencies</a>(</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account,</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;RippleLineCache&gt;</a> <span class="keyword">const</span>&amp; lrCache,</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keywordtype">bool</span> includeXRP)</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;{</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set.html">hash_set&lt;Currency&gt;</a> currencies;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="comment">// YYY Only bother if they are above reserve</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keywordflow">if</span> (includeXRP)</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        currencies.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set/insert.html">insert</a>(<a class="code" href="namespaceripple.html#a91af9326e7f471001066b6b59f24599c">xrpCurrency</a>());</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="comment">// List of ripple lines.</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keyword">auto</span>&amp; rippleLines = lrCache-&gt;<a class="code" href="classripple_1_1RippleLineCache.html#a14f081e641e7202c2851231565ab7433">getRippleLines</a>(account);</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; item : rippleLines)</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    {</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <span class="keyword">auto</span> rspEntry = (<a class="code" href="classripple_1_1RippleState.html">RippleState</a>*)item.get();</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        assert(rspEntry);</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keywordflow">if</span> (!rspEntry)</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;            <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <span class="keyword">auto</span>&amp; saBalance = rspEntry-&gt;getBalance();</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="comment">// Filter out non</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <span class="keywordflow">if</span> (saBalance &gt; beast::zero</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            <span class="comment">// Have IOUs to send.</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;            || (rspEntry-&gt;getLimitPeer()</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                <span class="comment">// Peer extends credit.</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                &amp;&amp; ((-saBalance) &lt; rspEntry-&gt;getLimitPeer())))  <span class="comment">// Credit left.</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        {</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            currencies.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set/insert.html">insert</a>(saBalance.getCurrency());</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        }</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    }</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    currencies.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set/erase.html">erase</a>(<a class="code" href="namespaceripple.html#a0d78fe5b5eff36774b5be525cbcc3972">badCurrency</a>());</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keywordflow">return</span> currencies;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;}</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;hash_set&lt;Currency&gt;</div>
+<div class="line"><a name="l00064"></a><span class="lineno"><a class="line" href="namespaceripple.html#a37173963b40ddf6c4e4245d821125ffb">   64</a></span>&#160;<a class="code" href="namespaceripple.html#a37173963b40ddf6c4e4245d821125ffb">accountDestCurrencies</a>(</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account,</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;RippleLineCache&gt;</a> <span class="keyword">const</span>&amp; lrCache,</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keywordtype">bool</span> includeXRP)</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;{</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set.html">hash_set&lt;Currency&gt;</a> currencies;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keywordflow">if</span> (includeXRP)</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        currencies.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set/insert.html">insert</a>(<a class="code" href="namespaceripple.html#a91af9326e7f471001066b6b59f24599c">xrpCurrency</a>());</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="comment">// Even if account doesn&#39;t exist</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="comment">// List of ripple lines.</span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keyword">auto</span>&amp; rippleLines = lrCache-&gt;<a class="code" href="classripple_1_1RippleLineCache.html#a14f081e641e7202c2851231565ab7433">getRippleLines</a>(account);</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; item : rippleLines)</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    {</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="keyword">auto</span> rspEntry = (<a class="code" href="classripple_1_1RippleState.html">RippleState</a>*)item.get();</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        assert(rspEntry);</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <span class="keywordflow">if</span> (!rspEntry)</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            <span class="keywordflow">continue</span>;</div>
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="keywordflow">if</span> (saBalance &lt; rspEntry-&gt;getLimit ())                  <span class="comment">// Can take more</span></div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            currencies.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set/insert.html">insert</a> (saBalance.getCurrency ());</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    }</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    currencies.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set/erase.html">erase</a> (<a class="code" href="namespaceripple.html#a0d78fe5b5eff36774b5be525cbcc3972">badCurrency</a>());</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="keywordflow">return</span> currencies;</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;}</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="keyword">auto</span>&amp; saBalance = rspEntry-&gt;getBalance();</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        <span class="keywordflow">if</span> (saBalance &lt; rspEntry-&gt;getLimit())  <span class="comment">// Can take more</span></div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            currencies.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set/insert.html">insert</a>(saBalance.getCurrency());</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    }</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    currencies.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set/erase.html">erase</a>(<a class="code" href="namespaceripple.html#a0d78fe5b5eff36774b5be525cbcc3972">badCurrency</a>());</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keywordflow">return</span> currencies;</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;}</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="anamespaceripple_html_a0d78fe5b5eff36774b5be525cbcc3972"><div class="ttname"><a href="namespaceripple.html#a0d78fe5b5eff36774b5be525cbcc3972">ripple::badCurrency</a></div><div class="ttdeci">Currency const  &amp; badCurrency()</div><div class="ttdoc">We deliberately disallow the currency that looks like &quot;XRP&quot; because too many people were using it ins...</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8cpp_source.html#l00123">UintTypes.cpp:123</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a0d78fe5b5eff36774b5be525cbcc3972"><div class="ttname"><a href="namespaceripple.html#a0d78fe5b5eff36774b5be525cbcc3972">ripple::badCurrency</a></div><div class="ttdeci">Currency const  &amp; badCurrency()</div><div class="ttdoc">We deliberately disallow the currency that looks like &quot;XRP&quot; because too many people were using it ins...</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8cpp_source.html#l00126">UintTypes.cpp:126</a></div></div>
 <div class="ttc" id="aclassripple_1_1RippleState_html"><div class="ttname"><a href="classripple_1_1RippleState.html">ripple::RippleState</a></div><div class="ttdoc">Wraps a trust line SLE for convenience.</div><div class="ttdef"><b>Definition:</b> <a href="RippleState_8h_source.html#l00039">RippleState.h:39</a></div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aunordered_set_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/unordered_set.html">std::unordered_set</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_html_a37173963b40ddf6c4e4245d821125ffb"><div class="ttname"><a href="namespaceripple.html#a37173963b40ddf6c4e4245d821125ffb">ripple::accountDestCurrencies</a></div><div class="ttdeci">hash_set&lt; Currency &gt; accountDestCurrencies(AccountID const &amp;account, std::shared_ptr&lt; RippleLineCache &gt; const &amp;lrCache, bool includeXRP)</div><div class="ttdef"><b>Definition:</b> <a href="AccountCurrencies_8cpp_source.html#l00062">AccountCurrencies.cpp:62</a></div></div>
-<div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00065">base_uint.h:65</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a37173963b40ddf6c4e4245d821125ffb"><div class="ttname"><a href="namespaceripple.html#a37173963b40ddf6c4e4245d821125ffb">ripple::accountDestCurrencies</a></div><div class="ttdeci">hash_set&lt; Currency &gt; accountDestCurrencies(AccountID const &amp;account, std::shared_ptr&lt; RippleLineCache &gt; const &amp;lrCache, bool includeXRP)</div><div class="ttdef"><b>Definition:</b> <a href="AccountCurrencies_8cpp_source.html#l00064">AccountCurrencies.cpp:64</a></div></div>
+<div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00063">base_uint.h:63</a></div></div>
 <div class="ttc" id="aerase_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/unordered_set/erase.html">std::unordered_set::erase</a></div><div class="ttdeci">T erase(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="ainsert_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/unordered_set/insert.html">std::unordered_set::insert</a></div><div class="ttdeci">T insert(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1RippleLineCache_html_a14f081e641e7202c2851231565ab7433"><div class="ttname"><a href="classripple_1_1RippleLineCache.html#a14f081e641e7202c2851231565ab7433">ripple::RippleLineCache::getRippleLines</a></div><div class="ttdeci">std::vector&lt; RippleState::pointer &gt; const  &amp; getRippleLines(AccountID const &amp;accountID)</div><div class="ttdef"><b>Definition:</b> <a href="RippleLineCache_8cpp_source.html#l00035">RippleLineCache.cpp:35</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a3c5f274e7acff7630f3e7a544f90c109"><div class="ttname"><a href="namespaceripple.html#a3c5f274e7acff7630f3e7a544f90c109">ripple::accountSourceCurrencies</a></div><div class="ttdeci">hash_set&lt; Currency &gt; accountSourceCurrencies(AccountID const &amp;account, std::shared_ptr&lt; RippleLineCache &gt; const &amp;lrCache, bool includeXRP)</div><div class="ttdef"><b>Definition:</b> <a href="AccountCurrencies_8cpp_source.html#l00024">AccountCurrencies.cpp:24</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a91af9326e7f471001066b6b59f24599c"><div class="ttname"><a href="namespaceripple.html#a91af9326e7f471001066b6b59f24599c">ripple::xrpCurrency</a></div><div class="ttdeci">Currency const  &amp; xrpCurrency()</div><div class="ttdoc">XRP currency.</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8cpp_source.html#l00111">UintTypes.cpp:111</a></div></div>
+<div class="ttc" id="aclassripple_1_1RippleLineCache_html_a14f081e641e7202c2851231565ab7433"><div class="ttname"><a href="classripple_1_1RippleLineCache.html#a14f081e641e7202c2851231565ab7433">ripple::RippleLineCache::getRippleLines</a></div><div class="ttdeci">std::vector&lt; RippleState::pointer &gt; const  &amp; getRippleLines(AccountID const &amp;accountID)</div><div class="ttdef"><b>Definition:</b> <a href="RippleLineCache_8cpp_source.html#l00034">RippleLineCache.cpp:34</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a3c5f274e7acff7630f3e7a544f90c109"><div class="ttname"><a href="namespaceripple.html#a3c5f274e7acff7630f3e7a544f90c109">ripple::accountSourceCurrencies</a></div><div class="ttdeci">hash_set&lt; Currency &gt; accountSourceCurrencies(AccountID const &amp;account, std::shared_ptr&lt; RippleLineCache &gt; const &amp;lrCache, bool includeXRP)</div><div class="ttdef"><b>Definition:</b> <a href="AccountCurrencies_8cpp_source.html#l00025">AccountCurrencies.cpp:25</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a91af9326e7f471001066b6b59f24599c"><div class="ttname"><a href="namespaceripple.html#a91af9326e7f471001066b6b59f24599c">ripple::xrpCurrency</a></div><div class="ttdeci">Currency const  &amp; xrpCurrency()</div><div class="ttdoc">XRP currency.</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8cpp_source.html#l00112">UintTypes.cpp:112</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

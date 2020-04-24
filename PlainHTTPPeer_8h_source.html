@@ -99,10 +99,10 @@ $(function() {
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">class</span> Handler&gt;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Handler&gt;</div>
 <div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="classripple_1_1PlainHTTPPeer.html">   32</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1PlainHTTPPeer.html">PlainHTTPPeer</a></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    : <span class="keyword">public</span> <a class="code" href="classripple_1_1BaseHTTPPeer.html">BaseHTTPPeer</a>&lt;Handler, PlainHTTPPeer&lt;Handler&gt;&gt;</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    , <span class="keyword">public</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html">std::enable_shared_from_this</a>&lt;PlainHTTPPeer&lt;Handler&gt;&gt;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    : <span class="keyword">public</span> <a class="code" href="classripple_1_1BaseHTTPPeer.html">BaseHTTPPeer</a>&lt;Handler, PlainHTTPPeer&lt;Handler&gt;&gt;,</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;      <span class="keyword">public</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html">std::enable_shared_from_this</a>&lt;PlainHTTPPeer&lt;Handler&gt;&gt;</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;{</div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">private</span>:</div>
 <div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="classripple_1_1PlainHTTPPeer.html#a37ac51d7da9efdac04e51943dbaf6c59">   37</a></span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classripple_1_1BaseHTTPPeer.html">BaseHTTPPeer</a>&lt;Handler, <a class="code" href="classripple_1_1PlainHTTPPeer.html">PlainHTTPPeer</a>&gt;;</div>
@@ -124,147 +124,151 @@ $(function() {
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        ConstBufferSequence <span class="keyword">const</span>&amp; buffers,</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        <a class="code" href="classripple_1_1PlainHTTPPeer.html#a9f76b3500867255834e8b43156bd63b4">stream_type</a>&amp;&amp; stream);</div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1PlainHTTPPeer.html#a6a5277bf0596c3622dc8d802af30f68a">run</a>();</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;WSSession&gt;</a></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <a class="code" href="classripple_1_1PlainHTTPPeer.html#a9c0f50f624bd173b9224d0df05368dad">websocketUpgrade</a>() <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="code" href="classripple_1_1PlainHTTPPeer.html#a8ee4beefde1092dae3213139a9bc4199">do_request</a>() <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <a class="code" href="classripple_1_1PlainHTTPPeer.html#af378151db0c913743dd8601c428c8e60">do_close</a>() <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;};</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Handler&gt;</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> ConstBufferSequence&gt;</div>
-<div class="line"><a name="l00073"></a><span class="lineno"><a class="line" href="classripple_1_1PlainHTTPPeer.html#af411e8cbd41daabf8f8f64a69ca27601">   73</a></span>&#160;<a class="code" href="classripple_1_1PlainHTTPPeer.html#af411e8cbd41daabf8f8f64a69ca27601">PlainHTTPPeer&lt;Handler&gt;::PlainHTTPPeer</a>(</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <a class="code" href="structripple_1_1Port.html">Port</a> <span class="keyword">const</span>&amp; port,</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    Handler&amp; handler,</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    boost::asio::io_context&amp; ioc,</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal,</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <a class="code" href="classripple_1_1PlainHTTPPeer.html#a30ef6778c8611207461ceb8516fc895d">endpoint_type</a> remote_endpoint,</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    ConstBufferSequence <span class="keyword">const</span>&amp; buffers,</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <a class="code" href="classripple_1_1PlainHTTPPeer.html#a9f76b3500867255834e8b43156bd63b4">stream_type</a>&amp;&amp; stream)</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    : <a class="code" href="classripple_1_1BaseHTTPPeer.html">BaseHTTPPeer</a>&lt;Handler, <a class="code" href="classripple_1_1PlainHTTPPeer.html">PlainHTTPPeer</a>&gt;(</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;          port,</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;          handler,</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;          ioc.get_executor(),</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;          journal,</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;          remote_endpoint,</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;          buffers)</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    , stream_(<a class="code" href="namespacestd.html">std</a>::move(stream))</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    , socket_(stream_.socket())</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;{</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="comment">// Set TCP_NODELAY on loopback interfaces,</span></div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="comment">// otherwise Nagle&#39;s algorithm makes Env</span></div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <span class="comment">// tests run slower on Linux systems.</span></div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keywordflow">if</span>(remote_endpoint.address().is_loopback())</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        <a class="code" href="classripple_1_1PlainHTTPPeer.html#a63dc498ae1da5c0d63a3af837dba642e">socket_</a>.set_option(boost::asio::ip::tcp::no_delay{<span class="keyword">true</span>});</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;}</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">class</span> Handler&gt;</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<a class="code" href="classripple_1_1PlainHTTPPeer.html#a6a5277bf0596c3622dc8d802af30f68a">PlainHTTPPeer&lt;Handler&gt;::</a></div>
-<div class="line"><a name="l00102"></a><span class="lineno"><a class="line" href="classripple_1_1PlainHTTPPeer.html#a6a5277bf0596c3622dc8d802af30f68a">  102</a></span>&#160;<a class="code" href="classripple_1_1PlainHTTPPeer.html#a6a5277bf0596c3622dc8d802af30f68a">run</a>()</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <a class="code" href="classripple_1_1PlainHTTPPeer.html#a6a5277bf0596c3622dc8d802af30f68a">run</a>();</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;WSSession&gt;</a></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <a class="code" href="classripple_1_1PlainHTTPPeer.html#a9c0f50f624bd173b9224d0df05368dad">websocketUpgrade</a>() <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <a class="code" href="classripple_1_1PlainHTTPPeer.html#a8ee4beefde1092dae3213139a9bc4199">do_request</a>() <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <a class="code" href="classripple_1_1PlainHTTPPeer.html#af378151db0c913743dd8601c428c8e60">do_close</a>() <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;};</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Handler&gt;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> ConstBufferSequence&gt;</div>
+<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="classripple_1_1PlainHTTPPeer.html#af411e8cbd41daabf8f8f64a69ca27601">   74</a></span>&#160;<a class="code" href="classripple_1_1PlainHTTPPeer.html#af411e8cbd41daabf8f8f64a69ca27601">PlainHTTPPeer&lt;Handler&gt;::PlainHTTPPeer</a>(</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <a class="code" href="structripple_1_1Port.html">Port</a> <span class="keyword">const</span>&amp; port,</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    Handler&amp; handler,</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    boost::asio::io_context&amp; ioc,</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal,</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <a class="code" href="classripple_1_1PlainHTTPPeer.html#a30ef6778c8611207461ceb8516fc895d">endpoint_type</a> remote_endpoint,</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    ConstBufferSequence <span class="keyword">const</span>&amp; buffers,</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <a class="code" href="classripple_1_1PlainHTTPPeer.html#a9f76b3500867255834e8b43156bd63b4">stream_type</a>&amp;&amp; stream)</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    : <a class="code" href="classripple_1_1BaseHTTPPeer.html">BaseHTTPPeer</a>&lt;Handler, <a class="code" href="classripple_1_1PlainHTTPPeer.html">PlainHTTPPeer</a>&gt;(</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;          port,</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;          handler,</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;          ioc.get_executor(),</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;          journal,</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;          remote_endpoint,</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;          buffers)</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    , stream_(<a class="code" href="namespacestd.html">std</a>::move(stream))</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    , socket_(stream_.socket())</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;{</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="comment">// Set TCP_NODELAY on loopback interfaces,</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <span class="comment">// otherwise Nagle&#39;s algorithm makes Env</span></div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="comment">// tests run slower on Linux systems.</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keywordflow">if</span> (remote_endpoint.address().is_loopback())</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <a class="code" href="classripple_1_1PlainHTTPPeer.html#a63dc498ae1da5c0d63a3af837dba642e">socket_</a>.set_option(boost::asio::ip::tcp::no_delay{<span class="keyword">true</span>});</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;}</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Handler&gt;</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00102"></a><span class="lineno"><a class="line" href="classripple_1_1PlainHTTPPeer.html#a6a5277bf0596c3622dc8d802af30f68a">  102</a></span>&#160;<a class="code" href="classripple_1_1PlainHTTPPeer.html#a6a5277bf0596c3622dc8d802af30f68a">PlainHTTPPeer&lt;Handler&gt;::run</a>()</div>
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;{</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="keywordflow">if</span> (! this-&gt;handler_.onAccept(this-&gt;session(), this-&gt;remote_address_))</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="keywordflow">if</span> (!this-&gt;handler_.onAccept(this-&gt;session(), this-&gt;remote_address_))</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    {</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        boost::asio::spawn(this-&gt;strand_,</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a> (&amp;<a class="code" href="classripple_1_1PlainHTTPPeer.html#af378151db0c913743dd8601c428c8e60">PlainHTTPPeer::do_close</a>,</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                this-&gt;shared_from_this()));</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        boost::asio::spawn(</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            this-&gt;strand_,</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(&amp;<a class="code" href="classripple_1_1PlainHTTPPeer.html#af378151db0c913743dd8601c428c8e60">PlainHTTPPeer::do_close</a>, this-&gt;shared_from_this()));</div>
 <div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    }</div>
 <div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <span class="keywordflow">if</span> (! socket_.is_open())</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <span class="keywordflow">if</span> (!socket_.is_open())</div>
 <div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160; </div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    boost::asio::spawn(this-&gt;strand_, <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(&amp;<a class="code" href="classripple_1_1BaseHTTPPeer.html#af70c1054dd2df89ca14ca670559e446d">PlainHTTPPeer::do_read</a>,</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        this-&gt;shared_from_this(), std::placeholders::_1));</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;}</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">class</span> Handler&gt;</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;WSSession&gt;</a></div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;<a class="code" href="classripple_1_1PlainHTTPPeer.html#a9c0f50f624bd173b9224d0df05368dad">PlainHTTPPeer&lt;Handler&gt;::</a></div>
-<div class="line"><a name="l00122"></a><span class="lineno"><a class="line" href="classripple_1_1PlainHTTPPeer.html#a9c0f50f624bd173b9224d0df05368dad">  122</a></span>&#160;<a class="code" href="classripple_1_1PlainHTTPPeer.html#a9c0f50f624bd173b9224d0df05368dad">websocketUpgrade</a>()</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;{</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;    <span class="keyword">auto</span> ws = this-&gt;ios().template emplace&lt;PlainWSPeer&lt;Handler&gt;&gt;(</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        this-&gt;port_, this-&gt;handler_, this-&gt;remote_address_,</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;            std::move(this-&gt;message_), std::move(stream_),</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;                this-&gt;journal_);</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <span class="keywordflow">return</span> ws;</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;}</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160; </div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">class</span> Handler&gt;</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;<a class="code" href="classripple_1_1PlainHTTPPeer.html#a8ee4beefde1092dae3213139a9bc4199">PlainHTTPPeer&lt;Handler&gt;::</a></div>
-<div class="line"><a name="l00134"></a><span class="lineno"><a class="line" href="classripple_1_1PlainHTTPPeer.html#a8ee4beefde1092dae3213139a9bc4199">  134</a></span>&#160;<a class="code" href="classripple_1_1PlainHTTPPeer.html#a8ee4beefde1092dae3213139a9bc4199">do_request</a>()</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;{</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    ++this-&gt;request_count_;</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> what = this-&gt;handler_.onHandoff(this-&gt;session(),</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;        std::move(this-&gt;message_), this-&gt;remote_address_);</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    <span class="keywordflow">if</span> (what.moved)</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;        <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;    boost::system::error_code ec;</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;    <span class="keywordflow">if</span> (what.response)</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    {</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;        <span class="comment">// half-close on Connection: close</span></div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;        <span class="keywordflow">if</span> (! what.keep_alive)</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;            socket_.shutdown(socket_type::shutdown_receive, ec);</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;        <span class="keywordflow">if</span> (ec)</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;            <span class="keywordflow">return</span> this-&gt;fail(ec, <span class="stringliteral">&quot;request&quot;</span>);</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        <span class="keywordflow">return</span> this-&gt;write(what.response, what.keep_alive);</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    }</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160; </div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    <span class="comment">// Perform half-close when Connection: close and not SSL</span></div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;    <span class="keywordflow">if</span> (! <a class="code" href="namespacebeast_1_1rfc2616.html#a9636e35eb0a45052354e43055540851d">beast::rfc2616::is_keep_alive</a>(this-&gt;message_))</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        socket_.shutdown(socket_type::shutdown_receive, ec);</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    <span class="keywordflow">if</span> (ec)</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        <span class="keywordflow">return</span> this-&gt;fail(ec, <span class="stringliteral">&quot;request&quot;</span>);</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    <span class="comment">// legacy</span></div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    this-&gt;handler_.onRequest(this-&gt;session());</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;}</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160; </div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">class</span> Handler&gt;</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;<a class="code" href="classripple_1_1PlainHTTPPeer.html#af378151db0c913743dd8601c428c8e60">PlainHTTPPeer&lt;Handler&gt;::</a></div>
-<div class="line"><a name="l00164"></a><span class="lineno"><a class="line" href="classripple_1_1PlainHTTPPeer.html#af378151db0c913743dd8601c428c8e60">  164</a></span>&#160;<a class="code" href="classripple_1_1PlainHTTPPeer.html#af378151db0c913743dd8601c428c8e60">do_close</a>()</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;{</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;    boost::system::error_code ec;</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    socket_.shutdown(socket_type::shutdown_send, ec);</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;}</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160; </div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;} <span class="comment">// ripple</span></div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160; </div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    boost::asio::spawn(</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        this-&gt;strand_,</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            &amp;<a class="code" href="classripple_1_1BaseHTTPPeer.html#af70c1054dd2df89ca14ca670559e446d">PlainHTTPPeer::do_read</a>,</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            this-&gt;shared_from_this(),</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            std::placeholders::_1));</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;}</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160; </div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Handler&gt;</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;WSSession&gt;</a></div>
+<div class="line"><a name="l00125"></a><span class="lineno"><a class="line" href="classripple_1_1PlainHTTPPeer.html#a9c0f50f624bd173b9224d0df05368dad">  125</a></span>&#160;<a class="code" href="classripple_1_1PlainHTTPPeer.html#a9c0f50f624bd173b9224d0df05368dad">PlainHTTPPeer&lt;Handler&gt;::websocketUpgrade</a>()</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;{</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    <span class="keyword">auto</span> ws = this-&gt;ios().template emplace&lt;PlainWSPeer&lt;Handler&gt;&gt;(</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;        this-&gt;port_,</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        this-&gt;handler_,</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        this-&gt;remote_address_,</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        std::move(this-&gt;message_),</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;        std::move(stream_),</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        this-&gt;journal_);</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <span class="keywordflow">return</span> ws;</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;}</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160; </div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Handler&gt;</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00139"></a><span class="lineno"><a class="line" href="classripple_1_1PlainHTTPPeer.html#a8ee4beefde1092dae3213139a9bc4199">  139</a></span>&#160;<a class="code" href="classripple_1_1PlainHTTPPeer.html#a8ee4beefde1092dae3213139a9bc4199">PlainHTTPPeer&lt;Handler&gt;::do_request</a>()</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;{</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;    ++this-&gt;request_count_;</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> what = this-&gt;handler_.onHandoff(</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;        this-&gt;session(), std::move(this-&gt;message_), this-&gt;remote_address_);</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    <span class="keywordflow">if</span> (what.moved)</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;        <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    boost::system::error_code ec;</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    <span class="keywordflow">if</span> (what.response)</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    {</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        <span class="comment">// half-close on Connection: close</span></div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        <span class="keywordflow">if</span> (!what.keep_alive)</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;            socket_.shutdown(socket_type::shutdown_receive, ec);</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        <span class="keywordflow">if</span> (ec)</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            <span class="keywordflow">return</span> this-&gt;fail(ec, <span class="stringliteral">&quot;request&quot;</span>);</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        <span class="keywordflow">return</span> this-&gt;write(what.response, what.keep_alive);</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    }</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160; </div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    <span class="comment">// Perform half-close when Connection: close and not SSL</span></div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    <span class="keywordflow">if</span> (!<a class="code" href="namespacebeast_1_1rfc2616.html#a9636e35eb0a45052354e43055540851d">beast::rfc2616::is_keep_alive</a>(this-&gt;message_))</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;        socket_.shutdown(socket_type::shutdown_receive, ec);</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    <span class="keywordflow">if</span> (ec)</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;        <span class="keywordflow">return</span> this-&gt;fail(ec, <span class="stringliteral">&quot;request&quot;</span>);</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    <span class="comment">// legacy</span></div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    this-&gt;handler_.onRequest(this-&gt;session());</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;}</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160; </div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Handler&gt;</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00168"></a><span class="lineno"><a class="line" href="classripple_1_1PlainHTTPPeer.html#af378151db0c913743dd8601c428c8e60">  168</a></span>&#160;<a class="code" href="classripple_1_1PlainHTTPPeer.html#af378151db0c913743dd8601c428c8e60">PlainHTTPPeer&lt;Handler&gt;::do_close</a>()</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;{</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    boost::system::error_code ec;</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    socket_.shutdown(socket_type::shutdown_send, ec);</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;}</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160; </div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160; </div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1PlainHTTPPeer_html_a63dc498ae1da5c0d63a3af837dba642e"><div class="ttname"><a href="classripple_1_1PlainHTTPPeer.html#a63dc498ae1da5c0d63a3af837dba642e">ripple::PlainHTTPPeer::socket_</a></div><div class="ttdeci">socket_type &amp; socket_</div><div class="ttdef"><b>Definition:</b> <a href="PlainHTTPPeer_8h_source.html#l00043">PlainHTTPPeer.h:43</a></div></div>
 <div class="ttc" id="abind_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a></div><div class="ttdeci">T bind(T... args)</div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1BaseHTTPPeer_html"><div class="ttname"><a href="classripple_1_1BaseHTTPPeer.html">ripple::BaseHTTPPeer</a></div><div class="ttdoc">Represents an active connection.</div><div class="ttdef"><b>Definition:</b> <a href="BaseHTTPPeer_8h_source.html#l00049">BaseHTTPPeer.h:49</a></div></div>
-<div class="ttc" id="aclassripple_1_1PlainHTTPPeer_html_af378151db0c913743dd8601c428c8e60"><div class="ttname"><a href="classripple_1_1PlainHTTPPeer.html#af378151db0c913743dd8601c428c8e60">ripple::PlainHTTPPeer::do_close</a></div><div class="ttdeci">void do_close() override</div><div class="ttdef"><b>Definition:</b> <a href="PlainHTTPPeer_8h_source.html#l00164">PlainHTTPPeer.h:164</a></div></div>
-<div class="ttc" id="anamespacebeast_1_1rfc2616_html_a9636e35eb0a45052354e43055540851d"><div class="ttname"><a href="namespacebeast_1_1rfc2616.html#a9636e35eb0a45052354e43055540851d">beast::rfc2616::is_keep_alive</a></div><div class="ttdeci">bool is_keep_alive(boost::beast::http::message&lt; isRequest, Body, Fields &gt; const &amp;m)</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00478">rfc2616.h:478</a></div></div>
+<div class="ttc" id="aclassripple_1_1PlainHTTPPeer_html_af378151db0c913743dd8601c428c8e60"><div class="ttname"><a href="classripple_1_1PlainHTTPPeer.html#af378151db0c913743dd8601c428c8e60">ripple::PlainHTTPPeer::do_close</a></div><div class="ttdeci">void do_close() override</div><div class="ttdef"><b>Definition:</b> <a href="PlainHTTPPeer_8h_source.html#l00168">PlainHTTPPeer.h:168</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1rfc2616_html_a9636e35eb0a45052354e43055540851d"><div class="ttname"><a href="namespacebeast_1_1rfc2616.html#a9636e35eb0a45052354e43055540851d">beast::rfc2616::is_keep_alive</a></div><div class="ttdeci">bool is_keep_alive(boost::beast::http::message&lt; isRequest, Body, Fields &gt; const &amp;m)</div><div class="ttdef"><b>Definition:</b> <a href="rfc2616_8h_source.html#l00475">rfc2616.h:475</a></div></div>
 <div class="ttc" id="aclassripple_1_1PlainHTTPPeer_html_a30ef6778c8611207461ceb8516fc895d"><div class="ttname"><a href="classripple_1_1PlainHTTPPeer.html#a30ef6778c8611207461ceb8516fc895d">ripple::PlainHTTPPeer::endpoint_type</a></div><div class="ttdeci">boost::asio::ip::tcp::endpoint endpoint_type</div><div class="ttdef"><b>Definition:</b> <a href="PlainHTTPPeer_8h_source.html#l00040">PlainHTTPPeer.h:40</a></div></div>
 <div class="ttc" id="aclassripple_1_1PlainHTTPPeer_html_a6a5277bf0596c3622dc8d802af30f68a"><div class="ttname"><a href="classripple_1_1PlainHTTPPeer.html#a6a5277bf0596c3622dc8d802af30f68a">ripple::PlainHTTPPeer::run</a></div><div class="ttdeci">void run()</div><div class="ttdef"><b>Definition:</b> <a href="PlainHTTPPeer_8h_source.html#l00102">PlainHTTPPeer.h:102</a></div></div>
 <div class="ttc" id="aenable_shared_from_this_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html">std::enable_shared_from_this</a></div></div>
-<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00060">Journal.h:60</a></div></div>
+<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00058">Journal.h:58</a></div></div>
 <div class="ttc" id="aclassripple_1_1PlainHTTPPeer_html_ac4958fa407b5de4c9c2cf62381d558fe"><div class="ttname"><a href="classripple_1_1PlainHTTPPeer.html#ac4958fa407b5de4c9c2cf62381d558fe">ripple::PlainHTTPPeer::stream_</a></div><div class="ttdeci">stream_type stream_</div><div class="ttdef"><b>Definition:</b> <a href="PlainHTTPPeer_8h_source.html#l00042">PlainHTTPPeer.h:42</a></div></div>
-<div class="ttc" id="aclassripple_1_1PlainHTTPPeer_html_a8ee4beefde1092dae3213139a9bc4199"><div class="ttname"><a href="classripple_1_1PlainHTTPPeer.html#a8ee4beefde1092dae3213139a9bc4199">ripple::PlainHTTPPeer::do_request</a></div><div class="ttdeci">void do_request() override</div><div class="ttdef"><b>Definition:</b> <a href="PlainHTTPPeer_8h_source.html#l00134">PlainHTTPPeer.h:134</a></div></div>
-<div class="ttc" id="astructripple_1_1Port_html"><div class="ttname"><a href="structripple_1_1Port.html">ripple::Port</a></div><div class="ttdoc">Configuration information for a Server listening port.</div><div class="ttdef"><b>Definition:</b> <a href="Port_8h_source.html#l00038">Port.h:38</a></div></div>
-<div class="ttc" id="aclassripple_1_1BaseHTTPPeer_html_aff9d53bd74b61d6eae3b62850a46271e"><div class="ttname"><a href="classripple_1_1BaseHTTPPeer.html#aff9d53bd74b61d6eae3b62850a46271e">ripple::BaseHTTPPeer&lt; Handler, PlainHTTPPeer&lt; Handler &gt; &gt;::journal</a></div><div class="ttdeci">beast::Journal journal() override</div><div class="ttdef"><b>Definition:</b> <a href="BaseHTTPPeer_8h_source.html#l00171">BaseHTTPPeer.h:171</a></div></div>
+<div class="ttc" id="aclassripple_1_1PlainHTTPPeer_html_a8ee4beefde1092dae3213139a9bc4199"><div class="ttname"><a href="classripple_1_1PlainHTTPPeer.html#a8ee4beefde1092dae3213139a9bc4199">ripple::PlainHTTPPeer::do_request</a></div><div class="ttdeci">void do_request() override</div><div class="ttdef"><b>Definition:</b> <a href="PlainHTTPPeer_8h_source.html#l00139">PlainHTTPPeer.h:139</a></div></div>
+<div class="ttc" id="astructripple_1_1Port_html"><div class="ttname"><a href="structripple_1_1Port.html">ripple::Port</a></div><div class="ttdoc">Configuration information for a Server listening port.</div><div class="ttdef"><b>Definition:</b> <a href="Port_8h_source.html#l00044">Port.h:44</a></div></div>
+<div class="ttc" id="aclassripple_1_1BaseHTTPPeer_html_aff9d53bd74b61d6eae3b62850a46271e"><div class="ttname"><a href="classripple_1_1BaseHTTPPeer.html#aff9d53bd74b61d6eae3b62850a46271e">ripple::BaseHTTPPeer&lt; Handler, PlainHTTPPeer&lt; Handler &gt; &gt;::journal</a></div><div class="ttdeci">beast::Journal journal() override</div><div class="ttdef"><b>Definition:</b> <a href="BaseHTTPPeer_8h_source.html#l00165">BaseHTTPPeer.h:165</a></div></div>
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
-<div class="ttc" id="aclassripple_1_1BaseHTTPPeer_html_a8a77c6c6e9b9d007e13a1ebf77d84917"><div class="ttname"><a href="classripple_1_1BaseHTTPPeer.html#a8a77c6c6e9b9d007e13a1ebf77d84917">ripple::BaseHTTPPeer&lt; Handler, PlainHTTPPeer&lt; Handler &gt; &gt;::port</a></div><div class="ttdeci">Port const &amp; port() override</div><div class="ttdef"><b>Definition:</b> <a href="BaseHTTPPeer_8h_source.html#l00177">BaseHTTPPeer.h:177</a></div></div>
-<div class="ttc" id="aclassripple_1_1PlainHTTPPeer_html_a9c0f50f624bd173b9224d0df05368dad"><div class="ttname"><a href="classripple_1_1PlainHTTPPeer.html#a9c0f50f624bd173b9224d0df05368dad">ripple::PlainHTTPPeer::websocketUpgrade</a></div><div class="ttdeci">std::shared_ptr&lt; WSSession &gt; websocketUpgrade() override</div><div class="ttdoc">Convert the connection to WebSocket.</div><div class="ttdef"><b>Definition:</b> <a href="PlainHTTPPeer_8h_source.html#l00122">PlainHTTPPeer.h:122</a></div></div>
-<div class="ttc" id="aclassripple_1_1BaseHTTPPeer_html_af70c1054dd2df89ca14ca670559e446d"><div class="ttname"><a href="classripple_1_1BaseHTTPPeer.html#af70c1054dd2df89ca14ca670559e446d">ripple::BaseHTTPPeer&lt; Handler, PlainHTTPPeer&lt; Handler &gt; &gt;::do_read</a></div><div class="ttdeci">void do_read(yield_context do_yield)</div><div class="ttdef"><b>Definition:</b> <a href="BaseHTTPPeer_8h_source.html#l00316">BaseHTTPPeer.h:316</a></div></div>
+<div class="ttc" id="aclassripple_1_1BaseHTTPPeer_html_a8a77c6c6e9b9d007e13a1ebf77d84917"><div class="ttname"><a href="classripple_1_1BaseHTTPPeer.html#a8a77c6c6e9b9d007e13a1ebf77d84917">ripple::BaseHTTPPeer&lt; Handler, PlainHTTPPeer&lt; Handler &gt; &gt;::port</a></div><div class="ttdeci">Port const &amp; port() override</div><div class="ttdef"><b>Definition:</b> <a href="BaseHTTPPeer_8h_source.html#l00171">BaseHTTPPeer.h:171</a></div></div>
+<div class="ttc" id="aclassripple_1_1PlainHTTPPeer_html_a9c0f50f624bd173b9224d0df05368dad"><div class="ttname"><a href="classripple_1_1PlainHTTPPeer.html#a9c0f50f624bd173b9224d0df05368dad">ripple::PlainHTTPPeer::websocketUpgrade</a></div><div class="ttdeci">std::shared_ptr&lt; WSSession &gt; websocketUpgrade() override</div><div class="ttdoc">Convert the connection to WebSocket.</div><div class="ttdef"><b>Definition:</b> <a href="PlainHTTPPeer_8h_source.html#l00125">PlainHTTPPeer.h:125</a></div></div>
+<div class="ttc" id="aclassripple_1_1BaseHTTPPeer_html_af70c1054dd2df89ca14ca670559e446d"><div class="ttname"><a href="classripple_1_1BaseHTTPPeer.html#af70c1054dd2df89ca14ca670559e446d">ripple::BaseHTTPPeer&lt; Handler, PlainHTTPPeer&lt; Handler &gt; &gt;::do_read</a></div><div class="ttdeci">void do_read(yield_context do_yield)</div><div class="ttdef"><b>Definition:</b> <a href="BaseHTTPPeer_8h_source.html#l00299">BaseHTTPPeer.h:299</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="anamespacestd_html"><div class="ttname"><a href="namespacestd.html">std</a></div><div class="ttdoc">STL namespace.</div></div>
 <div class="ttc" id="aclassripple_1_1PlainHTTPPeer_html"><div class="ttname"><a href="classripple_1_1PlainHTTPPeer.html">ripple::PlainHTTPPeer</a></div><div class="ttdef"><b>Definition:</b> <a href="PlainHTTPPeer_8h_source.html#l00032">PlainHTTPPeer.h:32</a></div></div>
 <div class="ttc" id="aclassripple_1_1PlainHTTPPeer_html_adadec56837d686d796d4b4515216debb"><div class="ttname"><a href="classripple_1_1PlainHTTPPeer.html#adadec56837d686d796d4b4515216debb">ripple::PlainHTTPPeer::socket_type</a></div><div class="ttdeci">boost::asio::ip::tcp::socket socket_type</div><div class="ttdef"><b>Definition:</b> <a href="PlainHTTPPeer_8h_source.html#l00038">PlainHTTPPeer.h:38</a></div></div>
-<div class="ttc" id="aclassripple_1_1PlainHTTPPeer_html_af411e8cbd41daabf8f8f64a69ca27601"><div class="ttname"><a href="classripple_1_1PlainHTTPPeer.html#af411e8cbd41daabf8f8f64a69ca27601">ripple::PlainHTTPPeer::PlainHTTPPeer</a></div><div class="ttdeci">PlainHTTPPeer(Port const &amp;port, Handler &amp;handler, boost::asio::io_context &amp;ioc, beast::Journal journal, endpoint_type remote_address, ConstBufferSequence const &amp;buffers, stream_type &amp;&amp;stream)</div><div class="ttdef"><b>Definition:</b> <a href="PlainHTTPPeer_8h_source.html#l00073">PlainHTTPPeer.h:73</a></div></div>
+<div class="ttc" id="aclassripple_1_1PlainHTTPPeer_html_af411e8cbd41daabf8f8f64a69ca27601"><div class="ttname"><a href="classripple_1_1PlainHTTPPeer.html#af411e8cbd41daabf8f8f64a69ca27601">ripple::PlainHTTPPeer::PlainHTTPPeer</a></div><div class="ttdeci">PlainHTTPPeer(Port const &amp;port, Handler &amp;handler, boost::asio::io_context &amp;ioc, beast::Journal journal, endpoint_type remote_address, ConstBufferSequence const &amp;buffers, stream_type &amp;&amp;stream)</div><div class="ttdef"><b>Definition:</b> <a href="PlainHTTPPeer_8h_source.html#l00074">PlainHTTPPeer.h:74</a></div></div>
 <div class="ttc" id="aclassripple_1_1PlainHTTPPeer_html_a9f76b3500867255834e8b43156bd63b4"><div class="ttname"><a href="classripple_1_1PlainHTTPPeer.html#a9f76b3500867255834e8b43156bd63b4">ripple::PlainHTTPPeer::stream_type</a></div><div class="ttdeci">boost::beast::tcp_stream stream_type</div><div class="ttdef"><b>Definition:</b> <a href="PlainHTTPPeer_8h_source.html#l00039">PlainHTTPPeer.h:39</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

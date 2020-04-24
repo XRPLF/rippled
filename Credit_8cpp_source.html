@@ -90,84 +90,83 @@ $(function() {
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/ledger/ReadView.h&gt;</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/AmountConversions.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STAmount.h&gt;</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/Indexes.h&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/Indexes.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STAmount.h&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;STAmount</div>
-<div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="namespaceripple.html#a59b34a5a4179de5ca0ebd178b26c5767">   28</a></span>&#160;<a class="code" href="namespaceripple.html#a59b34a5a4179de5ca0ebd178b26c5767">creditLimit</a> (</div>
+<div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="namespaceripple.html#a59b34a5a4179de5ca0ebd178b26c5767">   28</a></span>&#160;<a class="code" href="namespaceripple.html#a59b34a5a4179de5ca0ebd178b26c5767">creditLimit</a>(</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <a class="code" href="classripple_1_1ReadView.html">ReadView</a> <span class="keyword">const</span>&amp; view,</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account,</div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; issuer,</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">Currency</a> <span class="keyword">const</span>&amp; currency)</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;{</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> result ({currency, account});</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> result({currency, account});</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keyword">auto</span> sleRippleState = view.<a class="code" href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">read</a>(</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        <a class="code" href="namespaceripple_1_1keylet.html#a01cc447f0bed5323daea3cf819a87679">keylet::line</a>(account, issuer, currency));</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keywordflow">if</span> (sleRippleState)</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    {</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        result = sleRippleState-&gt;getFieldAmount (</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            account &lt; issuer ? <a class="code" href="namespaceripple.html#aaf69964db2cd73dde65acefced1e3441">sfLowLimit</a> : <a class="code" href="namespaceripple.html#a4f29578bd1b3d2d1225a87890489e7ca">sfHighLimit</a>);</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        result.setIssuer (account);</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    }</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    assert (result.getIssuer () == account);</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    assert (result.getCurrency () == currency);</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;}</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;IOUAmount</div>
-<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="namespaceripple.html#ac8f0e665814bff445a0a352ae56790c9">   52</a></span>&#160;<a class="code" href="namespaceripple.html#ac8f0e665814bff445a0a352ae56790c9">creditLimit2</a> (</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <a class="code" href="classripple_1_1ReadView.html">ReadView</a> <span class="keyword">const</span>&amp; v,</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; acc,</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; iss,</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">Currency</a> <span class="keyword">const</span>&amp; cur)</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;{</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a65dcac5799993b276e705961c3eee024">toAmount&lt;IOUAmount&gt;</a> (<a class="code" href="namespaceripple.html#a59b34a5a4179de5ca0ebd178b26c5767">creditLimit</a> (v, acc, iss, cur));</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;}</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno"><a class="line" href="namespaceripple.html#a676d0eac3fcb58c8634598bab4f5554b">   61</a></span>&#160;<a class="code" href="classripple_1_1STAmount.html">STAmount</a> <a class="code" href="namespaceripple.html#a676d0eac3fcb58c8634598bab4f5554b">creditBalance</a> (</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keyword">auto</span> sleRippleState = view.<a class="code" href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">read</a>(<a class="code" href="namespaceripple_1_1keylet.html#a01cc447f0bed5323daea3cf819a87679">keylet::line</a>(account, issuer, currency));</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keywordflow">if</span> (sleRippleState)</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    {</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        result = sleRippleState-&gt;getFieldAmount(</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            account &lt; issuer ? <a class="code" href="namespaceripple.html#aaf69964db2cd73dde65acefced1e3441">sfLowLimit</a> : <a class="code" href="namespaceripple.html#a4f29578bd1b3d2d1225a87890489e7ca">sfHighLimit</a>);</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        result.setIssuer(account);</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    }</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    assert(result.getIssuer() == account);</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    assert(result.getCurrency() == currency);</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;}</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;IOUAmount</div>
+<div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="namespaceripple.html#ac8f0e665814bff445a0a352ae56790c9">   51</a></span>&#160;<a class="code" href="namespaceripple.html#ac8f0e665814bff445a0a352ae56790c9">creditLimit2</a>(</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <a class="code" href="classripple_1_1ReadView.html">ReadView</a> <span class="keyword">const</span>&amp; v,</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; acc,</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; iss,</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">Currency</a> <span class="keyword">const</span>&amp; cur)</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;{</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a65dcac5799993b276e705961c3eee024">toAmount&lt;IOUAmount&gt;</a>(<a class="code" href="namespaceripple.html#a59b34a5a4179de5ca0ebd178b26c5767">creditLimit</a>(v, acc, iss, cur));</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;}</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;STAmount</div>
+<div class="line"><a name="l00061"></a><span class="lineno"><a class="line" href="namespaceripple.html#a676d0eac3fcb58c8634598bab4f5554b">   61</a></span>&#160;<a class="code" href="namespaceripple.html#a676d0eac3fcb58c8634598bab4f5554b">creditBalance</a>(</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <a class="code" href="classripple_1_1ReadView.html">ReadView</a> <span class="keyword">const</span>&amp; view,</div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account,</div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; issuer,</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">Currency</a> <span class="keyword">const</span>&amp; currency)</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;{</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> result ({currency, account});</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> result({currency, account});</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keyword">auto</span> sleRippleState = view.<a class="code" href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">read</a>(</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <a class="code" href="namespaceripple_1_1keylet.html#a01cc447f0bed5323daea3cf819a87679">keylet::line</a>(account, issuer, currency));</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keywordflow">if</span> (sleRippleState)</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    {</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        result = sleRippleState-&gt;getFieldAmount (<a class="code" href="namespaceripple.html#a302900f43b3d504ce71926534d7277e6">sfBalance</a>);</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keywordflow">if</span> (account &lt; issuer)</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;            result.negate ();</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        result.setIssuer (account);</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    }</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    assert (result.getIssuer () == account);</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    assert (result.getCurrency () == currency);</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;}</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keyword">auto</span> sleRippleState = view.<a class="code" href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">read</a>(<a class="code" href="namespaceripple_1_1keylet.html#a01cc447f0bed5323daea3cf819a87679">keylet::line</a>(account, issuer, currency));</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keywordflow">if</span> (sleRippleState)</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    {</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        result = sleRippleState-&gt;getFieldAmount(<a class="code" href="namespaceripple.html#a302900f43b3d504ce71926534d7277e6">sfBalance</a>);</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="keywordflow">if</span> (account &lt; issuer)</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            result.negate();</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        result.setIssuer(account);</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    }</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    assert(result.getIssuer() == account);</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    assert(result.getCurrency() == currency);</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;}</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_html_a676d0eac3fcb58c8634598bab4f5554b"><div class="ttname"><a href="namespaceripple.html#a676d0eac3fcb58c8634598bab4f5554b">ripple::creditBalance</a></div><div class="ttdeci">STAmount creditBalance(ReadView const &amp;view, AccountID const &amp;account, AccountID const &amp;issuer, Currency const &amp;currency)</div><div class="ttdoc">Returns the amount of IOUs issued by issuer that are held by an account.</div><div class="ttdef"><b>Definition:</b> <a href="Credit_8cpp_source.html#l00061">Credit.cpp:61</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ac8f0e665814bff445a0a352ae56790c9"><div class="ttname"><a href="namespaceripple.html#ac8f0e665814bff445a0a352ae56790c9">ripple::creditLimit2</a></div><div class="ttdeci">IOUAmount creditLimit2(ReadView const &amp;v, AccountID const &amp;acc, AccountID const &amp;iss, Currency const &amp;cur)</div><div class="ttdef"><b>Definition:</b> <a href="Credit_8cpp_source.html#l00052">Credit.cpp:52</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a4f29578bd1b3d2d1225a87890489e7ca"><div class="ttname"><a href="namespaceripple.html#a4f29578bd1b3d2d1225a87890489e7ca">ripple::sfHighLimit</a></div><div class="ttdeci">const SF_Amount sfHighLimit(access, STI_AMOUNT, 7, &quot;HighLimit&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00429">SField.h:429</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a65dcac5799993b276e705961c3eee024"><div class="ttname"><a href="namespaceripple.html#a65dcac5799993b276e705961c3eee024">ripple::toAmount&lt; IOUAmount &gt;</a></div><div class="ttdeci">IOUAmount toAmount&lt; IOUAmount &gt;(STAmount const &amp;amt)</div><div class="ttdef"><b>Definition:</b> <a href="AmountConversions_8h_source.html#l00082">AmountConversions.h:82</a></div></div>
-<div class="ttc" id="anamespaceripple_html_aaf69964db2cd73dde65acefced1e3441"><div class="ttname"><a href="namespaceripple.html#aaf69964db2cd73dde65acefced1e3441">ripple::sfLowLimit</a></div><div class="ttdeci">const SF_Amount sfLowLimit(access, STI_AMOUNT, 6, &quot;LowLimit&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00428">SField.h:428</a></div></div>
-<div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00065">base_uint.h:65</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1keylet_html_a01cc447f0bed5323daea3cf819a87679"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a01cc447f0bed5323daea3cf819a87679">ripple::keylet::line</a></div><div class="ttdeci">static const line_t line</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8h_source.html#l00176">Indexes.h:176</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ac8f0e665814bff445a0a352ae56790c9"><div class="ttname"><a href="namespaceripple.html#ac8f0e665814bff445a0a352ae56790c9">ripple::creditLimit2</a></div><div class="ttdeci">IOUAmount creditLimit2(ReadView const &amp;v, AccountID const &amp;acc, AccountID const &amp;iss, Currency const &amp;cur)</div><div class="ttdef"><b>Definition:</b> <a href="Credit_8cpp_source.html#l00051">Credit.cpp:51</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a4f29578bd1b3d2d1225a87890489e7ca"><div class="ttname"><a href="namespaceripple.html#a4f29578bd1b3d2d1225a87890489e7ca">ripple::sfHighLimit</a></div><div class="ttdeci">const SF_Amount sfHighLimit(access, STI_AMOUNT, 7, &quot;HighLimit&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00443">SField.h:443</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a65dcac5799993b276e705961c3eee024"><div class="ttname"><a href="namespaceripple.html#a65dcac5799993b276e705961c3eee024">ripple::toAmount&lt; IOUAmount &gt;</a></div><div class="ttdeci">IOUAmount toAmount&lt; IOUAmount &gt;(STAmount const &amp;amt)</div><div class="ttdef"><b>Definition:</b> <a href="AmountConversions_8h_source.html#l00081">AmountConversions.h:81</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aaf69964db2cd73dde65acefced1e3441"><div class="ttname"><a href="namespaceripple.html#aaf69964db2cd73dde65acefced1e3441">ripple::sfLowLimit</a></div><div class="ttdeci">const SF_Amount sfLowLimit(access, STI_AMOUNT, 6, &quot;LowLimit&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00442">SField.h:442</a></div></div>
+<div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00063">base_uint.h:63</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1keylet_html_a01cc447f0bed5323daea3cf819a87679"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a01cc447f0bed5323daea3cf819a87679">ripple::keylet::line</a></div><div class="ttdeci">static const line_t line</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8h_source.html#l00190">Indexes.h:190</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a59b34a5a4179de5ca0ebd178b26c5767"><div class="ttname"><a href="namespaceripple.html#a59b34a5a4179de5ca0ebd178b26c5767">ripple::creditLimit</a></div><div class="ttdeci">STAmount creditLimit(ReadView const &amp;view, AccountID const &amp;account, AccountID const &amp;issuer, Currency const &amp;currency)</div><div class="ttdoc">Calculate the maximum amount of IOUs that an account can hold.</div><div class="ttdef"><b>Definition:</b> <a href="Credit_8cpp_source.html#l00028">Credit.cpp:28</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html"><div class="ttname"><a href="classripple_1_1STAmount.html">ripple::STAmount</a></div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00042">STAmount.h:42</a></div></div>
 <div class="ttc" id="aclassripple_1_1ReadView_html_a3351e0244f921234d5ba005a07ddf539"><div class="ttname"><a href="classripple_1_1ReadView.html#a3351e0244f921234d5ba005a07ddf539">ripple::ReadView::read</a></div><div class="ttdeci">virtual std::shared_ptr&lt; SLE const  &gt; read(Keylet const &amp;k) const =0</div><div class="ttdoc">Return the state item associated with a key.</div></div>
-<div class="ttc" id="aclassripple_1_1ReadView_html"><div class="ttname"><a href="classripple_1_1ReadView.html">ripple::ReadView</a></div><div class="ttdoc">A view into a ledger.</div><div class="ttdef"><b>Definition:</b> <a href="ReadView_8h_source.html#l00186">ReadView.h:186</a></div></div>
+<div class="ttc" id="aclassripple_1_1ReadView_html"><div class="ttname"><a href="classripple_1_1ReadView.html">ripple::ReadView</a></div><div class="ttdoc">A view into a ledger.</div><div class="ttdef"><b>Definition:</b> <a href="ReadView_8h_source.html#l00188">ReadView.h:188</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a302900f43b3d504ce71926534d7277e6"><div class="ttname"><a href="namespaceripple.html#a302900f43b3d504ce71926534d7277e6">ripple::sfBalance</a></div><div class="ttdeci">const SF_Amount sfBalance(access, STI_AMOUNT, 2, &quot;Balance&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00424">SField.h:424</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a302900f43b3d504ce71926534d7277e6"><div class="ttname"><a href="namespaceripple.html#a302900f43b3d504ce71926534d7277e6">ripple::sfBalance</a></div><div class="ttdeci">const SF_Amount sfBalance(access, STI_AMOUNT, 2, &quot;Balance&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00438">SField.h:438</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

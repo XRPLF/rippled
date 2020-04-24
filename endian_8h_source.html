@@ -98,29 +98,29 @@ $(function() {
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="comment">// 1.  Is this system big or little endian?</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="comment">// 2.  Is the &quot;desired endian&quot; of some class or function the same as the</span></div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="comment">//     native endian?</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0a">   30</a></span>&#160;<span class="keyword">enum class</span> <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0a">endian</a></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;{</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#ifdef _MSC_VER</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aad861877da56b8b4ceb35c8cbfdf65bb4">big</a>    = 1,</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aaaae6635e044ac56046b2893a529b5114">little</a> = 0,</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aa8e5f3adee38c8fccc13c1f3be0143796">native</a> = <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aaaae6635e044ac56046b2893a529b5114">little</a></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="preprocessor">#else</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aa8e5f3adee38c8fccc13c1f3be0143796">native</a> = __BYTE_ORDER__,</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aaaae6635e044ac56046b2893a529b5114">little</a> = __ORDER_LITTLE_ENDIAN__,</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aad861877da56b8b4ceb35c8cbfdf65bb4">big</a>    = __ORDER_BIG_ENDIAN__</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;};</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="preprocessor">#ifndef __INTELLISENSE__</span></div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;static_assert(<a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aa8e5f3adee38c8fccc13c1f3be0143796">endian::native</a> == <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aaaae6635e044ac56046b2893a529b5114">endian::little</a> ||</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;              <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aa8e5f3adee38c8fccc13c1f3be0143796">endian::native</a> == <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aad861877da56b8b4ceb35c8cbfdf65bb4">endian::big</a>,</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;              <span class="stringliteral">&quot;endian::native shall be one of endian::little or endian::big&quot;</span>);</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;static_assert(<a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aad861877da56b8b4ceb35c8cbfdf65bb4">endian::big</a> != <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aaaae6635e044ac56046b2893a529b5114">endian::little</a>,</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;              <span class="stringliteral">&quot;endian::big and endian::little shall have different values&quot;</span>);</div>
+<div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0a">   30</a></span>&#160;<span class="keyword">enum class</span> <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0a">endian</a> {</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#ifdef _MSC_VER</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aad861877da56b8b4ceb35c8cbfdf65bb4">big</a> = 1,</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aaaae6635e044ac56046b2893a529b5114">little</a> = 0,</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aa8e5f3adee38c8fccc13c1f3be0143796">native</a> = <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aaaae6635e044ac56046b2893a529b5114">little</a></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">#else</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aa8e5f3adee38c8fccc13c1f3be0143796">native</a> = __BYTE_ORDER__,</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aaaae6635e044ac56046b2893a529b5114">little</a> = __ORDER_LITTLE_ENDIAN__,</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aad861877da56b8b4ceb35c8cbfdf65bb4">big</a> = __ORDER_BIG_ENDIAN__</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;};</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="preprocessor">#ifndef __INTELLISENSE__</span></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;static_assert(</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aa8e5f3adee38c8fccc13c1f3be0143796">endian::native</a> == <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aaaae6635e044ac56046b2893a529b5114">endian::little</a> || <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aa8e5f3adee38c8fccc13c1f3be0143796">endian::native</a> == <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aad861877da56b8b4ceb35c8cbfdf65bb4">endian::big</a>,</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="stringliteral">&quot;endian::native shall be one of endian::little or endian::big&quot;</span>);</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;static_assert(</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aad861877da56b8b4ceb35c8cbfdf65bb4">endian::big</a> != <a class="code" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aaaae6635e044ac56046b2893a529b5114">endian::little</a>,</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="stringliteral">&quot;endian::big and endian::little shall have different values&quot;</span>);</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="preprocessor">#endif</span></div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;} <span class="comment">// beast</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;}  <span class="comment">// namespace beast</span></div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
@@ -128,7 +128,7 @@ $(function() {
 <div class="ttc" id="anamespacebeast_html_aeb689e5282484a5d64be831c6e646f0aad861877da56b8b4ceb35c8cbfdf65bb4"><div class="ttname"><a href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aad861877da56b8b4ceb35c8cbfdf65bb4">beast::endian::big</a></div><div class="ttdeci">@ big</div></div>
 <div class="ttc" id="anamespacebeast_html_aeb689e5282484a5d64be831c6e646f0aa8e5f3adee38c8fccc13c1f3be0143796"><div class="ttname"><a href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0aa8e5f3adee38c8fccc13c1f3be0143796">beast::endian::native</a></div><div class="ttdeci">@ native</div></div>
 <div class="ttc" id="anamespacebeast_html_aeb689e5282484a5d64be831c6e646f0a"><div class="ttname"><a href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0a">beast::endian</a></div><div class="ttdeci">endian</div><div class="ttdef"><b>Definition:</b> <a href="endian_8h_source.html#l00030">endian.h:30</a></div></div>
-<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00582">base_uint.h:582</a></div></div>
+<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00646">base_uint.h:646</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

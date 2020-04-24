@@ -94,11 +94,11 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a9273b4d526a8f0a904a0afcaa4812577"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="el" href="structripple_1_1EitherAmount.html">EitherAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a9273b4d526a8f0a904a0afcaa4812577">cachedOut</a> () const =0</td></tr>
 <tr class="memdesc:a9273b4d526a8f0a904a0afcaa4812577"><td class="mdescLeft">&#160;</td><td class="mdescRight">Amount of currency computed coming out of the <a class="el" href="classripple_1_1Step.html" title="A step in a payment path.">Step</a> the last time the step ran in reverse.  <a href="classripple_1_1Step.html#a9273b4d526a8f0a904a0afcaa4812577">More...</a><br /></td></tr>
 <tr class="separator:a9273b4d526a8f0a904a0afcaa4812577"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a98fda1ca2b88444baa3db59720953ea2"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a98fda1ca2b88444baa3db59720953ea2">directStepSrcAcct</a> () const</td></tr>
+<tr class="memitem:a98fda1ca2b88444baa3db59720953ea2"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a98fda1ca2b88444baa3db59720953ea2">directStepSrcAcct</a> () const</td></tr>
 <tr class="memdesc:a98fda1ca2b88444baa3db59720953ea2"><td class="mdescLeft">&#160;</td><td class="mdescRight">If this step is <a class="el" href="classripple_1_1DirectStepI.html">DirectStepI</a> (IOU-&gt;IOU direct step), return the src account.  <a href="classripple_1_1Step.html#a98fda1ca2b88444baa3db59720953ea2">More...</a><br /></td></tr>
 <tr class="separator:a98fda1ca2b88444baa3db59720953ea2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a873ce29f5f9a2c6e09fc8717f91eb920"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a>, <a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a873ce29f5f9a2c6e09fc8717f91eb920">directStepAccts</a> () const</td></tr>
-<tr class="separator:a873ce29f5f9a2c6e09fc8717f91eb920"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad340fc1160bd43abd258a6b30bc61c90"><td class="memItemLeft" align="right" valign="top">virtual boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a>, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#ad340fc1160bd43abd258a6b30bc61c90">directStepAccts</a> () const</td></tr>
+<tr class="separator:ad340fc1160bd43abd258a6b30bc61c90"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a13f46801cf68bd4ba5e0c995db490463"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceripple.html#a8c623abdba7fa97ffd148311056d401e">DebtDirection</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Step.html#a13f46801cf68bd4ba5e0c995db490463">debtDirection</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;sb, <a class="el" href="namespaceripple.html#a2fca0f72cfacc04d15ad41d84ebf46fd">StrandDirection</a> dir) const =0</td></tr>
 <tr class="memdesc:a13f46801cf68bd4ba5e0c995db490463"><td class="mdescLeft">&#160;</td><td class="mdescRight">If this step is a <a class="el" href="classripple_1_1DirectStepI.html">DirectStepI</a> and the src redeems to the dst, return true, otherwise return false.  <a href="classripple_1_1Step.html#a13f46801cf68bd4ba5e0c995db490463">More...</a><br /></td></tr>
 <tr class="separator:a13f46801cf68bd4ba5e0c995db490463"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -153,7 +153,7 @@ Friends</h2></td></tr>
 <p>Amounts are always transformed using liquidity with the same quality (quality is the amount out/amount in). For example, a <a class="el" href="classripple_1_1BookStep.html">BookStep</a> may use multiple offers when executing <code>fwd</code> or <code>rev</code>, but all those offers will be from the same quality directory.</p>
 <p>A step may not have enough liquidity to transform the entire requested amount. Both <code>fwd</code> and <code>rev</code> return a pair of amounts (one for input amount, one for output amount) that show how much of the requested amount the step was actually able to use. </p>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00081">81</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00079">79</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a44775ea2303695696046b0e44e436f89"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a44775ea2303695696046b0e44e436f89">&#9670;&nbsp;</a></span>~Step()</h2>
@@ -365,7 +365,7 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual boost::optional&lt;<a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a>&gt; ripple::Step::directStepSrcAcct </td>
+          <td class="memname">virtual boost::optional&lt;<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a>&gt; ripple::Step::directStepSrcAcct </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -381,12 +381,12 @@ Friends</h2></td></tr>
 <p>If this step is <a class="el" href="classripple_1_1DirectStepI.html">DirectStepI</a> (IOU-&gt;IOU direct step), return the src account. </p>
 <p>This is needed for checkNoRipple. </p>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00145">145</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00139">139</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
-<a id="a873ce29f5f9a2c6e09fc8717f91eb920"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a873ce29f5f9a2c6e09fc8717f91eb920">&#9670;&nbsp;</a></span>directStepAccts()</h2>
+<a id="ad340fc1160bd43abd258a6b30bc61c90"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad340fc1160bd43abd258a6b30bc61c90">&#9670;&nbsp;</a></span>directStepAccts()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -395,7 +395,7 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual boost::optional&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a>,<a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a>&gt; &gt; ripple::Step::directStepAccts </td>
+          <td class="memname">virtual boost::optional&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a>, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a>&gt; &gt; ripple::Step::directStepAccts </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -408,7 +408,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00153">153</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00147">147</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -484,7 +484,7 @@ Friends</h2></td></tr>
 
 <p>If this step is a <a class="el" href="classripple_1_1DirectStepI.html">DirectStepI</a>, return the quality in of the dst account. </p>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00174">174</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00167">167</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -560,7 +560,7 @@ Friends</h2></td></tr>
 
 <p>If this step is a <a class="el" href="classripple_1_1BookStep.html">BookStep</a>, return the book. </p>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00202">202</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00195">195</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -618,7 +618,7 @@ Friends</h2></td></tr>
 <p>Return true if the step should be considered inactive. </p>
 <p>A strand that has additional liquidity may be marked inactive if a step has consumed too many offers. </p>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00220">220</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00212">212</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -847,7 +847,7 @@ Friends</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if lhs == rhs. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00262">262</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00249">249</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -895,7 +895,7 @@ Friends</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if lhs != rhs. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00273">273</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00261">261</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>
@@ -935,7 +935,7 @@ Friends</h2></td></tr>
 
 <p>Streaming operator for a <a class="el" href="classripple_1_1Step.html" title="A step in a payment path.">Step</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00281">281</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Steps_8h_source.html#l00268">268</a> of file <a class="el" href="Steps_8h_source.html">Steps.h</a>.</p>
 
 </div>
 </div>

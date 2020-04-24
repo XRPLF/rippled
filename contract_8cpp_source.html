@@ -88,8 +88,8 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/contract.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/Log.h&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/Log.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/contract.h&gt;</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstdlib.html">cstdlib</a>&gt;</span></div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/exception.html">exception</a>&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/iostream.html">iostream</a>&gt;</span></div>
@@ -98,46 +98,44 @@ $(function() {
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span>detail {</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;[[noreturn]]</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="namespaceripple_1_1detail.html#a7d97f07e5b7bfe169282ff5bacde87b5">   32</a></span>&#160;<a class="code" href="namespaceripple_1_1detail.html#a7d97f07e5b7bfe169282ff5bacde87b5">accessViolation</a>() noexcept</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;{</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="comment">// dereference memory location zero</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keywordtype">int</span> <span class="keyword">volatile</span>* j = 0;</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    (void)*j;</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/program/abort.html">std::abort</a> ();</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;}</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;} <span class="comment">// detail</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno"><a class="line" href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">   43</a></span>&#160;<a class="code" href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">LogThrow</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; title)</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;{</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    JLOG(<a class="code" href="namespaceripple.html#a94e13759bd026c8ac305482e17f05adb">debugLog</a>().warn()) &lt;&lt; title;</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;}</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;[[noreturn]]</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">   50</a></span>&#160;<a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; s) noexcept</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;{</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    JLOG(<a class="code" href="namespaceripple.html#a94e13759bd026c8ac305482e17f05adb">debugLog</a>().fatal()) &lt;&lt; s;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Logic error: &quot;</span> &lt;&lt; s &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a>;</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <a class="code" href="namespaceripple_1_1detail.html#a7d97f07e5b7bfe169282ff5bacde87b5">detail::accessViolation</a>();</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;}</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;[[noreturn]] <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="namespaceripple_1_1detail.html#a7d97f07e5b7bfe169282ff5bacde87b5">   31</a></span>&#160;<a class="code" href="namespaceripple_1_1detail.html#a7d97f07e5b7bfe169282ff5bacde87b5">accessViolation</a>() noexcept</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;{</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="comment">// dereference memory location zero</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keywordtype">int</span> <span class="keyword">volatile</span>* j = 0;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    (void)*j;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/program/abort.html">std::abort</a>();</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;}</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;}  <span class="comment">// namespace detail</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno"><a class="line" href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">   42</a></span>&#160;<a class="code" href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">LogThrow</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; title)</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;{</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    JLOG(<a class="code" href="namespaceripple.html#a94e13759bd026c8ac305482e17f05adb">debugLog</a>().warn()) &lt;&lt; title;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;}</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;[[noreturn]] <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno"><a class="line" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">   48</a></span>&#160;<a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; s) noexcept</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;{</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    JLOG(<a class="code" href="namespaceripple.html#a94e13759bd026c8ac305482e17f05adb">debugLog</a>().fatal()) &lt;&lt; s;</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Logic error: &quot;</span> &lt;&lt; s &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a>;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <a class="code" href="namespaceripple_1_1detail.html#a7d97f07e5b7bfe169282ff5bacde87b5">detail::accessViolation</a>();</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;}</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aexception_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/exception.html">exception</a></div></div>
 <div class="ttc" id="acerr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a></div></div>
 <div class="ttc" id="aiostream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/iostream.html">iostream</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a94e13759bd026c8ac305482e17f05adb"><div class="ttname"><a href="namespaceripple.html#a94e13759bd026c8ac305482e17f05adb">ripple::debugLog</a></div><div class="ttdeci">beast::Journal debugLog()</div><div class="ttdoc">Returns a debug journal.</div><div class="ttdef"><b>Definition:</b> <a href="Log_8cpp_source.html#l00417">Log.cpp:417</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a94e13759bd026c8ac305482e17f05adb"><div class="ttname"><a href="namespaceripple.html#a94e13759bd026c8ac305482e17f05adb">ripple::debugLog</a></div><div class="ttdeci">beast::Journal debugLog()</div><div class="ttdoc">Returns a debug journal.</div><div class="ttdef"><b>Definition:</b> <a href="Log_8cpp_source.html#l00452">Log.cpp:452</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="acstdlib_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstdlib.html">cstdlib</a></div></div>
 <div class="ttc" id="aendl_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a></div><div class="ttdeci">T endl(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_html_aefd2f77338ce3c9a2fffc4f0b289b483"><div class="ttname"><a href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">ripple::LogicError</a></div><div class="ttdeci">void LogicError(std::string const &amp;how) noexcept</div><div class="ttdoc">Called when faulty logic causes a broken invariant.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00050">contract.cpp:50</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a9685b5bd8afdfb40bdf25cf24f877f0f"><div class="ttname"><a href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">ripple::LogThrow</a></div><div class="ttdeci">void LogThrow(std::string const &amp;title)</div><div class="ttdoc">Generates and logs a call stack.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00043">contract.cpp:43</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1detail_html_a7d97f07e5b7bfe169282ff5bacde87b5"><div class="ttname"><a href="namespaceripple_1_1detail.html#a7d97f07e5b7bfe169282ff5bacde87b5">ripple::detail::accessViolation</a></div><div class="ttdeci">void accessViolation() noexcept</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00032">contract.cpp:32</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aefd2f77338ce3c9a2fffc4f0b289b483"><div class="ttname"><a href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">ripple::LogicError</a></div><div class="ttdeci">void LogicError(std::string const &amp;how) noexcept</div><div class="ttdoc">Called when faulty logic causes a broken invariant.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00048">contract.cpp:48</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a9685b5bd8afdfb40bdf25cf24f877f0f"><div class="ttname"><a href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">ripple::LogThrow</a></div><div class="ttdeci">void LogThrow(std::string const &amp;title)</div><div class="ttdoc">Generates and logs a call stack.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00042">contract.cpp:42</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1detail_html_a7d97f07e5b7bfe169282ff5bacde87b5"><div class="ttname"><a href="namespaceripple_1_1detail.html#a7d97f07e5b7bfe169282ff5bacde87b5">ripple::detail::accessViolation</a></div><div class="ttdeci">void accessViolation() noexcept</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00031">contract.cpp:31</a></div></div>
 <div class="ttc" id="aabort_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/program/abort.html">std::abort</a></div><div class="ttdeci">T abort(T... args)</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

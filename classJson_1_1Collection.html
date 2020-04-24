@@ -143,18 +143,14 @@ performance guarantees.  This puts restrictions upon API users:
 
 1. Only one collection can be open for change at any one time.
 
-   This condition is enforced automatically and a std::logic_error thrown if it
-   is violated.
-
-2. A tag may only be used once in an Object.
-
-   Some objects have many tags, so this condition might be a little
-   expensive. Enforcement of this condition is turned on in debug builds and
-   a std::logic_error is thrown when the tag is added for a second time.
-
-Code samples:
-
-    Writer writer;
+   This condition is enforced automatically and a std::logic_error thrown if
+</pre><p> it is violated.</p>
+<ol type="1">
+<li><p class="startli">A tag may only be used once in an <a class="el" href="classJson_1_1Object.html" title="Represents a JSON object being written to a Writer.">Object</a>.</p>
+<p class="startli">Some objects have many tags, so this condition might be a little expensive. Enforcement of this condition is turned on in debug builds and a <a class="elRef" href="http://en.cppreference.com/w/cpp/error/logic_error.html" title="STL class.">std::logic_error</a> is thrown when the tag is added for a second time.</p>
+</li>
+</ol>
+<p>Code samples: </p><pre class="fragment">Writer writer;
 </pre><p>An empty object. { <a class="el" href="classJson_1_1Object_1_1Root.html">Object::Root</a> (writer); } Outputs {}</p>
 <p>An object with one scalar value. { <a class="el" href="classJson_1_1Object_1_1Root.html">Object::Root</a> root (writer); write["hello"] = "world"; } Outputs {"hello":"world"}</p>
 <p>Same, using chaining. { <a class="el" href="classJson_1_1Object_1_1Root.html">Object::Root</a> (writer)["hello"] = "world"; } Output is the same.</p>
@@ -196,7 +192,7 @@ Code samples:
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Object_8cpp_source.html#l00058">58</a> of file <a class="el" href="Object_8cpp_source.html">Object.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Object_8cpp_source.html#l00059">59</a> of file <a class="el" href="Object_8cpp_source.html">Object.cpp</a>.</p>
 
 </div>
 </div>
@@ -307,7 +303,7 @@ Code samples:
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Object_8cpp_source.html#l00045">45</a> of file <a class="el" href="Object_8cpp_source.html">Object.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Object_8cpp_source.html#l00046">46</a> of file <a class="el" href="Object_8cpp_source.html">Object.cpp</a>.</p>
 
 </div>
 </div>
@@ -335,7 +331,7 @@ Code samples:
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Object_8cpp_source.html#l00063">63</a> of file <a class="el" href="Object_8cpp_source.html">Object.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Object_8cpp_source.html#l00065">65</a> of file <a class="el" href="Object_8cpp_source.html">Object.cpp</a>.</p>
 
 </div>
 </div>
@@ -360,7 +356,7 @@ Code samples:
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Object_8h_source.html#l00166">166</a> of file <a class="el" href="Object_8h_source.html">Object.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Object_8h_source.html#l00168">168</a> of file <a class="el" href="Object_8h_source.html">Object.h</a>.</p>
 
 </div>
 </div>
@@ -384,7 +380,7 @@ Code samples:
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Object_8h_source.html#l00167">167</a> of file <a class="el" href="Object_8h_source.html">Object.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Object_8h_source.html#l00169">169</a> of file <a class="el" href="Object_8h_source.html">Object.h</a>.</p>
 
 </div>
 </div>
@@ -408,7 +404,7 @@ Code samples:
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Object_8h_source.html#l00168">168</a> of file <a class="el" href="Object_8h_source.html">Object.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Object_8h_source.html#l00170">170</a> of file <a class="el" href="Object_8h_source.html">Object.h</a>.</p>
 
 </div>
 </div>

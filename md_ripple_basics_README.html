@@ -88,12 +88,12 @@ Choosing a rippled container.</h1>
 <li>For sorted containers.</li>
 </ul>
 </li>
-<li><code><a class="el" href="namespaceripple.html#af6706a6ca37a4295262cd18f8cb619e2">ripple::hash_set</a></code><ul>
+<li><code><a class="el" href="namespaceripple.html#a7750eec5e079354285f1d60cfd0247ca">ripple::hash_set</a></code><ul>
 <li>Where inserts and contains need to be O(1).</li>
 <li>For "small" sets, <code><a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html" title="STL class.">std::set</a></code> might be faster and smaller.</li>
 </ul>
 </li>
-<li><code><a class="el" href="namespaceripple.html#a0a20e7d51388a38ae62db1cd1542366a">ripple::hardened_hash_set</a></code><ul>
+<li><code><a class="el" href="namespaceripple.html#a3fd083ce42b38018aa59306a4660a52e">ripple::hardened_hash_set</a></code><ul>
 <li>For data sets where the key could be manipulated by an attacker in an attempt to mount an algorithmic complexity attack: see <a href="http://en.wikipedia.org/wiki/Algorithmic_complexity_attack">http://en.wikipedia.org/wiki/Algorithmic_complexity_attack</a></li>
 </ul>
 </li>
@@ -101,8 +101,8 @@ Choosing a rippled container.</h1>
 <p>The following container is deprecated</p>
 <ul>
 <li><code><a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_set.html" title="STL class.">std::unordered_set</a></code><ul>
-<li>Use <code><a class="el" href="namespaceripple.html#af6706a6ca37a4295262cd18f8cb619e2">ripple::hash_set</a></code> instead, which uses a better hashing algorithm.</li>
-<li>Or use <code><a class="el" href="namespaceripple.html#a0a20e7d51388a38ae62db1cd1542366a">ripple::hardened_hash_set</a></code> to prevent algorithmic complexity attacks. </li>
+<li>Use <code><a class="el" href="namespaceripple.html#a7750eec5e079354285f1d60cfd0247ca">ripple::hash_set</a></code> instead, which uses a better hashing algorithm.</li>
+<li>Or use <code><a class="el" href="namespaceripple.html#a3fd083ce42b38018aa59306a4660a52e">ripple::hardened_hash_set</a></code> to prevent algorithmic complexity attacks. </li>
 </ul>
 </li>
 </ul>

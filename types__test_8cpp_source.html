@@ -88,8 +88,8 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/UintTypes.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/unit_test.h&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/unit_test.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/UintTypes.h&gt;</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
@@ -98,29 +98,27 @@ $(function() {
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keywordtype">void</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="structripple_1_1types__test.html#a8c80a0a85d7ba576991f5ecaaf022ed8">   28</a></span>&#160;    <a class="code" href="structripple_1_1types__test.html#a8c80a0a85d7ba576991f5ecaaf022ed8">testAccountID</a>()</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    {</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> s =</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;            <span class="stringliteral">&quot;rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh&quot;</span>;</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <span class="keywordflow">if</span> (BEAST_EXPECT(parseBase58&lt;AccountID&gt;(s)))</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple.html#a08a13b62b18272366f788632359e8793">toBase58</a>(</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;                *parseBase58&lt;AccountID&gt;(s)) == s);</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    }</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="structripple_1_1types__test.html#acbbb457f38e79692297e2bf2a12cf143">   38</a></span>&#160;    <a class="code" href="structripple_1_1types__test.html#acbbb457f38e79692297e2bf2a12cf143">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <a class="code" href="structripple_1_1types__test.html#a8c80a0a85d7ba576991f5ecaaf022ed8">testAccountID</a>();</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    }</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;};</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> s = <span class="stringliteral">&quot;rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh&quot;</span>;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        <span class="keywordflow">if</span> (BEAST_EXPECT(parseBase58&lt;AccountID&gt;(s)))</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple.html#a08a13b62b18272366f788632359e8793">toBase58</a>(*parseBase58&lt;AccountID&gt;(s)) == s);</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    }</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="structripple_1_1types__test.html#acbbb457f38e79692297e2bf2a12cf143">   36</a></span>&#160;    <a class="code" href="structripple_1_1types__test.html#acbbb457f38e79692297e2bf2a12cf143">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <a class="code" href="structripple_1_1types__test.html#a8c80a0a85d7ba576991f5ecaaf022ed8">testAccountID</a>();</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    }</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;};</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(types, protocol, <a class="code" href="namespaceripple.html">ripple</a>);</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(types,protocol,<a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;}</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_html_a2701412a11b118c19256a4c901db2938"><div class="ttname"><a href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">ripple::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(AccountTxPaging, app, ripple)</div></div>
 <div class="ttc" id="astructripple_1_1types__test_html_a8c80a0a85d7ba576991f5ecaaf022ed8"><div class="ttname"><a href="structripple_1_1types__test.html#a8c80a0a85d7ba576991f5ecaaf022ed8">ripple::types_test::testAccountID</a></div><div class="ttdeci">void testAccountID()</div><div class="ttdef"><b>Definition:</b> <a href="types__test_8cpp_source.html#l00028">types_test.cpp:28</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a08a13b62b18272366f788632359e8793"><div class="ttname"><a href="namespaceripple.html#a08a13b62b18272366f788632359e8793">ripple::toBase58</a></div><div class="ttdeci">std::string toBase58(AccountID const &amp;v)</div><div class="ttdoc">Convert AccountID to base58 checked string.</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00029">AccountID.cpp:29</a></div></div>
 <div class="ttc" id="astructripple_1_1types__test_html"><div class="ttname"><a href="structripple_1_1types__test.html">ripple::types_test</a></div><div class="ttdef"><b>Definition:</b> <a href="types__test_8cpp_source.html#l00025">types_test.cpp:25</a></div></div>
-<div class="ttc" id="astructripple_1_1types__test_html_acbbb457f38e79692297e2bf2a12cf143"><div class="ttname"><a href="structripple_1_1types__test.html#acbbb457f38e79692297e2bf2a12cf143">ripple::types_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="types__test_8cpp_source.html#l00038">types_test.cpp:38</a></div></div>
+<div class="ttc" id="astructripple_1_1types__test_html_acbbb457f38e79692297e2bf2a12cf143"><div class="ttname"><a href="structripple_1_1types__test.html#acbbb457f38e79692297e2bf2a12cf143">ripple::types_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="types__test_8cpp_source.html#l00036">types_test.cpp:36</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

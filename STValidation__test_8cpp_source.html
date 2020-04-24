@@ -89,12 +89,12 @@ $(function() {
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/Log.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/jss.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/SecretKey.h&gt;</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/st.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/json/json_reader.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/json/to_string.h&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/unit_test.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/unit_test.h&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/json/json_reader.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/json/to_string.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/SecretKey.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/jss.h&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/st.h&gt;</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;test/jtx.h&gt;</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a>&gt;</span></div>
@@ -105,112 +105,103 @@ $(function() {
 <div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="classripple_1_1STValidation__test.html">   34</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1STValidation__test.html">STValidation_test</a> : <span class="keyword">public</span> beast::unit_test::suite</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;{</div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="classripple_1_1STValidation__test.html#a750daca99f40c4ae18db1f6baaf3f078">   37</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1STValidation__test.html#a750daca99f40c4ae18db1f6baaf3f078">testDeserialization</a> ()</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    {</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        testcase (<span class="stringliteral">&quot;Deserialization&quot;</span>);</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        constexpr <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> payload1[] =</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        {</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="classripple_1_1STValidation__test.html#a750daca99f40c4ae18db1f6baaf3f078">   38</a></span>&#160;    <a class="code" href="classripple_1_1STValidation__test.html#a750daca99f40c4ae18db1f6baaf3f078">testDeserialization</a>()</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    {</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        testcase(<span class="stringliteral">&quot;Deserialization&quot;</span>);</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        constexpr <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> payload1[] = {</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            <span class="comment">// specifies an Ed25519 public key.</span></div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;            0x22, 0x00, 0x00, 0x00, 0x00, 0x29, 0x00, 0x00, 0x00, 0x00, 0x51,</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2a, 0x73,</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            0x21, 0xed, 0x78, 0x00, 0xe6, 0x73, 0x00, 0x72, 0x00, 0x3c, 0x00,</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;            0x00, 0x00, 0x88, 0x00, 0xe6, 0x73, 0x38, 0x00, 0x00, 0x8a, 0x00,</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            0x88, 0x4e, 0x31, 0x30, 0x5f, 0x5f, 0x63, 0x78, 0x78, 0x61, 0x62,</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;            0x69</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        };</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        constexpr <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> payload2[] =</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        {</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;            0x22, 0x00, 0x00, 0x00, 0x00, 0x29, 0x00, 0x00, 0x00, 0x00, 0x51,</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2a, 0x73,</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            0x21, 0xed, 0xff, 0x03, 0x1c, 0xbe, 0x65, 0x22, 0x61, 0x9c, 0x5e,</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            0x13, 0x12, 0x00, 0x3b, 0x43, 0x00, 0x00, 0x00, 0xf7, 0x3f, 0x3f,</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x13, 0x13, 0x13, 0x3a, 0x27,</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            0xff</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        };</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        constexpr <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> payload3[] =</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        {</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            <span class="comment">// Has no public key at all</span></div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            0x22, 0x00, 0x00, 0x00, 0x00, 0x29, 0x00, 0x00, 0x00, 0x00, 0x51,</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2a</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        };</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        {</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <a class="code" href="classripple_1_1SerialIter.html">SerialIter</a> sit {payload1};</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            <span class="keyword">auto</span> stx = std::make_shared&lt;ripple::STValidation&gt;(sit,</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;                [](<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; pk) {</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;                    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">calcNodeID</a>(pk);</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;                }, <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            fail(<span class="stringliteral">&quot;An exception should have been thrown&quot;</span>);</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        }</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; e)</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        {</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            BEAST_EXPECT(strcmp(e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>(),</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                <span class="stringliteral">&quot;Invalid public key in validation&quot;</span>) == 0);</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        }</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;            0x22, 0x00, 0x00, 0x00, 0x00, 0x29, 0x00, 0x00, 0x00, 0x00,</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            0x51, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            0x00, 0x00, 0x2a, 0x73, 0x21, 0xed, 0x78, 0x00, 0xe6, 0x73,</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;            0x00, 0x72, 0x00, 0x3c, 0x00, 0x00, 0x00, 0x88, 0x00, 0xe6,</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            0x73, 0x38, 0x00, 0x00, 0x8a, 0x00, 0x88, 0x4e, 0x31, 0x30,</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;            0x5f, 0x5f, 0x63, 0x78, 0x78, 0x61, 0x62, 0x69};</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        constexpr <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> payload2[] = {</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;            0x22, 0x00, 0x00, 0x00, 0x00, 0x29, 0x00, 0x00, 0x00, 0x00,</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            0x51, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            0x00, 0x00, 0x2a, 0x73, 0x21, 0xed, 0xff, 0x03, 0x1c, 0xbe,</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;            0x65, 0x22, 0x61, 0x9c, 0x5e, 0x13, 0x12, 0x00, 0x3b, 0x43,</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            0x00, 0x00, 0x00, 0xf7, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f,</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            0x3f, 0x3f, 0x13, 0x13, 0x13, 0x3a, 0x27, 0xff};</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        constexpr <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> payload3[] = {</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            <span class="comment">// Has no public key at all</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            0x22, 0x00, 0x00, 0x00, 0x00, 0x29, 0x00, 0x00, 0x00, 0x00, 0x51,</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2a};</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        {</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            <a class="code" href="classripple_1_1SerialIter.html">SerialIter</a> sit{payload1};</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            <span class="keyword">auto</span> stx = std::make_shared&lt;ripple::STValidation&gt;(</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                sit, [](<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; pk) { <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">calcNodeID</a>(pk); }, <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            fail(<span class="stringliteral">&quot;An exception should have been thrown&quot;</span>);</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        }</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; e)</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        {</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;                strcmp(e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>(), <span class="stringliteral">&quot;Invalid public key in validation&quot;</span>) == 0);</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        }</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        {</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            <a class="code" href="classripple_1_1SerialIter.html">SerialIter</a> sit{payload2};</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            <span class="keyword">auto</span> stx = std::make_shared&lt;ripple::STValidation&gt;(</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                sit, [](<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; pk) { <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">calcNodeID</a>(pk); }, <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            fail(<span class="stringliteral">&quot;An exception should have been thrown&quot;</span>);</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        }</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; e)</div>
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        {</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            <a class="code" href="classripple_1_1SerialIter.html">SerialIter</a> sit {payload2};</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            <span class="keyword">auto</span> stx = std::make_shared&lt;ripple::STValidation&gt;(sit,</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                [](<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; pk) {</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">calcNodeID</a>(pk);</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                }, <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;            fail(<span class="stringliteral">&quot;An exception should have been thrown&quot;</span>);</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        }</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; e)</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        {</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            BEAST_EXPECT(strcmp(e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>(),</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;                <span class="stringliteral">&quot;Invalid public key in validation&quot;</span>) == 0);</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        }</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;        <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        {</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            <a class="code" href="classripple_1_1SerialIter.html">SerialIter</a> sit {payload3};</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;            <span class="keyword">auto</span> stx = std::make_shared&lt;ripple::STValidation&gt;(sit,</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                [](<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; pk) {</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">calcNodeID</a>(pk);</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;                }, <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            fail(<span class="stringliteral">&quot;An exception should have been thrown&quot;</span>);</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        }</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; e)</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        {</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            BEAST_EXPECT(strcmp(e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>(),</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;                <span class="stringliteral">&quot;Field &#39;SigningPubKey&#39; is required but missing.&quot;</span>) == 0);</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        }</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    }</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;                strcmp(e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>(), <span class="stringliteral">&quot;Invalid public key in validation&quot;</span>) == 0);</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        }</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        {</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;            <a class="code" href="classripple_1_1SerialIter.html">SerialIter</a> sit{payload3};</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;            <span class="keyword">auto</span> stx = std::make_shared&lt;ripple::STValidation&gt;(</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;                sit, [](<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp; pk) { <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">calcNodeID</a>(pk); }, <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            fail(<span class="stringliteral">&quot;An exception should have been thrown&quot;</span>);</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        }</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; e)</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        {</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                strcmp(</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;                    e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>(),</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                    <span class="stringliteral">&quot;Field &#39;SigningPubKey&#39; is required but missing.&quot;</span>) == 0);</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        }</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    }</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00113"></a><span class="lineno"><a class="line" href="classripple_1_1STValidation__test.html#ac5880c349963b895bc5fe83624474ec3">  113</a></span>&#160;    <a class="code" href="classripple_1_1STValidation__test.html#ac5880c349963b895bc5fe83624474ec3">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        <a class="code" href="classripple_1_1STValidation__test.html#a750daca99f40c4ae18db1f6baaf3f078">testDeserialization</a>();</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    }</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;};</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(STValidation, protocol, <a class="code" href="namespaceripple.html">ripple</a>);</div>
 <div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160; </div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00122"></a><span class="lineno"><a class="line" href="classripple_1_1STValidation__test.html#ac5880c349963b895bc5fe83624474ec3">  122</a></span>&#160;    <a class="code" href="classripple_1_1STValidation__test.html#ac5880c349963b895bc5fe83624474ec3">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;        <a class="code" href="classripple_1_1STValidation__test.html#a750daca99f40c4ae18db1f6baaf3f078">testDeserialization</a>();</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    }</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;};</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(STValidation,protocol,<a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160; </div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1STValidation__test_html_a750daca99f40c4ae18db1f6baaf3f078"><div class="ttname"><a href="classripple_1_1STValidation__test.html#a750daca99f40c4ae18db1f6baaf3f078">ripple::STValidation_test::testDeserialization</a></div><div class="ttdeci">void testDeserialization()</div><div class="ttdef"><b>Definition:</b> <a href="STValidation__test_8cpp_source.html#l00037">STValidation_test.cpp:37</a></div></div>
+<div class="ttc" id="aclassripple_1_1STValidation__test_html_a750daca99f40c4ae18db1f6baaf3f078"><div class="ttname"><a href="classripple_1_1STValidation__test.html#a750daca99f40c4ae18db1f6baaf3f078">ripple::STValidation_test::testDeserialization</a></div><div class="ttdeci">void testDeserialization()</div><div class="ttdef"><b>Definition:</b> <a href="STValidation__test_8cpp_source.html#l00038">STValidation_test.cpp:38</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a2701412a11b118c19256a4c901db2938"><div class="ttname"><a href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">ripple::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(AccountTxPaging, app, ripple)</div></div>
 <div class="ttc" id="aexception_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_html_a984ddd646f1e1a5032a9a17f96c6fc55"><div class="ttname"><a href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">ripple::calcNodeID</a></div><div class="ttdeci">NodeID calcNodeID(PublicKey const &amp;pk)</div><div class="ttdoc">Calculate the 160-bit node ID from a node public key.</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00307">PublicKey.cpp:307</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a984ddd646f1e1a5032a9a17f96c6fc55"><div class="ttname"><a href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">ripple::calcNodeID</a></div><div class="ttdeci">NodeID calcNodeID(PublicKey const &amp;pk)</div><div class="ttdoc">Calculate the 160-bit node ID from a node public key.</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8cpp_source.html#l00299">PublicKey.cpp:299</a></div></div>
 <div class="ttc" id="aclassripple_1_1STValidation__test_html"><div class="ttname"><a href="classripple_1_1STValidation__test.html">ripple::STValidation_test</a></div><div class="ttdef"><b>Definition:</b> <a href="STValidation__test_8cpp_source.html#l00034">STValidation_test.cpp:34</a></div></div>
 <div class="ttc" id="aclassripple_1_1PublicKey_html"><div class="ttname"><a href="classripple_1_1PublicKey.html">ripple::PublicKey</a></div><div class="ttdoc">A public key.</div><div class="ttdef"><b>Definition:</b> <a href="PublicKey_8h_source.html#l00059">PublicKey.h:59</a></div></div>
-<div class="ttc" id="aclassripple_1_1SerialIter_html"><div class="ttname"><a href="classripple_1_1SerialIter.html">ripple::SerialIter</a></div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8h_source.html#l00311">Serializer.h:311</a></div></div>
+<div class="ttc" id="aclassripple_1_1SerialIter_html"><div class="ttname"><a href="classripple_1_1SerialIter.html">ripple::SerialIter</a></div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8h_source.html#l00368">Serializer.h:368</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a></div></div>
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1STValidation__test_html_ac5880c349963b895bc5fe83624474ec3"><div class="ttname"><a href="classripple_1_1STValidation__test.html#ac5880c349963b895bc5fe83624474ec3">ripple::STValidation_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="STValidation__test_8cpp_source.html#l00122">STValidation_test.cpp:122</a></div></div>
+<div class="ttc" id="aclassripple_1_1STValidation__test_html_ac5880c349963b895bc5fe83624474ec3"><div class="ttname"><a href="classripple_1_1STValidation__test.html#ac5880c349963b895bc5fe83624474ec3">ripple::STValidation_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="STValidation__test_8cpp_source.html#l00113">STValidation_test.cpp:113</a></div></div>
 <div class="ttc" id="atype_traits_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/type_traits.html">type_traits</a></div></div>
 <div class="ttc" id="awhat_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/exception/what.html">std::exception::what</a></div><div class="ttdeci">T what(T... args)</div></div>
 <!-- start footer part -->

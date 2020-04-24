@@ -91,35 +91,34 @@ $(function() {
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_TEST_JTX_TRUST_H_INCLUDED</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_TEST_JTX_TRUST_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;test/jtx/Account.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/json/json_value.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STAmount.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/json/json_value.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STAmount.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;test/jtx/Account.h&gt;</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span>test {</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span>jtx {</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47cac3a8bfbc8c14ae8da735ec52ebbf">trust</a> (Account <span class="keyword">const</span>&amp; account,</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    STAmount <span class="keyword">const</span>&amp; amount,</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;       <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> flags=0);</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47cac3a8bfbc8c14ae8da735ec52ebbf">trust</a> (Account <span class="keyword">const</span>&amp; account,</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    STAmount <span class="keyword">const</span>&amp; amount,</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    Account <span class="keyword">const</span>&amp; peer,</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> flags);</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;} <span class="comment">// jtx</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;} <span class="comment">// test</span></div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;} <span class="comment">// ripple</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47cac3a8bfbc8c14ae8da735ec52ebbf">trust</a>(Account <span class="keyword">const</span>&amp; account, STAmount <span class="keyword">const</span>&amp; amount, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> flags = 0);</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47cac3a8bfbc8c14ae8da735ec52ebbf">trust</a>(</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    Account <span class="keyword">const</span>&amp; account,</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    STAmount <span class="keyword">const</span>&amp; amount,</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    Account <span class="keyword">const</span>&amp; peer,</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> flags);</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;}  <span class="comment">// namespace jtx</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a47cac3a8bfbc8c14ae8da735ec52ebbf"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a47cac3a8bfbc8c14ae8da735ec52ebbf">ripple::test::jtx::trust</a></div><div class="ttdeci">Json::Value trust(Account const &amp;account, STAmount const &amp;amount, std::uint32_t flags)</div><div class="ttdoc">Modify a trust line.</div><div class="ttdef"><b>Definition:</b> <a href="trust_8cpp_source.html#l00030">trust.cpp:30</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00141">json_value.h:141</a></div></div>
+<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00145">json_value.h:145</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

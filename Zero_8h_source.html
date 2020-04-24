@@ -103,117 +103,131 @@ $(function() {
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;}</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00053"></a><span class="lineno"><a class="line" href="namespacebeast.html#a97b6ffb69c2fee9618482fad04b94bb0">   53</a></span>&#160;<span class="keyword">auto</span> <a class="code" href="namespacebeast.html#a97b6ffb69c2fee9618482fad04b94bb0">signum</a>(T <span class="keyword">const</span>&amp; t)</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;{</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordflow">return</span> t.signum();</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;}</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="keyword">namespace </span>detail {</div>
-<div class="line"><a name="l00059"></a><span class="lineno"><a class="line" href="namespacebeast_1_1detail_1_1zero__helper.html">   59</a></span>&#160;<span class="keyword">namespace </span>zero_helper {</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="comment">// For argument dependent lookup to function properly, calls to signum must</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="comment">// be made from a namespace that does not include overloads of the function..</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
-<div class="line"><a name="l00064"></a><span class="lineno"><a class="line" href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">   64</a></span>&#160;<span class="keyword">auto</span> <a class="code" href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">call_signum</a>(T <span class="keyword">const</span>&amp; t)</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;{</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast.html#a97b6ffb69c2fee9618482fad04b94bb0">signum</a>(t);</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;}</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;} <span class="comment">// zero_helper</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;} <span class="comment">// detail</span></div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="comment">// Handle operators where T is on the left side using signum.</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="keyword">auto</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno"><a class="line" href="namespacebeast.html#a97b6ffb69c2fee9618482fad04b94bb0">   54</a></span>&#160;<a class="code" href="namespacebeast.html#a97b6ffb69c2fee9618482fad04b94bb0">signum</a>(T <span class="keyword">const</span>&amp; t)</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;{</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keywordflow">return</span> t.signum();</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;}</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keyword">namespace </span>detail {</div>
+<div class="line"><a name="l00060"></a><span class="lineno"><a class="line" href="namespacebeast_1_1detail_1_1zero__helper.html">   60</a></span>&#160;<span class="keyword">namespace </span>zero_helper {</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="comment">// For argument dependent lookup to function properly, calls to signum must</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="comment">// be made from a namespace that does not include overloads of the function..</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="keyword">auto</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno"><a class="line" href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">   66</a></span>&#160;<a class="code" href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">call_signum</a>(T <span class="keyword">const</span>&amp; t)</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;{</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast.html#a97b6ffb69c2fee9618482fad04b94bb0">signum</a>(t);</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;}</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;}  <span class="comment">// namespace zero_helper</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;}  <span class="comment">// namespace detail</span></div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00075"></a><span class="lineno"><a class="line" href="namespacebeast.html#aa95a5383433c68249f6a7bb2d78c550d">   75</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespacebeast.html#abe39345843815f6a125b8679bf0896f6">operator==</a>(T <span class="keyword">const</span>&amp; t, <a class="code" href="structbeast_1_1Zero.html">Zero</a>)</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;{</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">detail::zero_helper::call_signum</a>(t) == 0;</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;}</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00081"></a><span class="lineno"><a class="line" href="namespacebeast.html#ac8d690b97ecc4d35d08a112a0beb5f37">   81</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespacebeast.html#abf1fc3e5efef3302b3037704024a2cce">operator!=</a>(T <span class="keyword">const</span>&amp; t, <a class="code" href="structbeast_1_1Zero.html">Zero</a>)</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;{</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">detail::zero_helper::call_signum</a>(t) != 0;</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;}</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00087"></a><span class="lineno"><a class="line" href="namespacebeast.html#a0c712d6f6425319a04765ddbb5eb137d">   87</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespacebeast.html#abe13cdac8dc5b49ebcc089c4519f1cab">operator&lt;</a>(T <span class="keyword">const</span>&amp; t, <a class="code" href="structbeast_1_1Zero.html">Zero</a>)</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;{</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">detail::zero_helper::call_signum</a>(t) &lt; 0;</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;}</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00093"></a><span class="lineno"><a class="line" href="namespacebeast.html#a9ba93dcefadc25808f59183cd781b2ec">   93</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespacebeast.html#a5be32b6206719809af31bd797acf98da">operator&gt;</a>(T <span class="keyword">const</span>&amp; t, <a class="code" href="structbeast_1_1Zero.html">Zero</a>)</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;{</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">detail::zero_helper::call_signum</a>(t) &gt; 0;</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;}</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00099"></a><span class="lineno"><a class="line" href="namespacebeast.html#afd0a55ab7fb1dec42d3c37de3896382c">   99</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespacebeast.html#a1fc3fed57bea615111c82799724f9581">operator&gt;=</a>(T <span class="keyword">const</span>&amp; t, <a class="code" href="structbeast_1_1Zero.html">Zero</a>)</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="comment">// Handle operators where T is on the left side using signum.</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00078"></a><span class="lineno"><a class="line" href="namespacebeast.html#aa95a5383433c68249f6a7bb2d78c550d">   78</a></span>&#160;<a class="code" href="namespacebeast.html#abe39345843815f6a125b8679bf0896f6">operator==</a>(T <span class="keyword">const</span>&amp; t, <a class="code" href="structbeast_1_1Zero.html">Zero</a>)</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;{</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">detail::zero_helper::call_signum</a>(t) == 0;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;}</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00085"></a><span class="lineno"><a class="line" href="namespacebeast.html#ac8d690b97ecc4d35d08a112a0beb5f37">   85</a></span>&#160;<a class="code" href="namespacebeast.html#abf1fc3e5efef3302b3037704024a2cce">operator!=</a>(T <span class="keyword">const</span>&amp; t, <a class="code" href="structbeast_1_1Zero.html">Zero</a>)</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;{</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">detail::zero_helper::call_signum</a>(t) != 0;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;}</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00092"></a><span class="lineno"><a class="line" href="namespacebeast.html#a0c712d6f6425319a04765ddbb5eb137d">   92</a></span>&#160;<a class="code" href="namespacebeast.html#abe13cdac8dc5b49ebcc089c4519f1cab">operator&lt;</a>(T <span class="keyword">const</span>&amp; t, <a class="code" href="structbeast_1_1Zero.html">Zero</a>)</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;{</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">detail::zero_helper::call_signum</a>(t) &lt; 0;</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;}</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160; </div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00099"></a><span class="lineno"><a class="line" href="namespacebeast.html#a9ba93dcefadc25808f59183cd781b2ec">   99</a></span>&#160;<a class="code" href="namespacebeast.html#a5be32b6206719809af31bd797acf98da">operator&gt;</a>(T <span class="keyword">const</span>&amp; t, <a class="code" href="structbeast_1_1Zero.html">Zero</a>)</div>
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;{</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">detail::zero_helper::call_signum</a>(t) &gt;= 0;</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">detail::zero_helper::call_signum</a>(t) &gt; 0;</div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;}</div>
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00105"></a><span class="lineno"><a class="line" href="namespacebeast.html#a0a32c49e1d36a7d9c234ffb123cf43d7">  105</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespacebeast.html#a16d9c6d7573e0efbd63c1db2bf8116d7">operator&lt;=</a>(T <span class="keyword">const</span>&amp; t, <a class="code" href="structbeast_1_1Zero.html">Zero</a>)</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;{</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">detail::zero_helper::call_signum</a>(t) &lt;= 0;</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;}</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;<span class="comment">// Handle operators where T is on the right side by</span></div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;<span class="comment">// reversing the operation, so that T is on the left side.</span></div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160; </div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00114"></a><span class="lineno"><a class="line" href="namespacebeast.html#a3dc33f77bd143fb4390ced7bdb3ab085">  114</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespacebeast.html#abe39345843815f6a125b8679bf0896f6">operator==</a>(<a class="code" href="structbeast_1_1Zero.html">Zero</a>, T <span class="keyword">const</span>&amp; t)</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;{</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <span class="keywordflow">return</span> t == zero;</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;}</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00120"></a><span class="lineno"><a class="line" href="namespacebeast.html#ab5bb4d50eed31f506d671967185ce28b">  120</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespacebeast.html#abf1fc3e5efef3302b3037704024a2cce">operator!=</a>(<a class="code" href="structbeast_1_1Zero.html">Zero</a>, T <span class="keyword">const</span>&amp; t)</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;{</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="keywordflow">return</span> t != zero;</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;}</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00126"></a><span class="lineno"><a class="line" href="namespacebeast.html#a8966fd803ac53925e5031f645c4225c2">  126</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespacebeast.html#abe13cdac8dc5b49ebcc089c4519f1cab">operator&lt;</a>(<a class="code" href="structbeast_1_1Zero.html">Zero</a>, T <span class="keyword">const</span>&amp; t)</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;{</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <span class="keywordflow">return</span> t &gt; zero;</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;}</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160; </div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00132"></a><span class="lineno"><a class="line" href="namespacebeast.html#a4c1b6b2d453bbcb1c0461e6771a53f7f">  132</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespacebeast.html#a5be32b6206719809af31bd797acf98da">operator&gt;</a>(<a class="code" href="structbeast_1_1Zero.html">Zero</a>, T <span class="keyword">const</span>&amp; t)</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;{</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <span class="keywordflow">return</span> t &lt; zero;</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;}</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160; </div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00138"></a><span class="lineno"><a class="line" href="namespacebeast.html#abae13f7503de775139b9675378eb1218">  138</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespacebeast.html#a1fc3fed57bea615111c82799724f9581">operator&gt;=</a>(<a class="code" href="structbeast_1_1Zero.html">Zero</a>, T <span class="keyword">const</span>&amp; t)</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;{</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <span class="keywordflow">return</span> t &lt;= zero;</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;}</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160; </div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00144"></a><span class="lineno"><a class="line" href="namespacebeast.html#ade9b72fce81f819b2ca16edc9de26639">  144</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespacebeast.html#a16d9c6d7573e0efbd63c1db2bf8116d7">operator&lt;=</a>(<a class="code" href="structbeast_1_1Zero.html">Zero</a>, T <span class="keyword">const</span>&amp; t)</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00106"></a><span class="lineno"><a class="line" href="namespacebeast.html#afd0a55ab7fb1dec42d3c37de3896382c">  106</a></span>&#160;<a class="code" href="namespacebeast.html#a1fc3fed57bea615111c82799724f9581">operator&gt;=</a>(T <span class="keyword">const</span>&amp; t, <a class="code" href="structbeast_1_1Zero.html">Zero</a>)</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;{</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">detail::zero_helper::call_signum</a>(t) &gt;= 0;</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;}</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160; </div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00113"></a><span class="lineno"><a class="line" href="namespacebeast.html#a0a32c49e1d36a7d9c234ffb123cf43d7">  113</a></span>&#160;<a class="code" href="namespacebeast.html#a16d9c6d7573e0efbd63c1db2bf8116d7">operator&lt;=</a>(T <span class="keyword">const</span>&amp; t, <a class="code" href="structbeast_1_1Zero.html">Zero</a>)</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;{</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">detail::zero_helper::call_signum</a>(t) &lt;= 0;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;}</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160; </div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;<span class="comment">// Handle operators where T is on the right side by</span></div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;<span class="comment">// reversing the operation, so that T is on the left side.</span></div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160; </div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00123"></a><span class="lineno"><a class="line" href="namespacebeast.html#a3dc33f77bd143fb4390ced7bdb3ab085">  123</a></span>&#160;<a class="code" href="namespacebeast.html#abe39345843815f6a125b8679bf0896f6">operator==</a>(<a class="code" href="structbeast_1_1Zero.html">Zero</a>, T <span class="keyword">const</span>&amp; t)</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;{</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <span class="keywordflow">return</span> t == zero;</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;}</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00130"></a><span class="lineno"><a class="line" href="namespacebeast.html#ab5bb4d50eed31f506d671967185ce28b">  130</a></span>&#160;<a class="code" href="namespacebeast.html#abf1fc3e5efef3302b3037704024a2cce">operator!=</a>(<a class="code" href="structbeast_1_1Zero.html">Zero</a>, T <span class="keyword">const</span>&amp; t)</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;{</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    <span class="keywordflow">return</span> t != zero;</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;}</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160; </div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00137"></a><span class="lineno"><a class="line" href="namespacebeast.html#a8966fd803ac53925e5031f645c4225c2">  137</a></span>&#160;<a class="code" href="namespacebeast.html#abe13cdac8dc5b49ebcc089c4519f1cab">operator&lt;</a>(<a class="code" href="structbeast_1_1Zero.html">Zero</a>, T <span class="keyword">const</span>&amp; t)</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;{</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    <span class="keywordflow">return</span> t &gt; zero;</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;}</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160; </div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00144"></a><span class="lineno"><a class="line" href="namespacebeast.html#a4c1b6b2d453bbcb1c0461e6771a53f7f">  144</a></span>&#160;<a class="code" href="namespacebeast.html#a5be32b6206719809af31bd797acf98da">operator&gt;</a>(<a class="code" href="structbeast_1_1Zero.html">Zero</a>, T <span class="keyword">const</span>&amp; t)</div>
 <div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;{</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    <span class="keywordflow">return</span> t &gt;= zero;</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    <span class="keywordflow">return</span> t &lt; zero;</div>
 <div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;}</div>
 <div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160; </div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;} <span class="comment">// beast</span></div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160; </div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00151"></a><span class="lineno"><a class="line" href="namespacebeast.html#abae13f7503de775139b9675378eb1218">  151</a></span>&#160;<a class="code" href="namespacebeast.html#a1fc3fed57bea615111c82799724f9581">operator&gt;=</a>(<a class="code" href="structbeast_1_1Zero.html">Zero</a>, T <span class="keyword">const</span>&amp; t)</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;{</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;    <span class="keywordflow">return</span> t &lt;= zero;</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;}</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160; </div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00158"></a><span class="lineno"><a class="line" href="namespacebeast.html#ade9b72fce81f819b2ca16edc9de26639">  158</a></span>&#160;<a class="code" href="namespacebeast.html#a16d9c6d7573e0efbd63c1db2bf8116d7">operator&lt;=</a>(<a class="code" href="structbeast_1_1Zero.html">Zero</a>, T <span class="keyword">const</span>&amp; t)</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;{</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    <span class="keywordflow">return</span> t &gt;= zero;</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;}</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160; </div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;}  <span class="comment">// namespace beast</span></div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160; </div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="anamespacebeast_html_a97b6ffb69c2fee9618482fad04b94bb0"><div class="ttname"><a href="namespacebeast.html#a97b6ffb69c2fee9618482fad04b94bb0">beast::signum</a></div><div class="ttdeci">auto signum(T const &amp;t)</div><div class="ttdoc">Default implementation of signum calls the method on the class.</div><div class="ttdef"><b>Definition:</b> <a href="Zero_8h_source.html#l00053">Zero.h:53</a></div></div>
-<div class="ttc" id="anamespacebeast_html_abe39345843815f6a125b8679bf0896f6"><div class="ttname"><a href="namespacebeast.html#abe39345843815f6a125b8679bf0896f6">beast::operator==</a></div><div class="ttdeci">bool operator==(LockFreeStackIterator&lt; Container, LhsIsConst &gt; const &amp;lhs, LockFreeStackIterator&lt; Container, RhsIsConst &gt; const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="LockFreeStack_8h_source.html#l00115">LockFreeStack.h:115</a></div></div>
-<div class="ttc" id="anamespacebeast_html_a16d9c6d7573e0efbd63c1db2bf8116d7"><div class="ttname"><a href="namespacebeast.html#a16d9c6d7573e0efbd63c1db2bf8116d7">beast::operator&lt;=</a></div><div class="ttdeci">bool operator&lt;=(SemanticVersion const &amp;lhs, SemanticVersion const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="SemanticVersion_8h_source.html#l00094">SemanticVersion.h:94</a></div></div>
-<div class="ttc" id="anamespacebeast_html_a5be32b6206719809af31bd797acf98da"><div class="ttname"><a href="namespacebeast.html#a5be32b6206719809af31bd797acf98da">beast::operator&gt;</a></div><div class="ttdeci">bool operator&gt;(SemanticVersion const &amp;lhs, SemanticVersion const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="SemanticVersion_8h_source.html#l00100">SemanticVersion.h:100</a></div></div>
-<div class="ttc" id="anamespacebeast_html_a1fc3fed57bea615111c82799724f9581"><div class="ttname"><a href="namespacebeast.html#a1fc3fed57bea615111c82799724f9581">beast::operator&gt;=</a></div><div class="ttdeci">bool operator&gt;=(SemanticVersion const &amp;lhs, SemanticVersion const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="SemanticVersion_8h_source.html#l00088">SemanticVersion.h:88</a></div></div>
+<div class="ttc" id="anamespacebeast_html_a97b6ffb69c2fee9618482fad04b94bb0"><div class="ttname"><a href="namespacebeast.html#a97b6ffb69c2fee9618482fad04b94bb0">beast::signum</a></div><div class="ttdeci">auto signum(T const &amp;t)</div><div class="ttdoc">Default implementation of signum calls the method on the class.</div><div class="ttdef"><b>Definition:</b> <a href="Zero_8h_source.html#l00054">Zero.h:54</a></div></div>
+<div class="ttc" id="anamespacebeast_html_abe39345843815f6a125b8679bf0896f6"><div class="ttname"><a href="namespacebeast.html#abe39345843815f6a125b8679bf0896f6">beast::operator==</a></div><div class="ttdeci">bool operator==(LockFreeStackIterator&lt; Container, LhsIsConst &gt; const &amp;lhs, LockFreeStackIterator&lt; Container, RhsIsConst &gt; const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="LockFreeStack_8h_source.html#l00124">LockFreeStack.h:124</a></div></div>
+<div class="ttc" id="anamespacebeast_html_a16d9c6d7573e0efbd63c1db2bf8116d7"><div class="ttname"><a href="namespacebeast.html#a16d9c6d7573e0efbd63c1db2bf8116d7">beast::operator&lt;=</a></div><div class="ttdeci">bool operator&lt;=(SemanticVersion const &amp;lhs, SemanticVersion const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="SemanticVersion_8h_source.html#l00099">SemanticVersion.h:99</a></div></div>
+<div class="ttc" id="anamespacebeast_html_a5be32b6206719809af31bd797acf98da"><div class="ttname"><a href="namespacebeast.html#a5be32b6206719809af31bd797acf98da">beast::operator&gt;</a></div><div class="ttdeci">bool operator&gt;(SemanticVersion const &amp;lhs, SemanticVersion const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="SemanticVersion_8h_source.html#l00105">SemanticVersion.h:105</a></div></div>
+<div class="ttc" id="anamespacebeast_html_a1fc3fed57bea615111c82799724f9581"><div class="ttname"><a href="namespacebeast.html#a1fc3fed57bea615111c82799724f9581">beast::operator&gt;=</a></div><div class="ttdeci">bool operator&gt;=(SemanticVersion const &amp;lhs, SemanticVersion const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="SemanticVersion_8h_source.html#l00093">SemanticVersion.h:93</a></div></div>
 <div class="ttc" id="astructbeast_1_1Zero_html_a3b3b333a1593d7e259ede6ce244fd4bd"><div class="ttname"><a href="structbeast_1_1Zero.html#a3b3b333a1593d7e259ede6ce244fd4bd">beast::Zero::Zero</a></div><div class="ttdeci">Zero()=default</div></div>
-<div class="ttc" id="anamespacebeast_html_abf1fc3e5efef3302b3037704024a2cce"><div class="ttname"><a href="namespacebeast.html#abf1fc3e5efef3302b3037704024a2cce">beast::operator!=</a></div><div class="ttdeci">bool operator!=(LockFreeStackIterator&lt; Container, LhsIsConst &gt; const &amp;lhs, LockFreeStackIterator&lt; Container, RhsIsConst &gt; const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="LockFreeStack_8h_source.html#l00122">LockFreeStack.h:122</a></div></div>
+<div class="ttc" id="anamespacebeast_html_abf1fc3e5efef3302b3037704024a2cce"><div class="ttname"><a href="namespacebeast.html#abf1fc3e5efef3302b3037704024a2cce">beast::operator!=</a></div><div class="ttdeci">bool operator!=(LockFreeStackIterator&lt; Container, LhsIsConst &gt; const &amp;lhs, LockFreeStackIterator&lt; Container, RhsIsConst &gt; const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="LockFreeStack_8h_source.html#l00133">LockFreeStack.h:133</a></div></div>
 <div class="ttc" id="astructbeast_1_1Zero_html"><div class="ttname"><a href="structbeast_1_1Zero.html">beast::Zero</a></div><div class="ttdoc">Zero allows classes to offer efficient comparisons to zero.</div><div class="ttdef"><b>Definition:</b> <a href="Zero_8h_source.html#l00042">Zero.h:42</a></div></div>
-<div class="ttc" id="anamespacebeast_1_1detail_1_1zero__helper_html_a77d9500e66ee306c006acc03b2e025cd"><div class="ttname"><a href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">beast::detail::zero_helper::call_signum</a></div><div class="ttdeci">auto call_signum(T const &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="Zero_8h_source.html#l00064">Zero.h:64</a></div></div>
-<div class="ttc" id="anamespacebeast_html_abe13cdac8dc5b49ebcc089c4519f1cab"><div class="ttname"><a href="namespacebeast.html#abe13cdac8dc5b49ebcc089c4519f1cab">beast::operator&lt;</a></div><div class="ttdeci">bool operator&lt;(SemanticVersion const &amp;lhs, SemanticVersion const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="SemanticVersion_8h_source.html#l00106">SemanticVersion.h:106</a></div></div>
-<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00582">base_uint.h:582</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1detail_1_1zero__helper_html_a77d9500e66ee306c006acc03b2e025cd"><div class="ttname"><a href="namespacebeast_1_1detail_1_1zero__helper.html#a77d9500e66ee306c006acc03b2e025cd">beast::detail::zero_helper::call_signum</a></div><div class="ttdeci">auto call_signum(T const &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="Zero_8h_source.html#l00066">Zero.h:66</a></div></div>
+<div class="ttc" id="anamespacebeast_html_abe13cdac8dc5b49ebcc089c4519f1cab"><div class="ttname"><a href="namespacebeast.html#abe13cdac8dc5b49ebcc089c4519f1cab">beast::operator&lt;</a></div><div class="ttdeci">bool operator&lt;(SemanticVersion const &amp;lhs, SemanticVersion const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="SemanticVersion_8h_source.html#l00111">SemanticVersion.h:111</a></div></div>
+<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00646">base_uint.h:646</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

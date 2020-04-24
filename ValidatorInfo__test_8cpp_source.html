@@ -88,10 +88,10 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;test/jtx.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/unit_test.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/core/ConfigSections.h&gt;</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/jss.h&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/unit_test.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/core/ConfigSections.h&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/jss.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;test/jtx.h&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/string.html">string</a>&gt;</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/vector.html">vector</a>&gt;</span></div>
@@ -102,97 +102,113 @@ $(function() {
 <div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ValidatorInfo__test.html">   31</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1test_1_1ValidatorInfo__test.html">ValidatorInfo_test</a> : <span class="keyword">public</span> beast::unit_test::suite</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;{</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ValidatorInfo__test.html#a336bdcd3ab00f4c3879f1941807a440d">   34</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1test_1_1ValidatorInfo__test.html#a336bdcd3ab00f4c3879f1941807a440d">testErrors</a>()</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    {</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        testcase (<span class="stringliteral">&quot;Errors&quot;</span>);</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <span class="keyword">using namespace </span>jtx;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        {</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> info = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">rpc</a> (<span class="stringliteral">&quot;validator_info&quot;</span>);</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            BEAST_EXPECT(info[jss::result][jss::error_message] ==</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;                <span class="stringliteral">&quot;not a validator&quot;</span>);</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        }</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    }</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ValidatorInfo__test.html#ad58e6fa62bba4a78ee523c40a3db2658">   48</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1ValidatorInfo__test.html#ad58e6fa62bba4a78ee523c40a3db2658">testPrivileges</a>()</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    {</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a287cf5b6a71db097fe1678c88926efb4">envconfig</a>(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a587a5b3e8e1aac7c5c0c3fbc9e986410">no_admin</a>)};</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> info = env.rpc (<span class="stringliteral">&quot;validator_info&quot;</span>)[jss::result];</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        BEAST_EXPECT(info.isNull());</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    }</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ValidatorInfo__test.html#a489f136fccc98d663cb621194442c1f6">   56</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1test_1_1ValidatorInfo__test.html#a489f136fccc98d663cb621194442c1f6">testLookup</a>()</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    {</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        testcase (<span class="stringliteral">&quot;Lookup&quot;</span>);</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="keyword">using namespace </span>jtx;</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="keyword">const</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a> tokenBlob = {</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            <span class="stringliteral">&quot;    &quot;</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            <span class="stringliteral">&quot;eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT\n&quot;</span>,</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            <span class="stringliteral">&quot; \tQzODdjMDYyNTkwNzk3MmY0ZTcxOTAyMzFmYWE5Mzc0NTdmYTlkYWY2IiwibWFuaWZl &quot;</span></div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            <span class="stringliteral">&quot;    \n&quot;</span>,</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;            <span class="stringliteral">&quot;\tc3QiOiJKQUFBQUFGeEllMUZ0d21pbXZHdEgyaUNjTUpxQzlnVkZLaWxHZncxL3ZDeE&quot;</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;            <span class="stringliteral">&quot;\n&quot;</span>,</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            <span class="stringliteral">&quot;\t &quot;</span></div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            <span class="stringliteral">&quot;hYWExwbGMyR25NaEFrRTFhZ3FYeEJ3RHdEYklENk9NU1l1TTBGREFscEFnTms4U0tG\t  &quot;</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            <span class="stringliteral">&quot;\t\n&quot;</span>,</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            <span class="stringliteral">&quot;bjdNTzJmZGtjd1JRSWhBT25ndTlzQUtxWFlvdUorbDJWMFcrc0FPa1ZCK1pSUzZQU2\n&quot;</span>,</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            <span class="stringliteral">&quot;hsSkFmVXNYZkFpQnNWSkdlc2FhZE9KYy9hQVpva1MxdnltR21WcmxIUEtXWDNZeXd1\n&quot;</span>,</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            <span class="stringliteral">&quot;NmluOEhBU1FLUHVnQkQ2N2tNYVJGR3ZtcEFUSGxHS0pkdkRGbFdQWXk1QXFEZWRGdj\n&quot;</span>,</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;            <span class="stringliteral">&quot;VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ==\n&quot;</span>};</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> master_key = <span class="stringliteral">&quot;nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa&quot;</span>;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> ephemeral_key = <span class="stringliteral">&quot;n9KsDYGKhABVc4wK5u3MnVhgPinyJimyKGpr9VJYuBaY8EnJXR2x&quot;</span>;</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> <a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda7f5cb74af5d7f4b82200738fdbdc5a45">manifest</a> = <span class="stringliteral">&quot;JAAAAAFxIe1FtwmimvGtH2iCcMJqC9gVFKilGfw1/vCxHXXLplc2GnMhAkE1agqXxBwDwDbID6OMSYuM0FDAlpAgNk8SKFn7MO2fdkcwRQIhAOngu9sAKqXYouJ+l2V0W+sAOkVB+ZRS6PShlJAfUsXfAiBsVJGesaadOJc/aAZokS1vymGmVrlHPKWX3Yywu6in8HASQKPugBD67kMaRFGvmpATHlGKJdvDFlWPYy5AqDedFv5TJa2w0i21eq3MYywLVJZnFOr7C0kw2AiTzSCjIzditQ8=&quot;</span>;</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            *<span class="keyword">this</span>,</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a287cf5b6a71db097fe1678c88926efb4">envconfig</a>([&amp;tokenBlob](<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Config&gt;</a> cfg) {</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;                cfg-&gt;section(SECTION_VALIDATOR_TOKEN).append(tokenBlob);</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                <span class="keywordflow">return</span> cfg;</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            })</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        };</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        {</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> info = env.rpc (<span class="stringliteral">&quot;validator_info&quot;</span>);</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            BEAST_EXPECT(info[jss::result][jss::status] == <span class="stringliteral">&quot;success&quot;</span>);</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            BEAST_EXPECT(info[jss::result][jss::seq] == 1);</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            BEAST_EXPECT(info[jss::result][jss::master_key] == master_key);</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            BEAST_EXPECT(info[jss::result][jss::manifest] == <a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda7f5cb74af5d7f4b82200738fdbdc5a45">manifest</a>);</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            BEAST_EXPECT(info[jss::result][jss::ephemeral_key] == ephemeral_key);</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;            BEAST_EXPECT(info[jss::result][jss::domain] == <span class="stringliteral">&quot;&quot;</span>);</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        }</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    }</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
-<div class="line"><a name="l00098"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ValidatorInfo__test.html#ac6e8b8f0f29f9d11feaddf88d8320d3c">   98</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1test_1_1ValidatorInfo__test.html#ac6e8b8f0f29f9d11feaddf88d8320d3c">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <a class="code" href="classripple_1_1test_1_1ValidatorInfo__test.html#a336bdcd3ab00f4c3879f1941807a440d">testErrors</a>();</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        <a class="code" href="classripple_1_1test_1_1ValidatorInfo__test.html#ad58e6fa62bba4a78ee523c40a3db2658">testPrivileges</a>();</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        <a class="code" href="classripple_1_1test_1_1ValidatorInfo__test.html#a489f136fccc98d663cb621194442c1f6">testLookup</a>();</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    }</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;};</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">BEAST_DEFINE_TESTSUITE</a>(ValidatorInfo,rpc,<a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;}</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;}</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ValidatorInfo__test.html#a336bdcd3ab00f4c3879f1941807a440d">   35</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1ValidatorInfo__test.html#a336bdcd3ab00f4c3879f1941807a440d">testErrors</a>()</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    {</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        testcase(<span class="stringliteral">&quot;Errors&quot;</span>);</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="keyword">using namespace </span>jtx;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        {</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> info = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">rpc</a>(<span class="stringliteral">&quot;validator_info&quot;</span>);</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;                info[jss::result][jss::error_message] == <span class="stringliteral">&quot;not a validator&quot;</span>);</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        }</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    }</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ValidatorInfo__test.html#ad58e6fa62bba4a78ee523c40a3db2658">   49</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1ValidatorInfo__test.html#ad58e6fa62bba4a78ee523c40a3db2658">testPrivileges</a>()</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    {</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a287cf5b6a71db097fe1678c88926efb4">envconfig</a>(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a587a5b3e8e1aac7c5c0c3fbc9e986410">no_admin</a>)};</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> info = env.rpc(<span class="stringliteral">&quot;validator_info&quot;</span>)[jss::result];</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        BEAST_EXPECT(info.isNull());</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    }</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ValidatorInfo__test.html#a489f136fccc98d663cb621194442c1f6">   58</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1ValidatorInfo__test.html#a489f136fccc98d663cb621194442c1f6">testLookup</a>()</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    {</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        testcase(<span class="stringliteral">&quot;Lookup&quot;</span>);</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="keyword">using namespace </span>jtx;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="keyword">const</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a> tokenBlob = {</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            <span class="stringliteral">&quot;    &quot;</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            <span class="stringliteral">&quot;eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT&quot;</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;            <span class="stringliteral">&quot;\n&quot;</span>,</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;            <span class="stringliteral">&quot; \tQzODdjMDYyNTkwNzk3MmY0ZTcxOTAyMzFmYWE5Mzc0NTdmYTlkYWY2IiwibWFua&quot;</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            <span class="stringliteral">&quot;WZl &quot;</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            <span class="stringliteral">&quot;    \n&quot;</span>,</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            <span class="stringliteral">&quot;\tc3QiOiJKQUFBQUFGeEllMUZ0d21pbXZHdEgyaUNjTUpxQzlnVkZLaWxHZncxL3ZD&quot;</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            <span class="stringliteral">&quot;eE&quot;</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            <span class="stringliteral">&quot;\n&quot;</span>,</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            <span class="stringliteral">&quot;\t &quot;</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;            <span class="stringliteral">&quot;hYWExwbGMyR25NaEFrRTFhZ3FYeEJ3RHdEYklENk9NU1l1TTBGREFscEFnTms4U0tG&quot;</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            <span class="stringliteral">&quot;\t  &quot;</span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;            <span class="stringliteral">&quot;\t\n&quot;</span>,</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <span class="stringliteral">&quot;bjdNTzJmZGtjd1JRSWhBT25ndTlzQUtxWFlvdUorbDJWMFcrc0FPa1ZCK1pSUzZQU2&quot;</span></div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            <span class="stringliteral">&quot;\n&quot;</span>,</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            <span class="stringliteral">&quot;hsSkFmVXNYZkFpQnNWSkdlc2FhZE9KYy9hQVpva1MxdnltR21WcmxIUEtXWDNZeXd1&quot;</span></div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            <span class="stringliteral">&quot;\n&quot;</span>,</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            <span class="stringliteral">&quot;NmluOEhBU1FLUHVnQkQ2N2tNYVJGR3ZtcEFUSGxHS0pkdkRGbFdQWXk1QXFEZWRGdj&quot;</span></div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            <span class="stringliteral">&quot;\n&quot;</span>,</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            <span class="stringliteral">&quot;VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ==&quot;</span></div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            <span class="stringliteral">&quot;\n&quot;</span>};</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> master_key =</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;            <span class="stringliteral">&quot;nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa&quot;</span>;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> ephemeral_key =</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            <span class="stringliteral">&quot;n9KsDYGKhABVc4wK5u3MnVhgPinyJimyKGpr9VJYuBaY8EnJXR2x&quot;</span>;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> <a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda7f5cb74af5d7f4b82200738fdbdc5a45">manifest</a> =</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            <span class="stringliteral">&quot;JAAAAAFxIe1FtwmimvGtH2iCcMJqC9gVFKilGfw1/&quot;</span></div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            <span class="stringliteral">&quot;vCxHXXLplc2GnMhAkE1agqXxBwDwDbID6OMSYuM0FDAlpAgNk8SKFn7MO2fdkcwRQI&quot;</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            <span class="stringliteral">&quot;hAOngu9sAKqXYouJ+l2V0W+sAOkVB+ZRS6PShlJAfUsXfAiBsVJGesaadOJc/&quot;</span></div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;            <span class="stringliteral">&quot;aAZokS1vymGmVrlHPKWX3Yywu6in8HASQKPugBD67kMaRFGvmpATHlGKJdvDFlWPYy&quot;</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;            <span class="stringliteral">&quot;5AqDedFv5TJa2w0i21eq3MYywLVJZnFOr7C0kw2AiTzSCjIzditQ8=&quot;</span>;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160; </div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a287cf5b6a71db097fe1678c88926efb4">envconfig</a>([&amp;tokenBlob](<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Config&gt;</a> cfg) {</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;                    cfg-&gt;section(SECTION_VALIDATOR_TOKEN).append(tokenBlob);</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                    <span class="keywordflow">return</span> cfg;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;                })};</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        {</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> info = env.rpc(<span class="stringliteral">&quot;validator_info&quot;</span>);</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;            BEAST_EXPECT(info[jss::result][jss::status] == <span class="stringliteral">&quot;success&quot;</span>);</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;            BEAST_EXPECT(info[jss::result][jss::seq] == 1);</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            BEAST_EXPECT(info[jss::result][jss::master_key] == master_key);</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            BEAST_EXPECT(info[jss::result][jss::manifest] == <a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda7f5cb74af5d7f4b82200738fdbdc5a45">manifest</a>);</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                info[jss::result][jss::ephemeral_key] == ephemeral_key);</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;            BEAST_EXPECT(info[jss::result][jss::domain] == <span class="stringliteral">&quot;&quot;</span>);</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        }</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    }</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160; </div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00114"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ValidatorInfo__test.html#ac6e8b8f0f29f9d11feaddf88d8320d3c">  114</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1ValidatorInfo__test.html#ac6e8b8f0f29f9d11feaddf88d8320d3c">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        <a class="code" href="classripple_1_1test_1_1ValidatorInfo__test.html#a336bdcd3ab00f4c3879f1941807a440d">testErrors</a>();</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        <a class="code" href="classripple_1_1test_1_1ValidatorInfo__test.html#ad58e6fa62bba4a78ee523c40a3db2658">testPrivileges</a>();</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        <a class="code" href="classripple_1_1test_1_1ValidatorInfo__test.html#a489f136fccc98d663cb621194442c1f6">testLookup</a>();</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    }</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;};</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160; </div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">BEAST_DEFINE_TESTSUITE</a>(ValidatorInfo, rpc, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1test_1_1ValidatorInfo__test_html_a489f136fccc98d663cb621194442c1f6"><div class="ttname"><a href="classripple_1_1test_1_1ValidatorInfo__test.html#a489f136fccc98d663cb621194442c1f6">ripple::test::ValidatorInfo_test::testLookup</a></div><div class="ttdeci">void testLookup()</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorInfo__test_8cpp_source.html#l00056">ValidatorInfo_test.cpp:56</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1ValidatorInfo__test_html_a489f136fccc98d663cb621194442c1f6"><div class="ttname"><a href="classripple_1_1test_1_1ValidatorInfo__test.html#a489f136fccc98d663cb621194442c1f6">ripple::test::ValidatorInfo_test::testLookup</a></div><div class="ttdeci">void testLookup()</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorInfo__test_8cpp_source.html#l00058">ValidatorInfo_test.cpp:58</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1ValidatorInfo__test_html"><div class="ttname"><a href="classripple_1_1test_1_1ValidatorInfo__test.html">ripple::test::ValidatorInfo_test</a></div><div class="ttdef"><b>Definition:</b> <a href="ValidatorInfo__test_8cpp_source.html#l00031">ValidatorInfo_test.cpp:31</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_html_a52909fdbfa7f29626f24005ed12e6ef4"><div class="ttname"><a href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">ripple::test::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(AccountDelete, app, ripple)</div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_html_ad5143ceada01141772ae4aab984f94bda7f5cb74af5d7f4b82200738fdbdc5a45"><div class="ttname"><a href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda7f5cb74af5d7f4b82200738fdbdc5a45">ripple::HashPrefix::manifest</a></div><div class="ttdeci">@ manifest</div><div class="ttdoc">Manifest.</div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/vector.html">vector</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a287cf5b6a71db097fe1678c88926efb4"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a287cf5b6a71db097fe1678c88926efb4">ripple::test::jtx::envconfig</a></div><div class="ttdeci">std::unique_ptr&lt; Config &gt; envconfig()</div><div class="ttdoc">creates and initializes a default configuration for jtx::Env</div><div class="ttdef"><b>Definition:</b> <a href="envconfig_8h_source.html#l00052">envconfig.h:52</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a587a5b3e8e1aac7c5c0c3fbc9e986410"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a587a5b3e8e1aac7c5c0c3fbc9e986410">ripple::test::jtx::no_admin</a></div><div class="ttdeci">std::unique_ptr&lt; Config &gt; no_admin(std::unique_ptr&lt; Config &gt;)</div><div class="ttdoc">adjust config so no admin ports are enabled</div><div class="ttdef"><b>Definition:</b> <a href="envconfig_8cpp_source.html#l00069">envconfig.cpp:69</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1ValidatorInfo__test_html_ad58e6fa62bba4a78ee523c40a3db2658"><div class="ttname"><a href="classripple_1_1test_1_1ValidatorInfo__test.html#ad58e6fa62bba4a78ee523c40a3db2658">ripple::test::ValidatorInfo_test::testPrivileges</a></div><div class="ttdeci">void testPrivileges()</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorInfo__test_8cpp_source.html#l00048">ValidatorInfo_test.cpp:48</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1ValidatorInfo__test_html_ac6e8b8f0f29f9d11feaddf88d8320d3c"><div class="ttname"><a href="classripple_1_1test_1_1ValidatorInfo__test.html#ac6e8b8f0f29f9d11feaddf88d8320d3c">ripple::test::ValidatorInfo_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorInfo__test_8cpp_source.html#l00098">ValidatorInfo_test.cpp:98</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a287cf5b6a71db097fe1678c88926efb4"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a287cf5b6a71db097fe1678c88926efb4">ripple::test::jtx::envconfig</a></div><div class="ttdeci">std::unique_ptr&lt; Config &gt; envconfig()</div><div class="ttdoc">creates and initializes a default configuration for jtx::Env</div><div class="ttdef"><b>Definition:</b> <a href="envconfig_8h_source.html#l00049">envconfig.h:49</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a587a5b3e8e1aac7c5c0c3fbc9e986410"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a587a5b3e8e1aac7c5c0c3fbc9e986410">ripple::test::jtx::no_admin</a></div><div class="ttdeci">std::unique_ptr&lt; Config &gt; no_admin(std::unique_ptr&lt; Config &gt;)</div><div class="ttdoc">adjust config so no admin ports are enabled</div><div class="ttdef"><b>Definition:</b> <a href="envconfig_8cpp_source.html#l00070">envconfig.cpp:70</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1ValidatorInfo__test_html_ad58e6fa62bba4a78ee523c40a3db2658"><div class="ttname"><a href="classripple_1_1test_1_1ValidatorInfo__test.html#ad58e6fa62bba4a78ee523c40a3db2658">ripple::test::ValidatorInfo_test::testPrivileges</a></div><div class="ttdeci">void testPrivileges()</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorInfo__test_8cpp_source.html#l00049">ValidatorInfo_test.cpp:49</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1ValidatorInfo__test_html_ac6e8b8f0f29f9d11feaddf88d8320d3c"><div class="ttname"><a href="classripple_1_1test_1_1ValidatorInfo__test.html#ac6e8b8f0f29f9d11feaddf88d8320d3c">ripple::test::ValidatorInfo_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorInfo__test_8cpp_source.html#l00114">ValidatorInfo_test.cpp:114</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00117">Env.h:117</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1ValidatorInfo__test_html_a336bdcd3ab00f4c3879f1941807a440d"><div class="ttname"><a href="classripple_1_1test_1_1ValidatorInfo__test.html#a336bdcd3ab00f4c3879f1941807a440d">ripple::test::ValidatorInfo_test::testErrors</a></div><div class="ttdeci">void testErrors()</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorInfo__test_8cpp_source.html#l00034">ValidatorInfo_test.cpp:34</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_a0f3a59ffc07ea469d2999d1ae0aeea77"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">ripple::test::jtx::Env::rpc</a></div><div class="ttdeci">Json::Value rpc(std::unordered_map&lt; std::string, std::string &gt; const &amp;headers, std::string const &amp;cmd, Args &amp;&amp;... args)</div><div class="ttdoc">Execute an RPC command.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00688">Env.h:688</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00114">Env.h:114</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1ValidatorInfo__test_html_a336bdcd3ab00f4c3879f1941807a440d"><div class="ttname"><a href="classripple_1_1test_1_1ValidatorInfo__test.html#a336bdcd3ab00f4c3879f1941807a440d">ripple::test::ValidatorInfo_test::testErrors</a></div><div class="ttdeci">void testErrors()</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorInfo__test_8cpp_source.html#l00035">ValidatorInfo_test.cpp:35</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_a0f3a59ffc07ea469d2999d1ae0aeea77"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">ripple::test::jtx::Env::rpc</a></div><div class="ttdeci">Json::Value rpc(std::unordered_map&lt; std::string, std::string &gt; const &amp;headers, std::string const &amp;cmd, Args &amp;&amp;... args)</div><div class="ttdoc">Execute an RPC command.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00676">Env.h:676</a></div></div>
 <div class="ttc" id="astring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/string.html">string</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

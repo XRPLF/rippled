@@ -99,9 +99,9 @@ Collaboration diagram for ripple::Job:</div>
 Public Types</h2></td></tr>
 <tr class="memitem:ac6767f9553105ee2dfcc6cc34c7b5daa"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#ac6767f9553105ee2dfcc6cc34c7b5daa">clock_type</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a></td></tr>
 <tr class="separator:ac6767f9553105ee2dfcc6cc34c7b5daa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a371f6debefab820a39f0986a67dd95f7"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#a371f6debefab820a39f0986a67dd95f7">CancelCallback</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(void)&gt;</td></tr>
-<tr class="memdesc:a371f6debefab820a39f0986a67dd95f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">A callback used to check for canceling a job.  <a href="classripple_1_1Job.html#a371f6debefab820a39f0986a67dd95f7">More...</a><br /></td></tr>
-<tr class="separator:a371f6debefab820a39f0986a67dd95f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab19c41a13335dadf210f50223268856d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#ab19c41a13335dadf210f50223268856d">CancelCallback</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(void)&gt;</td></tr>
+<tr class="memdesc:ab19c41a13335dadf210f50223268856d"><td class="mdescLeft">&#160;</td><td class="mdescRight">A callback used to check for canceling a job.  <a href="classripple_1_1Job.html#ab19c41a13335dadf210f50223268856d">More...</a><br /></td></tr>
+<tr class="separator:ab19c41a13335dadf210f50223268856d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -110,11 +110,11 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a51dd106c62fbd7c1defeae50a851c436"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5ad7f4044aeec6d0c465bfb5a34fc224"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#a5ad7f4044aeec6d0c465bfb5a34fc224">Job</a> (<a class="el" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17a">JobType</a> type, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> index)</td></tr>
 <tr class="separator:a5ad7f4044aeec6d0c465bfb5a34fc224"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae433fd14ea7070ee7a3f109c687f98ae"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#ae433fd14ea7070ee7a3f109c687f98ae">Job</a> (<a class="el" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17a">JobType</a> type, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> index, <a class="el" href="classripple_1_1LoadMonitor.html">LoadMonitor</a> &amp;lm, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="el" href="classripple_1_1Job.html">Job</a> &amp;)&gt; const &amp;job, <a class="el" href="classripple_1_1Job.html#a371f6debefab820a39f0986a67dd95f7">CancelCallback</a> cancelCallback)</td></tr>
+<tr class="memitem:ae433fd14ea7070ee7a3f109c687f98ae"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#ae433fd14ea7070ee7a3f109c687f98ae">Job</a> (<a class="el" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17a">JobType</a> type, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> index, <a class="el" href="classripple_1_1LoadMonitor.html">LoadMonitor</a> &amp;lm, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="el" href="classripple_1_1Job.html">Job</a> &amp;)&gt; const &amp;job, <a class="el" href="classripple_1_1Job.html#ab19c41a13335dadf210f50223268856d">CancelCallback</a> cancelCallback)</td></tr>
 <tr class="separator:ae433fd14ea7070ee7a3f109c687f98ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed16ceadce11b29303c62582c0ecf44c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17a">JobType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#aed16ceadce11b29303c62582c0ecf44c">getType</a> () const</td></tr>
 <tr class="separator:aed16ceadce11b29303c62582c0ecf44c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a3d9c407f87d7254c767ff87845cc85"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Job.html#a371f6debefab820a39f0986a67dd95f7">CancelCallback</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#a0a3d9c407f87d7254c767ff87845cc85">getCancelCallback</a> () const</td></tr>
+<tr class="memitem:a0a3d9c407f87d7254c767ff87845cc85"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Job.html#ab19c41a13335dadf210f50223268856d">CancelCallback</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#a0a3d9c407f87d7254c767ff87845cc85">getCancelCallback</a> () const</td></tr>
 <tr class="separator:a0a3d9c407f87d7254c767ff87845cc85"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a789f77c51f558ff1373dbef8d206dfa6"><td class="memItemLeft" align="right" valign="top">clock_type::time_point const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#a789f77c51f558ff1373dbef8d206dfa6">queue_time</a> () const</td></tr>
 <tr class="memdesc:a789f77c51f558ff1373dbef8d206dfa6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the time when the job was queued.  <a href="classripple_1_1Job.html#a789f77c51f558ff1373dbef8d206dfa6">More...</a><br /></td></tr>
@@ -137,14 +137,14 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:aa4d0550b3eb5f25b5ca898ee709f0b36"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Job.html#a371f6debefab820a39f0986a67dd95f7">CancelCallback</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#aa4d0550b3eb5f25b5ca898ee709f0b36">m_cancelCallback</a></td></tr>
+<tr class="memitem:aa4d0550b3eb5f25b5ca898ee709f0b36"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Job.html#ab19c41a13335dadf210f50223268856d">CancelCallback</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#aa4d0550b3eb5f25b5ca898ee709f0b36">m_cancelCallback</a></td></tr>
 <tr class="separator:aa4d0550b3eb5f25b5ca898ee709f0b36"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aba9b6441ec53d750edc217c2ed81de25"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17a">JobType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#aba9b6441ec53d750edc217c2ed81de25">mType</a></td></tr>
 <tr class="separator:aba9b6441ec53d750edc217c2ed81de25"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5cb078a89e99aaa369dc9c27d9b40929"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#a5cb078a89e99aaa369dc9c27d9b40929">mJobIndex</a></td></tr>
 <tr class="separator:a5cb078a89e99aaa369dc9c27d9b40929"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a33b8fba4c550738ababe540afda80642"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="el" href="classripple_1_1Job.html">Job</a> &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#a33b8fba4c550738ababe540afda80642">mJob</a></td></tr>
-<tr class="separator:a33b8fba4c550738ababe540afda80642"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af9b541a8e225e74a4a7a5e91bbef3009"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="el" href="classripple_1_1Job.html">Job</a> &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#af9b541a8e225e74a4a7a5e91bbef3009">mJob</a></td></tr>
+<tr class="separator:af9b541a8e225e74a4a7a5e91bbef3009"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f5d5836f9144278d4add4951605b8dc"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1LoadEvent.html">LoadEvent</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#a1f5d5836f9144278d4add4951605b8dc">m_loadEvent</a></td></tr>
 <tr class="separator:a1f5d5836f9144278d4add4951605b8dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a015e98a2158b6fcdb707983edd2082"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Job.html#a0a015e98a2158b6fcdb707983edd2082">mName</a></td></tr>
@@ -154,7 +154,7 @@ Private Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00083">83</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00082">82</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="ac6767f9553105ee2dfcc6cc34c7b5daa"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac6767f9553105ee2dfcc6cc34c7b5daa">&#9670;&nbsp;</a></span>clock_type</h2>
@@ -168,25 +168,25 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00086">86</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00085">85</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
 
 </div>
 </div>
-<a id="a371f6debefab820a39f0986a67dd95f7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a371f6debefab820a39f0986a67dd95f7">&#9670;&nbsp;</a></span>CancelCallback</h2>
+<a id="ab19c41a13335dadf210f50223268856d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab19c41a13335dadf210f50223268856d">&#9670;&nbsp;</a></span>CancelCallback</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1Job.html#a371f6debefab820a39f0986a67dd95f7">ripple::Job::CancelCallback</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a> &lt;bool(void)&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1Job.html#ab19c41a13335dadf210f50223268856d">ripple::Job::CancelCallback</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;bool(void)&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>A callback used to check for canceling a job. </p>
 
-<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00106">106</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00105">105</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
 
 </div>
 </div>
@@ -240,7 +240,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00032">32</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00030">30</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
 
 </div>
 </div>
@@ -283,7 +283,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Job.html#a371f6debefab820a39f0986a67dd95f7">CancelCallback</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Job.html#ab19c41a13335dadf210f50223268856d">CancelCallback</a>&#160;</td>
           <td class="paramname"><em>cancelCallback</em>&#160;</td>
         </tr>
         <tr>
@@ -294,7 +294,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00038">38</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00034">34</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
 
 </div>
 </div>
@@ -314,7 +314,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00054">54</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00052">52</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
 
 </div>
 </div>
@@ -325,7 +325,7 @@ Private Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Job.html#a371f6debefab820a39f0986a67dd95f7">Job::CancelCallback</a> ripple::Job::getCancelCallback </td>
+          <td class="memname"><a class="el" href="classripple_1_1Job.html#ab19c41a13335dadf210f50223268856d">Job::CancelCallback</a> ripple::Job::getCancelCallback </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -333,7 +333,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00059">59</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00058">58</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
 
 </div>
 </div>
@@ -375,7 +375,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns <code>true</code> if the running job should make a best-effort cancel. </p>
 
-<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00070">70</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00071">71</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
 
 </div>
 </div>
@@ -394,7 +394,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00077">77</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00079">79</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
 
 </div>
 </div>
@@ -414,7 +414,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00090">90</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00093">93</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
 
 </div>
 </div>
@@ -434,7 +434,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00117">117</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00123">123</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
 
 </div>
 </div>
@@ -454,7 +454,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00095">95</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00099">99</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
 
 </div>
 </div>
@@ -474,7 +474,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00128">128</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00135">135</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
 
 </div>
 </div>
@@ -494,7 +494,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00106">106</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8cpp_source.html#l00111">111</a> of file <a class="el" href="Job_8cpp_source.html">Job.cpp</a>.</p>
 
 </div>
 </div>
@@ -509,7 +509,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Job.html#a371f6debefab820a39f0986a67dd95f7">CancelCallback</a> ripple::Job::m_cancelCallback</td>
+          <td class="memname"><a class="el" href="classripple_1_1Job.html#ab19c41a13335dadf210f50223268856d">CancelCallback</a> ripple::Job::m_cancelCallback</td>
         </tr>
       </table>
   </td>
@@ -519,7 +519,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00140">140</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00149">149</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
 
 </div>
 </div>
@@ -543,7 +543,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00141">141</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00150">150</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
 
 </div>
 </div>
@@ -567,12 +567,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00142">142</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00151">151</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
 
 </div>
 </div>
-<a id="a33b8fba4c550738ababe540afda80642"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a33b8fba4c550738ababe540afda80642">&#9670;&nbsp;</a></span>mJob</h2>
+<a id="af9b541a8e225e74a4a7a5e91bbef3009"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af9b541a8e225e74a4a7a5e91bbef3009">&#9670;&nbsp;</a></span>mJob</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -581,7 +581,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;void (<a class="el" href="classripple_1_1Job.html">Job</a>&amp;)&gt; ripple::Job::mJob</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;void(<a class="el" href="classripple_1_1Job.html">Job</a>&amp;)&gt; ripple::Job::mJob</td>
         </tr>
       </table>
   </td>
@@ -591,7 +591,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00143">143</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00152">152</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
 
 </div>
 </div>
@@ -615,7 +615,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00144">144</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00153">153</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
 
 </div>
 </div>
@@ -639,7 +639,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00145">145</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00154">154</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
 
 </div>
 </div>
@@ -663,7 +663,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00146">146</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Job_8h_source.html#l00155">155</a> of file <a class="el" href="Job_8h_source.html">Job.h</a>.</p>
 
 </div>
 </div>

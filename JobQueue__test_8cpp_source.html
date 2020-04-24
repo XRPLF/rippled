@@ -88,8 +88,8 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/core/JobQueue.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/unit_test.h&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/unit_test.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/core/JobQueue.h&gt;</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;test/jtx/Env.h&gt;</span></div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
@@ -99,148 +99,164 @@ $(function() {
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
 <div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1JobQueue__test.html">   29</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1test_1_1JobQueue__test.html">JobQueue_test</a> : <span class="keyword">public</span> beast::unit_test::suite</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;{</div>
-<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1JobQueue__test.html#ad1f554d4d41a6d534e3aa41b87f9719a">   31</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1test_1_1JobQueue__test.html#ad1f554d4d41a6d534e3aa41b87f9719a">testAddJob</a>()</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    {</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> env {*<span class="keyword">this</span>};</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        <a class="code" href="classripple_1_1JobQueue.html">JobQueue</a>&amp; jQueue = env.app().getJobQueue();</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        {</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;            <span class="comment">// addJob() should run the Job (and return true).</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic&lt;bool&gt;</a> jobRan {<span class="keyword">false</span>};</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;            BEAST_EXPECT (jQueue.<a class="code" href="classripple_1_1JobQueue.html#af5e34187d55aa58e551dc196aaf1ec25">addJob</a> (<a class="code" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17aad3afa64002a7625b44814318856804e9">jtCLIENT</a>, <span class="stringliteral">&quot;JobAddTest1&quot;</span>,</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;                [&amp;jobRan] (<a class="code" href="classripple_1_1Job.html">Job</a>&amp;) { jobRan = true; }) == <span class="keyword">true</span>);</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            <span class="comment">// Wait for the Job to run.</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            <span class="keywordflow">while</span> (jobRan == <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        }</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        {</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;            <span class="comment">// If the JobQueue&#39;s JobCounter is join()ed we should no</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;            <span class="comment">// longer be able to add Jobs (and calling addJob() should</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            <span class="comment">// return false).</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;            <span class="keyword">using namespace </span>std::chrono_literals;</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> j {env.app().journal (<span class="stringliteral">&quot;JobQueue_test&quot;</span>)};</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;            <a class="code" href="classripple_1_1ClosureCounter.html">JobCounter</a>&amp; jCounter = jQueue.<a class="code" href="classripple_1_1Stoppable.html#acc824cd8bdcffbac3c919c7e6009dea5">jobCounter</a>();</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;            jCounter.<a class="code" href="classripple_1_1ClosureCounter.html#af0786d10092850fd4a1f10d0bec927a7">join</a>(<span class="stringliteral">&quot;JobQueue_test&quot;</span>, 1s, j);</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;            <span class="comment">// The Job should never run, so having the Job access this</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            <span class="comment">// unprotected variable on the stack should be completely safe.</span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;            <span class="comment">// Not recommended for the faint of heart...</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            <span class="keywordtype">bool</span> unprotected;</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            BEAST_EXPECT (jQueue.<a class="code" href="classripple_1_1JobQueue.html#af5e34187d55aa58e551dc196aaf1ec25">addJob</a> (<a class="code" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17aad3afa64002a7625b44814318856804e9">jtCLIENT</a>, <span class="stringliteral">&quot;JobAddTest2&quot;</span>,</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;                [&amp;unprotected] (<a class="code" href="classripple_1_1Job.html">Job</a>&amp;) { unprotected = false; }) == <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        }</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    }</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
-<div class="line"><a name="l00063"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1JobQueue__test.html#af86815d17e13318be089b77f47e4cf1c">   63</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1test_1_1JobQueue__test.html#af86815d17e13318be089b77f47e4cf1c">testPostCoro</a>()</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    {</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> env {*<span class="keyword">this</span>};</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <a class="code" href="classripple_1_1JobQueue.html">JobQueue</a>&amp; jQueue = env.app().getJobQueue();</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        {</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            <span class="comment">// Test repeated post()s until the Coro completes.</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic&lt;int&gt;</a> yieldCount {0};</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> coro = jQueue.<a class="code" href="classripple_1_1JobQueue.html#a1ccc14aacdd6450e2ee29ad1eb71b6cb">postCoro</a> (<a class="code" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17aad3afa64002a7625b44814318856804e9">jtCLIENT</a>, <span class="stringliteral">&quot;PostCoroTest1&quot;</span>,</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;                [&amp;yieldCount] (<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;JobQueue::Coro&gt;</a> <span class="keyword">const</span>&amp; coroCopy)</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;                {</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                    <span class="keywordflow">while</span> (++yieldCount &lt; 4)</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;                        coroCopy-&gt;yield();</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;                });</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            BEAST_EXPECT (coro != <span class="keyword">nullptr</span>);</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            <span class="comment">// Wait for the Job to run and yield.</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            <span class="keywordflow">while</span> (yieldCount == 0);</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            <span class="comment">// Now re-post until the Coro says it is done.</span></div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            <span class="keywordtype">int</span> old = yieldCount;</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            <span class="keywordflow">while</span> (coro-&gt;runnable())</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            {</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;                BEAST_EXPECT (coro-&gt;post());</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                <span class="keywordflow">while</span> (old == yieldCount) { }</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;                coro-&gt;join();</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;                BEAST_EXPECT (++old == yieldCount);</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            }</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            BEAST_EXPECT (yieldCount == 4);</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        }</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        {</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;            <span class="comment">// Test repeated resume()s until the Coro completes.</span></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;            <span class="keywordtype">int</span> yieldCount {0};</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> coro = jQueue.<a class="code" href="classripple_1_1JobQueue.html#a1ccc14aacdd6450e2ee29ad1eb71b6cb">postCoro</a> (<a class="code" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17aad3afa64002a7625b44814318856804e9">jtCLIENT</a>, <span class="stringliteral">&quot;PostCoroTest2&quot;</span>,</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;                [&amp;yieldCount] (<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;JobQueue::Coro&gt;</a> <span class="keyword">const</span>&amp; coroCopy)</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;                {</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                    <span class="keywordflow">while</span> (++yieldCount &lt; 4)</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;                        coroCopy-&gt;yield();</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;                });</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            <span class="keywordflow">if</span> (! coro)</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;            {</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;                <span class="comment">// There&#39;s no good reason we should not get a Coro, but we</span></div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;                <span class="comment">// can&#39;t continue without one.</span></div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                BEAST_EXPECT (<span class="keyword">false</span>);</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;                <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;            }</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;            <span class="comment">// Wait for the Job to run and yield.</span></div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;            coro-&gt;join();</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160; </div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            <span class="comment">// Now resume until the Coro says it is done.</span></div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            <span class="keywordtype">int</span> old = yieldCount;</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            <span class="keywordflow">while</span> (coro-&gt;runnable())</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            {</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;                coro-&gt;resume(); <span class="comment">// Resume runs synchronously on this thread.</span></div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;                BEAST_EXPECT (++old == yieldCount);</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            }</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            BEAST_EXPECT (yieldCount == 4);</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;        }</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        {</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            <span class="comment">// If the JobQueue&#39;s JobCounter is join()ed we should no</span></div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            <span class="comment">// longer be able to add a Coro (and calling postCoro() should</span></div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            <span class="comment">// return false).</span></div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;            <span class="keyword">using namespace </span>std::chrono_literals;</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> j {env.app().journal (<span class="stringliteral">&quot;JobQueue_test&quot;</span>)};</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            <a class="code" href="classripple_1_1ClosureCounter.html">JobCounter</a>&amp; jCounter = jQueue.<a class="code" href="classripple_1_1Stoppable.html#acc824cd8bdcffbac3c919c7e6009dea5">jobCounter</a>();</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;            jCounter.<a class="code" href="classripple_1_1ClosureCounter.html#af0786d10092850fd4a1f10d0bec927a7">join</a>(<span class="stringliteral">&quot;JobQueue_test&quot;</span>, 1s, j);</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160; </div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;            <span class="comment">// The Coro should never run, so having the Coro access this</span></div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;            <span class="comment">// unprotected variable on the stack should be completely safe.</span></div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;            <span class="comment">// Not recommended for the faint of heart...</span></div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;            <span class="keywordtype">bool</span> unprotected;</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> coro = jQueue.<a class="code" href="classripple_1_1JobQueue.html#a1ccc14aacdd6450e2ee29ad1eb71b6cb">postCoro</a> (<a class="code" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17aad3afa64002a7625b44814318856804e9">jtCLIENT</a>, <span class="stringliteral">&quot;PostCoroTest3&quot;</span>,</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;                [&amp;unprotected] (<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;JobQueue::Coro&gt;</a> <span class="keyword">const</span>&amp;)</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                { unprotected = <span class="keyword">false</span>; });</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;            BEAST_EXPECT (coro == <span class="keyword">nullptr</span>);</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;        }</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    }</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160; </div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00143"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1JobQueue__test.html#a309d37a8e9feca7b0ebb26e7516e4cc9">  143</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1test_1_1JobQueue__test.html#a309d37a8e9feca7b0ebb26e7516e4cc9">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;        <a class="code" href="classripple_1_1test_1_1JobQueue__test.html#ad1f554d4d41a6d534e3aa41b87f9719a">testAddJob</a>();</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;        <a class="code" href="classripple_1_1test_1_1JobQueue__test.html#af86815d17e13318be089b77f47e4cf1c">testPostCoro</a>();</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    }</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;};</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160; </div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">BEAST_DEFINE_TESTSUITE</a>(<a class="code" href="classripple_1_1JobQueue.html">JobQueue</a>, core, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160; </div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;} <span class="comment">// test</span></div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1JobQueue__test.html#ad1f554d4d41a6d534e3aa41b87f9719a">   32</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1JobQueue__test.html#ad1f554d4d41a6d534e3aa41b87f9719a">testAddJob</a>()</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    {</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> env{*<span class="keyword">this</span>};</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        <a class="code" href="classripple_1_1JobQueue.html">JobQueue</a>&amp; jQueue = env.app().getJobQueue();</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        {</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;            <span class="comment">// addJob() should run the Job (and return true).</span></div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic&lt;bool&gt;</a> jobRan{<span class="keyword">false</span>};</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;                jQueue.<a class="code" href="classripple_1_1JobQueue.html#af5e34187d55aa58e551dc196aaf1ec25">addJob</a>(<a class="code" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17aad3afa64002a7625b44814318856804e9">jtCLIENT</a>, <span class="stringliteral">&quot;JobAddTest1&quot;</span>, [&amp;jobRan](<a class="code" href="classripple_1_1Job.html">Job</a>&amp;) {</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;                    jobRan = true;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;                }) == <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            <span class="comment">// Wait for the Job to run.</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;            <span class="keywordflow">while</span> (jobRan == <span class="keyword">false</span>)</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;                ;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        }</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        {</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            <span class="comment">// If the JobQueue&#39;s JobCounter is join()ed we should no</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;            <span class="comment">// longer be able to add Jobs (and calling addJob() should</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;            <span class="comment">// return false).</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;            <span class="keyword">using namespace </span>std::chrono_literals;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;            <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> j{env.app().journal(<span class="stringliteral">&quot;JobQueue_test&quot;</span>)};</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            <a class="code" href="classripple_1_1ClosureCounter.html">JobCounter</a>&amp; jCounter = jQueue.<a class="code" href="classripple_1_1Stoppable.html#acc824cd8bdcffbac3c919c7e6009dea5">jobCounter</a>();</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;            jCounter.<a class="code" href="classripple_1_1ClosureCounter.html#af0786d10092850fd4a1f10d0bec927a7">join</a>(<span class="stringliteral">&quot;JobQueue_test&quot;</span>, 1s, j);</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            <span class="comment">// The Job should never run, so having the Job access this</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;            <span class="comment">// unprotected variable on the stack should be completely safe.</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            <span class="comment">// Not recommended for the faint of heart...</span></div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            <span class="keywordtype">bool</span> unprotected;</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;                jQueue.<a class="code" href="classripple_1_1JobQueue.html#af5e34187d55aa58e551dc196aaf1ec25">addJob</a>(<a class="code" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17aad3afa64002a7625b44814318856804e9">jtCLIENT</a>, <span class="stringliteral">&quot;JobAddTest2&quot;</span>, [&amp;unprotected](<a class="code" href="classripple_1_1Job.html">Job</a>&amp;) {</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;                    unprotected = false;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;                }) == <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        }</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    }</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1JobQueue__test.html#af86815d17e13318be089b77f47e4cf1c">   70</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1JobQueue__test.html#af86815d17e13318be089b77f47e4cf1c">testPostCoro</a>()</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    {</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> env{*<span class="keyword">this</span>};</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <a class="code" href="classripple_1_1JobQueue.html">JobQueue</a>&amp; jQueue = env.app().getJobQueue();</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        {</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;            <span class="comment">// Test repeated post()s until the Coro completes.</span></div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic&lt;int&gt;</a> yieldCount{0};</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> coro = jQueue.<a class="code" href="classripple_1_1JobQueue.html#a1ccc14aacdd6450e2ee29ad1eb71b6cb">postCoro</a>(</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;                <a class="code" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17aad3afa64002a7625b44814318856804e9">jtCLIENT</a>,</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;                <span class="stringliteral">&quot;PostCoroTest1&quot;</span>,</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;                [&amp;yieldCount](<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;JobQueue::Coro&gt;</a> <span class="keyword">const</span>&amp; coroCopy) {</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;                    <span class="keywordflow">while</span> (++yieldCount &lt; 4)</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;                        coroCopy-&gt;yield();</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                });</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            BEAST_EXPECT(coro != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;            <span class="comment">// Wait for the Job to run and yield.</span></div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            <span class="keywordflow">while</span> (yieldCount == 0)</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;                ;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            <span class="comment">// Now re-post until the Coro says it is done.</span></div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            <span class="keywordtype">int</span> old = yieldCount;</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            <span class="keywordflow">while</span> (coro-&gt;runnable())</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;            {</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                BEAST_EXPECT(coro-&gt;post());</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                <span class="keywordflow">while</span> (old == yieldCount)</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;                {</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;                }</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                coro-&gt;join();</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;                BEAST_EXPECT(++old == yieldCount);</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            }</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            BEAST_EXPECT(yieldCount == 4);</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        }</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        {</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            <span class="comment">// Test repeated resume()s until the Coro completes.</span></div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            <span class="keywordtype">int</span> yieldCount{0};</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> coro = jQueue.<a class="code" href="classripple_1_1JobQueue.html#a1ccc14aacdd6450e2ee29ad1eb71b6cb">postCoro</a>(</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                <a class="code" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17aad3afa64002a7625b44814318856804e9">jtCLIENT</a>,</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                <span class="stringliteral">&quot;PostCoroTest2&quot;</span>,</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                [&amp;yieldCount](<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;JobQueue::Coro&gt;</a> <span class="keyword">const</span>&amp; coroCopy) {</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;                    <span class="keywordflow">while</span> (++yieldCount &lt; 4)</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                        coroCopy-&gt;yield();</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;                });</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            <span class="keywordflow">if</span> (!coro)</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            {</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;                <span class="comment">// There&#39;s no good reason we should not get a Coro, but we</span></div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;                <span class="comment">// can&#39;t continue without one.</span></div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;                BEAST_EXPECT(<span class="keyword">false</span>);</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;                <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            }</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160; </div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            <span class="comment">// Wait for the Job to run and yield.</span></div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            coro-&gt;join();</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            <span class="comment">// Now resume until the Coro says it is done.</span></div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;            <span class="keywordtype">int</span> old = yieldCount;</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            <span class="keywordflow">while</span> (coro-&gt;runnable())</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            {</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;                coro-&gt;resume();  <span class="comment">// Resume runs synchronously on this thread.</span></div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;                BEAST_EXPECT(++old == yieldCount);</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;            }</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;            BEAST_EXPECT(yieldCount == 4);</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        }</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        {</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;            <span class="comment">// If the JobQueue&#39;s JobCounter is join()ed we should no</span></div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;            <span class="comment">// longer be able to add a Coro (and calling postCoro() should</span></div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;            <span class="comment">// return false).</span></div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;            <span class="keyword">using namespace </span>std::chrono_literals;</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;            <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> j{env.app().journal(<span class="stringliteral">&quot;JobQueue_test&quot;</span>)};</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;            <a class="code" href="classripple_1_1ClosureCounter.html">JobCounter</a>&amp; jCounter = jQueue.<a class="code" href="classripple_1_1Stoppable.html#acc824cd8bdcffbac3c919c7e6009dea5">jobCounter</a>();</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;            jCounter.<a class="code" href="classripple_1_1ClosureCounter.html#af0786d10092850fd4a1f10d0bec927a7">join</a>(<span class="stringliteral">&quot;JobQueue_test&quot;</span>, 1s, j);</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160; </div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;            <span class="comment">// The Coro should never run, so having the Coro access this</span></div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;            <span class="comment">// unprotected variable on the stack should be completely safe.</span></div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;            <span class="comment">// Not recommended for the faint of heart...</span></div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;            <span class="keywordtype">bool</span> unprotected;</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> coro = jQueue.<a class="code" href="classripple_1_1JobQueue.html#a1ccc14aacdd6450e2ee29ad1eb71b6cb">postCoro</a>(</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                <a class="code" href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17aad3afa64002a7625b44814318856804e9">jtCLIENT</a>,</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                <span class="stringliteral">&quot;PostCoroTest3&quot;</span>,</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                [&amp;unprotected](<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;JobQueue::Coro&gt;</a> <span class="keyword">const</span>&amp;) {</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                    unprotected = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                });</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            BEAST_EXPECT(coro == <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        }</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    }</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160; </div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00159"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1JobQueue__test.html#a309d37a8e9feca7b0ebb26e7516e4cc9">  159</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1JobQueue__test.html#a309d37a8e9feca7b0ebb26e7516e4cc9">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;        <a class="code" href="classripple_1_1test_1_1JobQueue__test.html#ad1f554d4d41a6d534e3aa41b87f9719a">testAddJob</a>();</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        <a class="code" href="classripple_1_1test_1_1JobQueue__test.html#af86815d17e13318be089b77f47e4cf1c">testPostCoro</a>();</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    }</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;};</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160; </div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">BEAST_DEFINE_TESTSUITE</a>(<a class="code" href="classripple_1_1JobQueue.html">JobQueue</a>, core, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160; </div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_1_1test_html_a52909fdbfa7f29626f24005ed12e6ef4"><div class="ttname"><a href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">ripple::test::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(AccountDelete, app, ripple)</div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="aclassripple_1_1JobQueue_html_a1ccc14aacdd6450e2ee29ad1eb71b6cb"><div class="ttname"><a href="classripple_1_1JobQueue.html#a1ccc14aacdd6450e2ee29ad1eb71b6cb">ripple::JobQueue::postCoro</a></div><div class="ttdeci">std::shared_ptr&lt; Coro &gt; postCoro(JobType t, std::string const &amp;name, F &amp;&amp;f)</div><div class="ttdoc">Creates a coroutine and adds a job to the queue which will run it.</div><div class="ttdef"><b>Definition:</b> <a href="JobQueue_8h_source.html#l00395">JobQueue.h:395</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ae0f54f8ce649d639bf3e2b295347e17aad3afa64002a7625b44814318856804e9"><div class="ttname"><a href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17aad3afa64002a7625b44814318856804e9">ripple::jtCLIENT</a></div><div class="ttdeci">@ jtCLIENT</div><div class="ttdef"><b>Definition:</b> <a href="Job_8h_source.html#l00049">Job.h:49</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1JobQueue__test_html_a309d37a8e9feca7b0ebb26e7516e4cc9"><div class="ttname"><a href="classripple_1_1test_1_1JobQueue__test.html#a309d37a8e9feca7b0ebb26e7516e4cc9">ripple::test::JobQueue_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="JobQueue__test_8cpp_source.html#l00143">JobQueue_test.cpp:143</a></div></div>
-<div class="ttc" id="aclassripple_1_1JobQueue_html_af5e34187d55aa58e551dc196aaf1ec25"><div class="ttname"><a href="classripple_1_1JobQueue.html#af5e34187d55aa58e551dc196aaf1ec25">ripple::JobQueue::addJob</a></div><div class="ttdeci">bool addJob(JobType type, std::string const &amp;name, JobHandler &amp;&amp;jobHandler)</div><div class="ttdoc">Adds a job to the JobQueue.</div><div class="ttdef"><b>Definition:</b> <a href="JobQueue_8h_source.html#l00156">JobQueue.h:156</a></div></div>
+<div class="ttc" id="aclassripple_1_1JobQueue_html_a1ccc14aacdd6450e2ee29ad1eb71b6cb"><div class="ttname"><a href="classripple_1_1JobQueue.html#a1ccc14aacdd6450e2ee29ad1eb71b6cb">ripple::JobQueue::postCoro</a></div><div class="ttdeci">std::shared_ptr&lt; Coro &gt; postCoro(JobType t, std::string const &amp;name, F &amp;&amp;f)</div><div class="ttdoc">Creates a coroutine and adds a job to the queue which will run it.</div><div class="ttdef"><b>Definition:</b> <a href="JobQueue_8h_source.html#l00427">JobQueue.h:427</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ae0f54f8ce649d639bf3e2b295347e17aad3afa64002a7625b44814318856804e9"><div class="ttname"><a href="namespaceripple.html#ae0f54f8ce649d639bf3e2b295347e17aad3afa64002a7625b44814318856804e9">ripple::jtCLIENT</a></div><div class="ttdeci">@ jtCLIENT</div><div class="ttdef"><b>Definition:</b> <a href="Job_8h_source.html#l00048">Job.h:48</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1JobQueue__test_html_a309d37a8e9feca7b0ebb26e7516e4cc9"><div class="ttname"><a href="classripple_1_1test_1_1JobQueue__test.html#a309d37a8e9feca7b0ebb26e7516e4cc9">ripple::test::JobQueue_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="JobQueue__test_8cpp_source.html#l00159">JobQueue_test.cpp:159</a></div></div>
+<div class="ttc" id="aclassripple_1_1JobQueue_html_af5e34187d55aa58e551dc196aaf1ec25"><div class="ttname"><a href="classripple_1_1JobQueue.html#af5e34187d55aa58e551dc196aaf1ec25">ripple::JobQueue::addJob</a></div><div class="ttdeci">bool addJob(JobType type, std::string const &amp;name, JobHandler &amp;&amp;jobHandler)</div><div class="ttdoc">Adds a job to the JobQueue.</div><div class="ttdef"><b>Definition:</b> <a href="JobQueue_8h_source.html#l00166">JobQueue.h:166</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1JobQueue__test_html"><div class="ttname"><a href="classripple_1_1test_1_1JobQueue__test.html">ripple::test::JobQueue_test</a></div><div class="ttdef"><b>Definition:</b> <a href="JobQueue__test_8cpp_source.html#l00029">JobQueue_test.cpp:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1Stoppable_html_acc824cd8bdcffbac3c919c7e6009dea5"><div class="ttname"><a href="classripple_1_1Stoppable.html#acc824cd8bdcffbac3c919c7e6009dea5">ripple::Stoppable::jobCounter</a></div><div class="ttdeci">JobCounter &amp; jobCounter()</div><div class="ttdef"><b>Definition:</b> <a href="Stoppable_8h_source.html#l00413">Stoppable.h:413</a></div></div>
-<div class="ttc" id="aclassripple_1_1Job_html"><div class="ttname"><a href="classripple_1_1Job.html">ripple::Job</a></div><div class="ttdef"><b>Definition:</b> <a href="Job_8h_source.html#l00083">Job.h:83</a></div></div>
+<div class="ttc" id="aclassripple_1_1Stoppable_html_acc824cd8bdcffbac3c919c7e6009dea5"><div class="ttname"><a href="classripple_1_1Stoppable.html#acc824cd8bdcffbac3c919c7e6009dea5">ripple::Stoppable::jobCounter</a></div><div class="ttdeci">JobCounter &amp; jobCounter()</div><div class="ttdef"><b>Definition:</b> <a href="Stoppable_8h_source.html#l00436">Stoppable.h:436</a></div></div>
+<div class="ttc" id="aclassripple_1_1Job_html"><div class="ttname"><a href="classripple_1_1Job.html">ripple::Job</a></div><div class="ttdef"><b>Definition:</b> <a href="Job_8h_source.html#l00082">Job.h:82</a></div></div>
 <div class="ttc" id="aclassripple_1_1ClosureCounter_html"><div class="ttname"><a href="classripple_1_1ClosureCounter.html">ripple::ClosureCounter&lt; void, Job &amp; &gt;</a></div></div>
-<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00060">Journal.h:60</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1JobQueue__test_html_af86815d17e13318be089b77f47e4cf1c"><div class="ttname"><a href="classripple_1_1test_1_1JobQueue__test.html#af86815d17e13318be089b77f47e4cf1c">ripple::test::JobQueue_test::testPostCoro</a></div><div class="ttdeci">void testPostCoro()</div><div class="ttdef"><b>Definition:</b> <a href="JobQueue__test_8cpp_source.html#l00063">JobQueue_test.cpp:63</a></div></div>
+<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00058">Journal.h:58</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1JobQueue__test_html_af86815d17e13318be089b77f47e4cf1c"><div class="ttname"><a href="classripple_1_1test_1_1JobQueue__test.html#af86815d17e13318be089b77f47e4cf1c">ripple::test::JobQueue_test::testPostCoro</a></div><div class="ttdeci">void testPostCoro()</div><div class="ttdef"><b>Definition:</b> <a href="JobQueue__test_8cpp_source.html#l00070">JobQueue_test.cpp:70</a></div></div>
 <div class="ttc" id="aatomic_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic&lt; bool &gt;</a></div></div>
-<div class="ttc" id="aclassripple_1_1JobQueue_html"><div class="ttname"><a href="classripple_1_1JobQueue.html">ripple::JobQueue</a></div><div class="ttdoc">A pool of threads to perform work.</div><div class="ttdef"><b>Definition:</b> <a href="JobQueue_8h_source.html#l00056">JobQueue.h:56</a></div></div>
+<div class="ttc" id="aclassripple_1_1JobQueue_html"><div class="ttname"><a href="classripple_1_1JobQueue.html">ripple::JobQueue</a></div><div class="ttdoc">A pool of threads to perform work.</div><div class="ttdef"><b>Definition:</b> <a href="JobQueue_8h_source.html#l00055">JobQueue.h:55</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1JobQueue__test_html_ad1f554d4d41a6d534e3aa41b87f9719a"><div class="ttname"><a href="classripple_1_1test_1_1JobQueue__test.html#ad1f554d4d41a6d534e3aa41b87f9719a">ripple::test::JobQueue_test::testAddJob</a></div><div class="ttdeci">void testAddJob()</div><div class="ttdef"><b>Definition:</b> <a href="JobQueue__test_8cpp_source.html#l00031">JobQueue_test.cpp:31</a></div></div>
-<div class="ttc" id="aclassripple_1_1ClosureCounter_html_af0786d10092850fd4a1f10d0bec927a7"><div class="ttname"><a href="classripple_1_1ClosureCounter.html#af0786d10092850fd4a1f10d0bec927a7">ripple::ClosureCounter::join</a></div><div class="ttdeci">void join(char const *name, std::chrono::milliseconds wait, beast::Journal j)</div><div class="ttdoc">Returns once all counted in-flight closures are destroyed.</div><div class="ttdef"><b>Definition:</b> <a href="ClosureCounter_8h_source.html#l00148">ClosureCounter.h:148</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00117">Env.h:117</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1JobQueue__test_html_ad1f554d4d41a6d534e3aa41b87f9719a"><div class="ttname"><a href="classripple_1_1test_1_1JobQueue__test.html#ad1f554d4d41a6d534e3aa41b87f9719a">ripple::test::JobQueue_test::testAddJob</a></div><div class="ttdeci">void testAddJob()</div><div class="ttdef"><b>Definition:</b> <a href="JobQueue__test_8cpp_source.html#l00032">JobQueue_test.cpp:32</a></div></div>
+<div class="ttc" id="aclassripple_1_1ClosureCounter_html_af0786d10092850fd4a1f10d0bec927a7"><div class="ttname"><a href="classripple_1_1ClosureCounter.html#af0786d10092850fd4a1f10d0bec927a7">ripple::ClosureCounter::join</a></div><div class="ttdeci">void join(char const *name, std::chrono::milliseconds wait, beast::Journal j)</div><div class="ttdoc">Returns once all counted in-flight closures are destroyed.</div><div class="ttdef"><b>Definition:</b> <a href="ClosureCounter_8h_source.html#l00152">ClosureCounter.h:152</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00114">Env.h:114</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

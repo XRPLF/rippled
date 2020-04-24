@@ -93,8 +93,8 @@ $(function() {
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/insight/Collector.h&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/utility/Journal.h&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/net/IPEndpoint.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/net/IPEndpoint.h&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/utility/Journal.h&gt;</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacebeast.html">beast</a> {</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span>insight {</div>
@@ -104,26 +104,26 @@ $(function() {
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keyword">public</span>:</div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keyword">explicit</span> <a class="code" href="classbeast_1_1insight_1_1StatsDCollector.html#a16b7a385221640f3015e135657f59cac">StatsDCollector</a>() = <span class="keywordflow">default</span>;</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keyword">static</span></div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr &lt;StatsDCollector&gt;</a></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <a class="code" href="classbeast_1_1insight_1_1StatsDCollector.html#a25e5cf3f07c0553a5962ded9cc4d5c25">New</a> (<a class="code" href="classbeast_1_1IP_1_1Endpoint.html">IP::Endpoint</a> <span class="keyword">const</span>&amp; address,</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; prefix, <a class="code" href="classbeast_1_1Journal.html">Journal</a> journal);</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;StatsDCollector&gt;</a></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <a class="code" href="classbeast_1_1insight_1_1StatsDCollector.html#a25e5cf3f07c0553a5962ded9cc4d5c25">New</a>(<a class="code" href="classbeast_1_1IP_1_1Endpoint.html">IP::Endpoint</a> <span class="keyword">const</span>&amp; address,</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; prefix,</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <a class="code" href="classbeast_1_1Journal.html">Journal</a> journal);</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;};</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;}</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;}</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;}  <span class="comment">// namespace insight</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;}  <span class="comment">// namespace beast</span></div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="aclassbeast_1_1insight_1_1StatsDCollector_html_a25e5cf3f07c0553a5962ded9cc4d5c25"><div class="ttname"><a href="classbeast_1_1insight_1_1StatsDCollector.html#a25e5cf3f07c0553a5962ded9cc4d5c25">beast::insight::StatsDCollector::New</a></div><div class="ttdeci">static std::shared_ptr&lt; StatsDCollector &gt; New(IP::Endpoint const &amp;address, std::string const &amp;prefix, Journal journal)</div><div class="ttdoc">Create a StatsD collector.</div><div class="ttdef"><b>Definition:</b> <a href="StatsDCollector_8cpp_source.html#l00693">StatsDCollector.cpp:693</a></div></div>
+<div class="ttc" id="aclassbeast_1_1insight_1_1StatsDCollector_html_a25e5cf3f07c0553a5962ded9cc4d5c25"><div class="ttname"><a href="classbeast_1_1insight_1_1StatsDCollector.html#a25e5cf3f07c0553a5962ded9cc4d5c25">beast::insight::StatsDCollector::New</a></div><div class="ttdeci">static std::shared_ptr&lt; StatsDCollector &gt; New(IP::Endpoint const &amp;address, std::string const &amp;prefix, Journal journal)</div><div class="ttdoc">Create a StatsD collector.</div><div class="ttdef"><b>Definition:</b> <a href="StatsDCollector_8cpp_source.html#l00736">StatsDCollector.cpp:736</a></div></div>
 <div class="ttc" id="aclassbeast_1_1insight_1_1StatsDCollector_html"><div class="ttname"><a href="classbeast_1_1insight_1_1StatsDCollector.html">beast::insight::StatsDCollector</a></div><div class="ttdoc">A Collector that reports metrics to a StatsD server.</div><div class="ttdef"><b>Definition:</b> <a href="StatsDCollector_8h_source.html#l00035">StatsDCollector.h:35</a></div></div>
-<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00060">Journal.h:60</a></div></div>
+<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00058">Journal.h:58</a></div></div>
 <div class="ttc" id="aclassbeast_1_1insight_1_1StatsDCollector_html_a16b7a385221640f3015e135657f59cac"><div class="ttname"><a href="classbeast_1_1insight_1_1StatsDCollector.html#a16b7a385221640f3015e135657f59cac">beast::insight::StatsDCollector::StatsDCollector</a></div><div class="ttdeci">StatsDCollector()=default</div></div>
 <div class="ttc" id="aclassbeast_1_1insight_1_1Collector_html"><div class="ttname"><a href="classbeast_1_1insight_1_1Collector.html">beast::insight::Collector</a></div><div class="ttdoc">Interface for a manager that allows collection of metrics.</div><div class="ttdef"><b>Definition:</b> <a href="Collector_8h_source.html#l00044">Collector.h:44</a></div></div>
 <div class="ttc" id="aclassbeast_1_1IP_1_1Endpoint_html"><div class="ttname"><a href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a></div><div class="ttdoc">A version-independent IP address and port combination.</div><div class="ttdef"><b>Definition:</b> <a href="IPEndpoint_8h_source.html#l00039">IPEndpoint.h:39</a></div></div>
-<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00582">base_uint.h:582</a></div></div>
+<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00646">base_uint.h:646</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

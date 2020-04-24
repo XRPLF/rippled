@@ -108,118 +108,122 @@ $(function() {
 <div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="structripple_1_1detail_1_1LocalValues_1_1BasicValue.html">   37</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structripple_1_1detail_1_1LocalValues_1_1BasicValue.html">BasicValue</a></div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    {</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="keyword">virtual</span> <a class="code" href="structripple_1_1detail_1_1LocalValues_1_1BasicValue.html#ac52e02fcf8808667c8c18cea1da93637">~BasicValue</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="keyword">virtual</span> <span class="keywordtype">void</span>* <a class="code" href="structripple_1_1detail_1_1LocalValues_1_1BasicValue.html#a99efefdaf18543e7ff02d559a5c6b131">get</a>() = 0;</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    };</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
-<div class="line"><a name="l00044"></a><span class="lineno"><a class="line" href="structripple_1_1detail_1_1LocalValues_1_1Value.html">   44</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structripple_1_1detail_1_1LocalValues_1_1Value.html">Value</a> : <a class="code" href="structripple_1_1detail_1_1LocalValues_1_1BasicValue.html">BasicValue</a></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    {</div>
-<div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#ae5143bb826865c1c14d769ddc2127e00">   46</a></span>&#160;        T <a class="code" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#ae5143bb826865c1c14d769ddc2127e00">t_</a>;</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <a class="code" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#a3ec9ab8e8ab49e04ae18750815417c37">Value</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#a520160c789fe0592cee91d032609bd7e">   49</a></span>&#160;        <span class="keyword">explicit</span> <a class="code" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#a520160c789fe0592cee91d032609bd7e">Value</a>(T <span class="keyword">const</span>&amp; t) : <a class="code" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#ae5143bb826865c1c14d769ddc2127e00">t_</a>(t) {}</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#ad06e2d8484a3d519d8f9a8933570f24f">   51</a></span>&#160;        <span class="keywordtype">void</span>* <a class="code" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#ad06e2d8484a3d519d8f9a8933570f24f">get</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="keyword">        </span>{</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;            <span class="keywordflow">return</span> &amp;<a class="code" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#ae5143bb826865c1c14d769ddc2127e00">t_</a>;</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        }</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    };</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="comment">// Keys are the address of a LocalValue.</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="structripple_1_1detail_1_1LocalValues.html#a0d218fc01bf5288be372040c506e055f">   58</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map&lt;void const*, std::unique_ptr&lt;BasicValue&gt;</a>&gt; <a class="code" href="structripple_1_1detail_1_1LocalValues.html#a0d218fc01bf5288be372040c506e055f">values</a>;</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keyword">static</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">inline</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno"><a class="line" href="structripple_1_1detail_1_1LocalValues.html#aa032b4f3f71488f9cac0ec67efaae01e">   63</a></span>&#160;    <a class="code" href="structripple_1_1detail_1_1LocalValues.html#aa032b4f3f71488f9cac0ec67efaae01e">cleanup</a>(<a class="code" href="structripple_1_1detail_1_1LocalValues.html">LocalValues</a>* lvs)</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    {</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="keywordflow">if</span> (lvs &amp;&amp; ! lvs-&gt;<a class="code" href="structripple_1_1detail_1_1LocalValues.html#a4141d19c6c424818710531e8b844ec62">onCoro</a>)</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;            <span class="keyword">delete</span> lvs;</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    }</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;};</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;boost::thread_specific_ptr&lt;detail::LocalValues&gt;&amp;</div>
-<div class="line"><a name="l00072"></a><span class="lineno"><a class="line" href="namespaceripple_1_1detail.html#a782678181f37cb84c4b976f5e35d4e65">   72</a></span>&#160;<a class="code" href="namespaceripple_1_1detail.html#a782678181f37cb84c4b976f5e35d4e65">getLocalValues</a>()</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;{</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keyword">static</span> boost::thread_specific_ptr&lt;</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <a class="code" href="structripple_1_1detail_1_1LocalValues.html">detail::LocalValues</a>&gt; tsp(&amp;<a class="code" href="structripple_1_1detail_1_1LocalValues.html#aa032b4f3f71488f9cac0ec67efaae01e">detail::LocalValues::cleanup</a>);</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keywordflow">return</span> tsp;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;}</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;} <span class="comment">// detail</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="keyword">virtual</span> <span class="keywordtype">void</span>*</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <a class="code" href="structripple_1_1detail_1_1LocalValues_1_1BasicValue.html#a99efefdaf18543e7ff02d559a5c6b131">get</a>() = 0;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    };</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
+<div class="line"><a name="l00045"></a><span class="lineno"><a class="line" href="structripple_1_1detail_1_1LocalValues_1_1Value.html">   45</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structripple_1_1detail_1_1LocalValues_1_1Value.html">Value</a> : <a class="code" href="structripple_1_1detail_1_1LocalValues_1_1BasicValue.html">BasicValue</a></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    {</div>
+<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#ae5143bb826865c1c14d769ddc2127e00">   47</a></span>&#160;        T <a class="code" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#ae5143bb826865c1c14d769ddc2127e00">t_</a>;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <a class="code" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#a3ec9ab8e8ab49e04ae18750815417c37">Value</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#a520160c789fe0592cee91d032609bd7e">   50</a></span>&#160;        <span class="keyword">explicit</span> <a class="code" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#a520160c789fe0592cee91d032609bd7e">Value</a>(T <span class="keyword">const</span>&amp; t) : <a class="code" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#ae5143bb826865c1c14d769ddc2127e00">t_</a>(t)</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        {</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        }</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        <span class="keywordtype">void</span>*</div>
+<div class="line"><a name="l00055"></a><span class="lineno"><a class="line" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#ad06e2d8484a3d519d8f9a8933570f24f">   55</a></span>&#160;        <a class="code" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#ad06e2d8484a3d519d8f9a8933570f24f">get</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="keyword">        </span>{</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            <span class="keywordflow">return</span> &amp;<a class="code" href="structripple_1_1detail_1_1LocalValues_1_1Value.html#ae5143bb826865c1c14d769ddc2127e00">t_</a>;</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        }</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    };</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="comment">// Keys are the address of a LocalValue.</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno"><a class="line" href="structripple_1_1detail_1_1LocalValues.html#a0d218fc01bf5288be372040c506e055f">   62</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map&lt;void const*, std::unique_ptr&lt;BasicValue&gt;</a>&gt; <a class="code" href="structripple_1_1detail_1_1LocalValues.html#a0d218fc01bf5288be372040c506e055f">values</a>;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keyword">static</span> <span class="keyword">inline</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno"><a class="line" href="structripple_1_1detail_1_1LocalValues.html#aa032b4f3f71488f9cac0ec67efaae01e">   65</a></span>&#160;    <a class="code" href="structripple_1_1detail_1_1LocalValues.html#aa032b4f3f71488f9cac0ec67efaae01e">cleanup</a>(<a class="code" href="structripple_1_1detail_1_1LocalValues.html">LocalValues</a>* lvs)</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    {</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="keywordflow">if</span> (lvs &amp;&amp; !lvs-&gt;<a class="code" href="structripple_1_1detail_1_1LocalValues.html#a4141d19c6c424818710531e8b844ec62">onCoro</a>)</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            <span class="keyword">delete</span> lvs;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    }</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;};</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;boost::thread_specific_ptr&lt;detail::LocalValues&gt;&amp;</div>
+<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="namespaceripple_1_1detail.html#a782678181f37cb84c4b976f5e35d4e65">   74</a></span>&#160;<a class="code" href="namespaceripple_1_1detail.html#a782678181f37cb84c4b976f5e35d4e65">getLocalValues</a>()</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;{</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keyword">static</span> boost::thread_specific_ptr&lt;detail::LocalValues&gt; tsp(</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        &amp;<a class="code" href="structripple_1_1detail_1_1LocalValues.html#aa032b4f3f71488f9cac0ec67efaae01e">detail::LocalValues::cleanup</a>);</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keywordflow">return</span> tsp;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;}</div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
-<div class="line"><a name="l00082"></a><span class="lineno"><a class="line" href="classripple_1_1LocalValue.html">   82</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1LocalValue.html">LocalValue</a></div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;{</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">class</span>... Args&gt;</div>
-<div class="line"><a name="l00086"></a><span class="lineno"><a class="line" href="classripple_1_1LocalValue.html#a567f929d8cd0bfd3ed89f938f07c419d">   86</a></span>&#160;    <a class="code" href="classripple_1_1LocalValue.html#a567f929d8cd0bfd3ed89f938f07c419d">LocalValue</a>(Args&amp;&amp;... args)</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        : <a class="code" href="classripple_1_1LocalValue.html#aaaf9d81080297f71cd855adee9a525aa">t_</a>(<a class="code" href="namespacestd.html">std</a>::forward&lt;Args&gt;(args)...)</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    {</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    }</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    T&amp; <a class="code" href="classripple_1_1LocalValue.html#a1d24aaba5187e09f67eaae98f4457d2b">operator*</a>();</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
-<div class="line"><a name="l00095"></a><span class="lineno"><a class="line" href="classripple_1_1LocalValue.html#ad8e0fe3cdb1f7ed4d6b1259d2716ae2c">   95</a></span>&#160;    T* <a class="code" href="classripple_1_1LocalValue.html#ad8e0fe3cdb1f7ed4d6b1259d2716ae2c">operator-&gt;</a>()</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    {</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <span class="keywordflow">return</span> &amp;**<span class="keyword">this</span>;</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    }</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00101"></a><span class="lineno"><a class="line" href="classripple_1_1LocalValue.html#aaaf9d81080297f71cd855adee9a525aa">  101</a></span>&#160;    T <a class="code" href="classripple_1_1LocalValue.html#aaaf9d81080297f71cd855adee9a525aa">t_</a>;</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;};</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;T&amp;</div>
-<div class="line"><a name="l00106"></a><span class="lineno"><a class="line" href="classripple_1_1LocalValue.html#a1d24aaba5187e09f67eaae98f4457d2b">  106</a></span>&#160;<a class="code" href="classripple_1_1LocalValue.html#a1d24aaba5187e09f67eaae98f4457d2b">LocalValue&lt;T&gt;::operator*</a>()</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;{</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <span class="keyword">auto</span> lvs = <a class="code" href="namespaceripple_1_1detail.html#a782678181f37cb84c4b976f5e35d4e65">detail::getLocalValues</a>().get();</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="keywordflow">if</span> (! lvs)</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    {</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        lvs = <span class="keyword">new</span> <a class="code" href="structripple_1_1detail_1_1LocalValues.html">detail::LocalValues</a>();</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        lvs-&gt;onCoro = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        <a class="code" href="namespaceripple_1_1detail.html#a782678181f37cb84c4b976f5e35d4e65">detail::getLocalValues</a>().reset(lvs);</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    }</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    {</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> iter = lvs-&gt;values.find(<span class="keyword">this</span>);</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        <span class="keywordflow">if</span> (iter != lvs-&gt;values.end())</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            <span class="keywordflow">return</span> *<span class="keyword">reinterpret_cast&lt;</span>T*<span class="keyword">&gt;</span>(iter-&gt;second-&gt;get());</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    }</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160; </div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="keywordflow">return</span> *<span class="keyword">reinterpret_cast&lt;</span>T*<span class="keyword">&gt;</span>(lvs-&gt;values.emplace(<span class="keyword">this</span>,</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/make_unique.html">std::make_unique</a>&lt;<a class="code" href="structripple_1_1detail_1_1LocalValues_1_1Value.html">detail::LocalValues::Value&lt;T&gt;</a>&gt;(t_)).</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            first-&gt;second-&gt;get());</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;}</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;} <span class="comment">// ripple</span></div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;}  <span class="comment">// namespace detail</span></div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
+<div class="line"><a name="l00084"></a><span class="lineno"><a class="line" href="classripple_1_1LocalValue.html">   84</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1LocalValue.html">LocalValue</a></div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;{</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">class</span>... Args&gt;</div>
+<div class="line"><a name="l00088"></a><span class="lineno"><a class="line" href="classripple_1_1LocalValue.html#a567f929d8cd0bfd3ed89f938f07c419d">   88</a></span>&#160;    <a class="code" href="classripple_1_1LocalValue.html#a567f929d8cd0bfd3ed89f938f07c419d">LocalValue</a>(Args&amp;&amp;... args) : <a class="code" href="classripple_1_1LocalValue.html#aaaf9d81080297f71cd855adee9a525aa">t_</a>(<a class="code" href="namespacestd.html">std</a>::forward&lt;Args&gt;(args)...)</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    {</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    }</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    T&amp;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <a class="code" href="classripple_1_1LocalValue.html#a1d24aaba5187e09f67eaae98f4457d2b">operator*</a>();</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    T*</div>
+<div class="line"><a name="l00098"></a><span class="lineno"><a class="line" href="classripple_1_1LocalValue.html#ad8e0fe3cdb1f7ed4d6b1259d2716ae2c">   98</a></span>&#160;    <a class="code" href="classripple_1_1LocalValue.html#ad8e0fe3cdb1f7ed4d6b1259d2716ae2c">operator-&gt;</a>()</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    {</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <span class="keywordflow">return</span> &amp;**<span class="keyword">this</span>;</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    }</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00104"></a><span class="lineno"><a class="line" href="classripple_1_1LocalValue.html#aaaf9d81080297f71cd855adee9a525aa">  104</a></span>&#160;    T <a class="code" href="classripple_1_1LocalValue.html#aaaf9d81080297f71cd855adee9a525aa">t_</a>;</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;};</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;T&amp;</div>
+<div class="line"><a name="l00109"></a><span class="lineno"><a class="line" href="classripple_1_1LocalValue.html#a1d24aaba5187e09f67eaae98f4457d2b">  109</a></span>&#160;<a class="code" href="classripple_1_1LocalValue.html#a1d24aaba5187e09f67eaae98f4457d2b">LocalValue&lt;T&gt;::operator*</a>()</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;{</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <span class="keyword">auto</span> lvs = <a class="code" href="namespaceripple_1_1detail.html#a782678181f37cb84c4b976f5e35d4e65">detail::getLocalValues</a>().get();</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <span class="keywordflow">if</span> (!lvs)</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    {</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        lvs = <span class="keyword">new</span> <a class="code" href="structripple_1_1detail_1_1LocalValues.html">detail::LocalValues</a>();</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        lvs-&gt;onCoro = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        <a class="code" href="namespaceripple_1_1detail.html#a782678181f37cb84c4b976f5e35d4e65">detail::getLocalValues</a>().reset(lvs);</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    }</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    {</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> iter = lvs-&gt;values.find(<span class="keyword">this</span>);</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;        <span class="keywordflow">if</span> (iter != lvs-&gt;values.end())</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            <span class="keywordflow">return</span> *<span class="keyword">reinterpret_cast&lt;</span>T*<span class="keyword">&gt;</span>(iter-&gt;second-&gt;get());</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    }</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <span class="keywordflow">return</span> *<span class="keyword">reinterpret_cast&lt;</span>T*<span class="keyword">&gt;</span>(</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        lvs-&gt;values</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            .emplace(<span class="keyword">this</span>, <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr/make_unique.html">std::make_unique</a>&lt;<a class="code" href="structripple_1_1detail_1_1LocalValues_1_1Value.html">detail::LocalValues::Value&lt;T&gt;</a>&gt;(t_))</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            .first-&gt;second-&gt;get());</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;}</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1LocalValue_html_a1d24aaba5187e09f67eaae98f4457d2b"><div class="ttname"><a href="classripple_1_1LocalValue.html#a1d24aaba5187e09f67eaae98f4457d2b">ripple::LocalValue::operator*</a></div><div class="ttdeci">T &amp; operator*()</div><div class="ttdoc">Stores instance of T specific to the calling coroutine or thread.</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00106">LocalValue.h:106</a></div></div>
+<div class="ttc" id="aclassripple_1_1LocalValue_html_a1d24aaba5187e09f67eaae98f4457d2b"><div class="ttname"><a href="classripple_1_1LocalValue.html#a1d24aaba5187e09f67eaae98f4457d2b">ripple::LocalValue::operator*</a></div><div class="ttdeci">T &amp; operator*()</div><div class="ttdoc">Stores instance of T specific to the calling coroutine or thread.</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00109">LocalValue.h:109</a></div></div>
 <div class="ttc" id="astructripple_1_1detail_1_1LocalValues_1_1BasicValue_html_a99efefdaf18543e7ff02d559a5c6b131"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues_1_1BasicValue.html#a99efefdaf18543e7ff02d559a5c6b131">ripple::detail::LocalValues::BasicValue::get</a></div><div class="ttdeci">virtual void * get()=0</div></div>
 <div class="ttc" id="amake_unique_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr/make_unique.html">std::make_unique</a></div><div class="ttdeci">T make_unique(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_1_1detail_html_a782678181f37cb84c4b976f5e35d4e65"><div class="ttname"><a href="namespaceripple_1_1detail.html#a782678181f37cb84c4b976f5e35d4e65">ripple::detail::getLocalValues</a></div><div class="ttdeci">boost::thread_specific_ptr&lt; detail::LocalValues &gt; &amp; getLocalValues()</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00072">LocalValue.h:72</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1detail_html_a782678181f37cb84c4b976f5e35d4e65"><div class="ttname"><a href="namespaceripple_1_1detail.html#a782678181f37cb84c4b976f5e35d4e65">ripple::detail::getLocalValues</a></div><div class="ttdeci">boost::thread_specific_ptr&lt; detail::LocalValues &gt; &amp; getLocalValues()</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00074">LocalValue.h:74</a></div></div>
 <div class="ttc" id="astructripple_1_1detail_1_1LocalValues_html_ad31d7490b80deba41cdaec4da04497e6"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues.html#ad31d7490b80deba41cdaec4da04497e6">ripple::detail::LocalValues::LocalValues</a></div><div class="ttdeci">LocalValues()=default</div></div>
-<div class="ttc" id="astructripple_1_1detail_1_1LocalValues_html_aa032b4f3f71488f9cac0ec67efaae01e"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues.html#aa032b4f3f71488f9cac0ec67efaae01e">ripple::detail::LocalValues::cleanup</a></div><div class="ttdeci">static void cleanup(LocalValues *lvs)</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00063">LocalValue.h:63</a></div></div>
-<div class="ttc" id="astructripple_1_1detail_1_1LocalValues_1_1Value_html_a520160c789fe0592cee91d032609bd7e"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues_1_1Value.html#a520160c789fe0592cee91d032609bd7e">ripple::detail::LocalValues::Value::Value</a></div><div class="ttdeci">Value(T const &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00049">LocalValue.h:49</a></div></div>
-<div class="ttc" id="astructripple_1_1detail_1_1LocalValues_1_1Value_html"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues_1_1Value.html">ripple::detail::LocalValues::Value</a></div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00044">LocalValue.h:44</a></div></div>
-<div class="ttc" id="aclassripple_1_1LocalValue_html_a567f929d8cd0bfd3ed89f938f07c419d"><div class="ttname"><a href="classripple_1_1LocalValue.html#a567f929d8cd0bfd3ed89f938f07c419d">ripple::LocalValue::LocalValue</a></div><div class="ttdeci">LocalValue(Args &amp;&amp;... args)</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00086">LocalValue.h:86</a></div></div>
+<div class="ttc" id="astructripple_1_1detail_1_1LocalValues_html_aa032b4f3f71488f9cac0ec67efaae01e"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues.html#aa032b4f3f71488f9cac0ec67efaae01e">ripple::detail::LocalValues::cleanup</a></div><div class="ttdeci">static void cleanup(LocalValues *lvs)</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00065">LocalValue.h:65</a></div></div>
+<div class="ttc" id="astructripple_1_1detail_1_1LocalValues_1_1Value_html_a520160c789fe0592cee91d032609bd7e"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues_1_1Value.html#a520160c789fe0592cee91d032609bd7e">ripple::detail::LocalValues::Value::Value</a></div><div class="ttdeci">Value(T const &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00050">LocalValue.h:50</a></div></div>
+<div class="ttc" id="astructripple_1_1detail_1_1LocalValues_1_1Value_html"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues_1_1Value.html">ripple::detail::LocalValues::Value</a></div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00045">LocalValue.h:45</a></div></div>
+<div class="ttc" id="aclassripple_1_1LocalValue_html_a567f929d8cd0bfd3ed89f938f07c419d"><div class="ttname"><a href="classripple_1_1LocalValue.html#a567f929d8cd0bfd3ed89f938f07c419d">ripple::LocalValue::LocalValue</a></div><div class="ttdeci">LocalValue(Args &amp;&amp;... args)</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00088">LocalValue.h:88</a></div></div>
 <div class="ttc" id="astructripple_1_1detail_1_1LocalValues_html_a4141d19c6c424818710531e8b844ec62"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues.html#a4141d19c6c424818710531e8b844ec62">ripple::detail::LocalValues::onCoro</a></div><div class="ttdeci">bool onCoro</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00035">LocalValue.h:35</a></div></div>
 <div class="ttc" id="astructripple_1_1detail_1_1LocalValues_1_1Value_html_a3ec9ab8e8ab49e04ae18750815417c37"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues_1_1Value.html#a3ec9ab8e8ab49e04ae18750815417c37">ripple::detail::LocalValues::Value::Value</a></div><div class="ttdeci">Value()=default</div></div>
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
-<div class="ttc" id="astructripple_1_1detail_1_1LocalValues_1_1Value_html_ae5143bb826865c1c14d769ddc2127e00"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues_1_1Value.html#ae5143bb826865c1c14d769ddc2127e00">ripple::detail::LocalValues::Value::t_</a></div><div class="ttdeci">T t_</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00046">LocalValue.h:46</a></div></div>
+<div class="ttc" id="astructripple_1_1detail_1_1LocalValues_1_1Value_html_ae5143bb826865c1c14d769ddc2127e00"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues_1_1Value.html#ae5143bb826865c1c14d769ddc2127e00">ripple::detail::LocalValues::Value::t_</a></div><div class="ttdeci">T t_</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00047">LocalValue.h:47</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1LocalValue_html"><div class="ttname"><a href="classripple_1_1LocalValue.html">ripple::LocalValue</a></div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00082">LocalValue.h:82</a></div></div>
+<div class="ttc" id="aclassripple_1_1LocalValue_html"><div class="ttname"><a href="classripple_1_1LocalValue.html">ripple::LocalValue</a></div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00084">LocalValue.h:84</a></div></div>
 <div class="ttc" id="astructripple_1_1detail_1_1LocalValues_1_1BasicValue_html_ac52e02fcf8808667c8c18cea1da93637"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues_1_1BasicValue.html#ac52e02fcf8808667c8c18cea1da93637">ripple::detail::LocalValues::BasicValue::~BasicValue</a></div><div class="ttdeci">virtual ~BasicValue()=default</div></div>
 <div class="ttc" id="anamespacestd_html"><div class="ttname"><a href="namespacestd.html">std</a></div><div class="ttdoc">STL namespace.</div></div>
-<div class="ttc" id="astructripple_1_1detail_1_1LocalValues_1_1Value_html_ad06e2d8484a3d519d8f9a8933570f24f"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues_1_1Value.html#ad06e2d8484a3d519d8f9a8933570f24f">ripple::detail::LocalValues::Value::get</a></div><div class="ttdeci">void * get() override</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00051">LocalValue.h:51</a></div></div>
+<div class="ttc" id="astructripple_1_1detail_1_1LocalValues_1_1Value_html_ad06e2d8484a3d519d8f9a8933570f24f"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues_1_1Value.html#ad06e2d8484a3d519d8f9a8933570f24f">ripple::detail::LocalValues::Value::get</a></div><div class="ttdeci">void * get() override</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00055">LocalValue.h:55</a></div></div>
 <div class="ttc" id="astructripple_1_1detail_1_1LocalValues_1_1BasicValue_html"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues_1_1BasicValue.html">ripple::detail::LocalValues::BasicValue</a></div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00037">LocalValue.h:37</a></div></div>
-<div class="ttc" id="aclassripple_1_1LocalValue_html_aaaf9d81080297f71cd855adee9a525aa"><div class="ttname"><a href="classripple_1_1LocalValue.html#aaaf9d81080297f71cd855adee9a525aa">ripple::LocalValue::t_</a></div><div class="ttdeci">T t_</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00101">LocalValue.h:101</a></div></div>
-<div class="ttc" id="astructripple_1_1detail_1_1LocalValues_html_a0d218fc01bf5288be372040c506e055f"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues.html#a0d218fc01bf5288be372040c506e055f">ripple::detail::LocalValues::values</a></div><div class="ttdeci">std::unordered_map&lt; void const  *, std::unique_ptr&lt; BasicValue &gt; &gt; values</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00058">LocalValue.h:58</a></div></div>
+<div class="ttc" id="aclassripple_1_1LocalValue_html_aaaf9d81080297f71cd855adee9a525aa"><div class="ttname"><a href="classripple_1_1LocalValue.html#aaaf9d81080297f71cd855adee9a525aa">ripple::LocalValue::t_</a></div><div class="ttdeci">T t_</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00104">LocalValue.h:104</a></div></div>
+<div class="ttc" id="astructripple_1_1detail_1_1LocalValues_html_a0d218fc01bf5288be372040c506e055f"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues.html#a0d218fc01bf5288be372040c506e055f">ripple::detail::LocalValues::values</a></div><div class="ttdeci">std::unordered_map&lt; void const  *, std::unique_ptr&lt; BasicValue &gt; &gt; values</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00062">LocalValue.h:62</a></div></div>
 <div class="ttc" id="astructripple_1_1detail_1_1LocalValues_html"><div class="ttname"><a href="structripple_1_1detail_1_1LocalValues.html">ripple::detail::LocalValues</a></div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00031">LocalValue.h:31</a></div></div>
 <div class="ttc" id="aunordered_map_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/unordered_map.html">unordered_map</a></div></div>
-<div class="ttc" id="aclassripple_1_1LocalValue_html_ad8e0fe3cdb1f7ed4d6b1259d2716ae2c"><div class="ttname"><a href="classripple_1_1LocalValue.html#ad8e0fe3cdb1f7ed4d6b1259d2716ae2c">ripple::LocalValue::operator-&gt;</a></div><div class="ttdeci">T * operator-&gt;()</div><div class="ttdoc">Stores instance of T specific to the calling coroutine or thread.</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00095">LocalValue.h:95</a></div></div>
+<div class="ttc" id="aclassripple_1_1LocalValue_html_ad8e0fe3cdb1f7ed4d6b1259d2716ae2c"><div class="ttname"><a href="classripple_1_1LocalValue.html#ad8e0fe3cdb1f7ed4d6b1259d2716ae2c">ripple::LocalValue::operator-&gt;</a></div><div class="ttdeci">T * operator-&gt;()</div><div class="ttdoc">Stores instance of T specific to the calling coroutine or thread.</div><div class="ttdef"><b>Definition:</b> <a href="LocalValue_8h_source.html#l00098">LocalValue.h:98</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

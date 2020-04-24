@@ -91,12 +91,12 @@ $(function() {
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_TEST_CSF_UNL_H_INCLUDED</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_TEST_CSF_UNL_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;test/csf/random.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;boost/container/flat_set.hpp&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;boost/optional.hpp&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/chrono.html">chrono</a>&gt;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/numeric.html">numeric</a>&gt;</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/random.html">random</a>&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;boost/container/flat_set.hpp&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;boost/optional.hpp&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/chrono.html">chrono</a>&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/numeric.html">numeric</a>&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/random.html">random</a>&gt;</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;test/csf/random.h&gt;</span></div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/vector.html">vector</a>&gt;</span></div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
@@ -139,7 +139,7 @@ $(function() {
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    }</div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="keyword">auto</span></div>
-<div class="line"><a name="l00103"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#aad907b51c0be8ec01405ba14661f1610">  103</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#aad907b51c0be8ec01405ba14661f1610">trustedPeers</a>(<a class="code" href="structripple_1_1test_1_1csf_1_1Peer.html">Peer</a> <span class="keyword">const</span> &amp; a)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00103"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#aad907b51c0be8ec01405ba14661f1610">  103</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#aad907b51c0be8ec01405ba14661f1610">trustedPeers</a>(<a class="code" href="structripple_1_1test_1_1csf_1_1Peer.html">Peer</a> <span class="keyword">const</span>&amp; a)<span class="keyword"> const</span></div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="keyword">    </span>{</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#a9935822bec9848cc44423d264407ff46">graph_</a>.<a class="code" href="classripple_1_1test_1_1csf_1_1Digraph.html#a4eb88a3a85abfd45f454a43efc40b234">outVertices</a>(a);</div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    }</div>
@@ -163,7 +163,7 @@ $(function() {
 <div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160; </div>
 <div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;        <span class="keyword">using</span> UNL = <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set&lt;Peer&gt;</a>;</div>
 <div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set&lt;UNL&gt;</a> unique;</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        <span class="keywordflow">for</span> (<a class="code" href="structripple_1_1test_1_1csf_1_1Peer.html">Peer</a> <span class="keyword">const</span> &amp; peer : <a class="code" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#a9935822bec9848cc44423d264407ff46">graph_</a>.<a class="code" href="classripple_1_1test_1_1csf_1_1Digraph.html#a4eb88a3a85abfd45f454a43efc40b234">outVertices</a>())</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        <span class="keywordflow">for</span> (<a class="code" href="structripple_1_1test_1_1csf_1_1Peer.html">Peer</a> <span class="keyword">const</span>&amp; peer : <a class="code" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#a9935822bec9848cc44423d264407ff46">graph_</a>.<a class="code" href="classripple_1_1test_1_1csf_1_1Digraph.html#a4eb88a3a85abfd45f454a43efc40b234">outVertices</a>())</div>
 <div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        {</div>
 <div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;            unique.emplace(</div>
 <div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/begin.html">std::begin</a>(<a class="code" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#aad907b51c0be8ec01405ba14661f1610">trustedPeers</a>(peer)), <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/end.html">std::end</a>(<a class="code" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#aad907b51c0be8ec01405ba14661f1610">trustedPeers</a>(peer)));</div>
@@ -182,32 +182,33 @@ $(function() {
 <div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;                <span class="keywordtype">double</span> rhs =</div>
 <div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                    2.0 * (1. - quorum) * <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a>(unlA.size(), unlB.size());</div>
 <div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160; </div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                <span class="keywordtype">int</span> intersectionSize = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/count.html">std::count_if</a>(</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                    unlA.begin(), unlA.end(), [&amp;](<a class="code" href="structripple_1_1test_1_1csf_1_1Peer.html">Peer</a> p) {</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                <span class="keywordtype">int</span> intersectionSize =</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/count.html">std::count_if</a>(unlA.begin(), unlA.end(), [&amp;](<a class="code" href="structripple_1_1test_1_1csf_1_1Peer.html">Peer</a> p) {</div>
 <div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                        return unlB.find(p) != unlB.end();</div>
 <div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                    });</div>
 <div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160; </div>
 <div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;                <span class="keywordflow">if</span> (intersectionSize &lt; rhs)</div>
 <div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                {</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                    res.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(ForkInfo{unlA, unlB, intersectionSize, rhs});</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;                }</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;            }</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;        }</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;        <span class="keywordflow">return</span> res;</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    }</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160; </div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00166"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#a96ee13c05cdec0745818f87c553e7bb4">  166</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#a96ee13c05cdec0745818f87c553e7bb4">canFork</a>(<span class="keywordtype">double</span> quorum)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;        <span class="keywordflow">return</span> !<a class="code" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#aece24fb715be8173bdf87d4ea29a6622">forkablePairs</a>(quorum).empty();</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    }</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;};</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160; </div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;}  <span class="comment">// csf</span></div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;}  <span class="comment">// test</span></div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;}  <span class="comment">// ripple</span></div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160; </div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                    res.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;                        ForkInfo{unlA, unlB, intersectionSize, rhs});</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;                }</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;            }</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;        }</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;        <span class="keywordflow">return</span> res;</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    }</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160; </div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00167"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#a96ee13c05cdec0745818f87c553e7bb4">  167</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#a96ee13c05cdec0745818f87c553e7bb4">canFork</a>(<span class="keywordtype">double</span> quorum)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;        <span class="keywordflow">return</span> !<a class="code" href="classripple_1_1test_1_1csf_1_1TrustGraph.html#aece24fb715be8173bdf87d4ea29a6622">forkablePairs</a>(quorum).empty();</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    }</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;};</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160; </div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;}  <span class="comment">// namespace csf</span></div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160; </div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1test_1_1csf_1_1TrustGraph_html"><div class="ttname"><a href="classripple_1_1test_1_1csf_1_1TrustGraph.html">ripple::test::csf::TrustGraph</a></div><div class="ttdoc">Trust graph.</div><div class="ttdef"><b>Definition:</b> <a href="TrustGraph_8h_source.html#l00043">TrustGraph.h:43</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1csf_1_1Digraph_html_a4eb88a3a85abfd45f454a43efc40b234"><div class="ttname"><a href="classripple_1_1test_1_1csf_1_1Digraph.html#a4eb88a3a85abfd45f454a43efc40b234">ripple::test::csf::Digraph::outVertices</a></div><div class="ttdeci">auto outVertices() const</div><div class="ttdoc">Range over vertices in the graph.</div><div class="ttdef"><b>Definition:</b> <a href="Digraph_8h_source.html#l00148">Digraph.h:148</a></div></div>
@@ -231,7 +232,7 @@ $(function() {
 <div class="ttc" id="abegin_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/begin.html">std::begin</a></div><div class="ttdeci">T begin(T... args)</div></div>
 <div class="ttc" id="acount_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/count.html">std::count_if</a></div><div class="ttdeci">T count_if(T... args)</div></div>
 <div class="ttc" id="aend_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/end.html">std::end</a></div><div class="ttdeci">T end(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1csf_1_1TrustGraph_html_a96ee13c05cdec0745818f87c553e7bb4"><div class="ttname"><a href="classripple_1_1test_1_1csf_1_1TrustGraph.html#a96ee13c05cdec0745818f87c553e7bb4">ripple::test::csf::TrustGraph::canFork</a></div><div class="ttdeci">bool canFork(double quorum) const</div><div class="ttdoc">Check whether this trust graph satisfies the whitepaper no-forking condition.</div><div class="ttdef"><b>Definition:</b> <a href="TrustGraph_8h_source.html#l00166">TrustGraph.h:166</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1csf_1_1TrustGraph_html_a96ee13c05cdec0745818f87c553e7bb4"><div class="ttname"><a href="classripple_1_1test_1_1csf_1_1TrustGraph.html#a96ee13c05cdec0745818f87c553e7bb4">ripple::test::csf::TrustGraph::canFork</a></div><div class="ttdeci">bool canFork(double quorum) const</div><div class="ttdoc">Check whether this trust graph satisfies the whitepaper no-forking condition.</div><div class="ttdef"><b>Definition:</b> <a href="TrustGraph_8h_source.html#l00167">TrustGraph.h:167</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1csf_1_1Digraph_html_af5178dc42903feb3893fbf50cb895d0e"><div class="ttname"><a href="classripple_1_1test_1_1csf_1_1Digraph.html#af5178dc42903feb3893fbf50cb895d0e">ripple::test::csf::Digraph::connect</a></div><div class="ttdeci">bool connect(Vertex source, Vertex target, EdgeData e)</div><div class="ttdoc">Connect two vertices.</div><div class="ttdef"><b>Definition:</b> <a href="Digraph_8h_source.html#l00073">Digraph.h:73</a></div></div>
 <div class="ttc" id="anumeric_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/numeric.html">numeric</a></div></div>
 <div class="ttc" id="amax_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a></div><div class="ttdeci">T max(T... args)</div></div>

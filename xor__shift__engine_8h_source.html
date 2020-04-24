@@ -106,106 +106,97 @@ $(function() {
 <div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="classbeast_1_1detail_1_1xor__shift__engine.html#a12aadecba88d8557fe86dd1602d5d30e">   35</a></span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>;</div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#aae4328d24a4c7c8ad8138c2eb293ae5b">xor_shift_engine</a>(<a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html">xor_shift_engine</a> <span class="keyword">const</span>&amp;) = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html">xor_shift_engine</a>&amp; <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#a6e87109f3d77b1c879a25fc97565cf76">operator=</a>(<a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html">xor_shift_engine</a> <span class="keyword">const</span>&amp;) = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keyword">explicit</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#aae4328d24a4c7c8ad8138c2eb293ae5b">xor_shift_engine</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> val = 1977u);</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html">xor_shift_engine</a>&amp;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#a6e87109f3d77b1c879a25fc97565cf76">operator=</a>(<a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html">xor_shift_engine</a> <span class="keyword">const</span>&amp;) = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keyword">explicit</span> <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#aae4328d24a4c7c8ad8138c2eb293ae5b">xor_shift_engine</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> val = 1977u);</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#a2fcebbc5ae3ff950e5bd4bfa6ecdf491">seed</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#a2fcebbc5ae3ff950e5bd4bfa6ecdf491">seed</a>);</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#a2fcebbc5ae3ff950e5bd4bfa6ecdf491">seed</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#a2fcebbc5ae3ff950e5bd4bfa6ecdf491">seed</a>);</div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a></div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#a2f37ec7c54ded487e30ebc2e23ef7fdb">operator()</a>();</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keyword">static</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> constexpr</div>
-<div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="classbeast_1_1detail_1_1xor__shift__engine.html#ae8de99003fe4e87a9443dd6590e04fb2">   51</a></span>&#160;    <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#ae8de99003fe4e87a9443dd6590e04fb2">min</a>()</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    {</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits/min.html">std::numeric_limits&lt;result_type&gt;::min</a>();</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    }</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keyword">static</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#a12aadecba88d8557fe86dd1602d5d30e">result_type</a> constexpr</div>
-<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="classbeast_1_1detail_1_1xor__shift__engine.html#a5cd1d97ec94e64d46d6349938bc47518">   58</a></span>&#160;    <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#a5cd1d97ec94e64d46d6349938bc47518">max</a>()</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    {</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits/max.html">std::numeric_limits&lt;result_type&gt;::max</a>();</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    }</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00064"></a><span class="lineno"><a class="line" href="classbeast_1_1detail_1_1xor__shift__engine.html#ae972127733fd8c724b8bcbc6e22af828">   64</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#ae972127733fd8c724b8bcbc6e22af828">s_</a>[2];</div>
+<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="classbeast_1_1detail_1_1xor__shift__engine.html#ae8de99003fe4e87a9443dd6590e04fb2">   49</a></span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> constexpr <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#ae8de99003fe4e87a9443dd6590e04fb2">min</a>()</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    {</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits/min.html">std::numeric_limits&lt;result_type&gt;::min</a>();</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    }</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno"><a class="line" href="classbeast_1_1detail_1_1xor__shift__engine.html#a5cd1d97ec94e64d46d6349938bc47518">   54</a></span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> constexpr <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#a5cd1d97ec94e64d46d6349938bc47518">max</a>()</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    {</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits/max.html">std::numeric_limits&lt;result_type&gt;::max</a>();</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    }</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00060"></a><span class="lineno"><a class="line" href="classbeast_1_1detail_1_1xor__shift__engine.html#ae972127733fd8c724b8bcbc6e22af828">   60</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#ae972127733fd8c724b8bcbc6e22af828">s_</a>[2];</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#ab3b086d78bcaabde36a1219adf2b4190">murmurhash3</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> x);</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;};</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keyword">static</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a></div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#ab3b086d78bcaabde36a1219adf2b4190">murmurhash3</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> x);</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;};</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> _&gt;</div>
-<div class="line"><a name="l00072"></a><span class="lineno"><a class="line" href="classbeast_1_1detail_1_1xor__shift__engine.html#a16edb0ef62460730cc1f48409905419d">   72</a></span>&#160;<a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#aae4328d24a4c7c8ad8138c2eb293ae5b">xor_shift_engine&lt;_&gt;::xor_shift_engine</a> (</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> val)</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;{</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    seed (val);</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;}</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> _&gt;</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno"><a class="line" href="classbeast_1_1detail_1_1xor__shift__engine.html#a2fcebbc5ae3ff950e5bd4bfa6ecdf491">   80</a></span>&#160;<a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#a2fcebbc5ae3ff950e5bd4bfa6ecdf491">xor_shift_engine&lt;_&gt;::seed</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> seed)</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;{</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keywordflow">if</span> (seed == 0)</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/domain_error.html">std::domain_error</a>(<span class="stringliteral">&quot;invalid seed&quot;</span>);</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    s_[0] = murmurhash3 (seed);</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    s_[1] = murmurhash3 (s_[0]);</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;}</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> _&gt;</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="keyword">auto</span></div>
-<div class="line"><a name="l00090"></a><span class="lineno"><a class="line" href="classbeast_1_1detail_1_1xor__shift__engine.html#a2f37ec7c54ded487e30ebc2e23ef7fdb">   90</a></span>&#160;<a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#a2f37ec7c54ded487e30ebc2e23ef7fdb">xor_shift_engine&lt;_&gt;::operator()</a>() -&gt;</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a></div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;{</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> s1 = s_[0];</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> <span class="keyword">const</span> s0 = s_[1];</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    s_[0] = s0;</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    s1 ^= s1 &lt;&lt; 23;</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keywordflow">return</span> (s_[1] = (s1 ^ s0 ^ (s1 &gt;&gt; 17) ^ (s0 &gt;&gt; 26))) + s0;</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;}</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> _&gt;</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="keyword">auto</span></div>
-<div class="line"><a name="l00102"></a><span class="lineno"><a class="line" href="classbeast_1_1detail_1_1xor__shift__engine.html#ab3b086d78bcaabde36a1219adf2b4190">  102</a></span>&#160;<a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#ab3b086d78bcaabde36a1219adf2b4190">xor_shift_engine&lt;_&gt;::murmurhash3</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> x)</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    -&gt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a></div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;{</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    x ^= x &gt;&gt; 33;</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    x *= 0xff51afd7ed558ccdULL;</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    x ^= x &gt;&gt; 33;</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    x *= 0xc4ceb9fe1a85ec53ULL;</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="keywordflow">return</span> x ^= x &gt;&gt; 33;</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;}</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;} <span class="comment">// detail</span></div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160; </div>
-<div class="line"><a name="l00122"></a><span class="lineno"><a class="line" href="namespacebeast.html#a3a89b040ab5ccff1b2ce7692464c6a48">  122</a></span>&#160;<span class="keyword">using</span> <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html">xor_shift_engine</a> = <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html">detail::xor_shift_engine&lt;&gt;</a>;</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160; </div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;}</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> _&gt;</div>
+<div class="line"><a name="l00067"></a><span class="lineno"><a class="line" href="classbeast_1_1detail_1_1xor__shift__engine.html#a16edb0ef62460730cc1f48409905419d">   67</a></span>&#160;<a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#aae4328d24a4c7c8ad8138c2eb293ae5b">xor_shift_engine&lt;_&gt;::xor_shift_engine</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> val)</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;{</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    seed(val);</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;}</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> _&gt;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="classbeast_1_1detail_1_1xor__shift__engine.html#a2fcebbc5ae3ff950e5bd4bfa6ecdf491">   74</a></span>&#160;<a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#a2fcebbc5ae3ff950e5bd4bfa6ecdf491">xor_shift_engine&lt;_&gt;::seed</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> seed)</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;{</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keywordflow">if</span> (seed == 0)</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <span class="keywordflow">throw</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/domain_error.html">std::domain_error</a>(<span class="stringliteral">&quot;invalid seed&quot;</span>);</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    s_[0] = murmurhash3(seed);</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    s_[1] = murmurhash3(s_[0]);</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;}</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> _&gt;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="keyword">auto</span></div>
+<div class="line"><a name="l00084"></a><span class="lineno"><a class="line" href="classbeast_1_1detail_1_1xor__shift__engine.html#a2f37ec7c54ded487e30ebc2e23ef7fdb">   84</a></span>&#160;<a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#a2f37ec7c54ded487e30ebc2e23ef7fdb">xor_shift_engine&lt;_&gt;::operator()</a>() -&gt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a></div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;{</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> s1 = s_[0];</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> <span class="keyword">const</span> s0 = s_[1];</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    s_[0] = s0;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    s1 ^= s1 &lt;&lt; 23;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="keywordflow">return</span> (s_[1] = (s1 ^ s0 ^ (s1 &gt;&gt; 17) ^ (s0 &gt;&gt; 26))) + s0;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;}</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> _&gt;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="keyword">auto</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno"><a class="line" href="classbeast_1_1detail_1_1xor__shift__engine.html#ab3b086d78bcaabde36a1219adf2b4190">   95</a></span>&#160;<a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html#ab3b086d78bcaabde36a1219adf2b4190">xor_shift_engine&lt;_&gt;::murmurhash3</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a> x) -&gt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">result_type</a></div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;{</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    x ^= x &gt;&gt; 33;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    x *= 0xff51afd7ed558ccdULL;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    x ^= x &gt;&gt; 33;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    x *= 0xc4ceb9fe1a85ec53ULL;</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="keywordflow">return</span> x ^= x &gt;&gt; 33;</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;}</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;}  <span class="comment">// namespace detail</span></div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
+<div class="line"><a name="l00114"></a><span class="lineno"><a class="line" href="namespacebeast.html#a3a89b040ab5ccff1b2ce7692464c6a48">  114</a></span>&#160;<span class="keyword">using</span> <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html">xor_shift_engine</a> = <a class="code" href="classbeast_1_1detail_1_1xor__shift__engine.html">detail::xor_shift_engine&lt;&gt;</a>;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;}  <span class="comment">// namespace beast</span></div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160; </div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="adomain_error_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/domain_error.html">std::domain_error</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html_a12aadecba88d8557fe86dd1602d5d30e"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html#a12aadecba88d8557fe86dd1602d5d30e">beast::detail::xor_shift_engine::result_type</a></div><div class="ttdeci">std::uint64_t result_type</div><div class="ttdef"><b>Definition:</b> <a href="xor__shift__engine_8h_source.html#l00035">xor_shift_engine.h:35</a></div></div>
-<div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html_a2f37ec7c54ded487e30ebc2e23ef7fdb"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html#a2f37ec7c54ded487e30ebc2e23ef7fdb">beast::detail::xor_shift_engine::operator()</a></div><div class="ttdeci">result_type operator()()</div><div class="ttdef"><b>Definition:</b> <a href="xor__shift__engine_8h_source.html#l00090">xor_shift_engine.h:90</a></div></div>
-<div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html_ab3b086d78bcaabde36a1219adf2b4190"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html#ab3b086d78bcaabde36a1219adf2b4190">beast::detail::xor_shift_engine::murmurhash3</a></div><div class="ttdeci">static result_type murmurhash3(result_type x)</div><div class="ttdef"><b>Definition:</b> <a href="xor__shift__engine_8h_source.html#l00102">xor_shift_engine.h:102</a></div></div>
+<div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html_a2f37ec7c54ded487e30ebc2e23ef7fdb"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html#a2f37ec7c54ded487e30ebc2e23ef7fdb">beast::detail::xor_shift_engine::operator()</a></div><div class="ttdeci">result_type operator()()</div><div class="ttdef"><b>Definition:</b> <a href="xor__shift__engine_8h_source.html#l00084">xor_shift_engine.h:84</a></div></div>
+<div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html_ab3b086d78bcaabde36a1219adf2b4190"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html#ab3b086d78bcaabde36a1219adf2b4190">beast::detail::xor_shift_engine::murmurhash3</a></div><div class="ttdeci">static result_type murmurhash3(result_type x)</div><div class="ttdef"><b>Definition:</b> <a href="xor__shift__engine_8h_source.html#l00095">xor_shift_engine.h:95</a></div></div>
 <div class="ttc" id="astdexcept_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/stdexcept.html">stdexcept</a></div></div>
 <div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html_aae4328d24a4c7c8ad8138c2eb293ae5b"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html#aae4328d24a4c7c8ad8138c2eb293ae5b">beast::detail::xor_shift_engine::xor_shift_engine</a></div><div class="ttdeci">xor_shift_engine(xor_shift_engine const &amp;)=default</div></div>
-<div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html_a2fcebbc5ae3ff950e5bd4bfa6ecdf491"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html#a2fcebbc5ae3ff950e5bd4bfa6ecdf491">beast::detail::xor_shift_engine::seed</a></div><div class="ttdeci">void seed(result_type seed)</div><div class="ttdef"><b>Definition:</b> <a href="xor__shift__engine_8h_source.html#l00080">xor_shift_engine.h:80</a></div></div>
+<div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html_a2fcebbc5ae3ff950e5bd4bfa6ecdf491"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html#a2fcebbc5ae3ff950e5bd4bfa6ecdf491">beast::detail::xor_shift_engine::seed</a></div><div class="ttdeci">void seed(result_type seed)</div><div class="ttdef"><b>Definition:</b> <a href="xor__shift__engine_8h_source.html#l00074">xor_shift_engine.h:74</a></div></div>
 <div class="ttc" id="acstdint_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a></div></div>
-<div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html_a5cd1d97ec94e64d46d6349938bc47518"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html#a5cd1d97ec94e64d46d6349938bc47518">beast::detail::xor_shift_engine::max</a></div><div class="ttdeci">static constexpr result_type max()</div><div class="ttdef"><b>Definition:</b> <a href="xor__shift__engine_8h_source.html#l00058">xor_shift_engine.h:58</a></div></div>
+<div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html_a5cd1d97ec94e64d46d6349938bc47518"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html#a5cd1d97ec94e64d46d6349938bc47518">beast::detail::xor_shift_engine::max</a></div><div class="ttdeci">static constexpr result_type max()</div><div class="ttdef"><b>Definition:</b> <a href="xor__shift__engine_8h_source.html#l00054">xor_shift_engine.h:54</a></div></div>
 <div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html_a6e87109f3d77b1c879a25fc97565cf76"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html#a6e87109f3d77b1c879a25fc97565cf76">beast::detail::xor_shift_engine::operator=</a></div><div class="ttdeci">xor_shift_engine &amp; operator=(xor_shift_engine const &amp;)=default</div></div>
 <div class="ttc" id="amin_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/numeric_limits/min.html">std::numeric_limits::min</a></div><div class="ttdeci">T min(T... args)</div></div>
 <div class="ttc" id="alimits_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/limits.html">limits</a></div></div>
 <div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html">beast::detail::xor_shift_engine</a></div><div class="ttdef"><b>Definition:</b> <a href="xor__shift__engine_8h_source.html#l00032">xor_shift_engine.h:32</a></div></div>
 <div class="ttc" id="amax_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/numeric_limits/max.html">std::numeric_limits::max</a></div><div class="ttdeci">T max(T... args)</div></div>
-<div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html_ae972127733fd8c724b8bcbc6e22af828"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html#ae972127733fd8c724b8bcbc6e22af828">beast::detail::xor_shift_engine::s_</a></div><div class="ttdeci">result_type s_[2]</div><div class="ttdef"><b>Definition:</b> <a href="xor__shift__engine_8h_source.html#l00064">xor_shift_engine.h:64</a></div></div>
-<div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html_ae8de99003fe4e87a9443dd6590e04fb2"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html#ae8de99003fe4e87a9443dd6590e04fb2">beast::detail::xor_shift_engine::min</a></div><div class="ttdeci">static constexpr result_type min()</div><div class="ttdef"><b>Definition:</b> <a href="xor__shift__engine_8h_source.html#l00051">xor_shift_engine.h:51</a></div></div>
-<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00582">base_uint.h:582</a></div></div>
+<div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html_ae972127733fd8c724b8bcbc6e22af828"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html#ae972127733fd8c724b8bcbc6e22af828">beast::detail::xor_shift_engine::s_</a></div><div class="ttdeci">result_type s_[2]</div><div class="ttdef"><b>Definition:</b> <a href="xor__shift__engine_8h_source.html#l00060">xor_shift_engine.h:60</a></div></div>
+<div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html_ae8de99003fe4e87a9443dd6590e04fb2"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html#ae8de99003fe4e87a9443dd6590e04fb2">beast::detail::xor_shift_engine::min</a></div><div class="ttdeci">static constexpr result_type min()</div><div class="ttdef"><b>Definition:</b> <a href="xor__shift__engine_8h_source.html#l00049">xor_shift_engine.h:49</a></div></div>
+<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00646">base_uint.h:646</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

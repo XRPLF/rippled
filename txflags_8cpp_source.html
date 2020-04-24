@@ -88,8 +88,8 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;test/jtx/txflags.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/jss.h&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/jss.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;test/jtx/txflags.h&gt;</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="keyword">namespace </span>test {</div>
@@ -98,19 +98,18 @@ $(function() {
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keywordtype">void</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1txflags.html#a31c68c9bd93de16d1464c09953274d76">   28</a></span>&#160;<a class="code" href="classripple_1_1test_1_1jtx_1_1txflags.html#a31c68c9bd93de16d1464c09953274d76">txflags::operator()</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a>&amp;, <a class="code" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a>&amp; jt)<span class="keyword"> const</span></div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    jt[jss::Flags] =</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1txflags.html#a759386c4bc7b92510cbb398e8a87a75d">v_</a> <span class="comment">/*| tfUniversal*/</span>;</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;}</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;} <span class="comment">// jtx</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;} <span class="comment">// test</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    jt[jss::Flags] = <a class="code" href="classripple_1_1test_1_1jtx_1_1txflags.html#a759386c4bc7b92510cbb398e8a87a75d">v_</a> <span class="comment">/*| tfUniversal*/</span>;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;}</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;}  <span class="comment">// namespace jtx</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1txflags_html_a31c68c9bd93de16d1464c09953274d76"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1txflags.html#a31c68c9bd93de16d1464c09953274d76">ripple::test::jtx::txflags::operator()</a></div><div class="ttdeci">void operator()(Env &amp;, JTx &amp;jt) const</div><div class="ttdef"><b>Definition:</b> <a href="txflags_8cpp_source.html#l00028">txflags.cpp:28</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1jtx_1_1JTx_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1JTx.html">ripple::test::jtx::JTx</a></div><div class="ttdoc">Execution context for applying a JSON transaction.</div><div class="ttdef"><b>Definition:</b> <a href="JTx_8h_source.html#l00041">JTx.h:41</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1txflags_html_a759386c4bc7b92510cbb398e8a87a75d"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1txflags.html#a759386c4bc7b92510cbb398e8a87a75d">ripple::test::jtx::txflags::v_</a></div><div class="ttdeci">std::uint32_t v_</div><div class="ttdef"><b>Definition:</b> <a href="txflags_8h_source.html#l00033">txflags.h:33</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00117">Env.h:117</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00114">Env.h:114</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

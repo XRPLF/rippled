@@ -92,10 +92,10 @@ $(function() {
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_SERVER_SERVERIMPL_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/chrono.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/server/Server.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/server/impl/Door.h&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/server/impl/io_list.h&gt;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/core/List.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/core/List.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/server/Server.h&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/server/impl/Door.h&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;ripple/server/impl/io_list.h&gt;</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;boost/asio.hpp&gt;</span></div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;boost/optional.hpp&gt;</span></div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/array.html">array</a>&gt;</span></div>
@@ -109,195 +109,184 @@ $(function() {
 <div class="line"><a name="l00044"></a><span class="lineno"><a class="line" href="classripple_1_1Server.html">   44</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1Server.html">Server</a></div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;{</div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <a class="code" href="classripple_1_1Server.html#a47a7a65d04eca040324d978e224ae25d">~Server</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <a class="code" href="classripple_1_1Server.html#a6a984892293a31d9200217b6a3dd1e07">journal</a>() = 0;</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">Endpoints</a></div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <a class="code" href="classripple_1_1Server.html#a132e76325036846794780c22431f78c7">ports</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;Port&gt;</a> <span class="keyword">const</span>&amp; v) = 0;</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <a class="code" href="classripple_1_1Server.html#a022b4bd53b1eda3db97e404f90b31e4e">close</a>() = 0;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;};</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">class</span> Handler&gt;</div>
-<div class="line"><a name="l00080"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html">   80</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1ServerImpl.html">ServerImpl</a> : <span class="keyword">public</span> <a class="code" href="classripple_1_1Server.html">Server</a></div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;{</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00083"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a134e08537160d2088991324e7f3a5ddc">   83</a></span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock.html">clock_type</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock.html">std::chrono::system_clock</a>;</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keyword">enum</span></div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    {</div>
-<div class="line"><a name="l00087"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a59a5d0e905acfe5581301e8221c8a5a8ae8170535e048264df0ca466fd9efc1c5">   87</a></span>&#160;        <a class="code" href="classripple_1_1ServerImpl.html#a59a5d0e905acfe5581301e8221c8a5a8ae8170535e048264df0ca466fd9efc1c5">historySize</a> = 100</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    };</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
-<div class="line"><a name="l00090"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a2ac918daffa1a484e18976016c08c694">   90</a></span>&#160;    Handler&amp; <a class="code" href="classripple_1_1ServerImpl.html#a2ac918daffa1a484e18976016c08c694">handler_</a>;</div>
-<div class="line"><a name="l00091"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#ae025c381ec67b7a0e8d2dda117a1f0a4">   91</a></span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> <span class="keyword">const</span> <a class="code" href="classripple_1_1ServerImpl.html#ae025c381ec67b7a0e8d2dda117a1f0a4">j_</a>;</div>
-<div class="line"><a name="l00092"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#abc8b2cd27e96f5c9e17f2f367621aa74">   92</a></span>&#160;    boost::asio::io_service&amp; <a class="code" href="classripple_1_1ServerImpl.html#abc8b2cd27e96f5c9e17f2f367621aa74">io_service_</a>;</div>
-<div class="line"><a name="l00093"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a4381c7cdaa12f67103483800bd4fc45e">   93</a></span>&#160;    boost::asio::io_service::strand <a class="code" href="classripple_1_1ServerImpl.html#a4381c7cdaa12f67103483800bd4fc45e">strand_</a>;</div>
-<div class="line"><a name="l00094"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a8bfe461103dccb2b8f223a484acd753e">   94</a></span>&#160;    boost::optional &lt;boost::asio::io_service::work&gt; <a class="code" href="classripple_1_1ServerImpl.html#a8bfe461103dccb2b8f223a484acd753e">work_</a>;</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
-<div class="line"><a name="l00096"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a513dfd120f4beb08bbc6e1b48d711b85">   96</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> <a class="code" href="classripple_1_1ServerImpl.html#a513dfd120f4beb08bbc6e1b48d711b85">m_</a>;</div>
-<div class="line"><a name="l00097"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a46a39f953c1881b5678a8d7f398e2ff7">   97</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;Port&gt;</a> <a class="code" href="classripple_1_1ServerImpl.html#a46a39f953c1881b5678a8d7f398e2ff7">ports_</a>;</div>
-<div class="line"><a name="l00098"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a301e425d32d062df177f6e14b1ba07d6">   98</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::weak_ptr&lt;Door&lt;Handler&gt;</a>&gt;&gt; <a class="code" href="classripple_1_1ServerImpl.html#a301e425d32d062df177f6e14b1ba07d6">list_</a>;</div>
-<div class="line"><a name="l00099"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a42561f74b5194d343345c4ab59324cfc">   99</a></span>&#160;    <span class="keywordtype">int</span> <a class="code" href="classripple_1_1ServerImpl.html#a42561f74b5194d343345c4ab59324cfc">high_</a> = 0;</div>
-<div class="line"><a name="l00100"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a85f077a05f64f71dfc9714b68e3e75b8">  100</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array &lt;std::size_t, 64&gt;</a> <a class="code" href="classripple_1_1ServerImpl.html#a85f077a05f64f71dfc9714b68e3e75b8">hist_</a>;</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
-<div class="line"><a name="l00102"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a5da61b86dfcb13e56fb0f836242c1f02">  102</a></span>&#160;    <a class="code" href="classripple_1_1io__list.html">io_list</a> <a class="code" href="classripple_1_1ServerImpl.html#a5da61b86dfcb13e56fb0f836242c1f02">ios_</a>;</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#adeab259dfa2a7360747d6500fe49cfa6">ServerImpl</a>(Handler&amp; handler,</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        boost::asio::io_service&amp; io_service, <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> <a class="code" href="classripple_1_1ServerImpl.html#ab56061fcb6bb1d06451af082c3bdf8a0">journal</a>);</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#a7ac3729ff2586fa7fa6e534b6ef08cf7">~ServerImpl</a>();</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a></div>
-<div class="line"><a name="l00111"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#ab56061fcb6bb1d06451af082c3bdf8a0">  111</a></span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#ab56061fcb6bb1d06451af082c3bdf8a0">journal</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1ServerImpl.html#ae025c381ec67b7a0e8d2dda117a1f0a4">j_</a>;</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    }</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">Endpoints</a></div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#adfd8ae8449f7ceea13448c876af52741">ports</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;Port&gt;</a> <span class="keyword">const</span>&amp; <a class="code" href="classripple_1_1ServerImpl.html#adfd8ae8449f7ceea13448c876af52741">ports</a>) <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#a6b32ac32433b2227c36b762fb195ec5d">close</a>() <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160; </div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <a class="code" href="classripple_1_1io__list.html">io_list</a>&amp;</div>
-<div class="line"><a name="l00123"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a7a97dccf0c51594abbc745bc3fed95d0">  123</a></span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#a7a97dccf0c51594abbc745bc3fed95d0">ios</a>()</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;    {</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1ServerImpl.html#a5da61b86dfcb13e56fb0f836242c1f02">ios_</a>;</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    }</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    boost::asio::io_service&amp;</div>
-<div class="line"><a name="l00129"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a78e05f0175a3f3b39aeb1aad3b35f5a4">  129</a></span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#a78e05f0175a3f3b39aeb1aad3b35f5a4">get_io_service</a>()</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    {</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1ServerImpl.html#abc8b2cd27e96f5c9e17f2f367621aa74">io_service_</a>;</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    }</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160; </div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#acf9ee99a6aedefb0ecbea546739faa7b">closed</a>();</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classripple_1_1Server.html#a47a7a65d04eca040324d978e224ae25d">~Server</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a></div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <a class="code" href="classripple_1_1Server.html#a6a984892293a31d9200217b6a3dd1e07">journal</a>() = 0;</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">Endpoints</a></div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <a class="code" href="classripple_1_1Server.html#a132e76325036846794780c22431f78c7">ports</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;Port&gt;</a> <span class="keyword">const</span>&amp; v) = 0;</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <a class="code" href="classripple_1_1Server.html#a022b4bd53b1eda3db97e404f90b31e4e">close</a>() = 0;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;};</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Handler&gt;</div>
+<div class="line"><a name="l00076"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html">   76</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1ServerImpl.html">ServerImpl</a> : <span class="keyword">public</span> <a class="code" href="classripple_1_1Server.html">Server</a></div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;{</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00079"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a134e08537160d2088991324e7f3a5ddc">   79</a></span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock.html">clock_type</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/system_clock.html">std::chrono::system_clock</a>;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
+<div class="line"><a name="l00081"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a59a5d0e905acfe5581301e8221c8a5a8ae8170535e048264df0ca466fd9efc1c5">   81</a></span>&#160;    <span class="keyword">enum</span> { <a class="code" href="classripple_1_1ServerImpl.html#a59a5d0e905acfe5581301e8221c8a5a8ae8170535e048264df0ca466fd9efc1c5">historySize</a> = 100 };</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
+<div class="line"><a name="l00083"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a2ac918daffa1a484e18976016c08c694">   83</a></span>&#160;    Handler&amp; <a class="code" href="classripple_1_1ServerImpl.html#a2ac918daffa1a484e18976016c08c694">handler_</a>;</div>
+<div class="line"><a name="l00084"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#ae025c381ec67b7a0e8d2dda117a1f0a4">   84</a></span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> <span class="keyword">const</span> <a class="code" href="classripple_1_1ServerImpl.html#ae025c381ec67b7a0e8d2dda117a1f0a4">j_</a>;</div>
+<div class="line"><a name="l00085"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#abc8b2cd27e96f5c9e17f2f367621aa74">   85</a></span>&#160;    boost::asio::io_service&amp; <a class="code" href="classripple_1_1ServerImpl.html#abc8b2cd27e96f5c9e17f2f367621aa74">io_service_</a>;</div>
+<div class="line"><a name="l00086"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a4381c7cdaa12f67103483800bd4fc45e">   86</a></span>&#160;    boost::asio::io_service::strand <a class="code" href="classripple_1_1ServerImpl.html#a4381c7cdaa12f67103483800bd4fc45e">strand_</a>;</div>
+<div class="line"><a name="l00087"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a8bfe461103dccb2b8f223a484acd753e">   87</a></span>&#160;    boost::optional&lt;boost::asio::io_service::work&gt; <a class="code" href="classripple_1_1ServerImpl.html#a8bfe461103dccb2b8f223a484acd753e">work_</a>;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
+<div class="line"><a name="l00089"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a513dfd120f4beb08bbc6e1b48d711b85">   89</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> <a class="code" href="classripple_1_1ServerImpl.html#a513dfd120f4beb08bbc6e1b48d711b85">m_</a>;</div>
+<div class="line"><a name="l00090"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a46a39f953c1881b5678a8d7f398e2ff7">   90</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;Port&gt;</a> <a class="code" href="classripple_1_1ServerImpl.html#a46a39f953c1881b5678a8d7f398e2ff7">ports_</a>;</div>
+<div class="line"><a name="l00091"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a301e425d32d062df177f6e14b1ba07d6">   91</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::weak_ptr&lt;Door&lt;Handler&gt;</a>&gt;&gt; <a class="code" href="classripple_1_1ServerImpl.html#a301e425d32d062df177f6e14b1ba07d6">list_</a>;</div>
+<div class="line"><a name="l00092"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a42561f74b5194d343345c4ab59324cfc">   92</a></span>&#160;    <span class="keywordtype">int</span> <a class="code" href="classripple_1_1ServerImpl.html#a42561f74b5194d343345c4ab59324cfc">high_</a> = 0;</div>
+<div class="line"><a name="l00093"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a85f077a05f64f71dfc9714b68e3e75b8">   93</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;std::size_t, 64&gt;</a> <a class="code" href="classripple_1_1ServerImpl.html#a85f077a05f64f71dfc9714b68e3e75b8">hist_</a>;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
+<div class="line"><a name="l00095"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a5da61b86dfcb13e56fb0f836242c1f02">   95</a></span>&#160;    <a class="code" href="classripple_1_1io__list.html">io_list</a> <a class="code" href="classripple_1_1ServerImpl.html#a5da61b86dfcb13e56fb0f836242c1f02">ios_</a>;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160; </div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#adeab259dfa2a7360747d6500fe49cfa6">ServerImpl</a>(</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        Handler&amp; handler,</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        boost::asio::io_service&amp; io_service,</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> <a class="code" href="classripple_1_1ServerImpl.html#ab56061fcb6bb1d06451af082c3bdf8a0">journal</a>);</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#a7ac3729ff2586fa7fa6e534b6ef08cf7">~ServerImpl</a>();</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a></div>
+<div class="line"><a name="l00106"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#ab56061fcb6bb1d06451af082c3bdf8a0">  106</a></span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#ab56061fcb6bb1d06451af082c3bdf8a0">journal</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1ServerImpl.html#ae025c381ec67b7a0e8d2dda117a1f0a4">j_</a>;</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    }</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160; </div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">Endpoints</a></div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#adfd8ae8449f7ceea13448c876af52741">ports</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;Port&gt;</a> <span class="keyword">const</span>&amp; <a class="code" href="classripple_1_1ServerImpl.html#adfd8ae8449f7ceea13448c876af52741">ports</a>) <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160; </div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#a6b32ac32433b2227c36b762fb195ec5d">close</a>() <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160; </div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <a class="code" href="classripple_1_1io__list.html">io_list</a>&amp;</div>
+<div class="line"><a name="l00118"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a7a97dccf0c51594abbc745bc3fed95d0">  118</a></span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#a7a97dccf0c51594abbc745bc3fed95d0">ios</a>()</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    {</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1ServerImpl.html#a5da61b86dfcb13e56fb0f836242c1f02">ios_</a>;</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    }</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160; </div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    boost::asio::io_service&amp;</div>
+<div class="line"><a name="l00124"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a78e05f0175a3f3b39aeb1aad3b35f5a4">  124</a></span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#a78e05f0175a3f3b39aeb1aad3b35f5a4">get_io_service</a>()</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    {</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classripple_1_1ServerImpl.html#abc8b2cd27e96f5c9e17f2f367621aa74">io_service_</a>;</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    }</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160; </div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#acf9ee99a6aedefb0ecbea546739faa7b">closed</a>();</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">int</span></div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#adc9d584f90e323f1e0fd59df96729e76">ceil_log2</a>(<span class="keywordtype">unsigned</span> <span class="keywordtype">long</span> <span class="keywordtype">long</span> x);</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;};</div>
 <div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160; </div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    <span class="keyword">static</span></div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    <span class="keywordtype">int</span></div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <a class="code" href="classripple_1_1ServerImpl.html#adc9d584f90e323f1e0fd59df96729e76">ceil_log2</a> (<span class="keywordtype">unsigned</span> <span class="keywordtype">long</span> <span class="keywordtype">long</span> x);</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;};</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160; </div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">class</span> Handler&gt;</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;<a class="code" href="classripple_1_1ServerImpl.html#adeab259dfa2a7360747d6500fe49cfa6">ServerImpl&lt;Handler&gt;::</a></div>
-<div class="line"><a name="l00145"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#adeab259dfa2a7360747d6500fe49cfa6">  145</a></span>&#160;<a class="code" href="classripple_1_1ServerImpl.html#adeab259dfa2a7360747d6500fe49cfa6">ServerImpl</a>(Handler&amp; handler,</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;        boost::asio::io_service&amp; io_service, <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    : handler_(handler)</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    , j_(journal)</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    , io_service_(io_service)</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    , strand_(io_service_)</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    , work_(io_service_)</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Handler&gt;</div>
+<div class="line"><a name="l00138"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#adeab259dfa2a7360747d6500fe49cfa6">  138</a></span>&#160;<a class="code" href="classripple_1_1ServerImpl.html#adeab259dfa2a7360747d6500fe49cfa6">ServerImpl&lt;Handler&gt;::ServerImpl</a>(</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    Handler&amp; handler,</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    boost::asio::io_service&amp; io_service,</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;    : handler_(handler)</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    , j_(journal)</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    , io_service_(io_service)</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    , strand_(io_service_)</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    , work_(io_service_)</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;{</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;}</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160; </div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Handler&gt;</div>
+<div class="line"><a name="l00151"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a7ac3729ff2586fa7fa6e534b6ef08cf7">  151</a></span>&#160;<a class="code" href="classripple_1_1ServerImpl.html#a7ac3729ff2586fa7fa6e534b6ef08cf7">ServerImpl&lt;Handler&gt;::~ServerImpl</a>()</div>
 <div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;{</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;}</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160; </div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">class</span> Handler&gt;</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;<a class="code" href="classripple_1_1ServerImpl.html#a7ac3729ff2586fa7fa6e534b6ef08cf7">ServerImpl&lt;Handler&gt;::</a></div>
-<div class="line"><a name="l00157"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a7ac3729ff2586fa7fa6e534b6ef08cf7">  157</a></span>&#160;<a class="code" href="classripple_1_1ServerImpl.html#a7ac3729ff2586fa7fa6e534b6ef08cf7">~ServerImpl</a>()</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;{</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    <span class="comment">// Handler::onStopped will not be called</span></div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    work_ = boost::none;</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    ios_.close();</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    ios_.join();</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;}</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160; </div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">class</span> Handler&gt;</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">Endpoints</a></div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;<a class="code" href="classripple_1_1ServerImpl.html#adfd8ae8449f7ceea13448c876af52741">ServerImpl&lt;Handler&gt;::</a></div>
-<div class="line"><a name="l00168"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#adfd8ae8449f7ceea13448c876af52741">  168</a></span>&#160;<a class="code" href="classripple_1_1ServerImpl.html#adfd8ae8449f7ceea13448c876af52741">ports</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;Port&gt;</a> <span class="keyword">const</span>&amp; ports)</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;{</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    <span class="keywordflow">if</span> (closed())</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;        Throw&lt;std::logic_error&gt; (<span class="stringliteral">&quot;ports() on closed Server&quot;</span>);</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    ports_.reserve(ports.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>());</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">Endpoints</a> eps;</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;    eps.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(ports.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>());</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    <span class="keywordflow">for</span>(<span class="keyword">auto</span> <span class="keyword">const</span>&amp; port : ports)</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;    {</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;        ports_.push_back(port);</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;        <span class="keywordflow">if</span>(<span class="keyword">auto</span> sp = ios_.emplace&lt;<a class="code" href="classripple_1_1Door.html">Door&lt;Handler&gt;</a>&gt;(handler_,</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;            io_service_, ports_.back(), j_))</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        {</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;            list_.push_back(sp);</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;            eps.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(sp-&gt;get_endpoint());</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;            sp-&gt;run();</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;        }</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    }</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <span class="keywordflow">return</span> eps;</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;}</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160; </div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">class</span> Handler&gt;</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;<a class="code" href="classripple_1_1ServerImpl.html#a6b32ac32433b2227c36b762fb195ec5d">ServerImpl&lt;Handler&gt;::</a></div>
-<div class="line"><a name="l00192"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a6b32ac32433b2227c36b762fb195ec5d">  192</a></span>&#160;<a class="code" href="classripple_1_1ServerImpl.html#a6b32ac32433b2227c36b762fb195ec5d">close</a>()</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;{</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    ios_.close(</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    [&amp;]</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    {</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;        work_ = boost::none;</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;        handler_.onStopped(*<span class="keyword">this</span>);</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;    });</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;}</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160; </div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">class</span> Handler&gt;</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;<a class="code" href="classripple_1_1ServerImpl.html#acf9ee99a6aedefb0ecbea546739faa7b">ServerImpl&lt;Handler&gt;::</a></div>
-<div class="line"><a name="l00205"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#acf9ee99a6aedefb0ecbea546739faa7b">  205</a></span>&#160;<a class="code" href="classripple_1_1ServerImpl.html#acf9ee99a6aedefb0ecbea546739faa7b">closed</a>()</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;{</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    <span class="keywordflow">return</span> ios_.closed();</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;}</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;} <span class="comment">// ripple</span></div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160; </div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;    <span class="comment">// Handler::onStopped will not be called</span></div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    work_ = boost::none;</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    ios_.close();</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;    ios_.join();</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;}</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160; </div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Handler&gt;</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">Endpoints</a></div>
+<div class="line"><a name="l00161"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#adfd8ae8449f7ceea13448c876af52741">  161</a></span>&#160;<a class="code" href="classripple_1_1ServerImpl.html#adfd8ae8449f7ceea13448c876af52741">ServerImpl&lt;Handler&gt;::ports</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;Port&gt;</a> <span class="keyword">const</span>&amp; ports)</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;{</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    <span class="keywordflow">if</span> (closed())</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        Throw&lt;std::logic_error&gt;(<span class="stringliteral">&quot;ports() on closed Server&quot;</span>);</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    ports_.reserve(ports.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>());</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">Endpoints</a> eps;</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    eps.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(ports.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>());</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; port : ports)</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    {</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;        ports_.push_back(port);</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;        <span class="keywordflow">if</span> (<span class="keyword">auto</span> sp = ios_.emplace&lt;<a class="code" href="classripple_1_1Door.html">Door&lt;Handler&gt;</a>&gt;(</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;                handler_, io_service_, ports_.back(), j_))</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;        {</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;            list_.push_back(sp);</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;            eps.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(sp-&gt;get_endpoint());</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;            sp-&gt;run();</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;        }</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    }</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    <span class="keywordflow">return</span> eps;</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;}</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160; </div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Handler&gt;</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00184"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#a6b32ac32433b2227c36b762fb195ec5d">  184</a></span>&#160;<a class="code" href="classripple_1_1ServerImpl.html#a6b32ac32433b2227c36b762fb195ec5d">ServerImpl&lt;Handler&gt;::close</a>()</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;{</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    ios_.close([&amp;] {</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        work_ = boost::none;</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;        handler_.onStopped(*<span class="keyword">this</span>);</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    });</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;}</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160; </div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Handler&gt;</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00194"></a><span class="lineno"><a class="line" href="classripple_1_1ServerImpl.html#acf9ee99a6aedefb0ecbea546739faa7b">  194</a></span>&#160;<a class="code" href="classripple_1_1ServerImpl.html#acf9ee99a6aedefb0ecbea546739faa7b">ServerImpl&lt;Handler&gt;::closed</a>()</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;{</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    <span class="keywordflow">return</span> ios_.closed();</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;}</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160; </div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="asystem_clock_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/system_clock.html">std::chrono::system_clock</a></div></div>
 <div class="ttc" id="areserve_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">std::vector::reserve</a></div><div class="ttdeci">T reserve(T... args)</div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="asize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/size.html">std::vector::size</a></div><div class="ttdeci">T size(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_a4381c7cdaa12f67103483800bd4fc45e"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a4381c7cdaa12f67103483800bd4fc45e">ripple::ServerImpl::strand_</a></div><div class="ttdeci">boost::asio::io_service::strand strand_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00093">ServerImpl.h:93</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_a4381c7cdaa12f67103483800bd4fc45e"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a4381c7cdaa12f67103483800bd4fc45e">ripple::ServerImpl::strand_</a></div><div class="ttdeci">boost::asio::io_service::strand strand_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00086">ServerImpl.h:86</a></div></div>
 <div class="ttc" id="aclassripple_1_1Server_html_a47a7a65d04eca040324d978e224ae25d"><div class="ttname"><a href="classripple_1_1Server.html#a47a7a65d04eca040324d978e224ae25d">ripple::Server::~Server</a></div><div class="ttdeci">virtual ~Server()=default</div><div class="ttdoc">Destroy the server.</div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_a59a5d0e905acfe5581301e8221c8a5a8ae8170535e048264df0ca466fd9efc1c5"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a59a5d0e905acfe5581301e8221c8a5a8ae8170535e048264df0ca466fd9efc1c5">ripple::ServerImpl::historySize</a></div><div class="ttdeci">@ historySize</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00087">ServerImpl.h:87</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_a59a5d0e905acfe5581301e8221c8a5a8ae8170535e048264df0ca466fd9efc1c5"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a59a5d0e905acfe5581301e8221c8a5a8ae8170535e048264df0ca466fd9efc1c5">ripple::ServerImpl::historySize</a></div><div class="ttdeci">@ historySize</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00081">ServerImpl.h:81</a></div></div>
 <div class="ttc" id="aclassripple_1_1ServerImpl_html_adc9d584f90e323f1e0fd59df96729e76"><div class="ttname"><a href="classripple_1_1ServerImpl.html#adc9d584f90e323f1e0fd59df96729e76">ripple::ServerImpl::ceil_log2</a></div><div class="ttdeci">static int ceil_log2(unsigned long long x)</div></div>
 <div class="ttc" id="aclassripple_1_1Door_html"><div class="ttname"><a href="classripple_1_1Door.html">ripple::Door</a></div><div class="ttdoc">A listening socket.</div><div class="ttdef"><b>Definition:</b> <a href="Door_8h_source.html#l00047">Door.h:47</a></div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_abc8b2cd27e96f5c9e17f2f367621aa74"><div class="ttname"><a href="classripple_1_1ServerImpl.html#abc8b2cd27e96f5c9e17f2f367621aa74">ripple::ServerImpl::io_service_</a></div><div class="ttdeci">boost::asio::io_service &amp; io_service_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00092">ServerImpl.h:92</a></div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html"><div class="ttname"><a href="classripple_1_1ServerImpl.html">ripple::ServerImpl</a></div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00080">ServerImpl.h:80</a></div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_a78e05f0175a3f3b39aeb1aad3b35f5a4"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a78e05f0175a3f3b39aeb1aad3b35f5a4">ripple::ServerImpl::get_io_service</a></div><div class="ttdeci">boost::asio::io_service &amp; get_io_service()</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00129">ServerImpl.h:129</a></div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_a2ac918daffa1a484e18976016c08c694"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a2ac918daffa1a484e18976016c08c694">ripple::ServerImpl::handler_</a></div><div class="ttdeci">Handler &amp; handler_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00090">ServerImpl.h:90</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_abc8b2cd27e96f5c9e17f2f367621aa74"><div class="ttname"><a href="classripple_1_1ServerImpl.html#abc8b2cd27e96f5c9e17f2f367621aa74">ripple::ServerImpl::io_service_</a></div><div class="ttdeci">boost::asio::io_service &amp; io_service_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00085">ServerImpl.h:85</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html"><div class="ttname"><a href="classripple_1_1ServerImpl.html">ripple::ServerImpl</a></div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00076">ServerImpl.h:76</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_a78e05f0175a3f3b39aeb1aad3b35f5a4"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a78e05f0175a3f3b39aeb1aad3b35f5a4">ripple::ServerImpl::get_io_service</a></div><div class="ttdeci">boost::asio::io_service &amp; get_io_service()</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00124">ServerImpl.h:124</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_a2ac918daffa1a484e18976016c08c694"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a2ac918daffa1a484e18976016c08c694">ripple::ServerImpl::handler_</a></div><div class="ttdeci">Handler &amp; handler_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00083">ServerImpl.h:83</a></div></div>
 <div class="ttc" id="apush_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">std::vector::push_back</a></div><div class="ttdeci">T push_back(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_adeab259dfa2a7360747d6500fe49cfa6"><div class="ttname"><a href="classripple_1_1ServerImpl.html#adeab259dfa2a7360747d6500fe49cfa6">ripple::ServerImpl::ServerImpl</a></div><div class="ttdeci">ServerImpl(Handler &amp;handler, boost::asio::io_service &amp;io_service, beast::Journal journal)</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00145">ServerImpl.h:145</a></div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_a6b32ac32433b2227c36b762fb195ec5d"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a6b32ac32433b2227c36b762fb195ec5d">ripple::ServerImpl::close</a></div><div class="ttdeci">void close() override</div><div class="ttdoc">Close the server.</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00192">ServerImpl.h:192</a></div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_a85f077a05f64f71dfc9714b68e3e75b8"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a85f077a05f64f71dfc9714b68e3e75b8">ripple::ServerImpl::hist_</a></div><div class="ttdeci">std::array&lt; std::size_t, 64 &gt; hist_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00100">ServerImpl.h:100</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_adeab259dfa2a7360747d6500fe49cfa6"><div class="ttname"><a href="classripple_1_1ServerImpl.html#adeab259dfa2a7360747d6500fe49cfa6">ripple::ServerImpl::ServerImpl</a></div><div class="ttdeci">ServerImpl(Handler &amp;handler, boost::asio::io_service &amp;io_service, beast::Journal journal)</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00138">ServerImpl.h:138</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_a6b32ac32433b2227c36b762fb195ec5d"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a6b32ac32433b2227c36b762fb195ec5d">ripple::ServerImpl::close</a></div><div class="ttdeci">void close() override</div><div class="ttdoc">Close the server.</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00184">ServerImpl.h:184</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_a85f077a05f64f71dfc9714b68e3e75b8"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a85f077a05f64f71dfc9714b68e3e75b8">ripple::ServerImpl::hist_</a></div><div class="ttdeci">std::array&lt; std::size_t, 64 &gt; hist_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00093">ServerImpl.h:93</a></div></div>
 <div class="ttc" id="achrono_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/chrono.html">chrono</a></div></div>
 <div class="ttc" id="aclassripple_1_1Server_html_a022b4bd53b1eda3db97e404f90b31e4e"><div class="ttname"><a href="classripple_1_1Server.html#a022b4bd53b1eda3db97e404f90b31e4e">ripple::Server::close</a></div><div class="ttdeci">virtual void close()=0</div><div class="ttdoc">Close the server.</div></div>
 <div class="ttc" id="aarray_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/array.html">array</a></div></div>
 <div class="ttc" id="aclassripple_1_1Server_html"><div class="ttname"><a href="classripple_1_1Server.html">ripple::Server</a></div><div class="ttdoc">A multi-protocol server.</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00044">ServerImpl.h:44</a></div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_a46a39f953c1881b5678a8d7f398e2ff7"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a46a39f953c1881b5678a8d7f398e2ff7">ripple::ServerImpl::ports_</a></div><div class="ttdeci">std::vector&lt; Port &gt; ports_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00097">ServerImpl.h:97</a></div></div>
-<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00060">Journal.h:60</a></div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_acf9ee99a6aedefb0ecbea546739faa7b"><div class="ttname"><a href="classripple_1_1ServerImpl.html#acf9ee99a6aedefb0ecbea546739faa7b">ripple::ServerImpl::closed</a></div><div class="ttdeci">bool closed()</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00205">ServerImpl.h:205</a></div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_a8bfe461103dccb2b8f223a484acd753e"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a8bfe461103dccb2b8f223a484acd753e">ripple::ServerImpl::work_</a></div><div class="ttdeci">boost::optional&lt; boost::asio::io_service::work &gt; work_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00094">ServerImpl.h:94</a></div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_adfd8ae8449f7ceea13448c876af52741"><div class="ttname"><a href="classripple_1_1ServerImpl.html#adfd8ae8449f7ceea13448c876af52741">ripple::ServerImpl::ports</a></div><div class="ttdeci">Endpoints ports(std::vector&lt; Port &gt; const &amp;ports) override</div><div class="ttdoc">Set the listening port settings.</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00168">ServerImpl.h:168</a></div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_ae025c381ec67b7a0e8d2dda117a1f0a4"><div class="ttname"><a href="classripple_1_1ServerImpl.html#ae025c381ec67b7a0e8d2dda117a1f0a4">ripple::ServerImpl::j_</a></div><div class="ttdeci">const beast::Journal j_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00091">ServerImpl.h:91</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_a46a39f953c1881b5678a8d7f398e2ff7"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a46a39f953c1881b5678a8d7f398e2ff7">ripple::ServerImpl::ports_</a></div><div class="ttdeci">std::vector&lt; Port &gt; ports_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00090">ServerImpl.h:90</a></div></div>
+<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00058">Journal.h:58</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_acf9ee99a6aedefb0ecbea546739faa7b"><div class="ttname"><a href="classripple_1_1ServerImpl.html#acf9ee99a6aedefb0ecbea546739faa7b">ripple::ServerImpl::closed</a></div><div class="ttdeci">bool closed()</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00194">ServerImpl.h:194</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_a8bfe461103dccb2b8f223a484acd753e"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a8bfe461103dccb2b8f223a484acd753e">ripple::ServerImpl::work_</a></div><div class="ttdeci">boost::optional&lt; boost::asio::io_service::work &gt; work_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00087">ServerImpl.h:87</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_adfd8ae8449f7ceea13448c876af52741"><div class="ttname"><a href="classripple_1_1ServerImpl.html#adfd8ae8449f7ceea13448c876af52741">ripple::ServerImpl::ports</a></div><div class="ttdeci">Endpoints ports(std::vector&lt; Port &gt; const &amp;ports) override</div><div class="ttdoc">Set the listening port settings.</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00161">ServerImpl.h:161</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_ae025c381ec67b7a0e8d2dda117a1f0a4"><div class="ttname"><a href="classripple_1_1ServerImpl.html#ae025c381ec67b7a0e8d2dda117a1f0a4">ripple::ServerImpl::j_</a></div><div class="ttdeci">const beast::Journal j_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00084">ServerImpl.h:84</a></div></div>
 <div class="ttc" id="aclassripple_1_1Server_html_a6a984892293a31d9200217b6a3dd1e07"><div class="ttname"><a href="classripple_1_1Server.html#a6a984892293a31d9200217b6a3dd1e07">ripple::Server::journal</a></div><div class="ttdeci">virtual beast::Journal journal()=0</div><div class="ttdoc">Returns the Journal associated with the server.</div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_ab56061fcb6bb1d06451af082c3bdf8a0"><div class="ttname"><a href="classripple_1_1ServerImpl.html#ab56061fcb6bb1d06451af082c3bdf8a0">ripple::ServerImpl::journal</a></div><div class="ttdeci">beast::Journal journal() override</div><div class="ttdoc">Returns the Journal associated with the server.</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00111">ServerImpl.h:111</a></div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_a301e425d32d062df177f6e14b1ba07d6"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a301e425d32d062df177f6e14b1ba07d6">ripple::ServerImpl::list_</a></div><div class="ttdeci">std::vector&lt; std::weak_ptr&lt; Door&lt; Handler &gt; &gt; &gt; list_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00098">ServerImpl.h:98</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_ab56061fcb6bb1d06451af082c3bdf8a0"><div class="ttname"><a href="classripple_1_1ServerImpl.html#ab56061fcb6bb1d06451af082c3bdf8a0">ripple::ServerImpl::journal</a></div><div class="ttdeci">beast::Journal journal() override</div><div class="ttdoc">Returns the Journal associated with the server.</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00106">ServerImpl.h:106</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_a301e425d32d062df177f6e14b1ba07d6"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a301e425d32d062df177f6e14b1ba07d6">ripple::ServerImpl::list_</a></div><div class="ttdeci">std::vector&lt; std::weak_ptr&lt; Door&lt; Handler &gt; &gt; &gt; list_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00091">ServerImpl.h:91</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_a7a97dccf0c51594abbc745bc3fed95d0"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a7a97dccf0c51594abbc745bc3fed95d0">ripple::ServerImpl::ios</a></div><div class="ttdeci">io_list &amp; ios()</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00123">ServerImpl.h:123</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_a7a97dccf0c51594abbc745bc3fed95d0"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a7a97dccf0c51594abbc745bc3fed95d0">ripple::ServerImpl::ios</a></div><div class="ttdeci">io_list &amp; ios()</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00118">ServerImpl.h:118</a></div></div>
 <div class="ttc" id="aclassripple_1_1Server_html_a132e76325036846794780c22431f78c7"><div class="ttname"><a href="classripple_1_1Server.html#a132e76325036846794780c22431f78c7">ripple::Server::ports</a></div><div class="ttdeci">virtual Endpoints ports(std::vector&lt; Port &gt; const &amp;v)=0</div><div class="ttdoc">Set the listening port settings.</div></div>
 <div class="ttc" id="amutex_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/mutex.html">mutex</a></div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_a42561f74b5194d343345c4ab59324cfc"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a42561f74b5194d343345c4ab59324cfc">ripple::ServerImpl::high_</a></div><div class="ttdeci">int high_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00099">ServerImpl.h:99</a></div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_a513dfd120f4beb08bbc6e1b48d711b85"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a513dfd120f4beb08bbc6e1b48d711b85">ripple::ServerImpl::m_</a></div><div class="ttdeci">std::mutex m_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00096">ServerImpl.h:96</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_a42561f74b5194d343345c4ab59324cfc"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a42561f74b5194d343345c4ab59324cfc">ripple::ServerImpl::high_</a></div><div class="ttdeci">int high_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00092">ServerImpl.h:92</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_a513dfd120f4beb08bbc6e1b48d711b85"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a513dfd120f4beb08bbc6e1b48d711b85">ripple::ServerImpl::m_</a></div><div class="ttdeci">std::mutex m_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00089">ServerImpl.h:89</a></div></div>
 <div class="ttc" id="aclassripple_1_1io__list_html"><div class="ttname"><a href="classripple_1_1io__list.html">ripple::io_list</a></div><div class="ttdoc">Manages a set of objects performing asynchronous I/O.</div><div class="ttdef"><b>Definition:</b> <a href="io__list_8h_source.html#l00035">io_list.h:35</a></div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_a7ac3729ff2586fa7fa6e534b6ef08cf7"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a7ac3729ff2586fa7fa6e534b6ef08cf7">ripple::ServerImpl::~ServerImpl</a></div><div class="ttdeci">~ServerImpl()</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00157">ServerImpl.h:157</a></div></div>
-<div class="ttc" id="aclassripple_1_1ServerImpl_html_a5da61b86dfcb13e56fb0f836242c1f02"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a5da61b86dfcb13e56fb0f836242c1f02">ripple::ServerImpl::ios_</a></div><div class="ttdeci">io_list ios_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00102">ServerImpl.h:102</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_a7ac3729ff2586fa7fa6e534b6ef08cf7"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a7ac3729ff2586fa7fa6e534b6ef08cf7">ripple::ServerImpl::~ServerImpl</a></div><div class="ttdeci">~ServerImpl()</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00151">ServerImpl.h:151</a></div></div>
+<div class="ttc" id="aclassripple_1_1ServerImpl_html_a5da61b86dfcb13e56fb0f836242c1f02"><div class="ttname"><a href="classripple_1_1ServerImpl.html#a5da61b86dfcb13e56fb0f836242c1f02">ripple::ServerImpl::ios_</a></div><div class="ttdeci">io_list ios_</div><div class="ttdef"><b>Definition:</b> <a href="ServerImpl_8h_source.html#l00095">ServerImpl.h:95</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

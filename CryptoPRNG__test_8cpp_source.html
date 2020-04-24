@@ -88,12 +88,12 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;test/jtx/Env.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/utility/temp_dir.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/crypto/csprng.h&gt;</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;boost/filesystem.hpp&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/fstream.html">fstream</a>&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/streambuf.html">streambuf</a>&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/utility/temp_dir.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/crypto/csprng.h&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;boost/filesystem.hpp&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/fstream.html">fstream</a>&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/streambuf.html">streambuf</a>&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;test/jtx/Env.h&gt;</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
@@ -102,7 +102,7 @@ $(function() {
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keywordtype">void</span></div>
 <div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="classripple_1_1CryptoPRNG__test.html#aaeca99f21caefce05a26f92c66e4c95a">   32</a></span>&#160;    <a class="code" href="classripple_1_1CryptoPRNG__test.html#aaeca99f21caefce05a26f92c66e4c95a">testGetValues</a>()</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    {</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        testcase (<span class="stringliteral">&quot;Get Values&quot;</span>);</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        testcase(<span class="stringliteral">&quot;Get Values&quot;</span>);</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        <span class="keywordflow">try</span></div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        {</div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;            <span class="keyword">auto</span>&amp; engine = <a class="code" href="namespaceripple.html#a64faabbdff83da8b7fd7aaafbb937867">crypto_prng</a>();</div>
@@ -110,35 +110,36 @@ $(function() {
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;            BEAST_EXPECT(rand_val &gt;= engine.min());</div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            BEAST_EXPECT(rand_val &lt;= engine.max());</div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            uint16_t twoByte {0};</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            uint16_t twoByte{0};</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            engine(&amp;twoByte, <span class="keyword">sizeof</span>(uint16_t));</div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;            pass();</div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        }</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <span class="keywordflow">catch</span>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a>&amp;)</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a>&amp;)</div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        {</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            fail();</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        }</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    }</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00053"></a><span class="lineno"><a class="line" href="classripple_1_1CryptoPRNG__test.html#a6c3a367caf9046bba9bbc3270b3cad60">   53</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1CryptoPRNG__test.html#a6c3a367caf9046bba9bbc3270b3cad60">run</a> ()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <a class="code" href="classripple_1_1CryptoPRNG__test.html#aaeca99f21caefce05a26f92c66e4c95a">testGetValues</a>();</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    }</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;};</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a> (CryptoPRNG, core, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;}  <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno"><a class="line" href="classripple_1_1CryptoPRNG__test.html#a6c3a367caf9046bba9bbc3270b3cad60">   54</a></span>&#160;    <a class="code" href="classripple_1_1CryptoPRNG__test.html#a6c3a367caf9046bba9bbc3270b3cad60">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <a class="code" href="classripple_1_1CryptoPRNG__test.html#aaeca99f21caefce05a26f92c66e4c95a">testGetValues</a>();</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    }</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;};</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(CryptoPRNG, core, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1CryptoPRNG__test_html"><div class="ttname"><a href="classripple_1_1CryptoPRNG__test.html">ripple::CryptoPRNG_test</a></div><div class="ttdef"><b>Definition:</b> <a href="CryptoPRNG__test_8cpp_source.html#l00029">CryptoPRNG_test.cpp:29</a></div></div>
 <div class="ttc" id="afstream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/fstream.html">fstream</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a2701412a11b118c19256a4c901db2938"><div class="ttname"><a href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">ripple::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(AccountTxPaging, app, ripple)</div></div>
 <div class="ttc" id="aexception_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="astreambuf_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/streambuf.html">streambuf</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a64faabbdff83da8b7fd7aaafbb937867"><div class="ttname"><a href="namespaceripple.html#a64faabbdff83da8b7fd7aaafbb937867">ripple::crypto_prng</a></div><div class="ttdeci">csprng_engine &amp; crypto_prng()</div><div class="ttdoc">The default cryptographically secure PRNG.</div><div class="ttdef"><b>Definition:</b> <a href="csprng_8cpp_source.html#l00111">csprng.cpp:111</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a64faabbdff83da8b7fd7aaafbb937867"><div class="ttname"><a href="namespaceripple.html#a64faabbdff83da8b7fd7aaafbb937867">ripple::crypto_prng</a></div><div class="ttdeci">csprng_engine &amp; crypto_prng()</div><div class="ttdoc">The default cryptographically secure PRNG.</div><div class="ttdef"><b>Definition:</b> <a href="csprng_8cpp_source.html#l00108">csprng.cpp:108</a></div></div>
 <div class="ttc" id="aclassripple_1_1CryptoPRNG__test_html_aaeca99f21caefce05a26f92c66e4c95a"><div class="ttname"><a href="classripple_1_1CryptoPRNG__test.html#aaeca99f21caefce05a26f92c66e4c95a">ripple::CryptoPRNG_test::testGetValues</a></div><div class="ttdeci">void testGetValues()</div><div class="ttdef"><b>Definition:</b> <a href="CryptoPRNG__test_8cpp_source.html#l00032">CryptoPRNG_test.cpp:32</a></div></div>
-<div class="ttc" id="aclassripple_1_1CryptoPRNG__test_html_a6c3a367caf9046bba9bbc3270b3cad60"><div class="ttname"><a href="classripple_1_1CryptoPRNG__test.html#a6c3a367caf9046bba9bbc3270b3cad60">ripple::CryptoPRNG_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="CryptoPRNG__test_8cpp_source.html#l00053">CryptoPRNG_test.cpp:53</a></div></div>
+<div class="ttc" id="aclassripple_1_1CryptoPRNG__test_html_a6c3a367caf9046bba9bbc3270b3cad60"><div class="ttname"><a href="classripple_1_1CryptoPRNG__test.html#a6c3a367caf9046bba9bbc3270b3cad60">ripple::CryptoPRNG_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="CryptoPRNG__test_8cpp_source.html#l00054">CryptoPRNG_test.cpp:54</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

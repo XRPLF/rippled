@@ -134,10 +134,10 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:a195995ffbb4ad142663cd61752383e12"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a195995ffbb4ad142663cd61752383e12">ProcessTransactionFn</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt; &amp;transaction, bool bUnlimited, bool bLocal, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType)&gt;</td></tr>
-<tr class="separator:a195995ffbb4ad142663cd61752383e12"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac00d1aab90c7766d838981ed27607eff"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ac00d1aab90c7766d838981ed27607eff">Output</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(boost::string_ref const  &amp;)&gt;</td></tr>
-<tr class="separator:ac00d1aab90c7766d838981ed27607eff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18116d08d342fb04d1cf07f292afbcb6"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a18116d08d342fb04d1cf07f292afbcb6">ProcessTransactionFn</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt; &amp;transaction, bool bUnlimited, bool bLocal, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType)&gt;</td></tr>
+<tr class="separator:a18116d08d342fb04d1cf07f292afbcb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acca76813aa71dce78dcac6a8212380f2"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#acca76813aa71dce78dcac6a8212380f2">Output</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(boost::string_ref const  &amp;)&gt;</td></tr>
+<tr class="separator:acca76813aa71dce78dcac6a8212380f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
 Enumerations</h2></td></tr>
@@ -555,15 +555,15 @@ Functions</h2></td></tr>
 <tr class="separator:a84827a1d9b56ad8201671ff77c2ddf2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad29cb759c5b76c1ac2664cf416509f5a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ad29cb759c5b76c1ac2664cf416509f5a">roleRequired</a> (unsigned int version, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;method)</td></tr>
 <tr class="separator:ad29cb759c5b76c1ac2664cf416509f5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6720da4154f7ddb7fda480cefea55025"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a6720da4154f7ddb7fda480cefea55025">accountFromStringStrict</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;)</td></tr>
+<tr class="memitem:a6720da4154f7ddb7fda480cefea55025"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a6720da4154f7ddb7fda480cefea55025">accountFromStringStrict</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;)</td></tr>
 <tr class="memdesc:a6720da4154f7ddb7fda480cefea55025"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get an AccountID from an account ID or public key.  <a href="namespaceripple_1_1RPC.html#a6720da4154f7ddb7fda480cefea55025">More...</a><br /></td></tr>
 <tr class="separator:a6720da4154f7ddb7fda480cefea55025"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a19a7026fa315242cf5175e50408f90f7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a19a7026fa315242cf5175e50408f90f7">accountFromStringWithCode</a> (<a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> &amp;result, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;strIdent, bool bStrict=false)</td></tr>
+<tr class="memitem:a19a7026fa315242cf5175e50408f90f7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a19a7026fa315242cf5175e50408f90f7">accountFromStringWithCode</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &amp;result, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;strIdent, bool bStrict=false)</td></tr>
 <tr class="memdesc:a19a7026fa315242cf5175e50408f90f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decode account ID from string.  <a href="namespaceripple_1_1RPC.html#a19a7026fa315242cf5175e50408f90f7">More...</a><br /></td></tr>
 <tr class="separator:a19a7026fa315242cf5175e50408f90f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9dc259937a004b30e88f41a95756bee0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a9dc259937a004b30e88f41a95756bee0">accountFromString</a> (<a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> &amp;result, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strIdent, bool bStrict)</td></tr>
+<tr class="memitem:a9dc259937a004b30e88f41a95756bee0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a9dc259937a004b30e88f41a95756bee0">accountFromString</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &amp;result, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strIdent, bool bStrict)</td></tr>
 <tr class="separator:a9dc259937a004b30e88f41a95756bee0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab215cc3ba43cf3bc9c005735fc42ecd8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ab215cc3ba43cf3bc9c005735fc42ecd8">getAccountObjects</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &amp;ledger, <a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> const  &amp;account, boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07b">LedgerEntryType</a> &gt;&gt; const  &amp;typeFilter, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> dirIndex, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;entryIndex, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const limit, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;jvResult)</td></tr>
+<tr class="memitem:ab215cc3ba43cf3bc9c005735fc42ecd8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ab215cc3ba43cf3bc9c005735fc42ecd8">getAccountObjects</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &amp;ledger, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const  &amp;account, boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07b">LedgerEntryType</a> &gt;&gt; const  &amp;typeFilter, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> dirIndex, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;entryIndex, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const limit, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;jvResult)</td></tr>
 <tr class="memdesc:ab215cc3ba43cf3bc9c005735fc42ecd8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gathers all objects for an account in a ledger.  <a href="namespaceripple_1_1RPC.html#ab215cc3ba43cf3bc9c005735fc42ecd8">More...</a><br /></td></tr>
 <tr class="separator:ab215cc3ba43cf3bc9c005735fc42ecd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abababc02131dd73636524284cd966ab1"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
@@ -571,9 +571,9 @@ Functions</h2></td></tr>
 <tr class="separator:abababc02131dd73636524284cd966ab1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ecdeef997ce98f1d32ede460cc282fd"><td class="memItemLeft" align="right" valign="top">template <a class="el" href="structripple_1_1RPC_1_1Status.html">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a3ecdeef997ce98f1d32ede460cc282fd">ledgerFromRequest</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; &amp;, <a class="el" href="structripple_1_1RPC_1_1GRPCContext.html">GRPCContext</a>&lt; org::xrpl::rpc::v1::GetAccountInfoRequest &gt; &amp;)</td></tr>
 <tr class="separator:a3ecdeef997ce98f1d32ede460cc282fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a1b36a7d6f671687eba82aafeac6d57"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1RPC_1_1Status.html">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a8a1b36a7d6f671687eba82aafeac6d57">getLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &gt; &amp;ledger, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;ledgerHash, <a class="el" href="structripple_1_1RPC_1_1Context.html">Context</a> &amp;context)</td></tr>
-<tr class="memdesc:a8a1b36a7d6f671687eba82aafeac6d57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get ledger by hash If there is no error in the return value, the ledger pointer will have been filled.  <a href="namespaceripple_1_1RPC.html#a8a1b36a7d6f671687eba82aafeac6d57">More...</a><br /></td></tr>
-<tr class="separator:a8a1b36a7d6f671687eba82aafeac6d57"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86c176d5cb1e60935278f41a052032ae"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1RPC_1_1Status.html">Status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a86c176d5cb1e60935278f41a052032ae">getLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &gt; &amp;ledger, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;ledgerHash, <a class="el" href="structripple_1_1RPC_1_1Context.html">Context</a> &amp;context)</td></tr>
+<tr class="memdesc:a86c176d5cb1e60935278f41a052032ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get ledger by hash If there is no error in the return value, the ledger pointer will have been filled.  <a href="namespaceripple_1_1RPC.html#a86c176d5cb1e60935278f41a052032ae">More...</a><br /></td></tr>
+<tr class="separator:a86c176d5cb1e60935278f41a052032ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5d586f9b34b55958c3be770453b69b75"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
 <tr class="memitem:a5d586f9b34b55958c3be770453b69b75"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1RPC_1_1Status.html">Status</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a5d586f9b34b55958c3be770453b69b75">getLedger</a> (T &amp;ledger, uint32_t ledgerIndex, <a class="el" href="structripple_1_1RPC_1_1Context.html">Context</a> &amp;context)</td></tr>
 <tr class="memdesc:a5d586f9b34b55958c3be770453b69b75"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get ledger by sequence If there is no error in the return value, the ledger pointer will have been filled.  <a href="namespaceripple_1_1RPC.html#a5d586f9b34b55958c3be770453b69b75">More...</a><br /></td></tr>
@@ -594,7 +594,7 @@ Functions</h2></td></tr>
 <tr class="memitem:a332587f12dfd5f59558480bba7748feb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a332587f12dfd5f59558480bba7748feb">lookupLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &gt; &amp;, <a class="el" href="structripple_1_1RPC_1_1JsonContext.html">JsonContext</a> &amp;)</td></tr>
 <tr class="memdesc:a332587f12dfd5f59558480bba7748feb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Look up a ledger from a request and fill a Json::Result with either an error, or data representing a ledger.  <a href="namespaceripple_1_1RPC.html#a332587f12dfd5f59558480bba7748feb">More...</a><br /></td></tr>
 <tr class="separator:a332587f12dfd5f59558480bba7748feb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab56a444079d769fd33fdd04aa0c8baf3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#af6706a6ca37a4295262cd18f8cb619e2">hash_set</a>&lt; <a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ab56a444079d769fd33fdd04aa0c8baf3">parseAccountIds</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvArray)</td></tr>
+<tr class="memitem:ab56a444079d769fd33fdd04aa0c8baf3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a7750eec5e079354285f1d60cfd0247ca">hash_set</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ab56a444079d769fd33fdd04aa0c8baf3">parseAccountIds</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvArray)</td></tr>
 <tr class="separator:ab56a444079d769fd33fdd04aa0c8baf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ea6d08c0d50d738a6a55130a09ec238"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a4ea6d08c0d50d738a6a55130a09ec238">injectSLE</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;jv, <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> const  &amp;sle)</td></tr>
 <tr class="memdesc:a4ea6d08c0d50d738a6a55130a09ec238"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inject JSON describing ledger entry.  <a href="namespaceripple_1_1RPC.html#a4ea6d08c0d50d738a6a55130a09ec238">More...</a><br /></td></tr>
@@ -622,18 +622,18 @@ Functions</h2></td></tr>
 <tr class="memitem:a22e1b9888dfab6a73dd8116ad4ec6d0b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a22e1b9888dfab6a73dd8116ad4ec6d0b">transactionSign</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> jvRequest, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType, <a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> role, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> validatedLedgerAge, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
 <tr class="memdesc:a22e1b9888dfab6a73dd8116ad4ec6d0b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>.  <a href="namespaceripple_1_1RPC.html#a22e1b9888dfab6a73dd8116ad4ec6d0b">More...</a><br /></td></tr>
 <tr class="separator:a22e1b9888dfab6a73dd8116ad4ec6d0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0178ac853fe8968c19f9d5da694f47fd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a0178ac853fe8968c19f9d5da694f47fd">transactionSubmit</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> jvRequest, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType, <a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> role, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> validatedLedgerAge, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple_1_1RPC.html#a195995ffbb4ad142663cd61752383e12">ProcessTransactionFn</a> const &amp;processTransaction)</td></tr>
+<tr class="memitem:a0178ac853fe8968c19f9d5da694f47fd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a0178ac853fe8968c19f9d5da694f47fd">transactionSubmit</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> jvRequest, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType, <a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> role, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> validatedLedgerAge, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple_1_1RPC.html#a18116d08d342fb04d1cf07f292afbcb6">ProcessTransactionFn</a> const &amp;processTransaction)</td></tr>
 <tr class="memdesc:a0178ac853fe8968c19f9d5da694f47fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>.  <a href="namespaceripple_1_1RPC.html#a0178ac853fe8968c19f9d5da694f47fd">More...</a><br /></td></tr>
 <tr class="separator:a0178ac853fe8968c19f9d5da694f47fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2466eabd830ae0eb35322fc7a284c629"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a2466eabd830ae0eb35322fc7a284c629">transactionSignFor</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> jvRequest, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType, <a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> role, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> validatedLedgerAge, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
 <tr class="memdesc:a2466eabd830ae0eb35322fc7a284c629"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>.  <a href="namespaceripple_1_1RPC.html#a2466eabd830ae0eb35322fc7a284c629">More...</a><br /></td></tr>
 <tr class="separator:a2466eabd830ae0eb35322fc7a284c629"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a97488c6a780e56f3116fdd0a2e8128a2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a97488c6a780e56f3116fdd0a2e8128a2">transactionSubmitMultiSigned</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> jvRequest, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType, <a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> role, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> validatedLedgerAge, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple_1_1RPC.html#a195995ffbb4ad142663cd61752383e12">ProcessTransactionFn</a> const &amp;processTransaction)</td></tr>
+<tr class="memitem:a97488c6a780e56f3116fdd0a2e8128a2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a97488c6a780e56f3116fdd0a2e8128a2">transactionSubmitMultiSigned</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> jvRequest, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType, <a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> role, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> validatedLedgerAge, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple_1_1RPC.html#a18116d08d342fb04d1cf07f292afbcb6">ProcessTransactionFn</a> const &amp;processTransaction)</td></tr>
 <tr class="memdesc:a97488c6a780e56f3116fdd0a2e8128a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>.  <a href="namespaceripple_1_1RPC.html#a97488c6a780e56f3116fdd0a2e8128a2">More...</a><br /></td></tr>
 <tr class="separator:a97488c6a780e56f3116fdd0a2e8128a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac78278b4a437dd58b6266dd101f1925e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple_1_1RPC.html#a195995ffbb4ad142663cd61752383e12">ProcessTransactionFn</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ac78278b4a437dd58b6266dd101f1925e">getProcessTxnFn</a> (<a class="el" href="classripple_1_1NetworkOPs.html">NetworkOPs</a> &amp;netOPs)</td></tr>
+<tr class="memitem:ac78278b4a437dd58b6266dd101f1925e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple_1_1RPC.html#a18116d08d342fb04d1cf07f292afbcb6">ProcessTransactionFn</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ac78278b4a437dd58b6266dd101f1925e">getProcessTxnFn</a> (<a class="el" href="classripple_1_1NetworkOPs.html">NetworkOPs</a> &amp;netOPs)</td></tr>
 <tr class="separator:ac78278b4a437dd58b6266dd101f1925e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a001205e70b842e99ac28d568b8b8652d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple_1_1RPC.html#ac00d1aab90c7766d838981ed27607eff">Output</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a001205e70b842e99ac28d568b8b8652d">stringOutput</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &amp;s)</td></tr>
+<tr class="memitem:a001205e70b842e99ac28d568b8b8652d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple_1_1RPC.html#acca76813aa71dce78dcac6a8212380f2">Output</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a001205e70b842e99ac28d568b8b8652d">stringOutput</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &amp;s)</td></tr>
 <tr class="separator:a001205e70b842e99ac28d568b8b8652d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a557849511b477b905e67852636bb37f6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a557849511b477b905e67852636bb37f6">BEAST_DEFINE_TESTSUITE</a> (AccountLinesRPC, app, ripple)</td></tr>
 <tr class="separator:a557849511b477b905e67852636bb37f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -678,30 +678,30 @@ Variables</h2></td></tr>
 <tr class="separator:a0858010ae4cdf428121070f30ba3d5db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Typedef Documentation</h2>
-<a id="a195995ffbb4ad142663cd61752383e12"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a195995ffbb4ad142663cd61752383e12">&#9670;&nbsp;</a></span>ProcessTransactionFn</h2>
+<a id="a18116d08d342fb04d1cf07f292afbcb6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18116d08d342fb04d1cf07f292afbcb6">&#9670;&nbsp;</a></span>ProcessTransactionFn</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="namespaceripple_1_1RPC.html#a195995ffbb4ad142663cd61752383e12">ripple::RPC::ProcessTransactionFn</a> = typedef <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;void (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1Transaction.html">Transaction</a>&gt;&amp; transaction, bool bUnlimited, bool bLocal, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType)&gt;</td>
+          <td class="memname">using <a class="el" href="namespaceripple_1_1RPC.html#a18116d08d342fb04d1cf07f292afbcb6">ripple::RPC::ProcessTransactionFn</a> = typedef <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;void( <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1Transaction.html">Transaction</a>&gt;&amp; transaction, bool bUnlimited, bool bLocal, <a class="el" href="classripple_1_1NetworkOPs.html#ada325f492d3aa1aa62d4b159e106c37a">NetworkOPs::FailHard</a> failType)&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8h_source.html#l00076">76</a> of file <a class="el" href="TransactionSign_8h_source.html">TransactionSign.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8h_source.html#l00079">79</a> of file <a class="el" href="TransactionSign_8h_source.html">TransactionSign.h</a>.</p>
 
 </div>
 </div>
-<a id="ac00d1aab90c7766d838981ed27607eff"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac00d1aab90c7766d838981ed27607eff">&#9670;&nbsp;</a></span>Output</h2>
+<a id="acca76813aa71dce78dcac6a8212380f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acca76813aa71dce78dcac6a8212380f2">&#9670;&nbsp;</a></span>Output</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="namespaceripple_1_1RPC.html#ac00d1aab90c7766d838981ed27607eff">ripple::RPC::Output</a> = typedef <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a> &lt;void (boost::string_ref const&amp;)&gt;</td>
+          <td class="memname">using <a class="el" href="namespaceripple_1_1RPC.html#acca76813aa71dce78dcac6a8212380f2">ripple::RPC::Output</a> = typedef <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;void(boost::string_ref const&amp;)&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -750,7 +750,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="a4c04e509451d50d9449cff3d477ff4f2af275a9f97d64cc8d9bbec02e4a361755"></a>VALIDATED&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00101">101</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00111">111</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -773,7 +773,7 @@ Variables</h2></td></tr>
 
 <p>Returns an <a class="el" href="structripple_1_1RPC_1_1ErrorInfo.html" title="Maps an rpc error code to its token and default message.">ErrorInfo</a> that reflects the error code. </p>
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00175">175</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00194">194</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
 
 </div>
 </div>
@@ -807,7 +807,7 @@ template&lt;class JsonValue &gt; </div>
 
 <p>Add or update the json update to reflect the error code. </p>
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00185">185</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00186">186</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -839,7 +839,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00194">194</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00196">196</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -877,7 +877,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00200">200</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00203">203</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -899,7 +899,7 @@ template&lt;class JsonValue &gt; </div>
 
 <p>Returns a new json object that reflects the error code. </p>
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00182">182</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00202">202</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
 
 </div>
 </div>
@@ -929,7 +929,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00189">189</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00210">210</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
 
 </div>
 </div>
@@ -951,7 +951,7 @@ template&lt;class JsonValue &gt; </div>
 
 <p>Returns a new json object that indicates invalid parameters. </p>
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00219">219</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00224">224</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -971,7 +971,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00224">224</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00230">230</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -991,7 +991,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00229">229</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00236">236</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -1011,7 +1011,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00234">234</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00242">242</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -1031,7 +1031,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00239">239</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00248">248</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -1051,7 +1051,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00244">244</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00254">254</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -1071,7 +1071,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00249">249</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00260">260</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -1091,7 +1091,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00254">254</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00266">266</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -1111,7 +1111,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00259">259</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00272">272</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -1131,7 +1131,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00264">264</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00278">278</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -1151,7 +1151,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00269">269</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00284">284</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -1181,7 +1181,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00274">274</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00290">290</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -1211,7 +1211,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00280">280</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00296">296</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -1241,7 +1241,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00286">286</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00302">302</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -1271,7 +1271,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00292">292</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00308">308</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -1290,7 +1290,7 @@ template&lt;class JsonValue &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00298">298</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00314">314</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
 
 </div>
 </div>
@@ -1312,7 +1312,7 @@ template&lt;class JsonValue &gt; </div>
 
 <p>Returns <code>true</code> if the json contains an rpc error specification. </p>
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00196">196</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00218">218</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
 
 </div>
 </div>
@@ -5909,7 +5909,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Handler_8cpp_source.html#l00209">209</a> of file <a class="el" href="Handler_8cpp_source.html">Handler.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Handler_8cpp_source.html#l00255">255</a> of file <a class="el" href="Handler_8cpp_source.html">Handler.cpp</a>.</p>
 
 </div>
 </div>
@@ -5930,7 +5930,7 @@ template&lt;class T &gt; </div>
 
 <p>Return names of all methods. </p>
 
-<p class="definition">Definition at line <a class="el" href="Handler_8cpp_source.html#l00215">215</a> of file <a class="el" href="Handler_8cpp_source.html">Handler.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Handler_8cpp_source.html#l00261">261</a> of file <a class="el" href="Handler_8cpp_source.html">Handler.cpp</a>.</p>
 
 </div>
 </div>
@@ -5992,7 +5992,7 @@ template&lt;class Value &gt; </div>
 
 <p>Return a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a> with a single entry. </p>
 
-<p class="definition">Definition at line <a class="el" href="Handler_8h_source.html#l00061">61</a> of file <a class="el" href="Handler_8h_source.html">Handler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Handler_8h_source.html#l00063">63</a> of file <a class="el" href="Handler_8h_source.html">Handler.h</a>.</p>
 
 </div>
 </div>
@@ -6024,7 +6024,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Handler_8h_source.html#l00073">73</a> of file <a class="el" href="Handler_8h_source.html">Handler.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Handler_8h_source.html#l00078">78</a> of file <a class="el" href="Handler_8h_source.html">Handler.h</a>.</p>
 
 </div>
 </div>
@@ -6056,7 +6056,7 @@ template&lt;class T &gt; </div>
 
 <p>Execute an <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> command and store the results in a <a class="el" href="classJson_1_1Value.html" title="Represents a JSON value.">Json::Value</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHandler_8cpp_source.html#l00194">194</a> of file <a class="el" href="RPCHandler_8cpp_source.html">RPCHandler.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHandler_8cpp_source.html#l00199">199</a> of file <a class="el" href="RPCHandler_8cpp_source.html">RPCHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -6086,7 +6086,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHandler_8cpp_source.html#l00230">230</a> of file <a class="el" href="RPCHandler_8cpp_source.html">RPCHandler.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHandler_8cpp_source.html#l00237">237</a> of file <a class="el" href="RPCHandler_8cpp_source.html">RPCHandler.cpp</a>.</p>
 
 </div>
 </div>
@@ -6097,7 +6097,7 @@ template&lt;class T &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt; <a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> &gt; ripple::RPC::accountFromStringStrict </td>
+          <td class="memname">boost::optional&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt; ripple::RPC::accountFromStringStrict </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
           <td class="paramname"><em>account</em></td><td>)</td>
@@ -6121,7 +6121,7 @@ template&lt;class T &gt; </div>
         <tr>
           <td class="memname"><a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> ripple::RPC::accountFromStringWithCode </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &amp;&#160;</td>
           <td class="paramname"><em>result</em>, </td>
         </tr>
         <tr>
@@ -6155,7 +6155,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>code representing error, or rpcSUCCES on success </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00055">55</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00054">54</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -6168,7 +6168,7 @@ template&lt;class T &gt; </div>
         <tr>
           <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::RPC::accountFromString </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &amp;&#160;</td>
           <td class="paramname"><em>result</em>, </td>
         </tr>
         <tr>
@@ -6191,7 +6191,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00086">86</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00085">85</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -6210,7 +6210,7 @@ template&lt;class T &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
           <td class="paramname"><em>account</em>, </td>
         </tr>
         <tr>
@@ -6265,7 +6265,7 @@ template&lt;class T &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00098">98</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00095">95</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -6297,7 +6297,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00263">263</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00261">261</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -6329,8 +6329,8 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
-<a id="a8a1b36a7d6f671687eba82aafeac6d57"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8a1b36a7d6f671687eba82aafeac6d57">&#9670;&nbsp;</a></span>getLedger() <span class="overload">[1/5]</span></h2>
+<a id="a86c176d5cb1e60935278f41a052032ae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86c176d5cb1e60935278f41a052032ae">&#9670;&nbsp;</a></span>getLedger() <span class="overload">[1/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -6363,7 +6363,7 @@ template&lt;class T &gt; </div>
 
 <p>Get ledger by hash If there is no error in the return value, the ledger pointer will have been filled. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00322">322</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00318">318</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -6403,7 +6403,7 @@ template&lt;class T &gt; </div>
 
 <p>Get ledger by sequence If there is no error in the return value, the ledger pointer will have been filled. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00335">335</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00331">331</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -6444,7 +6444,7 @@ template&lt;class T &gt; </div>
 <p>Get ledger specified in shortcut. </p>
 <p>If there is no error in the return value, the ledger pointer will have been filled </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00363">363</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00358">358</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -6548,7 +6548,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00418">418</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00414">414</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -6587,7 +6587,7 @@ template&lt;class T &gt; </div>
 <p>Look up a ledger from a request and fill a Json::Result with the data representing a ledger. </p>
 <p>If the returned <a class="el" href="structripple_1_1RPC_1_1Status.html" title="Status represents the results of an operation that might fail.">Status</a> is OK, the ledger pointer will have been filled. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00484">484</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00481">481</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -6631,7 +6631,7 @@ template&lt;class T &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#af6706a6ca37a4295262cd18f8cb619e2">hash_set</a>&lt; <a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> &gt; ripple::RPC::parseAccountIds </td>
+          <td class="memname"><a class="el" href="namespaceripple.html#a7750eec5e079354285f1d60cfd0247ca">hash_set</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt; ripple::RPC::parseAccountIds </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
           <td class="paramname"><em>jvArray</em></td><td>)</td>
@@ -6674,7 +6674,7 @@ template&lt;class T &gt; </div>
 <p>Effects: Adds the JSON description of <code>sle</code> to <code>jv</code>.</p>
 <p>If <code>sle</code> holds an account root, also adds the urlgravatar field JSON if sfEmailHash is present. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00534">534</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00533">533</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -6713,7 +6713,7 @@ template&lt;class T &gt; </div>
 <p>Retrieve the limit value from a <a class="el" href="structripple_1_1RPC_1_1JsonContext.html">JsonContext</a>, or set a default - then restrict the limit by max and min if not an ADMIN request. </p>
 <p>If there is an error, return it as JSON. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00560">560</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00558">558</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -6793,7 +6793,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00659">659</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00654">654</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -6813,7 +6813,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00790">790</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00781">781</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -6843,7 +6843,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the api version number </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00844">844</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8cpp_source.html#l00833">833</a> of file <a class="el" href="RPCHelpers_8cpp_source.html">RPCHelpers.cpp</a>.</p>
 
 </div>
 </div>
@@ -6865,7 +6865,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00212">212</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00223">223</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -6940,7 +6940,7 @@ template&lt;class Object &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>A JSON object containing the error results, if any </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00658">658</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00675">675</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -6990,7 +6990,7 @@ template&lt;class Object &gt; </div>
 
 <p>Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00756">756</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00777">777</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -7033,7 +7033,7 @@ template&lt;class Object &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple_1_1RPC.html#a195995ffbb4ad142663cd61752383e12">ProcessTransactionFn</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple_1_1RPC.html#a18116d08d342fb04d1cf07f292afbcb6">ProcessTransactionFn</a> const &amp;&#160;</td>
           <td class="paramname"><em>processTransaction</em>&#160;</td>
         </tr>
         <tr>
@@ -7046,7 +7046,7 @@ template&lt;class Object &gt; </div>
 
 <p>Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00790">790</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00810">810</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -7096,7 +7096,7 @@ template&lt;class Object &gt; </div>
 
 <p>Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00918">918</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00939">939</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -7139,7 +7139,7 @@ template&lt;class Object &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple_1_1RPC.html#a195995ffbb4ad142663cd61752383e12">ProcessTransactionFn</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple_1_1RPC.html#a18116d08d342fb04d1cf07f292afbcb6">ProcessTransactionFn</a> const &amp;&#160;</td>
           <td class="paramname"><em>processTransaction</em>&#160;</td>
         </tr>
         <tr>
@@ -7152,7 +7152,7 @@ template&lt;class Object &gt; </div>
 
 <p>Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l01031">1031</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l01046">1046</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -7163,7 +7163,7 @@ template&lt;class Object &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceripple_1_1RPC.html#a195995ffbb4ad142663cd61752383e12">ProcessTransactionFn</a> ripple::RPC::getProcessTxnFn </td>
+          <td class="memname"><a class="el" href="namespaceripple_1_1RPC.html#a18116d08d342fb04d1cf07f292afbcb6">ProcessTransactionFn</a> ripple::RPC::getProcessTxnFn </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1NetworkOPs.html">NetworkOPs</a> &amp;&#160;</td>
           <td class="paramname"><em>netOPs</em></td><td>)</td>
@@ -7172,7 +7172,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8h_source.html#l00078">78</a> of file <a class="el" href="TransactionSign_8h_source.html">TransactionSign.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8h_source.html#l00082">82</a> of file <a class="el" href="TransactionSign_8h_source.html">TransactionSign.h</a>.</p>
 
 </div>
 </div>
@@ -7183,7 +7183,7 @@ template&lt;class Object &gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceripple_1_1RPC.html#ac00d1aab90c7766d838981ed27607eff">Output</a> ripple::RPC::stringOutput </td>
+          <td class="memname"><a class="el" href="namespaceripple_1_1RPC.html#acca76813aa71dce78dcac6a8212380f2">Output</a> ripple::RPC::stringOutput </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &amp;&#160;</td>
           <td class="paramname"><em>s</em></td><td>)</td>
@@ -7415,7 +7415,7 @@ template&lt;class Object &gt; </div>
 
 <p>API version numbers used in API version 1. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00177">177</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00189">189</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -7431,7 +7431,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00178">178</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00190">190</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -7447,7 +7447,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00179">179</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00191">191</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -7476,7 +7476,7 @@ template&lt;class Object &gt; </div>
 <p>Network Requests without explicit version numbers use APIVersionIfUnspecified. APIVersionIfUnspecified is 1, because all the <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> requests with a version &gt;= 2 must explicitly specify the version in the requests. Note that APIVersionIfUnspecified will be lower than ApiMinimumSupportedVersion when we stop supporting API version 1.</p>
 <p>Command line Requests use ApiMaximumSupportedVersion. </p>
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00199">199</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00211">211</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -7500,7 +7500,7 @@ template&lt;class Object &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00200">200</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00212">212</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -7524,7 +7524,7 @@ template&lt;class Object &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00201">201</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00213">213</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -7548,7 +7548,7 @@ template&lt;class Object &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00202">202</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00214">214</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -7571,10 +7571,10 @@ template&lt;class Object &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">= <a class="code" href="namespaceripple_1_1RPC.html#affbc9e6f947124dd7e2f7fec4bd95d80">ApiMaximumSupportedVersion</a> -</div>
-<div class="line">                                                   <a class="code" href="namespaceripple_1_1RPC.html#ad541f36347409391d286ab117b8e6659">ApiMinimumSupportedVersion</a> + 1</div>
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">    <a class="code" href="namespaceripple_1_1RPC.html#affbc9e6f947124dd7e2f7fec4bd95d80">ApiMaximumSupportedVersion</a> - <a class="code" href="namespaceripple_1_1RPC.html#ad541f36347409391d286ab117b8e6659">ApiMinimumSupportedVersion</a> + 1</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00203">203</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RPCHelpers_8h_source.html#l00215">215</a> of file <a class="el" href="RPCHelpers_8h_source.html">RPCHelpers.h</a>.</p>
 
 </div>
 </div>
@@ -7598,7 +7598,7 @@ template&lt;class Object &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="JSONRPC__test_8cpp_source.html#l00067">67</a> of file <a class="el" href="JSONRPC__test_8cpp_source.html">JSONRPC_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JSONRPC__test_8cpp_source.html#l00070">70</a> of file <a class="el" href="JSONRPC__test_8cpp_source.html">JSONRPC_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -7621,8 +7621,7 @@ template&lt;class Object &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">=</div>
-<div class="line">{</div>
+<b>Initial value:</b><div class="fragment"><div class="line">= {</div>
 <div class="line">    <span class="stringliteral">&quot;r4Vtj2jrfmTVZGfSP3gH9hQPMqFPQFin8f&quot;</span>,</div>
 <div class="line">    common::master_key,</div>
 <div class="line">    common::master_seed,</div>
@@ -7632,11 +7631,11 @@ template&lt;class Object &gt; </div>
 <div class="line">    <span class="stringliteral">&quot;1949ECD889EA71324BC7A30C8E81F4E93CB73EE19D59E9082111E78CC3DDABC2&quot;</span>,</div>
 <div class="line">    common::passphrase,</div>
 <div class="line">    <span class="stringliteral">&quot;This wallet was generated using a user-supplied &quot;</span></div>
-<div class="line">        <span class="stringliteral">&quot;passphrase that has low entropy and is vulnerable &quot;</span></div>
-<div class="line">        <span class="stringliteral">&quot;to brute-force attacks.&quot;</span>,</div>
+<div class="line">    <span class="stringliteral">&quot;passphrase that has low entropy and is vulnerable &quot;</span></div>
+<div class="line">    <span class="stringliteral">&quot;to brute-force attacks.&quot;</span>,</div>
 <div class="line">}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="KeyGeneration__test_8cpp_source.html#l00053">53</a> of file <a class="el" href="KeyGeneration__test_8cpp_source.html">KeyGeneration_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="KeyGeneration__test_8cpp_source.html#l00054">54</a> of file <a class="el" href="KeyGeneration__test_8cpp_source.html">KeyGeneration_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -7659,8 +7658,7 @@ template&lt;class Object &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">=</div>
-<div class="line">{</div>
+<b>Initial value:</b><div class="fragment"><div class="line">= {</div>
 <div class="line">    <span class="stringliteral">&quot;r4qV6xTXerqaZav3MJfSY79ynmc1BSBev1&quot;</span>,</div>
 <div class="line">    common::master_key,</div>
 <div class="line">    common::master_seed,</div>
@@ -7670,8 +7668,8 @@ template&lt;class Object &gt; </div>
 <div class="line">    <span class="stringliteral">&quot;77AAED2698D56D6676323629160F4EEF21CFD9EE3D0745CC78FA291461F98278&quot;</span>,</div>
 <div class="line">    common::passphrase,</div>
 <div class="line">    <span class="stringliteral">&quot;This wallet was generated using a user-supplied &quot;</span></div>
-<div class="line">        <span class="stringliteral">&quot;passphrase that has low entropy and is vulnerable &quot;</span></div>
-<div class="line">        <span class="stringliteral">&quot;to brute-force attacks.&quot;</span>,</div>
+<div class="line">    <span class="stringliteral">&quot;passphrase that has low entropy and is vulnerable &quot;</span></div>
+<div class="line">    <span class="stringliteral">&quot;to brute-force attacks.&quot;</span>,</div>
 <div class="line">}</div>
 </div><!-- fragment -->
 <p class="definition">Definition at line <a class="el" href="KeyGeneration__test_8cpp_source.html#l00068">68</a> of file <a class="el" href="KeyGeneration__test_8cpp_source.html">KeyGeneration_test.cpp</a>.</p>
@@ -7697,8 +7695,7 @@ template&lt;class Object &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">=</div>
-<div class="line">{</div>
+<b>Initial value:</b><div class="fragment"><div class="line">= {</div>
 <div class="line">    <span class="stringliteral">&quot;rBcvXmNb7KPkNdMkpckdWPpbvkWgcV3nir&quot;</span>,</div>
 <div class="line">    <span class="stringliteral">&quot;TED AVON CAVE HOUR BRAG JEFF RIFT NEAL TOLD FAT SEW SAN&quot;</span>,</div>
 <div class="line">    <span class="stringliteral">&quot;shKdhWka8hS7Es3bpctCZXBiAwfUN&quot;</span>,</div>
@@ -7708,17 +7705,17 @@ template&lt;class Object &gt; </div>
 <div class="line">    <span class="stringliteral">&quot;84262FB16AA25BE407174C7EDAB531220C30FA4D8A28AA9D564673FB3D34502C&quot;</span>,</div>
 <div class="line">    <span class="stringliteral">&quot;A4yKIRGdzrw0YQ$2%TFKYG9HP*&amp;ok^!sy7E@RwICs&quot;</span>,</div>
 <div class="line">    <span class="stringliteral">&quot;This wallet was generated using a user-supplied &quot;</span></div>
-<div class="line">        <span class="stringliteral">&quot;passphrase. It may be vulnerable to brute-force &quot;</span></div>
-<div class="line">        <span class="stringliteral">&quot;attacks.&quot;</span>,</div>
+<div class="line">    <span class="stringliteral">&quot;passphrase. It may be vulnerable to brute-force &quot;</span></div>
+<div class="line">    <span class="stringliteral">&quot;attacks.&quot;</span>,</div>
 <div class="line">}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="KeyGeneration__test_8cpp_source.html#l00083">83</a> of file <a class="el" href="KeyGeneration__test_8cpp_source.html">KeyGeneration_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="KeyGeneration__test_8cpp_source.html#l00082">82</a> of file <a class="el" href="KeyGeneration__test_8cpp_source.html">KeyGeneration_test.cpp</a>.</p>
 
 </div>
 </div>
 </div><!-- contents -->
-<div class="ttc" id="anamespaceripple_1_1RPC_html_ad541f36347409391d286ab117b8e6659"><div class="ttname"><a href="namespaceripple_1_1RPC.html#ad541f36347409391d286ab117b8e6659">ripple::RPC::ApiMinimumSupportedVersion</a></div><div class="ttdeci">constexpr unsigned int ApiMinimumSupportedVersion</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8h_source.html#l00201">RPCHelpers.h:201</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_affbc9e6f947124dd7e2f7fec4bd95d80"><div class="ttname"><a href="namespaceripple_1_1RPC.html#affbc9e6f947124dd7e2f7fec4bd95d80">ripple::RPC::ApiMaximumSupportedVersion</a></div><div class="ttdeci">constexpr unsigned int ApiMaximumSupportedVersion</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8h_source.html#l00202">RPCHelpers.h:202</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_ad541f36347409391d286ab117b8e6659"><div class="ttname"><a href="namespaceripple_1_1RPC.html#ad541f36347409391d286ab117b8e6659">ripple::RPC::ApiMinimumSupportedVersion</a></div><div class="ttdeci">constexpr unsigned int ApiMinimumSupportedVersion</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8h_source.html#l00213">RPCHelpers.h:213</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_affbc9e6f947124dd7e2f7fec4bd95d80"><div class="ttname"><a href="namespaceripple_1_1RPC.html#affbc9e6f947124dd7e2f7fec4bd95d80">ripple::RPC::ApiMaximumSupportedVersion</a></div><div class="ttdeci">constexpr unsigned int ApiMaximumSupportedVersion</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8h_source.html#l00214">RPCHelpers.h:214</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

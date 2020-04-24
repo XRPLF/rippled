@@ -120,17 +120,20 @@ $(function() {
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keyword">public</span>:</div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classripple_1_1NodeStore_1_1Scheduler.html#a623cbe27a726b27e9ea57fca6149e72a">~Scheduler</a>() = <span class="keywordflow">default</span>;</div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="classripple_1_1NodeStore_1_1Scheduler.html#af3734617d65f9903e3b33d3ee6de8102">scheduleTask</a> (<a class="code" href="structripple_1_1NodeStore_1_1Task.html">Task</a>&amp; task) = 0;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="classripple_1_1NodeStore_1_1Scheduler.html#acf9a08ef64dd95c98da3e095ee919171">onFetch</a> (<a class="code" href="structripple_1_1NodeStore_1_1FetchReport.html">FetchReport</a> <span class="keyword">const</span>&amp; report) = 0;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="classripple_1_1NodeStore_1_1Scheduler.html#a0adffe6c4e42f062bd47864f4e615a39">onBatchWrite</a> (<a class="code" href="structripple_1_1NodeStore_1_1BatchWriteReport.html">BatchWriteReport</a> <span class="keyword">const</span>&amp; report) = 0;</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;};</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;}</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;}</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <a class="code" href="classripple_1_1NodeStore_1_1Scheduler.html#af3734617d65f9903e3b33d3ee6de8102">scheduleTask</a>(<a class="code" href="structripple_1_1NodeStore_1_1Task.html">Task</a>&amp; task) = 0;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <a class="code" href="classripple_1_1NodeStore_1_1Scheduler.html#acf9a08ef64dd95c98da3e095ee919171">onFetch</a>(<a class="code" href="structripple_1_1NodeStore_1_1FetchReport.html">FetchReport</a> <span class="keyword">const</span>&amp; report) = 0;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <a class="code" href="classripple_1_1NodeStore_1_1Scheduler.html#a0adffe6c4e42f062bd47864f4e615a39">onBatchWrite</a>(<a class="code" href="structripple_1_1NodeStore_1_1BatchWriteReport.html">BatchWriteReport</a> <span class="keyword">const</span>&amp; report) = 0;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;};</div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;}  <span class="comment">// namespace NodeStore</span></div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="astructripple_1_1NodeStore_1_1FetchReport_html_a1ec2f3baddbb36d679d0ea5986582166"><div class="ttname"><a href="structripple_1_1NodeStore_1_1FetchReport.html#a1ec2f3baddbb36d679d0ea5986582166">ripple::NodeStore::FetchReport::FetchReport</a></div><div class="ttdeci">FetchReport()=default</div></div>
 <div class="ttc" id="aclassripple_1_1NodeStore_1_1Scheduler_html_a623cbe27a726b27e9ea57fca6149e72a"><div class="ttname"><a href="classripple_1_1NodeStore_1_1Scheduler.html#a623cbe27a726b27e9ea57fca6149e72a">ripple::NodeStore::Scheduler::~Scheduler</a></div><div class="ttdeci">virtual ~Scheduler()=default</div></div>

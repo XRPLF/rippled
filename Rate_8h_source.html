@@ -99,101 +99,85 @@ $(function() {
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="structripple_1_1Rate.html">   37</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1Rate.html">Rate</a></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    : <span class="keyword">private</span> boost::totally_ordered &lt;Rate&gt;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;{</div>
-<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="structripple_1_1Rate.html#a59fd441d04e641347e6dc62c2301f671">   40</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="code" href="structripple_1_1Rate.html#a59fd441d04e641347e6dc62c2301f671">value</a>;</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <a class="code" href="structripple_1_1Rate.html#ad98d5b7539da32d919e355fbabaee41d">Rate</a> () = <span class="keyword">delete</span>;</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keyword">explicit</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno"><a class="line" href="structripple_1_1Rate.html#a32e87ad7bb0f66b0da58fd1bc0c7d23f">   45</a></span>&#160;    <a class="code" href="structripple_1_1Rate.html#a32e87ad7bb0f66b0da58fd1bc0c7d23f">Rate</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> rate)</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        : <a class="code" href="structripple_1_1Rate.html#a59fd441d04e641347e6dc62c2301f671">value</a> (rate)</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    {</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    }</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;};</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="keyword">inline</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno"><a class="line" href="namespaceripple.html#a6fe3beff5f8ceca73d448c9aeac3a4a4">   53</a></span>&#160;<a class="code" href="namespaceripple.html#a4a7f562868748b9246dbcab39091021c">operator== </a>(<a class="code" href="structripple_1_1Rate.html">Rate</a> <span class="keyword">const</span>&amp; lhs, <a class="code" href="structripple_1_1Rate.html">Rate</a> <span class="keyword">const</span>&amp; rhs) noexcept</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;{</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordflow">return</span> lhs.value == rhs.value;</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;}</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="keyword">inline</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00060"></a><span class="lineno"><a class="line" href="namespaceripple.html#ae7c74e93da0c1d020d09b2a9851aa476">   60</a></span>&#160;<a class="code" href="namespaceripple.html#a085f3979afbbdb2fb60e4b729357ffc6">operator&lt; </a>(<a class="code" href="structripple_1_1Rate.html">Rate</a> <span class="keyword">const</span>&amp; lhs, <a class="code" href="structripple_1_1Rate.html">Rate</a> <span class="keyword">const</span>&amp; rhs) noexcept</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;{</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keywordflow">return</span> lhs.value &lt; rhs.value;</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;}</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="keyword">inline</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a>&amp;</div>
-<div class="line"><a name="l00067"></a><span class="lineno"><a class="line" href="namespaceripple.html#a88e8e64355120f8f01e4ee0355ba3a1f">   67</a></span>&#160;<a class="code" href="namespaceripple.html#ad2cbc273400d06e5ff80501de15410e3">operator&lt;&lt; </a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a>&amp; os, <a class="code" href="structripple_1_1Rate.html">Rate</a> <span class="keyword">const</span>&amp; rate)</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;{</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    os &lt;&lt; rate.value;</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keywordflow">return</span> os;</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;}</div>
+<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="structripple_1_1Rate.html">   37</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1Rate.html">Rate</a> : <span class="keyword">private</span> boost::totally_ordered&lt;Rate&gt;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;{</div>
+<div class="line"><a name="l00039"></a><span class="lineno"><a class="line" href="structripple_1_1Rate.html#a59fd441d04e641347e6dc62c2301f671">   39</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="code" href="structripple_1_1Rate.html#a59fd441d04e641347e6dc62c2301f671">value</a>;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <a class="code" href="structripple_1_1Rate.html#ad98d5b7539da32d919e355fbabaee41d">Rate</a>() = <span class="keyword">delete</span>;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
+<div class="line"><a name="l00043"></a><span class="lineno"><a class="line" href="structripple_1_1Rate.html#a32e87ad7bb0f66b0da58fd1bc0c7d23f">   43</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structripple_1_1Rate.html#a32e87ad7bb0f66b0da58fd1bc0c7d23f">Rate</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> rate) : <a class="code" href="structripple_1_1Rate.html#a59fd441d04e641347e6dc62c2301f671">value</a>(rate)</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    {</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    }</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;};</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="namespaceripple.html#a6fe3beff5f8ceca73d448c9aeac3a4a4">   49</a></span>&#160;<a class="code" href="namespaceripple.html#a4a7f562868748b9246dbcab39091021c">operator==</a>(<a class="code" href="structripple_1_1Rate.html">Rate</a> <span class="keyword">const</span>&amp; lhs, <a class="code" href="structripple_1_1Rate.html">Rate</a> <span class="keyword">const</span>&amp; rhs) noexcept</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;{</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordflow">return</span> lhs.value == rhs.value;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;}</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00055"></a><span class="lineno"><a class="line" href="namespaceripple.html#ae7c74e93da0c1d020d09b2a9851aa476">   55</a></span>&#160;<a class="code" href="namespaceripple.html#a085f3979afbbdb2fb60e4b729357ffc6">operator&lt;</a>(<a class="code" href="structripple_1_1Rate.html">Rate</a> <span class="keyword">const</span>&amp; lhs, <a class="code" href="structripple_1_1Rate.html">Rate</a> <span class="keyword">const</span>&amp; rhs) noexcept</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;{</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keywordflow">return</span> lhs.value &lt; rhs.value;</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;}</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="keyword">inline</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a>&amp;</div>
+<div class="line"><a name="l00061"></a><span class="lineno"><a class="line" href="namespaceripple.html#a88e8e64355120f8f01e4ee0355ba3a1f">   61</a></span>&#160;<a class="code" href="namespaceripple.html#ad2cbc273400d06e5ff80501de15410e3">operator&lt;&lt;</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a>&amp; os, <a class="code" href="structripple_1_1Rate.html">Rate</a> <span class="keyword">const</span>&amp; rate)</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;{</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    os &lt;&lt; rate.value;</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keywordflow">return</span> os;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;}</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;STAmount</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<a class="code" href="namespaceripple.html#a5adb540ae694e45bca2ad089fff15128">multiply</a>(STAmount <span class="keyword">const</span>&amp; amount, Rate <span class="keyword">const</span>&amp; rate);</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;STAmount</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<a class="code" href="namespaceripple.html#acba9aa7d1101df4ac940c3588972fdea">multiplyRound</a>(STAmount <span class="keyword">const</span>&amp; amount, Rate <span class="keyword">const</span>&amp; rate, <span class="keywordtype">bool</span> roundUp);</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;STAmount</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<a class="code" href="namespaceripple.html#a5adb540ae694e45bca2ad089fff15128">multiply</a> (</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<a class="code" href="namespaceripple.html#acba9aa7d1101df4ac940c3588972fdea">multiplyRound</a>(</div>
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    STAmount <span class="keyword">const</span>&amp; amount,</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    Rate <span class="keyword">const</span>&amp; rate);</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;STAmount</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<a class="code" href="namespaceripple.html#acba9aa7d1101df4ac940c3588972fdea">multiplyRound</a> (</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    STAmount <span class="keyword">const</span>&amp; amount,</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    Rate <span class="keyword">const</span>&amp; rate,</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keywordtype">bool</span> roundUp);</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;STAmount</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<a class="code" href="namespaceripple.html#acba9aa7d1101df4ac940c3588972fdea">multiplyRound</a> (</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    STAmount <span class="keyword">const</span>&amp; amount,</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    Rate <span class="keyword">const</span>&amp; rate,</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    Issue <span class="keyword">const</span>&amp; issue,</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keywordtype">bool</span> roundUp);</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;STAmount</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<a class="code" href="namespaceripple.html#a0ad557cc32ca87dcea19af8e30c63c6a">divide</a> (</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    STAmount <span class="keyword">const</span>&amp; amount,</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    Rate <span class="keyword">const</span>&amp; rate);</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    Rate <span class="keyword">const</span>&amp; rate,</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    Issue <span class="keyword">const</span>&amp; issue,</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keywordtype">bool</span> roundUp);</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;STAmount</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<a class="code" href="namespaceripple.html#a0ad557cc32ca87dcea19af8e30c63c6a">divide</a>(STAmount <span class="keyword">const</span>&amp; amount, Rate <span class="keyword">const</span>&amp; rate);</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;STAmount</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;<a class="code" href="namespaceripple.html#a5e49d5cb12f80e98c70ac0dea63764e5">divideRound</a>(STAmount <span class="keyword">const</span>&amp; amount, Rate <span class="keyword">const</span>&amp; rate, <span class="keywordtype">bool</span> roundUp);</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;STAmount</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<a class="code" href="namespaceripple.html#a5e49d5cb12f80e98c70ac0dea63764e5">divideRound</a>(</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    STAmount <span class="keyword">const</span>&amp; amount,</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    Rate <span class="keyword">const</span>&amp; rate,</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    Issue <span class="keyword">const</span>&amp; issue,</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keywordtype">bool</span> roundUp);</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
+<div class="line"><a name="l00094"></a><span class="lineno"><a class="line" href="namespaceripple.html#a8ca9b43bfc508a3fdbc296fb926320ce">   94</a></span>&#160;<span class="keyword">extern</span> <a class="code" href="structripple_1_1Rate.html">Rate</a> <span class="keyword">const</span> <a class="code" href="namespaceripple.html#a8ca9b43bfc508a3fdbc296fb926320ce">parityRate</a>;</div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;STAmount</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<a class="code" href="namespaceripple.html#a5e49d5cb12f80e98c70ac0dea63764e5">divideRound</a> (</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    STAmount <span class="keyword">const</span>&amp; amount,</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    Rate <span class="keyword">const</span>&amp; rate,</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <span class="keywordtype">bool</span> roundUp);</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;STAmount</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;<a class="code" href="namespaceripple.html#a5e49d5cb12f80e98c70ac0dea63764e5">divideRound</a> (</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    STAmount <span class="keyword">const</span>&amp; amount,</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    Rate <span class="keyword">const</span>&amp; rate,</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    Issue <span class="keyword">const</span>&amp; issue,</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="keywordtype">bool</span> roundUp);</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
-<div class="line"><a name="l00110"></a><span class="lineno"><a class="line" href="namespaceripple.html#a8ca9b43bfc508a3fdbc296fb926320ce">  110</a></span>&#160;<span class="keyword">extern</span> <a class="code" href="structripple_1_1Rate.html">Rate</a> <span class="keyword">const</span> <a class="code" href="namespaceripple.html#a8ca9b43bfc508a3fdbc296fb926320ce">parityRate</a>;</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;}</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160; </div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="astructripple_1_1Rate_html"><div class="ttname"><a href="structripple_1_1Rate.html">ripple::Rate</a></div><div class="ttdoc">Represents a transfer rate.</div><div class="ttdef"><b>Definition:</b> <a href="Rate_8h_source.html#l00037">Rate.h:37</a></div></div>
-<div class="ttc" id="anamespaceripple_html_acba9aa7d1101df4ac940c3588972fdea"><div class="ttname"><a href="namespaceripple.html#acba9aa7d1101df4ac940c3588972fdea">ripple::multiplyRound</a></div><div class="ttdeci">STAmount multiplyRound(STAmount const &amp;amount, Rate const &amp;rate, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="Rate2_8cpp_source.html#l00053">Rate2.cpp:53</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a5e49d5cb12f80e98c70ac0dea63764e5"><div class="ttname"><a href="namespaceripple.html#a5e49d5cb12f80e98c70ac0dea63764e5">ripple::divideRound</a></div><div class="ttdeci">STAmount divideRound(STAmount const &amp;amount, Rate const &amp;rate, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="Rate2_8cpp_source.html#l00108">Rate2.cpp:108</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ad2cbc273400d06e5ff80501de15410e3"><div class="ttname"><a href="namespaceripple.html#ad2cbc273400d06e5ff80501de15410e3">ripple::operator&lt;&lt;</a></div><div class="ttdeci">std::ostream &amp; operator&lt;&lt;(std::ostream &amp;os, TOffer&lt; TIn, TOut &gt; const &amp;offer)</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00237">Offer.h:237</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a8ca9b43bfc508a3fdbc296fb926320ce"><div class="ttname"><a href="namespaceripple.html#a8ca9b43bfc508a3fdbc296fb926320ce">ripple::parityRate</a></div><div class="ttdeci">const Rate parityRate(QUALITY_ONE)</div><div class="ttdoc">A transfer rate signifying a 1:1 exchange.</div><div class="ttdef"><b>Definition:</b> <a href="Rate_8h_source.html#l00110">Rate.h:110</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a4a7f562868748b9246dbcab39091021c"><div class="ttname"><a href="namespaceripple.html#a4a7f562868748b9246dbcab39091021c">ripple::operator==</a></div><div class="ttdeci">bool operator==(Manifest const &amp;lhs, Manifest const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="Manifest_8h_source.html#l00148">Manifest.h:148</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a0ad557cc32ca87dcea19af8e30c63c6a"><div class="ttname"><a href="namespaceripple.html#a0ad557cc32ca87dcea19af8e30c63c6a">ripple::divide</a></div><div class="ttdeci">STAmount divide(STAmount const &amp;amount, Rate const &amp;rate)</div><div class="ttdef"><b>Definition:</b> <a href="Rate2_8cpp_source.html#l00092">Rate2.cpp:92</a></div></div>
-<div class="ttc" id="astructripple_1_1Rate_html_a32e87ad7bb0f66b0da58fd1bc0c7d23f"><div class="ttname"><a href="structripple_1_1Rate.html#a32e87ad7bb0f66b0da58fd1bc0c7d23f">ripple::Rate::Rate</a></div><div class="ttdeci">Rate(std::uint32_t rate)</div><div class="ttdef"><b>Definition:</b> <a href="Rate_8h_source.html#l00045">Rate.h:45</a></div></div>
+<div class="ttc" id="anamespaceripple_html_acba9aa7d1101df4ac940c3588972fdea"><div class="ttname"><a href="namespaceripple.html#acba9aa7d1101df4ac940c3588972fdea">ripple::multiplyRound</a></div><div class="ttdeci">STAmount multiplyRound(STAmount const &amp;amount, Rate const &amp;rate, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="Rate2_8cpp_source.html#l00049">Rate2.cpp:49</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a5e49d5cb12f80e98c70ac0dea63764e5"><div class="ttname"><a href="namespaceripple.html#a5e49d5cb12f80e98c70ac0dea63764e5">ripple::divideRound</a></div><div class="ttdeci">STAmount divideRound(STAmount const &amp;amount, Rate const &amp;rate, bool roundUp)</div><div class="ttdef"><b>Definition:</b> <a href="Rate2_8cpp_source.html#l00088">Rate2.cpp:88</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ad2cbc273400d06e5ff80501de15410e3"><div class="ttname"><a href="namespaceripple.html#ad2cbc273400d06e5ff80501de15410e3">ripple::operator&lt;&lt;</a></div><div class="ttdeci">std::ostream &amp; operator&lt;&lt;(std::ostream &amp;os, TOffer&lt; TIn, TOut &gt; const &amp;offer)</div><div class="ttdef"><b>Definition:</b> <a href="Offer_8h_source.html#l00242">Offer.h:242</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a8ca9b43bfc508a3fdbc296fb926320ce"><div class="ttname"><a href="namespaceripple.html#a8ca9b43bfc508a3fdbc296fb926320ce">ripple::parityRate</a></div><div class="ttdeci">const Rate parityRate(QUALITY_ONE)</div><div class="ttdoc">A transfer rate signifying a 1:1 exchange.</div><div class="ttdef"><b>Definition:</b> <a href="Rate_8h_source.html#l00094">Rate.h:94</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a4a7f562868748b9246dbcab39091021c"><div class="ttname"><a href="namespaceripple.html#a4a7f562868748b9246dbcab39091021c">ripple::operator==</a></div><div class="ttdeci">bool operator==(Manifest const &amp;lhs, Manifest const &amp;rhs)</div><div class="ttdef"><b>Definition:</b> <a href="Manifest_8h_source.html#l00155">Manifest.h:155</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a0ad557cc32ca87dcea19af8e30c63c6a"><div class="ttname"><a href="namespaceripple.html#a0ad557cc32ca87dcea19af8e30c63c6a">ripple::divide</a></div><div class="ttdeci">STAmount divide(STAmount const &amp;amount, Rate const &amp;rate)</div><div class="ttdef"><b>Definition:</b> <a href="Rate2_8cpp_source.html#l00077">Rate2.cpp:77</a></div></div>
+<div class="ttc" id="astructripple_1_1Rate_html_a32e87ad7bb0f66b0da58fd1bc0c7d23f"><div class="ttname"><a href="structripple_1_1Rate.html#a32e87ad7bb0f66b0da58fd1bc0c7d23f">ripple::Rate::Rate</a></div><div class="ttdeci">Rate(std::uint32_t rate)</div><div class="ttdef"><b>Definition:</b> <a href="Rate_8h_source.html#l00043">Rate.h:43</a></div></div>
 <div class="ttc" id="abasic_ostream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="acstdint_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a5adb540ae694e45bca2ad089fff15128"><div class="ttname"><a href="namespaceripple.html#a5adb540ae694e45bca2ad089fff15128">ripple::multiply</a></div><div class="ttdeci">STAmount multiply(STAmount const &amp;amount, Rate const &amp;rate)</div><div class="ttdef"><b>Definition:</b> <a href="Rate2_8cpp_source.html#l00037">Rate2.cpp:37</a></div></div>
-<div class="ttc" id="astructripple_1_1Rate_html_a59fd441d04e641347e6dc62c2301f671"><div class="ttname"><a href="structripple_1_1Rate.html#a59fd441d04e641347e6dc62c2301f671">ripple::Rate::value</a></div><div class="ttdeci">std::uint32_t value</div><div class="ttdef"><b>Definition:</b> <a href="Rate_8h_source.html#l00040">Rate.h:40</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a5adb540ae694e45bca2ad089fff15128"><div class="ttname"><a href="namespaceripple.html#a5adb540ae694e45bca2ad089fff15128">ripple::multiply</a></div><div class="ttdeci">STAmount multiply(STAmount const &amp;amount, Rate const &amp;rate)</div><div class="ttdef"><b>Definition:</b> <a href="Rate2_8cpp_source.html#l00038">Rate2.cpp:38</a></div></div>
+<div class="ttc" id="astructripple_1_1Rate_html_a59fd441d04e641347e6dc62c2301f671"><div class="ttname"><a href="structripple_1_1Rate.html#a59fd441d04e641347e6dc62c2301f671">ripple::Rate::value</a></div><div class="ttdeci">std::uint32_t value</div><div class="ttdef"><b>Definition:</b> <a href="Rate_8h_source.html#l00039">Rate.h:39</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="acassert_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cassert.html">cassert</a></div></div>
 <div class="ttc" id="astructripple_1_1Rate_html_ad98d5b7539da32d919e355fbabaee41d"><div class="ttname"><a href="structripple_1_1Rate.html#ad98d5b7539da32d919e355fbabaee41d">ripple::Rate::Rate</a></div><div class="ttdeci">Rate()=delete</div></div>
-<div class="ttc" id="anamespaceripple_html_a085f3979afbbdb2fb60e4b729357ffc6"><div class="ttname"><a href="namespaceripple.html#a085f3979afbbdb2fb60e4b729357ffc6">ripple::operator&lt;</a></div><div class="ttdeci">bool operator&lt;(base_uint&lt; Bits, Tag &gt; const &amp;a, base_uint&lt; Bits, Tag &gt; const &amp;b)</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00456">base_uint.h:456</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a085f3979afbbdb2fb60e4b729357ffc6"><div class="ttname"><a href="namespaceripple.html#a085f3979afbbdb2fb60e4b729357ffc6">ripple::operator&lt;</a></div><div class="ttdeci">bool operator&lt;(base_uint&lt; Bits, Tag &gt; const &amp;a, base_uint&lt; Bits, Tag &gt; const &amp;b)</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00514">base_uint.h:514</a></div></div>
 <div class="ttc" id="aostream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/ostream.html">ostream</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

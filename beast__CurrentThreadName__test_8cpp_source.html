@@ -99,76 +99,81 @@ $(function() {
 <div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1CurrentThreadName__test.html">   28</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1test_1_1CurrentThreadName__test.html">CurrentThreadName_test</a> : <span class="keyword">public</span> beast::unit_test::suite</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;{</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1CurrentThreadName__test.html#a36b3b04509980288551e22a73e288816">   31</a></span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code" href="classripple_1_1test_1_1CurrentThreadName__test.html#a36b3b04509980288551e22a73e288816">exerciseName</a> (</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> myName, <a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic&lt;bool&gt;</a>* stop, <a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic&lt;int&gt;</a>* state)</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    {</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="comment">// Verify that upon creation a thread has no name.</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> initialThreadName = <a class="code" href="namespacebeast.html#afa60f82c45aadff5ed4da508c797e3a9">beast::getCurrentThreadName</a>();</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        <span class="comment">// Set the new name.</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <a class="code" href="namespacebeast.html#ab3bd70e6eb43bbd99b5fe518efce8c7e">beast::setCurrentThreadName</a> (myName);</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1CurrentThreadName__test.html#a36b3b04509980288551e22a73e288816">   32</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1CurrentThreadName__test.html#a36b3b04509980288551e22a73e288816">exerciseName</a>(</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> myName,</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic&lt;bool&gt;</a>* stop,</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic&lt;int&gt;</a>* state)</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    {</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        <span class="comment">// Verify that upon creation a thread has no name.</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> initialThreadName = <a class="code" href="namespacebeast.html#afa60f82c45aadff5ed4da508c797e3a9">beast::getCurrentThreadName</a>();</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="comment">// Indicate to caller that the name is set.</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        *state = 1;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="comment">// Set the new name.</span></div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <a class="code" href="namespacebeast.html#ab3bd70e6eb43bbd99b5fe518efce8c7e">beast::setCurrentThreadName</a>(myName);</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="comment">// If there is an initial thread name then we failed.</span></div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="keywordflow">if</span> (!initialThreadName.empty())</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="comment">// Wait until all threads have their names.</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="keywordflow">while</span> (! *stop);</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="comment">// Indicate to caller that the name is set.</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        *state = 1;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <span class="comment">// If there is an initial thread name then we failed.</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="keywordflow">if</span> (!initialThreadName.empty())</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <span class="comment">// Make sure the thread name that we set before is still there</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="comment">// (not overwritten by, for instance, another thread).</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="namespacebeast.html#afa60f82c45aadff5ed4da508c797e3a9">beast::getCurrentThreadName</a>() == myName)</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;            *state = 2;</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    }</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1CurrentThreadName__test.html#acbdbc1695f1955e8b71bda4d7432925c">   58</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1CurrentThreadName__test.html#acbdbc1695f1955e8b71bda4d7432925c">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="comment">// Make two different threads with two different names.  Make sure</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="comment">// that the expected thread names are still there when the thread</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="comment">// exits.</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic&lt;bool&gt;</a> stop {<span class="keyword">false</span>};</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic&lt;int&gt;</a> stateA {0};</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/thread.html">std::thread</a> tA (<a class="code" href="classripple_1_1test_1_1CurrentThreadName__test.html#a36b3b04509980288551e22a73e288816">exerciseName</a>, <span class="stringliteral">&quot;tA&quot;</span>, &amp;stop, &amp;stateA);</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic&lt;int&gt;</a> stateB {0};</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/thread.html">std::thread</a> tB (<a class="code" href="classripple_1_1test_1_1CurrentThreadName__test.html#a36b3b04509980288551e22a73e288816">exerciseName</a>, <span class="stringliteral">&quot;tB&quot;</span>, &amp;stop, &amp;stateB);</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="comment">// Wait until both threads have set their names.</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <span class="keywordflow">while</span> (stateA == 0 || stateB == 0);</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        stop = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        tA.<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/thread/join.html">join</a>();</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        tB.<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/thread/join.html">join</a>();</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="comment">// Both threads should still have the expected name when they exit.</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        BEAST_EXPECT (stateA == 2);</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        BEAST_EXPECT (stateB == 2);</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    }</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;};</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">BEAST_DEFINE_TESTSUITE</a>(CurrentThreadName,core,<a class="code" href="namespacebeast.html">beast</a>);</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;} <span class="comment">// test</span></div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <span class="comment">// Wait until all threads have their names.</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="keywordflow">while</span> (!*stop)</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;            ;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        <span class="comment">// Make sure the thread name that we set before is still there</span></div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <span class="comment">// (not overwritten by, for instance, another thread).</span></div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="namespacebeast.html#afa60f82c45aadff5ed4da508c797e3a9">beast::getCurrentThreadName</a>() == myName)</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            *state = 2;</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    }</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1CurrentThreadName__test.html#acbdbc1695f1955e8b71bda4d7432925c">   62</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1CurrentThreadName__test.html#acbdbc1695f1955e8b71bda4d7432925c">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="comment">// Make two different threads with two different names.  Make sure</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="comment">// that the expected thread names are still there when the thread</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <span class="comment">// exits.</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic&lt;bool&gt;</a> stop{<span class="keyword">false</span>};</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic&lt;int&gt;</a> stateA{0};</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/thread.html">std::thread</a> tA(<a class="code" href="classripple_1_1test_1_1CurrentThreadName__test.html#a36b3b04509980288551e22a73e288816">exerciseName</a>, <span class="stringliteral">&quot;tA&quot;</span>, &amp;stop, &amp;stateA);</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic&lt;int&gt;</a> stateB{0};</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/thread.html">std::thread</a> tB(<a class="code" href="classripple_1_1test_1_1CurrentThreadName__test.html#a36b3b04509980288551e22a73e288816">exerciseName</a>, <span class="stringliteral">&quot;tB&quot;</span>, &amp;stop, &amp;stateB);</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="comment">// Wait until both threads have set their names.</span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <span class="keywordflow">while</span> (stateA == 0 || stateB == 0)</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            ;</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        stop = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        tA.<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/thread/join.html">join</a>();</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        tB.<a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/thread/join.html">join</a>();</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        <span class="comment">// Both threads should still have the expected name when they exit.</span></div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        BEAST_EXPECT(stateA == 2);</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        BEAST_EXPECT(stateB == 2);</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    }</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;};</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">BEAST_DEFINE_TESTSUITE</a>(CurrentThreadName, core, <a class="code" href="namespacebeast.html">beast</a>);</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_1_1test_html_a52909fdbfa7f29626f24005ed12e6ef4"><div class="ttname"><a href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">ripple::test::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(AccountDelete, app, ripple)</div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1CurrentThreadName__test_html_acbdbc1695f1955e8b71bda4d7432925c"><div class="ttname"><a href="classripple_1_1test_1_1CurrentThreadName__test.html#acbdbc1695f1955e8b71bda4d7432925c">ripple::test::CurrentThreadName_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="beast__CurrentThreadName__test_8cpp_source.html#l00058">beast_CurrentThreadName_test.cpp:58</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1CurrentThreadName__test_html_a36b3b04509980288551e22a73e288816"><div class="ttname"><a href="classripple_1_1test_1_1CurrentThreadName__test.html#a36b3b04509980288551e22a73e288816">ripple::test::CurrentThreadName_test::exerciseName</a></div><div class="ttdeci">static void exerciseName(std::string myName, std::atomic&lt; bool &gt; *stop, std::atomic&lt; int &gt; *state)</div><div class="ttdef"><b>Definition:</b> <a href="beast__CurrentThreadName__test_8cpp_source.html#l00031">beast_CurrentThreadName_test.cpp:31</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1CurrentThreadName__test_html_acbdbc1695f1955e8b71bda4d7432925c"><div class="ttname"><a href="classripple_1_1test_1_1CurrentThreadName__test.html#acbdbc1695f1955e8b71bda4d7432925c">ripple::test::CurrentThreadName_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="beast__CurrentThreadName__test_8cpp_source.html#l00062">beast_CurrentThreadName_test.cpp:62</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1CurrentThreadName__test_html_a36b3b04509980288551e22a73e288816"><div class="ttname"><a href="classripple_1_1test_1_1CurrentThreadName__test.html#a36b3b04509980288551e22a73e288816">ripple::test::CurrentThreadName_test::exerciseName</a></div><div class="ttdeci">static void exerciseName(std::string myName, std::atomic&lt; bool &gt; *stop, std::atomic&lt; int &gt; *state)</div><div class="ttdef"><b>Definition:</b> <a href="beast__CurrentThreadName__test_8cpp_source.html#l00032">beast_CurrentThreadName_test.cpp:32</a></div></div>
 <div class="ttc" id="athread_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/thread.html">thread</a></div></div>
-<div class="ttc" id="anamespacebeast_html_afa60f82c45aadff5ed4da508c797e3a9"><div class="ttname"><a href="namespacebeast.html#afa60f82c45aadff5ed4da508c797e3a9">beast::getCurrentThreadName</a></div><div class="ttdeci">std::string getCurrentThreadName()</div><div class="ttdoc">Returns the name of the caller thread.</div><div class="ttdef"><b>Definition:</b> <a href="CurrentThreadName_8cpp_source.html#l00108">CurrentThreadName.cpp:108</a></div></div>
+<div class="ttc" id="anamespacebeast_html_afa60f82c45aadff5ed4da508c797e3a9"><div class="ttname"><a href="namespacebeast.html#afa60f82c45aadff5ed4da508c797e3a9">beast::getCurrentThreadName</a></div><div class="ttdeci">std::string getCurrentThreadName()</div><div class="ttdoc">Returns the name of the caller thread.</div><div class="ttdef"><b>Definition:</b> <a href="CurrentThreadName_8cpp_source.html#l00113">CurrentThreadName.cpp:113</a></div></div>
 <div class="ttc" id="aatomic_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/atomic.html">atomic</a></div></div>
-<div class="ttc" id="anamespacebeast_html_ab3bd70e6eb43bbd99b5fe518efce8c7e"><div class="ttname"><a href="namespacebeast.html#ab3bd70e6eb43bbd99b5fe518efce8c7e">beast::setCurrentThreadName</a></div><div class="ttdeci">void setCurrentThreadName(std::string_view name)</div><div class="ttdoc">Changes the name of the caller thread.</div><div class="ttdef"><b>Definition:</b> <a href="CurrentThreadName_8cpp_source.html#l00113">CurrentThreadName.cpp:113</a></div></div>
+<div class="ttc" id="anamespacebeast_html_ab3bd70e6eb43bbd99b5fe518efce8c7e"><div class="ttname"><a href="namespacebeast.html#ab3bd70e6eb43bbd99b5fe518efce8c7e">beast::setCurrentThreadName</a></div><div class="ttdeci">void setCurrentThreadName(std::string_view name)</div><div class="ttdoc">Changes the name of the caller thread.</div><div class="ttdef"><b>Definition:</b> <a href="CurrentThreadName_8cpp_source.html#l00119">CurrentThreadName.cpp:119</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="ajoin_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/thread/join.html">std::thread::join</a></div><div class="ttdeci">T join(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1CurrentThreadName__test_html"><div class="ttname"><a href="classripple_1_1test_1_1CurrentThreadName__test.html">ripple::test::CurrentThreadName_test</a></div><div class="ttdef"><b>Definition:</b> <a href="beast__CurrentThreadName__test_8cpp_source.html#l00028">beast_CurrentThreadName_test.cpp:28</a></div></div>
-<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00582">base_uint.h:582</a></div></div>
+<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00646">base_uint.h:646</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

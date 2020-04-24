@@ -96,16 +96,16 @@ $(function() {
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keyword">namespace </span>RPC {</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#ac00d1aab90c7766d838981ed27607eff">   28</a></span>&#160;<span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">Output</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a> &lt;void (boost::string_ref <span class="keyword">const</span>&amp;)&gt;;</div>
+<div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#acca76813aa71dce78dcac6a8212380f2">   28</a></span>&#160;<span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">Output</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;void(boost::string_ref <span class="keyword">const</span>&amp;)&gt;;</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">inline</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a001205e70b842e99ac28d568b8b8652d">   31</a></span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">Output</a> <a class="code" href="namespaceripple_1_1RPC.html#a001205e70b842e99ac28d568b8b8652d">stringOutput</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&amp; s)</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">inline</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">Output</a></div>
+<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a001205e70b842e99ac28d568b8b8652d">   31</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a001205e70b842e99ac28d568b8b8652d">stringOutput</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&amp; s)</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;{</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keywordflow">return</span> [&amp;](boost::string_ref <span class="keyword">const</span>&amp; b) { s.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/append.html">append</a> (b.data(), b.size()); };</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keywordflow">return</span> [&amp;](boost::string_ref <span class="keyword">const</span>&amp; b) { s.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/append.html">append</a>(b.data(), b.size()); };</div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;}</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;} <span class="comment">// RPC</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;}  <span class="comment">// namespace RPC</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->

@@ -167,15 +167,15 @@ Typedefs</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:adea68075e427dfc7781b5a930121b579"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1detail.html#adea68075e427dfc7781b5a930121b579">XXH_endianess</a> { <a class="el" href="namespacebeast_1_1detail.html#adea68075e427dfc7781b5a930121b579a68a60982d9622bb00417db5d6f0032ea">XXH_bigEndian</a> =0, 
-<a class="el" href="namespacebeast_1_1detail.html#adea68075e427dfc7781b5a930121b579a1cc3c7817ef899641248c430aaa73f4d">XXH_littleEndian</a> =1
+<tr class="memitem:adea68075e427dfc7781b5a930121b579"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1detail.html#adea68075e427dfc7781b5a930121b579">XXH_endianess</a> { <a class="el" href="namespacebeast_1_1detail.html#adea68075e427dfc7781b5a930121b579a68a60982d9622bb00417db5d6f0032ea">XXH_bigEndian</a> = 0, 
+<a class="el" href="namespacebeast_1_1detail.html#adea68075e427dfc7781b5a930121b579a1cc3c7817ef899641248c430aaa73f4d">XXH_littleEndian</a> = 1
  }</td></tr>
 <tr class="separator:adea68075e427dfc7781b5a930121b579"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f28e15d8e6a86d4fd1f604373318633"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1detail.html#a3f28e15d8e6a86d4fd1f604373318633">XXH_alignment</a> { <a class="el" href="namespacebeast_1_1detail.html#a3f28e15d8e6a86d4fd1f604373318633a4064cb027c54663f1b8b7295855c97d8">XXH_aligned</a>, 
 <a class="el" href="namespacebeast_1_1detail.html#a3f28e15d8e6a86d4fd1f604373318633a482e193e1bc18e4fb39839fb70f8eeb6">XXH_unaligned</a>
  }</td></tr>
 <tr class="separator:a3f28e15d8e6a86d4fd1f604373318633"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a23d8bec4f2b07e28987d348b3b5c896c"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1detail.html#a23d8bec4f2b07e28987d348b3b5c896c">XXH_errorcode</a> { <a class="el" href="namespacebeast_1_1detail.html#a23d8bec4f2b07e28987d348b3b5c896caa642c7046ece6b5bfd60b8bd51d20cc0">XXH_OK</a> =0, 
+<tr class="memitem:a23d8bec4f2b07e28987d348b3b5c896c"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1detail.html#a23d8bec4f2b07e28987d348b3b5c896c">XXH_errorcode</a> { <a class="el" href="namespacebeast_1_1detail.html#a23d8bec4f2b07e28987d348b3b5c896caa642c7046ece6b5bfd60b8bd51d20cc0">XXH_OK</a> = 0, 
 <a class="el" href="namespacebeast_1_1detail.html#a23d8bec4f2b07e28987d348b3b5c896ca14990ac4535ed1a6522cc44a93b279dd">XXH_ERROR</a>
  }</td></tr>
 <tr class="separator:a23d8bec4f2b07e28987d348b3b5c896c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -253,7 +253,7 @@ Functions</h2></td></tr>
 <tr class="memitem:a86139bf94dff8e069f7e2a359580840f"><td class="memTemplParams" colspan="2">template&lt;class Hasher , class T &gt; </td></tr>
 <tr class="memitem:a86139bf94dff8e069f7e2a359580840f"><td class="memTemplItemLeft" align="right" valign="top">int&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1detail.html#a86139bf94dff8e069f7e2a359580840f">hash_one</a> (Hasher &amp;h, T const &amp;t) noexcept</td></tr>
 <tr class="separator:a86139bf94dff8e069f7e2a359580840f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab13a26823532189458684f291a3aa6c3"><td class="memTemplParams" colspan="2">template&lt;class Hasher , class ... T, std::size_t ... I&gt; </td></tr>
+<tr class="memitem:ab13a26823532189458684f291a3aa6c3"><td class="memTemplParams" colspan="2">template&lt;class Hasher , class... T, std::size_t... I&gt; </td></tr>
 <tr class="memitem:ab13a26823532189458684f291a3aa6c3"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1detail.html#ab13a26823532189458684f291a3aa6c3">tuple_hash</a> (Hasher &amp;h, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">std::tuple</a>&lt; T... &gt; const &amp;t, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/integer_sequence.html">std::index_sequence</a>&lt; I... &gt;) noexcept</td></tr>
 <tr class="separator:ab13a26823532189458684f291a3aa6c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abce1f5a23d1af0c94c345ff76b9ed7d4"><td class="memItemLeft" align="right" valign="top">FORCE_INLINE U32&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebeast_1_1detail.html#abce1f5a23d1af0c94c345ff76b9ed7d4">XXH_readLE32_align</a> (const void *ptr, <a class="el" href="namespacebeast_1_1detail.html#adea68075e427dfc7781b5a930121b579">XXH_endianess</a> <a class="el" href="namespacebeast.html#aeb689e5282484a5d64be831c6e646f0a">endian</a>, <a class="el" href="namespacebeast_1_1detail.html#a3f28e15d8e6a86d4fd1f604373318633">XXH_alignment</a> align)</td></tr>
@@ -359,7 +359,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="adea68075e427dfc7781b5a930121b579a1cc3c7817ef899641248c430aaa73f4d"></a>XXH_littleEndian&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00210">210</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00223">223</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -379,7 +379,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="a3f28e15d8e6a86d4fd1f604373318633a482e193e1bc18e4fb39839fb70f8eeb6"></a>XXH_unaligned&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00226">226</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00242">242</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -399,7 +399,7 @@ Variables</h2></td></tr>
 <tr><td class="fieldname"><a id="a23d8bec4f2b07e28987d348b3b5c896ca14990ac4535ed1a6522cc44a93b279dd"></a>XXH_ERROR&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8h_source.html#l00078">78</a> of file <a class="el" href="xxhash_8h_source.html">xxhash.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8h_source.html#l00079">79</a> of file <a class="el" href="xxhash_8h_source.html">xxhash.h</a>.</p>
 
 </div>
 </div>
@@ -596,7 +596,7 @@ template&lt;class UIntType , class FwdIt &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LexicalCast_8h_source.html#l00125">125</a> of file <a class="el" href="LexicalCast_8h_source.html">LexicalCast.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LexicalCast_8h_source.html#l00126">126</a> of file <a class="el" href="LexicalCast_8h_source.html">LexicalCast.h</a>.</p>
 
 </div>
 </div>
@@ -628,7 +628,7 @@ template&lt;class  = void&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ripemd__context_8h_source.html#l00124">124</a> of file <a class="el" href="ripemd__context_8h_source.html">ripemd_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ripemd__context_8h_source.html#l00145">145</a> of file <a class="el" href="ripemd__context_8h_source.html">ripemd_context.h</a>.</p>
 
 </div>
 </div>
@@ -668,7 +668,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ripemd__context_8h_source.html#l00139">139</a> of file <a class="el" href="ripemd__context_8h_source.html">ripemd_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ripemd__context_8h_source.html#l00158">158</a> of file <a class="el" href="ripemd__context_8h_source.html">ripemd_context.h</a>.</p>
 
 </div>
 </div>
@@ -698,7 +698,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ripemd__context_8h_source.html#l00343">343</a> of file <a class="el" href="ripemd__context_8h_source.html">ripemd_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ripemd__context_8h_source.html#l00364">364</a> of file <a class="el" href="ripemd__context_8h_source.html">ripemd_context.h</a>.</p>
 
 </div>
 </div>
@@ -744,7 +744,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ripemd__context_8h_source.html#l00355">355</a> of file <a class="el" href="ripemd__context_8h_source.html">ripemd_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ripemd__context_8h_source.html#l00377">377</a> of file <a class="el" href="ripemd__context_8h_source.html">ripemd_context.h</a>.</p>
 
 </div>
 </div>
@@ -784,7 +784,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ripemd__context_8h_source.html#l00392">392</a> of file <a class="el" href="ripemd__context_8h_source.html">ripemd_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ripemd__context_8h_source.html#l00413">413</a> of file <a class="el" href="ripemd__context_8h_source.html">ripemd_context.h</a>.</p>
 
 </div>
 </div>
@@ -830,7 +830,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sha2__context_8h_source.html#l00153">153</a> of file <a class="el" href="sha2__context_8h_source.html">sha2_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sha2__context_8h_source.html#l00160">160</a> of file <a class="el" href="sha2__context_8h_source.html">sha2_context.h</a>.</p>
 
 </div>
 </div>
@@ -860,7 +860,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sha2__context_8h_source.html#l00212">212</a> of file <a class="el" href="sha2__context_8h_source.html">sha2_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sha2__context_8h_source.html#l00213">213</a> of file <a class="el" href="sha2__context_8h_source.html">sha2_context.h</a>.</p>
 
 </div>
 </div>
@@ -906,7 +906,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sha2__context_8h_source.html#l00227">227</a> of file <a class="el" href="sha2__context_8h_source.html">sha2_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sha2__context_8h_source.html#l00229">229</a> of file <a class="el" href="sha2__context_8h_source.html">sha2_context.h</a>.</p>
 
 </div>
 </div>
@@ -946,7 +946,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sha2__context_8h_source.html#l00255">255</a> of file <a class="el" href="sha2__context_8h_source.html">sha2_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sha2__context_8h_source.html#l00256">256</a> of file <a class="el" href="sha2__context_8h_source.html">sha2_context.h</a>.</p>
 
 </div>
 </div>
@@ -992,7 +992,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sha2__context_8h_source.html#l00281">281</a> of file <a class="el" href="sha2__context_8h_source.html">sha2_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sha2__context_8h_source.html#l00283">283</a> of file <a class="el" href="sha2__context_8h_source.html">sha2_context.h</a>.</p>
 
 </div>
 </div>
@@ -1022,7 +1022,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sha2__context_8h_source.html#l00365">365</a> of file <a class="el" href="sha2__context_8h_source.html">sha2_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sha2__context_8h_source.html#l00353">353</a> of file <a class="el" href="sha2__context_8h_source.html">sha2_context.h</a>.</p>
 
 </div>
 </div>
@@ -1068,7 +1068,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sha2__context_8h_source.html#l00380">380</a> of file <a class="el" href="sha2__context_8h_source.html">sha2_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sha2__context_8h_source.html#l00369">369</a> of file <a class="el" href="sha2__context_8h_source.html">sha2_context.h</a>.</p>
 
 </div>
 </div>
@@ -1108,7 +1108,7 @@ template&lt;class  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sha2__context_8h_source.html#l00408">408</a> of file <a class="el" href="sha2__context_8h_source.html">sha2_context.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sha2__context_8h_source.html#l00396">396</a> of file <a class="el" href="sha2__context_8h_source.html">sha2_context.h</a>.</p>
 
 </div>
 </div>
@@ -1130,7 +1130,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="hash__append_8h_source.html#l00052">52</a> of file <a class="el" href="hash__append_8h_source.html">hash_append.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="hash__append_8h_source.html#l00051">51</a> of file <a class="el" href="hash__append_8h_source.html">hash_append.h</a>.</p>
 
 </div>
 </div>
@@ -1162,7 +1162,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="hash__append_8h_source.html#l00065">65</a> of file <a class="el" href="hash__append_8h_source.html">hash_append.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="hash__append_8h_source.html#l00062">62</a> of file <a class="el" href="hash__append_8h_source.html">hash_append.h</a>.</p>
 
 </div>
 </div>
@@ -1194,7 +1194,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="hash__append_8h_source.html#l00073">73</a> of file <a class="el" href="hash__append_8h_source.html">hash_append.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="hash__append_8h_source.html#l00069">69</a> of file <a class="el" href="hash__append_8h_source.html">hash_append.h</a>.</p>
 
 </div>
 </div>
@@ -1226,7 +1226,7 @@ template&lt;class T , class Hasher &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="hash__append_8h_source.html#l00082">82</a> of file <a class="el" href="hash__append_8h_source.html">hash_append.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="hash__append_8h_source.html#l00077">77</a> of file <a class="el" href="hash__append_8h_source.html">hash_append.h</a>.</p>
 
 </div>
 </div>
@@ -1254,7 +1254,7 @@ template&lt;class T , class Hasher &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="hash__append_8h_source.html#l00479">479</a> of file <a class="el" href="hash__append_8h_source.html">hash_append.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="hash__append_8h_source.html#l00421">421</a> of file <a class="el" href="hash__append_8h_source.html">hash_append.h</a>.</p>
 
 </div>
 </div>
@@ -1294,7 +1294,7 @@ template&lt;class Hasher , class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="hash__append_8h_source.html#l00486">486</a> of file <a class="el" href="hash__append_8h_source.html">hash_append.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="hash__append_8h_source.html#l00427">427</a> of file <a class="el" href="hash__append_8h_source.html">hash_append.h</a>.</p>
 
 </div>
 </div>
@@ -1304,7 +1304,7 @@ template&lt;class Hasher , class T &gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
+template&lt;class Hasher , class... T, std::size_t... I&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -1340,7 +1340,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="hash__append_8h_source.html#l00495">495</a> of file <a class="el" href="hash__append_8h_source.html">hash_append.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="hash__append_8h_source.html#l00435">435</a> of file <a class="el" href="hash__append_8h_source.html">hash_append.h</a>.</p>
 
 </div>
 </div>
@@ -1376,7 +1376,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00228">228</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00245">245</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1406,7 +1406,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00236">236</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00254">254</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1442,7 +1442,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00241">241</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00260">260</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1472,7 +1472,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00249">249</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00269">269</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1520,7 +1520,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00258">258</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00278">278</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1556,7 +1556,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00335">335</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00360">360</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1604,7 +1604,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00363">363</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00394">394</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1640,7 +1640,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00475">475</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00511">511</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1660,7 +1660,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00533">533</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00574">574</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1680,7 +1680,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00538">538</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00583">583</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1700,7 +1700,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00544">544</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00590">590</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1720,7 +1720,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00549">549</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00599">599</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1750,7 +1750,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00558">558</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00608">608</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1780,7 +1780,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00571">571</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00622">622</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1822,7 +1822,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00585">585</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00636">636</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1858,7 +1858,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00674">674</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00731">731</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1888,7 +1888,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00686">686</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00742">742</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1908,7 +1908,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00728">728</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00785">785</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1950,7 +1950,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00739">739</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00796">796</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -1986,7 +1986,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00828">828</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00891">891</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -2016,7 +2016,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00840">840</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00902">902</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -2036,7 +2036,7 @@ template&lt;class Hasher , class ... T, std::size_t ... I&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00922">922</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00985">985</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>
@@ -2086,7 +2086,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="iosformat_8h_source.html#l00103">103</a> of file <a class="el" href="iosformat_8h_source.html">iosformat.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="iosformat_8h_source.html#l00106">106</a> of file <a class="el" href="iosformat_8h_source.html">iosformat.h</a>.</p>
 
 </div>
 </div>
@@ -2103,7 +2103,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CurrentThreadName_8cpp_source.html#l00105">105</a> of file <a class="el" href="CurrentThreadName_8cpp_source.html">CurrentThreadName.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CurrentThreadName_8cpp_source.html#l00109">109</a> of file <a class="el" href="CurrentThreadName_8cpp_source.html">CurrentThreadName.cpp</a>.</p>
 
 </div>
 </div>
@@ -2127,7 +2127,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00212">212</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhash_8cpp_source.html#l00227">227</a> of file <a class="el" href="xxhash_8cpp_source.html">xxhash.cpp</a>.</p>
 
 </div>
 </div>

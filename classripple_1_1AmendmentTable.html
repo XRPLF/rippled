@@ -119,9 +119,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a06e29d55d53a9d5f1e2b4b7e4cc2c5e9"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#a06e29d55d53a9d5f1e2b4b7e4cc2c5e9">needValidatedLedger</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> seq)=0</td></tr>
 <tr class="memdesc:a06e29d55d53a9d5f1e2b4b7e4cc2c5e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called to determine whether the amendment logic needs to process a new validated ledger.  <a href="classripple_1_1AmendmentTable.html#a06e29d55d53a9d5f1e2b4b7e4cc2c5e9">More...</a><br /></td></tr>
 <tr class="separator:a06e29d55d53a9d5f1e2b4b7e4cc2c5e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a48f050b47af8f00cafd237e2cddb2929"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#a48f050b47af8f00cafd237e2cddb2929">doValidatedLedger</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerSeq, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;enabled, <a class="el" href="namespaceripple.html#ad32b0ac0966ba6a4188a53c59c00a6ee">majorityAmendments_t</a> const &amp;majority)=0</td></tr>
+<tr class="memitem:a48f050b47af8f00cafd237e2cddb2929"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#a48f050b47af8f00cafd237e2cddb2929">doValidatedLedger</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerSeq, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;enabled, <a class="el" href="namespaceripple.html#a9722ac6213471ba4b92259afc6edc2b1">majorityAmendments_t</a> const &amp;majority)=0</td></tr>
 <tr class="separator:a48f050b47af8f00cafd237e2cddb2929"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0ef8c954784eea2557318f9a313df97d"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#a0ef8c954784eea2557318f9a313df97d">doVoting</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> closeTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;enabledAmendments, <a class="el" href="namespaceripple.html#ad32b0ac0966ba6a4188a53c59c00a6ee">majorityAmendments_t</a> const &amp;majorityAmendments, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1STValidation.html#a6136fd9d813b7d236830ed51bc22bbc7">STValidation::pointer</a> &gt; const &amp;valSet)=0</td></tr>
+<tr class="memitem:a0ef8c954784eea2557318f9a313df97d"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#a0ef8c954784eea2557318f9a313df97d">doVoting</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> closeTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;enabledAmendments, <a class="el" href="namespaceripple.html#a9722ac6213471ba4b92259afc6edc2b1">majorityAmendments_t</a> const &amp;majorityAmendments, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1STValidation.html#a6136fd9d813b7d236830ed51bc22bbc7">STValidation::pointer</a> &gt; const &amp;valSet)=0</td></tr>
 <tr class="separator:a0ef8c954784eea2557318f9a313df97d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad4448eeba600656f25e54dfcd18138af"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#ad4448eeba600656f25e54dfcd18138af">doValidation</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;enabled)=0</td></tr>
 <tr class="separator:ad4448eeba600656f25e54dfcd18138af"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -491,7 +491,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Called when a new fully-validated ledger is accepted. </p>
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8h_source.html#l00067">67</a> of file <a class="el" href="AmendmentTable_8h_source.html">AmendmentTable.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8h_source.html#l00077">77</a> of file <a class="el" href="AmendmentTable_8h_source.html">AmendmentTable.h</a>.</p>
 
 </div>
 </div>
@@ -550,7 +550,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#ad32b0ac0966ba6a4188a53c59c00a6ee">majorityAmendments_t</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a9722ac6213471ba4b92259afc6edc2b1">majorityAmendments_t</a> const &amp;&#160;</td>
           <td class="paramname"><em>majority</em>&#160;</td>
         </tr>
         <tr>
@@ -594,7 +594,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#ad32b0ac0966ba6a4188a53c59c00a6ee">majorityAmendments_t</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a9722ac6213471ba4b92259afc6edc2b1">majorityAmendments_t</a> const &amp;&#160;</td>
           <td class="paramname"><em>majorityAmendments</em>, </td>
         </tr>
         <tr>
@@ -707,7 +707,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8h_source.html#l00117">117</a> of file <a class="el" href="AmendmentTable_8h_source.html">AmendmentTable.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8h_source.html#l00127">127</a> of file <a class="el" href="AmendmentTable_8h_source.html">AmendmentTable.h</a>.</p>
 
 </div>
 </div>

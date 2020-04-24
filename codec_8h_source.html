@@ -96,13 +96,13 @@ $(function() {
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/contract.h&gt;</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/safe_cast.h&gt;</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;nudb/detail/field.hpp&gt;</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;ripple/nodestore/NodeObject.h&gt;</span></div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;ripple/nodestore/impl/varint.h&gt;</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &lt;ripple/nodestore/NodeObject.h&gt;</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/HashPrefix.h&gt;</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#include &lt;lz4.h&gt;</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstddef.html">cstddef</a>&gt;</span></div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstring.html">cstring</a>&gt;</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/HashPrefix.h&gt;</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstddef.html">cstddef</a>&gt;</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstring.html">cstring</a>&gt;</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#include &lt;lz4.h&gt;</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="preprocessor">#include &lt;nudb/detail/field.hpp&gt;</span></div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/string.html">string</a>&gt;</span></div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/utility.html">utility</a>&gt;</span></div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
@@ -111,361 +111,330 @@ $(function() {
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> BufferFactory&gt;</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;void const*, std::size_t&gt;</a></div>
-<div class="line"><a name="l00043"></a><span class="lineno"><a class="line" href="namespaceripple_1_1NodeStore.html#a99882e6eee2e2b6a6afe6b988acdf07d">   43</a></span>&#160;<a class="code" href="namespaceripple_1_1NodeStore.html#a99882e6eee2e2b6a6afe6b988acdf07d">lz4_decompress</a> (<span class="keywordtype">void</span> <span class="keyword">const</span>* in,</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> in_size, BufferFactory&amp;&amp; bf)</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;{</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>;</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keyword">using namespace </span>nudb::detail;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;void const*, std::size_t&gt;</a> result;</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> <span class="keyword">const</span>* p = <span class="keyword">reinterpret_cast&lt;</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> const*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>);</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> n = <a class="code" href="namespaceripple_1_1NodeStore.html#a18e4748d59143a5f5e64feb0bee58158">read_varint</a>(</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        p, in_size, result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>);</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordflow">if</span> (n == 0)</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        Throw&lt;std::runtime_error&gt; (</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            <span class="stringliteral">&quot;lz4 decompress: n == 0&quot;</span>);</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keywordtype">void</span>* <span class="keyword">const</span> <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a> = bf(result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>);</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a> = <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>;</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keywordflow">if</span> (LZ4_decompress_fast(</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span> const*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>) + n,</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>),</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;                result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>) + n != in_size)</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        Throw&lt;std::runtime_error&gt; (</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            <span class="stringliteral">&quot;lz4 decompress: LZ4_decompress_fast&quot;</span>);</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;}</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> BufferFactory&gt;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;void const*, std::size_t&gt;</a></div>
-<div class="line"><a name="l00069"></a><span class="lineno"><a class="line" href="namespaceripple_1_1NodeStore.html#abe5dcc6b9a2c6844489e9bdf7fd14d91">   69</a></span>&#160;<a class="code" href="namespaceripple_1_1NodeStore.html#abe5dcc6b9a2c6844489e9bdf7fd14d91">lz4_compress</a> (<span class="keywordtype">void</span> <span class="keyword">const</span>* in,</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> in_size, BufferFactory&amp;&amp; bf)</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;{</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keyword">using namespace </span>nudb::detail;</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;void const*, std::size_t&gt;</a> result;</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>, <a class="code" href="structripple_1_1NodeStore_1_1varint__traits.html">varint_traits</a>&lt;</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&gt;::max&gt; vi;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> n = <a class="code" href="namespaceripple_1_1NodeStore.html#ab4d0a64068209b5541c05b8f7edc572b">write_varint</a>(</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        vi.data(), in_size);</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> out_max =</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        LZ4_compressBound(in_size);</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>* <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a> = <span class="keyword">reinterpret_cast&lt;</span></div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>*<span class="keyword">&gt;</span>(bf(n + out_max));</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a> = <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>;</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>, vi.data(), n);</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> out_size = LZ4_compress_default(</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span> const*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>),</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;            <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a> + n),</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;                in_size, out_max);</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keywordflow">if</span> (out_size == 0)</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        Throw&lt;std::runtime_error&gt; (</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            <span class="stringliteral">&quot;lz4 compress&quot;</span>);</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = n + out_size;</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;}</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="comment">/*</span></div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="comment">    object types:</span></div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="comment"></span> </div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="comment">    0 = Uncompressed</span></div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="comment">    1 = lz4 compressed</span></div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;<span class="comment">    2 = inner node compressed</span></div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="comment">    3 = full inner node</span></div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;<span class="comment">*/</span></div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> BufferFactory&gt;</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;void const*, std::size_t&gt;</a></div>
-<div class="line"><a name="l00109"></a><span class="lineno"><a class="line" href="namespaceripple_1_1NodeStore.html#a4acf97063441a8fd79ef65df3f0fb6e4">  109</a></span>&#160;<a class="code" href="namespaceripple_1_1NodeStore.html#a4acf97063441a8fd79ef65df3f0fb6e4">nodeobject_decompress</a> (<span class="keywordtype">void</span> <span class="keyword">const</span>* in,</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> in_size, BufferFactory&amp;&amp; bf)</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;{</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <span class="keyword">using namespace </span>nudb::detail;</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160; </div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> <span class="keyword">const</span>* p = <span class="keyword">reinterpret_cast&lt;</span></div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> const*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>);</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> type;</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> vn = <a class="code" href="namespaceripple_1_1NodeStore.html#a18e4748d59143a5f5e64feb0bee58158">read_varint</a>(</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        p, in_size, type);</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="keywordflow">if</span> (vn == 0)</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        Throw&lt;std::runtime_error&gt; (</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            <span class="stringliteral">&quot;nodeobject decompress&quot;</span>);</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    p += vn;</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    in_size -= vn;</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;void const*, std::size_t&gt;</a> result;</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    <span class="keywordflow">switch</span>(type)</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    {</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <span class="keywordflow">case</span> 0: <span class="comment">// uncompressed</span></div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    {</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a> = p;</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = in_size;</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;        <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    }</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <span class="keywordflow">case</span> 1: <span class="comment">// lz4</span></div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    {</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;        result = <a class="code" href="namespaceripple_1_1NodeStore.html#a99882e6eee2e2b6a6afe6b988acdf07d">lz4_decompress</a>(</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;            p, in_size, bf);</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;        <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    }</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <span class="keywordflow">case</span> 2: <span class="comment">// compressed v1 inner node</span></div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;    {</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> hs =</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;            field&lt;std::uint16_t&gt;::size; <span class="comment">// Mask</span></div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;        <span class="keywordflow">if</span> (in_size &lt; hs + 32)</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;            Throw&lt;std::runtime_error&gt; (</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                <span class="stringliteral">&quot;nodeobject codec v1: short inner node size: &quot;</span></div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;in_size = &quot;</span>) + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(in_size)</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                + <span class="stringliteral">&quot; hs = &quot;</span> + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(hs));</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        istream is(p, in_size);</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> mask;</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        read&lt;std::uint16_t&gt;(is, mask);  <span class="comment">// Mask</span></div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        in_size -= hs;</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = 525;</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        <span class="keywordtype">void</span>* <span class="keyword">const</span> <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a> = bf(result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>);</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a> = <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>;</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        ostream os(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>, result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>);</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;        write&lt;std::uint32_t&gt;(os, 0);</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;        write&lt;std::uint32_t&gt;(os, 0);</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;        write&lt;std::uint8_t&gt; (os, <a class="code" href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3ac9d2b0df1bd24ef0d09db1040dceac6b">hotUNKNOWN</a>);</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;        write&lt;std::uint32_t&gt;(os,</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;            <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a><span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bdad9a09590da318a86ba2bd64b374c2d77">HashPrefix::innerNode</a>));</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        <span class="keywordflow">if</span> (mask == 0)</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;            Throw&lt;std::runtime_error&gt; (</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;                <span class="stringliteral">&quot;nodeobject codec v1: empty inner node&quot;</span>);</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> bit = 0x8000;</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 16; i--; bit &gt;&gt;= 1)</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;        {</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;            <span class="keywordflow">if</span> (mask &amp; bit)</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;            {</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;                <span class="keywordflow">if</span> (in_size &lt; 32)</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;                    Throw&lt;std::runtime_error&gt; (</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;                        <span class="stringliteral">&quot;nodeobject codec v1: short inner node subsize: &quot;</span></div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;                        + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;in_size = &quot;</span>) + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(in_size)</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;                        + <span class="stringliteral">&quot; i = &quot;</span> + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i));</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(os.data(32), is(32), 32);</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;                in_size -= 32;</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;            }</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;            {</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memset.html">std::memset</a>(os.data(32), 0, 32);</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;            }</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;        }</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;        <span class="keywordflow">if</span> (in_size &gt; 0)</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;            Throw&lt;std::runtime_error&gt; (</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;                <span class="stringliteral">&quot;nodeobject codec v1: long inner node, in_size = &quot;</span></div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;                + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(in_size));</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    }</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    <span class="keywordflow">case</span> 3: <span class="comment">// full v1 inner node</span></div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    {</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;        <span class="keywordflow">if</span> (in_size != 16 * 32) <span class="comment">// hashes</span></div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;            Throw&lt;std::runtime_error&gt; (</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;                <span class="stringliteral">&quot;nodeobject codec v1: short full inner node, in_size = &quot;</span></div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;                + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(in_size));</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;        istream is(p, in_size);</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = 525;</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;        <span class="keywordtype">void</span>* <span class="keyword">const</span> <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a> = bf(result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>);</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a> = <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>;</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;        ostream os(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>, result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>);</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;        write&lt;std::uint32_t&gt;(os, 0);</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        write&lt;std::uint32_t&gt;(os, 0);</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        write&lt;std::uint8_t&gt; (os, <a class="code" href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3ac9d2b0df1bd24ef0d09db1040dceac6b">hotUNKNOWN</a>);</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;        write&lt;std::uint32_t&gt;(os,</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;            <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a><span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bdad9a09590da318a86ba2bd64b374c2d77">HashPrefix::innerNode</a>));</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;        <a class="code" href="namespaceripple_1_1NodeStore.html#a600672c9d6874721b6701f782814c66a">write</a>(os, is(512), 512);</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;        <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    }</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    <span class="keywordflow">default</span>:</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;        Throw&lt;std::runtime_error&gt; (</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;            <span class="stringliteral">&quot;nodeobject codec: bad type=&quot;</span> +</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(type));</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    };</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;}</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160; </div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;<span class="keywordtype">void</span> <span class="keyword">const</span>*</div>
-<div class="line"><a name="l00218"></a><span class="lineno"><a class="line" href="namespaceripple_1_1NodeStore.html#a9cbbddcc4aa0d6fc0d00f368c38d4eb7">  218</a></span>&#160;<a class="code" href="namespaceripple_1_1NodeStore.html#a9cbbddcc4aa0d6fc0d00f368c38d4eb7">zero32</a>()</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;{</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;char, 32&gt;</a> v{};</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;    <span class="keywordflow">return</span> v.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/data.html">data</a>();</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;}</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160; </div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> BufferFactory&gt;</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;void const*, std::size_t&gt;</a></div>
-<div class="line"><a name="l00226"></a><span class="lineno"><a class="line" href="namespaceripple_1_1NodeStore.html#ac372a37cb687fb559f0f61d733d06ec5">  226</a></span>&#160;<a class="code" href="namespaceripple_1_1NodeStore.html#ac372a37cb687fb559f0f61d733d06ec5">nodeobject_compress</a> (<span class="keywordtype">void</span> <span class="keyword">const</span>* in,</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> in_size, BufferFactory&amp;&amp; bf)</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;{</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>;</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    <span class="keyword">using namespace </span>nudb::detail;</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160; </div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    <span class="comment">// Check for inner node v1</span></div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;    <span class="keywordflow">if</span> (in_size == 525)</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    {</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;        istream is(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>, in_size);</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index;</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> unused;</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>  kind;</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> prefix;</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;        read&lt;std::uint32_t&gt;(is, index);</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;        read&lt;std::uint32_t&gt;(is, unused);</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;        read&lt;std::uint8_t&gt; (is, kind);</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;        read&lt;std::uint32_t&gt;(is, prefix);</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;        <span class="keywordflow">if</span> (safe_cast&lt;HashPrefix&gt;(prefix) == <a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bdad9a09590da318a86ba2bd64b374c2d77">HashPrefix::innerNode</a>)</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;        {</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n = 0;</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> mask = 0;</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt;</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>, 512&gt; vh;</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> bit = 0x8000;</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;                bit; bit &gt;&gt;= 1)</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;            {</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;                <span class="keywordtype">void</span> <span class="keyword">const</span>* <span class="keyword">const</span> h = is(32);</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;                <span class="keywordflow">if</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcmp.html">std::memcmp</a>(h, <a class="code" href="namespaceripple_1_1NodeStore.html#a9cbbddcc4aa0d6fc0d00f368c38d4eb7">zero32</a>(), 32) == 0)</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;                    <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(</div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;                    vh.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/data.html">data</a>() + 32 * n, h, 32);</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;                mask |= bit;</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;                ++n;</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;            }</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<span class="keywordtype">void</span> <span class="keyword">const</span>*,</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&gt; result;</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;            <span class="keywordflow">if</span> (n &lt; 16)</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;            {</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;                <span class="comment">// 2 = v1 inner node compressed</span></div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> type = 2U;</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> vs = <a class="code" href="namespaceripple_1_1NodeStore.html#a192f2f28d881a6b7325189d1c2cc1bdd">size_varint</a>(type);</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;                result.second =</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;                    vs +</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;                    field&lt;std::uint16_t&gt;::size +    <span class="comment">// mask</span></div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;                    n * 32;                         <span class="comment">// hashes</span></div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>* <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a> = <span class="keyword">reinterpret_cast&lt;</span></div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>*<span class="keyword">&gt;</span>(bf(result.second));</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;                result.first = <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>;</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;                ostream os(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>, result.second);</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;                write&lt;varint&gt;(os, type);</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;                write&lt;std::uint16_t&gt;(os, mask);</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;                <a class="code" href="namespaceripple_1_1NodeStore.html#a600672c9d6874721b6701f782814c66a">write</a>(os, vh.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/data.html">data</a>(), n * 32);</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;                <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;            }</div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;            <span class="comment">// 3 = full v1 inner node</span></div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> type = 3U;</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> vs = <a class="code" href="namespaceripple_1_1NodeStore.html#a192f2f28d881a6b7325189d1c2cc1bdd">size_varint</a>(type);</div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;            result.second =</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;                vs +</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;                n * 32;                         <span class="comment">// hashes</span></div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>* <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a> = <span class="keyword">reinterpret_cast&lt;</span></div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>*<span class="keyword">&gt;</span>(bf(result.second));</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;            result.first = <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>;</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;            ostream os(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>, result.second);</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;            write&lt;varint&gt;(os, type);</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;            <a class="code" href="namespaceripple_1_1NodeStore.html#a600672c9d6874721b6701f782814c66a">write</a>(os, vh.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/data.html">data</a>(), n * 32);</div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;            <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00043"></a><span class="lineno"><a class="line" href="namespaceripple_1_1NodeStore.html#a99882e6eee2e2b6a6afe6b988acdf07d">   43</a></span>&#160;<a class="code" href="namespaceripple_1_1NodeStore.html#a99882e6eee2e2b6a6afe6b988acdf07d">lz4_decompress</a>(<span class="keywordtype">void</span> <span class="keyword">const</span>* in, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> in_size, BufferFactory&amp;&amp; bf)</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;{</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keyword">using namespace </span>nudb::detail;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;void const*, std::size_t&gt;</a> result;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> <span class="keyword">const</span>* p = <span class="keyword">reinterpret_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> const*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>);</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> n = <a class="code" href="namespaceripple_1_1NodeStore.html#a18e4748d59143a5f5e64feb0bee58158">read_varint</a>(p, in_size, result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>);</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keywordflow">if</span> (n == 0)</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;lz4 decompress: n == 0&quot;</span>);</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keywordtype">void</span>* <span class="keyword">const</span> <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a> = bf(result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>);</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a> = <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordflow">if</span> (LZ4_decompress_fast(</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span> const*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>) + n,</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;            <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>),</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>) +</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            n !=</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        in_size)</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;lz4 decompress: LZ4_decompress_fast&quot;</span>);</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;}</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> BufferFactory&gt;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;void const*, std::size_t&gt;</a></div>
+<div class="line"><a name="l00066"></a><span class="lineno"><a class="line" href="namespaceripple_1_1NodeStore.html#abe5dcc6b9a2c6844489e9bdf7fd14d91">   66</a></span>&#160;<a class="code" href="namespaceripple_1_1NodeStore.html#abe5dcc6b9a2c6844489e9bdf7fd14d91">lz4_compress</a>(<span class="keywordtype">void</span> <span class="keyword">const</span>* in, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> in_size, BufferFactory&amp;&amp; bf)</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;{</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keyword">using namespace </span>nudb::detail;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;void const*, std::size_t&gt;</a> result;</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;std::uint8_t, varint_traits&lt;std::size_t&gt;::max</a>&gt; vi;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> n = <a class="code" href="namespaceripple_1_1NodeStore.html#ab4d0a64068209b5541c05b8f7edc572b">write_varint</a>(vi.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/data.html">data</a>(), in_size);</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> out_max = LZ4_compressBound(in_size);</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>* <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a> = <span class="keyword">reinterpret_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>*<span class="keyword">&gt;</span>(bf(n + out_max));</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a> = <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>;</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>, vi.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/data.html">data</a>(), n);</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> out_size = LZ4_compress_default(</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span> const*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>),</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a> + n),</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        in_size,</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        out_max);</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keywordflow">if</span> (out_size == 0)</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;lz4 compress&quot;</span>);</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = n + out_size;</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;}</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="comment">/*</span></div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="comment">    object types:</span></div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="comment"></span> </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="comment">    0 = Uncompressed</span></div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="comment">    1 = lz4 compressed</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<span class="comment">    2 = inner node compressed</span></div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="comment">    3 = full inner node</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<span class="comment">*/</span></div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> BufferFactory&gt;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;void const*, std::size_t&gt;</a></div>
+<div class="line"><a name="l00101"></a><span class="lineno"><a class="line" href="namespaceripple_1_1NodeStore.html#a4acf97063441a8fd79ef65df3f0fb6e4">  101</a></span>&#160;<a class="code" href="namespaceripple_1_1NodeStore.html#a4acf97063441a8fd79ef65df3f0fb6e4">nodeobject_decompress</a>(<span class="keywordtype">void</span> <span class="keyword">const</span>* in, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> in_size, BufferFactory&amp;&amp; bf)</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;{</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <span class="keyword">using namespace </span>nudb::detail;</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> <span class="keyword">const</span>* p = <span class="keyword">reinterpret_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> const*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>);</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> type;</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> vn = <a class="code" href="namespaceripple_1_1NodeStore.html#a18e4748d59143a5f5e64feb0bee58158">read_varint</a>(p, in_size, type);</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <span class="keywordflow">if</span> (vn == 0)</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;nodeobject decompress&quot;</span>);</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    p += vn;</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    in_size -= vn;</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160; </div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;void const*, std::size_t&gt;</a> result;</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <span class="keywordflow">switch</span> (type)</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    {</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        <span class="keywordflow">case</span> 0:  <span class="comment">// uncompressed</span></div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        {</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a> = p;</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = in_size;</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;        }</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        <span class="keywordflow">case</span> 1:  <span class="comment">// lz4</span></div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        {</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            result = <a class="code" href="namespaceripple_1_1NodeStore.html#a99882e6eee2e2b6a6afe6b988acdf07d">lz4_decompress</a>(p, in_size, bf);</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        }</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;        <span class="keywordflow">case</span> 2:  <span class="comment">// compressed v1 inner node</span></div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;        {</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> hs = field&lt;std::uint16_t&gt;::size;  <span class="comment">// Mask</span></div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;            <span class="keywordflow">if</span> (in_size &lt; hs + 32)</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;                    <span class="stringliteral">&quot;nodeobject codec v1: short inner node size: &quot;</span> +</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;in_size = &quot;</span>) + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(in_size) +</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                    <span class="stringliteral">&quot; hs = &quot;</span> + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(hs));</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;            istream is(p, in_size);</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> mask;</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;            read&lt;std::uint16_t&gt;(is, mask);  <span class="comment">// Mask</span></div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;            in_size -= hs;</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = 525;</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;            <span class="keywordtype">void</span>* <span class="keyword">const</span> <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a> = bf(result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>);</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a> = <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>;</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;            ostream os(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>, result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>);</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;            write&lt;std::uint32_t&gt;(os, 0);</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;            write&lt;std::uint32_t&gt;(os, 0);</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;            write&lt;std::uint8_t&gt;(os, <a class="code" href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3ac9d2b0df1bd24ef0d09db1040dceac6b">hotUNKNOWN</a>);</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;            write&lt;std::uint32_t&gt;(</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                os, <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a><span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bdad9a09590da318a86ba2bd64b374c2d77">HashPrefix::innerNode</a>));</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;            <span class="keywordflow">if</span> (mask == 0)</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                    <span class="stringliteral">&quot;nodeobject codec v1: empty inner node&quot;</span>);</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> bit = 0x8000;</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 16; i--; bit &gt;&gt;= 1)</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            {</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                <span class="keywordflow">if</span> (mask &amp; bit)</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                {</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;                    <span class="keywordflow">if</span> (in_size &lt; 32)</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;                        Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;                            <span class="stringliteral">&quot;nodeobject codec v1: short inner node subsize: &quot;</span> +</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;                            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;in_size = &quot;</span>) +</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;                            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(in_size) +</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;                            <span class="stringliteral">&quot; i = &quot;</span> + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i));</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(os.data(32), is(32), 32);</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;                    in_size -= 32;</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;                }</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;                <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;                {</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memset.html">std::memset</a>(os.data(32), 0, 32);</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;                }</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;            }</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;            <span class="keywordflow">if</span> (in_size &gt; 0)</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;                    <span class="stringliteral">&quot;nodeobject codec v1: long inner node, in_size = &quot;</span> +</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(in_size));</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;        }</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        <span class="keywordflow">case</span> 3:  <span class="comment">// full v1 inner node</span></div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;        {</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;            <span class="keywordflow">if</span> (in_size != 16 * 32)  <span class="comment">// hashes</span></div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;                Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;                    <span class="stringliteral">&quot;nodeobject codec v1: short full inner node, in_size = &quot;</span> +</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(in_size));</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;            istream is(p, in_size);</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = 525;</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;            <span class="keywordtype">void</span>* <span class="keyword">const</span> <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a> = bf(result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>);</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a> = <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>;</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;            ostream os(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>, result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>);</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;            write&lt;std::uint32_t&gt;(os, 0);</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;            write&lt;std::uint32_t&gt;(os, 0);</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;            write&lt;std::uint8_t&gt;(os, <a class="code" href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3ac9d2b0df1bd24ef0d09db1040dceac6b">hotUNKNOWN</a>);</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;            write&lt;std::uint32_t&gt;(</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;                os, <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a><span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bdad9a09590da318a86ba2bd64b374c2d77">HashPrefix::innerNode</a>));</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;            <a class="code" href="namespaceripple_1_1NodeStore.html#a600672c9d6874721b6701f782814c66a">write</a>(os, is(512), 512);</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;        }</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;        <span class="keywordflow">default</span>:</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;                <span class="stringliteral">&quot;nodeobject codec: bad type=&quot;</span> + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(type));</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;    };</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;}</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160; </div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;<span class="keywordtype">void</span> <span class="keyword">const</span>*</div>
+<div class="line"><a name="l00204"></a><span class="lineno"><a class="line" href="namespaceripple_1_1NodeStore.html#a9cbbddcc4aa0d6fc0d00f368c38d4eb7">  204</a></span>&#160;<a class="code" href="namespaceripple_1_1NodeStore.html#a9cbbddcc4aa0d6fc0d00f368c38d4eb7">zero32</a>()</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;{</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;char, 32&gt;</a> v{};</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    <span class="keywordflow">return</span> v.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/data.html">data</a>();</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;}</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160; </div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> BufferFactory&gt;</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;void const*, std::size_t&gt;</a></div>
+<div class="line"><a name="l00212"></a><span class="lineno"><a class="line" href="namespaceripple_1_1NodeStore.html#ac372a37cb687fb559f0f61d733d06ec5">  212</a></span>&#160;<a class="code" href="namespaceripple_1_1NodeStore.html#ac372a37cb687fb559f0f61d733d06ec5">nodeobject_compress</a>(<span class="keywordtype">void</span> <span class="keyword">const</span>* in, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> in_size, BufferFactory&amp;&amp; bf)</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;{</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>;</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    <span class="keyword">using namespace </span>nudb::detail;</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160; </div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;    <span class="comment">// Check for inner node v1</span></div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    <span class="keywordflow">if</span> (in_size == 525)</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;    {</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;        istream is(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>, in_size);</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index;</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> unused;</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> kind;</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> prefix;</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;        read&lt;std::uint32_t&gt;(is, index);</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;        read&lt;std::uint32_t&gt;(is, unused);</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;        read&lt;std::uint8_t&gt;(is, kind);</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;        read&lt;std::uint32_t&gt;(is, prefix);</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        <span class="keywordflow">if</span> (safe_cast&lt;HashPrefix&gt;(prefix) == <a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bdad9a09590da318a86ba2bd64b374c2d77">HashPrefix::innerNode</a>)</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;        {</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n = 0;</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> mask = 0;</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;std::uint8_t, 512&gt;</a> vh;</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> bit = 0x8000; bit; bit &gt;&gt;= 1)</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;            {</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;                <span class="keywordtype">void</span> <span class="keyword">const</span>* <span class="keyword">const</span> h = is(32);</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;                <span class="keywordflow">if</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcmp.html">std::memcmp</a>(h, <a class="code" href="namespaceripple_1_1NodeStore.html#a9cbbddcc4aa0d6fc0d00f368c38d4eb7">zero32</a>(), 32) == 0)</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;                    <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(vh.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/data.html">data</a>() + 32 * n, h, 32);</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;                mask |= bit;</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;                ++n;</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;            }</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;void const*, std::size_t&gt;</a> result;</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;            <span class="keywordflow">if</span> (n &lt; 16)</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;            {</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;                <span class="comment">// 2 = v1 inner node compressed</span></div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> type = 2U;</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> vs = <a class="code" href="namespaceripple_1_1NodeStore.html#a192f2f28d881a6b7325189d1c2cc1bdd">size_varint</a>(type);</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;                result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = vs + field&lt;std::uint16_t&gt;::size +  <span class="comment">// mask</span></div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;                    n * 32;                                        <span class="comment">// hashes</span></div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>* <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a> =</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;                    <span class="keyword">reinterpret_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>*<span class="keyword">&gt;</span>(bf(result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>));</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;                result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a> = <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>;</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;                ostream os(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>, result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>);</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;                write&lt;varint&gt;(os, type);</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;                write&lt;std::uint16_t&gt;(os, mask);</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;                <a class="code" href="namespaceripple_1_1NodeStore.html#a600672c9d6874721b6701f782814c66a">write</a>(os, vh.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/data.html">data</a>(), n * 32);</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;                <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;            }</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;            <span class="comment">// 3 = full v1 inner node</span></div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> type = 3U;</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> vs = <a class="code" href="namespaceripple_1_1NodeStore.html#a192f2f28d881a6b7325189d1c2cc1bdd">size_varint</a>(type);</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = vs + n * 32;  <span class="comment">// hashes</span></div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>* <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a> =</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;                <span class="keyword">reinterpret_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>*<span class="keyword">&gt;</span>(bf(result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>));</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a> = <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>;</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;            ostream os(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>, result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>);</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;            write&lt;varint&gt;(os, type);</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;            <a class="code" href="namespaceripple_1_1NodeStore.html#a600672c9d6874721b6701f782814c66a">write</a>(os, vh.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/data.html">data</a>(), n * 32);</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;            <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;        }</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    }</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160; </div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;std::uint8_t, varint_traits&lt;std::size_t&gt;::max</a>&gt; vi;</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160; </div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    constexpr <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> codecType = 1;</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> vn = <a class="code" href="namespaceripple_1_1NodeStore.html#ab4d0a64068209b5541c05b8f7edc572b">write_varint</a>(vi.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/data.html">data</a>(), codecType);</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;void const*, std::size_t&gt;</a> result;</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <span class="keywordflow">switch</span> (codecType)</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    {</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;        <span class="comment">// case 0 was uncompressed data; we always compress now.</span></div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;        <span class="keywordflow">case</span> 1:  <span class="comment">// lz4</span></div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;        {</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>* p;</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> lzr = <a class="code" href="namespaceripple_1_1NodeStore.html#abe5dcc6b9a2c6844489e9bdf7fd14d91">NodeStore::lz4_compress</a>(</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;                <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>, in_size, [&amp;p, &amp;vn, &amp;bf](<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n) {</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;                    p = <span class="keyword">reinterpret_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>*<span class="keyword">&gt;</span>(bf(vn + n));</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;                    <span class="keywordflow">return</span> p + vn;</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;                });</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(p, vi.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/data.html">data</a>(), vn);</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a> = p;</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = vn + lzr.second;</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;            <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;        }</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;    }</div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160; </div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>, <a class="code" href="structripple_1_1NodeStore_1_1varint__traits.html">varint_traits</a>&lt;</div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&gt;::max&gt; vi;</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160; </div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;    constexpr <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> codecType = 1;</div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> vn = <a class="code" href="namespaceripple_1_1NodeStore.html#ab4d0a64068209b5541c05b8f7edc572b">write_varint</a>(</div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;        vi.data(), codecType);</div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;void const*, std::size_t&gt;</a> result;</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;    <span class="keywordflow">switch</span>(codecType)</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    {</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    <span class="comment">// case 0 was uncompressed data; we always compress now.</span></div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    <span class="keywordflow">case</span> 1: <span class="comment">// lz4</span></div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    {</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>* p;</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> lzr = <a class="code" href="namespaceripple_1_1NodeStore.html#abe5dcc6b9a2c6844489e9bdf7fd14d91">NodeStore::lz4_compress</a>(</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;                <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>, in_size, [&amp;p, &amp;vn, &amp;bf]</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;            (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n)</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;            {</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;                p = <span class="keyword">reinterpret_cast&lt;</span></div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>*<span class="keyword">&gt;</span>(</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;                        bf(vn + n));</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;                <span class="keywordflow">return</span> p + vn;</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;            });</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(p, vi.data(), vn);</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a> = p;</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;        result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a> = vn + lzr.second;</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;        <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;    }</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;    <span class="keywordflow">default</span>:</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;        Throw&lt;std::logic_error&gt; (</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;            <span class="stringliteral">&quot;nodeobject codec: unknown=&quot;</span> +</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(codecType));</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    };</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;}</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160; </div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;<span class="comment">// Modifies an inner node to erase the ledger</span></div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;<span class="comment">// sequence and type information so the codec</span></div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;<span class="comment">// verification can pass.</span></div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00338"></a><span class="lineno"><a class="line" href="namespaceripple_1_1NodeStore.html#a1cfd384753477480b86683a2072f303d">  338</a></span>&#160;<a class="code" href="namespaceripple_1_1NodeStore.html#a1cfd384753477480b86683a2072f303d">filter_inner</a> (<span class="keywordtype">void</span>* in, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> in_size)</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;{</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;    <span class="keyword">using namespace </span>nudb::detail;</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160; </div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;    <span class="comment">// Check for inner node</span></div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;    <span class="keywordflow">if</span> (in_size == 525)</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;    {</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;        istream is(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>, in_size);</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index;</div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> unused;</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>  kind;</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> prefix;</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;        read&lt;std::uint32_t&gt;(is, index);</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;        read&lt;std::uint32_t&gt;(is, unused);</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;        read&lt;std::uint8_t&gt; (is, kind);</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;        read&lt;std::uint32_t&gt;(is, prefix);</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;        <span class="keywordflow">if</span> (safe_cast&lt;HashPrefix&gt;(prefix) == <a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bdad9a09590da318a86ba2bd64b374c2d77">HashPrefix::innerNode</a>)</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;        {</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;            ostream os(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>, 9);</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;            write&lt;std::uint32_t&gt;(os, 0);</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;            write&lt;std::uint32_t&gt;(os, 0);</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;            write&lt;std::uint8_t&gt; (os, <a class="code" href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3ac9d2b0df1bd24ef0d09db1040dceac6b">hotUNKNOWN</a>);</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;        }</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;    }</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;}</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160; </div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;} <span class="comment">// NodeStore</span></div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;} <span class="comment">// ripple</span></div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160; </div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;        <span class="keywordflow">default</span>:</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;            Throw&lt;std::logic_error&gt;(</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;                <span class="stringliteral">&quot;nodeobject codec: unknown=&quot;</span> + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(codecType));</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;    };</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;}</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160; </div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;<span class="comment">// Modifies an inner node to erase the ledger</span></div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;<span class="comment">// sequence and type information so the codec</span></div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;<span class="comment">// verification can pass.</span></div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;<span class="comment">//</span></div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00308"></a><span class="lineno"><a class="line" href="namespaceripple_1_1NodeStore.html#a1cfd384753477480b86683a2072f303d">  308</a></span>&#160;<a class="code" href="namespaceripple_1_1NodeStore.html#a1cfd384753477480b86683a2072f303d">filter_inner</a>(<span class="keywordtype">void</span>* in, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> in_size)</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;{</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;    <span class="keyword">using namespace </span>nudb::detail;</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160; </div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;    <span class="comment">// Check for inner node</span></div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;    <span class="keywordflow">if</span> (in_size == 525)</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;    {</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;        istream is(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>, in_size);</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> index;</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> unused;</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> kind;</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> prefix;</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        read&lt;std::uint32_t&gt;(is, index);</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;        read&lt;std::uint32_t&gt;(is, unused);</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;        read&lt;std::uint8_t&gt;(is, kind);</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;        read&lt;std::uint32_t&gt;(is, prefix);</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;        <span class="keywordflow">if</span> (safe_cast&lt;HashPrefix&gt;(prefix) == <a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bdad9a09590da318a86ba2bd64b374c2d77">HashPrefix::innerNode</a>)</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;        {</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;            ostream os(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>, 9);</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;            write&lt;std::uint32_t&gt;(os, 0);</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;            write&lt;std::uint32_t&gt;(os, 0);</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;            write&lt;std::uint8_t&gt;(os, <a class="code" href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3ac9d2b0df1bd24ef0d09db1040dceac6b">hotUNKNOWN</a>);</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;        }</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;    }</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;}</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160; </div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;}  <span class="comment">// namespace NodeStore</span></div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160; </div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a4acf97063441a8fd79ef65df3f0fb6e4"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a4acf97063441a8fd79ef65df3f0fb6e4">ripple::NodeStore::nodeobject_decompress</a></div><div class="ttdeci">std::pair&lt; void const  *, std::size_t &gt; nodeobject_decompress(void const *in, std::size_t in_size, BufferFactory &amp;&amp;bf)</div><div class="ttdef"><b>Definition:</b> <a href="codec_8h_source.html#l00109">codec.h:109</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a57d7e7b27df7e719fdf5569f96be60a3ac9d2b0df1bd24ef0d09db1040dceac6b"><div class="ttname"><a href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3ac9d2b0df1bd24ef0d09db1040dceac6b">ripple::hotUNKNOWN</a></div><div class="ttdeci">@ hotUNKNOWN</div><div class="ttdef"><b>Definition:</b> <a href="NodeObject_8h_source.html#l00035">NodeObject.h:35</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a4acf97063441a8fd79ef65df3f0fb6e4"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a4acf97063441a8fd79ef65df3f0fb6e4">ripple::NodeStore::nodeobject_decompress</a></div><div class="ttdeci">std::pair&lt; void const  *, std::size_t &gt; nodeobject_decompress(void const *in, std::size_t in_size, BufferFactory &amp;&amp;bf)</div><div class="ttdef"><b>Definition:</b> <a href="codec_8h_source.html#l00101">codec.h:101</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a57d7e7b27df7e719fdf5569f96be60a3ac9d2b0df1bd24ef0d09db1040dceac6b"><div class="ttname"><a href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3ac9d2b0df1bd24ef0d09db1040dceac6b">ripple::hotUNKNOWN</a></div><div class="ttdeci">@ hotUNKNOWN</div><div class="ttdef"><b>Definition:</b> <a href="NodeObject_8h_source.html#l00033">NodeObject.h:33</a></div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="autility_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/utility.html">utility</a></div></div>
 <div class="ttc" id="acstring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstring.html">cstring</a></div></div>
 <div class="ttc" id="apair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1NodeStore_html_a99882e6eee2e2b6a6afe6b988acdf07d"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a99882e6eee2e2b6a6afe6b988acdf07d">ripple::NodeStore::lz4_decompress</a></div><div class="ttdeci">std::pair&lt; void const  *, std::size_t &gt; lz4_decompress(void const *in, std::size_t in_size, BufferFactory &amp;&amp;bf)</div><div class="ttdef"><b>Definition:</b> <a href="codec_8h_source.html#l00043">codec.h:43</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf"><div class="ttname"><a href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">ripple::QualityDirection::in</a></div><div class="ttdeci">@ in</div></div>
-<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a600672c9d6874721b6701f782814c66a"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a600672c9d6874721b6701f782814c66a">ripple::NodeStore::write</a></div><div class="ttdeci">void write(nudb::detail::ostream &amp;os, std::size_t t)</div><div class="ttdef"><b>Definition:</b> <a href="varint_8h_source.html#l00145">varint.h:145</a></div></div>
-<div class="ttc" id="astructripple_1_1NodeStore_1_1varint__traits_html"><div class="ttname"><a href="structripple_1_1NodeStore_1_1varint__traits.html">ripple::NodeStore::varint_traits</a></div><div class="ttdef"><b>Definition:</b> <a href="varint_8h_source.html#l00042">varint.h:42</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a600672c9d6874721b6701f782814c66a"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a600672c9d6874721b6701f782814c66a">ripple::NodeStore::write</a></div><div class="ttdeci">void write(nudb::detail::ostream &amp;os, std::size_t t)</div><div class="ttdef"><b>Definition:</b> <a href="varint_8h_source.html#l00131">varint.h:131</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275"><div class="ttname"><a href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">ripple::QualityDirection::out</a></div><div class="ttdeci">@ out</div></div>
 <div class="ttc" id="anamespaceripple_html_ad5143ceada01141772ae4aab984f94bdad9a09590da318a86ba2bd64b374c2d77"><div class="ttname"><a href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bdad9a09590da318a86ba2bd64b374c2d77">ripple::HashPrefix::innerNode</a></div><div class="ttdeci">@ innerNode</div><div class="ttdoc">inner node in V1 tree</div></div>
-<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a18e4748d59143a5f5e64feb0bee58158"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a18e4748d59143a5f5e64feb0bee58158">ripple::NodeStore::read_varint</a></div><div class="ttdeci">std::size_t read_varint(void const *buf, std::size_t buflen, std::size_t &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="varint_8h_source.html#l00058">varint.h:58</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1NodeStore_html_abe5dcc6b9a2c6844489e9bdf7fd14d91"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#abe5dcc6b9a2c6844489e9bdf7fd14d91">ripple::NodeStore::lz4_compress</a></div><div class="ttdeci">std::pair&lt; void const  *, std::size_t &gt; lz4_compress(void const *in, std::size_t in_size, BufferFactory &amp;&amp;bf)</div><div class="ttdef"><b>Definition:</b> <a href="codec_8h_source.html#l00069">codec.h:69</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a18e4748d59143a5f5e64feb0bee58158"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a18e4748d59143a5f5e64feb0bee58158">ripple::NodeStore::read_varint</a></div><div class="ttdeci">std::size_t read_varint(void const *buf, std::size_t buflen, std::size_t &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="varint_8h_source.html#l00056">varint.h:56</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1NodeStore_html_abe5dcc6b9a2c6844489e9bdf7fd14d91"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#abe5dcc6b9a2c6844489e9bdf7fd14d91">ripple::NodeStore::lz4_compress</a></div><div class="ttdeci">std::pair&lt; void const  *, std::size_t &gt; lz4_compress(void const *in, std::size_t in_size, BufferFactory &amp;&amp;bf)</div><div class="ttdef"><b>Definition:</b> <a href="codec_8h_source.html#l00066">codec.h:66</a></div></div>
 <div class="ttc" id="acstddef_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstddef.html">cstddef</a></div></div>
 <div class="ttc" id="ato_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a></div><div class="ttdeci">T to_string(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a1cfd384753477480b86683a2072f303d"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a1cfd384753477480b86683a2072f303d">ripple::NodeStore::filter_inner</a></div><div class="ttdeci">void filter_inner(void *in, std::size_t in_size)</div><div class="ttdef"><b>Definition:</b> <a href="codec_8h_source.html#l00338">codec.h:338</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a1cfd384753477480b86683a2072f303d"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a1cfd384753477480b86683a2072f303d">ripple::NodeStore::filter_inner</a></div><div class="ttdeci">void filter_inner(void *in, std::size_t in_size)</div><div class="ttdef"><b>Definition:</b> <a href="codec_8h_source.html#l00308">codec.h:308</a></div></div>
 <div class="ttc" id="aarray_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aruntime_error_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a9cbbddcc4aa0d6fc0d00f368c38d4eb7"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a9cbbddcc4aa0d6fc0d00f368c38d4eb7">ripple::NodeStore::zero32</a></div><div class="ttdeci">void const  * zero32()</div><div class="ttdef"><b>Definition:</b> <a href="codec_8h_source.html#l00218">codec.h:218</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a192f2f28d881a6b7325189d1c2cc1bdd"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a192f2f28d881a6b7325189d1c2cc1bdd">ripple::NodeStore::size_varint</a></div><div class="ttdeci">std::size_t size_varint(T v)</div><div class="ttdef"><b>Definition:</b> <a href="varint_8h_source.html#l00094">varint.h:94</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a9cbbddcc4aa0d6fc0d00f368c38d4eb7"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a9cbbddcc4aa0d6fc0d00f368c38d4eb7">ripple::NodeStore::zero32</a></div><div class="ttdeci">void const  * zero32()</div><div class="ttdef"><b>Definition:</b> <a href="codec_8h_source.html#l00204">codec.h:204</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a192f2f28d881a6b7325189d1c2cc1bdd"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a192f2f28d881a6b7325189d1c2cc1bdd">ripple::NodeStore::size_varint</a></div><div class="ttdeci">std::size_t size_varint(T v)</div><div class="ttdef"><b>Definition:</b> <a href="varint_8h_source.html#l00087">varint.h:87</a></div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
 <div class="ttc" id="amemcpy_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a></div><div class="ttdeci">T memcpy(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_1_1NodeStore_html_ac372a37cb687fb559f0f61d733d06ec5"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#ac372a37cb687fb559f0f61d733d06ec5">ripple::NodeStore::nodeobject_compress</a></div><div class="ttdeci">std::pair&lt; void const  *, std::size_t &gt; nodeobject_compress(void const *in, std::size_t in_size, BufferFactory &amp;&amp;bf)</div><div class="ttdef"><b>Definition:</b> <a href="codec_8h_source.html#l00226">codec.h:226</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1NodeStore_html_ac372a37cb687fb559f0f61d733d06ec5"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#ac372a37cb687fb559f0f61d733d06ec5">ripple::NodeStore::nodeobject_compress</a></div><div class="ttdeci">std::pair&lt; void const  *, std::size_t &gt; nodeobject_compress(void const *in, std::size_t in_size, BufferFactory &amp;&amp;bf)</div><div class="ttdef"><b>Definition:</b> <a href="codec_8h_source.html#l00212">codec.h:212</a></div></div>
 <div class="ttc" id="amemcmp_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/byte/memcmp.html">std::memcmp</a></div><div class="ttdeci">T memcmp(T... args)</div></div>
 <div class="ttc" id="adata_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/array/data.html">std::array::data</a></div><div class="ttdeci">T data(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_1_1NodeStore_html_ab4d0a64068209b5541c05b8f7edc572b"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#ab4d0a64068209b5541c05b8f7edc572b">ripple::NodeStore::write_varint</a></div><div class="ttdeci">std::size_t write_varint(void *p0, std::size_t v)</div><div class="ttdef"><b>Definition:</b> <a href="varint_8h_source.html#l00108">varint.h:108</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1NodeStore_html_ab4d0a64068209b5541c05b8f7edc572b"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#ab4d0a64068209b5541c05b8f7edc572b">ripple::NodeStore::write_varint</a></div><div class="ttdeci">std::size_t write_varint(void *p0, std::size_t v)</div><div class="ttdef"><b>Definition:</b> <a href="varint_8h_source.html#l00100">varint.h:100</a></div></div>
 <div class="ttc" id="amemset_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/byte/memset.html">std::memset</a></div><div class="ttdeci">T memset(T... args)</div></div>
 <div class="ttc" id="astring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/string.html">string</a></div></div>
 <!-- start footer part -->

@@ -105,10 +105,10 @@ $(function() {
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="comment">    1996 All Rights Reserved</span></div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="comment"></span> </div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="comment">    Permission is hereby granted, free of charge, to any person obtaining a copy</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="comment">    of this software and associated documentation files (the &quot;Software&quot;), to deal</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="comment">    in the Software without restriction, including without limitation the rights</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="comment">    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="comment">    copies of the Software, and to permit persons to whom the Software is</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="comment">    of this software and associated documentation files (the &quot;Software&quot;), to</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="comment">   deal in the Software without restriction, including without limitation the</span></div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="comment">   rights to use, copy, modify, merge, publish, distribute, sublicense, and/or</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="comment">   sell copies of the Software, and to permit persons to whom the Software is</span></div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="comment">    furnished to do so, subject to the following conditions:</span></div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="comment"></span> </div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="comment">    The above copyright notice and this permission notice shall be included in</span></div>
@@ -118,9 +118,9 @@ $(function() {
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="comment">    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,</span></div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="comment">    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE</span></div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="comment">    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="comment">    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="comment">    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="comment">    THE SOFTWARE.</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="comment">    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="comment">   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="comment">   IN THE SOFTWARE.</span></div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="comment">// This implementation has been modified from the</span></div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="comment">// original. It has been updated for C++11.</span></div>
@@ -140,388 +140,406 @@ $(function() {
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="comment">// ROL(x, n) cyclically rotates x over n bits to the left</span></div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="comment">// x must be of an unsigned 32 bits type and 0 &lt;= n &lt; 32.</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_ROL(x, n)  (((x) &lt;&lt; (n)) | ((x) &gt;&gt; (32-(n))))</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_ROL(x, n) (((x) &lt;&lt; (n)) | ((x) &gt;&gt; (32 - (n))))</span></div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="comment">// the five basic functions F(), G() and H()</span></div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_F(x, y, z)  ((x) ^  (y) ^ (z))</span></div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_G(x, y, z) (((x) &amp;  (y)) | (~(x) &amp; (z)))</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_F(x, y, z) ((x) ^ (y) ^ (z))</span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_G(x, y, z) (((x) &amp; (y)) | (~(x) &amp; (z)))</span></div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_H(x, y, z) (((x) | ~(y)) ^ (z))</span></div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_I(x, y, z) (((x) &amp;  (z)) | ((y) &amp; ~(z)))</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_J(x, y, z)  ((x) ^  ((y) | ~(z)))</span></div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_I(x, y, z) (((x) &amp; (z)) | ((y) &amp; ~(z)))</span></div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_J(x, y, z) ((x) ^ ((y) | ~(z)))</span></div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<span class="comment">// the ten basic operations FF() through III()</span></div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_FF(a, b, c, d, e, x, s) {      \</span></div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="preprocessor">      (a) += BEAST_RIPEMD_F((b), (c), (d)) + (x);   \</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;<span class="preprocessor">      (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);       \</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<span class="preprocessor">      (c) = BEAST_RIPEMD_ROL((c), 10); }</span></div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_GG(a, b, c, d, e, x, s) {      \</span></div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="preprocessor">      (a) += BEAST_RIPEMD_G((b), (c), (d)) + (x) + 0x5a827999UL; \</span></div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="preprocessor">      (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);       \</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="preprocessor">      (c) = BEAST_RIPEMD_ROL((c), 10); }</span></div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_HH(a, b, c, d, e, x, s) {      \</span></div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="preprocessor">      (a) += BEAST_RIPEMD_H((b), (c), (d)) + (x) + 0x6ed9eba1UL;\</span></div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="preprocessor">      (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);       \</span></div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="preprocessor">      (c) = BEAST_RIPEMD_ROL((c), 10); }</span></div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_II(a, b, c, d, e, x, s) {      \</span></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<span class="preprocessor">      (a) += BEAST_RIPEMD_I((b), (c), (d)) + (x) + 0x8f1bbcdcUL;\</span></div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="preprocessor">      (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);       \</span></div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<span class="preprocessor">      (c) = BEAST_RIPEMD_ROL((c), 10); }</span></div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_JJ(a, b, c, d, e, x, s) {      \</span></div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="preprocessor">      (a) += BEAST_RIPEMD_J((b), (c), (d)) + (x) + 0xa953fd4eUL;\</span></div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="preprocessor">      (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);       \</span></div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="preprocessor">      (c) = BEAST_RIPEMD_ROL((c), 10); }</span></div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_FFF(a, b, c, d, e, x, s) {     \</span></div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;<span class="preprocessor">      (a) += BEAST_RIPEMD_F((b), (c), (d)) + (x);   \</span></div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="preprocessor">      (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);       \</span></div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;<span class="preprocessor">      (c) = BEAST_RIPEMD_ROL((c), 10); }</span></div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_GGG(a, b, c, d, e, x, s) {     \</span></div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;<span class="preprocessor">      (a) += BEAST_RIPEMD_G((b), (c), (d)) + (x) + 0x7a6d76e9UL;\</span></div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<span class="preprocessor">      (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);       \</span></div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;<span class="preprocessor">      (c) = BEAST_RIPEMD_ROL((c), 10); }</span></div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_HHH(a, b, c, d, e, x, s) {     \</span></div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;<span class="preprocessor">      (a) += BEAST_RIPEMD_H((b), (c), (d)) + (x) + 0x6d703ef3UL;\</span></div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;<span class="preprocessor">      (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);       \</span></div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;<span class="preprocessor">      (c) = BEAST_RIPEMD_ROL((c), 10); }</span></div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_III(a, b, c, d, e, x, s) {     \</span></div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;<span class="preprocessor">      (a) += BEAST_RIPEMD_I((b), (c), (d)) + (x) + 0x5c4dd124UL;\</span></div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;<span class="preprocessor">      (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);       \</span></div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;<span class="preprocessor">      (c) = BEAST_RIPEMD_ROL((c), 10);  }</span></div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_JJJ(a, b, c, d, e, x, s) {     \</span></div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;<span class="preprocessor">      (a) += BEAST_RIPEMD_J((b), (c), (d)) + (x) + 0x50a28be6UL;\</span></div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;<span class="preprocessor">      (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);       \</span></div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;<span class="preprocessor">      (c) = BEAST_RIPEMD_ROL((c), 10); }</span></div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160; </div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
-<div class="line"><a name="l00124"></a><span class="lineno"><a class="line" href="namespacebeast_1_1detail.html#aa6988a5b5ed3e46bf0d8dd19ea1b9286">  124</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacebeast_1_1detail.html#aa6988a5b5ed3e46bf0d8dd19ea1b9286">ripemd_load</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;std::uint32_t, 16&gt;</a>&amp; X,</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* p)</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;{</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    <span class="keywordflow">for</span>(<span class="keywordtype">int</span> i = 0; i &lt; 16; ++i)</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    {</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        X[i] =</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;            ((<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>) *((p)+3) &lt;&lt; 24) |</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;            ((<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>) *((p)+2) &lt;&lt; 16) |</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;            ((<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>) *((p)+1) &lt;&lt;  8) |</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;            ((<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>) * (p));</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        p += 4;</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    }</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;}</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160; </div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
-<div class="line"><a name="l00139"></a><span class="lineno"><a class="line" href="namespacebeast_1_1detail.html#abb111161c4c2b9a49e39f2903e4075fe">  139</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacebeast_1_1detail.html#abb111161c4c2b9a49e39f2903e4075fe">ripemd_compress</a> (<a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html">ripemd160_context</a>&amp; ctx,</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;std::uint32_t, 16&gt;</a>&amp; X) noexcept</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;{</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> aa  = ctx.h[0];</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> bb  = ctx.h[1];</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> cc  = ctx.h[2];</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> dd  = ctx.h[3];</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ee  = ctx.h[4];</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> aaa = ctx.h[0];</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> bbb = ctx.h[1];</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ccc = ctx.h[2];</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ddd = ctx.h[3];</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> eee = ctx.h[4];</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160; </div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;    <span class="comment">// round 1</span></div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    BEAST_RIPEMD_FF(aa, bb, cc, dd, ee, X[ 0], 11);</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    BEAST_RIPEMD_FF(ee, aa, bb, cc, dd, X[ 1], 14);</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;    BEAST_RIPEMD_FF(dd, ee, aa, bb, cc, X[ 2], 15);</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    BEAST_RIPEMD_FF(cc, dd, ee, aa, bb, X[ 3], 12);</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    BEAST_RIPEMD_FF(bb, cc, dd, ee, aa, X[ 4],  5);</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    BEAST_RIPEMD_FF(aa, bb, cc, dd, ee, X[ 5],  8);</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    BEAST_RIPEMD_FF(ee, aa, bb, cc, dd, X[ 6],  7);</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    BEAST_RIPEMD_FF(dd, ee, aa, bb, cc, X[ 7],  9);</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    BEAST_RIPEMD_FF(cc, dd, ee, aa, bb, X[ 8], 11);</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    BEAST_RIPEMD_FF(bb, cc, dd, ee, aa, X[ 9], 13);</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;    BEAST_RIPEMD_FF(aa, bb, cc, dd, ee, X[10], 14);</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    BEAST_RIPEMD_FF(ee, aa, bb, cc, dd, X[11], 15);</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;    BEAST_RIPEMD_FF(dd, ee, aa, bb, cc, X[12],  6);</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    BEAST_RIPEMD_FF(cc, dd, ee, aa, bb, X[13],  7);</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;    BEAST_RIPEMD_FF(bb, cc, dd, ee, aa, X[14],  9);</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    BEAST_RIPEMD_FF(aa, bb, cc, dd, ee, X[15],  8);</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160; </div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <span class="comment">// round 2</span></div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    BEAST_RIPEMD_GG(ee, aa, bb, cc, dd, X[ 7],  7);</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    BEAST_RIPEMD_GG(dd, ee, aa, bb, cc, X[ 4],  6);</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;    BEAST_RIPEMD_GG(cc, dd, ee, aa, bb, X[13],  8);</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    BEAST_RIPEMD_GG(bb, cc, dd, ee, aa, X[ 1], 13);</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;    BEAST_RIPEMD_GG(aa, bb, cc, dd, ee, X[10], 11);</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    BEAST_RIPEMD_GG(ee, aa, bb, cc, dd, X[ 6],  9);</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    BEAST_RIPEMD_GG(dd, ee, aa, bb, cc, X[15],  7);</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    BEAST_RIPEMD_GG(cc, dd, ee, aa, bb, X[ 3], 15);</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;    BEAST_RIPEMD_GG(bb, cc, dd, ee, aa, X[12],  7);</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;    BEAST_RIPEMD_GG(aa, bb, cc, dd, ee, X[ 0], 12);</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;    BEAST_RIPEMD_GG(ee, aa, bb, cc, dd, X[ 9], 15);</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    BEAST_RIPEMD_GG(dd, ee, aa, bb, cc, X[ 5],  9);</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    BEAST_RIPEMD_GG(cc, dd, ee, aa, bb, X[ 2], 11);</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    BEAST_RIPEMD_GG(bb, cc, dd, ee, aa, X[14],  7);</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    BEAST_RIPEMD_GG(aa, bb, cc, dd, ee, X[11], 13);</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    BEAST_RIPEMD_GG(ee, aa, bb, cc, dd, X[ 8], 12);</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160; </div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    <span class="comment">// round 3</span></div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    BEAST_RIPEMD_HH(dd, ee, aa, bb, cc, X[ 3], 11);</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;    BEAST_RIPEMD_HH(cc, dd, ee, aa, bb, X[10], 13);</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;    BEAST_RIPEMD_HH(bb, cc, dd, ee, aa, X[14],  6);</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    BEAST_RIPEMD_HH(aa, bb, cc, dd, ee, X[ 4],  7);</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    BEAST_RIPEMD_HH(ee, aa, bb, cc, dd, X[ 9], 14);</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    BEAST_RIPEMD_HH(dd, ee, aa, bb, cc, X[15],  9);</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    BEAST_RIPEMD_HH(cc, dd, ee, aa, bb, X[ 8], 13);</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;    BEAST_RIPEMD_HH(bb, cc, dd, ee, aa, X[ 1], 15);</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;    BEAST_RIPEMD_HH(aa, bb, cc, dd, ee, X[ 2], 14);</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;    BEAST_RIPEMD_HH(ee, aa, bb, cc, dd, X[ 7],  8);</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;    BEAST_RIPEMD_HH(dd, ee, aa, bb, cc, X[ 0], 13);</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;    BEAST_RIPEMD_HH(cc, dd, ee, aa, bb, X[ 6],  6);</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;    BEAST_RIPEMD_HH(bb, cc, dd, ee, aa, X[13],  5);</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    BEAST_RIPEMD_HH(aa, bb, cc, dd, ee, X[11], 12);</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    BEAST_RIPEMD_HH(ee, aa, bb, cc, dd, X[ 5],  7);</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    BEAST_RIPEMD_HH(dd, ee, aa, bb, cc, X[12],  5);</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160; </div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    <span class="comment">// round 4</span></div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    BEAST_RIPEMD_II(cc, dd, ee, aa, bb, X[ 1], 11);</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    BEAST_RIPEMD_II(bb, cc, dd, ee, aa, X[ 9], 12);</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    BEAST_RIPEMD_II(aa, bb, cc, dd, ee, X[11], 14);</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;    BEAST_RIPEMD_II(ee, aa, bb, cc, dd, X[10], 15);</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    BEAST_RIPEMD_II(dd, ee, aa, bb, cc, X[ 0], 14);</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;    BEAST_RIPEMD_II(cc, dd, ee, aa, bb, X[ 8], 15);</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    BEAST_RIPEMD_II(bb, cc, dd, ee, aa, X[12],  9);</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    BEAST_RIPEMD_II(aa, bb, cc, dd, ee, X[ 4],  8);</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    BEAST_RIPEMD_II(ee, aa, bb, cc, dd, X[13],  9);</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;    BEAST_RIPEMD_II(dd, ee, aa, bb, cc, X[ 3], 14);</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    BEAST_RIPEMD_II(cc, dd, ee, aa, bb, X[ 7],  5);</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;    BEAST_RIPEMD_II(bb, cc, dd, ee, aa, X[15],  6);</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;    BEAST_RIPEMD_II(aa, bb, cc, dd, ee, X[14],  8);</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;    BEAST_RIPEMD_II(ee, aa, bb, cc, dd, X[ 5],  6);</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;    BEAST_RIPEMD_II(dd, ee, aa, bb, cc, X[ 6],  5);</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;    BEAST_RIPEMD_II(cc, dd, ee, aa, bb, X[ 2], 12);</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160; </div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    <span class="comment">// round 5</span></div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;    BEAST_RIPEMD_JJ(bb, cc, dd, ee, aa, X[ 4],  9);</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    BEAST_RIPEMD_JJ(aa, bb, cc, dd, ee, X[ 0], 15);</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;    BEAST_RIPEMD_JJ(ee, aa, bb, cc, dd, X[ 5],  5);</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;    BEAST_RIPEMD_JJ(dd, ee, aa, bb, cc, X[ 9], 11);</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    BEAST_RIPEMD_JJ(cc, dd, ee, aa, bb, X[ 7],  6);</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    BEAST_RIPEMD_JJ(bb, cc, dd, ee, aa, X[12],  8);</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    BEAST_RIPEMD_JJ(aa, bb, cc, dd, ee, X[ 2], 13);</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;    BEAST_RIPEMD_JJ(ee, aa, bb, cc, dd, X[10], 12);</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    BEAST_RIPEMD_JJ(dd, ee, aa, bb, cc, X[14],  5);</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    BEAST_RIPEMD_JJ(cc, dd, ee, aa, bb, X[ 1], 12);</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    BEAST_RIPEMD_JJ(bb, cc, dd, ee, aa, X[ 3], 13);</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    BEAST_RIPEMD_JJ(aa, bb, cc, dd, ee, X[ 8], 14);</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    BEAST_RIPEMD_JJ(ee, aa, bb, cc, dd, X[11], 11);</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    BEAST_RIPEMD_JJ(dd, ee, aa, bb, cc, X[ 6],  8);</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    BEAST_RIPEMD_JJ(cc, dd, ee, aa, bb, X[15],  5);</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;    BEAST_RIPEMD_JJ(bb, cc, dd, ee, aa, X[13],  6);</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160; </div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;    <span class="comment">// parallel round 1</span></div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;    BEAST_RIPEMD_JJJ(aaa, bbb, ccc, ddd, eee, X[ 5],  8);</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    BEAST_RIPEMD_JJJ(eee, aaa, bbb, ccc, ddd, X[14],  9);</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    BEAST_RIPEMD_JJJ(ddd, eee, aaa, bbb, ccc, X[ 7],  9);</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    BEAST_RIPEMD_JJJ(ccc, ddd, eee, aaa, bbb, X[ 0], 11);</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    BEAST_RIPEMD_JJJ(bbb, ccc, ddd, eee, aaa, X[ 9], 13);</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    BEAST_RIPEMD_JJJ(aaa, bbb, ccc, ddd, eee, X[ 2], 15);</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;    BEAST_RIPEMD_JJJ(eee, aaa, bbb, ccc, ddd, X[11], 15);</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    BEAST_RIPEMD_JJJ(ddd, eee, aaa, bbb, ccc, X[ 4],  5);</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    BEAST_RIPEMD_JJJ(ccc, ddd, eee, aaa, bbb, X[13],  7);</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;    BEAST_RIPEMD_JJJ(bbb, ccc, ddd, eee, aaa, X[ 6],  7);</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    BEAST_RIPEMD_JJJ(aaa, bbb, ccc, ddd, eee, X[15],  8);</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    BEAST_RIPEMD_JJJ(eee, aaa, bbb, ccc, ddd, X[ 8], 11);</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    BEAST_RIPEMD_JJJ(ddd, eee, aaa, bbb, ccc, X[ 1], 14);</div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    BEAST_RIPEMD_JJJ(ccc, ddd, eee, aaa, bbb, X[10], 14);</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;    BEAST_RIPEMD_JJJ(bbb, ccc, ddd, eee, aaa, X[ 3], 12);</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;    BEAST_RIPEMD_JJJ(aaa, bbb, ccc, ddd, eee, X[12],  6);</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160; </div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;    <span class="comment">// parallel round 2</span></div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;    BEAST_RIPEMD_III(eee, aaa, bbb, ccc, ddd, X[ 6],  9);</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    BEAST_RIPEMD_III(ddd, eee, aaa, bbb, ccc, X[11], 13);</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;    BEAST_RIPEMD_III(ccc, ddd, eee, aaa, bbb, X[ 3], 15);</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    BEAST_RIPEMD_III(bbb, ccc, ddd, eee, aaa, X[ 7],  7);</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;    BEAST_RIPEMD_III(aaa, bbb, ccc, ddd, eee, X[ 0], 12);</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;    BEAST_RIPEMD_III(eee, aaa, bbb, ccc, ddd, X[13],  8);</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    BEAST_RIPEMD_III(ddd, eee, aaa, bbb, ccc, X[ 5],  9);</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;    BEAST_RIPEMD_III(ccc, ddd, eee, aaa, bbb, X[10], 11);</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;    BEAST_RIPEMD_III(bbb, ccc, ddd, eee, aaa, X[14],  7);</div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    BEAST_RIPEMD_III(aaa, bbb, ccc, ddd, eee, X[15],  7);</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    BEAST_RIPEMD_III(eee, aaa, bbb, ccc, ddd, X[ 8], 12);</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    BEAST_RIPEMD_III(ddd, eee, aaa, bbb, ccc, X[12],  7);</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    BEAST_RIPEMD_III(ccc, ddd, eee, aaa, bbb, X[ 4],  6);</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    BEAST_RIPEMD_III(bbb, ccc, ddd, eee, aaa, X[ 9], 15);</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    BEAST_RIPEMD_III(aaa, bbb, ccc, ddd, eee, X[ 1], 13);</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    BEAST_RIPEMD_III(eee, aaa, bbb, ccc, ddd, X[ 2], 11);</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160; </div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <span class="comment">// parallel round 3</span></div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    BEAST_RIPEMD_HHH(ddd, eee, aaa, bbb, ccc, X[15],  9);</div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    BEAST_RIPEMD_HHH(ccc, ddd, eee, aaa, bbb, X[ 5],  7);</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    BEAST_RIPEMD_HHH(bbb, ccc, ddd, eee, aaa, X[ 1], 15);</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    BEAST_RIPEMD_HHH(aaa, bbb, ccc, ddd, eee, X[ 3], 11);</div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    BEAST_RIPEMD_HHH(eee, aaa, bbb, ccc, ddd, X[ 7],  8);</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    BEAST_RIPEMD_HHH(ddd, eee, aaa, bbb, ccc, X[14],  6);</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;    BEAST_RIPEMD_HHH(ccc, ddd, eee, aaa, bbb, X[ 6],  6);</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    BEAST_RIPEMD_HHH(bbb, ccc, ddd, eee, aaa, X[ 9], 14);</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;    BEAST_RIPEMD_HHH(aaa, bbb, ccc, ddd, eee, X[11], 12);</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;    BEAST_RIPEMD_HHH(eee, aaa, bbb, ccc, ddd, X[ 8], 13);</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;    BEAST_RIPEMD_HHH(ddd, eee, aaa, bbb, ccc, X[12],  5);</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;    BEAST_RIPEMD_HHH(ccc, ddd, eee, aaa, bbb, X[ 2], 14);</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;    BEAST_RIPEMD_HHH(bbb, ccc, ddd, eee, aaa, X[10], 13);</div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;    BEAST_RIPEMD_HHH(aaa, bbb, ccc, ddd, eee, X[ 0], 13);</div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    BEAST_RIPEMD_HHH(eee, aaa, bbb, ccc, ddd, X[ 4],  7);</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;    BEAST_RIPEMD_HHH(ddd, eee, aaa, bbb, ccc, X[13],  5);</div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160; </div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;    <span class="comment">// parallel round 4</span></div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;    BEAST_RIPEMD_GGG(ccc, ddd, eee, aaa, bbb, X[ 8], 15);</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;    BEAST_RIPEMD_GGG(bbb, ccc, ddd, eee, aaa, X[ 6],  5);</div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;    BEAST_RIPEMD_GGG(aaa, bbb, ccc, ddd, eee, X[ 4],  8);</div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;    BEAST_RIPEMD_GGG(eee, aaa, bbb, ccc, ddd, X[ 1], 11);</div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;    BEAST_RIPEMD_GGG(ddd, eee, aaa, bbb, ccc, X[ 3], 14);</div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    BEAST_RIPEMD_GGG(ccc, ddd, eee, aaa, bbb, X[11], 14);</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;    BEAST_RIPEMD_GGG(bbb, ccc, ddd, eee, aaa, X[15],  6);</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    BEAST_RIPEMD_GGG(aaa, bbb, ccc, ddd, eee, X[ 0], 14);</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    BEAST_RIPEMD_GGG(eee, aaa, bbb, ccc, ddd, X[ 5],  6);</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    BEAST_RIPEMD_GGG(ddd, eee, aaa, bbb, ccc, X[12],  9);</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    BEAST_RIPEMD_GGG(ccc, ddd, eee, aaa, bbb, X[ 2], 12);</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;    BEAST_RIPEMD_GGG(bbb, ccc, ddd, eee, aaa, X[13],  9);</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;    BEAST_RIPEMD_GGG(aaa, bbb, ccc, ddd, eee, X[ 9], 12);</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;    BEAST_RIPEMD_GGG(eee, aaa, bbb, ccc, ddd, X[ 7],  5);</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;    BEAST_RIPEMD_GGG(ddd, eee, aaa, bbb, ccc, X[10], 15);</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;    BEAST_RIPEMD_GGG(ccc, ddd, eee, aaa, bbb, X[14],  8);</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160; </div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;    <span class="comment">// parallel round 5</span></div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;    BEAST_RIPEMD_FFF(bbb, ccc, ddd, eee, aaa, X[12] ,  8);</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;    BEAST_RIPEMD_FFF(aaa, bbb, ccc, ddd, eee, X[15] ,  5);</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;    BEAST_RIPEMD_FFF(eee, aaa, bbb, ccc, ddd, X[10] , 12);</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;    BEAST_RIPEMD_FFF(ddd, eee, aaa, bbb, ccc, X[ 4] ,  9);</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;    BEAST_RIPEMD_FFF(ccc, ddd, eee, aaa, bbb, X[ 1] , 12);</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;    BEAST_RIPEMD_FFF(bbb, ccc, ddd, eee, aaa, X[ 5] ,  5);</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;    BEAST_RIPEMD_FFF(aaa, bbb, ccc, ddd, eee, X[ 8] , 14);</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;    BEAST_RIPEMD_FFF(eee, aaa, bbb, ccc, ddd, X[ 7] ,  6);</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;    BEAST_RIPEMD_FFF(ddd, eee, aaa, bbb, ccc, X[ 6] ,  8);</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;    BEAST_RIPEMD_FFF(ccc, ddd, eee, aaa, bbb, X[ 2] , 13);</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;    BEAST_RIPEMD_FFF(bbb, ccc, ddd, eee, aaa, X[13] ,  6);</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;    BEAST_RIPEMD_FFF(aaa, bbb, ccc, ddd, eee, X[14] ,  5);</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    BEAST_RIPEMD_FFF(eee, aaa, bbb, ccc, ddd, X[ 0] , 15);</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    BEAST_RIPEMD_FFF(ddd, eee, aaa, bbb, ccc, X[ 3] , 13);</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;    BEAST_RIPEMD_FFF(ccc, ddd, eee, aaa, bbb, X[ 9] , 11);</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;    BEAST_RIPEMD_FFF(bbb, ccc, ddd, eee, aaa, X[11] , 11);</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160; </div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;    <span class="comment">// combine results</span></div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;    ddd += cc + ctx.h[1]; <span class="comment">// final result for h[0]</span></div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;    ctx.h[1] = ctx.h[2] + dd + eee;</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;    ctx.h[2] = ctx.h[3] + ee + aaa;</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;    ctx.h[3] = ctx.h[4] + aa + bbb;</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;    ctx.h[4] = ctx.h[0] + bb + ccc;</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;    ctx.h[0] = ddd;</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;}</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160; </div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
-<div class="line"><a name="l00343"></a><span class="lineno"><a class="line" href="namespacebeast_1_1detail.html#a0a40082e87e5a1c26002b84a060d189a">  343</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacebeast_1_1detail.html#a0a40082e87e5a1c26002b84a060d189a">init</a> (<a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html">ripemd160_context</a>&amp; ctx) noexcept</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;{</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;    ctx.len = 0;</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;    ctx.tot_len = 0;</div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;    ctx.h[0] = 0x67452301UL;</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;    ctx.h[1] = 0xefcdab89UL;</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;    ctx.h[2] = 0x98badcfeUL;</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;    ctx.h[3] = 0x10325476UL;</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;    ctx.h[4] = 0xc3d2e1f0UL;</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;}</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160; </div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
-<div class="line"><a name="l00355"></a><span class="lineno"><a class="line" href="namespacebeast_1_1detail.html#ae358261db0d8f9cad658f9a6658d1ada">  355</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacebeast_1_1detail.html#ae358261db0d8f9cad658f9a6658d1ada">update</a> (<a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html">ripemd160_context</a>&amp; ctx,</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;    <span class="keywordtype">void</span> <span class="keyword">const</span>* message, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> size) noexcept</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;{</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> pm = <span class="keyword">reinterpret_cast&lt;</span></div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;        <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> const*<span class="keyword">&gt;</span>(message);</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> block_nb;</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> new_len, rem_len, tmp_len;</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *shifted_message;</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;    tmp_len = <a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html#a5a6b2fe0100f04891320a8f360d2cc00">ripemd160_context::block_size</a> - ctx.len;</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    rem_len = size &lt; tmp_len ? size : tmp_len;</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(&amp;ctx.block[ctx.len], pm, rem_len);</div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;    <span class="keywordflow">if</span> (ctx.len + size &lt; <a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html#a5a6b2fe0100f04891320a8f360d2cc00">ripemd160_context::block_size</a>) {</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;        ctx.len += size;</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;        <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;    }</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;    new_len = size - rem_len;</div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;    block_nb = new_len / <a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html#a5a6b2fe0100f04891320a8f360d2cc00">ripemd160_context::block_size</a>;</div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;    shifted_message = pm + rem_len;</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;std::uint32_t, 16&gt;</a> X;</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;    <a class="code" href="namespacebeast_1_1detail.html#aa6988a5b5ed3e46bf0d8dd19ea1b9286">ripemd_load</a>(X, ctx.block);</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;    <a class="code" href="namespacebeast_1_1detail.html#abb111161c4c2b9a49e39f2903e4075fe">ripemd_compress</a>(ctx, X);</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; block_nb; ++i)</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;    {</div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;        <a class="code" href="namespacebeast_1_1detail.html#aa6988a5b5ed3e46bf0d8dd19ea1b9286">ripemd_load</a>(X, shifted_message +</div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;            i * <a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html#a5a6b2fe0100f04891320a8f360d2cc00">ripemd160_context::block_size</a>);</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        <a class="code" href="namespacebeast_1_1detail.html#abb111161c4c2b9a49e39f2903e4075fe">ripemd_compress</a>(ctx, X);</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;    }</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;    rem_len = new_len % <a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html#a5a6b2fe0100f04891320a8f360d2cc00">ripemd160_context::block_size</a>;</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(ctx.block, &amp;shifted_message[</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;        block_nb * <a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html#a5a6b2fe0100f04891320a8f360d2cc00">ripemd160_context::block_size</a>],</div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;            rem_len);</div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;    ctx.len = rem_len;</div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;    ctx.tot_len += (block_nb + 1) *</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;        <a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html#a5a6b2fe0100f04891320a8f360d2cc00">ripemd160_context::block_size</a>;</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;}</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160; </div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
-<div class="line"><a name="l00392"></a><span class="lineno"><a class="line" href="namespacebeast_1_1detail.html#a929feaa1ed8799c4559774b8a0130e2f">  392</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacebeast_1_1detail.html#a929feaa1ed8799c4559774b8a0130e2f">finish</a> (<a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html">ripemd160_context</a>&amp; ctx,</div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;    <span class="keywordtype">void</span>* digest) noexcept</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;{</div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;std::uint32_t, 16&gt;</a> X;</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;    X.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/fill.html">fill</a>(0);</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;    <span class="comment">// put leftovers into X</span></div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;    <span class="keyword">auto</span> p = &amp;ctx.block[0];</div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;    <span class="comment">// uint8_t i goes into word X[i div 4] at pos.  8*(i mod 4)</span></div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; ctx.len; ++i)</div>
-<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;      X[i &gt;&gt; 2] ^= (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>) *p++ &lt;&lt; (8 * (i &amp; 3));</div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;    ctx.tot_len += ctx.len;</div>
-<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;    <span class="comment">// append the bit m_n == 1</span></div>
-<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;    X[(ctx.tot_len&gt;&gt;2)&amp;15] ^=</div>
-<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;        (uint32_t)1 &lt;&lt; (8*(ctx.tot_len&amp;3) + 7);</div>
-<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;    <span class="comment">// length goes to next block?</span></div>
-<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;    <span class="keywordflow">if</span> ((ctx.tot_len &amp; 63) &gt; 55)</div>
-<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;    {</div>
-<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;        <a class="code" href="namespacebeast_1_1detail.html#abb111161c4c2b9a49e39f2903e4075fe">ripemd_compress</a>(ctx, X);</div>
-<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;        X.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/fill.html">fill</a>(0);</div>
-<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;    }</div>
-<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;    <span class="comment">// append length in bits*/</span></div>
-<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;    X[14] = ctx.tot_len &lt;&lt; 3;</div>
-<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;    X[15] = (ctx.tot_len &gt;&gt; 29) | (0 &lt;&lt; 3);</div>
-<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;    <a class="code" href="namespacebeast_1_1detail.html#abb111161c4c2b9a49e39f2903e4075fe">ripemd_compress</a>(ctx, X);</div>
-<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160; </div>
-<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>* pd = <span class="keyword">reinterpret_cast&lt;</span></div>
-<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>*<span class="keyword">&gt;</span>(digest);</div>
-<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;    <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> i = 0; i &lt; 20; i += 4)</div>
-<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;    {</div>
-<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;        pd[i]   = (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>)(ctx.h[i&gt;&gt;2]);          <span class="comment">// implicit cast to uint8_t</span></div>
-<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;        pd[i+1] = (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>)(ctx.h[i&gt;&gt;2] &gt;&gt;  8);    <span class="comment">// extracts the 8 least</span></div>
-<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;        pd[i+2] = (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>)(ctx.h[i&gt;&gt;2] &gt;&gt; 16);    <span class="comment">// significant bits.</span></div>
-<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;        pd[i+3] = (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>)(ctx.h[i&gt;&gt;2] &gt;&gt; 24);</div>
-<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;    }</div>
-<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;}</div>
-<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160; </div>
-<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;} <span class="comment">// detail</span></div>
-<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;} <span class="comment">// beast</span></div>
-<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160; </div>
-<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_FF(a, b, c, d, e, x, s)        \</span></div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="preprocessor">    {                                               \</span></div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;<span class="preprocessor">        (a) += BEAST_RIPEMD_F((b), (c), (d)) + (x); \</span></div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<span class="preprocessor">        (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);     \</span></div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<span class="preprocessor">        (c) = BEAST_RIPEMD_ROL((c), 10);            \</span></div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="preprocessor">    }</span></div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_GG(a, b, c, d, e, x, s)                       \</span></div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="preprocessor">    {                                                              \</span></div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="preprocessor">        (a) += BEAST_RIPEMD_G((b), (c), (d)) + (x) + 0x5a827999UL; \</span></div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="preprocessor">        (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);                    \</span></div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="preprocessor">        (c) = BEAST_RIPEMD_ROL((c), 10);                           \</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="preprocessor">    }</span></div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_HH(a, b, c, d, e, x, s)                       \</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<span class="preprocessor">    {                                                              \</span></div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="preprocessor">        (a) += BEAST_RIPEMD_H((b), (c), (d)) + (x) + 0x6ed9eba1UL; \</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<span class="preprocessor">        (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);                    \</span></div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="preprocessor">        (c) = BEAST_RIPEMD_ROL((c), 10);                           \</span></div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="preprocessor">    }</span></div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_II(a, b, c, d, e, x, s)                       \</span></div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="preprocessor">    {                                                              \</span></div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="preprocessor">        (a) += BEAST_RIPEMD_I((b), (c), (d)) + (x) + 0x8f1bbcdcUL; \</span></div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;<span class="preprocessor">        (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);                    \</span></div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="preprocessor">        (c) = BEAST_RIPEMD_ROL((c), 10);                           \</span></div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;<span class="preprocessor">    }</span></div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_JJ(a, b, c, d, e, x, s)                       \</span></div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;<span class="preprocessor">    {                                                              \</span></div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<span class="preprocessor">        (a) += BEAST_RIPEMD_J((b), (c), (d)) + (x) + 0xa953fd4eUL; \</span></div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;<span class="preprocessor">        (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);                    \</span></div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;<span class="preprocessor">        (c) = BEAST_RIPEMD_ROL((c), 10);                           \</span></div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;<span class="preprocessor">    }</span></div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_FFF(a, b, c, d, e, x, s)       \</span></div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;<span class="preprocessor">    {                                               \</span></div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;<span class="preprocessor">        (a) += BEAST_RIPEMD_F((b), (c), (d)) + (x); \</span></div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;<span class="preprocessor">        (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);     \</span></div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;<span class="preprocessor">        (c) = BEAST_RIPEMD_ROL((c), 10);            \</span></div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;<span class="preprocessor">    }</span></div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_GGG(a, b, c, d, e, x, s)                      \</span></div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;<span class="preprocessor">    {                                                              \</span></div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;<span class="preprocessor">        (a) += BEAST_RIPEMD_G((b), (c), (d)) + (x) + 0x7a6d76e9UL; \</span></div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;<span class="preprocessor">        (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);                    \</span></div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;<span class="preprocessor">        (c) = BEAST_RIPEMD_ROL((c), 10);                           \</span></div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;<span class="preprocessor">    }</span></div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_HHH(a, b, c, d, e, x, s)                      \</span></div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;<span class="preprocessor">    {                                                              \</span></div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;<span class="preprocessor">        (a) += BEAST_RIPEMD_H((b), (c), (d)) + (x) + 0x6d703ef3UL; \</span></div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;<span class="preprocessor">        (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);                    \</span></div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;<span class="preprocessor">        (c) = BEAST_RIPEMD_ROL((c), 10);                           \</span></div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;<span class="preprocessor">    }</span></div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_III(a, b, c, d, e, x, s)                      \</span></div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;<span class="preprocessor">    {                                                              \</span></div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;<span class="preprocessor">        (a) += BEAST_RIPEMD_I((b), (c), (d)) + (x) + 0x5c4dd124UL; \</span></div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;<span class="preprocessor">        (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);                    \</span></div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;<span class="preprocessor">        (c) = BEAST_RIPEMD_ROL((c), 10);                           \</span></div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;<span class="preprocessor">    }</span></div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;<span class="preprocessor">#define BEAST_RIPEMD_JJJ(a, b, c, d, e, x, s)                      \</span></div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;<span class="preprocessor">    {                                                              \</span></div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;<span class="preprocessor">        (a) += BEAST_RIPEMD_J((b), (c), (d)) + (x) + 0x50a28be6UL; \</span></div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;<span class="preprocessor">        (a) = BEAST_RIPEMD_ROL((a), (s)) + (e);                    \</span></div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;<span class="preprocessor">        (c) = BEAST_RIPEMD_ROL((c), 10);                           \</span></div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;<span class="preprocessor">    }</span></div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160; </div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00145"></a><span class="lineno"><a class="line" href="namespacebeast_1_1detail.html#aa6988a5b5ed3e46bf0d8dd19ea1b9286">  145</a></span>&#160;<a class="code" href="namespacebeast_1_1detail.html#aa6988a5b5ed3e46bf0d8dd19ea1b9286">ripemd_load</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;std::uint32_t, 16&gt;</a>&amp; X, <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* p)</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;{</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 16; ++i)</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    {</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        X[i] = ((<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>) * ((p) + 3) &lt;&lt; 24) |</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;            ((<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>) * ((p) + 2) &lt;&lt; 16) |</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;            ((<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>) * ((p) + 1) &lt;&lt; 8) | ((<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>) * (p));</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        p += 4;</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;    }</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;}</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160; </div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00158"></a><span class="lineno"><a class="line" href="namespacebeast_1_1detail.html#abb111161c4c2b9a49e39f2903e4075fe">  158</a></span>&#160;<a class="code" href="namespacebeast_1_1detail.html#abb111161c4c2b9a49e39f2903e4075fe">ripemd_compress</a>(</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    <a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html">ripemd160_context</a>&amp; ctx,</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;std::uint32_t, 16&gt;</a>&amp; X) noexcept</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;{</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> aa = ctx.h[0];</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> bb = ctx.h[1];</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> cc = ctx.h[2];</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> dd = ctx.h[3];</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ee = ctx.h[4];</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> aaa = ctx.h[0];</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> bbb = ctx.h[1];</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ccc = ctx.h[2];</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ddd = ctx.h[3];</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> eee = ctx.h[4];</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160; </div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    <span class="comment">// round 1</span></div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;    BEAST_RIPEMD_FF(aa, bb, cc, dd, ee, X[0], 11);</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    BEAST_RIPEMD_FF(ee, aa, bb, cc, dd, X[1], 14);</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;    BEAST_RIPEMD_FF(dd, ee, aa, bb, cc, X[2], 15);</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    BEAST_RIPEMD_FF(cc, dd, ee, aa, bb, X[3], 12);</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;    BEAST_RIPEMD_FF(bb, cc, dd, ee, aa, X[4], 5);</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    BEAST_RIPEMD_FF(aa, bb, cc, dd, ee, X[5], 8);</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;    BEAST_RIPEMD_FF(ee, aa, bb, cc, dd, X[6], 7);</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;    BEAST_RIPEMD_FF(dd, ee, aa, bb, cc, X[7], 9);</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;    BEAST_RIPEMD_FF(cc, dd, ee, aa, bb, X[8], 11);</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    BEAST_RIPEMD_FF(bb, cc, dd, ee, aa, X[9], 13);</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    BEAST_RIPEMD_FF(aa, bb, cc, dd, ee, X[10], 14);</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    BEAST_RIPEMD_FF(ee, aa, bb, cc, dd, X[11], 15);</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    BEAST_RIPEMD_FF(dd, ee, aa, bb, cc, X[12], 6);</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    BEAST_RIPEMD_FF(cc, dd, ee, aa, bb, X[13], 7);</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    BEAST_RIPEMD_FF(bb, cc, dd, ee, aa, X[14], 9);</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    BEAST_RIPEMD_FF(aa, bb, cc, dd, ee, X[15], 8);</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160; </div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;    <span class="comment">// round 2</span></div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;    BEAST_RIPEMD_GG(ee, aa, bb, cc, dd, X[7], 7);</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;    BEAST_RIPEMD_GG(dd, ee, aa, bb, cc, X[4], 6);</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    BEAST_RIPEMD_GG(cc, dd, ee, aa, bb, X[13], 8);</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    BEAST_RIPEMD_GG(bb, cc, dd, ee, aa, X[1], 13);</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    BEAST_RIPEMD_GG(aa, bb, cc, dd, ee, X[10], 11);</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;    BEAST_RIPEMD_GG(ee, aa, bb, cc, dd, X[6], 9);</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;    BEAST_RIPEMD_GG(dd, ee, aa, bb, cc, X[15], 7);</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;    BEAST_RIPEMD_GG(cc, dd, ee, aa, bb, X[3], 15);</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;    BEAST_RIPEMD_GG(bb, cc, dd, ee, aa, X[12], 7);</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;    BEAST_RIPEMD_GG(aa, bb, cc, dd, ee, X[0], 12);</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;    BEAST_RIPEMD_GG(ee, aa, bb, cc, dd, X[9], 15);</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    BEAST_RIPEMD_GG(dd, ee, aa, bb, cc, X[5], 9);</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    BEAST_RIPEMD_GG(cc, dd, ee, aa, bb, X[2], 11);</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    BEAST_RIPEMD_GG(bb, cc, dd, ee, aa, X[14], 7);</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;    BEAST_RIPEMD_GG(aa, bb, cc, dd, ee, X[11], 13);</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    BEAST_RIPEMD_GG(ee, aa, bb, cc, dd, X[8], 12);</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160; </div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    <span class="comment">// round 3</span></div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    BEAST_RIPEMD_HH(dd, ee, aa, bb, cc, X[3], 11);</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;    BEAST_RIPEMD_HH(cc, dd, ee, aa, bb, X[10], 13);</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    BEAST_RIPEMD_HH(bb, cc, dd, ee, aa, X[14], 6);</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;    BEAST_RIPEMD_HH(aa, bb, cc, dd, ee, X[4], 7);</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    BEAST_RIPEMD_HH(ee, aa, bb, cc, dd, X[9], 14);</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    BEAST_RIPEMD_HH(dd, ee, aa, bb, cc, X[15], 9);</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    BEAST_RIPEMD_HH(cc, dd, ee, aa, bb, X[8], 13);</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;    BEAST_RIPEMD_HH(bb, cc, dd, ee, aa, X[1], 15);</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;    BEAST_RIPEMD_HH(aa, bb, cc, dd, ee, X[2], 14);</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;    BEAST_RIPEMD_HH(ee, aa, bb, cc, dd, X[7], 8);</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;    BEAST_RIPEMD_HH(dd, ee, aa, bb, cc, X[0], 13);</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;    BEAST_RIPEMD_HH(cc, dd, ee, aa, bb, X[6], 6);</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;    BEAST_RIPEMD_HH(bb, cc, dd, ee, aa, X[13], 5);</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;    BEAST_RIPEMD_HH(aa, bb, cc, dd, ee, X[11], 12);</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;    BEAST_RIPEMD_HH(ee, aa, bb, cc, dd, X[5], 7);</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    BEAST_RIPEMD_HH(dd, ee, aa, bb, cc, X[12], 5);</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160; </div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    <span class="comment">// round 4</span></div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;    BEAST_RIPEMD_II(cc, dd, ee, aa, bb, X[1], 11);</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;    BEAST_RIPEMD_II(bb, cc, dd, ee, aa, X[9], 12);</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    BEAST_RIPEMD_II(aa, bb, cc, dd, ee, X[11], 14);</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    BEAST_RIPEMD_II(ee, aa, bb, cc, dd, X[10], 15);</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    BEAST_RIPEMD_II(dd, ee, aa, bb, cc, X[0], 14);</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;    BEAST_RIPEMD_II(cc, dd, ee, aa, bb, X[8], 15);</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    BEAST_RIPEMD_II(bb, cc, dd, ee, aa, X[12], 9);</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    BEAST_RIPEMD_II(aa, bb, cc, dd, ee, X[4], 8);</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    BEAST_RIPEMD_II(ee, aa, bb, cc, dd, X[13], 9);</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    BEAST_RIPEMD_II(dd, ee, aa, bb, cc, X[3], 14);</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    BEAST_RIPEMD_II(cc, dd, ee, aa, bb, X[7], 5);</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    BEAST_RIPEMD_II(bb, cc, dd, ee, aa, X[15], 6);</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    BEAST_RIPEMD_II(aa, bb, cc, dd, ee, X[14], 8);</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;    BEAST_RIPEMD_II(ee, aa, bb, cc, dd, X[5], 6);</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;    BEAST_RIPEMD_II(dd, ee, aa, bb, cc, X[6], 5);</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;    BEAST_RIPEMD_II(cc, dd, ee, aa, bb, X[2], 12);</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160; </div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    <span class="comment">// round 5</span></div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    BEAST_RIPEMD_JJ(bb, cc, dd, ee, aa, X[4], 9);</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    BEAST_RIPEMD_JJ(aa, bb, cc, dd, ee, X[0], 15);</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    BEAST_RIPEMD_JJ(ee, aa, bb, cc, dd, X[5], 5);</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    BEAST_RIPEMD_JJ(dd, ee, aa, bb, cc, X[9], 11);</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;    BEAST_RIPEMD_JJ(cc, dd, ee, aa, bb, X[7], 6);</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    BEAST_RIPEMD_JJ(bb, cc, dd, ee, aa, X[12], 8);</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    BEAST_RIPEMD_JJ(aa, bb, cc, dd, ee, X[2], 13);</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;    BEAST_RIPEMD_JJ(ee, aa, bb, cc, dd, X[10], 12);</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    BEAST_RIPEMD_JJ(dd, ee, aa, bb, cc, X[14], 5);</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    BEAST_RIPEMD_JJ(cc, dd, ee, aa, bb, X[1], 12);</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    BEAST_RIPEMD_JJ(bb, cc, dd, ee, aa, X[3], 13);</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    BEAST_RIPEMD_JJ(aa, bb, cc, dd, ee, X[8], 14);</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;    BEAST_RIPEMD_JJ(ee, aa, bb, cc, dd, X[11], 11);</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;    BEAST_RIPEMD_JJ(dd, ee, aa, bb, cc, X[6], 8);</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;    BEAST_RIPEMD_JJ(cc, dd, ee, aa, bb, X[15], 5);</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;    BEAST_RIPEMD_JJ(bb, cc, dd, ee, aa, X[13], 6);</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160; </div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    <span class="comment">// parallel round 1</span></div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;    BEAST_RIPEMD_JJJ(aaa, bbb, ccc, ddd, eee, X[5], 8);</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    BEAST_RIPEMD_JJJ(eee, aaa, bbb, ccc, ddd, X[14], 9);</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;    BEAST_RIPEMD_JJJ(ddd, eee, aaa, bbb, ccc, X[7], 9);</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;    BEAST_RIPEMD_JJJ(ccc, ddd, eee, aaa, bbb, X[0], 11);</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    BEAST_RIPEMD_JJJ(bbb, ccc, ddd, eee, aaa, X[9], 13);</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;    BEAST_RIPEMD_JJJ(aaa, bbb, ccc, ddd, eee, X[2], 15);</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;    BEAST_RIPEMD_JJJ(eee, aaa, bbb, ccc, ddd, X[11], 15);</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    BEAST_RIPEMD_JJJ(ddd, eee, aaa, bbb, ccc, X[4], 5);</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    BEAST_RIPEMD_JJJ(ccc, ddd, eee, aaa, bbb, X[13], 7);</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    BEAST_RIPEMD_JJJ(bbb, ccc, ddd, eee, aaa, X[6], 7);</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    BEAST_RIPEMD_JJJ(aaa, bbb, ccc, ddd, eee, X[15], 8);</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    BEAST_RIPEMD_JJJ(eee, aaa, bbb, ccc, ddd, X[8], 11);</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    BEAST_RIPEMD_JJJ(ddd, eee, aaa, bbb, ccc, X[1], 14);</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    BEAST_RIPEMD_JJJ(ccc, ddd, eee, aaa, bbb, X[10], 14);</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    BEAST_RIPEMD_JJJ(bbb, ccc, ddd, eee, aaa, X[3], 12);</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    BEAST_RIPEMD_JJJ(aaa, bbb, ccc, ddd, eee, X[12], 6);</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160; </div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    <span class="comment">// parallel round 2</span></div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    BEAST_RIPEMD_III(eee, aaa, bbb, ccc, ddd, X[6], 9);</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    BEAST_RIPEMD_III(ddd, eee, aaa, bbb, ccc, X[11], 13);</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    BEAST_RIPEMD_III(ccc, ddd, eee, aaa, bbb, X[3], 15);</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    BEAST_RIPEMD_III(bbb, ccc, ddd, eee, aaa, X[7], 7);</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;    BEAST_RIPEMD_III(aaa, bbb, ccc, ddd, eee, X[0], 12);</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    BEAST_RIPEMD_III(eee, aaa, bbb, ccc, ddd, X[13], 8);</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;    BEAST_RIPEMD_III(ddd, eee, aaa, bbb, ccc, X[5], 9);</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;    BEAST_RIPEMD_III(ccc, ddd, eee, aaa, bbb, X[10], 11);</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;    BEAST_RIPEMD_III(bbb, ccc, ddd, eee, aaa, X[14], 7);</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;    BEAST_RIPEMD_III(aaa, bbb, ccc, ddd, eee, X[15], 7);</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;    BEAST_RIPEMD_III(eee, aaa, bbb, ccc, ddd, X[8], 12);</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;    BEAST_RIPEMD_III(ddd, eee, aaa, bbb, ccc, X[12], 7);</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    BEAST_RIPEMD_III(ccc, ddd, eee, aaa, bbb, X[4], 6);</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;    BEAST_RIPEMD_III(bbb, ccc, ddd, eee, aaa, X[9], 15);</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;    BEAST_RIPEMD_III(aaa, bbb, ccc, ddd, eee, X[1], 13);</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;    BEAST_RIPEMD_III(eee, aaa, bbb, ccc, ddd, X[2], 11);</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160; </div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;    <span class="comment">// parallel round 3</span></div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;    BEAST_RIPEMD_HHH(ddd, eee, aaa, bbb, ccc, X[15], 9);</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;    BEAST_RIPEMD_HHH(ccc, ddd, eee, aaa, bbb, X[5], 7);</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;    BEAST_RIPEMD_HHH(bbb, ccc, ddd, eee, aaa, X[1], 15);</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    BEAST_RIPEMD_HHH(aaa, bbb, ccc, ddd, eee, X[3], 11);</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;    BEAST_RIPEMD_HHH(eee, aaa, bbb, ccc, ddd, X[7], 8);</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    BEAST_RIPEMD_HHH(ddd, eee, aaa, bbb, ccc, X[14], 6);</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    BEAST_RIPEMD_HHH(ccc, ddd, eee, aaa, bbb, X[6], 6);</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    BEAST_RIPEMD_HHH(bbb, ccc, ddd, eee, aaa, X[9], 14);</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    BEAST_RIPEMD_HHH(aaa, bbb, ccc, ddd, eee, X[11], 12);</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;    BEAST_RIPEMD_HHH(eee, aaa, bbb, ccc, ddd, X[8], 13);</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;    BEAST_RIPEMD_HHH(ddd, eee, aaa, bbb, ccc, X[12], 5);</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;    BEAST_RIPEMD_HHH(ccc, ddd, eee, aaa, bbb, X[2], 14);</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;    BEAST_RIPEMD_HHH(bbb, ccc, ddd, eee, aaa, X[10], 13);</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;    BEAST_RIPEMD_HHH(aaa, bbb, ccc, ddd, eee, X[0], 13);</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;    BEAST_RIPEMD_HHH(eee, aaa, bbb, ccc, ddd, X[4], 7);</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;    BEAST_RIPEMD_HHH(ddd, eee, aaa, bbb, ccc, X[13], 5);</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160; </div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;    <span class="comment">// parallel round 4</span></div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;    BEAST_RIPEMD_GGG(ccc, ddd, eee, aaa, bbb, X[8], 15);</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;    BEAST_RIPEMD_GGG(bbb, ccc, ddd, eee, aaa, X[6], 5);</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;    BEAST_RIPEMD_GGG(aaa, bbb, ccc, ddd, eee, X[4], 8);</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;    BEAST_RIPEMD_GGG(eee, aaa, bbb, ccc, ddd, X[1], 11);</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;    BEAST_RIPEMD_GGG(ddd, eee, aaa, bbb, ccc, X[3], 14);</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;    BEAST_RIPEMD_GGG(ccc, ddd, eee, aaa, bbb, X[11], 14);</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;    BEAST_RIPEMD_GGG(bbb, ccc, ddd, eee, aaa, X[15], 6);</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;    BEAST_RIPEMD_GGG(aaa, bbb, ccc, ddd, eee, X[0], 14);</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;    BEAST_RIPEMD_GGG(eee, aaa, bbb, ccc, ddd, X[5], 6);</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;    BEAST_RIPEMD_GGG(ddd, eee, aaa, bbb, ccc, X[12], 9);</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    BEAST_RIPEMD_GGG(ccc, ddd, eee, aaa, bbb, X[2], 12);</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    BEAST_RIPEMD_GGG(bbb, ccc, ddd, eee, aaa, X[13], 9);</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;    BEAST_RIPEMD_GGG(aaa, bbb, ccc, ddd, eee, X[9], 12);</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;    BEAST_RIPEMD_GGG(eee, aaa, bbb, ccc, ddd, X[7], 5);</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;    BEAST_RIPEMD_GGG(ddd, eee, aaa, bbb, ccc, X[10], 15);</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;    BEAST_RIPEMD_GGG(ccc, ddd, eee, aaa, bbb, X[14], 8);</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160; </div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;    <span class="comment">// parallel round 5</span></div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;    BEAST_RIPEMD_FFF(bbb, ccc, ddd, eee, aaa, X[12], 8);</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;    BEAST_RIPEMD_FFF(aaa, bbb, ccc, ddd, eee, X[15], 5);</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;    BEAST_RIPEMD_FFF(eee, aaa, bbb, ccc, ddd, X[10], 12);</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;    BEAST_RIPEMD_FFF(ddd, eee, aaa, bbb, ccc, X[4], 9);</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;    BEAST_RIPEMD_FFF(ccc, ddd, eee, aaa, bbb, X[1], 12);</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;    BEAST_RIPEMD_FFF(bbb, ccc, ddd, eee, aaa, X[5], 5);</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;    BEAST_RIPEMD_FFF(aaa, bbb, ccc, ddd, eee, X[8], 14);</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;    BEAST_RIPEMD_FFF(eee, aaa, bbb, ccc, ddd, X[7], 6);</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;    BEAST_RIPEMD_FFF(ddd, eee, aaa, bbb, ccc, X[6], 8);</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;    BEAST_RIPEMD_FFF(ccc, ddd, eee, aaa, bbb, X[2], 13);</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;    BEAST_RIPEMD_FFF(bbb, ccc, ddd, eee, aaa, X[13], 6);</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;    BEAST_RIPEMD_FFF(aaa, bbb, ccc, ddd, eee, X[14], 5);</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;    BEAST_RIPEMD_FFF(eee, aaa, bbb, ccc, ddd, X[0], 15);</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;    BEAST_RIPEMD_FFF(ddd, eee, aaa, bbb, ccc, X[3], 13);</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;    BEAST_RIPEMD_FFF(ccc, ddd, eee, aaa, bbb, X[9], 11);</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;    BEAST_RIPEMD_FFF(bbb, ccc, ddd, eee, aaa, X[11], 11);</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160; </div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;    <span class="comment">// combine results</span></div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;    ddd += cc + ctx.h[1];  <span class="comment">// final result for h[0]</span></div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;    ctx.h[1] = ctx.h[2] + dd + eee;</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;    ctx.h[2] = ctx.h[3] + ee + aaa;</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;    ctx.h[3] = ctx.h[4] + aa + bbb;</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;    ctx.h[4] = ctx.h[0] + bb + ccc;</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;    ctx.h[0] = ddd;</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;}</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160; </div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00364"></a><span class="lineno"><a class="line" href="namespacebeast_1_1detail.html#a0a40082e87e5a1c26002b84a060d189a">  364</a></span>&#160;<a class="code" href="namespacebeast_1_1detail.html#a0a40082e87e5a1c26002b84a060d189a">init</a>(<a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html">ripemd160_context</a>&amp; ctx) noexcept</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;{</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;    ctx.len = 0;</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;    ctx.tot_len = 0;</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;    ctx.h[0] = 0x67452301UL;</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;    ctx.h[1] = 0xefcdab89UL;</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;    ctx.h[2] = 0x98badcfeUL;</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;    ctx.h[3] = 0x10325476UL;</div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;    ctx.h[4] = 0xc3d2e1f0UL;</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;}</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160; </div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00377"></a><span class="lineno"><a class="line" href="namespacebeast_1_1detail.html#ae358261db0d8f9cad658f9a6658d1ada">  377</a></span>&#160;<a class="code" href="namespacebeast_1_1detail.html#ae358261db0d8f9cad658f9a6658d1ada">update</a>(<a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html">ripemd160_context</a>&amp; ctx, <span class="keywordtype">void</span> <span class="keyword">const</span>* message, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> size) noexcept</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;{</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> pm = <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> const*<span class="keyword">&gt;</span>(message);</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> block_nb;</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> new_len, rem_len, tmp_len;</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span>* shifted_message;</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;    tmp_len = <a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html#a5a6b2fe0100f04891320a8f360d2cc00">ripemd160_context::block_size</a> - ctx.len;</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;    rem_len = size &lt; tmp_len ? size : tmp_len;</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(&amp;ctx.block[ctx.len], pm, rem_len);</div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;    <span class="keywordflow">if</span> (ctx.len + size &lt; <a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html#a5a6b2fe0100f04891320a8f360d2cc00">ripemd160_context::block_size</a>)</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;    {</div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;        ctx.len += size;</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;        <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;    }</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;    new_len = size - rem_len;</div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;    block_nb = new_len / <a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html#a5a6b2fe0100f04891320a8f360d2cc00">ripemd160_context::block_size</a>;</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;    shifted_message = pm + rem_len;</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;std::uint32_t, 16&gt;</a> X;</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;    <a class="code" href="namespacebeast_1_1detail.html#aa6988a5b5ed3e46bf0d8dd19ea1b9286">ripemd_load</a>(X, ctx.block);</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;    <a class="code" href="namespacebeast_1_1detail.html#abb111161c4c2b9a49e39f2903e4075fe">ripemd_compress</a>(ctx, X);</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; block_nb; ++i)</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;    {</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;        <a class="code" href="namespacebeast_1_1detail.html#aa6988a5b5ed3e46bf0d8dd19ea1b9286">ripemd_load</a>(X, shifted_message + i * <a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html#a5a6b2fe0100f04891320a8f360d2cc00">ripemd160_context::block_size</a>);</div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;        <a class="code" href="namespacebeast_1_1detail.html#abb111161c4c2b9a49e39f2903e4075fe">ripemd_compress</a>(ctx, X);</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;    }</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;    rem_len = new_len % <a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html#a5a6b2fe0100f04891320a8f360d2cc00">ripemd160_context::block_size</a>;</div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(</div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;        ctx.block,</div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;        &amp;shifted_message[block_nb * <a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html#a5a6b2fe0100f04891320a8f360d2cc00">ripemd160_context::block_size</a>],</div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;        rem_len);</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;    ctx.len = rem_len;</div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;    ctx.tot_len += (block_nb + 1) * <a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html#a5a6b2fe0100f04891320a8f360d2cc00">ripemd160_context::block_size</a>;</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;}</div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160; </div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> = <span class="keywordtype">void</span>&gt;</div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00413"></a><span class="lineno"><a class="line" href="namespacebeast_1_1detail.html#a929feaa1ed8799c4559774b8a0130e2f">  413</a></span>&#160;<a class="code" href="namespacebeast_1_1detail.html#a929feaa1ed8799c4559774b8a0130e2f">finish</a>(<a class="code" href="structbeast_1_1detail_1_1ripemd160__context.html">ripemd160_context</a>&amp; ctx, <span class="keywordtype">void</span>* digest) noexcept</div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;{</div>
+<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;std::uint32_t, 16&gt;</a> X;</div>
+<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;    X.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/fill.html">fill</a>(0);</div>
+<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;    <span class="comment">// put leftovers into X</span></div>
+<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;    <span class="keyword">auto</span> p = &amp;ctx.block[0];</div>
+<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;    <span class="comment">// uint8_t i goes into word X[i div 4] at pos.  8*(i mod 4)</span></div>
+<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; ctx.len; ++i)</div>
+<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;        X[i &gt;&gt; 2] ^= (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>)*p++ &lt;&lt; (8 * (i &amp; 3));</div>
+<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;    ctx.tot_len += ctx.len;</div>
+<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;    <span class="comment">// append the bit m_n == 1</span></div>
+<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;    X[(ctx.tot_len &gt;&gt; 2) &amp; 15] ^= (uint32_t)1 &lt;&lt; (8 * (ctx.tot_len &amp; 3) + 7);</div>
+<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;    <span class="comment">// length goes to next block?</span></div>
+<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;    <span class="keywordflow">if</span> ((ctx.tot_len &amp; 63) &gt; 55)</div>
+<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;    {</div>
+<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;        <a class="code" href="namespacebeast_1_1detail.html#abb111161c4c2b9a49e39f2903e4075fe">ripemd_compress</a>(ctx, X);</div>
+<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;        X.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/fill.html">fill</a>(0);</div>
+<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;    }</div>
+<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;    <span class="comment">// append length in bits*/</span></div>
+<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;    X[14] = ctx.tot_len &lt;&lt; 3;</div>
+<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;    X[15] = (ctx.tot_len &gt;&gt; 29) | (0 &lt;&lt; 3);</div>
+<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;    <a class="code" href="namespacebeast_1_1detail.html#abb111161c4c2b9a49e39f2903e4075fe">ripemd_compress</a>(ctx, X);</div>
+<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160; </div>
+<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>* pd = <span class="keyword">reinterpret_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>*<span class="keyword">&gt;</span>(digest);</div>
+<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;    <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> i = 0; i &lt; 20; i += 4)</div>
+<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;    {</div>
+<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;        pd[i] = (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>)(ctx.h[i &gt;&gt; 2]);  <span class="comment">// implicit cast to uint8_t</span></div>
+<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;        pd[i + 1] = (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>)(ctx.h[i &gt;&gt; 2] &gt;&gt; 8);  <span class="comment">// extracts the 8 least</span></div>
+<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;        pd[i + 2] = (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>)(ctx.h[i &gt;&gt; 2] &gt;&gt; 16);  <span class="comment">// significant bits.</span></div>
+<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;        pd[i + 3] = (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>)(ctx.h[i &gt;&gt; 2] &gt;&gt; 24);</div>
+<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;    }</div>
+<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;}</div>
+<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160; </div>
+<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;}  <span class="comment">// namespace detail</span></div>
+<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;}  <span class="comment">// namespace beast</span></div>
+<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160; </div>
+<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="astructbeast_1_1detail_1_1ripemd160__context_html_a5a6b2fe0100f04891320a8f360d2cc00"><div class="ttname"><a href="structbeast_1_1detail_1_1ripemd160__context.html#a5a6b2fe0100f04891320a8f360d2cc00">beast::detail::ripemd160_context::block_size</a></div><div class="ttdeci">static unsigned const int block_size</div><div class="ttdef"><b>Definition:</b> <a href="ripemd__context_8h_source.html#l00061">ripemd_context.h:61</a></div></div>
-<div class="ttc" id="anamespacebeast_1_1detail_html_ae358261db0d8f9cad658f9a6658d1ada"><div class="ttname"><a href="namespacebeast_1_1detail.html#ae358261db0d8f9cad658f9a6658d1ada">beast::detail::update</a></div><div class="ttdeci">void update(ripemd160_context &amp;ctx, void const *message, std::size_t size) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="ripemd__context_8h_source.html#l00355">ripemd_context.h:355</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1detail_html_ae358261db0d8f9cad658f9a6658d1ada"><div class="ttname"><a href="namespacebeast_1_1detail.html#ae358261db0d8f9cad658f9a6658d1ada">beast::detail::update</a></div><div class="ttdeci">void update(ripemd160_context &amp;ctx, void const *message, std::size_t size) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="ripemd__context_8h_source.html#l00377">ripemd_context.h:377</a></div></div>
 <div class="ttc" id="acstring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstring.html">cstring</a></div></div>
-<div class="ttc" id="anamespacebeast_1_1detail_html_abb111161c4c2b9a49e39f2903e4075fe"><div class="ttname"><a href="namespacebeast_1_1detail.html#abb111161c4c2b9a49e39f2903e4075fe">beast::detail::ripemd_compress</a></div><div class="ttdeci">void ripemd_compress(ripemd160_context &amp;ctx, std::array&lt; std::uint32_t, 16 &gt; &amp;X) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="ripemd__context_8h_source.html#l00139">ripemd_context.h:139</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1detail_html_abb111161c4c2b9a49e39f2903e4075fe"><div class="ttname"><a href="namespacebeast_1_1detail.html#abb111161c4c2b9a49e39f2903e4075fe">beast::detail::ripemd_compress</a></div><div class="ttdeci">void ripemd_compress(ripemd160_context &amp;ctx, std::array&lt; std::uint32_t, 16 &gt; &amp;X) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="ripemd__context_8h_source.html#l00158">ripemd_context.h:158</a></div></div>
 <div class="ttc" id="astructbeast_1_1detail_1_1ripemd160__context_html_a27fd0094c092c165df6f0c6f62b67864"><div class="ttname"><a href="structbeast_1_1detail_1_1ripemd160__context.html#a27fd0094c092c165df6f0c6f62b67864">beast::detail::ripemd160_context::tot_len</a></div><div class="ttdeci">unsigned int tot_len</div><div class="ttdef"><b>Definition:</b> <a href="ripemd__context_8h_source.html#l00064">ripemd_context.h:64</a></div></div>
 <div class="ttc" id="astructbeast_1_1detail_1_1ripemd160__context_html_ad90f53e4bbd4f19ff8c2eed9837cd8ee"><div class="ttname"><a href="structbeast_1_1detail_1_1ripemd160__context.html#ad90f53e4bbd4f19ff8c2eed9837cd8ee">beast::detail::ripemd160_context::len</a></div><div class="ttdeci">unsigned int len</div><div class="ttdef"><b>Definition:</b> <a href="ripemd__context_8h_source.html#l00065">ripemd_context.h:65</a></div></div>
 <div class="ttc" id="afill_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/array/fill.html">std::array::fill</a></div><div class="ttdeci">T fill(T... args)</div></div>
 <div class="ttc" id="astructbeast_1_1detail_1_1ripemd160__context_html_a6e28508afa1ffc4c6fd96b3ab43d7ba8"><div class="ttname"><a href="structbeast_1_1detail_1_1ripemd160__context.html#a6e28508afa1ffc4c6fd96b3ab43d7ba8">beast::detail::ripemd160_context::digest_size</a></div><div class="ttdeci">static unsigned const int digest_size</div><div class="ttdef"><b>Definition:</b> <a href="ripemd__context_8h_source.html#l00062">ripemd_context.h:62</a></div></div>
 <div class="ttc" id="aarray_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/array.html">array</a></div></div>
 <div class="ttc" id="acstdint_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a></div></div>
-<div class="ttc" id="anamespacebeast_1_1detail_html_a0a40082e87e5a1c26002b84a060d189a"><div class="ttname"><a href="namespacebeast_1_1detail.html#a0a40082e87e5a1c26002b84a060d189a">beast::detail::init</a></div><div class="ttdeci">void init(ripemd160_context &amp;ctx) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="ripemd__context_8h_source.html#l00343">ripemd_context.h:343</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1detail_html_a0a40082e87e5a1c26002b84a060d189a"><div class="ttname"><a href="namespacebeast_1_1detail.html#a0a40082e87e5a1c26002b84a060d189a">beast::detail::init</a></div><div class="ttdeci">void init(ripemd160_context &amp;ctx) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="ripemd__context_8h_source.html#l00364">ripemd_context.h:364</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
-<div class="ttc" id="anamespacebeast_1_1detail_html_a929feaa1ed8799c4559774b8a0130e2f"><div class="ttname"><a href="namespacebeast_1_1detail.html#a929feaa1ed8799c4559774b8a0130e2f">beast::detail::finish</a></div><div class="ttdeci">void finish(ripemd160_context &amp;ctx, void *digest) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="ripemd__context_8h_source.html#l00392">ripemd_context.h:392</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1detail_html_a929feaa1ed8799c4559774b8a0130e2f"><div class="ttname"><a href="namespacebeast_1_1detail.html#a929feaa1ed8799c4559774b8a0130e2f">beast::detail::finish</a></div><div class="ttdeci">void finish(ripemd160_context &amp;ctx, void *digest) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="ripemd__context_8h_source.html#l00413">ripemd_context.h:413</a></div></div>
 <div class="ttc" id="astructbeast_1_1detail_1_1ripemd160__context_html_adab59562e40d58f63e1ae604ce8de24e"><div class="ttname"><a href="structbeast_1_1detail_1_1ripemd160__context.html#adab59562e40d58f63e1ae604ce8de24e">beast::detail::ripemd160_context::h</a></div><div class="ttdeci">std::uint32_t h[5]</div><div class="ttdef"><b>Definition:</b> <a href="ripemd__context_8h_source.html#l00067">ripemd_context.h:67</a></div></div>
 <div class="ttc" id="astructbeast_1_1detail_1_1ripemd160__context_html"><div class="ttname"><a href="structbeast_1_1detail_1_1ripemd160__context.html">beast::detail::ripemd160_context</a></div><div class="ttdef"><b>Definition:</b> <a href="ripemd__context_8h_source.html#l00057">ripemd_context.h:57</a></div></div>
 <div class="ttc" id="astructbeast_1_1detail_1_1ripemd160__context_html_a69a7e46410b245fbb9ba4cefa6b47101"><div class="ttname"><a href="structbeast_1_1detail_1_1ripemd160__context.html#a69a7e46410b245fbb9ba4cefa6b47101">beast::detail::ripemd160_context::block</a></div><div class="ttdeci">unsigned char block[256]</div><div class="ttdef"><b>Definition:</b> <a href="ripemd__context_8h_source.html#l00066">ripemd_context.h:66</a></div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
 <div class="ttc" id="amemcpy_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a></div><div class="ttdeci">T memcpy(T... args)</div></div>
 <div class="ttc" id="astructbeast_1_1detail_1_1ripemd160__context_html_af1ea8a39e1d159dd8237de8c9e041d72"><div class="ttname"><a href="structbeast_1_1detail_1_1ripemd160__context.html#af1ea8a39e1d159dd8237de8c9e041d72">beast::detail::ripemd160_context::ripemd160_context</a></div><div class="ttdeci">ripemd160_context()=default</div></div>
-<div class="ttc" id="anamespacebeast_1_1detail_html_aa6988a5b5ed3e46bf0d8dd19ea1b9286"><div class="ttname"><a href="namespacebeast_1_1detail.html#aa6988a5b5ed3e46bf0d8dd19ea1b9286">beast::detail::ripemd_load</a></div><div class="ttdeci">void ripemd_load(std::array&lt; std::uint32_t, 16 &gt; &amp;X, unsigned char const *p)</div><div class="ttdef"><b>Definition:</b> <a href="ripemd__context_8h_source.html#l00124">ripemd_context.h:124</a></div></div>
-<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00582">base_uint.h:582</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1detail_html_aa6988a5b5ed3e46bf0d8dd19ea1b9286"><div class="ttname"><a href="namespacebeast_1_1detail.html#aa6988a5b5ed3e46bf0d8dd19ea1b9286">beast::detail::ripemd_load</a></div><div class="ttdeci">void ripemd_load(std::array&lt; std::uint32_t, 16 &gt; &amp;X, unsigned char const *p)</div><div class="ttdef"><b>Definition:</b> <a href="ripemd__context_8h_source.html#l00145">ripemd_context.h:145</a></div></div>
+<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00646">base_uint.h:646</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

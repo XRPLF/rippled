@@ -129,7 +129,7 @@ Public Member Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a4bf9e0ab6525122a6cd2d16270ada692"><td class="memItemLeft" align="right" valign="top">boost::intrusive::set_member_hook&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a4bf9e0ab6525122a6cd2d16270ada692">byFeeListHook</a></td></tr>
-<tr class="memdesc:a4bf9e0ab6525122a6cd2d16270ada692"><td class="mdescLeft">&#160;</td><td class="mdescRight">Used by the <a class="el" href="classripple_1_1TxQ.html#a94f01d1b8e394bacea34cd2bcbd31863">TxQ::FeeHook</a> and <a class="el" href="classripple_1_1TxQ.html#a4cfee027967ca2e830bcd375010b4c6c">TxQ::FeeMultiSet</a> below to put each <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html" title="Represents a transaction in the queue which may be applied later to the open ledger.">MaybeTx</a> object into more than one set without copies, pointers, etc.  <a href="classripple_1_1TxQ_1_1MaybeTx.html#a4bf9e0ab6525122a6cd2d16270ada692">More...</a><br /></td></tr>
+<tr class="memdesc:a4bf9e0ab6525122a6cd2d16270ada692"><td class="mdescLeft">&#160;</td><td class="mdescRight">Used by the <a class="el" href="classripple_1_1TxQ.html#a6bb6f93b4d95b63dfc55fae4246b38b8">TxQ::FeeHook</a> and <a class="el" href="classripple_1_1TxQ.html#aa5d1c2c494387c1f59c1d71259724bc6">TxQ::FeeMultiSet</a> below to put each <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html" title="Represents a transaction in the queue which may be applied later to the open ledger.">MaybeTx</a> object into more than one set without copies, pointers, etc.  <a href="classripple_1_1TxQ_1_1MaybeTx.html#a4bf9e0ab6525122a6cd2d16270ada692">More...</a><br /></td></tr>
 <tr class="separator:a4bf9e0ab6525122a6cd2d16270ada692"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abf55d40e02fe19801802976089234c2c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#abf55d40e02fe19801802976089234c2c">txn</a></td></tr>
 <tr class="memdesc:abf55d40e02fe19801802976089234c2c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The complete transaction.  <a href="classripple_1_1TxQ_1_1MaybeTx.html#abf55d40e02fe19801802976089234c2c">More...</a><br /></td></tr>
@@ -146,7 +146,7 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a5d732649a12554aa92ccd33f83ac0422"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="namespaceripple.html#a3f39560bfd60c64700b109c412e90f72">TxID</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a5d732649a12554aa92ccd33f83ac0422">priorTxID</a></td></tr>
 <tr class="memdesc:a5d732649a12554aa92ccd33f83ac0422"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prior transaction ID (<code>sfAccountTxnID</code> field).  <a href="classripple_1_1TxQ_1_1MaybeTx.html#a5d732649a12554aa92ccd33f83ac0422">More...</a><br /></td></tr>
 <tr class="separator:a5d732649a12554aa92ccd33f83ac0422"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a81e4136540fa07798d7576c574da2db0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a81e4136540fa07798d7576c574da2db0">account</a></td></tr>
+<tr class="memitem:a81e4136540fa07798d7576c574da2db0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a81e4136540fa07798d7576c574da2db0">account</a></td></tr>
 <tr class="memdesc:a81e4136540fa07798d7576c574da2db0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Account submitting the transaction.  <a href="classripple_1_1TxQ_1_1MaybeTx.html#a81e4136540fa07798d7576c574da2db0">More...</a><br /></td></tr>
 <tr class="separator:a81e4136540fa07798d7576c574da2db0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d678029f542ec924eb4ce3b12a7f0ab"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a7d678029f542ec924eb4ce3b12a7f0ab">lastValid</a></td></tr>
@@ -177,7 +177,7 @@ Static Public Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Represents a transaction in the queue which may be applied later to the open ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00505">505</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00511">511</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a5a00a6620ad164b279396218c731422b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5a00a6620ad164b279396218c731422b">&#9670;&nbsp;</a></span>MaybeTx()</h2>
@@ -225,7 +225,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Constructor. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00258">258</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00243">243</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -264,7 +264,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Attempt to apply the queued transaction to the open ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00279">279</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8cpp_source.html#l00265">265</a> of file <a class="el" href="TxQ_8cpp_source.html">TxQ.cpp</a>.</p>
 
 </div>
 </div>
@@ -281,9 +281,9 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Used by the <a class="el" href="classripple_1_1TxQ.html#a94f01d1b8e394bacea34cd2bcbd31863">TxQ::FeeHook</a> and <a class="el" href="classripple_1_1TxQ.html#a4cfee027967ca2e830bcd375010b4c6c">TxQ::FeeMultiSet</a> below to put each <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html" title="Represents a transaction in the queue which may be applied later to the open ledger.">MaybeTx</a> object into more than one set without copies, pointers, etc. </p>
+<p>Used by the <a class="el" href="classripple_1_1TxQ.html#a6bb6f93b4d95b63dfc55fae4246b38b8">TxQ::FeeHook</a> and <a class="el" href="classripple_1_1TxQ.html#aa5d1c2c494387c1f59c1d71259724bc6">TxQ::FeeMultiSet</a> below to put each <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html" title="Represents a transaction in the queue which may be applied later to the open ledger.">MaybeTx</a> object into more than one set without copies, pointers, etc. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00511">511</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00517">517</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -301,7 +301,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>The complete transaction. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00514">514</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00520">520</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -319,7 +319,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Potential <a class="el" href="structripple_1_1TxConsequences.html">TxConsequences</a> of applying this transaction to the open ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00518">518</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00524">524</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -337,7 +337,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Computed fee level that the transaction will pay. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00521">521</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00527">527</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -355,7 +355,7 @@ Static Public Attributes</h2></td></tr>
 
 <p><a class="el" href="classripple_1_1Transaction.html">Transaction</a> ID. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00523">523</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00529">529</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -373,7 +373,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Prior transaction ID (<code>sfAccountTxnID</code> field). </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00525">525</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00531">531</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -384,14 +384,14 @@ Static Public Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> ripple::TxQ::MaybeTx::account</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> ripple::TxQ::MaybeTx::account</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>Account submitting the transaction. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00527">527</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00533">533</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -409,7 +409,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Expiration ledger for the transaction (<code>sfLastLedgerSequence</code> field). </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00530">530</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00536">536</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -427,7 +427,7 @@ Static Public Attributes</h2></td></tr>
 
 <p><a class="el" href="classripple_1_1Transaction.html">Transaction</a> sequence number (<code>sfSequence</code> field). </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00532">532</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00538">538</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -446,7 +446,7 @@ Static Public Attributes</h2></td></tr>
 <p>A transaction at the front of the queue will be given several attempts to succeed before being dropped from the queue. </p>
 <p>If dropped, one of the account's penalty flags will be set, and other transactions may have their <code>retriesRemaining</code> forced down as part of the penalty. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00541">541</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00547">547</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -465,7 +465,7 @@ Static Public Attributes</h2></td></tr>
 <p>Flags provided to <code>apply</code>. </p>
 <p>If the transaction is later attempted with different flags, it will need to be <code>preflight</code>ed again. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00545">545</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00551">551</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -484,7 +484,7 @@ Static Public Attributes</h2></td></tr>
 <p>If the transactor attempted to apply the transaction to the open ledger from the queue and <em>failed</em>, then this is the transactor result from the last attempt. </p>
 <p>Should never be a <code>tec</code>, <code>tef</code>, <code>tem</code>, or <code>tesSUCCESS</code>, because those results cause the transaction to be removed from the queue. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00552">552</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00558">558</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -503,7 +503,7 @@ Static Public Attributes</h2></td></tr>
 <p>Cached result of the <code>preflight</code> operation. </p>
 <p>Because <code>preflight</code> is expensive, minimize the number of times it needs to be done. </p><dl class="section invariant"><dt>Invariant</dt><dd><code>pfresult</code> is never allowed to be empty. The <code>boost::optional</code> is leveraged to allow <code>emplace</code>d construction and replacement without a copy assignment operation. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00561">561</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00567">567</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -530,7 +530,7 @@ Static Public Attributes</h2></td></tr>
 <p>Starting retry count for newly queued transactions. </p>
 <p>In <a class="el" href="classripple_1_1TxQ.html#ac83649e59014572a908ab144bef86bb2" title="Fill the new open ledger with transactions from the queue.">TxQ::accept</a>, the required fee level may be low enough that this transaction gets a chance to apply to the ledger, but it may get a retry ter result for another reason (eg. insufficient balance). When that happens, the transaction is left in the queue to try again later, but it shouldn't be allowed to fail indefinitely. The number of failures allowed is essentially arbitrary. It should be large enough to allow temporary failures to clear up, but small enough that the queue doesn't fill up with stale transactions which prevent lower fee level transactions from queuing. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00577">577</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00583">583</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>

@@ -162,7 +162,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aa45d85b6656c6b464b8e6bec3880e40a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adf7cd47a7f64ebc05b53627d8209bbec"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#adf7cd47a7f64ebc05b53627d8209bbec">balance</a> (<a class="el" href="structripple_1_1Resource_1_1Entry.html">Entry</a> &amp;entry)</td></tr>
 <tr class="separator:adf7cd47a7f64ebc05b53627d8209bbec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ada43c39fb474526b30dec07d24ede152"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#ada43c39fb474526b30dec07d24ede152">writeList</a> (<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">clock_type::time_point</a> const now, <a class="el" href="classbeast_1_1PropertyStream_1_1Set.html">beast::PropertyStream::Set</a> &amp;items, <a class="el" href="classripple_1_1Resource_1_1Logic.html#aa9263fa7f636f153170daf25c55dfb7e">EntryIntrusiveList</a> &amp;list)</td></tr>
+<tr class="memitem:ada43c39fb474526b30dec07d24ede152"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#ada43c39fb474526b30dec07d24ede152">writeList</a> (<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">clock_type::time_point</a> const now, <a class="el" href="classbeast_1_1PropertyStream_1_1Set.html">beast::PropertyStream::Set</a> &amp;items, <a class="el" href="classripple_1_1Resource_1_1Logic.html#af50b1295041c993946dbbe459b67c548">EntryIntrusiveList</a> &amp;list)</td></tr>
 <tr class="separator:ada43c39fb474526b30dec07d24ede152"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a57448d384be8acc5d540297f8a65c0ae"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#a57448d384be8acc5d540297f8a65c0ae">onWrite</a> (<a class="el" href="classbeast_1_1PropertyStream_1_1Map.html">beast::PropertyStream::Map</a> &amp;map)</td></tr>
 <tr class="separator:a57448d384be8acc5d540297f8a65c0ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -176,12 +176,12 @@ Static Public Member Functions</h2></td></tr>
 Private Types</h2></td></tr>
 <tr class="memitem:a64406b3986bc06ed21fb339e8bd0147e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1ResourceManager__test_1_1TestLogic.html#a64406b3986bc06ed21fb339e8bd0147e">clock_type</a> = boost::base_from_member&lt; <a class="el" href="namespaceripple.html#a1883f49b218a589ba24a1c875354f63d">TestStopwatch</a> &gt;</td></tr>
 <tr class="separator:a64406b3986bc06ed21fb339e8bd0147e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d56aa883df00119213468f29ce8a86a"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#a0d56aa883df00119213468f29ce8a86a">Imports</a> = <a class="el" href="namespaceripple.html#a264a4ea9f4b2c583f442b89379832e85">hash_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="el" href="structripple_1_1Resource_1_1Import.html">Import</a> &gt;</td></tr>
-<tr class="separator:a0d56aa883df00119213468f29ce8a86a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab59a15cebc67fff6f182f44cc0a2bc04"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#ab59a15cebc67fff6f182f44cc0a2bc04">Table</a> = <a class="el" href="namespaceripple.html#a264a4ea9f4b2c583f442b89379832e85">hash_map</a>&lt; <a class="el" href="structripple_1_1Resource_1_1Key.html">Key</a>, <a class="el" href="structripple_1_1Resource_1_1Entry.html">Entry</a>, <a class="el" href="structripple_1_1Resource_1_1Key_1_1hasher.html">Key::hasher</a>, <a class="el" href="structripple_1_1Resource_1_1Key_1_1key__equal.html">Key::key_equal</a> &gt;</td></tr>
-<tr class="separator:ab59a15cebc67fff6f182f44cc0a2bc04"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa9263fa7f636f153170daf25c55dfb7e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#aa9263fa7f636f153170daf25c55dfb7e">EntryIntrusiveList</a> = <a class="el" href="classbeast_1_1List.html">beast::List</a>&lt; <a class="el" href="structripple_1_1Resource_1_1Entry.html">Entry</a> &gt;</td></tr>
-<tr class="separator:aa9263fa7f636f153170daf25c55dfb7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae86e527f5de9fff53133e58323ff8d5e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#ae86e527f5de9fff53133e58323ff8d5e">Imports</a> = <a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="el" href="structripple_1_1Resource_1_1Import.html">Import</a> &gt;</td></tr>
+<tr class="separator:ae86e527f5de9fff53133e58323ff8d5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1b4cb175432c3fdaa53b83f949366564"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#a1b4cb175432c3fdaa53b83f949366564">Table</a> = <a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt; <a class="el" href="structripple_1_1Resource_1_1Key.html">Key</a>, <a class="el" href="structripple_1_1Resource_1_1Entry.html">Entry</a>, <a class="el" href="structripple_1_1Resource_1_1Key_1_1hasher.html">Key::hasher</a>, <a class="el" href="structripple_1_1Resource_1_1Key_1_1key__equal.html">Key::key_equal</a> &gt;</td></tr>
+<tr class="separator:a1b4cb175432c3fdaa53b83f949366564"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af50b1295041c993946dbbe459b67c548"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#af50b1295041c993946dbbe459b67c548">EntryIntrusiveList</a> = <a class="el" href="classbeast_1_1List.html">beast::List</a>&lt; <a class="el" href="structripple_1_1Resource_1_1Entry.html">Entry</a> &gt;</td></tr>
+<tr class="separator:af50b1295041c993946dbbe459b67c548"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -193,22 +193,22 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a3dfa9976922bab7139cf0754e3e38b6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac357c9604f37854071b5d5b4a29fda4b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#ac357c9604f37854071b5d5b4a29fda4b">lock_</a></td></tr>
 <tr class="separator:ac357c9604f37854071b5d5b4a29fda4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a68423e9ac9b9f1da163972ecda648c11"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Resource_1_1Logic.html#ab59a15cebc67fff6f182f44cc0a2bc04">Table</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#a68423e9ac9b9f1da163972ecda648c11">table_</a></td></tr>
+<tr class="memitem:a68423e9ac9b9f1da163972ecda648c11"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Resource_1_1Logic.html#a1b4cb175432c3fdaa53b83f949366564">Table</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#a68423e9ac9b9f1da163972ecda648c11">table_</a></td></tr>
 <tr class="separator:a68423e9ac9b9f1da163972ecda648c11"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae162b43551e2e59881901e90dbb3f582"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Resource_1_1Logic.html#aa9263fa7f636f153170daf25c55dfb7e">EntryIntrusiveList</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#ae162b43551e2e59881901e90dbb3f582">inbound_</a></td></tr>
+<tr class="memitem:ae162b43551e2e59881901e90dbb3f582"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Resource_1_1Logic.html#af50b1295041c993946dbbe459b67c548">EntryIntrusiveList</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#ae162b43551e2e59881901e90dbb3f582">inbound_</a></td></tr>
 <tr class="separator:ae162b43551e2e59881901e90dbb3f582"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a776a48f79dcfe151e31934514e91220d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Resource_1_1Logic.html#aa9263fa7f636f153170daf25c55dfb7e">EntryIntrusiveList</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#a776a48f79dcfe151e31934514e91220d">outbound_</a></td></tr>
+<tr class="memitem:a776a48f79dcfe151e31934514e91220d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Resource_1_1Logic.html#af50b1295041c993946dbbe459b67c548">EntryIntrusiveList</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#a776a48f79dcfe151e31934514e91220d">outbound_</a></td></tr>
 <tr class="separator:a776a48f79dcfe151e31934514e91220d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2e3685454f12794c714b9133a083d802"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Resource_1_1Logic.html#aa9263fa7f636f153170daf25c55dfb7e">EntryIntrusiveList</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#a2e3685454f12794c714b9133a083d802">admin_</a></td></tr>
+<tr class="memitem:a2e3685454f12794c714b9133a083d802"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Resource_1_1Logic.html#af50b1295041c993946dbbe459b67c548">EntryIntrusiveList</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#a2e3685454f12794c714b9133a083d802">admin_</a></td></tr>
 <tr class="separator:a2e3685454f12794c714b9133a083d802"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a309a338bf70f11d9c39fec8914343331"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Resource_1_1Logic.html#aa9263fa7f636f153170daf25c55dfb7e">EntryIntrusiveList</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#a309a338bf70f11d9c39fec8914343331">inactive_</a></td></tr>
+<tr class="memitem:a309a338bf70f11d9c39fec8914343331"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Resource_1_1Logic.html#af50b1295041c993946dbbe459b67c548">EntryIntrusiveList</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#a309a338bf70f11d9c39fec8914343331">inactive_</a></td></tr>
 <tr class="separator:a309a338bf70f11d9c39fec8914343331"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a76b9067846717bd527db0cfd6b811edb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Resource_1_1Logic.html#a0d56aa883df00119213468f29ce8a86a">Imports</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#a76b9067846717bd527db0cfd6b811edb">importTable_</a></td></tr>
+<tr class="memitem:a76b9067846717bd527db0cfd6b811edb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Resource_1_1Logic.html#ae86e527f5de9fff53133e58323ff8d5e">Imports</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Logic.html#a76b9067846717bd527db0cfd6b811edb">importTable_</a></td></tr>
 <tr class="separator:a76b9067846717bd527db0cfd6b811edb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="Logic__test_8cpp_source.html#l00038">38</a> of file <a class="el" href="Logic__test_8cpp_source.html">Logic_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Logic__test_8cpp_source.html#l00037">37</a> of file <a class="el" href="Logic__test_8cpp_source.html">Logic_test.cpp</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a64406b3986bc06ed21fb339e8bd0147e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a64406b3986bc06ed21fb339e8bd0147e">&#9670;&nbsp;</a></span>clock_type</h2>
@@ -230,12 +230,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Logic__test_8cpp_source.html#l00045">45</a> of file <a class="el" href="Logic__test_8cpp_source.html">Logic_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Logic__test_8cpp_source.html#l00042">42</a> of file <a class="el" href="Logic__test_8cpp_source.html">Logic_test.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a0d56aa883df00119213468f29ce8a86a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0d56aa883df00119213468f29ce8a86a">&#9670;&nbsp;</a></span>Imports</h2>
+<a id="ae86e527f5de9fff53133e58323ff8d5e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae86e527f5de9fff53133e58323ff8d5e">&#9670;&nbsp;</a></span>Imports</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -244,7 +244,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1Resource_1_1Logic.html#a0d56aa883df00119213468f29ce8a86a">ripple::Resource::Logic::Imports</a> =  <a class="el" href="namespaceripple.html#a264a4ea9f4b2c583f442b89379832e85">hash_map</a> &lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="el" href="structripple_1_1Resource_1_1Import.html">Import</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1Resource_1_1Logic.html#ae86e527f5de9fff53133e58323ff8d5e">ripple::Resource::Logic::Imports</a> =  <a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="el" href="structripple_1_1Resource_1_1Import.html">Import</a>&gt;</td>
         </tr>
       </table>
   </td>
@@ -258,8 +258,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="ab59a15cebc67fff6f182f44cc0a2bc04"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab59a15cebc67fff6f182f44cc0a2bc04">&#9670;&nbsp;</a></span>Table</h2>
+<a id="a1b4cb175432c3fdaa53b83f949366564"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1b4cb175432c3fdaa53b83f949366564">&#9670;&nbsp;</a></span>Table</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -268,7 +268,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1Resource_1_1Logic.html#ab59a15cebc67fff6f182f44cc0a2bc04">ripple::Resource::Logic::Table</a> =  <a class="el" href="namespaceripple.html#a264a4ea9f4b2c583f442b89379832e85">hash_map</a> &lt;<a class="el" href="structripple_1_1Resource_1_1Key.html">Key</a>, <a class="el" href="structripple_1_1Resource_1_1Entry.html">Entry</a>, <a class="el" href="structripple_1_1Resource_1_1Key_1_1hasher.html">Key::hasher</a>, <a class="el" href="structripple_1_1Resource_1_1Key_1_1key__equal.html">Key::key_equal</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1Resource_1_1Logic.html#a1b4cb175432c3fdaa53b83f949366564">ripple::Resource::Logic::Table</a> =  <a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt;<a class="el" href="structripple_1_1Resource_1_1Key.html">Key</a>, <a class="el" href="structripple_1_1Resource_1_1Entry.html">Entry</a>, <a class="el" href="structripple_1_1Resource_1_1Key_1_1hasher.html">Key::hasher</a>, <a class="el" href="structripple_1_1Resource_1_1Key_1_1key__equal.html">Key::key_equal</a>&gt;</td>
         </tr>
       </table>
   </td>
@@ -282,8 +282,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="aa9263fa7f636f153170daf25c55dfb7e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa9263fa7f636f153170daf25c55dfb7e">&#9670;&nbsp;</a></span>EntryIntrusiveList</h2>
+<a id="af50b1295041c993946dbbe459b67c548"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af50b1295041c993946dbbe459b67c548">&#9670;&nbsp;</a></span>EntryIntrusiveList</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -292,7 +292,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1Resource_1_1Logic.html#aa9263fa7f636f153170daf25c55dfb7e">ripple::Resource::Logic::EntryIntrusiveList</a> =  <a class="el" href="classbeast_1_1List.html">beast::List</a> &lt;<a class="el" href="structripple_1_1Resource_1_1Entry.html">Entry</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1Resource_1_1Logic.html#af50b1295041c993946dbbe459b67c548">ripple::Resource::Logic::EntryIntrusiveList</a> =  <a class="el" href="classbeast_1_1List.html">beast::List</a>&lt;<a class="el" href="structripple_1_1Resource_1_1Entry.html">Entry</a>&gt;</td>
         </tr>
       </table>
   </td>
@@ -331,7 +331,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Logic__test_8cpp_source.html#l00048">48</a> of file <a class="el" href="Logic__test_8cpp_source.html">Logic_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Logic__test_8cpp_source.html#l00045">45</a> of file <a class="el" href="Logic__test_8cpp_source.html">Logic_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -351,7 +351,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Logic__test_8cpp_source.html#l00053">53</a> of file <a class="el" href="Logic__test_8cpp_source.html">Logic_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Logic__test_8cpp_source.html#l00051">51</a> of file <a class="el" href="Logic__test_8cpp_source.html">Logic_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -370,7 +370,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Logic__test_8cpp_source.html#l00058">58</a> of file <a class="el" href="Logic__test_8cpp_source.html">Logic_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Logic__test_8cpp_source.html#l00057">57</a> of file <a class="el" href="Logic__test_8cpp_source.html">Logic_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -426,7 +426,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00141">141</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00140">140</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
 
 </div>
 </div>
@@ -457,7 +457,7 @@ Private Attributes</h2></td></tr>
 <p>Create endpoint that should not have resource limits applied. </p>
 <p>Other restrictions, such as permission to perform certain <a class="el" href="namespaceripple_1_1RPC.html">RPC</a> calls, may be enabled. </p>
 
-<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00175">175</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00173">173</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
 
 </div>
 </div>
@@ -484,7 +484,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00204">204</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00201">201</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
 
 </div>
 </div>
@@ -514,7 +514,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00210">210</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00208">208</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
 
 </div>
 </div>
@@ -541,7 +541,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00257">257</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00256">256</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
 
 </div>
 </div>
@@ -606,7 +606,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00340">340</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00342">342</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
 
 </div>
 </div>
@@ -634,7 +634,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00384">384</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00388">388</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
 
 </div>
 </div>
@@ -662,7 +662,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00395">395</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00400">400</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
 
 </div>
 </div>
@@ -690,7 +690,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00405">405</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00410">410</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
 
 </div>
 </div>
@@ -718,7 +718,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00411">411</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00417">417</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
 
 </div>
 </div>
@@ -756,7 +756,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00442">442</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00445">445</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
 
 </div>
 </div>
@@ -784,7 +784,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00452">452</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00455">455</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
 
 </div>
 </div>
@@ -812,7 +812,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00475">475</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00479">479</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
 
 </div>
 </div>
@@ -840,7 +840,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00501">501</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00505">505</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
 
 </div>
 </div>
@@ -868,7 +868,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Resource_1_1Logic.html#aa9263fa7f636f153170daf25c55dfb7e">EntryIntrusiveList</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Resource_1_1Logic.html#af50b1295041c993946dbbe459b67c548">EntryIntrusiveList</a> &amp;&#160;</td>
           <td class="paramname"><em>list</em>&#160;</td>
         </tr>
         <tr>
@@ -884,7 +884,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00509">509</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00514">514</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
 
 </div>
 </div>
@@ -912,7 +912,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00526">526</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="resource_2impl_2Logic_8h_source.html#l00532">532</a> of file <a class="el" href="resource_2impl_2Logic_8h_source.html">resource/impl/Logic.h</a>.</p>
 
 </div>
 </div>
@@ -1023,7 +1023,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Resource_1_1Logic.html#ab59a15cebc67fff6f182f44cc0a2bc04">Table</a> ripple::Resource::Logic::table_</td>
+          <td class="memname"><a class="el" href="classripple_1_1Resource_1_1Logic.html#a1b4cb175432c3fdaa53b83f949366564">Table</a> ripple::Resource::Logic::table_</td>
         </tr>
       </table>
   </td>
@@ -1047,7 +1047,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Resource_1_1Logic.html#aa9263fa7f636f153170daf25c55dfb7e">EntryIntrusiveList</a> ripple::Resource::Logic::inbound_</td>
+          <td class="memname"><a class="el" href="classripple_1_1Resource_1_1Logic.html#af50b1295041c993946dbbe459b67c548">EntryIntrusiveList</a> ripple::Resource::Logic::inbound_</td>
         </tr>
       </table>
   </td>
@@ -1071,7 +1071,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Resource_1_1Logic.html#aa9263fa7f636f153170daf25c55dfb7e">EntryIntrusiveList</a> ripple::Resource::Logic::outbound_</td>
+          <td class="memname"><a class="el" href="classripple_1_1Resource_1_1Logic.html#af50b1295041c993946dbbe459b67c548">EntryIntrusiveList</a> ripple::Resource::Logic::outbound_</td>
         </tr>
       </table>
   </td>
@@ -1095,7 +1095,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Resource_1_1Logic.html#aa9263fa7f636f153170daf25c55dfb7e">EntryIntrusiveList</a> ripple::Resource::Logic::admin_</td>
+          <td class="memname"><a class="el" href="classripple_1_1Resource_1_1Logic.html#af50b1295041c993946dbbe459b67c548">EntryIntrusiveList</a> ripple::Resource::Logic::admin_</td>
         </tr>
       </table>
   </td>
@@ -1119,7 +1119,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Resource_1_1Logic.html#aa9263fa7f636f153170daf25c55dfb7e">EntryIntrusiveList</a> ripple::Resource::Logic::inactive_</td>
+          <td class="memname"><a class="el" href="classripple_1_1Resource_1_1Logic.html#af50b1295041c993946dbbe459b67c548">EntryIntrusiveList</a> ripple::Resource::Logic::inactive_</td>
         </tr>
       </table>
   </td>
@@ -1143,7 +1143,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Resource_1_1Logic.html#a0d56aa883df00119213468f29ce8a86a">Imports</a> ripple::Resource::Logic::importTable_</td>
+          <td class="memname"><a class="el" href="classripple_1_1Resource_1_1Logic.html#ae86e527f5de9fff53133e58323ff8d5e">Imports</a> ripple::Resource::Logic::importTable_</td>
         </tr>
       </table>
   </td>

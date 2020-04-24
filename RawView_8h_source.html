@@ -92,8 +92,8 @@ $(function() {
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_LEDGER_RAWVIEW_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/ledger/ReadView.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/Serializer.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STLedgerEntry.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STLedgerEntry.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/Serializer.h&gt;</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;boost/optional.hpp&gt;</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a>&gt;</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a>&gt;</span></div>
@@ -107,41 +107,37 @@ $(function() {
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classripple_1_1RawView.html#a9bdaa1e7d96c41fd07d44a3ccc6e8c0e">~RawView</a>() = <span class="keywordflow">default</span>;</div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <a class="code" href="classripple_1_1RawView.html#abbdbbc9799c838cdd2af9554558e01c9">RawView</a>() = <span class="keywordflow">default</span>;</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <a class="code" href="classripple_1_1RawView.html#abbdbbc9799c838cdd2af9554558e01c9">RawView</a>(<a class="code" href="classripple_1_1RawView.html">RawView</a> <span class="keyword">const</span>&amp;) = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <a class="code" href="classripple_1_1RawView.html">RawView</a>&amp; <a class="code" href="classripple_1_1RawView.html#a3091a671f8a4444822c0677420d2fe81">operator=</a>(<a class="code" href="classripple_1_1RawView.html">RawView</a> <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <a class="code" href="classripple_1_1RawView.html#ae90031cd2242cf34aeb93fbdbf92cfb8">rawErase</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE&gt;</a> <span class="keyword">const</span>&amp; sle) = 0;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <a class="code" href="classripple_1_1RawView.html">RawView</a>&amp;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <a class="code" href="classripple_1_1RawView.html#a3091a671f8a4444822c0677420d2fe81">operator=</a>(<a class="code" href="classripple_1_1RawView.html">RawView</a> <span class="keyword">const</span>&amp;) = <span class="keyword">delete</span>;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <a class="code" href="classripple_1_1RawView.html#ae90031cd2242cf34aeb93fbdbf92cfb8">rawErase</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE&gt;</a> <span class="keyword">const</span>&amp; sle) = 0;</div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <a class="code" href="classripple_1_1RawView.html#a144f9ecbd046e28918d273728ad91eb0">rawInsert</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE&gt;</a> <span class="keyword">const</span>&amp; sle) = 0;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <a class="code" href="classripple_1_1RawView.html#ad27fcee888dd020ca39a2327d1a5f19c">rawReplace</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE&gt;</a> <span class="keyword">const</span>&amp; sle) = 0;</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <a class="code" href="classripple_1_1RawView.html#accebb9124b44b63080c236f01e070a1e">rawDestroyXRP</a> (<a class="code" href="classripple_1_1XRPAmount.html">XRPAmount</a> <span class="keyword">const</span>&amp; fee) = 0;</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;};</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
-<div class="line"><a name="l00101"></a><span class="lineno"><a class="line" href="classripple_1_1TxsRawView.html">  101</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1TxsRawView.html">TxsRawView</a> : <span class="keyword">public</span> <a class="code" href="classripple_1_1RawView.html">RawView</a></div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;{</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <a class="code" href="classripple_1_1TxsRawView.html#af0a1537fc962314ebc611a569e366368">rawTxInsert</a> (<a class="code" href="classripple_1_1base__uint.html">ReadView::key_type</a> <span class="keyword">const</span>&amp; key,</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Serializer const&gt;</a></div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            <span class="keyword">const</span>&amp; txn, <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;                <a class="code" href="classripple_1_1Serializer.html">Serializer</a> <span class="keyword">const</span>&gt; <span class="keyword">const</span>&amp; metaData) = 0;</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;};</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160; </div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;} <span class="comment">// ripple</span></div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <a class="code" href="classripple_1_1RawView.html#a144f9ecbd046e28918d273728ad91eb0">rawInsert</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE&gt;</a> <span class="keyword">const</span>&amp; sle) = 0;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <a class="code" href="classripple_1_1RawView.html#ad27fcee888dd020ca39a2327d1a5f19c">rawReplace</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE&gt;</a> <span class="keyword">const</span>&amp; sle) = 0;</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <a class="code" href="classripple_1_1RawView.html#accebb9124b44b63080c236f01e070a1e">rawDestroyXRP</a>(<a class="code" href="classripple_1_1XRPAmount.html">XRPAmount</a> <span class="keyword">const</span>&amp; fee) = 0;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;};</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
+<div class="line"><a name="l00098"></a><span class="lineno"><a class="line" href="classripple_1_1TxsRawView.html">   98</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1TxsRawView.html">TxsRawView</a> : <span class="keyword">public</span> <a class="code" href="classripple_1_1RawView.html">RawView</a></div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;{</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <a class="code" href="classripple_1_1TxsRawView.html#af0a1537fc962314ebc611a569e366368">rawTxInsert</a>(</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        <a class="code" href="classripple_1_1base__uint.html">ReadView::key_type</a> <span class="keyword">const</span>&amp; key,</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Serializer const&gt;</a> <span class="keyword">const</span>&amp; txn,</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Serializer const&gt;</a> <span class="keyword">const</span>&amp; metaData) = 0;</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;};</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160; </div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160; </div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1RawView_html_abbdbbc9799c838cdd2af9554558e01c9"><div class="ttname"><a href="classripple_1_1RawView.html#abbdbbc9799c838cdd2af9554558e01c9">ripple::RawView::RawView</a></div><div class="ttdeci">RawView()=default</div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
@@ -156,9 +152,8 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1RawView_html_a144f9ecbd046e28918d273728ad91eb0"><div class="ttname"><a href="classripple_1_1RawView.html#a144f9ecbd046e28918d273728ad91eb0">ripple::RawView::rawInsert</a></div><div class="ttdeci">virtual void rawInsert(std::shared_ptr&lt; SLE &gt; const &amp;sle)=0</div><div class="ttdoc">Unconditionally insert a state item.</div></div>
 <div class="ttc" id="acstdint_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a></div></div>
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
-<div class="ttc" id="aclassripple_1_1Serializer_html"><div class="ttname"><a href="classripple_1_1Serializer.html">ripple::Serializer</a></div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8h_source.html#l00043">Serializer.h:43</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1TxsRawView_html"><div class="ttname"><a href="classripple_1_1TxsRawView.html">ripple::TxsRawView</a></div><div class="ttdoc">Interface for changing ledger entries with transactions.</div><div class="ttdef"><b>Definition:</b> <a href="RawView_8h_source.html#l00101">RawView.h:101</a></div></div>
+<div class="ttc" id="aclassripple_1_1TxsRawView_html"><div class="ttname"><a href="classripple_1_1TxsRawView.html">ripple::TxsRawView</a></div><div class="ttdoc">Interface for changing ledger entries with transactions.</div><div class="ttdef"><b>Definition:</b> <a href="RawView_8h_source.html#l00098">RawView.h:98</a></div></div>
 <div class="ttc" id="aclassripple_1_1RawView_html_a3091a671f8a4444822c0677420d2fe81"><div class="ttname"><a href="classripple_1_1RawView.html#a3091a671f8a4444822c0677420d2fe81">ripple::RawView::operator=</a></div><div class="ttdeci">RawView &amp; operator=(RawView const &amp;)=delete</div></div>
 <div class="ttc" id="aclassripple_1_1XRPAmount_html"><div class="ttname"><a href="classripple_1_1XRPAmount.html">ripple::XRPAmount</a></div><div class="ttdef"><b>Definition:</b> <a href="XRPAmount_8h_source.html#l00046">XRPAmount.h:46</a></div></div>
 <!-- start footer part -->

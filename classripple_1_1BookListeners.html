@@ -106,7 +106,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a53dad68c41be892909cfa1d182b54c39"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BookListeners.html#a53dad68c41be892909cfa1d182b54c39">removeSubscriber</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> sub)</td></tr>
 <tr class="memdesc:a53dad68c41be892909cfa1d182b54c39"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stop publishing to a subscriber.  <a href="classripple_1_1BookListeners.html#a53dad68c41be892909cfa1d182b54c39">More...</a><br /></td></tr>
 <tr class="separator:a53dad68c41be892909cfa1d182b54c39"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab76eb6a5597ec490e37f5c4a271a8d03"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BookListeners.html#ab76eb6a5597ec490e37f5c4a271a8d03">publish</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvObj, <a class="el" href="namespaceripple.html#af6706a6ca37a4295262cd18f8cb619e2">hash_set</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> &gt; &amp;havePublished)</td></tr>
+<tr class="memitem:ab76eb6a5597ec490e37f5c4a271a8d03"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BookListeners.html#ab76eb6a5597ec490e37f5c4a271a8d03">publish</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvObj, <a class="el" href="namespaceripple.html#a7750eec5e079354285f1d60cfd0247ca">hash_set</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> &gt; &amp;havePublished)</td></tr>
 <tr class="memdesc:ab76eb6a5597ec490e37f5c4a271a8d03"><td class="mdescLeft">&#160;</td><td class="mdescRight">Publish a transaction to subscribers.  <a href="classripple_1_1BookListeners.html#ab76eb6a5597ec490e37f5c4a271a8d03">More...</a><br /></td></tr>
 <tr class="separator:ab76eb6a5597ec490e37f5c4a271a8d03"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -114,7 +114,7 @@ Public Member Functions</h2></td></tr>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a18dd8b67ac39506dcf7a980a4b0e250e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BookListeners.html#a18dd8b67ac39506dcf7a980a4b0e250e">mLock</a></td></tr>
 <tr class="separator:a18dd8b67ac39506dcf7a980a4b0e250e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a27f5d2654d8ab4b0ed518c81809b6ebc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a264a4ea9f4b2c583f442b89379832e85">hash_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>, <a class="el" href="classripple_1_1InfoSub.html#aaf94a98105c180340881bf6eef915670">InfoSub::wptr</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BookListeners.html#a27f5d2654d8ab4b0ed518c81809b6ebc">mListeners</a></td></tr>
+<tr class="memitem:a27f5d2654d8ab4b0ed518c81809b6ebc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>, <a class="el" href="classripple_1_1InfoSub.html#aaf94a98105c180340881bf6eef915670">InfoSub::wptr</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1BookListeners.html#a27f5d2654d8ab4b0ed518c81809b6ebc">mListeners</a></td></tr>
 <tr class="separator:a27f5d2654d8ab4b0ed518c81809b6ebc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -218,7 +218,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#af6706a6ca37a4295262cd18f8cb619e2">hash_set</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a7750eec5e079354285f1d60cfd0247ca">hash_set</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>havePublished</em>&#160;</td>
         </tr>
         <tr>
@@ -278,7 +278,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#a264a4ea9f4b2c583f442b89379832e85">hash_map</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>, <a class="el" href="classripple_1_1InfoSub.html#aaf94a98105c180340881bf6eef915670">InfoSub::wptr</a>&gt; ripple::BookListeners::mListeners</td>
+          <td class="memname"><a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>, <a class="el" href="classripple_1_1InfoSub.html#aaf94a98105c180340881bf6eef915670">InfoSub::wptr</a>&gt; ripple::BookListeners::mListeners</td>
         </tr>
       </table>
   </td>

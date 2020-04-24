@@ -88,128 +88,132 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/contract.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/Slice.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/StringUtilities.h&gt;</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/ToString.h&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/Slice.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/StringUtilities.h&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/ToString.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/contract.h&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/core/LexicalCast.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;boost/algorithm/string.hpp&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/net/IPEndpoint.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/net/IPEndpoint.h&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;boost/algorithm/string.hpp&gt;</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;boost/regex.hpp&gt;</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a>&gt;</span></div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstdarg.html">cstdarg</a>&gt;</span></div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
-<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="namespaceripple.html#aee64a868709aa69fb5080c0fdc5aecba">   33</a></span>&#160;uint64_t <a class="code" href="namespaceripple.html#aee64a868709aa69fb5080c0fdc5aecba">uintFromHex</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; strSrc)</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;{</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    uint64_t uValue (0);</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keywordflow">if</span> (strSrc.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/size.html">size</a> () &gt; 16)</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        Throw&lt;std::invalid_argument&gt; (<span class="stringliteral">&quot;overlong 64-bit value&quot;</span>);</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> c : strSrc)</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    {</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keywordtype">int</span> ret = <a class="code" href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">charUnHex</a> (c);</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="keywordflow">if</span> (ret == -1)</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            Throw&lt;std::invalid_argument&gt; (<span class="stringliteral">&quot;invalid hex digit&quot;</span>);</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        uValue = (uValue &lt;&lt; 4) | ret;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    }</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keywordflow">return</span> uValue;</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;}</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
-<div class="line"><a name="l00053"></a><span class="lineno"><a class="line" href="namespaceripple.html#a723f8529b7c277a851246d7ffc379b05">   53</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespaceripple.html#a723f8529b7c277a851246d7ffc379b05">parseUrl</a> (<a class="code" href="structripple_1_1parsedURL.html">parsedURL</a>&amp; pUrl, <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; strUrl)</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;{</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="comment">// scheme://username:password@hostname:port/rest</span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keyword">static</span> boost::regex reUrl (</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        <span class="stringliteral">&quot;(?i)\\`\\s*&quot;</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        <span class="comment">// required scheme</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <span class="stringliteral">&quot;([[:alpha:]][-+.[:alpha:][:digit:]]*?):&quot;</span></div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="comment">// We choose to support only URIs whose `hier-part` has the form</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="comment">// `&quot;//&quot; authority path-abempty`.</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="stringliteral">&quot;//&quot;</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="comment">// optional userinfo</span></div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="stringliteral">&quot;(?:([^:@/]*?)(?::([^@/]*?))?@)?&quot;</span></div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="comment">// optional host</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <span class="stringliteral">&quot;([[:digit:]:]*[[:digit:]]|\\[[^]]+\\]|[^:/?#]*?)&quot;</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="comment">// optional port</span></div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="stringliteral">&quot;(?::([[:digit:]]+))?&quot;</span></div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="comment">// optional path</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="stringliteral">&quot;(/.*)?&quot;</span></div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="stringliteral">&quot;\\s*?\\&#39;&quot;</span>);</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    boost::smatch smMatch;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="comment">// Bail if there is no match.</span></div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keywordflow">try</span> {</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <span class="keywordflow">if</span> (! boost::regex_match (strUrl, smMatch, reUrl))</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    } <span class="keywordflow">catch</span> (...) {</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    }</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    pUrl.<a class="code" href="structripple_1_1parsedURL.html#abf3d08230b4c8b90ce9c6091c99552ff">scheme</a> = smMatch[1];</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    boost::algorithm::to_lower (pUrl.<a class="code" href="structripple_1_1parsedURL.html#abf3d08230b4c8b90ce9c6091c99552ff">scheme</a>);</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    pUrl.<a class="code" href="structripple_1_1parsedURL.html#a7ccdd1caf7cd6f551428632f25384115">username</a> = smMatch[2];</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    pUrl.<a class="code" href="structripple_1_1parsedURL.html#ab44f229d9601fa6585b780dc2f46fc73">password</a> = smMatch[3];</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="keyword">const</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> domain = smMatch[4];</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="comment">// We need to use Endpoint to parse the domain to</span></div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="comment">// strip surrounding brackets from IPv6 addresses,</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="comment">// e.g. [::1] =&gt; ::1.</span></div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> result = <a class="code" href="classbeast_1_1IP_1_1Endpoint.html#aac388eeb417add061487b8166490a338">beast::IP::Endpoint::from_string_checked</a> (domain);</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    pUrl.<a class="code" href="structripple_1_1parsedURL.html#a6d796e85c96cc5060586ce806b288bcb">domain</a> = result</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        ? result-&gt;address().to_string()</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        : domain;</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="keyword">const</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> port = smMatch[5];</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keywordflow">if</span> (!port.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    {</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        pUrl.<a class="code" href="structripple_1_1parsedURL.html#a661220a562cd86c4f251cb6b2bb097ad">port</a> = beast::lexicalCast &lt;std::uint16_t&gt; (port);</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    }</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    pUrl.<a class="code" href="structripple_1_1parsedURL.html#a4d823c3fa1765f734b684dddc8128b8f">path</a> = smMatch[6];</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;}</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;uint64_t</div>
+<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="namespaceripple.html#aee64a868709aa69fb5080c0fdc5aecba">   34</a></span>&#160;<a class="code" href="namespaceripple.html#aee64a868709aa69fb5080c0fdc5aecba">uintFromHex</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; strSrc)</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;{</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    uint64_t uValue(0);</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keywordflow">if</span> (strSrc.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/size.html">size</a>() &gt; 16)</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        Throw&lt;std::invalid_argument&gt;(<span class="stringliteral">&quot;overlong 64-bit value&quot;</span>);</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> c : strSrc)</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    {</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keywordtype">int</span> ret = <a class="code" href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">charUnHex</a>(c);</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <span class="keywordflow">if</span> (ret == -1)</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;            Throw&lt;std::invalid_argument&gt;(<span class="stringliteral">&quot;invalid hex digit&quot;</span>);</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        uValue = (uValue &lt;&lt; 4) | ret;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    }</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordflow">return</span> uValue;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;}</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00055"></a><span class="lineno"><a class="line" href="namespaceripple.html#a723f8529b7c277a851246d7ffc379b05">   55</a></span>&#160;<a class="code" href="namespaceripple.html#a723f8529b7c277a851246d7ffc379b05">parseUrl</a>(<a class="code" href="structripple_1_1parsedURL.html">parsedURL</a>&amp; pUrl, <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; strUrl)</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;{</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="comment">// scheme://username:password@hostname:port/rest</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">static</span> boost::regex reUrl(</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <span class="stringliteral">&quot;(?i)\\`\\s*&quot;</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="comment">// required scheme</span></div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="stringliteral">&quot;([[:alpha:]][-+.[:alpha:][:digit:]]*?):&quot;</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="comment">// We choose to support only URIs whose `hier-part` has the form</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="comment">// `&quot;//&quot; authority path-abempty`.</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="stringliteral">&quot;//&quot;</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="comment">// optional userinfo</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <span class="stringliteral">&quot;(?:([^:@/]*?)(?::([^@/]*?))?@)?&quot;</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="comment">// optional host</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="stringliteral">&quot;([[:digit:]:]*[[:digit:]]|\\[[^]]+\\]|[^:/?#]*?)&quot;</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="comment">// optional port</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="stringliteral">&quot;(?::([[:digit:]]+))?&quot;</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="comment">// optional path</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <span class="stringliteral">&quot;(/.*)?&quot;</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        <span class="stringliteral">&quot;\\s*?\\&#39;&quot;</span>);</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    boost::smatch smMatch;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="comment">// Bail if there is no match.</span></div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    {</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="keywordflow">if</span> (!boost::regex_match(strUrl, smMatch, reUrl))</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    }</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keywordflow">catch</span> (...)</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    {</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    }</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    pUrl.<a class="code" href="structripple_1_1parsedURL.html#abf3d08230b4c8b90ce9c6091c99552ff">scheme</a> = smMatch[1];</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    boost::algorithm::to_lower(pUrl.<a class="code" href="structripple_1_1parsedURL.html#abf3d08230b4c8b90ce9c6091c99552ff">scheme</a>);</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    pUrl.<a class="code" href="structripple_1_1parsedURL.html#a7ccdd1caf7cd6f551428632f25384115">username</a> = smMatch[2];</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    pUrl.<a class="code" href="structripple_1_1parsedURL.html#ab44f229d9601fa6585b780dc2f46fc73">password</a> = smMatch[3];</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keyword">const</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> domain = smMatch[4];</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="comment">// We need to use Endpoint to parse the domain to</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <span class="comment">// strip surrounding brackets from IPv6 addresses,</span></div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="comment">// e.g. [::1] =&gt; ::1.</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> result = <a class="code" href="classbeast_1_1IP_1_1Endpoint.html#aac388eeb417add061487b8166490a338">beast::IP::Endpoint::from_string_checked</a>(domain);</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    pUrl.<a class="code" href="structripple_1_1parsedURL.html#a6d796e85c96cc5060586ce806b288bcb">domain</a> = result ? result-&gt;address().to_string() : domain;</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keyword">const</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> port = smMatch[5];</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <span class="keywordflow">if</span> (!port.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    {</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        pUrl.<a class="code" href="structripple_1_1parsedURL.html#a661220a562cd86c4f251cb6b2bb097ad">port</a> = beast::lexicalCast&lt;std::uint16_t&gt;(port);</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    }</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    pUrl.<a class="code" href="structripple_1_1parsedURL.html#a4d823c3fa1765f734b684dddc8128b8f">path</a> = smMatch[6];</div>
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <a class="code" href="namespaceripple.html#a4a0f163a7e357063a6b2993348d60c3c">trim_whitespace</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> str)</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;{</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    boost::trim (str);</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="keywordflow">return</span> str;</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;}</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;boost::optional&lt;std::uint64_t&gt;</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;<a class="code" href="namespaceripple.html#a123dbbb0bb7c71fa138ace0ab37842cd">to_uint64</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; s)</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;{</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> result;</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespacebeast.html#aeb241ed2f4422ea57283956ca58c5d42">beast::lexicalCastChecked</a> (result, s))</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <span class="keywordflow">return</span> boost::none;</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;}</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;}</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<a class="code" href="namespaceripple.html#a4a0f163a7e357063a6b2993348d60c3c">trim_whitespace</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> str)</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;{</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    boost::trim(str);</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <span class="keywordflow">return</span> str;</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;}</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160; </div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;boost::optional&lt;std::uint64_t&gt;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;<a class="code" href="namespaceripple.html#a123dbbb0bb7c71fa138ace0ab37842cd">to_uint64</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; s)</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;{</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> result;</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespacebeast.html#aeb241ed2f4422ea57283956ca58c5d42">beast::lexicalCastChecked</a>(result, s))</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <span class="keywordflow">return</span> boost::none;</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;}</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160; </div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="acstdarg_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstdarg.html">cstdarg</a></div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_html_ac6bd4d1a123ab730216bc521e094720f"><div class="ttname"><a href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">ripple::charUnHex</a></div><div class="ttdeci">int charUnHex(unsigned char c)</div><div class="ttdoc">Converts a hex digit to the corresponding integer.</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8cpp_source.html#l00026">strHex.cpp:26</a></div></div>
-<div class="ttc" id="astructripple_1_1parsedURL_html"><div class="ttname"><a href="structripple_1_1parsedURL.html">ripple::parsedURL</a></div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8h_source.html#l00122">StringUtilities.h:122</a></div></div>
-<div class="ttc" id="astructripple_1_1parsedURL_html_ab44f229d9601fa6585b780dc2f46fc73"><div class="ttname"><a href="structripple_1_1parsedURL.html#ab44f229d9601fa6585b780dc2f46fc73">ripple::parsedURL::password</a></div><div class="ttdeci">std::string password</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8h_source.html#l00128">StringUtilities.h:128</a></div></div>
-<div class="ttc" id="anamespaceripple_html_aee64a868709aa69fb5080c0fdc5aecba"><div class="ttname"><a href="namespaceripple.html#aee64a868709aa69fb5080c0fdc5aecba">ripple::uintFromHex</a></div><div class="ttdeci">uint64_t uintFromHex(std::string const &amp;strSrc)</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8cpp_source.html#l00033">StringUtilities.cpp:33</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ac6bd4d1a123ab730216bc521e094720f"><div class="ttname"><a href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">ripple::charUnHex</a></div><div class="ttdeci">int charUnHex(unsigned char c)</div><div class="ttdoc">Converts a hex digit to the corresponding integer.</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8cpp_source.html#l00027">strHex.cpp:27</a></div></div>
+<div class="ttc" id="astructripple_1_1parsedURL_html"><div class="ttname"><a href="structripple_1_1parsedURL.html">ripple::parsedURL</a></div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8h_source.html#l00123">StringUtilities.h:123</a></div></div>
+<div class="ttc" id="astructripple_1_1parsedURL_html_ab44f229d9601fa6585b780dc2f46fc73"><div class="ttname"><a href="structripple_1_1parsedURL.html#ab44f229d9601fa6585b780dc2f46fc73">ripple::parsedURL::password</a></div><div class="ttdeci">std::string password</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8h_source.html#l00129">StringUtilities.h:129</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aee64a868709aa69fb5080c0fdc5aecba"><div class="ttname"><a href="namespaceripple.html#aee64a868709aa69fb5080c0fdc5aecba">ripple::uintFromHex</a></div><div class="ttdeci">uint64_t uintFromHex(std::string const &amp;strSrc)</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8cpp_source.html#l00034">StringUtilities.cpp:34</a></div></div>
 <div class="ttc" id="asize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/size.html">std::string::size</a></div><div class="ttdeci">T size(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_a123dbbb0bb7c71fa138ace0ab37842cd"><div class="ttname"><a href="namespaceripple.html#a123dbbb0bb7c71fa138ace0ab37842cd">ripple::to_uint64</a></div><div class="ttdeci">boost::optional&lt; std::uint64_t &gt; to_uint64(std::string const &amp;s)</div></div>
-<div class="ttc" id="astructripple_1_1parsedURL_html_a7ccdd1caf7cd6f551428632f25384115"><div class="ttname"><a href="structripple_1_1parsedURL.html#a7ccdd1caf7cd6f551428632f25384115">ripple::parsedURL::username</a></div><div class="ttdeci">std::string username</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8h_source.html#l00127">StringUtilities.h:127</a></div></div>
-<div class="ttc" id="astructripple_1_1parsedURL_html_a4d823c3fa1765f734b684dddc8128b8f"><div class="ttname"><a href="structripple_1_1parsedURL.html#a4d823c3fa1765f734b684dddc8128b8f">ripple::parsedURL::path</a></div><div class="ttdeci">std::string path</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8h_source.html#l00131">StringUtilities.h:131</a></div></div>
+<div class="ttc" id="astructripple_1_1parsedURL_html_a7ccdd1caf7cd6f551428632f25384115"><div class="ttname"><a href="structripple_1_1parsedURL.html#a7ccdd1caf7cd6f551428632f25384115">ripple::parsedURL::username</a></div><div class="ttdeci">std::string username</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8h_source.html#l00128">StringUtilities.h:128</a></div></div>
+<div class="ttc" id="astructripple_1_1parsedURL_html_a4d823c3fa1765f734b684dddc8128b8f"><div class="ttname"><a href="structripple_1_1parsedURL.html#a4d823c3fa1765f734b684dddc8128b8f">ripple::parsedURL::path</a></div><div class="ttdeci">std::string path</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8h_source.html#l00132">StringUtilities.h:132</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a4a0f163a7e357063a6b2993348d60c3c"><div class="ttname"><a href="namespaceripple.html#a4a0f163a7e357063a6b2993348d60c3c">ripple::trim_whitespace</a></div><div class="ttdeci">std::string trim_whitespace(std::string str)</div></div>
 <div class="ttc" id="aalgorithm_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a723f8529b7c277a851246d7ffc379b05"><div class="ttname"><a href="namespaceripple.html#a723f8529b7c277a851246d7ffc379b05">ripple::parseUrl</a></div><div class="ttdeci">bool parseUrl(parsedURL &amp;pUrl, std::string const &amp;strUrl)</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8cpp_source.html#l00053">StringUtilities.cpp:53</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a723f8529b7c277a851246d7ffc379b05"><div class="ttname"><a href="namespaceripple.html#a723f8529b7c277a851246d7ffc379b05">ripple::parseUrl</a></div><div class="ttdeci">bool parseUrl(parsedURL &amp;pUrl, std::string const &amp;strUrl)</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8cpp_source.html#l00055">StringUtilities.cpp:55</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a></div></div>
-<div class="ttc" id="astructripple_1_1parsedURL_html_a661220a562cd86c4f251cb6b2bb097ad"><div class="ttname"><a href="structripple_1_1parsedURL.html#a661220a562cd86c4f251cb6b2bb097ad">ripple::parsedURL::port</a></div><div class="ttdeci">boost::optional&lt; std::uint16_t &gt; port</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8h_source.html#l00130">StringUtilities.h:130</a></div></div>
+<div class="ttc" id="astructripple_1_1parsedURL_html_a661220a562cd86c4f251cb6b2bb097ad"><div class="ttname"><a href="structripple_1_1parsedURL.html#a661220a562cd86c4f251cb6b2bb097ad">ripple::parsedURL::port</a></div><div class="ttdeci">boost::optional&lt; std::uint16_t &gt; port</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8h_source.html#l00131">StringUtilities.h:131</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="anamespacebeast_html_aeb241ed2f4422ea57283956ca58c5d42"><div class="ttname"><a href="namespacebeast.html#aeb241ed2f4422ea57283956ca58c5d42">beast::lexicalCastChecked</a></div><div class="ttdeci">bool lexicalCastChecked(Out &amp;out, In in)</div><div class="ttdoc">Intelligently convert from one type to another.</div><div class="ttdef"><b>Definition:</b> <a href="LexicalCast_8h_source.html#l00262">LexicalCast.h:262</a></div></div>
+<div class="ttc" id="anamespacebeast_html_aeb241ed2f4422ea57283956ca58c5d42"><div class="ttname"><a href="namespacebeast.html#aeb241ed2f4422ea57283956ca58c5d42">beast::lexicalCastChecked</a></div><div class="ttdeci">bool lexicalCastChecked(Out &amp;out, In in)</div><div class="ttdoc">Intelligently convert from one type to another.</div><div class="ttdef"><b>Definition:</b> <a href="LexicalCast_8h_source.html#l00266">LexicalCast.h:266</a></div></div>
 <div class="ttc" id="aempty_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">std::string::empty</a></div><div class="ttdeci">T empty(T... args)</div></div>
-<div class="ttc" id="astructripple_1_1parsedURL_html_abf3d08230b4c8b90ce9c6091c99552ff"><div class="ttname"><a href="structripple_1_1parsedURL.html#abf3d08230b4c8b90ce9c6091c99552ff">ripple::parsedURL::scheme</a></div><div class="ttdeci">std::string scheme</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8h_source.html#l00126">StringUtilities.h:126</a></div></div>
-<div class="ttc" id="astructripple_1_1parsedURL_html_a6d796e85c96cc5060586ce806b288bcb"><div class="ttname"><a href="structripple_1_1parsedURL.html#a6d796e85c96cc5060586ce806b288bcb">ripple::parsedURL::domain</a></div><div class="ttdeci">std::string domain</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8h_source.html#l00129">StringUtilities.h:129</a></div></div>
-<div class="ttc" id="aclassbeast_1_1IP_1_1Endpoint_html_aac388eeb417add061487b8166490a338"><div class="ttname"><a href="classbeast_1_1IP_1_1Endpoint.html#aac388eeb417add061487b8166490a338">beast::IP::Endpoint::from_string_checked</a></div><div class="ttdeci">static boost::optional&lt; Endpoint &gt; from_string_checked(std::string const &amp;s)</div><div class="ttdoc">Create an Endpoint from a string.</div><div class="ttdef"><b>Definition:</b> <a href="IPEndpoint_8cpp_source.html#l00037">IPEndpoint.cpp:37</a></div></div>
+<div class="ttc" id="astructripple_1_1parsedURL_html_abf3d08230b4c8b90ce9c6091c99552ff"><div class="ttname"><a href="structripple_1_1parsedURL.html#abf3d08230b4c8b90ce9c6091c99552ff">ripple::parsedURL::scheme</a></div><div class="ttdeci">std::string scheme</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8h_source.html#l00127">StringUtilities.h:127</a></div></div>
+<div class="ttc" id="astructripple_1_1parsedURL_html_a6d796e85c96cc5060586ce806b288bcb"><div class="ttname"><a href="structripple_1_1parsedURL.html#a6d796e85c96cc5060586ce806b288bcb">ripple::parsedURL::domain</a></div><div class="ttdeci">std::string domain</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8h_source.html#l00130">StringUtilities.h:130</a></div></div>
+<div class="ttc" id="aclassbeast_1_1IP_1_1Endpoint_html_aac388eeb417add061487b8166490a338"><div class="ttname"><a href="classbeast_1_1IP_1_1Endpoint.html#aac388eeb417add061487b8166490a338">beast::IP::Endpoint::from_string_checked</a></div><div class="ttdeci">static boost::optional&lt; Endpoint &gt; from_string_checked(std::string const &amp;s)</div><div class="ttdoc">Create an Endpoint from a string.</div><div class="ttdef"><b>Definition:</b> <a href="IPEndpoint_8cpp_source.html#l00035">IPEndpoint.cpp:35</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

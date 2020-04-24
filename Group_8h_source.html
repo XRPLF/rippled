@@ -102,15 +102,16 @@ $(function() {
 <div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="classbeast_1_1insight_1_1Group.html">   32</a></span>&#160;<span class="keyword">class </span><a class="code" href="classbeast_1_1insight_1_1Group.html">Group</a> : <span class="keyword">public</span> <a class="code" href="classbeast_1_1insight_1_1Collector.html">Collector</a></div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;{</div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="classbeast_1_1insight_1_1Group.html#a71985ea7ba658cc08f2d05056cd9b9d0">   35</a></span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">ptr</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr &lt;Group&gt;</a>;</div>
+<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="classbeast_1_1insight_1_1Group.html#a96f5c2259fc02b018922e3bcd1bc4a63">   35</a></span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">ptr</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Group&gt;</a>;</div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; <a class="code" href="classbeast_1_1insight_1_1Group.html#a4cb0f73da5d06d58845a0dd0f4e2ba5a">name</a> () <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;};</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;}</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;}</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <a class="code" href="classbeast_1_1insight_1_1Group.html#a4cb0f73da5d06d58845a0dd0f4e2ba5a">name</a>() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;};</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;}  <span class="comment">// namespace insight</span></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;}  <span class="comment">// namespace beast</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt; Collector &gt;</a></div></div>
@@ -118,7 +119,7 @@ $(function() {
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
 <div class="ttc" id="aclassbeast_1_1insight_1_1Group_html"><div class="ttname"><a href="classbeast_1_1insight_1_1Group.html">beast::insight::Group</a></div><div class="ttdoc">A collector front-end that manages a group of metrics.</div><div class="ttdef"><b>Definition:</b> <a href="Group_8h_source.html#l00032">Group.h:32</a></div></div>
 <div class="ttc" id="aclassbeast_1_1insight_1_1Collector_html"><div class="ttname"><a href="classbeast_1_1insight_1_1Collector.html">beast::insight::Collector</a></div><div class="ttdoc">Interface for a manager that allows collection of metrics.</div><div class="ttdef"><b>Definition:</b> <a href="Collector_8h_source.html#l00044">Collector.h:44</a></div></div>
-<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00582">base_uint.h:582</a></div></div>
+<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00646">base_uint.h:646</a></div></div>
 <div class="ttc" id="astring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/string.html">string</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

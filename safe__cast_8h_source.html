@@ -100,118 +100,87 @@ $(function() {
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="comment">// the destination can hold all values of the source.  This is particularly</span></div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="comment">// handy when the source or destination is an enumeration type.</span></div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">class</span> Dest, <span class="keyword">class</span> Src&gt;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Dest, <span class="keyword">class</span> Src&gt;</div>
 <div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="namespaceripple.html#a5adbc123c2d72443b7efd2ab8df961b1">   33</a></span>&#160;<span class="keyword">static</span> constexpr <span class="keywordtype">bool</span> <a class="code" href="namespaceripple.html#a5adbc123c2d72443b7efd2ab8df961b1">is_safetocasttovalue_v</a> =</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    ( std::is_integral_v&lt;Src&gt; &amp;&amp;</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        std::is_integral_v&lt;Dest&gt; ) &amp;&amp;</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    ( <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_signed.html">std::is_signed&lt;Src&gt;::value</a> ||</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_unsigned.html">std::is_unsigned&lt;Dest&gt;::value</a> ) &amp;&amp;</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    ( <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_signed.html">std::is_signed&lt;Src&gt;::value</a> !=</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_signed.html">std::is_signed&lt;Dest&gt;::value</a> ?</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="keyword">sizeof</span>(Dest) &gt; <span class="keyword">sizeof</span>(Src) :</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        sizeof(Dest) &gt;= sizeof(Src) );</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Dest, <span class="keyword">class</span> Src&gt;</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="keyword">inline</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;constexpr</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;&lt;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    std::is_integral_v&lt;Dest&gt; &amp;&amp; std::is_integral_v&lt;Src&gt;,</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    Dest</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;&gt;</div>
-<div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="namespaceripple.html#adea557558897534dc8f79edf5f1c10ce">   51</a></span>&#160;<a class="code" href="namespaceripple.html#a6f30ee31f9359c69a5294921d5c10d0b">safe_cast</a>(Src s) noexcept</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;{</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    static_assert(std::is_signed_v&lt;Dest&gt; || std::is_unsigned_v&lt;Src&gt;,</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        <span class="stringliteral">&quot;Cannot cast signed to unsigned&quot;</span>);</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    constexpr <span class="keywordtype">unsigned</span> not_same = std::is_signed_v&lt;Dest&gt; !=</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;                                  std::is_signed_v&lt;Src&gt;;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    static_assert(<span class="keyword">sizeof</span>(Dest) &gt;= <span class="keyword">sizeof</span>(Src) + not_same,</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        <span class="stringliteral">&quot;Destination is too small to hold all values of source&quot;</span>);</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span>Dest<span class="keyword">&gt;</span>(s);</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;}</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Dest, <span class="keyword">class</span> Src&gt;</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="keyword">inline</span></div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;constexpr</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;&lt;</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    std::is_enum_v&lt;Dest&gt; &amp;&amp; std::is_integral_v&lt;Src&gt;,</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    Dest</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;&gt;</div>
-<div class="line"><a name="l00070"></a><span class="lineno"><a class="line" href="namespaceripple.html#aff448b0a13e5ef9852d5f0babe9b652f">   70</a></span>&#160;<a class="code" href="namespaceripple.html#a6f30ee31f9359c69a5294921d5c10d0b">safe_cast</a>(Src s) noexcept</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;{</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span>Dest<span class="keyword">&gt;</span>(safe_cast&lt;std::underlying_type_t&lt;Dest&gt;&gt;(s));</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;}</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Dest, <span class="keyword">class</span> Src&gt;</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="keyword">inline</span></div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;constexpr</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;&lt;</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    std::is_integral_v&lt;Dest&gt; &amp;&amp; std::is_enum_v&lt;Src&gt;,</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    Dest</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;&gt;</div>
-<div class="line"><a name="l00083"></a><span class="lineno"><a class="line" href="namespaceripple.html#a7b6ed7ec53037610b63586067deac297">   83</a></span>&#160;<a class="code" href="namespaceripple.html#a6f30ee31f9359c69a5294921d5c10d0b">safe_cast</a>(Src s) noexcept</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;{</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keywordflow">return</span> safe_cast&lt;Dest&gt;(<span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/underlying_type.html">std::underlying_type_t&lt;Src&gt;</a><span class="keyword">&gt;</span>(s));</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    (std::is_integral_v&lt;Src&gt; &amp;&amp; std::is_integral_v&lt;Dest&gt;)&amp;&amp;(</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_signed.html">std::is_signed&lt;Src&gt;::value</a> || <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_unsigned.html">std::is_unsigned&lt;Dest&gt;::value</a>) &amp;&amp;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_signed.html">std::is_signed&lt;Src&gt;::value</a> != <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_signed.html">std::is_signed&lt;Dest&gt;::value</a></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;         ? <span class="keyword">sizeof</span>(Dest) &gt; <span class="keyword">sizeof</span>(Src)</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;         : sizeof(Dest) &gt;= sizeof(Src));</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Dest, <span class="keyword">class</span> Src&gt;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="keyword">inline</span> constexpr std::</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    enable_if_t&lt;std::is_integral_v&lt;Dest&gt; &amp;&amp; std::is_integral_v&lt;Src&gt;, Dest&gt;</div>
+<div class="line"><a name="l00043"></a><span class="lineno"><a class="line" href="namespaceripple.html#a7890a68e8c69029083b8ac82cf219140">   43</a></span>&#160;    <a class="code" href="namespaceripple.html#a6f30ee31f9359c69a5294921d5c10d0b">safe_cast</a>(Src s) noexcept</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;{</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    static_assert(</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        std::is_signed_v&lt;Dest&gt; || std::is_unsigned_v&lt;Src&gt;,</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="stringliteral">&quot;Cannot cast signed to unsigned&quot;</span>);</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    constexpr <span class="keywordtype">unsigned</span> not_same =</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        std::is_signed_v&lt;Dest&gt; != std::is_signed_v&lt;Src&gt;;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    static_assert(</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="keyword">sizeof</span>(Dest) &gt;= <span class="keyword">sizeof</span>(Src) + not_same,</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <span class="stringliteral">&quot;Destination is too small to hold all values of source&quot;</span>);</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span>Dest<span class="keyword">&gt;</span>(s);</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;}</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Dest, <span class="keyword">class</span> Src&gt;</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="keyword">inline</span> constexpr std::</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    enable_if_t&lt;std::is_enum_v&lt;Dest&gt; &amp;&amp; std::is_integral_v&lt;Src&gt;, Dest&gt;</div>
+<div class="line"><a name="l00059"></a><span class="lineno"><a class="line" href="namespaceripple.html#a804950522c4aed0eaeecf72d626a839b">   59</a></span>&#160;    <a class="code" href="namespaceripple.html#a6f30ee31f9359c69a5294921d5c10d0b">safe_cast</a>(Src s) noexcept</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;{</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span>Dest<span class="keyword">&gt;</span>(safe_cast&lt;std::underlying_type_t&lt;Dest&gt;&gt;(s));</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;}</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Dest, <span class="keyword">class</span> Src&gt;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="keyword">inline</span> constexpr std::</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    enable_if_t&lt;std::is_integral_v&lt;Dest&gt; &amp;&amp; std::is_enum_v&lt;Src&gt;, Dest&gt;</div>
+<div class="line"><a name="l00067"></a><span class="lineno"><a class="line" href="namespaceripple.html#a028005f6656f5f2b8ee1e3e17d5e0af8">   67</a></span>&#160;    <a class="code" href="namespaceripple.html#a6f30ee31f9359c69a5294921d5c10d0b">safe_cast</a>(Src s) noexcept</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;{</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordflow">return</span> safe_cast&lt;Dest&gt;(<span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/underlying_type.html">std::underlying_type_t&lt;Src&gt;</a><span class="keyword">&gt;</span>(s));</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;}</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="comment">// unsafe_cast explicitly flags a static_cast as not necessarily able to hold</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="comment">// all values of the source. It includes a compile-time check so that if</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="comment">// underlying types become safe, it can be converted to a safe_cast.</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Dest, <span class="keyword">class</span> Src&gt;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="keyword">inline</span> constexpr std::</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    enable_if_t&lt;std::is_integral_v&lt;Dest&gt; &amp;&amp; std::is_integral_v&lt;Src&gt;, Dest&gt;</div>
+<div class="line"><a name="l00079"></a><span class="lineno"><a class="line" href="namespaceripple.html#ab4905950415a3a4bd7e2c9094adcf30f">   79</a></span>&#160;    <a class="code" href="namespaceripple.html#a488ed8c31419d36c6f9af5e9eef703a4">unsafe_cast</a>(Src s) noexcept</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;{</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    static_assert(</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        !is_safetocasttovalue_v&lt;Dest, Src&gt;,</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        <span class="stringliteral">&quot;Only unsafe if casting signed to unsigned or &quot;</span></div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="stringliteral">&quot;destination is too small&quot;</span>);</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span>Dest<span class="keyword">&gt;</span>(s);</div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;}</div>
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="comment">// unsafe_cast explicitly flags a static_cast as not necessarily able to hold</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="comment">// all values of the source. It includes a compile-time check so that if</span></div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="comment">// underlying types become safe, it can be converted to a safe_cast.</span></div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Dest, <span class="keyword">class</span> Src&gt;</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="keyword">inline</span></div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;constexpr</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a></div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;&lt;</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    std::is_integral_v&lt;Dest&gt; &amp;&amp; std::is_integral_v&lt;Src&gt;,</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    Dest</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;&gt;</div>
-<div class="line"><a name="l00100"></a><span class="lineno"><a class="line" href="namespaceripple.html#a00b8e7fcb05c11572966bfd69e50875b">  100</a></span>&#160;<a class="code" href="namespaceripple.html#a488ed8c31419d36c6f9af5e9eef703a4">unsafe_cast</a>(Src s) noexcept</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;{</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    static_assert(! is_safetocasttovalue_v&lt;Dest, Src&gt;,</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        <span class="stringliteral">&quot;Only unsafe if casting signed to unsigned or &quot;</span></div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        <span class="stringliteral">&quot;destination is too small&quot;</span>);</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span>Dest<span class="keyword">&gt;</span>(s);</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;}</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Dest, <span class="keyword">class</span> Src&gt;</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;<span class="keyword">inline</span></div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;constexpr</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a></div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;&lt;</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    std::is_enum_v&lt;Dest&gt; &amp;&amp; std::is_integral_v&lt;Src&gt;,</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    Dest</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;&gt;</div>
-<div class="line"><a name="l00116"></a><span class="lineno"><a class="line" href="namespaceripple.html#a6c64867b1a08e1d824b905dd8fb1bdb3">  116</a></span>&#160;<a class="code" href="namespaceripple.html#a488ed8c31419d36c6f9af5e9eef703a4">unsafe_cast</a>(Src s) noexcept</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;{</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span>Dest<span class="keyword">&gt;</span>(unsafe_cast&lt;std::underlying_type_t&lt;Dest&gt;&gt;(s));</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;}</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160; </div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Dest, <span class="keyword">class</span> Src&gt;</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;<span class="keyword">inline</span></div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;constexpr</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a></div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;&lt;</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    std::is_integral_v&lt;Dest&gt; &amp;&amp; std::is_enum_v&lt;Src&gt;,</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    Dest</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;&gt;</div>
-<div class="line"><a name="l00129"></a><span class="lineno"><a class="line" href="namespaceripple.html#aad552d7b7a1da9debe07ebd21942fd11">  129</a></span>&#160;<a class="code" href="namespaceripple.html#a488ed8c31419d36c6f9af5e9eef703a4">unsafe_cast</a>(Src s) noexcept</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;{</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;    <span class="keywordflow">return</span> unsafe_cast&lt;Dest&gt;(<span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/underlying_type.html">std::underlying_type_t&lt;Src&gt;</a><span class="keyword">&gt;</span>(s));</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;}</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160; </div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;} <span class="comment">// ripple</span></div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160; </div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Dest, <span class="keyword">class</span> Src&gt;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="keyword">inline</span> constexpr std::</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    enable_if_t&lt;std::is_enum_v&lt;Dest&gt; &amp;&amp; std::is_integral_v&lt;Src&gt;, Dest&gt;</div>
+<div class="line"><a name="l00091"></a><span class="lineno"><a class="line" href="namespaceripple.html#a51f247f0d49bb4b1750b71d873c1a194">   91</a></span>&#160;    <a class="code" href="namespaceripple.html#a488ed8c31419d36c6f9af5e9eef703a4">unsafe_cast</a>(Src s) noexcept</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;{</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span>Dest<span class="keyword">&gt;</span>(unsafe_cast&lt;std::underlying_type_t&lt;Dest&gt;&gt;(s));</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;}</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Dest, <span class="keyword">class</span> Src&gt;</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<span class="keyword">inline</span> constexpr std::</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    enable_if_t&lt;std::is_integral_v&lt;Dest&gt; &amp;&amp; std::is_enum_v&lt;Src&gt;, Dest&gt;</div>
+<div class="line"><a name="l00099"></a><span class="lineno"><a class="line" href="namespaceripple.html#afadd26fe6df3774c0b409a88e271a990">   99</a></span>&#160;    <a class="code" href="namespaceripple.html#a488ed8c31419d36c6f9af5e9eef703a4">unsafe_cast</a>(Src s) noexcept</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;{</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="keywordflow">return</span> unsafe_cast&lt;Dest&gt;(<span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/underlying_type.html">std::underlying_type_t&lt;Src&gt;</a><span class="keyword">&gt;</span>(s));</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;}</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="ais_signed_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_signed.html">std::is_signed</a></div></div>
 <div class="ttc" id="ais_unsigned_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_unsigned.html">std::is_unsigned</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a488ed8c31419d36c6f9af5e9eef703a4"><div class="ttname"><a href="namespaceripple.html#a488ed8c31419d36c6f9af5e9eef703a4">ripple::unsafe_cast</a></div><div class="ttdeci">constexpr std::enable_if_t&lt; std::is_same_v&lt; typename Dest::unit_type, typename Src::unit_type &gt; &amp;&amp;std::is_integral_v&lt; typename Dest::value_type &gt; &amp;&amp;std::is_integral_v&lt; typename Src::value_type &gt;, Dest &gt; unsafe_cast(Src s) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="FeeUnits_8h_source.html#l00568">FeeUnits.h:568</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a488ed8c31419d36c6f9af5e9eef703a4"><div class="ttname"><a href="namespaceripple.html#a488ed8c31419d36c6f9af5e9eef703a4">ripple::unsafe_cast</a></div><div class="ttdeci">constexpr std::enable_if_t&lt; std::is_same_v&lt; typename Dest::unit_type, typename Src::unit_type &gt; &amp;&amp;std::is_integral_v&lt; typename Dest::value_type &gt; &amp;&amp;std::is_integral_v&lt; typename Src::value_type &gt;, Dest &gt; unsafe_cast(Src s) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="FeeUnits_8h_source.html#l00549">FeeUnits.h:549</a></div></div>
 <div class="ttc" id="aunderlying_type_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/underlying_type.html">std::underlying_type_t</a></div></div>
-<div class="ttc" id="aenable_if_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a6f30ee31f9359c69a5294921d5c10d0b"><div class="ttname"><a href="namespaceripple.html#a6f30ee31f9359c69a5294921d5c10d0b">ripple::safe_cast</a></div><div class="ttdeci">constexpr std::enable_if_t&lt; std::is_same_v&lt; typename Dest::unit_type, typename Src::unit_type &gt; &amp;&amp;std::is_integral_v&lt; typename Dest::value_type &gt; &amp;&amp;std::is_integral_v&lt; typename Src::value_type &gt;, Dest &gt; safe_cast(Src s) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="FeeUnits_8h_source.html#l00553">FeeUnits.h:553</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a6f30ee31f9359c69a5294921d5c10d0b"><div class="ttname"><a href="namespaceripple.html#a6f30ee31f9359c69a5294921d5c10d0b">ripple::safe_cast</a></div><div class="ttdeci">constexpr std::enable_if_t&lt; std::is_same_v&lt; typename Dest::unit_type, typename Src::unit_type &gt; &amp;&amp;std::is_integral_v&lt; typename Dest::value_type &gt; &amp;&amp;std::is_integral_v&lt; typename Src::value_type &gt;, Dest &gt; safe_cast(Src s) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="FeeUnits_8h_source.html#l00537">FeeUnits.h:537</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a5adbc123c2d72443b7efd2ab8df961b1"><div class="ttname"><a href="namespaceripple.html#a5adbc123c2d72443b7efd2ab8df961b1">ripple::is_safetocasttovalue_v</a></div><div class="ttdeci">static constexpr bool is_safetocasttovalue_v</div><div class="ttdef"><b>Definition:</b> <a href="safe__cast_8h_source.html#l00033">safe_cast.h:33</a></div></div>
 <div class="ttc" id="atype_traits_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/type_traits.html">type_traits</a></div></div>

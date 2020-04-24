@@ -97,47 +97,48 @@ $(function() {
 <div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="classripple_1_1contract__test.html">   26</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1contract__test.html">contract_test</a> : <span class="keyword">public</span> beast::unit_test::suite</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;{</div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="classripple_1_1contract__test.html#aee4e3b77e78d9beeff69834ffff02761">   29</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1contract__test.html#aee4e3b77e78d9beeff69834ffff02761">run</a> ()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        {</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;            Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;Throw test&quot;</span>);</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        }</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a> <span class="keyword">const</span>&amp; e1)</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        {</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;            BEAST_EXPECT(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(e1.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>()) == <span class="stringliteral">&quot;Throw test&quot;</span>);</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;            <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            {</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;                <a class="code" href="namespaceripple.html#ad99788f1aca6ce31a1fe8365eee1bba3">Rethrow</a>();</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            }</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a> <span class="keyword">const</span>&amp; e2)</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;            {</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;                BEAST_EXPECT(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(e2.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>()) == <span class="stringliteral">&quot;Throw test&quot;</span>);</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;            }</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;            <span class="keywordflow">catch</span> (...)</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            {</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;                BEAST_EXPECT(<span class="keyword">false</span>);</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            }</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        }</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <span class="keywordflow">catch</span> (...)</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        {</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;            BEAST_EXPECT(<span class="keyword">false</span>);</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        }</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    }</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;};</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(contract,basics,<a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;}</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="classripple_1_1contract__test.html#aee4e3b77e78d9beeff69834ffff02761">   30</a></span>&#160;    <a class="code" href="classripple_1_1contract__test.html#aee4e3b77e78d9beeff69834ffff02761">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        {</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;            Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;Throw test&quot;</span>);</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        }</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a> <span class="keyword">const</span>&amp; e1)</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        {</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;            BEAST_EXPECT(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(e1.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>()) == <span class="stringliteral">&quot;Throw test&quot;</span>);</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            {</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;                <a class="code" href="namespaceripple.html#ad99788f1aca6ce31a1fe8365eee1bba3">Rethrow</a>();</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            }</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;            <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a> <span class="keyword">const</span>&amp; e2)</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            {</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;                BEAST_EXPECT(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(e2.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>()) == <span class="stringliteral">&quot;Throw test&quot;</span>);</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;            }</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            <span class="keywordflow">catch</span> (...)</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;            {</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;                BEAST_EXPECT(<span class="keyword">false</span>);</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;            }</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        }</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="keywordflow">catch</span> (...)</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        {</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            BEAST_EXPECT(<span class="keyword">false</span>);</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        }</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    }</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;};</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(contract, basics, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_html_a2701412a11b118c19256a4c901db2938"><div class="ttname"><a href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">ripple::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(AccountTxPaging, app, ripple)</div></div>
-<div class="ttc" id="anamespaceripple_html_ad99788f1aca6ce31a1fe8365eee1bba3"><div class="ttname"><a href="namespaceripple.html#ad99788f1aca6ce31a1fe8365eee1bba3">ripple::Rethrow</a></div><div class="ttdeci">void Rethrow()</div><div class="ttdoc">Rethrow the exception currently being handled.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8h_source.html#l00050">contract.h:50</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ad99788f1aca6ce31a1fe8365eee1bba3"><div class="ttname"><a href="namespaceripple.html#ad99788f1aca6ce31a1fe8365eee1bba3">ripple::Rethrow</a></div><div class="ttdeci">void Rethrow()</div><div class="ttdoc">Rethrow the exception currently being handled.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8h_source.html#l00048">contract.h:48</a></div></div>
 <div class="ttc" id="aruntime_error_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1contract__test_html"><div class="ttname"><a href="classripple_1_1contract__test.html">ripple::contract_test</a></div><div class="ttdef"><b>Definition:</b> <a href="contract__test_8cpp_source.html#l00026">contract_test.cpp:26</a></div></div>
-<div class="ttc" id="aclassripple_1_1contract__test_html_aee4e3b77e78d9beeff69834ffff02761"><div class="ttname"><a href="classripple_1_1contract__test.html#aee4e3b77e78d9beeff69834ffff02761">ripple::contract_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="contract__test_8cpp_source.html#l00029">contract_test.cpp:29</a></div></div>
+<div class="ttc" id="aclassripple_1_1contract__test_html_aee4e3b77e78d9beeff69834ffff02761"><div class="ttname"><a href="classripple_1_1contract__test.html#aee4e3b77e78d9beeff69834ffff02761">ripple::contract_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="contract__test_8cpp_source.html#l00030">contract_test.cpp:30</a></div></div>
 <div class="ttc" id="awhat_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/exception/what.html">std::runtime_error::what</a></div><div class="ttdeci">T what(T... args)</div></div>
 <div class="ttc" id="astring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/string.html">string</a></div></div>
 <!-- start footer part -->

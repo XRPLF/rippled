@@ -89,8 +89,8 @@ $(function() {
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/Buffer.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/strHex.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/Slice.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/Slice.h&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/strHex.h&gt;</span></div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/unit_test.h&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/conditions/Condition.h&gt;</span></div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/conditions/Fulfillment.h&gt;</span></div>
@@ -105,57 +105,57 @@ $(function() {
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
 <div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html">   35</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html">PreimageSha256_test</a> : <span class="keyword">public</span> beast::unit_test::suite</div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;{</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keyword">inline</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="code" href="classripple_1_1Buffer.html">Buffer</a></div>
-<div class="line"><a name="l00039"></a><span class="lineno"><a class="line" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a096c232bb6087fddfe6f3d7ffbafcfa0">   39</a></span>&#160;    <a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a096c232bb6087fddfe6f3d7ffbafcfa0">hexblob</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; s)</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    {</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::uint8_t&gt;</a> x;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        x.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(s.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/size.html">size</a>() / 2);</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="keyword">auto</span> iter = s.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/begin.html">cbegin</a>();</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <span class="keywordflow">while</span> (iter != s.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/end.html">cend</a>())</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        {</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            <span class="keywordtype">int</span> cHigh = <a class="code" href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">charUnHex</a>(*iter++);</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            <span class="keywordflow">if</span> (cHigh &lt; 0)</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;                <span class="keywordflow">return</span> {};</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;            <span class="keywordtype">int</span> cLow = <a class="code" href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">charUnHex</a>(*iter++);</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            <span class="keywordflow">if</span> (cLow &lt; 0)</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;                <span class="keywordflow">return</span> {};</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            x.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;                <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a><span class="keyword">&gt;</span>(cHigh &lt;&lt; 4) |</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;                <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a><span class="keyword">&gt;</span>(cLow));</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        }</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="keywordflow">return</span> { x.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/data.html">data</a>(), x.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>() };</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    }</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno"><a class="line" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a912b34292981eab9177332a82d65692e">   67</a></span>&#160;    <a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a912b34292981eab9177332a82d65692e">testKnownVectors</a>()</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    {</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        testcase(<span class="stringliteral">&quot;Known Vectors&quot;</span>);</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;std::string, std::string&gt;</a> <span class="keyword">const</span> known[] =</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        {</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            { <span class="stringliteral">&quot;A0028000&quot;</span>,</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                <span class="stringliteral">&quot;A0258020E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855810100&quot;</span> },</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            { <span class="stringliteral">&quot;A0058003616161&quot;</span>,</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;                <span class="stringliteral">&quot;A02580209834876DCFB05CB167A5C24953EBA58C4AC89B1ADF57F28F2F9D09AF107EE8F0810103&quot;</span> },</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keyword">inline</span> <a class="code" href="classripple_1_1Buffer.html">Buffer</a></div>
+<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a096c232bb6087fddfe6f3d7ffbafcfa0">   38</a></span>&#160;    <a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a096c232bb6087fddfe6f3d7ffbafcfa0">hexblob</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; s)</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    {</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::uint8_t&gt;</a> x;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        x.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(s.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/size.html">size</a>() / 2);</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keyword">auto</span> iter = s.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/begin.html">cbegin</a>();</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <span class="keywordflow">while</span> (iter != s.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/end.html">cend</a>())</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        {</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;            <span class="keywordtype">int</span> cHigh = <a class="code" href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">charUnHex</a>(*iter++);</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;            <span class="keywordflow">if</span> (cHigh &lt; 0)</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;                <span class="keywordflow">return</span> {};</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;            <span class="keywordtype">int</span> cLow = <a class="code" href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">charUnHex</a>(*iter++);</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;            <span class="keywordflow">if</span> (cLow &lt; 0)</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;                <span class="keywordflow">return</span> {};</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            x.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;                <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a><span class="keyword">&gt;</span>(cHigh &lt;&lt; 4) |</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;                <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a><span class="keyword">&gt;</span>(cLow));</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        }</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="keywordflow">return</span> {x.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/data.html">data</a>(), x.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>()};</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    }</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno"><a class="line" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a912b34292981eab9177332a82d65692e">   66</a></span>&#160;    <a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a912b34292981eab9177332a82d65692e">testKnownVectors</a>()</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    {</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        testcase(<span class="stringliteral">&quot;Known Vectors&quot;</span>);</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;std::string, std::string&gt;</a> <span class="keyword">const</span> known[] = {</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            {<span class="stringliteral">&quot;A0028000&quot;</span>,</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;             <span class="stringliteral">&quot;A0258020E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7&quot;</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;             <span class="stringliteral">&quot;852B855810100&quot;</span>},</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;            {<span class="stringliteral">&quot;A0058003616161&quot;</span>,</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;             <span class="stringliteral">&quot;A02580209834876DCFB05CB167A5C24953EBA58C4AC89B1ADF57F28F2F9D09AF1&quot;</span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;             <span class="stringliteral">&quot;07EE8F0810103&quot;</span>},</div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        };</div>
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/error_code.html">std::error_code</a> ec;</div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="keyword">auto</span> f1 = <a class="code" href="structripple_1_1cryptoconditions_1_1Fulfillment.html#a0cfe100013ad62e4d389040f52b9b96b">Fulfillment::deserialize</a> (<a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a096c232bb6087fddfe6f3d7ffbafcfa0">hexblob</a>(known[0].first), ec);</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        BEAST_EXPECT (f1);</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        BEAST_EXPECT (!ec);</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="keyword">auto</span> f1 = <a class="code" href="structripple_1_1cryptoconditions_1_1Fulfillment.html#a0cfe100013ad62e4d389040f52b9b96b">Fulfillment::deserialize</a>(<a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a096c232bb6087fddfe6f3d7ffbafcfa0">hexblob</a>(known[0].first), ec);</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        BEAST_EXPECT(f1);</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        BEAST_EXPECT(!ec);</div>
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="keyword">auto</span> c1 = <a class="code" href="classripple_1_1cryptoconditions_1_1Condition.html#a68f03ea61a631fe50d2e0948dfcc1631">Condition::deserialize</a> (<a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a096c232bb6087fddfe6f3d7ffbafcfa0">hexblob</a>(known[0].second), ec);</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        BEAST_EXPECT (c1);</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        BEAST_EXPECT (!ec);</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="keyword">auto</span> c1 = <a class="code" href="classripple_1_1cryptoconditions_1_1Condition.html#a68f03ea61a631fe50d2e0948dfcc1631">Condition::deserialize</a>(<a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a096c232bb6087fddfe6f3d7ffbafcfa0">hexblob</a>(known[0].second), ec);</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        BEAST_EXPECT(c1);</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        BEAST_EXPECT(!ec);</div>
 <div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        <span class="keyword">auto</span> f2 = <a class="code" href="structripple_1_1cryptoconditions_1_1Fulfillment.html#a0cfe100013ad62e4d389040f52b9b96b">Fulfillment::deserialize</a>(<a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a096c232bb6087fddfe6f3d7ffbafcfa0">hexblob</a>(known[1].first), ec);</div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        BEAST_EXPECT(f2);</div>
@@ -164,128 +164,145 @@ $(function() {
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        <span class="keyword">auto</span> c2 = <a class="code" href="classripple_1_1cryptoconditions_1_1Condition.html#a68f03ea61a631fe50d2e0948dfcc1631">Condition::deserialize</a>(<a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a096c232bb6087fddfe6f3d7ffbafcfa0">hexblob</a>(known[1].second), ec);</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        BEAST_EXPECT(c2);</div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        BEAST_EXPECT(!ec);</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        </div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160; </div>
 <div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <span class="comment">// Check equality and inequality</span></div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        BEAST_EXPECT (f1-&gt;condition() == *c1);</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        BEAST_EXPECT (f1-&gt;condition() != *c2);</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        BEAST_EXPECT (f2-&gt;condition() == *c2);</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        BEAST_EXPECT (f2-&gt;condition() != *c1);</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        BEAST_EXPECT (*c1 != *c2);</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        BEAST_EXPECT (*c1 == *c1);</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        BEAST_EXPECT (f1-&gt;condition() == f1-&gt;condition());</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        BEAST_EXPECT(f1-&gt;condition() == *c1);</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        BEAST_EXPECT(f1-&gt;condition() != *c2);</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        BEAST_EXPECT(f2-&gt;condition() == *c2);</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        BEAST_EXPECT(f2-&gt;condition() != *c1);</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        BEAST_EXPECT(*c1 != *c2);</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        BEAST_EXPECT(*c1 == *c1);</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        BEAST_EXPECT(f1-&gt;condition() == f1-&gt;condition());</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        <span class="comment">// Should validate with the empty string</span></div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        BEAST_EXPECT (<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a> (*f1, *c1));</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        BEAST_EXPECT (<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f2, *c2));</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        BEAST_EXPECT(<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f1, *c1));</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        BEAST_EXPECT(<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f2, *c2));</div>
 <div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
 <div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        <span class="comment">// And with any string - the message doesn&#39;t matter for PrefixSha256</span></div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        BEAST_EXPECT (<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a> (*f1, *c1, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(known[0].first)));</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        BEAST_EXPECT (<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f1, *c1, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(known[0].second)));</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        BEAST_EXPECT (<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f2, *c2, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(known[0].first)));</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        BEAST_EXPECT (<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f2, *c2, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(known[0].second)));</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        BEAST_EXPECT(<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f1, *c1, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(known[0].first)));</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        BEAST_EXPECT(<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f1, *c1, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(known[0].second)));</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        BEAST_EXPECT(<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f2, *c2, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(known[0].first)));</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        BEAST_EXPECT(<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f2, *c2, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(known[0].second)));</div>
 <div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
 <div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        <span class="comment">// Shouldn&#39;t validate if the fulfillment &amp; condition don&#39;t match</span></div>
 <div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        <span class="comment">// regardless of the message.</span></div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        BEAST_EXPECT (! <a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f2, *c1));</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        BEAST_EXPECT (! <a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f2, *c1, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(known[0].first)));</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        BEAST_EXPECT (! <a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f2, *c1, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(known[0].second)));</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;        BEAST_EXPECT (! <a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f1, *c2));</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        BEAST_EXPECT (! <a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f1, *c2, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(known[0].first)));</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        BEAST_EXPECT (! <a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f1, *c2, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(known[0].second)));</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        BEAST_EXPECT(!<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f2, *c1));</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        BEAST_EXPECT(!<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f2, *c1, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(known[0].first)));</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        BEAST_EXPECT(!<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f2, *c1, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(known[0].second)));</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;        BEAST_EXPECT(!<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f1, *c2));</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        BEAST_EXPECT(!<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f1, *c2, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(known[0].first)));</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        BEAST_EXPECT(!<a class="code" href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">validate</a>(*f1, *c2, <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(known[0].second)));</div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;    }</div>
 <div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
-<div class="line"><a name="l00126"></a><span class="lineno"><a class="line" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a13978500bf54c00b12d22da6d6ae1933">  126</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a13978500bf54c00b12d22da6d6ae1933">testOtherTypes</a>()</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    {</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;        testcase (<span class="stringliteral">&quot;Other Types&quot;</span>);</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160; </div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;std::string, std::string&gt;</a> <span class="keyword">const</span> others[] =</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        {</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00127"></a><span class="lineno"><a class="line" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a13978500bf54c00b12d22da6d6ae1933">  127</a></span>&#160;    <a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a13978500bf54c00b12d22da6d6ae1933">testOtherTypes</a>()</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    {</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        testcase(<span class="stringliteral">&quot;Other Types&quot;</span>);</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160; </div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;std::string, std::string&gt;</a> <span class="keyword">const</span> others[] = {</div>
 <div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;            <span class="comment">// PREFIX + PREIMAGE:</span></div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;            { <span class="stringliteral">&quot;A10B8000810100A204A0028000&quot;</span>,</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;            {<span class="stringliteral">&quot;A10B8000810100A204A0028000&quot;</span>,</div>
 <div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160; </div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;                <span class="stringliteral">&quot;A12A8020BB1AC5260C0141B7E54B26EC2330637C5597BF811951AC09E744AD20FF77E287810204&quot;</span></div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;                <span class="stringliteral">&quot;0082020780&quot;</span> },</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160; </div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;            <span class="comment">// THRESHOLD:</span></div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;            { <span class="stringliteral">&quot;A208A004A0028000A100&quot;</span>,</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160; </div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                <span class="stringliteral">&quot;A22A8020B4B84136DF48A71D73F4985C04C6767A778ECB65BA7023B4506823BEEE7631B9810204&quot;</span></div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                <span class="stringliteral">&quot;0082020780&quot;</span> },</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160; </div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;            <span class="comment">// RSA:</span></div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;            { <span class="stringliteral">&quot;A382020880820100E1EF8B24D6F76B09C81ED7752AA262F044F04A874D43809D31CEA612F99B0C97&quot;</span></div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;              <span class="stringliteral">&quot;A8B4374153E3EEF3D66616843E0E41C293264B71B6173DB1CF0D6CD558C58657706FCF097F704C48&quot;</span></div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;              <span class="stringliteral">&quot;3E59CBFDFD5B3EE7BC80D740C5E0F047F3E85FC0D75815776A6F3F23C5DC5E797139A6882E38336A&quot;</span></div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;              <span class="stringliteral">&quot;4A5FB36137620FF3663DBAE328472801862F72F2F87B202B9C89ADD7CD5B0A076F7C53E35039F67E&quot;</span></div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;              <span class="stringliteral">&quot;D17EC815E5B4305CC63197068D5E6E579BA6DE5F4E3E57DF5E4E072FF2CE4C66EB45233973875275&quot;</span></div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;              <span class="stringliteral">&quot;9639F0257BF57DBD5C443FB5158CCE0A3D36ADC7BA01F33A0BB6DBB2BF989D607112F2344D993E77&quot;</span></div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;              <span class="stringliteral">&quot;E563C1D361DEDF57DA96EF2CFC685F002B638246A5B309B981820100BD42D6569F6599AED455F96B&quot;</span></div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;              <span class="stringliteral">&quot;C0ED08ED1480BF36CD9E1467F9C6F74461C9E3A749334B2F6404AA5F9F6BAFE76C347D069250B35D&quot;</span></div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;              <span class="stringliteral">&quot;1C970C793059EE733A8193F30FA78FEC7CAE459E3DDFD7633805D476940D0CB53D7FB389DCDAEAF6&quot;</span></div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;              <span class="stringliteral">&quot;E8CF48C4B5635430E4F2BCDFE505C2C0FC17B40D93C7EDB7C261EBF43895A705E024AA0549A660F7&quot;</span></div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;              <span class="stringliteral">&quot;0A32150647522DBE6B63520497CFF8F8D5D74768A27C5B86E580BE3FCDC96F1976293CBA0D58DFC6&quot;</span></div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;              <span class="stringliteral">&quot;0B518B632A6DC1E950C43E231FE1A379AA6DDCC52C70EDF851C6C0123A964261CFDB3857CD6CD5AD&quot;</span></div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;              <span class="stringliteral">&quot;C37D8DA2CC924EDAE1D84CF6124587F274C1FA3697DA2901F0269F03B243C03B614E0385E1961FAC&quot;</span></div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;              <span class="stringliteral">&quot;5000F9BB&quot;</span>,</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160; </div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;                <span class="stringliteral">&quot;A32580204849505152535455484950515253545548495051525354554849505152535455810101&quot;</span> },</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160; </div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;            <span class="comment">// ED25519:</span></div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;            { <span class="stringliteral">&quot;A4648020D75A980182B10AB7D54BFED3C964073A0EE172F3DAA62325AF021A68F707511A8140E556&quot;</span></div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;              <span class="stringliteral">&quot;4300C360AC729086E2CC806E828A84877F1EB8E5D974D873E065224901555FB8821590A33BACC61E&quot;</span></div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;              <span class="stringliteral">&quot;39701CF9B46BD25BF5F0595BBE24655141438E7A100B&quot;</span>,</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160; </div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;                <span class="stringliteral">&quot;A4278020799239ABA8FC4FF7EABFBC4C44E69E8BDFED993324E12ED64792ABE289CF1D5F810302&quot;</span></div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;                <span class="stringliteral">&quot;0000&quot;</span> }</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;        };</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160; </div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> x : others)</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;        {</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/error_code.html">std::error_code</a> ec;</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;             <span class="stringliteral">&quot;A12A8020BB1AC5260C0141B7E54B26EC2330637C5597BF811951AC09E744AD20F&quot;</span></div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;             <span class="stringliteral">&quot;F77E287810204&quot;</span></div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;             <span class="stringliteral">&quot;0082020780&quot;</span>},</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160; </div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;            <span class="comment">// THRESHOLD:</span></div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;            {<span class="stringliteral">&quot;A208A004A0028000A100&quot;</span>,</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160; </div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;             <span class="stringliteral">&quot;A22A8020B4B84136DF48A71D73F4985C04C6767A778ECB65BA7023B4506823BEE&quot;</span></div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;             <span class="stringliteral">&quot;E7631B9810204&quot;</span></div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;             <span class="stringliteral">&quot;0082020780&quot;</span>},</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160; </div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;            <span class="comment">// RSA:</span></div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;            {<span class="stringliteral">&quot;A382020880820100E1EF8B24D6F76B09C81ED7752AA262F044F04A874D43809D3&quot;</span></div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;             <span class="stringliteral">&quot;1CEA612F99B0C97&quot;</span></div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;             <span class="stringliteral">&quot;A8B4374153E3EEF3D66616843E0E41C293264B71B6173DB1CF0D6CD558C586577&quot;</span></div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;             <span class="stringliteral">&quot;06FCF097F704C48&quot;</span></div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;             <span class="stringliteral">&quot;3E59CBFDFD5B3EE7BC80D740C5E0F047F3E85FC0D75815776A6F3F23C5DC5E797&quot;</span></div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;             <span class="stringliteral">&quot;139A6882E38336A&quot;</span></div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;             <span class="stringliteral">&quot;4A5FB36137620FF3663DBAE328472801862F72F2F87B202B9C89ADD7CD5B0A076&quot;</span></div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;             <span class="stringliteral">&quot;F7C53E35039F67E&quot;</span></div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;             <span class="stringliteral">&quot;D17EC815E5B4305CC63197068D5E6E579BA6DE5F4E3E57DF5E4E072FF2CE4C66E&quot;</span></div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;             <span class="stringliteral">&quot;B45233973875275&quot;</span></div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;             <span class="stringliteral">&quot;9639F0257BF57DBD5C443FB5158CCE0A3D36ADC7BA01F33A0BB6DBB2BF989D607&quot;</span></div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;             <span class="stringliteral">&quot;112F2344D993E77&quot;</span></div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;             <span class="stringliteral">&quot;E563C1D361DEDF57DA96EF2CFC685F002B638246A5B309B981820100BD42D6569&quot;</span></div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;             <span class="stringliteral">&quot;F6599AED455F96B&quot;</span></div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;             <span class="stringliteral">&quot;C0ED08ED1480BF36CD9E1467F9C6F74461C9E3A749334B2F6404AA5F9F6BAFE76&quot;</span></div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;             <span class="stringliteral">&quot;C347D069250B35D&quot;</span></div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;             <span class="stringliteral">&quot;1C970C793059EE733A8193F30FA78FEC7CAE459E3DDFD7633805D476940D0CB53&quot;</span></div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;             <span class="stringliteral">&quot;D7FB389DCDAEAF6&quot;</span></div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;             <span class="stringliteral">&quot;E8CF48C4B5635430E4F2BCDFE505C2C0FC17B40D93C7EDB7C261EBF43895A705E&quot;</span></div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;             <span class="stringliteral">&quot;024AA0549A660F7&quot;</span></div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;             <span class="stringliteral">&quot;0A32150647522DBE6B63520497CFF8F8D5D74768A27C5B86E580BE3FCDC96F197&quot;</span></div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;             <span class="stringliteral">&quot;6293CBA0D58DFC6&quot;</span></div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;             <span class="stringliteral">&quot;0B518B632A6DC1E950C43E231FE1A379AA6DDCC52C70EDF851C6C0123A964261C&quot;</span></div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;             <span class="stringliteral">&quot;FDB3857CD6CD5AD&quot;</span></div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;             <span class="stringliteral">&quot;C37D8DA2CC924EDAE1D84CF6124587F274C1FA3697DA2901F0269F03B243C03B6&quot;</span></div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;             <span class="stringliteral">&quot;14E0385E1961FAC&quot;</span></div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;             <span class="stringliteral">&quot;5000F9BB&quot;</span>,</div>
 <div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160; </div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;            BEAST_EXPECT (!<a class="code" href="structripple_1_1cryptoconditions_1_1Fulfillment.html#a0cfe100013ad62e4d389040f52b9b96b">Fulfillment::deserialize</a>(<a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a096c232bb6087fddfe6f3d7ffbafcfa0">hexblob</a>(x.first), ec));</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;            BEAST_EXPECT (!<a class="code" href="classripple_1_1cryptoconditions_1_1Condition.html#a68f03ea61a631fe50d2e0948dfcc1631">Condition::deserialize</a> (<a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a096c232bb6087fddfe6f3d7ffbafcfa0">hexblob</a>(x.second), ec));</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;        }</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160; </div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160; </div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;    }</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160; </div>
-<div class="line"><a name="l00182"></a><span class="lineno"><a class="line" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#aec7a7165457dd97dcf3ccc543b540134">  182</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#aec7a7165457dd97dcf3ccc543b540134">run</a> ()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;        <a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a912b34292981eab9177332a82d65692e">testKnownVectors</a>();</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;        <a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a13978500bf54c00b12d22da6d6ae1933">testOtherTypes</a>();</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    }</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;};</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;             <span class="stringliteral">&quot;A3258020484950515253545548495051525354554849505152535455484950515&quot;</span></div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;             <span class="stringliteral">&quot;2535455810101&quot;</span>},</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160; </div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;            <span class="comment">// ED25519:</span></div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;            {<span class="stringliteral">&quot;A4648020D75A980182B10AB7D54BFED3C964073A0EE172F3DAA62325AF021A68F&quot;</span></div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;             <span class="stringliteral">&quot;707511A8140E556&quot;</span></div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;             <span class="stringliteral">&quot;4300C360AC729086E2CC806E828A84877F1EB8E5D974D873E065224901555FB88&quot;</span></div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;             <span class="stringliteral">&quot;21590A33BACC61E&quot;</span></div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;             <span class="stringliteral">&quot;39701CF9B46BD25BF5F0595BBE24655141438E7A100B&quot;</span>,</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160; </div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;             <span class="stringliteral">&quot;A4278020799239ABA8FC4FF7EABFBC4C44E69E8BDFED993324E12ED64792ABE28&quot;</span></div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;             <span class="stringliteral">&quot;9CF1D5F810302&quot;</span></div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;             <span class="stringliteral">&quot;0000&quot;</span>}};</div>
 <div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160; </div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;<a class="code" href="namespaceripple_1_1cryptoconditions.html#a1c9843ac6ffae7f60102ccce2a8f31ba">BEAST_DEFINE_TESTSUITE</a> (PreimageSha256, conditions, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160; </div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;}</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> x : others)</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;        {</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/error_code.html">std::error_code</a> ec;</div>
 <div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160; </div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;}</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;            BEAST_EXPECT(!<a class="code" href="structripple_1_1cryptoconditions_1_1Fulfillment.html#a0cfe100013ad62e4d389040f52b9b96b">Fulfillment::deserialize</a>(<a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a096c232bb6087fddfe6f3d7ffbafcfa0">hexblob</a>(x.first), ec));</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;            BEAST_EXPECT(!<a class="code" href="classripple_1_1cryptoconditions_1_1Condition.html#a68f03ea61a631fe50d2e0948dfcc1631">Condition::deserialize</a>(<a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a096c232bb6087fddfe6f3d7ffbafcfa0">hexblob</a>(x.second), ec));</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;        }</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    }</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160; </div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00199"></a><span class="lineno"><a class="line" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#aec7a7165457dd97dcf3ccc543b540134">  199</a></span>&#160;    <a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#aec7a7165457dd97dcf3ccc543b540134">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        <a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a912b34292981eab9177332a82d65692e">testKnownVectors</a>();</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        <a class="code" href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a13978500bf54c00b12d22da6d6ae1933">testOtherTypes</a>();</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;    }</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;};</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160; </div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;<a class="code" href="namespaceripple_1_1cryptoconditions.html#a1c9843ac6ffae7f60102ccce2a8f31ba">BEAST_DEFINE_TESTSUITE</a>(PreimageSha256, conditions, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160; </div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;}  <span class="comment">// namespace cryptoconditions</span></div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160; </div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="anamespaceripple_html_aabe37451093c21757855542d68fba3ce"><div class="ttname"><a href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">ripple::makeSlice</a></div><div class="ttdeci">std::enable_if_t&lt; std::is_same&lt; T, char &gt;::value||std::is_same&lt; T, unsigned char &gt;::value, Slice &gt; makeSlice(std::array&lt; T, N &gt; const &amp;a)</div><div class="ttdef"><b>Definition:</b> <a href="Slice_8h_source.html#l00199">Slice.h:199</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aabe37451093c21757855542d68fba3ce"><div class="ttname"><a href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">ripple::makeSlice</a></div><div class="ttdeci">std::enable_if_t&lt; std::is_same&lt; T, char &gt;::value||std::is_same&lt; T, unsigned char &gt;::value, Slice &gt; makeSlice(std::array&lt; T, N &gt; const &amp;a)</div><div class="ttdef"><b>Definition:</b> <a href="Slice_8h_source.html#l00194">Slice.h:194</a></div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="astructripple_1_1cryptoconditions_1_1Fulfillment_html_a0cfe100013ad62e4d389040f52b9b96b"><div class="ttname"><a href="structripple_1_1cryptoconditions_1_1Fulfillment.html#a0cfe100013ad62e4d389040f52b9b96b">ripple::cryptoconditions::Fulfillment::deserialize</a></div><div class="ttdeci">static std::unique_ptr&lt; Fulfillment &gt; deserialize(Slice s, std::error_code &amp;ec)</div><div class="ttdoc">Load a fulfillment from its binary form.</div><div class="ttdef"><b>Definition:</b> <a href="Fulfillment_8cpp_source.html#l00066">Fulfillment.cpp:66</a></div></div>
+<div class="ttc" id="astructripple_1_1cryptoconditions_1_1Fulfillment_html_a0cfe100013ad62e4d389040f52b9b96b"><div class="ttname"><a href="structripple_1_1cryptoconditions_1_1Fulfillment.html#a0cfe100013ad62e4d389040f52b9b96b">ripple::cryptoconditions::Fulfillment::deserialize</a></div><div class="ttdeci">static std::unique_ptr&lt; Fulfillment &gt; deserialize(Slice s, std::error_code &amp;ec)</div><div class="ttdoc">Load a fulfillment from its binary form.</div><div class="ttdef"><b>Definition:</b> <a href="Fulfillment_8cpp_source.html#l00059">Fulfillment.cpp:59</a></div></div>
 <div class="ttc" id="autility_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/utility.html">utility</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ac6bd4d1a123ab730216bc521e094720f"><div class="ttname"><a href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">ripple::charUnHex</a></div><div class="ttdeci">int charUnHex(unsigned char c)</div><div class="ttdoc">Converts a hex digit to the corresponding integer.</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8cpp_source.html#l00026">strHex.cpp:26</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ac6bd4d1a123ab730216bc521e094720f"><div class="ttname"><a href="namespaceripple.html#ac6bd4d1a123ab730216bc521e094720f">ripple::charUnHex</a></div><div class="ttdeci">int charUnHex(unsigned char c)</div><div class="ttdoc">Converts a hex digit to the corresponding integer.</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8cpp_source.html#l00027">strHex.cpp:27</a></div></div>
 <div class="ttc" id="apair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a></div></div>
 <div class="ttc" id="areserve_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">std::vector::reserve</a></div><div class="ttdeci">T reserve(T... args)</div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/vector.html">vector</a></div></div>
 <div class="ttc" id="asize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/size.html">std::string::size</a></div><div class="ttdeci">T size(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1cryptoconditions_1_1PreimageSha256__test_html_a13978500bf54c00b12d22da6d6ae1933"><div class="ttname"><a href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a13978500bf54c00b12d22da6d6ae1933">ripple::cryptoconditions::PreimageSha256_test::testOtherTypes</a></div><div class="ttdeci">void testOtherTypes()</div><div class="ttdef"><b>Definition:</b> <a href="PreimageSha256__test_8cpp_source.html#l00126">PreimageSha256_test.cpp:126</a></div></div>
-<div class="ttc" id="aclassripple_1_1cryptoconditions_1_1PreimageSha256__test_html_aec7a7165457dd97dcf3ccc543b540134"><div class="ttname"><a href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#aec7a7165457dd97dcf3ccc543b540134">ripple::cryptoconditions::PreimageSha256_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="PreimageSha256__test_8cpp_source.html#l00182">PreimageSha256_test.cpp:182</a></div></div>
+<div class="ttc" id="aclassripple_1_1cryptoconditions_1_1PreimageSha256__test_html_a13978500bf54c00b12d22da6d6ae1933"><div class="ttname"><a href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a13978500bf54c00b12d22da6d6ae1933">ripple::cryptoconditions::PreimageSha256_test::testOtherTypes</a></div><div class="ttdeci">void testOtherTypes()</div><div class="ttdef"><b>Definition:</b> <a href="PreimageSha256__test_8cpp_source.html#l00127">PreimageSha256_test.cpp:127</a></div></div>
+<div class="ttc" id="aclassripple_1_1cryptoconditions_1_1PreimageSha256__test_html_aec7a7165457dd97dcf3ccc543b540134"><div class="ttname"><a href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#aec7a7165457dd97dcf3ccc543b540134">ripple::cryptoconditions::PreimageSha256_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="PreimageSha256__test_8cpp_source.html#l00199">PreimageSha256_test.cpp:199</a></div></div>
 <div class="ttc" id="aclassripple_1_1Buffer_html"><div class="ttname"><a href="classripple_1_1Buffer.html">ripple::Buffer</a></div><div class="ttdoc">Like std::vector&lt;char&gt; but better.</div><div class="ttdef"><b>Definition:</b> <a href="Buffer_8h_source.html#l00035">Buffer.h:35</a></div></div>
 <div class="ttc" id="aalgorithm_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a></div></div>
 <div class="ttc" id="aerror_code_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/error_code.html">std::error_code</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="aclassripple_1_1cryptoconditions_1_1PreimageSha256__test_html_a912b34292981eab9177332a82d65692e"><div class="ttname"><a href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a912b34292981eab9177332a82d65692e">ripple::cryptoconditions::PreimageSha256_test::testKnownVectors</a></div><div class="ttdeci">void testKnownVectors()</div><div class="ttdef"><b>Definition:</b> <a href="PreimageSha256__test_8cpp_source.html#l00067">PreimageSha256_test.cpp:67</a></div></div>
+<div class="ttc" id="aclassripple_1_1cryptoconditions_1_1PreimageSha256__test_html_a912b34292981eab9177332a82d65692e"><div class="ttname"><a href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a912b34292981eab9177332a82d65692e">ripple::cryptoconditions::PreimageSha256_test::testKnownVectors</a></div><div class="ttdeci">void testKnownVectors()</div><div class="ttdef"><b>Definition:</b> <a href="PreimageSha256__test_8cpp_source.html#l00066">PreimageSha256_test.cpp:66</a></div></div>
 <div class="ttc" id="apush_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">std::vector::push_back</a></div><div class="ttdeci">T push_back(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1cryptoconditions_1_1PreimageSha256__test_html"><div class="ttname"><a href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html">ripple::cryptoconditions::PreimageSha256_test</a></div><div class="ttdef"><b>Definition:</b> <a href="PreimageSha256__test_8cpp_source.html#l00035">PreimageSha256_test.cpp:35</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1cryptoconditions_html_a623cd4b6ce708a05ac624308c31520fa"><div class="ttname"><a href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">ripple::cryptoconditions::validate</a></div><div class="ttdeci">bool validate(Fulfillment const &amp;f, Condition const &amp;c, Slice m)</div><div class="ttdoc">Verify if the given message satisfies the fulfillment.</div><div class="ttdef"><b>Definition:</b> <a href="Fulfillment_8cpp_source.html#l00049">Fulfillment.cpp:49</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1cryptoconditions_html_a623cd4b6ce708a05ac624308c31520fa"><div class="ttname"><a href="namespaceripple_1_1cryptoconditions.html#a623cd4b6ce708a05ac624308c31520fa">ripple::cryptoconditions::validate</a></div><div class="ttdeci">bool validate(Fulfillment const &amp;f, Condition const &amp;c, Slice m)</div><div class="ttdoc">Verify if the given message satisfies the fulfillment.</div><div class="ttdef"><b>Definition:</b> <a href="Fulfillment_8cpp_source.html#l00047">Fulfillment.cpp:47</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="abegin_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/begin.html">std::string::cbegin</a></div><div class="ttdeci">T cbegin(T... args)</div></div>
 <div class="ttc" id="aend_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/end.html">std::string::cend</a></div><div class="ttdeci">T cend(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1cryptoconditions_1_1PreimageSha256__test_html_a096c232bb6087fddfe6f3d7ffbafcfa0"><div class="ttname"><a href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a096c232bb6087fddfe6f3d7ffbafcfa0">ripple::cryptoconditions::PreimageSha256_test::hexblob</a></div><div class="ttdeci">Buffer hexblob(std::string const &amp;s)</div><div class="ttdef"><b>Definition:</b> <a href="PreimageSha256__test_8cpp_source.html#l00039">PreimageSha256_test.cpp:39</a></div></div>
+<div class="ttc" id="aclassripple_1_1cryptoconditions_1_1PreimageSha256__test_html_a096c232bb6087fddfe6f3d7ffbafcfa0"><div class="ttname"><a href="classripple_1_1cryptoconditions_1_1PreimageSha256__test.html#a096c232bb6087fddfe6f3d7ffbafcfa0">ripple::cryptoconditions::PreimageSha256_test::hexblob</a></div><div class="ttdeci">Buffer hexblob(std::string const &amp;s)</div><div class="ttdef"><b>Definition:</b> <a href="PreimageSha256__test_8cpp_source.html#l00038">PreimageSha256_test.cpp:38</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1cryptoconditions_html_a1c9843ac6ffae7f60102ccce2a8f31ba"><div class="ttname"><a href="namespaceripple_1_1cryptoconditions.html#a1c9843ac6ffae7f60102ccce2a8f31ba">ripple::cryptoconditions::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(PreimageSha256, conditions, ripple)</div></div>
 <div class="ttc" id="adata_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/data.html">std::vector::data</a></div><div class="ttdeci">T data(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1cryptoconditions_1_1Condition_html_a68f03ea61a631fe50d2e0948dfcc1631"><div class="ttname"><a href="classripple_1_1cryptoconditions_1_1Condition.html#a68f03ea61a631fe50d2e0948dfcc1631">ripple::cryptoconditions::Condition::deserialize</a></div><div class="ttdeci">static std::unique_ptr&lt; Condition &gt; deserialize(Slice s, std::error_code &amp;ec)</div><div class="ttdoc">Load a condition from its binary form.</div><div class="ttdef"><b>Definition:</b> <a href="Condition_8cpp_source.html#l00154">Condition.cpp:154</a></div></div>

@@ -91,11 +91,11 @@ $(function() {
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_TEST_JTX_FEE_H_INCLUDED</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_TEST_JTX_FEE_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;test/jtx/Env.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;test/jtx/tags.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STAmount.h&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/contract.h&gt;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;boost/optional.hpp&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/contract.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STAmount.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;boost/optional.hpp&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;test/jtx/Env.h&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;test/jtx/tags.h&gt;</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">namespace </span>test {</div>
@@ -108,58 +108,50 @@ $(function() {
 <div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1fee.html#a1c76620f655af2775ad6645e8ad6656d">   38</a></span>&#160;    boost::optional&lt;STAmount&gt; <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#a1c76620f655af2775ad6645e8ad6656d">amount_</a>;</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keyword">explicit</span></div>
-<div class="line"><a name="l00042"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1fee.html#ae9eb0262ed5a0aa4fc897cd28711267f">   42</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#ae9eb0262ed5a0aa4fc897cd28711267f">fee</a> (<a class="code" href="structripple_1_1test_1_1jtx_1_1autofill__t.html">autofill_t</a>)</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        : <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#a942d31864e207cc6a2851b5a3a426ab3">manual_</a>(false)</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    {</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    }</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keyword">explicit</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1fee.html#a6ae062ae09ecf2b6fa1fe496e1d989c7">   48</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#a6ae062ae09ecf2b6fa1fe496e1d989c7">fee</a> (<a class="code" href="structripple_1_1test_1_1jtx_1_1none__t.html">none_t</a>)</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    {</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    }</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keyword">explicit</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1fee.html#adedd9b4ed283c4d7f19ff4c240a7ec93">   53</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#adedd9b4ed283c4d7f19ff4c240a7ec93">fee</a> (<a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; amount)</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        : <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#a1c76620f655af2775ad6645e8ad6656d">amount_</a>(amount)</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    {</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keywordflow">if</span> (! <a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(*<a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#a1c76620f655af2775ad6645e8ad6656d">amount_</a>))</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            Throw&lt;std::runtime_error&gt; (</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;                <span class="stringliteral">&quot;fee: not XRP&quot;</span>);</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    }</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">explicit</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1fee.html#afff4c2c726ba6b64a297f8e56b13d022">   62</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#afff4c2c726ba6b64a297f8e56b13d022">fee</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> amount)</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        : <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>{<a class="code" href="classripple_1_1STAmount.html">STAmount</a>{amount}}</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    {</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    }</div>
+<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1fee.html#ae9eb0262ed5a0aa4fc897cd28711267f">   41</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#ae9eb0262ed5a0aa4fc897cd28711267f">fee</a>(<a class="code" href="structripple_1_1test_1_1jtx_1_1autofill__t.html">autofill_t</a>) : <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#a942d31864e207cc6a2851b5a3a426ab3">manual_</a>(false)</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    {</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    }</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1fee.html#a6ae062ae09ecf2b6fa1fe496e1d989c7">   45</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#a6ae062ae09ecf2b6fa1fe496e1d989c7">fee</a>(<a class="code" href="structripple_1_1test_1_1jtx_1_1none__t.html">none_t</a>)</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    {</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    }</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1fee.html#adedd9b4ed283c4d7f19ff4c240a7ec93">   49</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#adedd9b4ed283c4d7f19ff4c240a7ec93">fee</a>(<a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; amount) : <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#a1c76620f655af2775ad6645e8ad6656d">amount_</a>(amount)</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    {</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">isXRP</a>(*<a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#a1c76620f655af2775ad6645e8ad6656d">amount_</a>))</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;            Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;fee: not XRP&quot;</span>);</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    }</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
+<div class="line"><a name="l00055"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1fee.html#afff4c2c726ba6b64a297f8e56b13d022">   55</a></span>&#160;    <span class="keyword">explicit</span> <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#afff4c2c726ba6b64a297f8e56b13d022">fee</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> amount) : <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>{<a class="code" href="classripple_1_1STAmount.html">STAmount</a>{amount}}</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    {</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    }</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#ac04bdec3533093516a24178dc1b8c683">operator()</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a>&amp;, <a class="code" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a>&amp; jt) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;};</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;}  <span class="comment">// namespace jtx</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html#ac04bdec3533093516a24178dc1b8c683">operator()</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a>&amp;, <a class="code" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a>&amp; jt) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;};</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;} <span class="comment">// jtx</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;} <span class="comment">// test</span></div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;} <span class="comment">// ripple</span></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1fee_html_a942d31864e207cc6a2851b5a3a426ab3"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1fee.html#a942d31864e207cc6a2851b5a3a426ab3">ripple::test::jtx::fee::manual_</a></div><div class="ttdeci">bool manual_</div><div class="ttdef"><b>Definition:</b> <a href="fee_8h_source.html#l00037">fee.h:37</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1fee_html_a1c76620f655af2775ad6645e8ad6656d"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1fee.html#a1c76620f655af2775ad6645e8ad6656d">ripple::test::jtx::fee::amount_</a></div><div class="ttdeci">boost::optional&lt; STAmount &gt; amount_</div><div class="ttdef"><b>Definition:</b> <a href="fee_8h_source.html#l00038">fee.h:38</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1autofill__t_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1autofill__t.html">ripple::test::jtx::autofill_t</a></div><div class="ttdef"><b>Definition:</b> <a href="tags_8h_source.html#l00031">tags.h:31</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1autofill__t_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1autofill__t.html">ripple::test::jtx::autofill_t</a></div><div class="ttdef"><b>Definition:</b> <a href="tags_8h_source.html#l00036">tags.h:36</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1jtx_1_1none__t_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1none__t.html">ripple::test::jtx::none_t</a></div><div class="ttdef"><b>Definition:</b> <a href="tags_8h_source.html#l00028">tags.h:28</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1fee_html_adedd9b4ed283c4d7f19ff4c240a7ec93"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1fee.html#adedd9b4ed283c4d7f19ff4c240a7ec93">ripple::test::jtx::fee::fee</a></div><div class="ttdeci">fee(STAmount const &amp;amount)</div><div class="ttdef"><b>Definition:</b> <a href="fee_8h_source.html#l00053">fee.h:53</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1fee_html_a6ae062ae09ecf2b6fa1fe496e1d989c7"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1fee.html#a6ae062ae09ecf2b6fa1fe496e1d989c7">ripple::test::jtx::fee::fee</a></div><div class="ttdeci">fee(none_t)</div><div class="ttdef"><b>Definition:</b> <a href="fee_8h_source.html#l00048">fee.h:48</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1fee_html_afff4c2c726ba6b64a297f8e56b13d022"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1fee.html#afff4c2c726ba6b64a297f8e56b13d022">ripple::test::jtx::fee::fee</a></div><div class="ttdeci">fee(std::uint64_t amount)</div><div class="ttdef"><b>Definition:</b> <a href="fee_8h_source.html#l00062">fee.h:62</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1fee_html_adedd9b4ed283c4d7f19ff4c240a7ec93"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1fee.html#adedd9b4ed283c4d7f19ff4c240a7ec93">ripple::test::jtx::fee::fee</a></div><div class="ttdeci">fee(STAmount const &amp;amount)</div><div class="ttdef"><b>Definition:</b> <a href="fee_8h_source.html#l00049">fee.h:49</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1fee_html_a6ae062ae09ecf2b6fa1fe496e1d989c7"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1fee.html#a6ae062ae09ecf2b6fa1fe496e1d989c7">ripple::test::jtx::fee::fee</a></div><div class="ttdeci">fee(none_t)</div><div class="ttdef"><b>Definition:</b> <a href="fee_8h_source.html#l00045">fee.h:45</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1fee_html_afff4c2c726ba6b64a297f8e56b13d022"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1fee.html#afff4c2c726ba6b64a297f8e56b13d022">ripple::test::jtx::fee::fee</a></div><div class="ttdeci">fee(std::uint64_t amount)</div><div class="ttdef"><b>Definition:</b> <a href="fee_8h_source.html#l00055">fee.h:55</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1jtx_1_1JTx_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1JTx.html">ripple::test::jtx::JTx</a></div><div class="ttdoc">Execution context for applying a JSON transaction.</div><div class="ttdef"><b>Definition:</b> <a href="JTx_8h_source.html#l00041">JTx.h:41</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html"><div class="ttname"><a href="classripple_1_1STAmount.html">ripple::STAmount</a></div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00042">STAmount.h:42</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a20d30277b9c78756b3d14493055a307c"><div class="ttname"><a href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">ripple::isXRP</a></div><div class="ttdeci">bool isXRP(AccountID const &amp;c)</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8h_source.html#l00121">AccountID.h:121</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a20d30277b9c78756b3d14493055a307c"><div class="ttname"><a href="namespaceripple.html#a20d30277b9c78756b3d14493055a307c">ripple::isXRP</a></div><div class="ttdeci">bool isXRP(AccountID const &amp;c)</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8h_source.html#l00118">AccountID.h:118</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1fee_html_ac04bdec3533093516a24178dc1b8c683"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1fee.html#ac04bdec3533093516a24178dc1b8c683">ripple::test::jtx::fee::operator()</a></div><div class="ttdeci">void operator()(Env &amp;, JTx &amp;jt) const</div><div class="ttdef"><b>Definition:</b> <a href="fee_8cpp_source.html#l00028">fee.cpp:28</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1fee_html_ae9eb0262ed5a0aa4fc897cd28711267f"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1fee.html#ae9eb0262ed5a0aa4fc897cd28711267f">ripple::test::jtx::fee::fee</a></div><div class="ttdeci">fee(autofill_t)</div><div class="ttdef"><b>Definition:</b> <a href="fee_8h_source.html#l00042">fee.h:42</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1fee_html_ae9eb0262ed5a0aa4fc897cd28711267f"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1fee.html#ae9eb0262ed5a0aa4fc897cd28711267f">ripple::test::jtx::fee::fee</a></div><div class="ttdeci">fee(autofill_t)</div><div class="ttdef"><b>Definition:</b> <a href="fee_8h_source.html#l00041">fee.h:41</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1fee_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1fee.html">ripple::test::jtx::fee</a></div><div class="ttdoc">Set the fee on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="fee_8h_source.html#l00034">fee.h:34</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00117">Env.h:117</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00114">Env.h:114</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

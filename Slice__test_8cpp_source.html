@@ -98,101 +98,99 @@ $(function() {
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
 <div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1Slice__test.html">   28</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1test_1_1Slice__test.html">Slice_test</a> : beast::unit_test::suite</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;{</div>
-<div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1Slice__test.html#afd99f41080957aa9c8c0cf240ed47232">   30</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="structripple_1_1test_1_1Slice__test.html#afd99f41080957aa9c8c0cf240ed47232">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> <span class="keyword">const</span> data[] =</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        {</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;            0xa8, 0xa1, 0x38, 0x45, 0x23, 0xec, 0xe4, 0x23,</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;            0x71, 0x6d, 0x2a, 0x18, 0xb4, 0x70, 0xcb, 0xf5,</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;            0xac, 0x2d, 0x89, 0x4d, 0x19, 0x9c, 0xf0, 0x2c,</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;            0x15, 0xd1, 0xf9, 0x9b, 0x66, 0xd2, 0x30, 0xd3</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        };</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        {</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            testcase (<span class="stringliteral">&quot;Equality &amp; Inequality&quot;</span>);</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1Slice__test.html#afd99f41080957aa9c8c0cf240ed47232">   31</a></span>&#160;    <a class="code" href="structripple_1_1test_1_1Slice__test.html#afd99f41080957aa9c8c0cf240ed47232">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> <span class="keyword">const</span> data[] = {</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;            0xa8, 0xa1, 0x38, 0x45, 0x23, 0xec, 0xe4, 0x23, 0x71, 0x6d, 0x2a,</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;            0x18, 0xb4, 0x70, 0xcb, 0xf5, 0xac, 0x2d, 0x89, 0x4d, 0x19, 0x9c,</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;            0xf0, 0x2c, 0x15, 0xd1, 0xf9, 0x9b, 0x66, 0xd2, 0x30, 0xd3};</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        {</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;            testcase(<span class="stringliteral">&quot;Equality &amp; Inequality&quot;</span>);</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            <a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span> s0{};</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            <a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span> s0{};</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            BEAST_EXPECT (s0.size() == 0);</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;            BEAST_EXPECT (s0.data() == <span class="keyword">nullptr</span>);</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;            BEAST_EXPECT (s0 == s0);</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;            <span class="comment">// Test slices of equal and unequal size pointing to same data:</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> i = 0; i != <span class="keyword">sizeof</span>(data); ++i)</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;            {</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                <a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span> s1 { data, i };</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;                BEAST_EXPECT (s1.size() == i);</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;                BEAST_EXPECT (s1.data() != <span class="keyword">nullptr</span>);</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;                <span class="keywordflow">if</span> (i == 0)</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;                    BEAST_EXPECT (s1 == s0);</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;                <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;                    BEAST_EXPECT (s1 != s0);</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;                <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> j = 0; j != <span class="keyword">sizeof</span>(data); ++j)</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;                {</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;                    <a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span> s2 { data, j };</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;                    <span class="keywordflow">if</span> (i == j)</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;                        BEAST_EXPECT (s1 == s2);</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;                    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;                        BEAST_EXPECT (s1 != s2);</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;                }</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            }</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            <span class="comment">// Test slices of equal size but pointing to different data:</span></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>, <span class="keyword">sizeof</span>(data)&gt; a;</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>, <span class="keyword">sizeof</span>(data)&gt; b;</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> i = 0; i != <span class="keyword">sizeof</span>(data); ++i)</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;                a[i] = b[i] = data[i];</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            BEAST_EXPECT (<a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(a) == <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(b));</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            b[7]++;</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            BEAST_EXPECT (<a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(a) != <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(b));</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            a[7]++;</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            BEAST_EXPECT (<a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(a) == <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(b));</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        }</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        {</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            testcase (<span class="stringliteral">&quot;Indexing&quot;</span>);</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            BEAST_EXPECT(s0.size() == 0);</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;            BEAST_EXPECT(s0.data() == <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            BEAST_EXPECT(s0 == s0);</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;            <span class="comment">// Test slices of equal and unequal size pointing to same data:</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> i = 0; i != <span class="keyword">sizeof</span>(data); ++i)</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;            {</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;                <a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span> s1{data, i};</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                BEAST_EXPECT(s1.size() == i);</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                BEAST_EXPECT(s1.data() != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;                <span class="keywordflow">if</span> (i == 0)</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;                    BEAST_EXPECT(s1 == s0);</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;                <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;                    BEAST_EXPECT(s1 != s0);</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;                <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> j = 0; j != <span class="keyword">sizeof</span>(data); ++j)</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;                {</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;                    <a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span> s2{data, j};</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;                    <span class="keywordflow">if</span> (i == j)</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;                        BEAST_EXPECT(s1 == s2);</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;                    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;                        BEAST_EXPECT(s1 != s2);</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;                }</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            }</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            <span class="comment">// Test slices of equal size but pointing to different data:</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>, <span class="keyword">sizeof</span>(data)&gt; a;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>, <span class="keyword">sizeof</span>(data)&gt; b;</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> i = 0; i != <span class="keyword">sizeof</span>(data); ++i)</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;                a[i] = b[i] = data[i];</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(a) == <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(b));</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            b[7]++;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(a) != <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(b));</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            a[7]++;</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            BEAST_EXPECT(<a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(a) == <a class="code" href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">makeSlice</a>(b));</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        }</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        {</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            testcase(<span class="stringliteral">&quot;Indexing&quot;</span>);</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            <a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span> s{data, <span class="keyword">sizeof</span>(data)};</div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            <a class="code" href="classripple_1_1Slice.html">Slice</a> <span class="keyword">const</span> s  { data, <span class="keyword">sizeof</span>(data) };</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> i = 0; i != <span class="keyword">sizeof</span>(data); ++i)</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;                BEAST_EXPECT (s[i] == data[i]);</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        }</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        {</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;            testcase (<span class="stringliteral">&quot;Advancing&quot;</span>);</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> i = 0; i &lt; <span class="keyword">sizeof</span>(data); ++i)</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;            {</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;                <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> j = 0; i + j &lt; <span class="keyword">sizeof</span>(data); ++j)</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;                {</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;                    <a class="code" href="classripple_1_1Slice.html">Slice</a> s (data + i, <span class="keyword">sizeof</span>(data) - i);</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;                    s += j;</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                    BEAST_EXPECT (s.<a class="code" href="classripple_1_1Slice.html#a9d49708cd15d24841b78dc0a9ecaac26">data</a>() == data + i + j);</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;                    BEAST_EXPECT (s.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() == <span class="keyword">sizeof</span>(data) - i - j);</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                }</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;            }</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        }</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    }</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;};</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> i = 0; i != <span class="keyword">sizeof</span>(data); ++i)</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;                BEAST_EXPECT(s[i] == data[i]);</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        }</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        {</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;            testcase(<span class="stringliteral">&quot;Advancing&quot;</span>);</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160; </div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;            <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> i = 0; i &lt; <span class="keyword">sizeof</span>(data); ++i)</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;            {</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                <span class="keywordflow">for</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> j = 0; i + j &lt; <span class="keyword">sizeof</span>(data); ++j)</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;                {</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;                    <a class="code" href="classripple_1_1Slice.html">Slice</a> s(data + i, <span class="keyword">sizeof</span>(data) - i);</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;                    s += j;</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;                    BEAST_EXPECT(s.<a class="code" href="classripple_1_1Slice.html#a9d49708cd15d24841b78dc0a9ecaac26">data</a>() == data + i + j);</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;                    BEAST_EXPECT(s.<a class="code" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a>() == <span class="keyword">sizeof</span>(data) - i - j);</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                }</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            }</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        }</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    }</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;};</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">BEAST_DEFINE_TESTSUITE</a>(<a class="code" href="classripple_1_1Slice.html">Slice</a>, ripple_basics, <a class="code" href="namespaceripple.html">ripple</a>);</div>
 <div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160; </div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">BEAST_DEFINE_TESTSUITE</a>(<a class="code" href="classripple_1_1Slice.html">Slice</a>, ripple_basics, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;}  <span class="comment">// namespace test</span></div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1Slice_html_aa6faa586508e0f849d4591d807353825"><div class="ttname"><a href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">ripple::Slice::size</a></div><div class="ttdeci">std::size_t size() const noexcept</div><div class="ttdoc">Returns the number of bytes in the storage.</div><div class="ttdef"><b>Definition:</b> <a href="Slice_8h_source.html#l00077">Slice.h:77</a></div></div>
-<div class="ttc" id="anamespaceripple_html_aabe37451093c21757855542d68fba3ce"><div class="ttname"><a href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">ripple::makeSlice</a></div><div class="ttdeci">std::enable_if_t&lt; std::is_same&lt; T, char &gt;::value||std::is_same&lt; T, unsigned char &gt;::value, Slice &gt; makeSlice(std::array&lt; T, N &gt; const &amp;a)</div><div class="ttdef"><b>Definition:</b> <a href="Slice_8h_source.html#l00199">Slice.h:199</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aabe37451093c21757855542d68fba3ce"><div class="ttname"><a href="namespaceripple.html#aabe37451093c21757855542d68fba3ce">ripple::makeSlice</a></div><div class="ttdeci">std::enable_if_t&lt; std::is_same&lt; T, char &gt;::value||std::is_same&lt; T, unsigned char &gt;::value, Slice &gt; makeSlice(std::array&lt; T, N &gt; const &amp;a)</div><div class="ttdef"><b>Definition:</b> <a href="Slice_8h_source.html#l00194">Slice.h:194</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_html_a52909fdbfa7f29626f24005ed12e6ef4"><div class="ttname"><a href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">ripple::test::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(AccountDelete, app, ripple)</div></div>
 <div class="ttc" id="aclassripple_1_1Slice_html"><div class="ttname"><a href="classripple_1_1Slice.html">ripple::Slice</a></div><div class="ttdoc">An immutable linear range of bytes.</div><div class="ttdef"><b>Definition:</b> <a href="Slice_8h_source.html#l00043">Slice.h:43</a></div></div>
 <div class="ttc" id="aclassripple_1_1Slice_html_a9d49708cd15d24841b78dc0a9ecaac26"><div class="ttname"><a href="classripple_1_1Slice.html#a9d49708cd15d24841b78dc0a9ecaac26">ripple::Slice::data</a></div><div class="ttdeci">std::uint8_t const  * data() const noexcept</div><div class="ttdoc">Return a pointer to beginning of the storage.</div><div class="ttdef"><b>Definition:</b> <a href="Slice_8h_source.html#l00087">Slice.h:87</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1Slice__test_html_afd99f41080957aa9c8c0cf240ed47232"><div class="ttname"><a href="structripple_1_1test_1_1Slice__test.html#afd99f41080957aa9c8c0cf240ed47232">ripple::test::Slice_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="Slice__test_8cpp_source.html#l00030">Slice_test.cpp:30</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1Slice__test_html_afd99f41080957aa9c8c0cf240ed47232"><div class="ttname"><a href="structripple_1_1test_1_1Slice__test.html#afd99f41080957aa9c8c0cf240ed47232">ripple::test::Slice_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="Slice__test_8cpp_source.html#l00031">Slice_test.cpp:31</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1Slice__test_html"><div class="ttname"><a href="structripple_1_1test_1_1Slice__test.html">ripple::test::Slice_test</a></div><div class="ttdef"><b>Definition:</b> <a href="Slice__test_8cpp_source.html#l00028">Slice_test.cpp:28</a></div></div>
 <div class="ttc" id="aarray_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/array.html">array</a></div></div>
 <div class="ttc" id="acstdint_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a></div></div>

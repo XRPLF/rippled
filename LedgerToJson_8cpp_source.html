@@ -100,300 +100,311 @@ $(function() {
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">namespace </span>{</div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keywordtype">bool</span> isFull(LedgerFill <span class="keyword">const</span>&amp; fill)</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;{</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.options &amp; <a class="code" href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a0fafa7070f778f38820f61903e1a5fc5">LedgerFill::full</a>;</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;}</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keywordtype">bool</span> isExpanded(LedgerFill <span class="keyword">const</span>&amp; fill)</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;{</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keywordflow">return</span> isFull(fill) || (<a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.options &amp; <a class="code" href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a4f938035f8870502b74cc4ad01256a99">LedgerFill::expand</a>);</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;}</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="keywordtype">bool</span> isBinary(LedgerFill <span class="keyword">const</span>&amp; fill)</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;{</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.options &amp; <a class="code" href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a38cf0d49202caf3c5941757512d9c8fb">LedgerFill::binary</a>;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;}</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Object&gt;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="keywordtype">void</span> fillJson(Object&amp; json, <span class="keywordtype">bool</span> closed, LedgerInfo <span class="keyword">const</span>&amp; info, <span class="keywordtype">bool</span> bFull)</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;{</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    json[jss::parent_hash]  = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a> (info.parentHash);</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    json[jss::ledger_index] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a> (info.seq);</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    json[jss::seqNum]       = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a> (info.seq);      <span class="comment">// DEPRECATED</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordflow">if</span> (closed)</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    {</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        json[jss::closed] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    }</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (! bFull)</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;isFull(LedgerFill <span class="keyword">const</span>&amp; fill)</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;{</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.options &amp; <a class="code" href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a0fafa7070f778f38820f61903e1a5fc5">LedgerFill::full</a>;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;}</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;isExpanded(LedgerFill <span class="keyword">const</span>&amp; fill)</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;{</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keywordflow">return</span> isFull(fill) || (<a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.options &amp; <a class="code" href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a4f938035f8870502b74cc4ad01256a99">LedgerFill::expand</a>);</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;}</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;isBinary(LedgerFill <span class="keyword">const</span>&amp; fill)</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;{</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.options &amp; <a class="code" href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a38cf0d49202caf3c5941757512d9c8fb">LedgerFill::binary</a>;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;}</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Object&gt;</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;fillJson(Object&amp; json, <span class="keywordtype">bool</span> closed, LedgerInfo <span class="keyword">const</span>&amp; info, <span class="keywordtype">bool</span> bFull)</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;{</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    json[jss::parent_hash] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(info.parentHash);</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    json[jss::ledger_index] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(info.seq);</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    json[jss::seqNum] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(info.seq);  <span class="comment">// DEPRECATED</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keywordflow">if</span> (closed)</div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    {</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        json[jss::closed] = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    }</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    json[jss::ledger_hash] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a> (info.hash);</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    json[jss::transaction_hash] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a> (info.txHash);</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    json[jss::account_hash] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a> (info.accountHash);</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    json[jss::total_coins] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a> (info.drops);</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="comment">// These next three are DEPRECATED.</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    json[jss::hash] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a> (info.hash);</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    json[jss::totalCoins] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a> (info.drops);</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    json[jss::accepted] = closed;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    json[jss::close_flags] = info.closeFlags;</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="comment">// Always show fields that contribute to the ledger hash</span></div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    json[jss::parent_close_time] = info.parentCloseTime.time_since_epoch().count();</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    json[jss::close_time] = info.closeTime.time_since_epoch().count();</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    json[jss::close_time_resolution] = info.closeTimeResolution.count();</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keywordflow">if</span> (info.closeTime != <a class="code" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>{})</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    {</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        json[jss::close_time_human] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(info.closeTime);</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        <span class="keywordflow">if</span> (! <a class="code" href="namespaceripple.html#a2bb299a1db65861baa4c6c1c91cf336f">getCloseAgree</a>(info))</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            json[jss::close_time_estimated] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    }</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;}</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Object&gt;</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="keywordtype">void</span> fillJsonBinary(Object&amp; json, <span class="keywordtype">bool</span> closed, LedgerInfo <span class="keyword">const</span>&amp; info)</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;{</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keywordflow">if</span> (! closed)</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        json[jss::closed] = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    {</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        json[jss::closed] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160; </div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        Serializer s;</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        <a class="code" href="namespaceripple.html#ad7942728afb82fa3846f81251de60e3e">addRaw</a> (info, s);</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        json[jss::ledger_data] = <a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a> (s.peekData ());</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    }</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;}</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        json[jss::closed] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    }</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (!bFull)</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    {</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        json[jss::closed] = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    }</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    json[jss::ledger_hash] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(info.hash);</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    json[jss::transaction_hash] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(info.txHash);</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    json[jss::account_hash] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(info.accountHash);</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    json[jss::total_coins] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(info.drops);</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="comment">// These next three are DEPRECATED.</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    json[jss::hash] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(info.hash);</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    json[jss::totalCoins] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(info.drops);</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    json[jss::accepted] = closed;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    json[jss::close_flags] = info.closeFlags;</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="comment">// Always show fields that contribute to the ledger hash</span></div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    json[jss::parent_close_time] =</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        info.parentCloseTime.time_since_epoch().count();</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    json[jss::close_time] = info.closeTime.time_since_epoch().count();</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    json[jss::close_time_resolution] = info.closeTimeResolution.count();</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keywordflow">if</span> (info.closeTime != <a class="code" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>{})</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    {</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        json[jss::close_time_human] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(info.closeTime);</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#a2bb299a1db65861baa4c6c1c91cf336f">getCloseAgree</a>(info))</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            json[jss::close_time_estimated] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    }</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;}</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Object&gt;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;fillJsonBinary(Object&amp; json, <span class="keywordtype">bool</span> closed, LedgerInfo <span class="keyword">const</span>&amp; info)</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;{</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keywordflow">if</span> (!closed)</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        json[jss::closed] = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    {</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        json[jss::closed] = <span class="keyword">true</span>;</div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;fillJsonTx(</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    LedgerFill <span class="keyword">const</span>&amp; fill,</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keywordtype">bool</span> bBinary,</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="keywordtype">bool</span> bExpanded,</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; txn,</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STObject const&gt;</a> <span class="keyword">const</span>&amp; stMeta)</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;{</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <span class="keywordflow">if</span> (!bExpanded)</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(txn-&gt;<a class="code" href="classripple_1_1STTx.html#ad314af66e2542db537b3b5de291d33c3">getTransactionID</a>());</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160; </div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> txJson{<a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>};</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> txnType = txn-&gt;<a class="code" href="classripple_1_1STTx.html#ac1eac05342231bce66b0924340da1ae9">getTxnType</a>();</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <span class="keywordflow">if</span> (bBinary)</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    {</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        txJson[jss::tx_blob] = <a class="code" href="namespaceripple.html#a681e6f9e09fb27ccce0cc37110b784ac">serializeHex</a>(*txn);</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        <span class="keywordflow">if</span> (stMeta)</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            txJson[jss::meta] = <a class="code" href="namespaceripple.html#a681e6f9e09fb27ccce0cc37110b784ac">serializeHex</a>(*stMeta);</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    }</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        Serializer s;</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        <a class="code" href="namespaceripple.html#ad7942728afb82fa3846f81251de60e3e">addRaw</a>(info, s);</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;        json[jss::ledger_data] = <a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(s.peekData());</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    }</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;}</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;fillJsonTx(</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    LedgerFill <span class="keyword">const</span>&amp; fill,</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <span class="keywordtype">bool</span> bBinary,</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <span class="keywordtype">bool</span> bExpanded,</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; txn,</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STObject const&gt;</a> <span class="keyword">const</span>&amp; stMeta)</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;{</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <span class="keywordflow">if</span> (!bExpanded)</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(txn-&gt;<a class="code" href="classripple_1_1STTx.html#ad314af66e2542db537b3b5de291d33c3">getTransactionID</a>());</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160; </div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> txJson{<a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>};</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> txnType = txn-&gt;<a class="code" href="classripple_1_1STTx.html#ac1eac05342231bce66b0924340da1ae9">getTxnType</a>();</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="keywordflow">if</span> (bBinary)</div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    {</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;        <a class="code" href="namespaceJson.html#a2fe7822c152a070dbc536c32fb090206">copyFrom</a>(txJson, txn-&gt;<a class="code" href="classripple_1_1STTx.html#a489c8110e24455a2e7dac783f4760cc2">getJson</a>(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>));</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;        txJson[jss::tx_blob] = <a class="code" href="namespaceripple.html#a681e6f9e09fb27ccce0cc37110b784ac">serializeHex</a>(*txn);</div>
 <div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        <span class="keywordflow">if</span> (stMeta)</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        {</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            txJson[jss::metaData] = stMeta-&gt;<a class="code" href="classripple_1_1STObject.html#acc2ceb95cdb8fc8b2520aeceabf17553">getJson</a>(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>);</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            <span class="keywordflow">if</span> (txnType == <a class="code" href="namespaceripple.html#a48e7bc26e67dbb8709698c89f67a9264ace21e6721f555ecd4ebf9b2c104a7a21">ttPAYMENT</a> || txnType == <a class="code" href="namespaceripple.html#a48e7bc26e67dbb8709698c89f67a9264a75d2b11655582bd6bd39c7fd4a407d9d">ttCHECK_CASH</a>)</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;            {</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;                <span class="comment">// Insert delivered amount</span></div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;                <span class="keyword">auto</span> txMeta = std::make_shared&lt;TxMeta&gt;(</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;                    txn-&gt;<a class="code" href="classripple_1_1STTx.html#ad314af66e2542db537b3b5de291d33c3">getTransactionID</a>(), <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger.seq(), *stMeta);</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                <a class="code" href="namespaceripple_1_1RPC.html#aaa57921f6c51e3495cb6bf14b94a4d90">RPC::insertDeliveredAmount</a>(</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                    txJson[jss::metaData], <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger, txn, *txMeta);</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;            }</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;        }</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    }</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160; </div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    <span class="keywordflow">if</span> ((<a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.options &amp; <a class="code" href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a4d567fe1eb1b4268e9ef85e4d2993ff6">LedgerFill::ownerFunds</a>) &amp;&amp;</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;        txn-&gt;<a class="code" href="classripple_1_1STTx.html#ac1eac05342231bce66b0924340da1ae9">getTxnType</a>() == <a class="code" href="namespaceripple.html#a48e7bc26e67dbb8709698c89f67a9264a386b20eac63613c062612835c86118a6">ttOFFER_CREATE</a>)</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;    {</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> account = txn-&gt;<a class="code" href="classripple_1_1STObject.html#a0d2d874d34a1c3ed432cdb9fb1386b35">getAccountID</a>(<a class="code" href="namespaceripple.html#af0fe0cd9ec9c5f73998088d7d133c394">sfAccount</a>);</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> amount = txn-&gt;<a class="code" href="classripple_1_1STObject.html#a8e207109e646759f4927d90e4404893f">getFieldAmount</a>(<a class="code" href="namespaceripple.html#a7b344311df2e05264161f7b7e38c9730">sfTakerGets</a>);</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;            txJson[jss::meta] = <a class="code" href="namespaceripple.html#a681e6f9e09fb27ccce0cc37110b784ac">serializeHex</a>(*stMeta);</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    }</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    {</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        <a class="code" href="namespaceJson.html#a2fe7822c152a070dbc536c32fb090206">copyFrom</a>(txJson, txn-&gt;<a class="code" href="classripple_1_1STTx.html#a489c8110e24455a2e7dac783f4760cc2">getJson</a>(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>));</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        <span class="keywordflow">if</span> (stMeta)</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;        {</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;            txJson[jss::metaData] = stMeta-&gt;<a class="code" href="classripple_1_1STObject.html#acc2ceb95cdb8fc8b2520aeceabf17553">getJson</a>(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>);</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;            <span class="keywordflow">if</span> (txnType == <a class="code" href="namespaceripple.html#a48e7bc26e67dbb8709698c89f67a9264ace21e6721f555ecd4ebf9b2c104a7a21">ttPAYMENT</a> || txnType == <a class="code" href="namespaceripple.html#a48e7bc26e67dbb8709698c89f67a9264a75d2b11655582bd6bd39c7fd4a407d9d">ttCHECK_CASH</a>)</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;            {</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;                <span class="comment">// Insert delivered amount</span></div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                <span class="keyword">auto</span> txMeta = std::make_shared&lt;TxMeta&gt;(</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                    txn-&gt;<a class="code" href="classripple_1_1STTx.html#ad314af66e2542db537b3b5de291d33c3">getTransactionID</a>(), <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger.seq(), *stMeta);</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;                <a class="code" href="namespaceripple_1_1RPC.html#aaa57921f6c51e3495cb6bf14b94a4d90">RPC::insertDeliveredAmount</a>(</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;                    txJson[jss::metaData], <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger, txn, *txMeta);</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;            }</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;        }</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    }</div>
 <div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160; </div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;        <span class="comment">// If the offer create is not self funded then add the</span></div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;        <span class="comment">// owner balance</span></div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;        <span class="keywordflow">if</span> (account != amount.getIssuer())</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;        {</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> ownerFunds = <a class="code" href="namespaceripple.html#a15bb971c7e554fc3df218aba54c33fcc">accountFunds</a>(</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger,</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                account,</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                amount,</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;                <a class="code" href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085a91e3c4f8089025c7ecf66dd62b822d90">fhIGNORE_FREEZE</a>,</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a>{beast::Journal::getNullSink()});</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;            txJson[jss::owner_funds] = ownerFunds.getText();</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        }</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    }</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160; </div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;    <span class="keywordflow">return</span> txJson;</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;}</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160; </div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Object&gt;</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;<span class="keywordtype">void</span> fillJsonTx (Object&amp; json, LedgerFill <span class="keyword">const</span>&amp; fill)</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;{</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    <span class="keyword">auto</span>&amp;&amp; txns = <a class="code" href="namespaceJson.html#a844d3d2c97ae1bafd1faa5a1f408514b">setArray</a> (json, jss::transactions);</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;    <span class="keyword">auto</span> bBinary = isBinary(fill);</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;    <span class="keyword">auto</span> bExpanded = isExpanded(fill);</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160; </div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;    {</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; i: <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger.txs)</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;        {</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;            txns.append(fillJsonTx(fill, bBinary, bExpanded, i.first, i.second));</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;        }</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    }</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;    <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <span class="keywordflow">if</span> ((<a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.options &amp; <a class="code" href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a4d567fe1eb1b4268e9ef85e4d2993ff6">LedgerFill::ownerFunds</a>) &amp;&amp;</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;        txn-&gt;<a class="code" href="classripple_1_1STTx.html#ac1eac05342231bce66b0924340da1ae9">getTxnType</a>() == <a class="code" href="namespaceripple.html#a48e7bc26e67dbb8709698c89f67a9264a386b20eac63613c062612835c86118a6">ttOFFER_CREATE</a>)</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    {</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> account = txn-&gt;<a class="code" href="classripple_1_1STObject.html#a0d2d874d34a1c3ed432cdb9fb1386b35">getAccountID</a>(<a class="code" href="namespaceripple.html#af0fe0cd9ec9c5f73998088d7d133c394">sfAccount</a>);</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> amount = txn-&gt;<a class="code" href="classripple_1_1STObject.html#a8e207109e646759f4927d90e4404893f">getFieldAmount</a>(<a class="code" href="namespaceripple.html#a7b344311df2e05264161f7b7e38c9730">sfTakerGets</a>);</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160; </div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        <span class="comment">// If the offer create is not self funded then add the</span></div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        <span class="comment">// owner balance</span></div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;        <span class="keywordflow">if</span> (account != amount.getIssuer())</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        {</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> ownerFunds = <a class="code" href="namespaceripple.html#a15bb971c7e554fc3df218aba54c33fcc">accountFunds</a>(</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger,</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;                account,</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;                amount,</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;                <a class="code" href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085a91e3c4f8089025c7ecf66dd62b822d90">fhIGNORE_FREEZE</a>,</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;                <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a>{beast::Journal::getNullSink()});</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;            txJson[jss::owner_funds] = ownerFunds.getText();</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        }</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;    }</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160; </div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;    <span class="keywordflow">return</span> txJson;</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;}</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160; </div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Object&gt;</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;fillJsonTx(Object&amp; json, LedgerFill <span class="keyword">const</span>&amp; fill)</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;{</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    <span class="keyword">auto</span>&amp;&amp; txns = <a class="code" href="namespaceJson.html#a844d3d2c97ae1bafd1faa5a1f408514b">setArray</a>(json, jss::transactions);</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;    <span class="keyword">auto</span> bBinary = isBinary(fill);</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;    <span class="keyword">auto</span> bExpanded = isExpanded(fill);</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160; </div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;    <span class="keywordflow">try</span></div>
 <div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    {</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;        <span class="comment">// Nothing the user can do about this.</span></div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    }</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;}</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160; </div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Object&gt;</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;<span class="keywordtype">void</span> fillJsonState(Object&amp; json, LedgerFill <span class="keyword">const</span>&amp; fill)</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;{</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    <span class="keyword">auto</span>&amp; ledger = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger;</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <span class="keyword">auto</span>&amp;&amp; array = <a class="code" href="namespaceJson.html#a844d3d2c97ae1bafd1faa5a1f408514b">Json::setArray</a> (json, jss::accountState);</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    <span class="keyword">auto</span> expanded = isExpanded(fill);</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    <span class="keyword">auto</span> binary = isBinary(fill);</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; i : <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger.txs)</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;        {</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;            txns.append(</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;                fillJsonTx(fill, bBinary, bExpanded, i.first, i.second));</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;        }</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    }</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;    <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    {</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;        <span class="comment">// Nothing the user can do about this.</span></div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    }</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;}</div>
 <div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160; </div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <span class="keywordflow">for</span>(<span class="keyword">auto</span> <span class="keyword">const</span>&amp; sle : ledger.sles)</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;    {</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;        <span class="keywordflow">if</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.type == <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bae3eb391490c08d0dbf2cb353e2ba440b">ltINVALID</a> || sle-&gt;getType () == <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.type)</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;        {</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;            <span class="keywordflow">if</span> (binary)</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;            {</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;                <span class="keyword">auto</span>&amp;&amp; obj = <a class="code" href="namespaceJson.html#acc1cbe15334d91694665c836f92ecc8a">appendObject</a>(array);</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;                obj[jss::hash] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(sle-&gt;key());</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;                obj[jss::tx_blob] = <a class="code" href="namespaceripple.html#a681e6f9e09fb27ccce0cc37110b784ac">serializeHex</a>(*sle);</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;            }</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;            <span class="keywordflow">else</span> <span class="keywordflow">if</span> (expanded)</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;                array.append(sle-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>));</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;                array.append(<a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(sle-&gt;key()));</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;        }</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;    }</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;}</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160; </div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Object&gt;</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;<span class="keywordtype">void</span> fillJsonQueue(Object&amp; json, LedgerFill <span class="keyword">const</span>&amp; fill)</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;{</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;    <span class="keyword">auto</span>&amp;&amp; queueData = <a class="code" href="namespaceJson.html#a844d3d2c97ae1bafd1faa5a1f408514b">Json::setArray</a>(json, jss::queue_data);</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    <span class="keyword">auto</span> bBinary = isBinary(fill);</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;    <span class="keyword">auto</span> bExpanded = isExpanded(fill);</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160; </div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; tx : <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.txQueue)</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;    {</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;        <span class="keyword">auto</span>&amp;&amp; txJson = <a class="code" href="namespaceJson.html#acc1cbe15334d91694665c836f92ecc8a">appendObject</a>(queueData);</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;        txJson[jss::fee_level] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(tx.feeLevel);</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;        <span class="keywordflow">if</span> (tx.lastValid)</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;            txJson[jss::LastLedgerSequence] = *tx.lastValid;</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        <span class="keywordflow">if</span> (tx.consequences)</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;        {</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;            txJson[jss::fee] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;                tx.consequences-&gt;fee);</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;            <span class="keyword">auto</span> spend = tx.consequences-&gt;potentialSpend +</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;                tx.consequences-&gt;fee;</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;            txJson[jss::max_spend_drops] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(spend);</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;            <span class="keyword">auto</span> authChanged = tx.consequences-&gt;category ==</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                <a class="code" href="structripple_1_1TxConsequences.html#ab1a8896e43f9f4ebe4113631b56a7fbcaea7777d0faf53e7b154d9239bb1ee1c8">TxConsequences::blocker</a>;</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;            txJson[jss::auth_change] = authChanged;</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;        }</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160; </div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;        txJson[jss::account] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(tx.account);</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;        txJson[<span class="stringliteral">&quot;retries_remaining&quot;</span>] = tx.retriesRemaining;</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;        txJson[<span class="stringliteral">&quot;preflight_result&quot;</span>] = <a class="code" href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">transToken</a>(tx.preflightResult);</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;        <span class="keywordflow">if</span> (tx.lastResult)</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;            txJson[<span class="stringliteral">&quot;last_result&quot;</span>] = <a class="code" href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">transToken</a>(*tx.lastResult);</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160; </div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;        txJson[jss::tx] = fillJsonTx(fill, bBinary, bExpanded, tx.txn, <span class="keyword">nullptr</span>);</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    }</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;}</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160; </div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Object&gt;</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;<span class="keywordtype">void</span> fillJson (Object&amp; json, LedgerFill <span class="keyword">const</span>&amp; fill)</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;{</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    <span class="comment">// TODO: what happens if bBinary and bExtracted are both set?</span></div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    <span class="comment">// Is there a way to report this back?</span></div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    <span class="keyword">auto</span> bFull = isFull(fill);</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    <span class="keywordflow">if</span> (isBinary(fill))</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        fillJsonBinary(json, ! <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger.open(), <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger.info());</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        fillJson(json, ! <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger.open(), <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger.info(), bFull);</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    <span class="keywordflow">if</span> (bFull || <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.options &amp; <a class="code" href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826af755a18c1418b2e0078d8f967ecaac34">LedgerFill::dumpTxrp</a>)</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;        fillJsonTx(json, fill);</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160; </div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    <span class="keywordflow">if</span> (bFull || <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.options &amp; <a class="code" href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a22467bc2d1c3fd3a960ffa1c3742aba8">LedgerFill::dumpState</a>)</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;        fillJsonState(json, fill);</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;}</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160; </div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;} <span class="comment">// namespace</span></div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Object&gt;</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;fillJsonState(Object&amp; json, LedgerFill <span class="keyword">const</span>&amp; fill)</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;{</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;    <span class="keyword">auto</span>&amp; ledger = <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger;</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;    <span class="keyword">auto</span>&amp;&amp; array = <a class="code" href="namespaceJson.html#a844d3d2c97ae1bafd1faa5a1f408514b">Json::setArray</a>(json, jss::accountState);</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;    <span class="keyword">auto</span> expanded = isExpanded(fill);</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;    <span class="keyword">auto</span> binary = isBinary(fill);</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160; </div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; sle : ledger.sles)</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;    {</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        <span class="keywordflow">if</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.type == <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bae3eb391490c08d0dbf2cb353e2ba440b">ltINVALID</a> || sle-&gt;getType() == <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.type)</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        {</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;            <span class="keywordflow">if</span> (binary)</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;            {</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;                <span class="keyword">auto</span>&amp;&amp; obj = <a class="code" href="namespaceJson.html#acc1cbe15334d91694665c836f92ecc8a">appendObject</a>(array);</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;                obj[jss::hash] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(sle-&gt;key());</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;                obj[jss::tx_blob] = <a class="code" href="namespaceripple.html#a681e6f9e09fb27ccce0cc37110b784ac">serializeHex</a>(*sle);</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;            }</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;            <span class="keywordflow">else</span> <span class="keywordflow">if</span> (expanded)</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;                array.append(sle-&gt;getJson(<a class="code" href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">JsonOptions::none</a>));</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;                array.append(<a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(sle-&gt;key()));</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;        }</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    }</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;}</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160; </div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Object&gt;</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;fillJsonQueue(Object&amp; json, LedgerFill <span class="keyword">const</span>&amp; fill)</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;{</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;    <span class="keyword">auto</span>&amp;&amp; queueData = <a class="code" href="namespaceJson.html#a844d3d2c97ae1bafd1faa5a1f408514b">Json::setArray</a>(json, jss::queue_data);</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;    <span class="keyword">auto</span> bBinary = isBinary(fill);</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;    <span class="keyword">auto</span> bExpanded = isExpanded(fill);</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160; </div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; tx : <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.txQueue)</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;    {</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;        <span class="keyword">auto</span>&amp;&amp; txJson = <a class="code" href="namespaceJson.html#acc1cbe15334d91694665c836f92ecc8a">appendObject</a>(queueData);</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;        txJson[jss::fee_level] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(tx.feeLevel);</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        <span class="keywordflow">if</span> (tx.lastValid)</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;            txJson[jss::LastLedgerSequence] = *tx.lastValid;</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;        <span class="keywordflow">if</span> (tx.consequences)</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;        {</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;            txJson[jss::fee] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(tx.consequences-&gt;fee);</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;            <span class="keyword">auto</span> spend = tx.consequences-&gt;potentialSpend + tx.consequences-&gt;fee;</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;            txJson[jss::max_spend_drops] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(spend);</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;            <span class="keyword">auto</span> authChanged =</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;                tx.consequences-&gt;category == <a class="code" href="structripple_1_1TxConsequences.html#ab1a8896e43f9f4ebe4113631b56a7fbcaea7777d0faf53e7b154d9239bb1ee1c8">TxConsequences::blocker</a>;</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;            txJson[jss::auth_change] = authChanged;</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;        }</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160; </div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;        txJson[jss::account] = <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(tx.account);</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;        txJson[<span class="stringliteral">&quot;retries_remaining&quot;</span>] = tx.retriesRemaining;</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;        txJson[<span class="stringliteral">&quot;preflight_result&quot;</span>] = <a class="code" href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">transToken</a>(tx.preflightResult);</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;        <span class="keywordflow">if</span> (tx.lastResult)</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;            txJson[<span class="stringliteral">&quot;last_result&quot;</span>] = <a class="code" href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">transToken</a>(*tx.lastResult);</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160; </div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        txJson[jss::tx] = fillJsonTx(fill, bBinary, bExpanded, tx.txn, <span class="keyword">nullptr</span>);</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    }</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;}</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160; </div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Object&gt;</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;fillJson(Object&amp; json, LedgerFill <span class="keyword">const</span>&amp; fill)</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;{</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    <span class="comment">// TODO: what happens if bBinary and bExtracted are both set?</span></div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    <span class="comment">// Is there a way to report this back?</span></div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    <span class="keyword">auto</span> bFull = isFull(fill);</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;    <span class="keywordflow">if</span> (isBinary(fill))</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;        fillJsonBinary(json, !<a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger.open(), <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger.info());</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;        fillJson(json, !<a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger.open(), <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.ledger.info(), bFull);</div>
 <div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160; </div>
-<div class="line"><a name="l00263"></a><span class="lineno"><a class="line" href="namespaceripple.html#a76c03032f9f754bf4659c3e18ede1510">  263</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespaceripple.html#a76c03032f9f754bf4659c3e18ede1510">addJson</a> (<a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; json, <a class="code" href="structripple_1_1LedgerFill.html">LedgerFill</a> <span class="keyword">const</span>&amp; fill)</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;{</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    <span class="keyword">auto</span>&amp;&amp; <span class="keywordtype">object</span> = <a class="code" href="namespaceJson.html#abb848a3f8224f260eb73b028026995c8">Json::addObject</a> (json, jss::ledger);</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;    fillJson (<span class="keywordtype">object</span>, fill);</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160; </div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    <span class="keywordflow">if</span> ((fill.options &amp; <a class="code" href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826adea306223be25992ba166d6e5e09158b">LedgerFill::dumpQueue</a>) &amp;&amp; !fill.txQueue.empty())</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;        fillJsonQueue(json, fill);</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;}</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    <span class="keywordflow">if</span> (bFull || <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.options &amp; <a class="code" href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826af755a18c1418b2e0078d8f967ecaac34">LedgerFill::dumpTxrp</a>)</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;        fillJsonTx(json, fill);</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160; </div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;    <span class="keywordflow">if</span> (bFull || <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/fill.html">fill</a>.options &amp; <a class="code" href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a22467bc2d1c3fd3a960ffa1c3742aba8">LedgerFill::dumpState</a>)</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;        fillJsonState(json, fill);</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;}</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160; </div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;}  <span class="comment">// namespace</span></div>
 <div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160; </div>
-<div class="line"><a name="l00272"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">  272</a></span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a> <a class="code" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a> (<a class="code" href="structripple_1_1LedgerFill.html">LedgerFill</a> <span class="keyword">const</span>&amp; fill)</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;{</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> json;</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    fillJson (json, fill);</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    <span class="keywordflow">return</span> json;</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;}</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160; </div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00273"></a><span class="lineno"><a class="line" href="namespaceripple.html#a76c03032f9f754bf4659c3e18ede1510">  273</a></span>&#160;<a class="code" href="namespaceripple.html#a76c03032f9f754bf4659c3e18ede1510">addJson</a>(<a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; json, <a class="code" href="structripple_1_1LedgerFill.html">LedgerFill</a> <span class="keyword">const</span>&amp; fill)</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;{</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    <span class="keyword">auto</span>&amp;&amp; <span class="keywordtype">object</span> = <a class="code" href="namespaceJson.html#abb848a3f8224f260eb73b028026995c8">Json::addObject</a>(json, jss::ledger);</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    fillJson(<span class="keywordtype">object</span>, fill);</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160; </div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    <span class="keywordflow">if</span> ((fill.options &amp; <a class="code" href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826adea306223be25992ba166d6e5e09158b">LedgerFill::dumpQueue</a>) &amp;&amp; !fill.txQueue.empty())</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;        fillJsonQueue(json, fill);</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;}</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160; </div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;<a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00283"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">  283</a></span>&#160;<a class="code" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<a class="code" href="structripple_1_1LedgerFill.html">LedgerFill</a> <span class="keyword">const</span>&amp; fill)</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;{</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> json;</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;    fillJson(json, fill);</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    <span class="keywordflow">return</span> json;</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;}</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160; </div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1STTx_html_ac1eac05342231bce66b0924340da1ae9"><div class="ttname"><a href="classripple_1_1STTx.html#ac1eac05342231bce66b0924340da1ae9">ripple::STTx::getTxnType</a></div><div class="ttdeci">TxType getTxnType() const</div><div class="ttdef"><b>Definition:</b> <a href="STTx_8h_source.html#l00098">STTx.h:98</a></div></div>
-<div class="ttc" id="anamespaceJson_html_acc1cbe15334d91694665c836f92ecc8a"><div class="ttname"><a href="namespaceJson.html#acc1cbe15334d91694665c836f92ecc8a">Json::appendObject</a></div><div class="ttdeci">Json::Value &amp; appendObject(Json::Value &amp;)</div><div class="ttdoc">Append a new subobject to a Json object.</div><div class="ttdef"><b>Definition:</b> <a href="Object_8h_source.html#l00423">Object.h:423</a></div></div>
+<div class="ttc" id="aclassripple_1_1STTx_html_ac1eac05342231bce66b0924340da1ae9"><div class="ttname"><a href="classripple_1_1STTx.html#ac1eac05342231bce66b0924340da1ae9">ripple::STTx::getTxnType</a></div><div class="ttdeci">TxType getTxnType() const</div><div class="ttdef"><b>Definition:</b> <a href="STTx_8h_source.html#l00105">STTx.h:105</a></div></div>
+<div class="ttc" id="anamespaceJson_html_acc1cbe15334d91694665c836f92ecc8a"><div class="ttname"><a href="namespaceJson.html#acc1cbe15334d91694665c836f92ecc8a">Json::appendObject</a></div><div class="ttdeci">Json::Value &amp; appendObject(Json::Value &amp;)</div><div class="ttdoc">Append a new subobject to a Json object.</div><div class="ttdef"><b>Definition:</b> <a href="Object_8h_source.html#l00450">Object.h:450</a></div></div>
 <div class="ttc" id="astructripple_1_1LedgerFill_html_acb9af41b82a8550a08d2288b6f9fc826af755a18c1418b2e0078d8f967ecaac34"><div class="ttname"><a href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826af755a18c1418b2e0078d8f967ecaac34">ripple::LedgerFill::dumpTxrp</a></div><div class="ttdeci">@ dumpTxrp</div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8h_source.html#l00044">LedgerToJson.h:44</a></div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aexception_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_html_a48e7bc26e67dbb8709698c89f67a9264a386b20eac63613c062612835c86118a6"><div class="ttname"><a href="namespaceripple.html#a48e7bc26e67dbb8709698c89f67a9264a386b20eac63613c062612835c86118a6">ripple::ttOFFER_CREATE</a></div><div class="ttdeci">@ ttOFFER_CREATE</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8h_source.html#l00044">TxFormats.h:44</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a48e7bc26e67dbb8709698c89f67a9264a386b20eac63613c062612835c86118a6"><div class="ttname"><a href="namespaceripple.html#a48e7bc26e67dbb8709698c89f67a9264a386b20eac63613c062612835c86118a6">ripple::ttOFFER_CREATE</a></div><div class="ttdeci">@ ttOFFER_CREATE</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8h_source.html#l00043">TxFormats.h:43</a></div></div>
 <div class="ttc" id="astructripple_1_1LedgerFill_html_acb9af41b82a8550a08d2288b6f9fc826adea306223be25992ba166d6e5e09158b"><div class="ttname"><a href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826adea306223be25992ba166d6e5e09158b">ripple::LedgerFill::dumpQueue</a></div><div class="ttdeci">@ dumpQueue</div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8h_source.html#l00050">LedgerToJson.h:50</a></div></div>
-<div class="ttc" id="anamespaceripple_html_af0fe0cd9ec9c5f73998088d7d133c394"><div class="ttname"><a href="namespaceripple.html#af0fe0cd9ec9c5f73998088d7d133c394">ripple::sfAccount</a></div><div class="ttdeci">const SF_Account sfAccount(access, STI_ACCOUNT, 1, &quot;Account&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00460">SField.h:460</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a875ae996b37ed036597d70628ae053e3"><div class="ttname"><a href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">ripple::transToken</a></div><div class="ttdeci">std::string transToken(TER code)</div><div class="ttdef"><b>Definition:</b> <a href="TER_8cpp_source.html#l00183">TER.cpp:183</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ad7942728afb82fa3846f81251de60e3e"><div class="ttname"><a href="namespaceripple.html#ad7942728afb82fa3846f81251de60e3e">ripple::addRaw</a></div><div class="ttdeci">void addRaw(LedgerInfo const &amp;info, Serializer &amp;s)</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00042">View.cpp:42</a></div></div>
+<div class="ttc" id="anamespaceripple_html_af0fe0cd9ec9c5f73998088d7d133c394"><div class="ttname"><a href="namespaceripple.html#af0fe0cd9ec9c5f73998088d7d133c394">ripple::sfAccount</a></div><div class="ttdeci">const SF_Account sfAccount(access, STI_ACCOUNT, 1, &quot;Account&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00474">SField.h:474</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a875ae996b37ed036597d70628ae053e3"><div class="ttname"><a href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">ripple::transToken</a></div><div class="ttdeci">std::string transToken(TER code)</div><div class="ttdef"><b>Definition:</b> <a href="TER_8cpp_source.html#l00279">TER.cpp:279</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ad7942728afb82fa3846f81251de60e3e"><div class="ttname"><a href="namespaceripple.html#ad7942728afb82fa3846f81251de60e3e">ripple::addRaw</a></div><div class="ttdeci">void addRaw(LedgerInfo const &amp;info, Serializer &amp;s)</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00043">View.cpp:43</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a96888695e8d79474e080c334f149e30a"><div class="ttname"><a href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">ripple::to_string</a></div><div class="ttdeci">std::string to_string(ListDisposition disposition)</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorList_8cpp_source.html#l00041">ValidatorList.cpp:41</a></div></div>
 <div class="ttc" id="astructripple_1_1LedgerFill_html_acb9af41b82a8550a08d2288b6f9fc826a4f938035f8870502b74cc4ad01256a99"><div class="ttname"><a href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a4f938035f8870502b74cc4ad01256a99">ripple::LedgerFill::expand</a></div><div class="ttdeci">@ expand</div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8h_source.html#l00046">LedgerToJson.h:46</a></div></div>
-<div class="ttc" id="anamespaceJson_html_a2fe7822c152a070dbc536c32fb090206"><div class="ttname"><a href="namespaceJson.html#a2fe7822c152a070dbc536c32fb090206">Json::copyFrom</a></div><div class="ttdeci">void copyFrom(Json::Value &amp;to, Json::Value const &amp;from)</div><div class="ttdoc">Copy all the keys and values from one object into another.</div><div class="ttdef"><b>Definition:</b> <a href="Object_8cpp_source.html#l00206">Object.cpp:206</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a48e7bc26e67dbb8709698c89f67a9264ace21e6721f555ecd4ebf9b2c104a7a21"><div class="ttname"><a href="namespaceripple.html#a48e7bc26e67dbb8709698c89f67a9264ace21e6721f555ecd4ebf9b2c104a7a21">ripple::ttPAYMENT</a></div><div class="ttdeci">@ ttPAYMENT</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8h_source.html#l00037">TxFormats.h:37</a></div></div>
+<div class="ttc" id="anamespaceJson_html_a2fe7822c152a070dbc536c32fb090206"><div class="ttname"><a href="namespaceJson.html#a2fe7822c152a070dbc536c32fb090206">Json::copyFrom</a></div><div class="ttdeci">void copyFrom(Json::Value &amp;to, Json::Value const &amp;from)</div><div class="ttdoc">Copy all the keys and values from one object into another.</div><div class="ttdef"><b>Definition:</b> <a href="Object_8cpp_source.html#l00226">Object.cpp:226</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a48e7bc26e67dbb8709698c89f67a9264ace21e6721f555ecd4ebf9b2c104a7a21"><div class="ttname"><a href="namespaceripple.html#a48e7bc26e67dbb8709698c89f67a9264ace21e6721f555ecd4ebf9b2c104a7a21">ripple::ttPAYMENT</a></div><div class="ttdeci">@ ttPAYMENT</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8h_source.html#l00036">TxFormats.h:36</a></div></div>
 <div class="ttc" id="afill_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/fill.html">std::fill</a></div><div class="ttdeci">T fill(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_html_af6e0324b257fc9992b83ecf827c2a07bae3eb391490c08d0dbf2cb353e2ba440b"><div class="ttname"><a href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bae3eb391490c08d0dbf2cb353e2ba440b">ripple::ltINVALID</a></div><div class="ttdeci">@ ltINVALID</div><div class="ttdef"><b>Definition:</b> <a href="LedgerFormats_8h_source.html#l00050">LedgerFormats.h:50</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a681e6f9e09fb27ccce0cc37110b784ac"><div class="ttname"><a href="namespaceripple.html#a681e6f9e09fb27ccce0cc37110b784ac">ripple::serializeHex</a></div><div class="ttdeci">std::string serializeHex(STObject const &amp;o)</div><div class="ttdoc">Serialize an object to a hex string.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8h_source.html#l00079">LedgerToJson.h:79</a></div></div>
-<div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a></div><div class="ttdeci">@ objectValue</div><div class="ttdoc">object value (collection of name/value pairs).</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00045">json_value.h:45</a></div></div>
-<div class="ttc" id="aclassripple_1_1STObject_html_a0d2d874d34a1c3ed432cdb9fb1386b35"><div class="ttname"><a href="classripple_1_1STObject.html#a0d2d874d34a1c3ed432cdb9fb1386b35">ripple::STObject::getAccountID</a></div><div class="ttdeci">AccountID getAccountID(SField const &amp;field) const</div><div class="ttdef"><b>Definition:</b> <a href="STObject_8cpp_source.html#l00537">STObject.cpp:537</a></div></div>
+<div class="ttc" id="anamespaceripple_html_af6e0324b257fc9992b83ecf827c2a07bae3eb391490c08d0dbf2cb353e2ba440b"><div class="ttname"><a href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bae3eb391490c08d0dbf2cb353e2ba440b">ripple::ltINVALID</a></div><div class="ttdeci">@ ltINVALID</div><div class="ttdef"><b>Definition:</b> <a href="LedgerFormats_8h_source.html#l00049">LedgerFormats.h:49</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a681e6f9e09fb27ccce0cc37110b784ac"><div class="ttname"><a href="namespaceripple.html#a681e6f9e09fb27ccce0cc37110b784ac">ripple::serializeHex</a></div><div class="ttdeci">std::string serializeHex(STObject const &amp;o)</div><div class="ttdoc">Serialize an object to a hex string.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8h_source.html#l00082">LedgerToJson.h:82</a></div></div>
+<div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a></div><div class="ttdeci">@ objectValue</div><div class="ttdoc">object value (collection of name/value pairs).</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00043">json_value.h:43</a></div></div>
+<div class="ttc" id="aclassripple_1_1STObject_html_a0d2d874d34a1c3ed432cdb9fb1386b35"><div class="ttname"><a href="classripple_1_1STObject.html#a0d2d874d34a1c3ed432cdb9fb1386b35">ripple::STObject::getAccountID</a></div><div class="ttdeci">AccountID getAccountID(SField const &amp;field) const</div><div class="ttdef"><b>Definition:</b> <a href="STObject_8cpp_source.html#l00573">STObject.cpp:573</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8"><div class="ttname"><a href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">ripple::JsonOptions::none</a></div><div class="ttdeci">@ none</div></div>
 <div class="ttc" id="astructripple_1_1LedgerFill_html_acb9af41b82a8550a08d2288b6f9fc826a0fafa7070f778f38820f61903e1a5fc5"><div class="ttname"><a href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a0fafa7070f778f38820f61903e1a5fc5">ripple::LedgerFill::full</a></div><div class="ttdeci">@ full</div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8h_source.html#l00047">LedgerToJson.h:47</a></div></div>
-<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00060">Journal.h:60</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a48e7bc26e67dbb8709698c89f67a9264a75d2b11655582bd6bd39c7fd4a407d9d"><div class="ttname"><a href="namespaceripple.html#a48e7bc26e67dbb8709698c89f67a9264a75d2b11655582bd6bd39c7fd4a407d9d">ripple::ttCHECK_CASH</a></div><div class="ttdeci">@ ttCHECK_CASH</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8h_source.html#l00054">TxFormats.h:54</a></div></div>
-<div class="ttc" id="aclassripple_1_1STTx_html_a489c8110e24455a2e7dac783f4760cc2"><div class="ttname"><a href="classripple_1_1STTx.html#a489c8110e24455a2e7dac783f4760cc2">ripple::STTx::getJson</a></div><div class="ttdeci">Json::Value getJson(JsonOptions options) const override</div><div class="ttdef"><b>Definition:</b> <a href="STTx_8cpp_source.html#l00202">STTx.cpp:202</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a15bb971c7e554fc3df218aba54c33fcc"><div class="ttname"><a href="namespaceripple.html#a15bb971c7e554fc3df218aba54c33fcc">ripple::accountFunds</a></div><div class="ttdeci">STAmount accountFunds(ReadView const &amp;view, AccountID const &amp;id, STAmount const &amp;saDefault, FreezeHandling freezeHandling, beast::Journal j)</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00133">View.cpp:133</a></div></div>
-<div class="ttc" id="aclassripple_1_1STTx_html_ad314af66e2542db537b3b5de291d33c3"><div class="ttname"><a href="classripple_1_1STTx.html#ad314af66e2542db537b3b5de291d33c3">ripple::STTx::getTransactionID</a></div><div class="ttdeci">uint256 getTransactionID() const</div><div class="ttdef"><b>Definition:</b> <a href="STTx_8h_source.html#l00120">STTx.h:120</a></div></div>
-<div class="ttc" id="anamespaceJson_html_a844d3d2c97ae1bafd1faa5a1f408514b"><div class="ttname"><a href="namespaceJson.html#a844d3d2c97ae1bafd1faa5a1f408514b">Json::setArray</a></div><div class="ttdeci">Json::Value &amp; setArray(Json::Value &amp;, Json::StaticString const &amp;key)</div><div class="ttdoc">Add a new subarray at a named key in a Json object.</div><div class="ttdef"><b>Definition:</b> <a href="Object_8h_source.html#l00387">Object.h:387</a></div></div>
+<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00058">Journal.h:58</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a48e7bc26e67dbb8709698c89f67a9264a75d2b11655582bd6bd39c7fd4a407d9d"><div class="ttname"><a href="namespaceripple.html#a48e7bc26e67dbb8709698c89f67a9264a75d2b11655582bd6bd39c7fd4a407d9d">ripple::ttCHECK_CASH</a></div><div class="ttdeci">@ ttCHECK_CASH</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8h_source.html#l00053">TxFormats.h:53</a></div></div>
+<div class="ttc" id="aclassripple_1_1STTx_html_a489c8110e24455a2e7dac783f4760cc2"><div class="ttname"><a href="classripple_1_1STTx.html#a489c8110e24455a2e7dac783f4760cc2">ripple::STTx::getJson</a></div><div class="ttdeci">Json::Value getJson(JsonOptions options) const override</div><div class="ttdef"><b>Definition:</b> <a href="STTx_8cpp_source.html#l00194">STTx.cpp:194</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a15bb971c7e554fc3df218aba54c33fcc"><div class="ttname"><a href="namespaceripple.html#a15bb971c7e554fc3df218aba54c33fcc">ripple::accountFunds</a></div><div class="ttdeci">STAmount accountFunds(ReadView const &amp;view, AccountID const &amp;id, STAmount const &amp;saDefault, FreezeHandling freezeHandling, beast::Journal j)</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00136">View.cpp:136</a></div></div>
+<div class="ttc" id="aclassripple_1_1STTx_html_ad314af66e2542db537b3b5de291d33c3"><div class="ttname"><a href="classripple_1_1STTx.html#ad314af66e2542db537b3b5de291d33c3">ripple::STTx::getTransactionID</a></div><div class="ttdeci">uint256 getTransactionID() const</div><div class="ttdef"><b>Definition:</b> <a href="STTx_8h_source.html#l00131">STTx.h:131</a></div></div>
+<div class="ttc" id="anamespaceJson_html_a844d3d2c97ae1bafd1faa5a1f408514b"><div class="ttname"><a href="namespaceJson.html#a844d3d2c97ae1bafd1faa5a1f408514b">Json::setArray</a></div><div class="ttdeci">Json::Value &amp; setArray(Json::Value &amp;, Json::StaticString const &amp;key)</div><div class="ttdoc">Add a new subarray at a named key in a Json object.</div><div class="ttdef"><b>Definition:</b> <a href="Object_8h_source.html#l00414">Object.h:414</a></div></div>
 <div class="ttc" id="astructripple_1_1LedgerFill_html_acb9af41b82a8550a08d2288b6f9fc826a38cf0d49202caf3c5941757512d9c8fb"><div class="ttname"><a href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a38cf0d49202caf3c5941757512d9c8fb">ripple::LedgerFill::binary</a></div><div class="ttdeci">@ binary</div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8h_source.html#l00048">LedgerToJson.h:48</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ad30131b5a5b7cf60d9b392ab868b8c0e"><div class="ttname"><a href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">ripple::getJson</a></div><div class="ttdeci">Json::Value getJson(LedgerFill const &amp;fill)</div><div class="ttdoc">Return a new Json::Value representing the ledger with given options.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8cpp_source.html#l00272">LedgerToJson.cpp:272</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a2bb299a1db65861baa4c6c1c91cf336f"><div class="ttname"><a href="namespaceripple.html#a2bb299a1db65861baa4c6c1c91cf336f">ripple::getCloseAgree</a></div><div class="ttdeci">bool getCloseAgree(LedgerInfo const &amp;info)</div><div class="ttdef"><b>Definition:</b> <a href="ReadView_8h_source.html#l00432">ReadView.h:432</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ad30131b5a5b7cf60d9b392ab868b8c0e"><div class="ttname"><a href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">ripple::getJson</a></div><div class="ttdeci">Json::Value getJson(LedgerFill const &amp;fill)</div><div class="ttdoc">Return a new Json::Value representing the ledger with given options.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8cpp_source.html#l00283">LedgerToJson.cpp:283</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a2bb299a1db65861baa4c6c1c91cf336f"><div class="ttname"><a href="namespaceripple.html#a2bb299a1db65861baa4c6c1c91cf336f">ripple::getCloseAgree</a></div><div class="ttdeci">bool getCloseAgree(LedgerInfo const &amp;info)</div><div class="ttdef"><b>Definition:</b> <a href="ReadView_8h_source.html#l00414">ReadView.h:414</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="astructripple_1_1LedgerFill_html_acb9af41b82a8550a08d2288b6f9fc826a4d567fe1eb1b4268e9ef85e4d2993ff6"><div class="ttname"><a href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a4d567fe1eb1b4268e9ef85e4d2993ff6">ripple::LedgerFill::ownerFunds</a></div><div class="ttdeci">@ ownerFunds</div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8h_source.html#l00049">LedgerToJson.h:49</a></div></div>
-<div class="ttc" id="anamespaceJson_html_abb848a3f8224f260eb73b028026995c8"><div class="ttname"><a href="namespaceJson.html#abb848a3f8224f260eb73b028026995c8">Json::addObject</a></div><div class="ttdeci">Json::Value &amp; addObject(Json::Value &amp;, Json::StaticString const &amp;key)</div><div class="ttdoc">Add a new subobject at a named key in a Json object.</div><div class="ttdef"><b>Definition:</b> <a href="Object_8h_source.html#l00399">Object.h:399</a></div></div>
+<div class="ttc" id="anamespaceJson_html_abb848a3f8224f260eb73b028026995c8"><div class="ttname"><a href="namespaceJson.html#abb848a3f8224f260eb73b028026995c8">Json::addObject</a></div><div class="ttdeci">Json::Value &amp; addObject(Json::Value &amp;, Json::StaticString const &amp;key)</div><div class="ttdoc">Add a new subobject at a named key in a Json object.</div><div class="ttdef"><b>Definition:</b> <a href="Object_8h_source.html#l00426">Object.h:426</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_aaa57921f6c51e3495cb6bf14b94a4d90"><div class="ttname"><a href="namespaceripple_1_1RPC.html#aaa57921f6c51e3495cb6bf14b94a4d90">ripple::RPC::insertDeliveredAmount</a></div><div class="ttdeci">void insertDeliveredAmount(Json::Value &amp;meta, ReadView const &amp;, std::shared_ptr&lt; STTx const &gt; const &amp;serializedTx, TxMeta const &amp;)</div><div class="ttdoc">Add a delivered_amount field to the meta input/output parameter.</div><div class="ttdef"><b>Definition:</b> <a href="DeliveredAmount_8cpp_source.html#l00133">DeliveredAmount.cpp:133</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a76c03032f9f754bf4659c3e18ede1510"><div class="ttname"><a href="namespaceripple.html#a76c03032f9f754bf4659c3e18ede1510">ripple::addJson</a></div><div class="ttdeci">void addJson(Json::Value &amp;json, LedgerFill const &amp;fill)</div><div class="ttdoc">Given a Ledger and options, fill a Json::Object or Json::Value with a description of the ledger.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8cpp_source.html#l00263">LedgerToJson.cpp:263</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a7b344311df2e05264161f7b7e38c9730"><div class="ttname"><a href="namespaceripple.html#a7b344311df2e05264161f7b7e38c9730">ripple::sfTakerGets</a></div><div class="ttdeci">const SF_Amount sfTakerGets(access, STI_AMOUNT, 5, &quot;TakerGets&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00427">SField.h:427</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a17a9a9b903b66e49f5413d82ce79f085a91e3c4f8089025c7ecf66dd62b822d90"><div class="ttname"><a href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085a91e3c4f8089025c7ecf66dd62b822d90">ripple::fhIGNORE_FREEZE</a></div><div class="ttdeci">@ fhIGNORE_FREEZE</div><div class="ttdef"><b>Definition:</b> <a href="View_8h_source.html#l00055">View.h:55</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a86e358ce3f06ff049af13c2342791cf8"><div class="ttname"><a href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">ripple::strHex</a></div><div class="ttdeci">std::string strHex(FwdIt begin, FwdIt end)</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8h_source.html#l00070">strHex.h:70</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a76c03032f9f754bf4659c3e18ede1510"><div class="ttname"><a href="namespaceripple.html#a76c03032f9f754bf4659c3e18ede1510">ripple::addJson</a></div><div class="ttdeci">void addJson(Json::Value &amp;json, LedgerFill const &amp;fill)</div><div class="ttdoc">Given a Ledger and options, fill a Json::Object or Json::Value with a description of the ledger.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8cpp_source.html#l00273">LedgerToJson.cpp:273</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a7b344311df2e05264161f7b7e38c9730"><div class="ttname"><a href="namespaceripple.html#a7b344311df2e05264161f7b7e38c9730">ripple::sfTakerGets</a></div><div class="ttdeci">const SF_Amount sfTakerGets(access, STI_AMOUNT, 5, &quot;TakerGets&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00441">SField.h:441</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a17a9a9b903b66e49f5413d82ce79f085a91e3c4f8089025c7ecf66dd62b822d90"><div class="ttname"><a href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085a91e3c4f8089025c7ecf66dd62b822d90">ripple::fhIGNORE_FREEZE</a></div><div class="ttdeci">@ fhIGNORE_FREEZE</div><div class="ttdef"><b>Definition:</b> <a href="View_8h_source.html#l00053">View.h:53</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a86e358ce3f06ff049af13c2342791cf8"><div class="ttname"><a href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">ripple::strHex</a></div><div class="ttdeci">std::string strHex(FwdIt begin, FwdIt end)</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8h_source.html#l00067">strHex.h:67</a></div></div>
 <div class="ttc" id="astructripple_1_1LedgerFill_html_acb9af41b82a8550a08d2288b6f9fc826a22467bc2d1c3fd3a960ffa1c3742aba8"><div class="ttname"><a href="structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a22467bc2d1c3fd3a960ffa1c3742aba8">ripple::LedgerFill::dumpState</a></div><div class="ttdeci">@ dumpState</div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8h_source.html#l00045">LedgerToJson.h:45</a></div></div>
-<div class="ttc" id="astructripple_1_1TxConsequences_html_ab1a8896e43f9f4ebe4113631b56a7fbcaea7777d0faf53e7b154d9239bb1ee1c8"><div class="ttname"><a href="structripple_1_1TxConsequences.html#ab1a8896e43f9f4ebe4113631b56a7fbcaea7777d0faf53e7b154d9239bb1ee1c8">ripple::TxConsequences::blocker</a></div><div class="ttdeci">@ blocker</div><div class="ttdoc">Affects the ability of subsequent transactions to claim a fee.</div><div class="ttdef"><b>Definition:</b> <a href="applySteps_8h_source.html#l00137">applySteps.h:137</a></div></div>
-<div class="ttc" id="aclassripple_1_1STObject_html_acc2ceb95cdb8fc8b2520aeceabf17553"><div class="ttname"><a href="classripple_1_1STObject.html#acc2ceb95cdb8fc8b2520aeceabf17553">ripple::STObject::getJson</a></div><div class="ttdeci">virtual Json::Value getJson(JsonOptions options) const override</div><div class="ttdef"><b>Definition:</b> <a href="STObject_8cpp_source.html#l00657">STObject.cpp:657</a></div></div>
+<div class="ttc" id="astructripple_1_1TxConsequences_html_ab1a8896e43f9f4ebe4113631b56a7fbcaea7777d0faf53e7b154d9239bb1ee1c8"><div class="ttname"><a href="structripple_1_1TxConsequences.html#ab1a8896e43f9f4ebe4113631b56a7fbcaea7777d0faf53e7b154d9239bb1ee1c8">ripple::TxConsequences::blocker</a></div><div class="ttdeci">@ blocker</div><div class="ttdoc">Affects the ability of subsequent transactions to claim a fee.</div><div class="ttdef"><b>Definition:</b> <a href="applySteps_8h_source.html#l00135">applySteps.h:135</a></div></div>
+<div class="ttc" id="aclassripple_1_1STObject_html_acc2ceb95cdb8fc8b2520aeceabf17553"><div class="ttname"><a href="classripple_1_1STObject.html#acc2ceb95cdb8fc8b2520aeceabf17553">ripple::STObject::getJson</a></div><div class="ttdeci">virtual Json::Value getJson(JsonOptions options) const override</div><div class="ttdef"><b>Definition:</b> <a href="STObject_8cpp_source.html#l00709">STObject.cpp:709</a></div></div>
 <div class="ttc" id="astructripple_1_1LedgerFill_html"><div class="ttname"><a href="structripple_1_1LedgerFill.html">ripple::LedgerFill</a></div><div class="ttdef"><b>Definition:</b> <a href="LedgerToJson_8h_source.html#l00032">LedgerToJson.h:32</a></div></div>
-<div class="ttc" id="aclassripple_1_1NetClock_html_a4c2428e178dca6689fa3fb4be0657107"><div class="ttname"><a href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">ripple::NetClock::time_point</a></div><div class="ttdeci">std::chrono::time_point&lt; NetClock &gt; time_point</div><div class="ttdef"><b>Definition:</b> <a href="chrono_8h_source.html#l00053">chrono.h:53</a></div></div>
-<div class="ttc" id="aclassripple_1_1STObject_html_a8e207109e646759f4927d90e4404893f"><div class="ttname"><a href="classripple_1_1STObject.html#a8e207109e646759f4927d90e4404893f">ripple::STObject::getFieldAmount</a></div><div class="ttdeci">STAmount const  &amp; getFieldAmount(SField const &amp;field) const</div><div class="ttdef"><b>Definition:</b> <a href="STObject_8cpp_source.html#l00549">STObject.cpp:549</a></div></div>
-<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00141">json_value.h:141</a></div></div>
+<div class="ttc" id="aclassripple_1_1NetClock_html_a4c2428e178dca6689fa3fb4be0657107"><div class="ttname"><a href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">ripple::NetClock::time_point</a></div><div class="ttdeci">std::chrono::time_point&lt; NetClock &gt; time_point</div><div class="ttdef"><b>Definition:</b> <a href="chrono_8h_source.html#l00054">chrono.h:54</a></div></div>
+<div class="ttc" id="aclassripple_1_1STObject_html_a8e207109e646759f4927d90e4404893f"><div class="ttname"><a href="classripple_1_1STObject.html#a8e207109e646759f4927d90e4404893f">ripple::STObject::getFieldAmount</a></div><div class="ttdeci">STAmount const  &amp; getFieldAmount(SField const &amp;field) const</div><div class="ttdef"><b>Definition:</b> <a href="STObject_8cpp_source.html#l00587">STObject.cpp:587</a></div></div>
+<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00145">json_value.h:145</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

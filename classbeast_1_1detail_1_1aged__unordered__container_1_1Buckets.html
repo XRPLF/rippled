@@ -86,8 +86,8 @@ Collaboration diagram for beast::detail::aged_unordered_container&lt; IsMulti, I
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a12e020f5f10c6568b789b366cc5d7712"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html#a12e020f5f10c6568b789b366cc5d7712">vec_type</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a49beb554a9055bff389c6789036f9fff">bucket_type</a>, typename <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/allocator_traits.html">std::allocator_traits</a>&lt; Allocator &gt;::template rebind_alloc&lt; <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a49beb554a9055bff389c6789036f9fff">bucket_type</a> &gt; &gt;</td></tr>
-<tr class="separator:a12e020f5f10c6568b789b366cc5d7712"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a37b5a50e63d99fc3af4f40a0e5b201de"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html#a37b5a50e63d99fc3af4f40a0e5b201de">vec_type</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a49beb554a9055bff389c6789036f9fff">bucket_type</a>, typename <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/allocator_traits.html">std::allocator_traits</a>&lt; Allocator &gt;::template rebind_alloc&lt; <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a49beb554a9055bff389c6789036f9fff">bucket_type</a> &gt; &gt;</td></tr>
+<tr class="separator:a37b5a50e63d99fc3af4f40a0e5b201de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -116,31 +116,31 @@ Public Member Functions</h2></td></tr>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a076b7f867a80e2448d16c04aaa3766e2"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html#a076b7f867a80e2448d16c04aaa3766e2">m_max_load_factor</a></td></tr>
 <tr class="separator:a076b7f867a80e2448d16c04aaa3766e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a11dc1dc57e5098bead8f23bfca240e03"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html#a12e020f5f10c6568b789b366cc5d7712">vec_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html#a11dc1dc57e5098bead8f23bfca240e03">m_vec</a></td></tr>
+<tr class="memitem:a11dc1dc57e5098bead8f23bfca240e03"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html#a37b5a50e63d99fc3af4f40a0e5b201de">vec_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html#a11dc1dc57e5098bead8f23bfca240e03">m_vec</a></td></tr>
 <tr class="separator:a11dc1dc57e5098bead8f23bfca240e03"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><h3>template&lt;bool IsMulti, bool IsMap, class Key, class T, class Clock = std::chrono::steady_clock, class Hash = std::hash &lt;Key&gt;, class KeyEqual = std::equal_to &lt;Key&gt;, class Allocator = std::allocator &lt;        typename std::conditional &lt;IsMap,            std::pair &lt;Key const, T&gt;,                Key&gt;::type&gt;&gt;<br />
+<div class="textblock"><h3>template&lt;bool IsMulti, bool IsMap, class Key, class T, class Clock = std::chrono::steady_clock, class Hash = std::hash&lt;Key&gt;, class KeyEqual = std::equal_to&lt;Key&gt;, class Allocator = std::allocator&lt;        typename std::conditional&lt;IsMap, std::pair&lt;Key const, T&gt;, Key&gt;::type&gt;&gt;<br />
 class beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::Buckets</h3>
 
 
-<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00488">488</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00474">474</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a12e020f5f10c6568b789b366cc5d7712"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a12e020f5f10c6568b789b366cc5d7712">&#9670;&nbsp;</a></span>vec_type</h2>
+<a id="a37b5a50e63d99fc3af4f40a0e5b201de"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a37b5a50e63d99fc3af4f40a0e5b201de">&#9670;&nbsp;</a></span>vec_type</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash &lt;Key&gt;, class KeyEqual  = std::equal_to &lt;Key&gt;, class Allocator  = std::allocator &lt;        typename std::conditional &lt;IsMap,            std::pair &lt;Key const, T&gt;,                Key&gt;::type&gt;&gt; </div>
+template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash&lt;Key&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Allocator  = std::allocator&lt;        typename std::conditional&lt;IsMap, std::pair&lt;Key const, T&gt;, Key&gt;::type&gt;&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::<a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html#a12e020f5f10c6568b789b366cc5d7712">Buckets::vec_type</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a49beb554a9055bff389c6789036f9fff">bucket_type</a>, typename <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/allocator_traits.html">std::allocator_traits</a> &lt;Allocator&gt;:: template rebind_alloc &lt;<a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a49beb554a9055bff389c6789036f9fff">bucket_type</a>&gt; &gt;</td>
+          <td class="memname">using <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::<a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html#a37b5a50e63d99fc3af4f40a0e5b201de">Buckets::vec_type</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a49beb554a9055bff389c6789036f9fff">bucket_type</a>, typename <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/allocator_traits.html">std::allocator_traits</a>&lt;Allocator&gt;::template rebind_alloc&lt; <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a49beb554a9055bff389c6789036f9fff">bucket_type</a>&gt; &gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00494">494</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00480">480</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
 
 </div>
 </div>
@@ -151,7 +151,7 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash &lt;Key&gt;, class KeyEqual  = std::equal_to &lt;Key&gt;, class Allocator  = std::allocator &lt;        typename std::conditional &lt;IsMap,            std::pair &lt;Key const, T&gt;,                Key&gt;::type&gt;&gt; </div>
+template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash&lt;Key&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Allocator  = std::allocator&lt;        typename std::conditional&lt;IsMap, std::pair&lt;Key const, T&gt;, Key&gt;::type&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::Buckets::Buckets </td>
@@ -162,7 +162,7 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00496">496</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00482">482</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
 
 </div>
 </div>
@@ -172,7 +172,7 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash &lt;Key&gt;, class KeyEqual  = std::equal_to &lt;Key&gt;, class Allocator  = std::allocator &lt;        typename std::conditional &lt;IsMap,            std::pair &lt;Key const, T&gt;,                Key&gt;::type&gt;&gt; </div>
+template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash&lt;Key&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Allocator  = std::allocator&lt;        typename std::conditional&lt;IsMap, std::pair&lt;Key const, T&gt;, Key&gt;::type&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::Buckets::Buckets </td>
@@ -184,7 +184,7 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00504">504</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00487">487</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
 
 </div>
 </div>
@@ -195,7 +195,7 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash &lt;Key&gt;, class KeyEqual  = std::equal_to &lt;Key&gt;, class Allocator  = std::allocator &lt;        typename std::conditional &lt;IsMap,            std::pair &lt;Key const, T&gt;,                Key&gt;::type&gt;&gt; </div>
+template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash&lt;Key&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Allocator  = std::allocator&lt;        typename std::conditional&lt;IsMap, std::pair&lt;Key const, T&gt;, Key&gt;::type&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::Buckets::operator <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a57210aa1c39dfb309da0bf19ecd4958f">bucket_traits</a> </td>
@@ -206,7 +206,7 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00512">512</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00492">492</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
 
 </div>
 </div>
@@ -216,7 +216,7 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash &lt;Key&gt;, class KeyEqual  = std::equal_to &lt;Key&gt;, class Allocator  = std::allocator &lt;        typename std::conditional &lt;IsMap,            std::pair &lt;Key const, T&gt;,                Key&gt;::type&gt;&gt; </div>
+template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash&lt;Key&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Allocator  = std::allocator&lt;        typename std::conditional&lt;IsMap, std::pair&lt;Key const, T&gt;, Key&gt;::type&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">void <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::Buckets::clear </td>
@@ -227,7 +227,7 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00517">517</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00498">498</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
 
 </div>
 </div>
@@ -237,7 +237,7 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash &lt;Key&gt;, class KeyEqual  = std::equal_to &lt;Key&gt;, class Allocator  = std::allocator &lt;        typename std::conditional &lt;IsMap,            std::pair &lt;Key const, T&gt;,                Key&gt;::type&gt;&gt; </div>
+template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash&lt;Key&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Allocator  = std::allocator&lt;        typename std::conditional&lt;IsMap, std::pair&lt;Key const, T&gt;, Key&gt;::type&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a63a428f23157e2d613dd6f6d9a5dbed8">size_type</a> <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::Buckets::max_bucket_count </td>
@@ -248,7 +248,7 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00522">522</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00504">504</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
 
 </div>
 </div>
@@ -258,7 +258,7 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash &lt;Key&gt;, class KeyEqual  = std::equal_to &lt;Key&gt;, class Allocator  = std::allocator &lt;        typename std::conditional &lt;IsMap,            std::pair &lt;Key const, T&gt;,                Key&gt;::type&gt;&gt; </div>
+template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash&lt;Key&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Allocator  = std::allocator&lt;        typename std::conditional&lt;IsMap, std::pair&lt;Key const, T&gt;, Key&gt;::type&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">float&amp; <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::Buckets::max_load_factor </td>
@@ -269,7 +269,7 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00527">527</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00510">510</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
 
 </div>
 </div>
@@ -279,7 +279,7 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash &lt;Key&gt;, class KeyEqual  = std::equal_to &lt;Key&gt;, class Allocator  = std::allocator &lt;        typename std::conditional &lt;IsMap,            std::pair &lt;Key const, T&gt;,                Key&gt;::type&gt;&gt; </div>
+template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash&lt;Key&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Allocator  = std::allocator&lt;        typename std::conditional&lt;IsMap, std::pair&lt;Key const, T&gt;, Key&gt;::type&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">float const&amp; <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::Buckets::max_load_factor </td>
@@ -290,7 +290,7 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00532">532</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00516">516</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
 
 </div>
 </div>
@@ -300,7 +300,7 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash &lt;Key&gt;, class KeyEqual  = std::equal_to &lt;Key&gt;, class Allocator  = std::allocator &lt;        typename std::conditional &lt;IsMap,            std::pair &lt;Key const, T&gt;,                Key&gt;::type&gt;&gt; </div>
+template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash&lt;Key&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Allocator  = std::allocator&lt;        typename std::conditional&lt;IsMap, std::pair&lt;Key const, T&gt;, Key&gt;::type&gt;&gt; </div>
 <div class="memtemplate">
 template&lt;class Container &gt; </div>
       <table class="memname">
@@ -324,7 +324,7 @@ template&lt;class Container &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00539">539</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00524">524</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
 
 </div>
 </div>
@@ -334,7 +334,7 @@ template&lt;class Container &gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash &lt;Key&gt;, class KeyEqual  = std::equal_to &lt;Key&gt;, class Allocator  = std::allocator &lt;        typename std::conditional &lt;IsMap,            std::pair &lt;Key const, T&gt;,                Key&gt;::type&gt;&gt; </div>
+template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash&lt;Key&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Allocator  = std::allocator&lt;        typename std::conditional&lt;IsMap, std::pair&lt;Key const, T&gt;, Key&gt;::type&gt;&gt; </div>
 <div class="memtemplate">
 template&lt;class Container &gt; </div>
       <table class="memname">
@@ -358,7 +358,7 @@ template&lt;class Container &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00574">574</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00557">557</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
 
 </div>
 </div>
@@ -369,7 +369,7 @@ template&lt;class Container &gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash &lt;Key&gt;, class KeyEqual  = std::equal_to &lt;Key&gt;, class Allocator  = std::allocator &lt;        typename std::conditional &lt;IsMap,            std::pair &lt;Key const, T&gt;,                Key&gt;::type&gt;&gt; </div>
+template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash&lt;Key&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Allocator  = std::allocator&lt;        typename std::conditional&lt;IsMap, std::pair&lt;Key const, T&gt;, Key&gt;::type&gt;&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -385,7 +385,7 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00582">582</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00565">565</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
 
 </div>
 </div>
@@ -395,13 +395,13 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash &lt;Key&gt;, class KeyEqual  = std::equal_to &lt;Key&gt;, class Allocator  = std::allocator &lt;        typename std::conditional &lt;IsMap,            std::pair &lt;Key const, T&gt;,                Key&gt;::type&gt;&gt; </div>
+template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::chrono::steady_clock, class Hash  = std::hash&lt;Key&gt;, class KeyEqual  = std::equal_to&lt;Key&gt;, class Allocator  = std::allocator&lt;        typename std::conditional&lt;IsMap, std::pair&lt;Key const, T&gt;, Key&gt;::type&gt;&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html#a12e020f5f10c6568b789b366cc5d7712">vec_type</a> <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::Buckets::m_vec</td>
+          <td class="memname"><a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html#a37b5a50e63d99fc3af4f40a0e5b201de">vec_type</a> <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::Buckets::m_vec</td>
         </tr>
       </table>
   </td>
@@ -411,7 +411,7 @@ template&lt;bool IsMulti, bool IsMap, class Key , class T , class Clock  = std::
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00583">583</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="aged__unordered__container_8h_source.html#l00566">566</a> of file <a class="el" href="aged__unordered__container_8h_source.html">aged_unordered_container.h</a>.</p>
 
 </div>
 </div>

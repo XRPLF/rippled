@@ -92,110 +92,122 @@ $(function() {
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLED_COMPRESSIONALGORITHMS_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/contract.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;lz4.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a>&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a>&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;lz4.h&gt;</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
 <div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="namespaceripple_1_1compression__algorithms.html">   29</a></span>&#160;<span class="keyword">namespace </span>compression_algorithms {</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
-<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="namespaceripple_1_1compression__algorithms.html#a7a25fc2be5a306f1056debb8fa3d8a35">   34</a></span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code" href="namespaceripple_1_1compression__algorithms.html#a7a25fc2be5a306f1056debb8fa3d8a35">doThrow</a>(<span class="keyword">const</span> <span class="keywordtype">char</span> *message)</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;{</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    Throw&lt;std::runtime_error&gt;(message);</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;}</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> BufferFactory&gt;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div>
-<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="namespaceripple_1_1compression__algorithms.html#a8fb4610c8381afcf3d92ddfff9dbf0cf">   49</a></span>&#160;<a class="code" href="namespaceripple_1_1compression__algorithms.html#a8fb4610c8381afcf3d92ddfff9dbf0cf">lz4Compress</a>(<span class="keywordtype">void</span> <span class="keyword">const</span>* in,</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> inSize, BufferFactory&amp;&amp; bf)</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="namespaceripple_1_1compression__algorithms.html#a7a25fc2be5a306f1056debb8fa3d8a35">   35</a></span>&#160;<a class="code" href="namespaceripple_1_1compression__algorithms.html#a7a25fc2be5a306f1056debb8fa3d8a35">doThrow</a>(<span class="keyword">const</span> <span class="keywordtype">char</span>* message)</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;{</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    Throw&lt;std::runtime_error&gt;(message);</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;}</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> BufferFactory&gt;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div>
+<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="namespaceripple_1_1compression__algorithms.html#a8fb4610c8381afcf3d92ddfff9dbf0cf">   50</a></span>&#160;<a class="code" href="namespaceripple_1_1compression__algorithms.html#a8fb4610c8381afcf3d92ddfff9dbf0cf">lz4Compress</a>(<span class="keywordtype">void</span> <span class="keyword">const</span>* in, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> inSize, BufferFactory&amp;&amp; bf)</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;{</div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keywordflow">if</span> (inSize &gt; UINT32_MAX)</div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <a class="code" href="namespaceripple_1_1compression__algorithms.html#a7a25fc2be5a306f1056debb8fa3d8a35">doThrow</a>(<span class="stringliteral">&quot;lz4 compress: invalid size&quot;</span>);</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> outCapacity = LZ4_compressBound(inSize);</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="comment">// Request the caller to allocate and return the buffer to hold compressed data</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">auto</span> compressed = bf(outCapacity);</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keyword">auto</span> compressedSize = LZ4_compress_default(</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            <span class="keyword">reinterpret_cast&lt;</span><span class="keyword">const </span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>),</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(compressed),</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            inSize,</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            outCapacity);</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordflow">if</span> (compressedSize == 0)</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <a class="code" href="namespaceripple_1_1compression__algorithms.html#a7a25fc2be5a306f1056debb8fa3d8a35">doThrow</a>(<span class="stringliteral">&quot;lz4 compress: failed&quot;</span>);</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keywordflow">return</span> compressedSize;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;}</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="keyword">inline</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div>
-<div class="line"><a name="l00080"></a><span class="lineno"><a class="line" href="namespaceripple_1_1compression__algorithms.html#adffbf89cb05c470ae10b85ef9ecb3b2e">   80</a></span>&#160;<a class="code" href="namespaceripple_1_1compression__algorithms.html#adffbf89cb05c470ae10b85ef9ecb3b2e">lz4Decompress</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> <span class="keyword">const</span>* in, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> inSize,</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;              <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>* decompressed, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> decompressedSize)</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;{</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keyword">auto</span> ret = LZ4_decompress_safe(<span class="keyword">reinterpret_cast&lt;</span><span class="keyword">const </span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>),</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                               <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(decompressed), inSize, decompressedSize);</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="keywordflow">if</span> (ret &lt;= 0 || ret != decompressedSize)</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        <a class="code" href="namespaceripple_1_1compression__algorithms.html#a7a25fc2be5a306f1056debb8fa3d8a35">doThrow</a>(<span class="stringliteral">&quot;lz4 decompress: failed&quot;</span>);</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keywordflow">return</span> decompressedSize;</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;}</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="comment">// Request the caller to allocate and return the buffer to hold compressed</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="comment">// data</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keyword">auto</span> compressed = bf(outCapacity);</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">auto</span> compressedSize = LZ4_compress_default(</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="keyword">reinterpret_cast&lt;</span><span class="keyword">const </span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>),</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(compressed),</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        inSize,</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        outCapacity);</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordflow">if</span> (compressedSize == 0)</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <a class="code" href="namespaceripple_1_1compression__algorithms.html#a7a25fc2be5a306f1056debb8fa3d8a35">doThrow</a>(<span class="stringliteral">&quot;lz4 compress: failed&quot;</span>);</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordflow">return</span> compressedSize;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;}</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="keyword">inline</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div>
+<div class="line"><a name="l00080"></a><span class="lineno"><a class="line" href="namespaceripple_1_1compression__algorithms.html#adffbf89cb05c470ae10b85ef9ecb3b2e">   80</a></span>&#160;<a class="code" href="namespaceripple_1_1compression__algorithms.html#adffbf89cb05c470ae10b85ef9ecb3b2e">lz4Decompress</a>(</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> <span class="keyword">const</span>* in,</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> inSize,</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>* decompressed,</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> decompressedSize)</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;{</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="keyword">auto</span> ret = LZ4_decompress_safe(</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        <span class="keyword">reinterpret_cast&lt;</span><span class="keyword">const </span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>),</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(decompressed),</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        inSize,</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        decompressedSize);</div>
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> InputStream&gt;</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div>
-<div class="line"><a name="l00102"></a><span class="lineno"><a class="line" href="namespaceripple_1_1compression__algorithms.html#aa5001af4f7a6dad195e48601c3941785">  102</a></span>&#160;<a class="code" href="namespaceripple_1_1compression__algorithms.html#adffbf89cb05c470ae10b85ef9ecb3b2e">lz4Decompress</a>(InputStream&amp; in, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> inSize,</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;              <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>* decompressed, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> decompressedSize)</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;{</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::uint8_t&gt;</a> compressed;</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> <span class="keyword">const</span>* chunk = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="keywordtype">int</span> chunkSize = 0;</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <span class="keywordtype">int</span> copiedInSize = 0;</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> currentBytes = <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>.ByteCount();</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160; </div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <span class="comment">// Use the first chunk if it is &gt;= inSize bytes of the compressed message.</span></div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <span class="comment">// Otherwise copy inSize bytes of chunks into compressed buffer and</span></div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <span class="comment">// use the buffer to decompress.</span></div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <span class="keywordflow">while</span> (<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>.Next(<span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">void</span> const**<span class="keyword">&gt;</span>(&amp;chunk), &amp;chunkSize))</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    {</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        <span class="keywordflow">if</span> (copiedInSize == 0)</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        {</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            <span class="keywordflow">if</span> (chunkSize &gt;= inSize)</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            {</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;                copiedInSize = inSize;</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;                <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            }</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            compressed.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/resize.html">resize</a>(inSize);</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;        }</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        chunkSize = chunkSize &lt; (inSize - copiedInSize) ? chunkSize : (inSize - copiedInSize);</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/copy.html">std::copy</a>(chunk, chunk + chunkSize, compressed.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/data.html">data</a>() + copiedInSize);</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160; </div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        copiedInSize += chunkSize;</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;        <span class="keywordflow">if</span> (copiedInSize == inSize)</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        {</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;            chunk = compressed.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/data.html">data</a>();</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;        }</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    }</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keywordflow">if</span> (ret &lt;= 0 || ret != decompressedSize)</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        <a class="code" href="namespaceripple_1_1compression__algorithms.html#a7a25fc2be5a306f1056debb8fa3d8a35">doThrow</a>(<span class="stringliteral">&quot;lz4 decompress: failed&quot;</span>);</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keywordflow">return</span> decompressedSize;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;}</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> InputStream&gt;</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div>
+<div class="line"><a name="l00108"></a><span class="lineno"><a class="line" href="namespaceripple_1_1compression__algorithms.html#aa5001af4f7a6dad195e48601c3941785">  108</a></span>&#160;<a class="code" href="namespaceripple_1_1compression__algorithms.html#adffbf89cb05c470ae10b85ef9ecb3b2e">lz4Decompress</a>(</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    InputStream&amp; in,</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> inSize,</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>* decompressed,</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> decompressedSize)</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;{</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::uint8_t&gt;</a> compressed;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> <span class="keyword">const</span>* chunk = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <span class="keywordtype">int</span> chunkSize = 0;</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <span class="keywordtype">int</span> copiedInSize = 0;</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="keyword">auto</span> <span class="keyword">const</span> currentBytes = <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>.ByteCount();</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160; </div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <span class="comment">// Use the first chunk if it is &gt;= inSize bytes of the compressed message.</span></div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="comment">// Otherwise copy inSize bytes of chunks into compressed buffer and</span></div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="comment">// use the buffer to decompress.</span></div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    <span class="keywordflow">while</span> (<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>.Next(<span class="keyword">reinterpret_cast&lt;</span><span class="keywordtype">void</span> const**<span class="keyword">&gt;</span>(&amp;chunk), &amp;chunkSize))</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;    {</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        <span class="keywordflow">if</span> (copiedInSize == 0)</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        {</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            <span class="keywordflow">if</span> (chunkSize &gt;= inSize)</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            {</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;                copiedInSize = inSize;</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;                <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;            }</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;            compressed.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/resize.html">resize</a>(inSize);</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        }</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160; </div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        chunkSize = chunkSize &lt; (inSize - copiedInSize)</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;            ? chunkSize</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;            : (inSize - copiedInSize);</div>
 <div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160; </div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    <span class="comment">// Put back unused bytes</span></div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>.ByteCount() &gt; (currentBytes + copiedInSize))</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;        <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>.BackUp(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>.ByteCount() - currentBytes - copiedInSize);</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/copy.html">std::copy</a>(chunk, chunk + chunkSize, compressed.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/data.html">data</a>() + copiedInSize);</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160; </div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;        copiedInSize += chunkSize;</div>
 <div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160; </div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;    <span class="keywordflow">if</span> ((copiedInSize == 0 &amp;&amp; chunkSize &lt; inSize) || (copiedInSize &gt; 0 &amp;&amp; copiedInSize != inSize))</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;        <a class="code" href="namespaceripple_1_1compression__algorithms.html#a7a25fc2be5a306f1056debb8fa3d8a35">doThrow</a>(<span class="stringliteral">&quot;lz4 decompress: insufficient input size&quot;</span>);</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160; </div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1compression__algorithms.html#adffbf89cb05c470ae10b85ef9ecb3b2e">lz4Decompress</a>(chunk, inSize, decompressed, decompressedSize);</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;}</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160; </div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;} <span class="comment">// compression</span></div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160; </div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;} <span class="comment">// ripple</span></div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160; </div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;<span class="preprocessor">#endif //RIPPLED_COMPRESSIONALGORITHMS_H_INCLUDED</span></div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;        <span class="keywordflow">if</span> (copiedInSize == inSize)</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;        {</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;            chunk = compressed.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/data.html">data</a>();</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;        }</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    }</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160; </div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    <span class="comment">// Put back unused bytes</span></div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>.ByteCount() &gt; (currentBytes + copiedInSize))</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        <a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>.BackUp(<a class="code" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>.ByteCount() - currentBytes - copiedInSize);</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160; </div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    <span class="keywordflow">if</span> ((copiedInSize == 0 &amp;&amp; chunkSize &lt; inSize) ||</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;        (copiedInSize &gt; 0 &amp;&amp; copiedInSize != inSize))</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        <a class="code" href="namespaceripple_1_1compression__algorithms.html#a7a25fc2be5a306f1056debb8fa3d8a35">doThrow</a>(<span class="stringliteral">&quot;lz4 decompress: insufficient input size&quot;</span>);</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160; </div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple_1_1compression__algorithms.html#adffbf89cb05c470ae10b85ef9ecb3b2e">lz4Decompress</a>(chunk, inSize, decompressed, decompressedSize);</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;}</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160; </div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;}  <span class="comment">// namespace compression_algorithms</span></div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160; </div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160; </div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;<span class="preprocessor">#endif  // RIPPLED_COMPRESSIONALGORITHMS_H_INCLUDED</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aresize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/resize.html">std::vector::resize</a></div><div class="ttdeci">T resize(T... args)</div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a></div><div class="ttdoc">STL class.</div></div>
@@ -204,9 +216,9 @@ $(function() {
 <div class="ttc" id="acopy_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/copy.html">std::copy</a></div><div class="ttdeci">T copy(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_1_1compression__algorithms_html_adffbf89cb05c470ae10b85ef9ecb3b2e"><div class="ttname"><a href="namespaceripple_1_1compression__algorithms.html#adffbf89cb05c470ae10b85ef9ecb3b2e">ripple::compression_algorithms::lz4Decompress</a></div><div class="ttdeci">std::size_t lz4Decompress(std::uint8_t const *in, std::size_t inSize, std::uint8_t *decompressed, std::size_t decompressedSize)</div><div class="ttdef"><b>Definition:</b> <a href="CompressionAlgorithms_8h_source.html#l00080">CompressionAlgorithms.h:80</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1compression__algorithms_html_a7a25fc2be5a306f1056debb8fa3d8a35"><div class="ttname"><a href="namespaceripple_1_1compression__algorithms.html#a7a25fc2be5a306f1056debb8fa3d8a35">ripple::compression_algorithms::doThrow</a></div><div class="ttdeci">void doThrow(const char *message)</div><div class="ttdoc">Convenience wrapper for Throw.</div><div class="ttdef"><b>Definition:</b> <a href="CompressionAlgorithms_8h_source.html#l00034">CompressionAlgorithms.h:34</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1compression__algorithms_html_a7a25fc2be5a306f1056debb8fa3d8a35"><div class="ttname"><a href="namespaceripple_1_1compression__algorithms.html#a7a25fc2be5a306f1056debb8fa3d8a35">ripple::compression_algorithms::doThrow</a></div><div class="ttdeci">void doThrow(const char *message)</div><div class="ttdoc">Convenience wrapper for Throw.</div><div class="ttdef"><b>Definition:</b> <a href="CompressionAlgorithms_8h_source.html#l00035">CompressionAlgorithms.h:35</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1compression__algorithms_html_a8fb4610c8381afcf3d92ddfff9dbf0cf"><div class="ttname"><a href="namespaceripple_1_1compression__algorithms.html#a8fb4610c8381afcf3d92ddfff9dbf0cf">ripple::compression_algorithms::lz4Compress</a></div><div class="ttdeci">std::size_t lz4Compress(void const *in, std::size_t inSize, BufferFactory &amp;&amp;bf)</div><div class="ttdoc">LZ4 block compression.</div><div class="ttdef"><b>Definition:</b> <a href="CompressionAlgorithms_8h_source.html#l00049">CompressionAlgorithms.h:49</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1compression__algorithms_html_a8fb4610c8381afcf3d92ddfff9dbf0cf"><div class="ttname"><a href="namespaceripple_1_1compression__algorithms.html#a8fb4610c8381afcf3d92ddfff9dbf0cf">ripple::compression_algorithms::lz4Compress</a></div><div class="ttdeci">std::size_t lz4Compress(void const *in, std::size_t inSize, BufferFactory &amp;&amp;bf)</div><div class="ttdoc">LZ4 block compression.</div><div class="ttdef"><b>Definition:</b> <a href="CompressionAlgorithms_8h_source.html#l00050">CompressionAlgorithms.h:50</a></div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
 <div class="ttc" id="adata_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/data.html">std::vector::data</a></div><div class="ttdeci">T data(T... args)</div></div>
 <!-- start footer part -->

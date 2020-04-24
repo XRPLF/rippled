@@ -91,9 +91,9 @@ $(function() {
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_APP_BOOK_BOOKTIP_H_INCLUDED</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_APP_BOOK_BOOKTIP_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/Quality.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/ledger/View.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/Indexes.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/ledger/View.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/Indexes.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/Quality.h&gt;</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/functional.html">functional</a>&gt;</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
@@ -114,7 +114,7 @@ $(function() {
 <div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="classripple_1_1BookTip.html#a9260904a5d30263326ee1dff39ece201">   47</a></span>&#160;    Quality <a class="code" href="classripple_1_1BookTip.html#a9260904a5d30263326ee1dff39ece201">m_quality</a>;</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <a class="code" href="classripple_1_1BookTip.html#a270b078cbf4551c2ec499c7d8d8a9ac3">BookTip</a> (<a class="code" href="classripple_1_1ApplyView.html">ApplyView</a>&amp; view, <a class="code" href="classripple_1_1Book.html">Book</a> <span class="keyword">const</span>&amp; book);</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <a class="code" href="classripple_1_1BookTip.html#a270b078cbf4551c2ec499c7d8d8a9ac3">BookTip</a>(<a class="code" href="classripple_1_1ApplyView.html">ApplyView</a>&amp; view, <a class="code" href="classripple_1_1Book.html">Book</a> <span class="keyword">const</span>&amp; book);</div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp;</div>
 <div class="line"><a name="l00054"></a><span class="lineno"><a class="line" href="classripple_1_1BookTip.html#a1e903a45ae4a5dca6a34781fcaf61392">   54</a></span>&#160;    <a class="code" href="classripple_1_1BookTip.html#a1e903a45ae4a5dca6a34781fcaf61392">dir</a>() const noexcept</div>
@@ -141,17 +141,17 @@ $(function() {
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    }</div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <a class="code" href="classripple_1_1BookTip.html#a397775ff95cf391a6cdc71bf0bfd1082">step</a> (<a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> j);</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <a class="code" href="classripple_1_1BookTip.html#a397775ff95cf391a6cdc71bf0bfd1082">step</a>(<a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> j);</div>
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;};</div>
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;}</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="afunctional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/functional.html">functional</a></div></div>
 <div class="ttc" id="aclassripple_1_1BookTip_html_a5173c64dad3fc11b19fd7ea5df3e1aec"><div class="ttname"><a href="classripple_1_1BookTip.html#a5173c64dad3fc11b19fd7ea5df3e1aec">ripple::BookTip::m_end</a></div><div class="ttdeci">uint256 m_end</div><div class="ttdef"><b>Definition:</b> <a href="BookTip_8h_source.html#l00043">BookTip.h:43</a></div></div>
-<div class="ttc" id="aclassripple_1_1ApplyView_html"><div class="ttname"><a href="classripple_1_1ApplyView.html">ripple::ApplyView</a></div><div class="ttdoc">Writeable view to a ledger, for applying a transaction.</div><div class="ttdef"><b>Definition:</b> <a href="ApplyView_8h_source.html#l00150">ApplyView.h:150</a></div></div>
+<div class="ttc" id="aclassripple_1_1ApplyView_html"><div class="ttname"><a href="classripple_1_1ApplyView.html">ripple::ApplyView</a></div><div class="ttdoc">Writeable view to a ledger, for applying a transaction.</div><div class="ttdef"><b>Definition:</b> <a href="ApplyView_8h_source.html#l00140">ApplyView.h:140</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 256 &gt;</a></div></div>
 <div class="ttc" id="aclassripple_1_1BookTip_html_ae31968310bc434fb8d06a70c4cbb5ce1"><div class="ttname"><a href="classripple_1_1BookTip.html#ae31968310bc434fb8d06a70c4cbb5ce1">ripple::BookTip::index</a></div><div class="ttdeci">uint256 const  &amp; index() const noexcept</div><div class="ttdef"><b>Definition:</b> <a href="BookTip_8h_source.html#l00060">BookTip.h:60</a></div></div>
 <div class="ttc" id="aclassripple_1_1BookTip_html_a270b078cbf4551c2ec499c7d8d8a9ac3"><div class="ttname"><a href="classripple_1_1BookTip.html#a270b078cbf4551c2ec499c7d8d8a9ac3">ripple::BookTip::BookTip</a></div><div class="ttdeci">BookTip(ApplyView &amp;view, Book const &amp;book)</div><div class="ttdoc">Create the iterator.</div><div class="ttdef"><b>Definition:</b> <a href="BookTip_8cpp_source.html#l00025">BookTip.cpp:25</a></div></div>
@@ -159,7 +159,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1BookTip_html_a16a19065aeac8e13a44e9487f4a82661"><div class="ttname"><a href="classripple_1_1BookTip.html#a16a19065aeac8e13a44e9487f4a82661">ripple::BookTip::view_</a></div><div class="ttdeci">ApplyView &amp; view_</div><div class="ttdef"><b>Definition:</b> <a href="BookTip_8h_source.html#l00040">BookTip.h:40</a></div></div>
 <div class="ttc" id="aclassripple_1_1BookTip_html_a001120a15b8578a1bd23866c2b95aa7d"><div class="ttname"><a href="classripple_1_1BookTip.html#a001120a15b8578a1bd23866c2b95aa7d">ripple::BookTip::m_book</a></div><div class="ttdeci">uint256 m_book</div><div class="ttdef"><b>Definition:</b> <a href="BookTip_8h_source.html#l00042">BookTip.h:42</a></div></div>
 <div class="ttc" id="aclassripple_1_1BookTip_html"><div class="ttname"><a href="classripple_1_1BookTip.html">ripple::BookTip</a></div><div class="ttdoc">Iterates and consumes raw offers in an order book.</div><div class="ttdef"><b>Definition:</b> <a href="BookTip_8h_source.html#l00037">BookTip.h:37</a></div></div>
-<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00060">Journal.h:60</a></div></div>
+<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00058">Journal.h:58</a></div></div>
 <div class="ttc" id="aclassripple_1_1BookTip_html_a9260904a5d30263326ee1dff39ece201"><div class="ttname"><a href="classripple_1_1BookTip.html#a9260904a5d30263326ee1dff39ece201">ripple::BookTip::m_quality</a></div><div class="ttdeci">Quality m_quality</div><div class="ttdef"><b>Definition:</b> <a href="BookTip_8h_source.html#l00047">BookTip.h:47</a></div></div>
 <div class="ttc" id="aclassripple_1_1BookTip_html_a35db02c211264c557b3d58d4d7996c6b"><div class="ttname"><a href="classripple_1_1BookTip.html#a35db02c211264c557b3d58d4d7996c6b">ripple::BookTip::m_index</a></div><div class="ttdeci">uint256 m_index</div><div class="ttdef"><b>Definition:</b> <a href="BookTip_8h_source.html#l00045">BookTip.h:45</a></div></div>
 <div class="ttc" id="aclassripple_1_1BookTip_html_ac15cdda52ef8015f6721a2bfcb937484"><div class="ttname"><a href="classripple_1_1BookTip.html#ac15cdda52ef8015f6721a2bfcb937484">ripple::BookTip::m_valid</a></div><div class="ttdeci">bool m_valid</div><div class="ttdef"><b>Definition:</b> <a href="BookTip_8h_source.html#l00041">BookTip.h:41</a></div></div>

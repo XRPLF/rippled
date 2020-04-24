@@ -91,8 +91,8 @@ $(function() {
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_PROTOCOL_KEYLET_H_INCLUDED</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_PROTOCOL_KEYLET_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/LedgerFormats.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/base_uint.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/base_uint.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/LedgerFormats.h&gt;</span></div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
@@ -103,20 +103,17 @@ $(function() {
 <div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="structripple_1_1Keylet.html#a194d83c488eaa909ae4bcf816d8f4cb0">   40</a></span>&#160;    <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07b">LedgerEntryType</a> <a class="code" href="structripple_1_1Keylet.html#a194d83c488eaa909ae4bcf816d8f4cb0">type</a>;</div>
 <div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">   41</a></span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <a class="code" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno"><a class="line" href="structripple_1_1Keylet.html#a0178242a6b4273e3bd80c15f24ebb35a">   43</a></span>&#160;    <a class="code" href="structripple_1_1Keylet.html#a0178242a6b4273e3bd80c15f24ebb35a">Keylet</a> (<a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07b">LedgerEntryType</a> type_,</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;            <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key_)</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        : <a class="code" href="structripple_1_1Keylet.html#a194d83c488eaa909ae4bcf816d8f4cb0">type</a>(type_)</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        , <a class="code" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>(key_)</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    {</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    }</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <a class="code" href="structripple_1_1Keylet.html#a1e8ccd4a50a894a338c789fc566d8802">check</a> (<a class="code" href="classripple_1_1STLedgerEntry.html">STLedgerEntry</a> <span class="keyword">const</span>&amp;) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;};</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;}</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00043"></a><span class="lineno"><a class="line" href="structripple_1_1Keylet.html#a0178242a6b4273e3bd80c15f24ebb35a">   43</a></span>&#160;    <a class="code" href="structripple_1_1Keylet.html#a0178242a6b4273e3bd80c15f24ebb35a">Keylet</a>(<a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07b">LedgerEntryType</a> type_, <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key_) : <a class="code" href="structripple_1_1Keylet.html#a194d83c488eaa909ae4bcf816d8f4cb0">type</a>(type_), <a class="code" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>(key_)</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    {</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    }</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <a class="code" href="structripple_1_1Keylet.html#a1e8ccd4a50a894a338c789fc566d8802">check</a>(<a class="code" href="classripple_1_1STLedgerEntry.html">STLedgerEntry</a> <span class="keyword">const</span>&amp;) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;};</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="astructripple_1_1Keylet_html"><div class="ttname"><a href="structripple_1_1Keylet.html">ripple::Keylet</a></div><div class="ttdoc">A pair of SHAMap key and LedgerEntryType.</div><div class="ttdef"><b>Definition:</b> <a href="Keylet_8h_source.html#l00038">Keylet.h:38</a></div></div>
 <div class="ttc" id="aclassripple_1_1STLedgerEntry_html"><div class="ttname"><a href="classripple_1_1STLedgerEntry.html">ripple::STLedgerEntry</a></div><div class="ttdef"><b>Definition:</b> <a href="STLedgerEntry_8h_source.html#l00030">STLedgerEntry.h:30</a></div></div>

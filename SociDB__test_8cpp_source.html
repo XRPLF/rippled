@@ -88,386 +88,398 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/core/ConfigSections.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/core/SociDB.h&gt;</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/contract.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;test/jtx/TestSuite.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/BasicConfig.h&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;boost/filesystem.hpp&gt;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;boost/algorithm/string.hpp&gt;</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html">   30</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1SociDB__test.html">SociDB_test</a> final : <span class="keyword">public</span> <a class="code" href="classripple_1_1TestSuite.html">TestSuite</a></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;{</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a178713edcabb570517745bd3afc545d8">   33</a></span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code" href="classripple_1_1SociDB__test.html#a178713edcabb570517745bd3afc545d8">setupSQLiteConfig</a> (<a class="code" href="classripple_1_1BasicConfig.html">BasicConfig</a>&amp; config,</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;                                   boost::filesystem::path <span class="keyword">const</span>&amp; dbPath)</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    {</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        config.<a class="code" href="classripple_1_1BasicConfig.html#ac9bc9bfdd56fde61573aae73511504c9">overwrite</a> (<span class="stringliteral">&quot;sqdb&quot;</span>, <span class="stringliteral">&quot;backend&quot;</span>, <span class="stringliteral">&quot;sqlite&quot;</span>);</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        <span class="keyword">auto</span> value = dbPath.string ();</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <span class="keywordflow">if</span> (!value.empty ())</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;            config.<a class="code" href="classripple_1_1BasicConfig.html#ae2c21d011e6424d4917db175ef9df301">legacy</a> (<span class="stringliteral">&quot;database_path&quot;</span>, value);</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    }</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#abf69439c31ea0c2b6d3f6e6b02d09aca">   42</a></span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code" href="classripple_1_1SociDB__test.html#abf69439c31ea0c2b6d3f6e6b02d09aca">cleanupDatabaseDir</a> (boost::filesystem::path <span class="keyword">const</span>&amp; dbPath)</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    {</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="keyword">using namespace </span>boost::filesystem;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <span class="keywordflow">if</span> (!exists (dbPath) || !is_directory (dbPath) || !is_empty (dbPath))</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        remove (dbPath);</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    }</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a0f5e7ed67e47544bc01349656bf81590">   50</a></span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code" href="classripple_1_1SociDB__test.html#a0f5e7ed67e47544bc01349656bf81590">setupDatabaseDir</a> (boost::filesystem::path <span class="keyword">const</span>&amp; dbPath)</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    {</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <span class="keyword">using namespace </span>boost::filesystem;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="keywordflow">if</span> (!exists (dbPath))</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        {</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            create_directory (dbPath);</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        }</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <span class="keywordflow">if</span> (!is_directory (dbPath))</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        {</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            <span class="comment">// someone created a file where we want to put out directory</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            Throw&lt;std::runtime_error&gt; (</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;                <span class="stringliteral">&quot;Cannot create directory: &quot;</span> + dbPath.string ());</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        }</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    }</div>
-<div class="line"><a name="l00066"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">   66</a></span>&#160;    <span class="keyword">static</span> boost::filesystem::path <a class="code" href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">getDatabasePath</a> ()</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    {</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="keywordflow">return</span> boost::filesystem::current_path () / <span class="stringliteral">&quot;socidb_test_databases&quot;</span>;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    }</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00072"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a2a3bdd45b90d1f9f18ba8cb4c27afeab">   72</a></span>&#160;    <a class="code" href="classripple_1_1SociDB__test.html#a2a3bdd45b90d1f9f18ba8cb4c27afeab">SociDB_test</a> ()</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    {</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        {</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;            <a class="code" href="classripple_1_1SociDB__test.html#a0f5e7ed67e47544bc01349656bf81590">setupDatabaseDir</a> (<a class="code" href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">getDatabasePath</a> ());</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        }</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/BasicConfig.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/contract.h&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/core/ConfigSections.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/core/SociDB.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;boost/algorithm/string.hpp&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;boost/filesystem.hpp&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;test/jtx/TestSuite.h&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html">   29</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1SociDB__test.html">SociDB_test</a> final : <span class="keyword">public</span> <a class="code" href="classripple_1_1TestSuite.html">TestSuite</a></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;{</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a178713edcabb570517745bd3afc545d8">   33</a></span>&#160;    <a class="code" href="classripple_1_1SociDB__test.html#a178713edcabb570517745bd3afc545d8">setupSQLiteConfig</a>(</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <a class="code" href="classripple_1_1BasicConfig.html">BasicConfig</a>&amp; config,</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        boost::filesystem::path <span class="keyword">const</span>&amp; dbPath)</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    {</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        config.<a class="code" href="classripple_1_1BasicConfig.html#ac9bc9bfdd56fde61573aae73511504c9">overwrite</a>(<span class="stringliteral">&quot;sqdb&quot;</span>, <span class="stringliteral">&quot;backend&quot;</span>, <span class="stringliteral">&quot;sqlite&quot;</span>);</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <span class="keyword">auto</span> value = dbPath.string();</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="keywordflow">if</span> (!value.empty())</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            config.<a class="code" href="classripple_1_1BasicConfig.html#ae2c21d011e6424d4917db175ef9df301">legacy</a>(<span class="stringliteral">&quot;database_path&quot;</span>, value);</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    }</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#abf69439c31ea0c2b6d3f6e6b02d09aca">   44</a></span>&#160;    <a class="code" href="classripple_1_1SociDB__test.html#abf69439c31ea0c2b6d3f6e6b02d09aca">cleanupDatabaseDir</a>(boost::filesystem::path <span class="keyword">const</span>&amp; dbPath)</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    {</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <span class="keyword">using namespace </span>boost::filesystem;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="keywordflow">if</span> (!exists(dbPath) || !is_directory(dbPath) || !is_empty(dbPath))</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        remove(dbPath);</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    }</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a0f5e7ed67e47544bc01349656bf81590">   53</a></span>&#160;    <a class="code" href="classripple_1_1SociDB__test.html#a0f5e7ed67e47544bc01349656bf81590">setupDatabaseDir</a>(boost::filesystem::path <span class="keyword">const</span>&amp; dbPath)</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    {</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <span class="keyword">using namespace </span>boost::filesystem;</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keywordflow">if</span> (!exists(dbPath))</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        {</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            create_directory(dbPath);</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        }</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="keywordflow">if</span> (!is_directory(dbPath))</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        {</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            <span class="comment">// someone created a file where we want to put out directory</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;                <span class="stringliteral">&quot;Cannot create directory: &quot;</span> + dbPath.string());</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        }</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    }</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keyword">static</span> boost::filesystem::path</div>
+<div class="line"><a name="l00070"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">   70</a></span>&#160;    <a class="code" href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">getDatabasePath</a>()</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    {</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <span class="keywordflow">return</span> boost::filesystem::current_path() / <span class="stringliteral">&quot;socidb_test_databases&quot;</span>;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    }</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00076"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a2a3bdd45b90d1f9f18ba8cb4c27afeab">   76</a></span>&#160;    <a class="code" href="classripple_1_1SociDB__test.html#a2a3bdd45b90d1f9f18ba8cb4c27afeab">SociDB_test</a>()</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    {</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="keywordflow">try</span></div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        {</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        }</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    }</div>
-<div class="line"><a name="l00082"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#af2bf997507ea0eeef1597195f4a70001">   82</a></span>&#160;    <a class="code" href="classripple_1_1SociDB__test.html#af2bf997507ea0eeef1597195f4a70001">~SociDB_test</a> ()</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    {</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        {</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            <a class="code" href="classripple_1_1SociDB__test.html#abf69439c31ea0c2b6d3f6e6b02d09aca">cleanupDatabaseDir</a> (<a class="code" href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">getDatabasePath</a> ());</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        }</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            <a class="code" href="classripple_1_1SociDB__test.html#a0f5e7ed67e47544bc01349656bf81590">setupDatabaseDir</a>(<a class="code" href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">getDatabasePath</a>());</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        }</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        {</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        }</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    }</div>
+<div class="line"><a name="l00086"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#af2bf997507ea0eeef1597195f4a70001">   86</a></span>&#160;    <a class="code" href="classripple_1_1SociDB__test.html#af2bf997507ea0eeef1597195f4a70001">~SociDB_test</a>()</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    {</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <span class="keywordflow">try</span></div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        {</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        }</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    }</div>
-<div class="line"><a name="l00092"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a23e4514def83935e7c1b3fcaef160290">   92</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1SociDB__test.html#a23e4514def83935e7c1b3fcaef160290">testSQLiteFileNames</a> ()</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    {</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        <span class="comment">// confirm that files are given the correct exensions</span></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        testcase (<span class="stringliteral">&quot;sqliteFileNames&quot;</span>);</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        <a class="code" href="classripple_1_1BasicConfig.html">BasicConfig</a> c;</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#a178713edcabb570517745bd3afc545d8">setupSQLiteConfig</a> (c, <a class="code" href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">getDatabasePath</a> ());</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::pair&lt;std::string, std::string&gt;</a>&gt; <span class="keyword">const</span> d (</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;            {{<span class="stringliteral">&quot;peerfinder&quot;</span>, <span class="stringliteral">&quot;.sqlite&quot;</span>},</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;             {<span class="stringliteral">&quot;state&quot;</span>, <span class="stringliteral">&quot;.db&quot;</span>},</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;             {<span class="stringliteral">&quot;random&quot;</span>, <span class="stringliteral">&quot;.db&quot;</span>},</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;             {<span class="stringliteral">&quot;validators&quot;</span>, <span class="stringliteral">&quot;.sqlite&quot;</span>}});</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; i : d)</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;        {</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            <a class="code" href="classripple_1_1SociConfig.html">SociConfig</a> sc (c, i.first);</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            BEAST_EXPECT(boost::ends_with (sc.<a class="code" href="classripple_1_1SociConfig.html#aa776a9f294ea2bb9e2a6b00c01dd2eb0">connectionString</a> (),</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                                      i.first + i.second));</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        }</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    }</div>
-<div class="line"><a name="l00111"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a776c1b836a685ea179ab11ce1a811b62">  111</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1SociDB__test.html#a776c1b836a685ea179ab11ce1a811b62">testSQLiteSession</a> ()</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    {</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        testcase (<span class="stringliteral">&quot;open&quot;</span>);</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        <a class="code" href="classripple_1_1BasicConfig.html">BasicConfig</a> c;</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#a178713edcabb570517745bd3afc545d8">setupSQLiteConfig</a> (c, <a class="code" href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">getDatabasePath</a> ());</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        <a class="code" href="classripple_1_1SociConfig.html">SociConfig</a> sc (c, <span class="stringliteral">&quot;SociTestDB&quot;</span>);</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a> <span class="keyword">const</span> stringData (</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            {<span class="stringliteral">&quot;String1&quot;</span>, <span class="stringliteral">&quot;String2&quot;</span>, <span class="stringliteral">&quot;String3&quot;</span>});</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;int&gt;</a> <span class="keyword">const</span> intData ({1, 2, 3});</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        <span class="keyword">auto</span> checkValues = [<span class="keyword">this</span>, &amp;stringData, &amp;intData](soci::session&amp; s)</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;        {</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            <span class="comment">// Check values in db</span></div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a> stringResult (20 * stringData.size ());</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;int&gt;</a> intResult (20 * intData.size ());</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            s &lt;&lt; <span class="stringliteral">&quot;SELECT StringData, IntData FROM SociTestTable;&quot;</span>,</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;                soci::into (stringResult), soci::into (intResult);</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            BEAST_EXPECT(stringResult.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a> () == stringData.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/size.html">size</a> () &amp;&amp;</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;                    intResult.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a> () == intData.size ());</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; stringResult.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a> (); ++i)</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;            {</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;                <span class="keyword">auto</span> si = <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a> (stringData.begin (),</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;                                         <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find</a> (stringData.begin (),</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                                                    stringData.end (),</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                                                    stringResult[i]));</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;                <span class="keyword">auto</span> ii = <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a> (</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;                    intData.begin (),</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find</a> (intData.begin (), intData.end (), intResult[i]));</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                BEAST_EXPECT(si == ii &amp;&amp; si &lt; stringResult.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a> ());</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;            }</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;        };</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160; </div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;        {</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;            soci::session s;</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;            sc.<a class="code" href="classripple_1_1SociConfig.html#aa0afdd9239f42648f4e2a35c1ffee69c">open</a> (s);</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;            s &lt;&lt; <span class="stringliteral">&quot;CREATE TABLE IF NOT EXISTS SociTestTable (&quot;</span></div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                 <span class="stringliteral">&quot;  Key                    INTEGER PRIMARY KEY,&quot;</span></div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                 <span class="stringliteral">&quot;  StringData             TEXT,&quot;</span></div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                 <span class="stringliteral">&quot;  IntData                INTEGER&quot;</span></div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                 <span class="stringliteral">&quot;);&quot;</span>;</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160; </div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;            s &lt;&lt; <span class="stringliteral">&quot;INSERT INTO SociTestTable (StringData, IntData) VALUES &quot;</span></div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                 <span class="stringliteral">&quot;(:stringData, :intData);&quot;</span>,</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;                soci::use (stringData), soci::use (intData);</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;            checkValues (s);</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;        }</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        {</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;            <span class="comment">// Check values in db after session was closed</span></div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;            soci::session s;</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;            sc.<a class="code" href="classripple_1_1SociConfig.html#aa0afdd9239f42648f4e2a35c1ffee69c">open</a> (s);</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;            checkValues (s);</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            <a class="code" href="classripple_1_1SociDB__test.html#abf69439c31ea0c2b6d3f6e6b02d09aca">cleanupDatabaseDir</a>(<a class="code" href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">getDatabasePath</a>());</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        }</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        {</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        }</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    }</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a23e4514def83935e7c1b3fcaef160290">   97</a></span>&#160;    <a class="code" href="classripple_1_1SociDB__test.html#a23e4514def83935e7c1b3fcaef160290">testSQLiteFileNames</a>()</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    {</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        <span class="comment">// confirm that files are given the correct exensions</span></div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        testcase(<span class="stringliteral">&quot;sqliteFileNames&quot;</span>);</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        <a class="code" href="classripple_1_1BasicConfig.html">BasicConfig</a> c;</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#a178713edcabb570517745bd3afc545d8">setupSQLiteConfig</a>(c, <a class="code" href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">getDatabasePath</a>());</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::pair&lt;std::string, std::string&gt;</a>&gt; <span class="keyword">const</span> d(</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;            {{<span class="stringliteral">&quot;peerfinder&quot;</span>, <span class="stringliteral">&quot;.sqlite&quot;</span>},</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;             {<span class="stringliteral">&quot;state&quot;</span>, <span class="stringliteral">&quot;.db&quot;</span>},</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;             {<span class="stringliteral">&quot;random&quot;</span>, <span class="stringliteral">&quot;.db&quot;</span>},</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;             {<span class="stringliteral">&quot;validators&quot;</span>, <span class="stringliteral">&quot;.sqlite&quot;</span>}});</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; i : d)</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        {</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;            <a class="code" href="classripple_1_1SociConfig.html">SociConfig</a> sc(c, i.first);</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;                boost::ends_with(sc.<a class="code" href="classripple_1_1SociConfig.html#aa776a9f294ea2bb9e2a6b00c01dd2eb0">connectionString</a>(), i.first + i.second));</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        }</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    }</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00117"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a776c1b836a685ea179ab11ce1a811b62">  117</a></span>&#160;    <a class="code" href="classripple_1_1SociDB__test.html#a776c1b836a685ea179ab11ce1a811b62">testSQLiteSession</a>()</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    {</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        testcase(<span class="stringliteral">&quot;open&quot;</span>);</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        <a class="code" href="classripple_1_1BasicConfig.html">BasicConfig</a> c;</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#a178713edcabb570517745bd3afc545d8">setupSQLiteConfig</a>(c, <a class="code" href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">getDatabasePath</a>());</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        <a class="code" href="classripple_1_1SociConfig.html">SociConfig</a> sc(c, <span class="stringliteral">&quot;SociTestDB&quot;</span>);</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a> <span class="keyword">const</span> stringData(</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            {<span class="stringliteral">&quot;String1&quot;</span>, <span class="stringliteral">&quot;String2&quot;</span>, <span class="stringliteral">&quot;String3&quot;</span>});</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;int&gt;</a> <span class="keyword">const</span> intData({1, 2, 3});</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        <span class="keyword">auto</span> checkValues = [<span class="keyword">this</span>, &amp;stringData, &amp;intData](soci::session&amp; s) {</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            <span class="comment">// Check values in db</span></div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a> stringResult(20 * stringData.size());</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;int&gt;</a> intResult(20 * intData.size());</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;            s &lt;&lt; <span class="stringliteral">&quot;SELECT StringData, IntData FROM SociTestTable;&quot;</span>,</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;                soci::into(stringResult), soci::into(intResult);</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                stringResult.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>() == stringData.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/size.html">size</a>() &amp;&amp;</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                intResult.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>() == intData.size());</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; stringResult.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>(); ++i)</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;            {</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                <span class="keyword">auto</span> si = <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a>(</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                    stringData.begin(),</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find</a>(</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;                        stringData.begin(), stringData.end(), stringResult[i]));</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                <span class="keyword">auto</span> ii = <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a>(</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                    intData.begin(),</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find</a>(intData.begin(), intData.end(), intResult[i]));</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;                BEAST_EXPECT(si == ii &amp;&amp; si &lt; stringResult.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>());</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;            }</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;        };</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160; </div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;        {</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;            soci::session s;</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;            sc.<a class="code" href="classripple_1_1SociConfig.html#aa0afdd9239f42648f4e2a35c1ffee69c">open</a>(s);</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;            s &lt;&lt; <span class="stringliteral">&quot;CREATE TABLE IF NOT EXISTS SociTestTable (&quot;</span></div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                 <span class="stringliteral">&quot;  Key                    INTEGER PRIMARY KEY,&quot;</span></div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;                 <span class="stringliteral">&quot;  StringData             TEXT,&quot;</span></div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                 <span class="stringliteral">&quot;  IntData                INTEGER&quot;</span></div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                 <span class="stringliteral">&quot;);&quot;</span>;</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160; </div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;            s &lt;&lt; <span class="stringliteral">&quot;INSERT INTO SociTestTable (StringData, IntData) VALUES &quot;</span></div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;                 <span class="stringliteral">&quot;(:stringData, :intData);&quot;</span>,</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;                soci::use(stringData), soci::use(intData);</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;            checkValues(s);</div>
 <div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;        }</div>
 <div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;        {</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;            <span class="keyword">namespace </span>bfs = boost::filesystem;</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;            <span class="comment">// Remove the database</span></div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;            bfs::path dbPath (sc.<a class="code" href="classripple_1_1SociConfig.html#aa776a9f294ea2bb9e2a6b00c01dd2eb0">connectionString</a> ());</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;            <span class="keywordflow">if</span> (bfs::is_regular_file (dbPath))</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;                bfs::remove (dbPath);</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;        }</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    }</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160; </div>
-<div class="line"><a name="l00171"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a383b133b7e03c5d411bc48f6b2085d59">  171</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1SociDB__test.html#a383b133b7e03c5d411bc48f6b2085d59">testSQLiteSelect</a> ()</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    {</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;        testcase (<span class="stringliteral">&quot;select&quot;</span>);</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;        <a class="code" href="classripple_1_1BasicConfig.html">BasicConfig</a> c;</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#a178713edcabb570517745bd3afc545d8">setupSQLiteConfig</a> (c, <a class="code" href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">getDatabasePath</a> ());</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        <a class="code" href="classripple_1_1SociConfig.html">SociConfig</a> sc (c, <span class="stringliteral">&quot;SociTestDB&quot;</span>);</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::uint64_t&gt;</a> <span class="keyword">const</span> ubid (</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;            {(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>)<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits&lt;std::int64_t&gt;::max</a> (), 20, 30});</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::int64_t&gt;</a> <span class="keyword">const</span> bid ({-10, -20, -30});</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::uint32_t&gt;</a> <span class="keyword">const</span> uid (</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;            {<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits/max.html">std::numeric_limits&lt;std::uint32_t&gt;::max</a> (), 2, 3});</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::int32_t&gt;</a> <span class="keyword">const</span> id ({-1, -2, -3});</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160; </div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;        {</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;            soci::session s;</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;            sc.<a class="code" href="classripple_1_1SociConfig.html#aa0afdd9239f42648f4e2a35c1ffee69c">open</a> (s);</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160; </div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;            s &lt;&lt; <span class="stringliteral">&quot;DROP TABLE IF EXISTS STT;&quot;</span>;</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160; </div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;            s &lt;&lt; <span class="stringliteral">&quot;CREATE TABLE STT (&quot;</span></div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;                 <span class="stringliteral">&quot;  I              INTEGER,&quot;</span></div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;                 <span class="stringliteral">&quot;  UI             INTEGER UNSIGNED,&quot;</span></div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;                 <span class="stringliteral">&quot;  BI             BIGINT,&quot;</span></div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;                 <span class="stringliteral">&quot;  UBI            BIGINT UNSIGNED&quot;</span></div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;                 <span class="stringliteral">&quot;);&quot;</span>;</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;            <span class="comment">// Check values in db after session was closed</span></div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;            soci::session s;</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;            sc.<a class="code" href="classripple_1_1SociConfig.html#aa0afdd9239f42648f4e2a35c1ffee69c">open</a>(s);</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;            checkValues(s);</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;        }</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;        {</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;            <span class="keyword">namespace </span>bfs = boost::filesystem;</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;            <span class="comment">// Remove the database</span></div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;            bfs::path dbPath(sc.<a class="code" href="classripple_1_1SociConfig.html#aa776a9f294ea2bb9e2a6b00c01dd2eb0">connectionString</a>());</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;            <span class="keywordflow">if</span> (bfs::is_regular_file(dbPath))</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;                bfs::remove(dbPath);</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;        }</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    }</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160; </div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00178"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a383b133b7e03c5d411bc48f6b2085d59">  178</a></span>&#160;    <a class="code" href="classripple_1_1SociDB__test.html#a383b133b7e03c5d411bc48f6b2085d59">testSQLiteSelect</a>()</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;    {</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;        testcase(<span class="stringliteral">&quot;select&quot;</span>);</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;        <a class="code" href="classripple_1_1BasicConfig.html">BasicConfig</a> c;</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#a178713edcabb570517745bd3afc545d8">setupSQLiteConfig</a>(c, <a class="code" href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">getDatabasePath</a>());</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;        <a class="code" href="classripple_1_1SociConfig.html">SociConfig</a> sc(c, <span class="stringliteral">&quot;SociTestDB&quot;</span>);</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::uint64_t&gt;</a> <span class="keyword">const</span> ubid(</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;            {(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>)<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits&lt;std::int64_t&gt;::max</a>(), 20, 30});</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::int64_t&gt;</a> <span class="keyword">const</span> bid({-10, -20, -30});</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::uint32_t&gt;</a> <span class="keyword">const</span> uid(</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;            {<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits/max.html">std::numeric_limits&lt;std::uint32_t&gt;::max</a>(), 2, 3});</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::int32_t&gt;</a> <span class="keyword">const</span> id({-1, -2, -3});</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160; </div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;        {</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;            soci::session s;</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;            sc.<a class="code" href="classripple_1_1SociConfig.html#aa0afdd9239f42648f4e2a35c1ffee69c">open</a>(s);</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160; </div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;            s &lt;&lt; <span class="stringliteral">&quot;DROP TABLE IF EXISTS STT;&quot;</span>;</div>
 <div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160; </div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;            s &lt;&lt; <span class="stringliteral">&quot;INSERT INTO STT (I, UI, BI, UBI) VALUES &quot;</span></div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;                 <span class="stringliteral">&quot;(:id, :idu, :bid, :bidu);&quot;</span>,</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;                soci::use (<span class="keywordtype">id</span>), soci::use (uid), soci::use (bid),</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;                soci::use (ubid);</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160; </div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;            <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;            {</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a> ig = 0;</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uig = 0;</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a> big = 0;</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> ubig = 0;</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;                s &lt;&lt; <span class="stringliteral">&quot;SELECT I, UI, BI, UBI from STT;&quot;</span>, soci::into (ig),</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;                    soci::into (uig), soci::into (big), soci::into (ubig);</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;                BEAST_EXPECT(ig == <span class="keywordtype">id</span>[0] &amp;&amp; uig == uid[0] &amp;&amp; big == bid[0] &amp;&amp;</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;                        ubig == ubid[0]);</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;            }</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;            <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a>&amp;)</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;            {</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;                fail ();</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;            }</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;            <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;            {</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;                boost::optional&lt;std::int32_t&gt; ig;</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;                boost::optional&lt;std::uint32_t&gt; uig;</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;                boost::optional&lt;std::int64_t&gt; big;</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;                boost::optional&lt;std::uint64_t&gt; ubig;</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;                s &lt;&lt; <span class="stringliteral">&quot;SELECT I, UI, BI, UBI from STT;&quot;</span>, soci::into (ig),</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;                    soci::into (uig), soci::into (big), soci::into (ubig);</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;                BEAST_EXPECT(*ig == <span class="keywordtype">id</span>[0] &amp;&amp; *uig == uid[0] &amp;&amp; *big == bid[0] &amp;&amp;</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;                        *ubig == ubid[0]);</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;            }</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;            <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a>&amp;)</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;            {</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;                fail ();</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;            }</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;            <span class="comment">// There are too many issues when working with soci::row and boost::tuple. DO NOT USE</span></div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;            <span class="comment">// soci row! I had a set of workarounds to make soci row less error prone, I&#39;m keeping</span></div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;            <span class="comment">// these tests in case I try to add soci::row and boost::tuple back into soci.</span></div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;<span class="preprocessor">#if 0</span></div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;            <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;            s &lt;&lt; <span class="stringliteral">&quot;CREATE TABLE STT (&quot;</span></div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;                 <span class="stringliteral">&quot;  I              INTEGER,&quot;</span></div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;                 <span class="stringliteral">&quot;  UI             INTEGER UNSIGNED,&quot;</span></div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;                 <span class="stringliteral">&quot;  BI             BIGINT,&quot;</span></div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;                 <span class="stringliteral">&quot;  UBI            BIGINT UNSIGNED&quot;</span></div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;                 <span class="stringliteral">&quot;);&quot;</span>;</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160; </div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;            s &lt;&lt; <span class="stringliteral">&quot;INSERT INTO STT (I, UI, BI, UBI) VALUES &quot;</span></div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;                 <span class="stringliteral">&quot;(:id, :idu, :bid, :bidu);&quot;</span>,</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;                soci::use(<span class="keywordtype">id</span>), soci::use(uid), soci::use(bid), soci::use(ubid);</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160; </div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;            <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;            {</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a> ig = 0;</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uig = 0;</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a> big = 0;</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> ubig = 0;</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;                s &lt;&lt; <span class="stringliteral">&quot;SELECT I, UI, BI, UBI from STT;&quot;</span>, soci::into(ig),</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;                    soci::into(uig), soci::into(big), soci::into(ubig);</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;                BEAST_EXPECT(</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;                    ig == <span class="keywordtype">id</span>[0] &amp;&amp; uig == uid[0] &amp;&amp; big == bid[0] &amp;&amp;</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;                    ubig == ubid[0]);</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;            }</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;            <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a>&amp;)</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;            {</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;                fail();</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;            }</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;            <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;            {</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;                boost::optional&lt;std::int32_t&gt; ig;</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;                boost::optional&lt;std::uint32_t&gt; uig;</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;                boost::optional&lt;std::int64_t&gt; big;</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                boost::optional&lt;std::uint64_t&gt; ubig;</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;                s &lt;&lt; <span class="stringliteral">&quot;SELECT I, UI, BI, UBI from STT;&quot;</span>, soci::into(ig),</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                    soci::into(uig), soci::into(big), soci::into(ubig);</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;                BEAST_EXPECT(</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;                    *ig == <span class="keywordtype">id</span>[0] &amp;&amp; *uig == uid[0] &amp;&amp; *big == bid[0] &amp;&amp;</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;                    *ubig == ubid[0]);</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;            }</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;            <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a>&amp;)</div>
 <div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;            {</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a> ig = 0;</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uig = 0;</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a> big = 0;</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> ubig = 0;</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;                soci::row r;</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;                s &lt;&lt; <span class="stringliteral">&quot;SELECT I, UI, BI, UBI from STT&quot;</span>, soci::into (r);</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;                ig = r.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a>&gt;(0);</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;                uig = r.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&gt;(1);</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;                big = r.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a>&gt;(2);</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;                ubig = r.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&gt;(3);</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;                BEAST_EXPECT(ig == <span class="keywordtype">id</span>[0] &amp;&amp; uig == uid[0] &amp;&amp; big == bid[0] &amp;&amp;</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;                        ubig == ubid[0]);</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;            }</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;            <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a>&amp;)</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;            {</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;                fail ();</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;            }</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;            <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;            {</div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a> ig = 0;</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uig = 0;</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a> big = 0;</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> ubig = 0;</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;                soci::row r;</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;                s &lt;&lt; <span class="stringliteral">&quot;SELECT I, UI, BI, UBI from STT&quot;</span>, soci::into (r);</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;                ig = r.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a>&gt;(<span class="stringliteral">&quot;I&quot;</span>);</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;                uig = r.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&gt;(<span class="stringliteral">&quot;UI&quot;</span>);</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;                big = r.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a>&gt;(<span class="stringliteral">&quot;BI&quot;</span>);</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;                ubig = r.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&gt;(<span class="stringliteral">&quot;UBI&quot;</span>);</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;                BEAST_EXPECT(ig == <span class="keywordtype">id</span>[0] &amp;&amp; uig == uid[0] &amp;&amp; big == bid[0] &amp;&amp;</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;                        ubig == ubid[0]);</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;            }</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;            <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a>&amp;)</div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;            {</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;                fail ();</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;            }</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;            <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;            {</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;                boost::tuple&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a>,</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;                             <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>,</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;                             <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a>,</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;                             <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&gt; d;</div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;                s &lt;&lt; <span class="stringliteral">&quot;SELECT I, UI, BI, UBI from STT&quot;</span>, soci::into (d);</div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;                BEAST_EXPECT(get&lt;0&gt;(d) == <span class="keywordtype">id</span>[0] &amp;&amp; get&lt;1&gt;(d) == uid[0] &amp;&amp;</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;                        get&lt;2&gt;(d) == bid[0] &amp;&amp; get&lt;3&gt;(d) == ubid[0]);</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;            }</div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;            <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a>&amp;)</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;            {</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;                fail ();</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;            }</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;        }</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;        {</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;            <span class="keyword">namespace </span>bfs = boost::filesystem;</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;            <span class="comment">// Remove the database</span></div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;            bfs::path dbPath (sc.<a class="code" href="classripple_1_1SociConfig.html#aa776a9f294ea2bb9e2a6b00c01dd2eb0">connectionString</a> ());</div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;            <span class="keywordflow">if</span> (bfs::is_regular_file (dbPath))</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;                bfs::remove (dbPath);</div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;        }</div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;    }</div>
-<div class="line"><a name="l00298"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#ad6789b365f2bd9350e8cc0751a2b56a4">  298</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1SociDB__test.html#ad6789b365f2bd9350e8cc0751a2b56a4">testSQLiteDeleteWithSubselect</a>()</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;    {</div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;        testcase (<span class="stringliteral">&quot;deleteWithSubselect&quot;</span>);</div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;        <a class="code" href="classripple_1_1BasicConfig.html">BasicConfig</a> c;</div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#a178713edcabb570517745bd3afc545d8">setupSQLiteConfig</a> (c, <a class="code" href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">getDatabasePath</a> ());</div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;        <a class="code" href="classripple_1_1SociConfig.html">SociConfig</a> sc (c, <span class="stringliteral">&quot;SociTestDB&quot;</span>);</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;        {</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;            soci::session s;</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;            sc.<a class="code" href="classripple_1_1SociConfig.html#aa0afdd9239f42648f4e2a35c1ffee69c">open</a> (s);</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;            <span class="keyword">const</span> <span class="keywordtype">char</span>* dbInit[] = {</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                <span class="stringliteral">&quot;BEGIN TRANSACTION;&quot;</span>,</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;                <span class="stringliteral">&quot;CREATE TABLE Ledgers (                     \</span></div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;<span class="stringliteral">                LedgerHash      CHARACTER(64) PRIMARY KEY,  \</span></div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;<span class="stringliteral">                LedgerSeq       BIGINT UNSIGNED             \</span></div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;<span class="stringliteral">            );&quot;</span>,</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;                <span class="stringliteral">&quot;CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);&quot;</span>};</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;            <span class="keywordtype">int</span> dbInitCount = <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/extent.html">std::extent</a>&lt;decltype(dbInit)&gt;::value;</div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; dbInitCount; ++i)</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;            {</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;                s &lt;&lt; dbInit[i];</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;            }</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;            <span class="keywordtype">char</span> lh[65];</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;            memset (lh, <span class="charliteral">&#39;a&#39;</span>, 64);</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;            lh[64] = <span class="charliteral">&#39;\0&#39;</span>;</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;            <span class="keywordtype">int</span> toIncIndex = 63;</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;            <span class="keywordtype">int</span> <span class="keyword">const</span> numRows = 16;</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a> ledgerHashes;</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;int&gt;</a> ledgerIndexes;</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;            ledgerHashes.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(numRows);</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;            ledgerIndexes.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(numRows);</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; numRows; ++i)</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;            {</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;                ++lh[toIncIndex];</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;                <span class="keywordflow">if</span> (lh[toIncIndex] == <span class="charliteral">&#39;z&#39;</span>)</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;                    --toIncIndex;</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                ledgerHashes.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(lh);</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;                ledgerIndexes.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(i);</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;            }</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            s &lt;&lt; <span class="stringliteral">&quot;INSERT INTO Ledgers (LedgerHash, LedgerSeq) VALUES &quot;</span></div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;                 <span class="stringliteral">&quot;(:lh, :li);&quot;</span>,</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                soci::use (ledgerHashes), soci::use (ledgerIndexes);</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160; </div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;int&gt;</a> ledgersLS (numRows * 2);</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;            s &lt;&lt; <span class="stringliteral">&quot;SELECT LedgerSeq FROM Ledgers;&quot;</span>, soci::into (ledgersLS);</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;            BEAST_EXPECT(ledgersLS.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a> () == numRows);</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;        }</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;        <span class="keyword">namespace </span>bfs = boost::filesystem;</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;        <span class="comment">// Remove the database</span></div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;        bfs::path dbPath (sc.<a class="code" href="classripple_1_1SociConfig.html#aa776a9f294ea2bb9e2a6b00c01dd2eb0">connectionString</a> ());</div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;        <span class="keywordflow">if</span> (bfs::is_regular_file (dbPath))</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;            bfs::remove (dbPath);</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;    }</div>
-<div class="line"><a name="l00350"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a34233286be4210673a42e3f972c8f717">  350</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1SociDB__test.html#a34233286be4210673a42e3f972c8f717">testSQLite</a> ()</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;    {</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#a23e4514def83935e7c1b3fcaef160290">testSQLiteFileNames</a> ();</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#a776c1b836a685ea179ab11ce1a811b62">testSQLiteSession</a> ();</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#a383b133b7e03c5d411bc48f6b2085d59">testSQLiteSelect</a> ();</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#ad6789b365f2bd9350e8cc0751a2b56a4">testSQLiteDeleteWithSubselect</a>();</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;    }</div>
-<div class="line"><a name="l00357"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a1bb2fa8142596d0fb430fc07a35cdf84">  357</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1SociDB__test.html#a1bb2fa8142596d0fb430fc07a35cdf84">run</a> ()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#a34233286be4210673a42e3f972c8f717">testSQLite</a> ();</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;    }</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;};</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160; </div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(SociDB,core,<a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160; </div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;}  <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;                fail();</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;            }</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;            <span class="comment">// There are too many issues when working with soci::row and</span></div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;            <span class="comment">// boost::tuple. DO NOT USE soci row! I had a set of workarounds to</span></div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;            <span class="comment">// make soci row less error prone, I&#39;m keeping these tests in case I</span></div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;            <span class="comment">// try to add soci::row and boost::tuple back into soci.</span></div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;<span class="preprocessor">#if 0</span></div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;            <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;            {</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a> ig = 0;</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uig = 0;</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a> big = 0;</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> ubig = 0;</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;                soci::row r;</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;                s &lt;&lt; <span class="stringliteral">&quot;SELECT I, UI, BI, UBI from STT&quot;</span>, soci::into (r);</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;                ig = r.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a>&gt;(0);</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;                uig = r.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&gt;(1);</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;                big = r.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a>&gt;(2);</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;                ubig = r.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&gt;(3);</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;                BEAST_EXPECT(ig == <span class="keywordtype">id</span>[0] &amp;&amp; uig == uid[0] &amp;&amp; big == bid[0] &amp;&amp;</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;                        ubig == ubid[0]);</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;            }</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;            <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a>&amp;)</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;            {</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;                fail ();</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;            }</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;            <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;            {</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a> ig = 0;</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uig = 0;</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a> big = 0;</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> ubig = 0;</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;                soci::row r;</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;                s &lt;&lt; <span class="stringliteral">&quot;SELECT I, UI, BI, UBI from STT&quot;</span>, soci::into (r);</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;                ig = r.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a>&gt;(<span class="stringliteral">&quot;I&quot;</span>);</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;                uig = r.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&gt;(<span class="stringliteral">&quot;UI&quot;</span>);</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;                big = r.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a>&gt;(<span class="stringliteral">&quot;BI&quot;</span>);</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;                ubig = r.get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&gt;(<span class="stringliteral">&quot;UBI&quot;</span>);</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;                BEAST_EXPECT(ig == <span class="keywordtype">id</span>[0] &amp;&amp; uig == uid[0] &amp;&amp; big == bid[0] &amp;&amp;</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;                        ubig == ubid[0]);</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;            }</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;            <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a>&amp;)</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;            {</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;                fail ();</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;            }</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;            <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;            {</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;                boost::tuple&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a>,</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;                             <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>,</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;                             <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int64_t</a>,</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;                             <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&gt; d;</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;                s &lt;&lt; <span class="stringliteral">&quot;SELECT I, UI, BI, UBI from STT&quot;</span>, soci::into (d);</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;                BEAST_EXPECT(get&lt;0&gt;(d) == <span class="keywordtype">id</span>[0] &amp;&amp; get&lt;1&gt;(d) == uid[0] &amp;&amp;</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;                        get&lt;2&gt;(d) == bid[0] &amp;&amp; get&lt;3&gt;(d) == ubid[0]);</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;            }</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;            <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a>&amp;)</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;            {</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;                fail ();</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;            }</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;        }</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;        {</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;            <span class="keyword">namespace </span>bfs = boost::filesystem;</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;            <span class="comment">// Remove the database</span></div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;            bfs::path dbPath(sc.<a class="code" href="classripple_1_1SociConfig.html#aa776a9f294ea2bb9e2a6b00c01dd2eb0">connectionString</a>());</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;            <span class="keywordflow">if</span> (bfs::is_regular_file(dbPath))</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;                bfs::remove(dbPath);</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;        }</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    }</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00308"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#ad6789b365f2bd9350e8cc0751a2b56a4">  308</a></span>&#160;    <a class="code" href="classripple_1_1SociDB__test.html#ad6789b365f2bd9350e8cc0751a2b56a4">testSQLiteDeleteWithSubselect</a>()</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;    {</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;        testcase(<span class="stringliteral">&quot;deleteWithSubselect&quot;</span>);</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;        <a class="code" href="classripple_1_1BasicConfig.html">BasicConfig</a> c;</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#a178713edcabb570517745bd3afc545d8">setupSQLiteConfig</a>(c, <a class="code" href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">getDatabasePath</a>());</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        <a class="code" href="classripple_1_1SociConfig.html">SociConfig</a> sc(c, <span class="stringliteral">&quot;SociTestDB&quot;</span>);</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;        {</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;            soci::session s;</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;            sc.<a class="code" href="classripple_1_1SociConfig.html#aa0afdd9239f42648f4e2a35c1ffee69c">open</a>(s);</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;            <span class="keyword">const</span> <span class="keywordtype">char</span>* dbInit[] = {</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;                <span class="stringliteral">&quot;BEGIN TRANSACTION;&quot;</span>,</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;                <span class="stringliteral">&quot;CREATE TABLE Ledgers (                     \</span></div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;<span class="stringliteral">                LedgerHash      CHARACTER(64) PRIMARY KEY,  \</span></div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;<span class="stringliteral">                LedgerSeq       BIGINT UNSIGNED             \</span></div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;<span class="stringliteral">            );&quot;</span>,</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;                <span class="stringliteral">&quot;CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);&quot;</span>};</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;            <span class="keywordtype">int</span> dbInitCount = <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/extent.html">std::extent</a>&lt;decltype(dbInit)&gt;::value;</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; dbInitCount; ++i)</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;            {</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;                s &lt;&lt; dbInit[i];</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;            }</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;            <span class="keywordtype">char</span> lh[65];</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;            memset(lh, <span class="charliteral">&#39;a&#39;</span>, 64);</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;            lh[64] = <span class="charliteral">&#39;\0&#39;</span>;</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;            <span class="keywordtype">int</span> toIncIndex = 63;</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;            <span class="keywordtype">int</span> <span class="keyword">const</span> numRows = 16;</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a> ledgerHashes;</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;int&gt;</a> ledgerIndexes;</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            ledgerHashes.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(numRows);</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;            ledgerIndexes.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(numRows);</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; numRows; ++i)</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;            {</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;                ++lh[toIncIndex];</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;                <span class="keywordflow">if</span> (lh[toIncIndex] == <span class="charliteral">&#39;z&#39;</span>)</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;                    --toIncIndex;</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;                ledgerHashes.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(lh);</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;                ledgerIndexes.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(i);</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;            }</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;            s &lt;&lt; <span class="stringliteral">&quot;INSERT INTO Ledgers (LedgerHash, LedgerSeq) VALUES &quot;</span></div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;                 <span class="stringliteral">&quot;(:lh, :li);&quot;</span>,</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;                soci::use(ledgerHashes), soci::use(ledgerIndexes);</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160; </div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;int&gt;</a> ledgersLS(numRows * 2);</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;            s &lt;&lt; <span class="stringliteral">&quot;SELECT LedgerSeq FROM Ledgers;&quot;</span>, soci::into(ledgersLS);</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;            BEAST_EXPECT(ledgersLS.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>() == numRows);</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;        }</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;        <span class="keyword">namespace </span>bfs = boost::filesystem;</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;        <span class="comment">// Remove the database</span></div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;        bfs::path dbPath(sc.<a class="code" href="classripple_1_1SociConfig.html#aa776a9f294ea2bb9e2a6b00c01dd2eb0">connectionString</a>());</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;        <span class="keywordflow">if</span> (bfs::is_regular_file(dbPath))</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;            bfs::remove(dbPath);</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;    }</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00361"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a34233286be4210673a42e3f972c8f717">  361</a></span>&#160;    <a class="code" href="classripple_1_1SociDB__test.html#a34233286be4210673a42e3f972c8f717">testSQLite</a>()</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;    {</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#a23e4514def83935e7c1b3fcaef160290">testSQLiteFileNames</a>();</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#a776c1b836a685ea179ab11ce1a811b62">testSQLiteSession</a>();</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#a383b133b7e03c5d411bc48f6b2085d59">testSQLiteSelect</a>();</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#ad6789b365f2bd9350e8cc0751a2b56a4">testSQLiteDeleteWithSubselect</a>();</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;    }</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00369"></a><span class="lineno"><a class="line" href="classripple_1_1SociDB__test.html#a1bb2fa8142596d0fb430fc07a35cdf84">  369</a></span>&#160;    <a class="code" href="classripple_1_1SociDB__test.html#a1bb2fa8142596d0fb430fc07a35cdf84">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;        <a class="code" href="classripple_1_1SociDB__test.html#a34233286be4210673a42e3f972c8f717">testSQLite</a>();</div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;    }</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;};</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160; </div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(SociDB, core, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160; </div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1SociConfig_html"><div class="ttname"><a href="classripple_1_1SociConfig.html">ripple::SociConfig</a></div><div class="ttdoc">SociConfig is used when a client wants to delay opening a soci::session after parsing the config para...</div><div class="ttdef"><b>Definition:</b> <a href="SociDB_8h_source.html#l00075">SociDB.h:75</a></div></div>
-<div class="ttc" id="aclassripple_1_1SociDB__test_html_a34233286be4210673a42e3f972c8f717"><div class="ttname"><a href="classripple_1_1SociDB__test.html#a34233286be4210673a42e3f972c8f717">ripple::SociDB_test::testSQLite</a></div><div class="ttdeci">void testSQLite()</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00350">SociDB_test.cpp:350</a></div></div>
+<div class="ttc" id="aclassripple_1_1SociConfig_html"><div class="ttname"><a href="classripple_1_1SociConfig.html">ripple::SociConfig</a></div><div class="ttdoc">SociConfig is used when a client wants to delay opening a soci::session after parsing the config para...</div><div class="ttdef"><b>Definition:</b> <a href="SociDB_8h_source.html#l00076">SociDB.h:76</a></div></div>
+<div class="ttc" id="aclassripple_1_1SociDB__test_html_a34233286be4210673a42e3f972c8f717"><div class="ttname"><a href="classripple_1_1SociDB__test.html#a34233286be4210673a42e3f972c8f717">ripple::SociDB_test::testSQLite</a></div><div class="ttdeci">void testSQLite()</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00361">SociDB_test.cpp:361</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a2701412a11b118c19256a4c901db2938"><div class="ttname"><a href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">ripple::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(AccountTxPaging, app, ripple)</div></div>
 <div class="ttc" id="aexception_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="aclassripple_1_1SociDB__test_html_ad6789b365f2bd9350e8cc0751a2b56a4"><div class="ttname"><a href="classripple_1_1SociDB__test.html#ad6789b365f2bd9350e8cc0751a2b56a4">ripple::SociDB_test::testSQLiteDeleteWithSubselect</a></div><div class="ttdeci">void testSQLiteDeleteWithSubselect()</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00298">SociDB_test.cpp:298</a></div></div>
-<div class="ttc" id="aclassripple_1_1SociDB__test_html_a1bb2fa8142596d0fb430fc07a35cdf84"><div class="ttname"><a href="classripple_1_1SociDB__test.html#a1bb2fa8142596d0fb430fc07a35cdf84">ripple::SociDB_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00357">SociDB_test.cpp:357</a></div></div>
+<div class="ttc" id="aclassripple_1_1SociDB__test_html_ad6789b365f2bd9350e8cc0751a2b56a4"><div class="ttname"><a href="classripple_1_1SociDB__test.html#ad6789b365f2bd9350e8cc0751a2b56a4">ripple::SociDB_test::testSQLiteDeleteWithSubselect</a></div><div class="ttdeci">void testSQLiteDeleteWithSubselect()</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00308">SociDB_test.cpp:308</a></div></div>
+<div class="ttc" id="aclassripple_1_1SociDB__test_html_a1bb2fa8142596d0fb430fc07a35cdf84"><div class="ttname"><a href="classripple_1_1SociDB__test.html#a1bb2fa8142596d0fb430fc07a35cdf84">ripple::SociDB_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00369">SociDB_test.cpp:369</a></div></div>
 <div class="ttc" id="areserve_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">std::vector::reserve</a></div><div class="ttdeci">T reserve(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1SociDB__test_html_a178713edcabb570517745bd3afc545d8"><div class="ttname"><a href="classripple_1_1SociDB__test.html#a178713edcabb570517745bd3afc545d8">ripple::SociDB_test::setupSQLiteConfig</a></div><div class="ttdeci">static void setupSQLiteConfig(BasicConfig &amp;config, boost::filesystem::path const &amp;dbPath)</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00033">SociDB_test.cpp:33</a></div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="afind_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find</a></div><div class="ttdeci">T find(T... args)</div></div>
 <div class="ttc" id="asize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/size.html">std::vector::size</a></div><div class="ttdeci">T size(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1SociDB__test_html_a776c1b836a685ea179ab11ce1a811b62"><div class="ttname"><a href="classripple_1_1SociDB__test.html#a776c1b836a685ea179ab11ce1a811b62">ripple::SociDB_test::testSQLiteSession</a></div><div class="ttdeci">void testSQLiteSession()</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00111">SociDB_test.cpp:111</a></div></div>
+<div class="ttc" id="aclassripple_1_1SociDB__test_html_a776c1b836a685ea179ab11ce1a811b62"><div class="ttname"><a href="classripple_1_1SociDB__test.html#a776c1b836a685ea179ab11ce1a811b62">ripple::SociDB_test::testSQLiteSession</a></div><div class="ttdeci">void testSQLiteSession()</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00117">SociDB_test.cpp:117</a></div></div>
 <div class="ttc" id="adistance_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a></div><div class="ttdeci">T distance(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1SociDB__test_html_a2a3bdd45b90d1f9f18ba8cb4c27afeab"><div class="ttname"><a href="classripple_1_1SociDB__test.html#a2a3bdd45b90d1f9f18ba8cb4c27afeab">ripple::SociDB_test::SociDB_test</a></div><div class="ttdeci">SociDB_test()</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00072">SociDB_test.cpp:72</a></div></div>
-<div class="ttc" id="aclassripple_1_1SociDB__test_html"><div class="ttname"><a href="classripple_1_1SociDB__test.html">ripple::SociDB_test</a></div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00030">SociDB_test.cpp:30</a></div></div>
-<div class="ttc" id="aclassripple_1_1SociDB__test_html_a383b133b7e03c5d411bc48f6b2085d59"><div class="ttname"><a href="classripple_1_1SociDB__test.html#a383b133b7e03c5d411bc48f6b2085d59">ripple::SociDB_test::testSQLiteSelect</a></div><div class="ttdeci">void testSQLiteSelect()</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00171">SociDB_test.cpp:171</a></div></div>
+<div class="ttc" id="aclassripple_1_1SociDB__test_html_a2a3bdd45b90d1f9f18ba8cb4c27afeab"><div class="ttname"><a href="classripple_1_1SociDB__test.html#a2a3bdd45b90d1f9f18ba8cb4c27afeab">ripple::SociDB_test::SociDB_test</a></div><div class="ttdeci">SociDB_test()</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00076">SociDB_test.cpp:76</a></div></div>
+<div class="ttc" id="aclassripple_1_1SociDB__test_html"><div class="ttname"><a href="classripple_1_1SociDB__test.html">ripple::SociDB_test</a></div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00029">SociDB_test.cpp:29</a></div></div>
+<div class="ttc" id="aclassripple_1_1SociDB__test_html_a383b133b7e03c5d411bc48f6b2085d59"><div class="ttname"><a href="classripple_1_1SociDB__test.html#a383b133b7e03c5d411bc48f6b2085d59">ripple::SociDB_test::testSQLiteSelect</a></div><div class="ttdeci">void testSQLiteSelect()</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00178">SociDB_test.cpp:178</a></div></div>
 <div class="ttc" id="aextent_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/extent.html">std::extent</a></div></div>
-<div class="ttc" id="aclassripple_1_1SociDB__test_html_af2bf997507ea0eeef1597195f4a70001"><div class="ttname"><a href="classripple_1_1SociDB__test.html#af2bf997507ea0eeef1597195f4a70001">ripple::SociDB_test::~SociDB_test</a></div><div class="ttdeci">~SociDB_test()</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00082">SociDB_test.cpp:82</a></div></div>
-<div class="ttc" id="aclassripple_1_1BasicConfig_html_ae2c21d011e6424d4917db175ef9df301"><div class="ttname"><a href="classripple_1_1BasicConfig.html#ae2c21d011e6424d4917db175ef9df301">ripple::BasicConfig::legacy</a></div><div class="ttdeci">void legacy(std::string const &amp;section, std::string value)</div><div class="ttdoc">Set a value that is not a key/value pair.</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8cpp_source.html#l00173">BasicConfig.cpp:173</a></div></div>
+<div class="ttc" id="aclassripple_1_1SociDB__test_html_af2bf997507ea0eeef1597195f4a70001"><div class="ttname"><a href="classripple_1_1SociDB__test.html#af2bf997507ea0eeef1597195f4a70001">ripple::SociDB_test::~SociDB_test</a></div><div class="ttdeci">~SociDB_test()</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00086">SociDB_test.cpp:86</a></div></div>
+<div class="ttc" id="aclassripple_1_1BasicConfig_html_ae2c21d011e6424d4917db175ef9df301"><div class="ttname"><a href="classripple_1_1BasicConfig.html#ae2c21d011e6424d4917db175ef9df301">ripple::BasicConfig::legacy</a></div><div class="ttdeci">void legacy(std::string const &amp;section, std::string value)</div><div class="ttdoc">Set a value that is not a key/value pair.</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8cpp_source.html#l00175">BasicConfig.cpp:175</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a></div></div>
-<div class="ttc" id="aclassripple_1_1SociDB__test_html_a0f5e7ed67e47544bc01349656bf81590"><div class="ttname"><a href="classripple_1_1SociDB__test.html#a0f5e7ed67e47544bc01349656bf81590">ripple::SociDB_test::setupDatabaseDir</a></div><div class="ttdeci">static void setupDatabaseDir(boost::filesystem::path const &amp;dbPath)</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00050">SociDB_test.cpp:50</a></div></div>
-<div class="ttc" id="aclassripple_1_1BasicConfig_html_ac9bc9bfdd56fde61573aae73511504c9"><div class="ttname"><a href="classripple_1_1BasicConfig.html#ac9bc9bfdd56fde61573aae73511504c9">ripple::BasicConfig::overwrite</a></div><div class="ttdeci">void overwrite(std::string const &amp;section, std::string const &amp;key, std::string const &amp;value)</div><div class="ttdoc">Overwrite a key/value pair with a command line argument If the section does not exist it is created.</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8cpp_source.html#l00156">BasicConfig.cpp:156</a></div></div>
-<div class="ttc" id="aclassripple_1_1SociDB__test_html_abf69439c31ea0c2b6d3f6e6b02d09aca"><div class="ttname"><a href="classripple_1_1SociDB__test.html#abf69439c31ea0c2b6d3f6e6b02d09aca">ripple::SociDB_test::cleanupDatabaseDir</a></div><div class="ttdeci">static void cleanupDatabaseDir(boost::filesystem::path const &amp;dbPath)</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00042">SociDB_test.cpp:42</a></div></div>
+<div class="ttc" id="aclassripple_1_1SociDB__test_html_a0f5e7ed67e47544bc01349656bf81590"><div class="ttname"><a href="classripple_1_1SociDB__test.html#a0f5e7ed67e47544bc01349656bf81590">ripple::SociDB_test::setupDatabaseDir</a></div><div class="ttdeci">static void setupDatabaseDir(boost::filesystem::path const &amp;dbPath)</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00053">SociDB_test.cpp:53</a></div></div>
+<div class="ttc" id="aclassripple_1_1BasicConfig_html_ac9bc9bfdd56fde61573aae73511504c9"><div class="ttname"><a href="classripple_1_1BasicConfig.html#ac9bc9bfdd56fde61573aae73511504c9">ripple::BasicConfig::overwrite</a></div><div class="ttdeci">void overwrite(std::string const &amp;section, std::string const &amp;key, std::string const &amp;value)</div><div class="ttdoc">Overwrite a key/value pair with a command line argument If the section does not exist it is created.</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8cpp_source.html#l00154">BasicConfig.cpp:154</a></div></div>
+<div class="ttc" id="aclassripple_1_1SociDB__test_html_abf69439c31ea0c2b6d3f6e6b02d09aca"><div class="ttname"><a href="classripple_1_1SociDB__test.html#abf69439c31ea0c2b6d3f6e6b02d09aca">ripple::SociDB_test::cleanupDatabaseDir</a></div><div class="ttdeci">static void cleanupDatabaseDir(boost::filesystem::path const &amp;dbPath)</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00044">SociDB_test.cpp:44</a></div></div>
 <div class="ttc" id="aclassripple_1_1TestSuite_html"><div class="ttname"><a href="classripple_1_1TestSuite.html">ripple::TestSuite</a></div><div class="ttdef"><b>Definition:</b> <a href="TestSuite_8h_source.html#l00028">TestSuite.h:28</a></div></div>
-<div class="ttc" id="aclassripple_1_1SociDB__test_html_a47a9d42a754fc4acd2d5764739111eb1"><div class="ttname"><a href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">ripple::SociDB_test::getDatabasePath</a></div><div class="ttdeci">static boost::filesystem::path getDatabasePath()</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00066">SociDB_test.cpp:66</a></div></div>
+<div class="ttc" id="aclassripple_1_1SociDB__test_html_a47a9d42a754fc4acd2d5764739111eb1"><div class="ttname"><a href="classripple_1_1SociDB__test.html#a47a9d42a754fc4acd2d5764739111eb1">ripple::SociDB_test::getDatabasePath</a></div><div class="ttdeci">static boost::filesystem::path getDatabasePath()</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00070">SociDB_test.cpp:70</a></div></div>
 <div class="ttc" id="aemplace_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">std::vector::emplace_back</a></div><div class="ttdeci">T emplace_back(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1SociConfig_html_aa0afdd9239f42648f4e2a35c1ffee69c"><div class="ttname"><a href="classripple_1_1SociConfig.html#aa0afdd9239f42648f4e2a35c1ffee69c">ripple::SociConfig::open</a></div><div class="ttdeci">void open(soci::session &amp;s) const</div><div class="ttdef"><b>Definition:</b> <a href="SociDB_8cpp_source.html#l00093">SociDB.cpp:93</a></div></div>
-<div class="ttc" id="aclassripple_1_1SociConfig_html_aa776a9f294ea2bb9e2a6b00c01dd2eb0"><div class="ttname"><a href="classripple_1_1SociConfig.html#aa776a9f294ea2bb9e2a6b00c01dd2eb0">ripple::SociConfig::connectionString</a></div><div class="ttdeci">std::string connectionString() const</div><div class="ttdef"><b>Definition:</b> <a href="SociDB_8cpp_source.html#l00088">SociDB.cpp:88</a></div></div>
+<div class="ttc" id="aclassripple_1_1SociConfig_html_aa776a9f294ea2bb9e2a6b00c01dd2eb0"><div class="ttname"><a href="classripple_1_1SociConfig.html#aa776a9f294ea2bb9e2a6b00c01dd2eb0">ripple::SociConfig::connectionString</a></div><div class="ttdeci">std::string connectionString() const</div><div class="ttdef"><b>Definition:</b> <a href="SociDB_8cpp_source.html#l00087">SociDB.cpp:87</a></div></div>
 <div class="ttc" id="amax_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/numeric_limits/max.html">std::numeric_limits::max</a></div><div class="ttdeci">T max(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1SociDB__test_html_a23e4514def83935e7c1b3fcaef160290"><div class="ttname"><a href="classripple_1_1SociDB__test.html#a23e4514def83935e7c1b3fcaef160290">ripple::SociDB_test::testSQLiteFileNames</a></div><div class="ttdeci">void testSQLiteFileNames()</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00092">SociDB_test.cpp:92</a></div></div>
+<div class="ttc" id="aclassripple_1_1SociDB__test_html_a23e4514def83935e7c1b3fcaef160290"><div class="ttname"><a href="classripple_1_1SociDB__test.html#a23e4514def83935e7c1b3fcaef160290">ripple::SociDB_test::testSQLiteFileNames</a></div><div class="ttdeci">void testSQLiteFileNames()</div><div class="ttdef"><b>Definition:</b> <a href="SociDB__test_8cpp_source.html#l00097">SociDB_test.cpp:97</a></div></div>
 <div class="ttc" id="anumeric_limits_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits</a></div></div>
-<div class="ttc" id="aclassripple_1_1BasicConfig_html"><div class="ttname"><a href="classripple_1_1BasicConfig.html">ripple::BasicConfig</a></div><div class="ttdoc">Holds unparsed configuration information.</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8h_source.html#l00177">BasicConfig.h:177</a></div></div>
+<div class="ttc" id="aclassripple_1_1BasicConfig_html"><div class="ttname"><a href="classripple_1_1BasicConfig.html">ripple::BasicConfig</a></div><div class="ttdoc">Holds unparsed configuration information.</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8h_source.html#l00178">BasicConfig.h:178</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

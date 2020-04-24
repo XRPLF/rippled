@@ -131,7 +131,7 @@ Private Attributes</h2></td></tr>
 <div class="textblock"><p>Manages a system file containing logged output. </p>
 <p>The system file remains open during program execution. Interfaces are provided for interoperating with standard log management tools like logrotate(8): <a href="http://linuxcommand.org/man_pages/logrotate8.html">http://linuxcommand.org/man_pages/logrotate8.html</a> </p><dl class="section note"><dt>Note</dt><dd>None of the listed interfaces are thread-safe. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Log_8h_source.html#l00077">77</a> of file <a class="el" href="Log_8h_source.html">Log.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Log_8h_source.html#l00079">79</a> of file <a class="el" href="Log_8h_source.html">Log.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a7d75e7ebc83bf98c2483cea01e0b2a95"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7d75e7ebc83bf98c2483cea01e0b2a95">&#9670;&nbsp;</a></span>File()</h2>
@@ -233,7 +233,7 @@ Private Attributes</h2></td></tr>
 <p>Associate a system file with the log. </p>
 <p>If the file does not exist an attempt is made to create it and open it for writing. If the file already exists an attempt is made to open it for appending. If a system file is already associated with the log, it is closed first. </p><dl class="section return"><dt>Returns</dt><dd><code>true</code> if the file was opened. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Log_8cpp_source.html#l00062">62</a> of file <a class="el" href="Log_8cpp_source.html">Log.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Log_8cpp_source.html#l00063">63</a> of file <a class="el" href="Log_8cpp_source.html">Log.cpp</a>.</p>
 
 </div>
 </div>
@@ -255,7 +255,7 @@ Private Attributes</h2></td></tr>
 <p>Close and re-open the system file associated with the log This assists in interoperating with external log management tools. </p>
 <dl class="section return"><dt>Returns</dt><dd><code>true</code> if the file was opened. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Log_8cpp_source.html#l00084">84</a> of file <a class="el" href="Log_8cpp_source.html">Log.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Log_8cpp_source.html#l00086">86</a> of file <a class="el" href="Log_8cpp_source.html">Log.cpp</a>.</p>
 
 </div>
 </div>
@@ -276,7 +276,7 @@ Private Attributes</h2></td></tr>
 
 <p>Close the system file if it is open. </p>
 
-<p class="definition">Definition at line <a class="el" href="Log_8cpp_source.html#l00091">91</a> of file <a class="el" href="Log_8cpp_source.html">Log.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Log_8cpp_source.html#l00094">94</a> of file <a class="el" href="Log_8cpp_source.html">Log.cpp</a>.</p>
 
 </div>
 </div>
@@ -299,7 +299,7 @@ Private Attributes</h2></td></tr>
 <p>write to the log file. </p>
 <p>Does nothing if there is no associated system file. </p>
 
-<p class="definition">Definition at line <a class="el" href="Log_8cpp_source.html#l00096">96</a> of file <a class="el" href="Log_8cpp_source.html">Log.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Log_8cpp_source.html#l00100">100</a> of file <a class="el" href="Log_8cpp_source.html">Log.cpp</a>.</p>
 
 </div>
 </div>
@@ -322,7 +322,7 @@ Private Attributes</h2></td></tr>
 <p>write to the log file and append an end of line marker. </p>
 <p>Does nothing if there is no associated system file. </p>
 
-<p class="definition">Definition at line <a class="el" href="Log_8cpp_source.html#l00102">102</a> of file <a class="el" href="Log_8cpp_source.html">Log.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Log_8cpp_source.html#l00107">107</a> of file <a class="el" href="Log_8cpp_source.html">Log.cpp</a>.</p>
 
 </div>
 </div>
@@ -344,7 +344,7 @@ Private Attributes</h2></td></tr>
 
 <p>Write to the log file using <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class.">std::string</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="Log_8h_source.html#l00132">132</a> of file <a class="el" href="Log_8h_source.html">Log.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Log_8h_source.html#l00141">141</a> of file <a class="el" href="Log_8h_source.html">Log.h</a>.</p>
 
 </div>
 </div>
@@ -364,7 +364,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Log_8h_source.html#l00137">137</a> of file <a class="el" href="Log_8h_source.html">Log.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Log_8h_source.html#l00147">147</a> of file <a class="el" href="Log_8h_source.html">Log.h</a>.</p>
 
 </div>
 </div>
@@ -389,7 +389,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Log_8h_source.html#l00144">144</a> of file <a class="el" href="Log_8h_source.html">Log.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Log_8h_source.html#l00154">154</a> of file <a class="el" href="Log_8h_source.html">Log.h</a>.</p>
 
 </div>
 </div>
@@ -413,7 +413,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Log_8h_source.html#l00145">145</a> of file <a class="el" href="Log_8h_source.html">Log.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Log_8h_source.html#l00155">155</a> of file <a class="el" href="Log_8h_source.html">Log.h</a>.</p>
 
 </div>
 </div>

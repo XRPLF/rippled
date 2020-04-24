@@ -91,8 +91,8 @@ $(function() {
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_BASICS_RESOLVER_H_INCLUDED</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_BASICS_RESOLVER_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/vector.html">vector</a>&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/functional.html">functional</a>&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/functional.html">functional</a>&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/vector.html">vector</a>&gt;</span></div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/net/IPEndpoint.h&gt;</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
@@ -101,43 +101,48 @@ $(function() {
 <div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="classripple_1_1Resolver.html">   30</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1Resolver.html">Resolver</a></div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;{</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">HandlerType</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a> &lt;</div>
-<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="classripple_1_1Resolver.html#ac610fc7f7e2e38f91140fc154a8a191e">   34</a></span>&#160;        void (<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector &lt;beast::IP::Endpoint&gt;</a>) &gt;;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keyword">using</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">HandlerType</a> =</div>
+<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="classripple_1_1Resolver.html#a2f2274e619a3c7b9a0e9993bcc387202">   34</a></span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;void(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;beast::IP::Endpoint&gt;</a>)&gt;;</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classripple_1_1Resolver.html#acbc7e53c855c2a009bcab4d8fc4d64df">~Resolver</a> () = 0;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classripple_1_1Resolver.html#acbc7e53c855c2a009bcab4d8fc4d64df">~Resolver</a>() = 0;</div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="classripple_1_1Resolver.html#a9d2751e048dbe3fb2cd229db4d791f00">stop_async</a> () = 0;</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="classripple_1_1Resolver.html#acbdf93b006ef3a857da30e63bf24415a">stop</a> () = 0;</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="classripple_1_1Resolver.html#adfe3352554c00d3ecf8535f323ce1438">start</a> () = 0;</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">class</span> Handler&gt;</div>
-<div class="line"><a name="l00053"></a><span class="lineno"><a class="line" href="classripple_1_1Resolver.html#a2b7ea0953f182de10d6d5818e6b26874">   53</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1Resolver.html#a2b7ea0953f182de10d6d5818e6b26874">resolve</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector &lt;std::string&gt;</a> <span class="keyword">const</span>&amp; names, Handler handler)</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    {</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <a class="code" href="classripple_1_1Resolver.html#a2b7ea0953f182de10d6d5818e6b26874">resolve</a> (names, <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">HandlerType</a> (handler));</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    }</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="classripple_1_1Resolver.html#a2b7ea0953f182de10d6d5818e6b26874">resolve</a> (</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector &lt;std::string&gt;</a> <span class="keyword">const</span>&amp; names,</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <a class="code" href="classripple_1_1Resolver.html#ac610fc7f7e2e38f91140fc154a8a191e">HandlerType</a> <span class="keyword">const</span>&amp; handler) = 0;</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;};</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;}</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <a class="code" href="classripple_1_1Resolver.html#a9d2751e048dbe3fb2cd229db4d791f00">stop_async</a>() = 0;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <a class="code" href="classripple_1_1Resolver.html#acbdf93b006ef3a857da30e63bf24415a">stop</a>() = 0;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <a class="code" href="classripple_1_1Resolver.html#adfe3352554c00d3ecf8535f323ce1438">start</a>() = 0;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">class</span> Handler&gt;</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno"><a class="line" href="classripple_1_1Resolver.html#a2b7ea0953f182de10d6d5818e6b26874">   57</a></span>&#160;    <a class="code" href="classripple_1_1Resolver.html#a2b7ea0953f182de10d6d5818e6b26874">resolve</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a> <span class="keyword">const</span>&amp; names, Handler handler)</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    {</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <a class="code" href="classripple_1_1Resolver.html#a2b7ea0953f182de10d6d5818e6b26874">resolve</a>(names, <a class="code" href="classripple_1_1Resolver.html#a2f2274e619a3c7b9a0e9993bcc387202">HandlerType</a>(handler));</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    }</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="code" href="classripple_1_1Resolver.html#a2b7ea0953f182de10d6d5818e6b26874">resolve</a>(</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::string&gt;</a> <span class="keyword">const</span>&amp; names,</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <a class="code" href="classripple_1_1Resolver.html#a2f2274e619a3c7b9a0e9993bcc387202">HandlerType</a> <span class="keyword">const</span>&amp; handler) = 0;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;};</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="afunctional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/functional.html">functional</a></div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/vector.html">vector</a></div></div>
 <div class="ttc" id="aclassripple_1_1Resolver_html_acbc7e53c855c2a009bcab4d8fc4d64df"><div class="ttname"><a href="classripple_1_1Resolver.html#acbc7e53c855c2a009bcab4d8fc4d64df">ripple::Resolver::~Resolver</a></div><div class="ttdeci">virtual ~Resolver()=0</div></div>
 <div class="ttc" id="afunction_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a></div></div>
+<div class="ttc" id="aclassripple_1_1Resolver_html_a2f2274e619a3c7b9a0e9993bcc387202"><div class="ttname"><a href="classripple_1_1Resolver.html#a2f2274e619a3c7b9a0e9993bcc387202">ripple::Resolver::HandlerType</a></div><div class="ttdeci">std::function&lt; void(std::string, std::vector&lt; beast::IP::Endpoint &gt;)&gt; HandlerType</div><div class="ttdef"><b>Definition:</b> <a href="Resolver_8h_source.html#l00034">Resolver.h:34</a></div></div>
 <div class="ttc" id="aclassripple_1_1Resolver_html"><div class="ttname"><a href="classripple_1_1Resolver.html">ripple::Resolver</a></div><div class="ttdef"><b>Definition:</b> <a href="Resolver_8h_source.html#l00030">Resolver.h:30</a></div></div>
-<div class="ttc" id="aclassripple_1_1Resolver_html_ac610fc7f7e2e38f91140fc154a8a191e"><div class="ttname"><a href="classripple_1_1Resolver.html#ac610fc7f7e2e38f91140fc154a8a191e">ripple::Resolver::HandlerType</a></div><div class="ttdeci">std::function&lt; void(std::string, std::vector&lt; beast::IP::Endpoint &gt;) &gt; HandlerType</div><div class="ttdef"><b>Definition:</b> <a href="Resolver_8h_source.html#l00034">Resolver.h:34</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1Resolver_html_adfe3352554c00d3ecf8535f323ce1438"><div class="ttname"><a href="classripple_1_1Resolver.html#adfe3352554c00d3ecf8535f323ce1438">ripple::Resolver::start</a></div><div class="ttdeci">virtual void start()=0</div><div class="ttdoc">Issue a synchronous start request.</div></div>
 <div class="ttc" id="aclassripple_1_1Resolver_html_acbdf93b006ef3a857da30e63bf24415a"><div class="ttname"><a href="classripple_1_1Resolver.html#acbdf93b006ef3a857da30e63bf24415a">ripple::Resolver::stop</a></div><div class="ttdeci">virtual void stop()=0</div><div class="ttdoc">Issue a synchronous stop request.</div></div>
-<div class="ttc" id="aclassripple_1_1Resolver_html_a2b7ea0953f182de10d6d5818e6b26874"><div class="ttname"><a href="classripple_1_1Resolver.html#a2b7ea0953f182de10d6d5818e6b26874">ripple::Resolver::resolve</a></div><div class="ttdeci">void resolve(std::vector&lt; std::string &gt; const &amp;names, Handler handler)</div><div class="ttdoc">resolve all hostnames on the list</div><div class="ttdef"><b>Definition:</b> <a href="Resolver_8h_source.html#l00053">Resolver.h:53</a></div></div>
+<div class="ttc" id="aclassripple_1_1Resolver_html_a2b7ea0953f182de10d6d5818e6b26874"><div class="ttname"><a href="classripple_1_1Resolver.html#a2b7ea0953f182de10d6d5818e6b26874">ripple::Resolver::resolve</a></div><div class="ttdeci">void resolve(std::vector&lt; std::string &gt; const &amp;names, Handler handler)</div><div class="ttdoc">resolve all hostnames on the list</div><div class="ttdef"><b>Definition:</b> <a href="Resolver_8h_source.html#l00057">Resolver.h:57</a></div></div>
 <div class="ttc" id="aclassripple_1_1Resolver_html_a9d2751e048dbe3fb2cd229db4d791f00"><div class="ttname"><a href="classripple_1_1Resolver.html#a9d2751e048dbe3fb2cd229db4d791f00">ripple::Resolver::stop_async</a></div><div class="ttdeci">virtual void stop_async()=0</div><div class="ttdoc">Issue an asynchronous stop request.</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

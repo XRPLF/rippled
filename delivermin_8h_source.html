@@ -91,8 +91,8 @@ $(function() {
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_TEST_JTX_DELIVERMIN_H_INCLUDED</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_TEST_JTX_DELIVERMIN_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;test/jtx/Env.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STAmount.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STAmount.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;test/jtx/Env.h&gt;</span></div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keyword">namespace </span>test {</div>
@@ -104,20 +104,19 @@ $(function() {
 <div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1delivermin.html#a03b2fba3891d2d52507c3c9a2e38896c">   34</a></span>&#160;    <a class="code" href="classripple_1_1STAmount.html">STAmount</a> <a class="code" href="classripple_1_1test_1_1jtx_1_1delivermin.html#a03b2fba3891d2d52507c3c9a2e38896c">amount_</a>;</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1delivermin.html#a2ccf46892cae69db128043ff72cbd10c">   37</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1jtx_1_1delivermin.html#a2ccf46892cae69db128043ff72cbd10c">delivermin</a> (<a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; amount)</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        : <a class="code" href="classripple_1_1test_1_1jtx_1_1delivermin.html#a03b2fba3891d2d52507c3c9a2e38896c">amount_</a>(amount)</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    {</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    }</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <a class="code" href="classripple_1_1test_1_1jtx_1_1delivermin.html#a38ad4ed4ff5714650b360285051ea75b">operator()</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a>&amp;, <a class="code" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a>&amp; jtx) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;};</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;} <span class="comment">// jtx</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;} <span class="comment">// test</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;} <span class="comment">// ripple</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1delivermin.html#a2ccf46892cae69db128043ff72cbd10c">   37</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1jtx_1_1delivermin.html#a2ccf46892cae69db128043ff72cbd10c">delivermin</a>(<a class="code" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; amount) : <a class="code" href="classripple_1_1test_1_1jtx_1_1delivermin.html#a03b2fba3891d2d52507c3c9a2e38896c">amount_</a>(amount)</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    {</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    }</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <a class="code" href="classripple_1_1test_1_1jtx_1_1delivermin.html#a38ad4ed4ff5714650b360285051ea75b">operator()</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a>&amp;, <a class="code" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a>&amp; jtx) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;};</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;}  <span class="comment">// namespace jtx</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="astructripple_1_1test_1_1jtx_1_1JTx_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1JTx.html">ripple::test::jtx::JTx</a></div><div class="ttdoc">Execution context for applying a JSON transaction.</div><div class="ttdef"><b>Definition:</b> <a href="JTx_8h_source.html#l00041">JTx.h:41</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html"><div class="ttname"><a href="classripple_1_1STAmount.html">ripple::STAmount</a></div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00042">STAmount.h:42</a></div></div>
@@ -126,7 +125,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1delivermin_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1delivermin.html">ripple::test::jtx::delivermin</a></div><div class="ttdoc">Sets the DeliverMin on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="delivermin_8h_source.html#l00031">delivermin.h:31</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1delivermin_html_a2ccf46892cae69db128043ff72cbd10c"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1delivermin.html#a2ccf46892cae69db128043ff72cbd10c">ripple::test::jtx::delivermin::delivermin</a></div><div class="ttdeci">delivermin(STAmount const &amp;amount)</div><div class="ttdef"><b>Definition:</b> <a href="delivermin_8h_source.html#l00037">delivermin.h:37</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00117">Env.h:117</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00114">Env.h:114</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

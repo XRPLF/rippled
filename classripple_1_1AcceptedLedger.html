@@ -102,7 +102,7 @@ Public Types</h2></td></tr>
 <tr class="separator:a70e9652fd8f821b422b120a6eeb68988"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a47e45d1b1a826b94289243f3f28f0c68"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AcceptedLedger.html#a47e45d1b1a826b94289243f3f28f0c68">ret</a> = const <a class="el" href="classripple_1_1AcceptedLedger.html#a70e9652fd8f821b422b120a6eeb68988">pointer</a> &amp;</td></tr>
 <tr class="separator:a47e45d1b1a826b94289243f3f28f0c68"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6069f2a1bf4bd3fbe34f01383b9528ee"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AcceptedLedger.html#a6069f2a1bf4bd3fbe34f01383b9528ee">map_t</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; int, <a class="el" href="classripple_1_1AcceptedLedgerTx.html#a1296d331a2bdcbaf250e1efe45fd01ec">AcceptedLedgerTx::pointer</a> &gt;</td></tr>
+<tr class="memitem:a6069f2a1bf4bd3fbe34f01383b9528ee"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AcceptedLedger.html#a6069f2a1bf4bd3fbe34f01383b9528ee">map_t</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; int, <a class="el" href="classripple_1_1AcceptedLedgerTx.html#ad36697ab650cba915f16e2331bdf5b98">AcceptedLedgerTx::pointer</a> &gt;</td></tr>
 <tr class="separator:a6069f2a1bf4bd3fbe34f01383b9528ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2b0be648521dbe5863995e0458142cb6"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AcceptedLedger.html#a2b0be648521dbe5863995e0458142cb6">value_type</a> = map_t::value_type</td></tr>
 <tr class="separator:a2b0be648521dbe5863995e0458142cb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -117,7 +117,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6da4c1ce828fb0abaf6c48692a33abb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae68f795c17045969e41207b4592eaf2a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AcceptedLedger.html#ae68f795c17045969e41207b4592eaf2a">getTxnCount</a> () const</td></tr>
 <tr class="separator:ae68f795c17045969e41207b4592eaf2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac651631a0fbae4e549bbbed93b793403"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1AcceptedLedgerTx.html#a1296d331a2bdcbaf250e1efe45fd01ec">AcceptedLedgerTx::pointer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AcceptedLedger.html#ac651631a0fbae4e549bbbed93b793403">getTxn</a> (int) const</td></tr>
+<tr class="memitem:ac651631a0fbae4e549bbbed93b793403"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1AcceptedLedgerTx.html#ad36697ab650cba915f16e2331bdf5b98">AcceptedLedgerTx::pointer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AcceptedLedger.html#ac651631a0fbae4e549bbbed93b793403">getTxn</a> (int) const</td></tr>
 <tr class="separator:ac651631a0fbae4e549bbbed93b793403"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa467f4f830fbd8c9ce73d854ec9ab269"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AcceptedLedger.html#aa467f4f830fbd8c9ce73d854ec9ab269">AcceptedLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; const &amp;ledger, <a class="el" href="classripple_1_1AccountIDCache.html">AccountIDCache</a> const &amp;accountCache, <a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;logs)</td></tr>
 <tr class="separator:aa467f4f830fbd8c9ce73d854ec9ab269"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -180,7 +180,7 @@ Private Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1AcceptedLedger.html#a6069f2a1bf4bd3fbe34f01383b9528ee">ripple::AcceptedLedger::map_t</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt;int, <a class="el" href="classripple_1_1AcceptedLedgerTx.html#a1296d331a2bdcbaf250e1efe45fd01ec">AcceptedLedgerTx::pointer</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1AcceptedLedger.html#a6069f2a1bf4bd3fbe34f01383b9528ee">ripple::AcceptedLedger::map_t</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt;int, <a class="el" href="classripple_1_1AcceptedLedgerTx.html#ad36697ab650cba915f16e2331bdf5b98">AcceptedLedgerTx::pointer</a>&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -274,7 +274,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8h_source.html#l00055">55</a> of file <a class="el" href="AcceptedLedger_8h_source.html">AcceptedLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8h_source.html#l00056">56</a> of file <a class="el" href="AcceptedLedger_8h_source.html">AcceptedLedger.h</a>.</p>
 
 </div>
 </div>
@@ -293,7 +293,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8h_source.html#l00059">59</a> of file <a class="el" href="AcceptedLedger_8h_source.html">AcceptedLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8h_source.html#l00061">61</a> of file <a class="el" href="AcceptedLedger_8h_source.html">AcceptedLedger.h</a>.</p>
 
 </div>
 </div>
@@ -312,7 +312,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8h_source.html#l00064">64</a> of file <a class="el" href="AcceptedLedger_8h_source.html">AcceptedLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8h_source.html#l00067">67</a> of file <a class="el" href="AcceptedLedger_8h_source.html">AcceptedLedger.h</a>.</p>
 
 </div>
 </div>
@@ -323,7 +323,7 @@ Private Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1AcceptedLedgerTx.html#a1296d331a2bdcbaf250e1efe45fd01ec">AcceptedLedgerTx::pointer</a> ripple::AcceptedLedger::getTxn </td>
+          <td class="memname"><a class="el" href="classripple_1_1AcceptedLedgerTx.html#ad36697ab650cba915f16e2331bdf5b98">AcceptedLedgerTx::pointer</a> ripple::AcceptedLedger::getTxn </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>i</em></td><td>)</td>
@@ -332,7 +332,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8cpp_source.html#l00044">44</a> of file <a class="el" href="AcceptedLedger_8cpp_source.html">AcceptedLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8cpp_source.html#l00047">47</a> of file <a class="el" href="AcceptedLedger_8cpp_source.html">AcceptedLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -360,7 +360,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8cpp_source.html#l00038">38</a> of file <a class="el" href="AcceptedLedger_8cpp_source.html">AcceptedLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8cpp_source.html#l00040">40</a> of file <a class="el" href="AcceptedLedger_8cpp_source.html">AcceptedLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -385,7 +385,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8h_source.html#l00078">78</a> of file <a class="el" href="AcceptedLedger_8h_source.html">AcceptedLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8h_source.html#l00083">83</a> of file <a class="el" href="AcceptedLedger_8h_source.html">AcceptedLedger.h</a>.</p>
 
 </div>
 </div>
@@ -409,7 +409,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8h_source.html#l00079">79</a> of file <a class="el" href="AcceptedLedger_8h_source.html">AcceptedLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AcceptedLedger_8h_source.html#l00084">84</a> of file <a class="el" href="AcceptedLedger_8h_source.html">AcceptedLedger.h</a>.</p>
 
 </div>
 </div>

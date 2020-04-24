@@ -101,14 +101,14 @@ $(function() {
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;{</div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">public</span>:</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="classripple_1_1NodeStore_1_1tests_1_1varint__test.html#a73a5fcb623fca44cd4449e7162216d69">   33</a></span>&#160;    <a class="code" href="classripple_1_1NodeStore_1_1tests_1_1varint__test.html#a73a5fcb623fca44cd4449e7162216d69">test_varints</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::size_t&gt;</a> vv)</div>
+<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="classripple_1_1NodeStore_1_1tests_1_1varint__test.html#a73a5fcb623fca44cd4449e7162216d69">   33</a></span>&#160;    <a class="code" href="classripple_1_1NodeStore_1_1tests_1_1varint__test.html#a73a5fcb623fca44cd4449e7162216d69">test_varints</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::size_t&gt;</a> vv)</div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    {</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        testcase(<span class="stringliteral">&quot;encode, decode&quot;</span>);</div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span> v : vv)</div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        {</div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;std::uint8_t, varint_traits&lt;std::size_t&gt;::max</a>&gt; vi;</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> n0 = <a class="code" href="namespaceripple_1_1NodeStore.html#ab4d0a64068209b5541c05b8f7edc572b">write_varint</a>(vi.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/data.html">data</a>(), v);</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            expect (n0 &gt; 0, <span class="stringliteral">&quot;write error&quot;</span>);</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            expect(n0 &gt; 0, <span class="stringliteral">&quot;write error&quot;</span>);</div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            expect(n0 == <a class="code" href="namespaceripple_1_1NodeStore.html#a192f2f28d881a6b7325189d1c2cc1bdd">size_varint</a>(v), <span class="stringliteral">&quot;size error&quot;</span>);</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> v1;</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> n1 = <a class="code" href="namespaceripple_1_1NodeStore.html#a18e4748d59143a5f5e64feb0bee58158">read_varint</a>(vi.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array/data.html">data</a>(), n0, v1);</div>
@@ -120,37 +120,45 @@ $(function() {
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keywordtype">void</span></div>
 <div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="classripple_1_1NodeStore_1_1tests_1_1varint__test.html#a6b16a7b6958dc6f8b16086c46594e59d">   50</a></span>&#160;    <a class="code" href="classripple_1_1NodeStore_1_1tests_1_1varint__test.html#a6b16a7b6958dc6f8b16086c46594e59d">run</a>()<span class="keyword"> override</span></div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <a class="code" href="classripple_1_1NodeStore_1_1tests_1_1varint__test.html#a73a5fcb623fca44cd4449e7162216d69">test_varints</a>({</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                0,     1,     2,</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;              126,   127,   128,</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;              253,   254,   255,</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;            16127, 16128, 16129,</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            0xff,</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            0xffff,</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;            0xffffffff,</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            0xffffffffffffUL,</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            0xffffffffffffffffUL});</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    }</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;};</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<a class="code" href="namespaceripple_1_1NodeStore_1_1tests.html#a4d97b8be61d36fbd9fbe8598b8437fe7">BEAST_DEFINE_TESTSUITE</a>(varint,NodeStore,<a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;} <span class="comment">// test</span></div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;} <span class="comment">// NodeStore</span></div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <a class="code" href="classripple_1_1NodeStore_1_1tests_1_1varint__test.html#a73a5fcb623fca44cd4449e7162216d69">test_varints</a>(</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;            {0,</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;             1,</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;             2,</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;             126,</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;             127,</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;             128,</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;             253,</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;             254,</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;             255,</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;             16127,</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;             16128,</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;             16129,</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;             0xff,</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;             0xffff,</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;             0xffffffff,</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;             0xffffffffffffUL,</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;             0xffffffffffffffffUL});</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    }</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;};</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<a class="code" href="namespaceripple_1_1NodeStore_1_1tests.html#a4d97b8be61d36fbd9fbe8598b8437fe7">BEAST_DEFINE_TESTSUITE</a>(varint, NodeStore, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;}  <span class="comment">// namespace tests</span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;}  <span class="comment">// namespace NodeStore</span></div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/vector.html">vector</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1NodeStore_1_1tests_html_a4d97b8be61d36fbd9fbe8598b8437fe7"><div class="ttname"><a href="namespaceripple_1_1NodeStore_1_1tests.html#a4d97b8be61d36fbd9fbe8598b8437fe7">ripple::NodeStore::tests::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(varint, NodeStore, ripple)</div></div>
 <div class="ttc" id="aclassripple_1_1NodeStore_1_1tests_1_1varint__test_html_a6b16a7b6958dc6f8b16086c46594e59d"><div class="ttname"><a href="classripple_1_1NodeStore_1_1tests_1_1varint__test.html#a6b16a7b6958dc6f8b16086c46594e59d">ripple::NodeStore::tests::varint_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="varint__test_8cpp_source.html#l00050">varint_test.cpp:50</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a18e4748d59143a5f5e64feb0bee58158"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a18e4748d59143a5f5e64feb0bee58158">ripple::NodeStore::read_varint</a></div><div class="ttdeci">std::size_t read_varint(void const *buf, std::size_t buflen, std::size_t &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="varint_8h_source.html#l00058">varint.h:58</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a18e4748d59143a5f5e64feb0bee58158"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a18e4748d59143a5f5e64feb0bee58158">ripple::NodeStore::read_varint</a></div><div class="ttdeci">std::size_t read_varint(void const *buf, std::size_t buflen, std::size_t &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="varint_8h_source.html#l00056">varint.h:56</a></div></div>
 <div class="ttc" id="aarray_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/array.html">array</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1NodeStore_1_1tests_1_1varint__test_html"><div class="ttname"><a href="classripple_1_1NodeStore_1_1tests_1_1varint__test.html">ripple::NodeStore::tests::varint_test</a></div><div class="ttdef"><b>Definition:</b> <a href="varint__test_8cpp_source.html#l00029">varint_test.cpp:29</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a192f2f28d881a6b7325189d1c2cc1bdd"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a192f2f28d881a6b7325189d1c2cc1bdd">ripple::NodeStore::size_varint</a></div><div class="ttdeci">std::size_t size_varint(T v)</div><div class="ttdef"><b>Definition:</b> <a href="varint_8h_source.html#l00094">varint.h:94</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a192f2f28d881a6b7325189d1c2cc1bdd"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a192f2f28d881a6b7325189d1c2cc1bdd">ripple::NodeStore::size_varint</a></div><div class="ttdeci">std::size_t size_varint(T v)</div><div class="ttdef"><b>Definition:</b> <a href="varint_8h_source.html#l00087">varint.h:87</a></div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
 <div class="ttc" id="aclassripple_1_1NodeStore_1_1tests_1_1varint__test_html_a73a5fcb623fca44cd4449e7162216d69"><div class="ttname"><a href="classripple_1_1NodeStore_1_1tests_1_1varint__test.html#a73a5fcb623fca44cd4449e7162216d69">ripple::NodeStore::tests::varint_test::test_varints</a></div><div class="ttdeci">void test_varints(std::vector&lt; std::size_t &gt; vv)</div><div class="ttdef"><b>Definition:</b> <a href="varint__test_8cpp_source.html#l00033">varint_test.cpp:33</a></div></div>
 <div class="ttc" id="adata_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/array/data.html">std::array::data</a></div><div class="ttdeci">T data(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_1_1NodeStore_html_ab4d0a64068209b5541c05b8f7edc572b"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#ab4d0a64068209b5541c05b8f7edc572b">ripple::NodeStore::write_varint</a></div><div class="ttdeci">std::size_t write_varint(void *p0, std::size_t v)</div><div class="ttdef"><b>Definition:</b> <a href="varint_8h_source.html#l00108">varint.h:108</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1NodeStore_html_ab4d0a64068209b5541c05b8f7edc572b"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#ab4d0a64068209b5541c05b8f7edc572b">ripple::NodeStore::write_varint</a></div><div class="ttdeci">std::size_t write_varint(void *p0, std::size_t v)</div><div class="ttdef"><b>Definition:</b> <a href="varint_8h_source.html#l00100">varint.h:100</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

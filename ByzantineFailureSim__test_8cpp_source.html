@@ -138,40 +138,39 @@ $(function() {
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;             sim.trustGraph.forkablePairs(0.8))</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        {</div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cout.html">std::cout</a> &lt;&lt; <span class="stringliteral">&quot;Can fork &quot;</span> &lt;&lt; PeerGroup{fi.unlA} &lt;&lt; <span class="stringliteral">&quot; &quot;</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;                      &lt;&lt; <span class="stringliteral">&quot; &quot;</span> &lt;&lt; PeerGroup{fi.unlB}</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;                      &lt;&lt; <span class="stringliteral">&quot; overlap &quot;</span> &lt;&lt; fi.overlap &lt;&lt; <span class="stringliteral">&quot; required &quot;</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;                      &lt;&lt; fi.required &lt;&lt; <span class="stringliteral">&quot;\n&quot;</span>;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        };</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="comment">// set prior state</span></div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        sim.run(1);</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        PeerGroup byzantineNodes = a + b + c + g;</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="comment">// All peers see some TX 0</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="keywordflow">for</span> (<a class="code" href="classripple_1_1Peer.html">Peer</a> * peer : network)</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        {</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            peer-&gt;submit(Tx(0));</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            <span class="comment">// Peers 0,1,2,6 will close the next ledger differently by injecting</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            <span class="comment">// a non-consensus approved transaciton</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            <span class="keywordflow">if</span> (byzantineNodes.contains(peer))</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            {</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                peer-&gt;txInjections.emplace(</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;                    peer-&gt;lastClosedLedger.seq(), Tx{42});</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            }</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        }</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        sim.run(4);</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cout.html">std::cout</a> &lt;&lt; <span class="stringliteral">&quot;Branches: &quot;</span> &lt;&lt; sim.branches() &lt;&lt; <span class="stringliteral">&quot;\n&quot;</span>;</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cout.html">std::cout</a> &lt;&lt; <span class="stringliteral">&quot;Fully synchronized: &quot;</span> &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/manip/boolalpha.html">std::boolalpha</a></div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                  &lt;&lt; sim.synchronized() &lt;&lt; <span class="stringliteral">&quot;\n&quot;</span>;</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        <span class="comment">// Not tessting anything currently.</span></div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        pass();</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    }</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;};</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<a class="code" href="namespaceripple_1_1test.html#affd2de93e088271db6605a235074acf2">BEAST_DEFINE_TESTSUITE_MANUAL</a>(ByzantineFailureSim, consensus, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;}  <span class="comment">// namespace test</span></div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;                      &lt;&lt; <span class="stringliteral">&quot; &quot;</span> &lt;&lt; PeerGroup{fi.unlB} &lt;&lt; <span class="stringliteral">&quot; overlap &quot;</span> &lt;&lt; fi.overlap</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;                      &lt;&lt; <span class="stringliteral">&quot; required &quot;</span> &lt;&lt; fi.required &lt;&lt; <span class="stringliteral">&quot;\n&quot;</span>;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        };</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="comment">// set prior state</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        sim.run(1);</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        PeerGroup byzantineNodes = a + b + c + g;</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="comment">// All peers see some TX 0</span></div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="keywordflow">for</span> (<a class="code" href="classripple_1_1Peer.html">Peer</a>* peer : network)</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        {</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            peer-&gt;submit(Tx(0));</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            <span class="comment">// Peers 0,1,2,6 will close the next ledger differently by injecting</span></div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            <span class="comment">// a non-consensus approved transaciton</span></div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            <span class="keywordflow">if</span> (byzantineNodes.contains(peer))</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            {</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;                peer-&gt;txInjections.emplace(</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                    peer-&gt;lastClosedLedger.seq(), Tx{42});</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            }</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        }</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        sim.run(4);</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cout.html">std::cout</a> &lt;&lt; <span class="stringliteral">&quot;Branches: &quot;</span> &lt;&lt; sim.branches() &lt;&lt; <span class="stringliteral">&quot;\n&quot;</span>;</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cout.html">std::cout</a> &lt;&lt; <span class="stringliteral">&quot;Fully synchronized: &quot;</span> &lt;&lt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/manip/boolalpha.html">std::boolalpha</a></div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;                  &lt;&lt; sim.synchronized() &lt;&lt; <span class="stringliteral">&quot;\n&quot;</span>;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        <span class="comment">// Not tessting anything currently.</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        pass();</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    }</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;};</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<a class="code" href="namespaceripple_1_1test.html#affd2de93e088271db6605a235074acf2">BEAST_DEFINE_TESTSUITE_MANUAL</a>(ByzantineFailureSim, consensus, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="autility_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/utility.html">utility</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1ByzantineFailureSim__test_html"><div class="ttname"><a href="classripple_1_1test_1_1ByzantineFailureSim__test.html">ripple::test::ByzantineFailureSim_test</a></div><div class="ttdef"><b>Definition:</b> <a href="ByzantineFailureSim__test_8cpp_source.html#l00027">ByzantineFailureSim_test.cpp:27</a></div></div>

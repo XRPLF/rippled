@@ -97,32 +97,34 @@ $(function() {
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
 <div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1DetectCrash__test.html">   27</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1test_1_1DetectCrash__test.html">DetectCrash_test</a> : <span class="keyword">public</span> beast::unit_test::suite</div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;{</div>
-<div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1DetectCrash__test.html#a205fecccbdce617531cfacb8220c7b00">   29</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="structripple_1_1test_1_1DetectCrash__test.html#a205fecccbdce617531cfacb8220c7b00">testDetectCrash</a> ()</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    {</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        testcase (<span class="stringliteral">&quot;Detect Crash&quot;</span>);</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <span class="comment">// Kill the process. This is used to test that the multi-process</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <span class="comment">// unit test will correctly report the crash.</span></div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/terminate.html">std::terminate</a>();</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    }</div>
-<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1DetectCrash__test.html#ac240aa4b9aac2935cca244aea221aded">   36</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="structripple_1_1test_1_1DetectCrash__test.html#ac240aa4b9aac2935cca244aea221aded">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <a class="code" href="structripple_1_1test_1_1DetectCrash__test.html#a205fecccbdce617531cfacb8220c7b00">testDetectCrash</a>();</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    }</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;};</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<a class="code" href="namespaceripple_1_1test.html#affd2de93e088271db6605a235074acf2">BEAST_DEFINE_TESTSUITE_MANUAL</a>(DetectCrash,unit_test,<a class="code" href="namespacebeast.html">beast</a>);</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1DetectCrash__test.html#a205fecccbdce617531cfacb8220c7b00">   30</a></span>&#160;    <a class="code" href="structripple_1_1test_1_1DetectCrash__test.html#a205fecccbdce617531cfacb8220c7b00">testDetectCrash</a>()</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    {</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        testcase(<span class="stringliteral">&quot;Detect Crash&quot;</span>);</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <span class="comment">// Kill the process. This is used to test that the multi-process</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="comment">// unit test will correctly report the crash.</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/error/terminate.html">std::terminate</a>();</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    }</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1DetectCrash__test.html#ac240aa4b9aac2935cca244aea221aded">   38</a></span>&#160;    <a class="code" href="structripple_1_1test_1_1DetectCrash__test.html#ac240aa4b9aac2935cca244aea221aded">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <a class="code" href="structripple_1_1test_1_1DetectCrash__test.html#a205fecccbdce617531cfacb8220c7b00">testDetectCrash</a>();</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    }</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;};</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;} <span class="comment">// test</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<a class="code" href="namespaceripple_1_1test.html#affd2de93e088271db6605a235074acf2">BEAST_DEFINE_TESTSUITE_MANUAL</a>(DetectCrash, unit_test, <a class="code" href="namespacebeast.html">beast</a>);</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aexception_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/exception.html">exception</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1DetectCrash__test_html_a205fecccbdce617531cfacb8220c7b00"><div class="ttname"><a href="structripple_1_1test_1_1DetectCrash__test.html#a205fecccbdce617531cfacb8220c7b00">ripple::test::DetectCrash_test::testDetectCrash</a></div><div class="ttdeci">void testDetectCrash()</div><div class="ttdef"><b>Definition:</b> <a href="DetectCrash__test_8cpp_source.html#l00029">DetectCrash_test.cpp:29</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1DetectCrash__test_html_a205fecccbdce617531cfacb8220c7b00"><div class="ttname"><a href="structripple_1_1test_1_1DetectCrash__test.html#a205fecccbdce617531cfacb8220c7b00">ripple::test::DetectCrash_test::testDetectCrash</a></div><div class="ttdeci">void testDetectCrash()</div><div class="ttdef"><b>Definition:</b> <a href="DetectCrash__test_8cpp_source.html#l00030">DetectCrash_test.cpp:30</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1DetectCrash__test_html"><div class="ttname"><a href="structripple_1_1test_1_1DetectCrash__test.html">ripple::test::DetectCrash_test</a></div><div class="ttdef"><b>Definition:</b> <a href="DetectCrash__test_8cpp_source.html#l00027">DetectCrash_test.cpp:27</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1DetectCrash__test_html_ac240aa4b9aac2935cca244aea221aded"><div class="ttname"><a href="structripple_1_1test_1_1DetectCrash__test.html#ac240aa4b9aac2935cca244aea221aded">ripple::test::DetectCrash_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="DetectCrash__test_8cpp_source.html#l00036">DetectCrash_test.cpp:36</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1DetectCrash__test_html_ac240aa4b9aac2935cca244aea221aded"><div class="ttname"><a href="structripple_1_1test_1_1DetectCrash__test.html#ac240aa4b9aac2935cca244aea221aded">ripple::test::DetectCrash_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="DetectCrash__test_8cpp_source.html#l00038">DetectCrash_test.cpp:38</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_html_affd2de93e088271db6605a235074acf2"><div class="ttname"><a href="namespaceripple_1_1test.html#affd2de93e088271db6605a235074acf2">ripple::test::BEAST_DEFINE_TESTSUITE_MANUAL</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE_MANUAL(DetectCrash, unit_test, beast)</div></div>
 <div class="ttc" id="aterminate_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/terminate.html">std::terminate</a></div><div class="ttdeci">T terminate(T... args)</div></div>
-<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00582">base_uint.h:582</a></div></div>
+<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00646">base_uint.h:646</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

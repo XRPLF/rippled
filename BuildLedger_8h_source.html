@@ -91,9 +91,9 @@ $(function() {
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_APP_LEDGER_BUILD_LEDGER_H_INCLUDED</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_APP_LEDGER_BUILD_LEDGER_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/ledger/ApplyView.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/chrono.h&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/utility/Journal.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/chrono.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/utility/Journal.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/ledger/ApplyView.h&gt;</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/chrono.html">chrono</a>&gt;</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a>&gt;</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
@@ -105,37 +105,36 @@ $(function() {
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="keyword">class </span>LedgerReplay;</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="keyword">class </span>SHAMap;</div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger&gt;</a></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<a class="code" href="namespaceripple.html#a00a2aa0c3f2861ed15d2b9b8b71b03a3">buildLedger</a>(</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger const&gt;</a> <span class="keyword">const</span>&amp; parent,</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <a class="code" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> closeTime,</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">bool</span> closeTimeCorrect,</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <a class="code" href="classripple_1_1NetClock.html#afe3767203cd971a00067671641bc7e16">NetClock::duration</a> closeResolution,</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    Application&amp; app,</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    CanonicalTXSet&amp; txns,</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set&lt;TxID&gt;</a>&amp; failedTxs,</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> j);</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger&gt;</a></div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<a class="code" href="namespaceripple.html#a00a2aa0c3f2861ed15d2b9b8b71b03a3">buildLedger</a>(</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    LedgerReplay <span class="keyword">const</span>&amp; replayData,</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <a class="code" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a> applyFlags,</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    Application&amp; app,</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> j);</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger&gt;</a></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<a class="code" href="namespaceripple.html#a00a2aa0c3f2861ed15d2b9b8b71b03a3">buildLedger</a>(</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger const&gt;</a> <span class="keyword">const</span>&amp; parent,</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <a class="code" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> closeTime,</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">bool</span> closeTimeCorrect,</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <a class="code" href="classripple_1_1NetClock.html#afe3767203cd971a00067671641bc7e16">NetClock::duration</a> closeResolution,</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    Application&amp; app,</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    CanonicalTXSet&amp; txns,</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set&lt;TxID&gt;</a>&amp; failedTxs,</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> j);</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger&gt;</a></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<a class="code" href="namespaceripple.html#a00a2aa0c3f2861ed15d2b9b8b71b03a3">buildLedger</a>(</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    LedgerReplay <span class="keyword">const</span>&amp; replayData,</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <a class="code" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a> applyFlags,</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    Application&amp; app,</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> j);</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_html_ad2487abbcc1a5d6064b72144b461df6e"><div class="ttname"><a href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ripple::ApplyFlags</a></div><div class="ttdeci">ApplyFlags</div><div class="ttdef"><b>Definition:</b> <a href="ApplyView_8h_source.html#l00030">ApplyView.h:30</a></div></div>
 <div class="ttc" id="achrono_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/chrono.html">chrono</a></div></div>
-<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00060">Journal.h:60</a></div></div>
+<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00058">Journal.h:58</a></div></div>
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a00a2aa0c3f2861ed15d2b9b8b71b03a3"><div class="ttname"><a href="namespaceripple.html#a00a2aa0c3f2861ed15d2b9b8b71b03a3">ripple::buildLedger</a></div><div class="ttdeci">std::shared_ptr&lt; Ledger &gt; buildLedger(std::shared_ptr&lt; Ledger const &gt; const &amp;parent, NetClock::time_point closeTime, const bool closeTimeCorrect, NetClock::duration closeResolution, Application &amp;app, CanonicalTXSet &amp;txns, std::set&lt; TxID &gt; &amp;failedTxs, beast::Journal j)</div><div class="ttdoc">Build a new ledger by applying consensus transactions.</div><div class="ttdef"><b>Definition:</b> <a href="BuildLedger_8cpp_source.html#l00174">BuildLedger.cpp:174</a></div></div>
-<div class="ttc" id="aclassripple_1_1NetClock_html_afe3767203cd971a00067671641bc7e16"><div class="ttname"><a href="classripple_1_1NetClock.html#afe3767203cd971a00067671641bc7e16">ripple::NetClock::duration</a></div><div class="ttdeci">std::chrono::duration&lt; rep, period &gt; duration</div><div class="ttdef"><b>Definition:</b> <a href="chrono_8h_source.html#l00052">chrono.h:52</a></div></div>
-<div class="ttc" id="aclassripple_1_1NetClock_html_a4c2428e178dca6689fa3fb4be0657107"><div class="ttname"><a href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">ripple::NetClock::time_point</a></div><div class="ttdeci">std::chrono::time_point&lt; NetClock &gt; time_point</div><div class="ttdef"><b>Definition:</b> <a href="chrono_8h_source.html#l00053">chrono.h:53</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a00a2aa0c3f2861ed15d2b9b8b71b03a3"><div class="ttname"><a href="namespaceripple.html#a00a2aa0c3f2861ed15d2b9b8b71b03a3">ripple::buildLedger</a></div><div class="ttdeci">std::shared_ptr&lt; Ledger &gt; buildLedger(std::shared_ptr&lt; Ledger const &gt; const &amp;parent, NetClock::time_point closeTime, const bool closeTimeCorrect, NetClock::duration closeResolution, Application &amp;app, CanonicalTXSet &amp;txns, std::set&lt; TxID &gt; &amp;failedTxs, beast::Journal j)</div><div class="ttdoc">Build a new ledger by applying consensus transactions.</div><div class="ttdef"><b>Definition:</b> <a href="BuildLedger_8cpp_source.html#l00172">BuildLedger.cpp:172</a></div></div>
+<div class="ttc" id="aclassripple_1_1NetClock_html_afe3767203cd971a00067671641bc7e16"><div class="ttname"><a href="classripple_1_1NetClock.html#afe3767203cd971a00067671641bc7e16">ripple::NetClock::duration</a></div><div class="ttdeci">std::chrono::duration&lt; rep, period &gt; duration</div><div class="ttdef"><b>Definition:</b> <a href="chrono_8h_source.html#l00053">chrono.h:53</a></div></div>
+<div class="ttc" id="aclassripple_1_1NetClock_html_a4c2428e178dca6689fa3fb4be0657107"><div class="ttname"><a href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">ripple::NetClock::time_point</a></div><div class="ttdeci">std::chrono::time_point&lt; NetClock &gt; time_point</div><div class="ttdef"><b>Definition:</b> <a href="chrono_8h_source.html#l00054">chrono.h:54</a></div></div>
 <div class="ttc" id="aset_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a></div><div class="ttdoc">STL class.</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

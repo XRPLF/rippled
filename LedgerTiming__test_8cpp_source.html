@@ -95,124 +95,124 @@ $(function() {
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
 <div class="line"><a name="l00025"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerTiming__test.html">   25</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1test_1_1LedgerTiming__test.html">LedgerTiming_test</a> : <span class="keyword">public</span> beast::unit_test::suite</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;{</div>
-<div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerTiming__test.html#a07356fa80fc2933a9b799b1df983e00c">   27</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1test_1_1LedgerTiming__test.html#a07356fa80fc2933a9b799b1df983e00c">testGetNextLedgerTimeResolution</a>()</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    {</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        <span class="comment">// helper to iteratively call into getNextLedgerTimeResolution</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        <span class="keyword">struct </span>test_res</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        {</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> decrease = 0;</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="code" href="namespaceripple_1_1test.html#a63c90ac219dc626aae857a027f002b96">equal</a> = 0;</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="code" href="namespaceripple.html#a253199a1f3076c92f481e29607c66d29">increase</a> = 0;</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;            <span class="keyword">static</span> test_res <a class="code" href="classripple_1_1test_1_1LedgerTiming__test.html#a4d2f0b1d92eee9d99b1a97d64d5e2dfa">run</a>(<span class="keywordtype">bool</span> previousAgree, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> rounds)</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;            {</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;                test_res res;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;                <span class="keyword">auto</span> closeResolution = <a class="code" href="namespaceripple.html#a8d9f578e31d5fdf0e82150bc1a4ce374">ledgerDefaultTimeResolution</a>;</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;                <span class="keyword">auto</span> nextCloseResolution = closeResolution;</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> round = 0;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;                <span class="keywordflow">do</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;                {</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;                   nextCloseResolution = <a class="code" href="namespaceripple.html#a769291ba9f7a5f5ba7a389c395e83a3c">getNextLedgerTimeResolution</a>(</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;                       closeResolution, previousAgree, ++round);</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;                   <span class="keywordflow">if</span> (nextCloseResolution &lt; closeResolution)</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;                       ++res.decrease;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;                   <span class="keywordflow">else</span> <span class="keywordflow">if</span> (nextCloseResolution &gt; closeResolution)</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;                       ++res.increase;</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;                   <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;                       ++res.equal;</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                   <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/swap.html">std::swap</a>(nextCloseResolution, closeResolution);</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                } <span class="keywordflow">while</span> (round &lt; rounds);</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;                <span class="keywordflow">return</span> res;</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            }</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        };</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <span class="comment">// If we never agree on close time, only can increase resolution</span></div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="comment">// until hit the max</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="keyword">auto</span> decreases = test_res::run(<span class="keyword">false</span>, 10);</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        BEAST_EXPECT(decreases.increase == 3);</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        BEAST_EXPECT(decreases.decrease == 0);</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        BEAST_EXPECT(decreases.equal    == 7);</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <span class="comment">// If we always agree on close time, only can decrease resolution</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="comment">// until hit the min</span></div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="keyword">auto</span> increases = test_res::run(<span class="keyword">false</span>, 100);</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        BEAST_EXPECT(increases.increase == 3);</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        BEAST_EXPECT(increases.decrease == 0);</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        BEAST_EXPECT(increases.equal    == 97);</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerTiming__test.html#a07356fa80fc2933a9b799b1df983e00c">   28</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1LedgerTiming__test.html#a07356fa80fc2933a9b799b1df983e00c">testGetNextLedgerTimeResolution</a>()</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    {</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        <span class="comment">// helper to iteratively call into getNextLedgerTimeResolution</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        <span class="keyword">struct </span>test_res</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        {</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> decrease = 0;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="code" href="namespaceripple_1_1test.html#a63c90ac219dc626aae857a027f002b96">equal</a> = 0;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="code" href="namespaceripple.html#a253199a1f3076c92f481e29607c66d29">increase</a> = 0;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;            <span class="keyword">static</span> test_res</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;            <a class="code" href="classripple_1_1test_1_1LedgerTiming__test.html#a4d2f0b1d92eee9d99b1a97d64d5e2dfa">run</a>(<span class="keywordtype">bool</span> previousAgree, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> rounds)</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;            {</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;                test_res res;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;                <span class="keyword">auto</span> closeResolution = <a class="code" href="namespaceripple.html#a8d9f578e31d5fdf0e82150bc1a4ce374">ledgerDefaultTimeResolution</a>;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;                <span class="keyword">auto</span> nextCloseResolution = closeResolution;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> round = 0;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;                <span class="keywordflow">do</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;                {</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;                    nextCloseResolution = <a class="code" href="namespaceripple.html#a769291ba9f7a5f5ba7a389c395e83a3c">getNextLedgerTimeResolution</a>(</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;                        closeResolution, previousAgree, ++round);</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;                    <span class="keywordflow">if</span> (nextCloseResolution &lt; closeResolution)</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;                        ++res.decrease;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;                    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (nextCloseResolution &gt; closeResolution)</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;                        ++res.increase;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                        ++res.equal;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/swap.html">std::swap</a>(nextCloseResolution, closeResolution);</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;                } <span class="keywordflow">while</span> (round &lt; rounds);</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;                <span class="keywordflow">return</span> res;</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            }</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        };</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="comment">// If we never agree on close time, only can increase resolution</span></div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="comment">// until hit the max</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="keyword">auto</span> decreases = test_res::run(<span class="keyword">false</span>, 10);</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        BEAST_EXPECT(decreases.increase == 3);</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        BEAST_EXPECT(decreases.decrease == 0);</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        BEAST_EXPECT(decreases.equal == 7);</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="comment">// If we always agree on close time, only can decrease resolution</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="comment">// until hit the min</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="keyword">auto</span> increases = test_res::run(<span class="keyword">false</span>, 100);</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        BEAST_EXPECT(increases.increase == 3);</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        BEAST_EXPECT(increases.decrease == 0);</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        BEAST_EXPECT(increases.equal == 97);</div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    }</div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerTiming__test.html#ab504e781ce803ceee51d7cefedd2e8f7">   75</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1test_1_1LedgerTiming__test.html#ab504e781ce803ceee51d7cefedd2e8f7">testRoundCloseTime</a>()</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    {</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <span class="keyword">using namespace </span>std::chrono_literals;</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="comment">// A closeTime equal to the epoch is not modified</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="keyword">using</span> tp = <a class="code" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>;</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        tp def;</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        BEAST_EXPECT(def == <a class="code" href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">roundCloseTime</a>(def, 30s));</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        <span class="comment">// Otherwise, the closeTime is rounded to the nearest</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="comment">// rounding up on ties</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        BEAST_EXPECT(tp{ 0s } == <a class="code" href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">roundCloseTime</a>(tp{ 29s }, 60s));</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        BEAST_EXPECT(tp{ 30s } == <a class="code" href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">roundCloseTime</a>(tp{ 30s }, 1s));</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        BEAST_EXPECT(tp{ 60s } == <a class="code" href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">roundCloseTime</a>(tp{ 31s }, 60s));</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        BEAST_EXPECT(tp{ 60s } == <a class="code" href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">roundCloseTime</a>(tp{ 30s }, 60s));</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        BEAST_EXPECT(tp{ 60s } == <a class="code" href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">roundCloseTime</a>(tp{ 59s }, 60s));</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        BEAST_EXPECT(tp{ 60s } == <a class="code" href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">roundCloseTime</a>(tp{ 60s }, 60s));</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        BEAST_EXPECT(tp{ 60s } == <a class="code" href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">roundCloseTime</a>(tp{ 61s }, 60s));</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00076"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerTiming__test.html#ab504e781ce803ceee51d7cefedd2e8f7">   76</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1LedgerTiming__test.html#ab504e781ce803ceee51d7cefedd2e8f7">testRoundCloseTime</a>()</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    {</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="keyword">using namespace </span>std::chrono_literals;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="comment">// A closeTime equal to the epoch is not modified</span></div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="keyword">using</span> tp = <a class="code" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        tp def;</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        BEAST_EXPECT(def == <a class="code" href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">roundCloseTime</a>(def, 30s));</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="comment">// Otherwise, the closeTime is rounded to the nearest</span></div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="comment">// rounding up on ties</span></div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        BEAST_EXPECT(tp{0s} == <a class="code" href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">roundCloseTime</a>(tp{29s}, 60s));</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        BEAST_EXPECT(tp{30s} == <a class="code" href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">roundCloseTime</a>(tp{30s}, 1s));</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        BEAST_EXPECT(tp{60s} == <a class="code" href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">roundCloseTime</a>(tp{31s}, 60s));</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        BEAST_EXPECT(tp{60s} == <a class="code" href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">roundCloseTime</a>(tp{30s}, 60s));</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        BEAST_EXPECT(tp{60s} == <a class="code" href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">roundCloseTime</a>(tp{59s}, 60s));</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        BEAST_EXPECT(tp{60s} == <a class="code" href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">roundCloseTime</a>(tp{60s}, 60s));</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        BEAST_EXPECT(tp{60s} == <a class="code" href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">roundCloseTime</a>(tp{61s}, 60s));</div>
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    }</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
-<div class="line"><a name="l00095"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerTiming__test.html#abbdf83040ae9185d7e6d8186850eac83">   95</a></span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classripple_1_1test_1_1LedgerTiming__test.html#abbdf83040ae9185d7e6d8186850eac83">testEffCloseTime</a>()</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    {</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <span class="keyword">using namespace </span>std::chrono_literals;</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        <span class="keyword">using</span> tp = <a class="code" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>;</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        tp close = <a class="code" href="namespaceripple.html#a6b403455e1efce1935495bb2e7c6e8ff">effCloseTime</a>(tp{10s}, 30s, tp{0s});</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        BEAST_EXPECT(close == tp{1s});</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        close = <a class="code" href="namespaceripple.html#a6b403455e1efce1935495bb2e7c6e8ff">effCloseTime</a>(tp{16s}, 30s, tp{0s});</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        BEAST_EXPECT(close == tp{30s});</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;        close = <a class="code" href="namespaceripple.html#a6b403455e1efce1935495bb2e7c6e8ff">effCloseTime</a>(tp{16s}, 30s, tp{30s});</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        BEAST_EXPECT(close == tp{31s});</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        close = <a class="code" href="namespaceripple.html#a6b403455e1efce1935495bb2e7c6e8ff">effCloseTime</a>(tp{16s}, 30s, tp{60s});</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        BEAST_EXPECT(close == tp{61s});</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160; </div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        close = <a class="code" href="namespaceripple.html#a6b403455e1efce1935495bb2e7c6e8ff">effCloseTime</a>(tp{31s}, 30s, tp{0s});</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        BEAST_EXPECT(close == tp{30s});</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    }</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160; </div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00116"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerTiming__test.html#a4d2f0b1d92eee9d99b1a97d64d5e2dfa">  116</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1LedgerTiming__test.html#a4d2f0b1d92eee9d99b1a97d64d5e2dfa">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        <a class="code" href="classripple_1_1test_1_1LedgerTiming__test.html#a07356fa80fc2933a9b799b1df983e00c">testGetNextLedgerTimeResolution</a>();</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        <a class="code" href="classripple_1_1test_1_1LedgerTiming__test.html#ab504e781ce803ceee51d7cefedd2e8f7">testRoundCloseTime</a>();</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        <a class="code" href="classripple_1_1test_1_1LedgerTiming__test.html#abbdf83040ae9185d7e6d8186850eac83">testEffCloseTime</a>();</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    }</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160; </div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00096"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerTiming__test.html#abbdf83040ae9185d7e6d8186850eac83">   96</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1LedgerTiming__test.html#abbdf83040ae9185d7e6d8186850eac83">testEffCloseTime</a>()</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    {</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        <span class="keyword">using namespace </span>std::chrono_literals;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        <span class="keyword">using</span> tp = <a class="code" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        tp close = <a class="code" href="namespaceripple.html#a6b403455e1efce1935495bb2e7c6e8ff">effCloseTime</a>(tp{10s}, 30s, tp{0s});</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        BEAST_EXPECT(close == tp{1s});</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        close = <a class="code" href="namespaceripple.html#a6b403455e1efce1935495bb2e7c6e8ff">effCloseTime</a>(tp{16s}, 30s, tp{0s});</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        BEAST_EXPECT(close == tp{30s});</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        close = <a class="code" href="namespaceripple.html#a6b403455e1efce1935495bb2e7c6e8ff">effCloseTime</a>(tp{16s}, 30s, tp{30s});</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        BEAST_EXPECT(close == tp{31s});</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        close = <a class="code" href="namespaceripple.html#a6b403455e1efce1935495bb2e7c6e8ff">effCloseTime</a>(tp{16s}, 30s, tp{60s});</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        BEAST_EXPECT(close == tp{61s});</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        close = <a class="code" href="namespaceripple.html#a6b403455e1efce1935495bb2e7c6e8ff">effCloseTime</a>(tp{31s}, 30s, tp{0s});</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        BEAST_EXPECT(close == tp{30s});</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    }</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00117"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerTiming__test.html#a4d2f0b1d92eee9d99b1a97d64d5e2dfa">  117</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1LedgerTiming__test.html#a4d2f0b1d92eee9d99b1a97d64d5e2dfa">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        <a class="code" href="classripple_1_1test_1_1LedgerTiming__test.html#a07356fa80fc2933a9b799b1df983e00c">testGetNextLedgerTimeResolution</a>();</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        <a class="code" href="classripple_1_1test_1_1LedgerTiming__test.html#ab504e781ce803ceee51d7cefedd2e8f7">testRoundCloseTime</a>();</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;        <a class="code" href="classripple_1_1test_1_1LedgerTiming__test.html#abbdf83040ae9185d7e6d8186850eac83">testEffCloseTime</a>();</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    }</div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;};</div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
 <div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">BEAST_DEFINE_TESTSUITE</a>(LedgerTiming, consensus, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;} <span class="comment">// test</span></div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1test_1_1LedgerTiming__test_html_a4d2f0b1d92eee9d99b1a97d64d5e2dfa"><div class="ttname"><a href="classripple_1_1test_1_1LedgerTiming__test.html#a4d2f0b1d92eee9d99b1a97d64d5e2dfa">ripple::test::LedgerTiming_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="LedgerTiming__test_8cpp_source.html#l00116">LedgerTiming_test.cpp:116</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1LedgerTiming__test_html_a4d2f0b1d92eee9d99b1a97d64d5e2dfa"><div class="ttname"><a href="classripple_1_1test_1_1LedgerTiming__test.html#a4d2f0b1d92eee9d99b1a97d64d5e2dfa">ripple::test::LedgerTiming_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="LedgerTiming__test_8cpp_source.html#l00117">LedgerTiming_test.cpp:117</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_html_a52909fdbfa7f29626f24005ed12e6ef4"><div class="ttname"><a href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">ripple::test::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(AccountDelete, app, ripple)</div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1LedgerTiming__test_html"><div class="ttname"><a href="classripple_1_1test_1_1LedgerTiming__test.html">ripple::test::LedgerTiming_test</a></div><div class="ttdef"><b>Definition:</b> <a href="LedgerTiming__test_8cpp_source.html#l00025">LedgerTiming_test.cpp:25</a></div></div>
-<div class="ttc" id="anamespaceripple_html_aebcad336ac983e05caf01c53d1cacde7"><div class="ttname"><a href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">ripple::roundCloseTime</a></div><div class="ttdeci">std::chrono::time_point&lt; Clock, Duration &gt; roundCloseTime(std::chrono::time_point&lt; Clock, Duration &gt; closeTime, std::chrono::duration&lt; Rep, Period &gt; closeResolution)</div><div class="ttdoc">Calculates the close time for a ledger, given a close time resolution.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerTiming_8h_source.html#l00128">LedgerTiming.h:128</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a253199a1f3076c92f481e29607c66d29"><div class="ttname"><a href="namespaceripple.html#a253199a1f3076c92f481e29607c66d29">ripple::increase</a></div><div class="ttdeci">static FeeLevel64 increase(FeeLevel64 level, std::uint32_t increasePercent)</div><div class="ttdef"><b>Definition:</b> <a href="TxQ_8cpp_source.html#l00070">TxQ.cpp:70</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aebcad336ac983e05caf01c53d1cacde7"><div class="ttname"><a href="namespaceripple.html#aebcad336ac983e05caf01c53d1cacde7">ripple::roundCloseTime</a></div><div class="ttdeci">std::chrono::time_point&lt; Clock, Duration &gt; roundCloseTime(std::chrono::time_point&lt; Clock, Duration &gt; closeTime, std::chrono::duration&lt; Rep, Period &gt; closeResolution)</div><div class="ttdoc">Calculates the close time for a ledger, given a close time resolution.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerTiming_8h_source.html#l00126">LedgerTiming.h:126</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a253199a1f3076c92f481e29607c66d29"><div class="ttname"><a href="namespaceripple.html#a253199a1f3076c92f481e29607c66d29">ripple::increase</a></div><div class="ttdeci">static FeeLevel64 increase(FeeLevel64 level, std::uint32_t increasePercent)</div><div class="ttdef"><b>Definition:</b> <a href="TxQ_8cpp_source.html#l00065">TxQ.cpp:65</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
 <div class="ttc" id="aswap_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/swap.html">std::swap</a></div><div class="ttdeci">T swap(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_1_1test_html_a63c90ac219dc626aae857a027f002b96"><div class="ttname"><a href="namespaceripple_1_1test.html#a63c90ac219dc626aae857a027f002b96">ripple::test::equal</a></div><div class="ttdeci">bool equal(STAmount const &amp;sa1, STAmount const &amp;sa2)</div><div class="ttdef"><b>Definition:</b> <a href="Path__test_8cpp_source.html#l00136">Path_test.cpp:136</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1test_html_a63c90ac219dc626aae857a027f002b96"><div class="ttname"><a href="namespaceripple_1_1test.html#a63c90ac219dc626aae857a027f002b96">ripple::test::equal</a></div><div class="ttdeci">bool equal(STAmount const &amp;sa1, STAmount const &amp;sa2)</div><div class="ttdef"><b>Definition:</b> <a href="Path__test_8cpp_source.html#l00125">Path_test.cpp:125</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1LedgerTiming__test_html_abbdf83040ae9185d7e6d8186850eac83"><div class="ttname"><a href="classripple_1_1test_1_1LedgerTiming__test.html#abbdf83040ae9185d7e6d8186850eac83">ripple::test::LedgerTiming_test::testEffCloseTime</a></div><div class="ttdeci">void testEffCloseTime()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerTiming__test_8cpp_source.html#l00095">LedgerTiming_test.cpp:95</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1LedgerTiming__test_html_ab504e781ce803ceee51d7cefedd2e8f7"><div class="ttname"><a href="classripple_1_1test_1_1LedgerTiming__test.html#ab504e781ce803ceee51d7cefedd2e8f7">ripple::test::LedgerTiming_test::testRoundCloseTime</a></div><div class="ttdeci">void testRoundCloseTime()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerTiming__test_8cpp_source.html#l00075">LedgerTiming_test.cpp:75</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a769291ba9f7a5f5ba7a389c395e83a3c"><div class="ttname"><a href="namespaceripple.html#a769291ba9f7a5f5ba7a389c395e83a3c">ripple::getNextLedgerTimeResolution</a></div><div class="ttdeci">std::chrono::duration&lt; Rep, Period &gt; getNextLedgerTimeResolution(std::chrono::duration&lt; Rep, Period &gt; previousResolution, bool previousAgree, Seq ledgerSeq)</div><div class="ttdoc">Calculates the close time resolution for the specified ledger.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerTiming_8h_source.html#l00079">LedgerTiming.h:79</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a8d9f578e31d5fdf0e82150bc1a4ce374"><div class="ttname"><a href="namespaceripple.html#a8d9f578e31d5fdf0e82150bc1a4ce374">ripple::ledgerDefaultTimeResolution</a></div><div class="ttdeci">constexpr auto ledgerDefaultTimeResolution</div><div class="ttdoc">Initial resolution of ledger close time.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerTiming_8h_source.html#l00046">LedgerTiming.h:46</a></div></div>
-<div class="ttc" id="aclassripple_1_1NetClock_html_a4c2428e178dca6689fa3fb4be0657107"><div class="ttname"><a href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">ripple::NetClock::time_point</a></div><div class="ttdeci">std::chrono::time_point&lt; NetClock &gt; time_point</div><div class="ttdef"><b>Definition:</b> <a href="chrono_8h_source.html#l00053">chrono.h:53</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a6b403455e1efce1935495bb2e7c6e8ff"><div class="ttname"><a href="namespaceripple.html#a6b403455e1efce1935495bb2e7c6e8ff">ripple::effCloseTime</a></div><div class="ttdeci">std::chrono::time_point&lt; Clock, Duration &gt; effCloseTime(std::chrono::time_point&lt; Clock, Duration &gt; closeTime, std::chrono::duration&lt; Rep, Period &gt; resolution, std::chrono::time_point&lt; Clock, Duration &gt; priorCloseTime)</div><div class="ttdoc">Calculate the effective ledger close time.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerTiming_8h_source.html#l00151">LedgerTiming.h:151</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1LedgerTiming__test_html_a07356fa80fc2933a9b799b1df983e00c"><div class="ttname"><a href="classripple_1_1test_1_1LedgerTiming__test.html#a07356fa80fc2933a9b799b1df983e00c">ripple::test::LedgerTiming_test::testGetNextLedgerTimeResolution</a></div><div class="ttdeci">void testGetNextLedgerTimeResolution()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerTiming__test_8cpp_source.html#l00027">LedgerTiming_test.cpp:27</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1LedgerTiming__test_html_abbdf83040ae9185d7e6d8186850eac83"><div class="ttname"><a href="classripple_1_1test_1_1LedgerTiming__test.html#abbdf83040ae9185d7e6d8186850eac83">ripple::test::LedgerTiming_test::testEffCloseTime</a></div><div class="ttdeci">void testEffCloseTime()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerTiming__test_8cpp_source.html#l00096">LedgerTiming_test.cpp:96</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1LedgerTiming__test_html_ab504e781ce803ceee51d7cefedd2e8f7"><div class="ttname"><a href="classripple_1_1test_1_1LedgerTiming__test.html#ab504e781ce803ceee51d7cefedd2e8f7">ripple::test::LedgerTiming_test::testRoundCloseTime</a></div><div class="ttdeci">void testRoundCloseTime()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerTiming__test_8cpp_source.html#l00076">LedgerTiming_test.cpp:76</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a769291ba9f7a5f5ba7a389c395e83a3c"><div class="ttname"><a href="namespaceripple.html#a769291ba9f7a5f5ba7a389c395e83a3c">ripple::getNextLedgerTimeResolution</a></div><div class="ttdeci">std::chrono::duration&lt; Rep, Period &gt; getNextLedgerTimeResolution(std::chrono::duration&lt; Rep, Period &gt; previousResolution, bool previousAgree, Seq ledgerSeq)</div><div class="ttdoc">Calculates the close time resolution for the specified ledger.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerTiming_8h_source.html#l00077">LedgerTiming.h:77</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a8d9f578e31d5fdf0e82150bc1a4ce374"><div class="ttname"><a href="namespaceripple.html#a8d9f578e31d5fdf0e82150bc1a4ce374">ripple::ledgerDefaultTimeResolution</a></div><div class="ttdeci">constexpr auto ledgerDefaultTimeResolution</div><div class="ttdoc">Initial resolution of ledger close time.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerTiming_8h_source.html#l00044">LedgerTiming.h:44</a></div></div>
+<div class="ttc" id="aclassripple_1_1NetClock_html_a4c2428e178dca6689fa3fb4be0657107"><div class="ttname"><a href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">ripple::NetClock::time_point</a></div><div class="ttdeci">std::chrono::time_point&lt; NetClock &gt; time_point</div><div class="ttdef"><b>Definition:</b> <a href="chrono_8h_source.html#l00054">chrono.h:54</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a6b403455e1efce1935495bb2e7c6e8ff"><div class="ttname"><a href="namespaceripple.html#a6b403455e1efce1935495bb2e7c6e8ff">ripple::effCloseTime</a></div><div class="ttdeci">std::chrono::time_point&lt; Clock, Duration &gt; effCloseTime(std::chrono::time_point&lt; Clock, Duration &gt; closeTime, std::chrono::duration&lt; Rep, Period &gt; resolution, std::chrono::time_point&lt; Clock, Duration &gt; priorCloseTime)</div><div class="ttdoc">Calculate the effective ledger close time.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerTiming_8h_source.html#l00149">LedgerTiming.h:149</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1LedgerTiming__test_html_a07356fa80fc2933a9b799b1df983e00c"><div class="ttname"><a href="classripple_1_1test_1_1LedgerTiming__test.html#a07356fa80fc2933a9b799b1df983e00c">ripple::test::LedgerTiming_test::testGetNextLedgerTimeResolution</a></div><div class="ttdeci">void testGetNextLedgerTimeResolution()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerTiming__test_8cpp_source.html#l00028">LedgerTiming_test.cpp:28</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

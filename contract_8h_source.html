@@ -106,51 +106,48 @@ $(function() {
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<a class="code" href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">LogThrow</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; title);</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<a class="code" href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">LogThrow</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; title);</div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;[[noreturn]]</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="keyword">inline</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad99788f1aca6ce31a1fe8365eee1bba3">   50</a></span>&#160;<a class="code" href="namespaceripple.html#ad99788f1aca6ce31a1fe8365eee1bba3">Rethrow</a> ()</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;{</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <a class="code" href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">LogThrow</a> (<span class="stringliteral">&quot;Re-throwing exception&quot;</span>);</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordflow">throw</span>;</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;}</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class </span>E, <span class="keyword">class</span>... Args&gt;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;[[noreturn]]</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="keyword">inline</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00060"></a><span class="lineno"><a class="line" href="namespaceripple.html#a60a8000b5ea6d1121d1e0fb03cae63a0">   60</a></span>&#160;<a class="code" href="namespaceripple.html#a60a8000b5ea6d1121d1e0fb03cae63a0">Throw</a> (Args&amp;&amp;... args)</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;{</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    static_assert (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_convertible.html">std::is_convertible&lt;E*, std::exception*&gt;::value</a>,</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="stringliteral">&quot;Exception must derive from std::exception.&quot;</span>);</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    E e(std::forward&lt;Args&gt;(args)...);</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <a class="code" href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">LogThrow</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;Throwing exception of type &quot;</span> +</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;                          beast::type_name&lt;E&gt;() +<span class="stringliteral">&quot;: &quot;</span>) + e.what());</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keywordflow">throw</span> e;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;}</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;[[noreturn]]</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a> (</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; how) noexcept;</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;} <span class="comment">// ripple</span></div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;[[noreturn]] <span class="keyword">inline</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad99788f1aca6ce31a1fe8365eee1bba3">   48</a></span>&#160;<a class="code" href="namespaceripple.html#ad99788f1aca6ce31a1fe8365eee1bba3">Rethrow</a>()</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;{</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <a class="code" href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">LogThrow</a>(<span class="stringliteral">&quot;Re-throwing exception&quot;</span>);</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordflow">throw</span>;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;}</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class </span>E, <span class="keyword">class</span>... Args&gt;</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;[[noreturn]] <span class="keyword">inline</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00056"></a><span class="lineno"><a class="line" href="namespaceripple.html#a60a8000b5ea6d1121d1e0fb03cae63a0">   56</a></span>&#160;<a class="code" href="namespaceripple.html#a60a8000b5ea6d1121d1e0fb03cae63a0">Throw</a>(Args&amp;&amp;... args)</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;{</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    static_assert(</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_convertible.html">std::is_convertible&lt;E*, std::exception*&gt;::value</a>,</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="stringliteral">&quot;Exception must derive from std::exception.&quot;</span>);</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    E e(std::forward&lt;Args&gt;(args)...);</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="code" href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">LogThrow</a>(</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            <span class="stringliteral">&quot;Throwing exception of type &quot;</span> + beast::type_name&lt;E&gt;() + <span class="stringliteral">&quot;: &quot;</span>) +</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        e.what());</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keywordflow">throw</span> e;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;}</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;[[noreturn]] <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; how) noexcept;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="autility_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/utility.html">utility</a></div></div>
 <div class="ttc" id="aexception_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/exception.html">exception</a></div></div>
 <div class="ttc" id="ais_convertible_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_convertible.html">std::is_convertible</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ad99788f1aca6ce31a1fe8365eee1bba3"><div class="ttname"><a href="namespaceripple.html#ad99788f1aca6ce31a1fe8365eee1bba3">ripple::Rethrow</a></div><div class="ttdeci">void Rethrow()</div><div class="ttdoc">Rethrow the exception currently being handled.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8h_source.html#l00050">contract.h:50</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ad99788f1aca6ce31a1fe8365eee1bba3"><div class="ttname"><a href="namespaceripple.html#ad99788f1aca6ce31a1fe8365eee1bba3">ripple::Rethrow</a></div><div class="ttdeci">void Rethrow()</div><div class="ttdoc">Rethrow the exception currently being handled.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8h_source.html#l00048">contract.h:48</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="anamespaceripple_html_aefd2f77338ce3c9a2fffc4f0b289b483"><div class="ttname"><a href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">ripple::LogicError</a></div><div class="ttdeci">void LogicError(std::string const &amp;how) noexcept</div><div class="ttdoc">Called when faulty logic causes a broken invariant.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00050">contract.cpp:50</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aefd2f77338ce3c9a2fffc4f0b289b483"><div class="ttname"><a href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">ripple::LogicError</a></div><div class="ttdeci">void LogicError(std::string const &amp;how) noexcept</div><div class="ttdoc">Called when faulty logic causes a broken invariant.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00048">contract.cpp:48</a></div></div>
 <div class="ttc" id="atypeinfo_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/typeinfo.html">typeinfo</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a9685b5bd8afdfb40bdf25cf24f877f0f"><div class="ttname"><a href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">ripple::LogThrow</a></div><div class="ttdeci">void LogThrow(std::string const &amp;title)</div><div class="ttdoc">Generates and logs a call stack.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00043">contract.cpp:43</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a60a8000b5ea6d1121d1e0fb03cae63a0"><div class="ttname"><a href="namespaceripple.html#a60a8000b5ea6d1121d1e0fb03cae63a0">ripple::Throw</a></div><div class="ttdeci">void Throw(Args &amp;&amp;... args)</div><div class="ttdef"><b>Definition:</b> <a href="contract_8h_source.html#l00060">contract.h:60</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a9685b5bd8afdfb40bdf25cf24f877f0f"><div class="ttname"><a href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">ripple::LogThrow</a></div><div class="ttdeci">void LogThrow(std::string const &amp;title)</div><div class="ttdoc">Generates and logs a call stack.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00042">contract.cpp:42</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a60a8000b5ea6d1121d1e0fb03cae63a0"><div class="ttname"><a href="namespaceripple.html#a60a8000b5ea6d1121d1e0fb03cae63a0">ripple::Throw</a></div><div class="ttdeci">void Throw(Args &amp;&amp;... args)</div><div class="ttdef"><b>Definition:</b> <a href="contract_8h_source.html#l00056">contract.h:56</a></div></div>
 <div class="ttc" id="astring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/string.html">string</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

@@ -96,38 +96,41 @@ $(function() {
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacebeast.html">beast</a> {</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keyword">namespace </span>IP {</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="namespacebeast_1_1IP.html#aab5302f0a96d55a125cd4e0dd5d03288">   28</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespacebeast_1_1IP.html#aab5302f0a96d55a125cd4e0dd5d03288">is_private</a> (<a class="code" href="namespacebeast_1_1IP.html#ad2074ed8068d52be937bf6895918bcb5">AddressV4</a> <span class="keyword">const</span>&amp; addr)</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;{</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        ((addr.to_ulong() &amp; 0xff000000) == 0x0a000000) || <span class="comment">// Prefix /8,    10.  #.#.#</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        ((addr.to_ulong() &amp; 0xfff00000) == 0xac100000) || <span class="comment">// Prefix /12   172. 16.#.# - 172.31.#.#</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        ((addr.to_ulong() &amp; 0xffff0000) == 0xc0a80000) || <span class="comment">// Prefix /16   192.168.#.#</span></div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        addr.is_loopback();</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;}</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="namespacebeast_1_1IP.html#af5a04b94fad7e242325069c5f730bde6">   37</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespacebeast_1_1IP.html#af5a04b94fad7e242325069c5f730bde6">is_public</a> (<a class="code" href="namespacebeast_1_1IP.html#ad2074ed8068d52be937bf6895918bcb5">AddressV4</a> <span class="keyword">const</span>&amp; addr)</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;{</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        ! <a class="code" href="namespacebeast_1_1IP.html#aab5302f0a96d55a125cd4e0dd5d03288">is_private</a> (addr) &amp;&amp;</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        ! addr.is_multicast();</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;}</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno"><a class="line" href="namespacebeast_1_1IP.html#ab6d4810c9fcab20d3ad143fd2df49cd5">   44</a></span>&#160;<span class="keywordtype">char</span> <a class="code" href="namespacebeast_1_1IP.html#ab6d4810c9fcab20d3ad143fd2df49cd5">get_class</a> (<a class="code" href="namespacebeast_1_1IP.html#ad2074ed8068d52be937bf6895918bcb5">AddressV4</a> <span class="keyword">const</span>&amp; addr)</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;{</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* table = <span class="stringliteral">&quot;AAAABBCD&quot;</span>;</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordflow">return</span> table [(addr.to_ulong() &amp; 0xE0000000) &gt;&gt; 29];</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;}</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;}</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="namespacebeast_1_1IP.html#aab5302f0a96d55a125cd4e0dd5d03288">   29</a></span>&#160;<a class="code" href="namespacebeast_1_1IP.html#aab5302f0a96d55a125cd4e0dd5d03288">is_private</a>(<a class="code" href="namespacebeast_1_1IP.html#ad2074ed8068d52be937bf6895918bcb5">AddressV4</a> <span class="keyword">const</span>&amp; addr)</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;{</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keywordflow">return</span> ((addr.to_ulong() &amp; 0xff000000) ==</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;            0x0a000000) ||  <span class="comment">// Prefix /8,    10.  #.#.#</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        ((addr.to_ulong() &amp; 0xfff00000) ==</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;         0xac100000) ||  <span class="comment">// Prefix /12   172. 16.#.# - 172.31.#.#</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        ((addr.to_ulong() &amp; 0xffff0000) ==</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;         0xc0a80000) ||  <span class="comment">// Prefix /16   192.168.#.#</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        addr.is_loopback();</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;}</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="namespacebeast_1_1IP.html#af5a04b94fad7e242325069c5f730bde6">   41</a></span>&#160;<a class="code" href="namespacebeast_1_1IP.html#af5a04b94fad7e242325069c5f730bde6">is_public</a>(<a class="code" href="namespacebeast_1_1IP.html#ad2074ed8068d52be937bf6895918bcb5">AddressV4</a> <span class="keyword">const</span>&amp; addr)</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;{</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keywordflow">return</span> !<a class="code" href="namespacebeast_1_1IP.html#aab5302f0a96d55a125cd4e0dd5d03288">is_private</a>(addr) &amp;&amp; !addr.is_multicast();</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;}</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="keywordtype">char</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="namespacebeast_1_1IP.html#ab6d4810c9fcab20d3ad143fd2df49cd5">   47</a></span>&#160;<a class="code" href="namespacebeast_1_1IP.html#ab6d4810c9fcab20d3ad143fd2df49cd5">get_class</a>(<a class="code" href="namespacebeast_1_1IP.html#ad2074ed8068d52be937bf6895918bcb5">AddressV4</a> <span class="keyword">const</span>&amp; addr)</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;{</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* table = <span class="stringliteral">&quot;AAAABBCD&quot;</span>;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keywordflow">return</span> table[(addr.to_ulong() &amp; 0xE0000000) &gt;&gt; 29];</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;}</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;}  <span class="comment">// namespace IP</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;}  <span class="comment">// namespace beast</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="asstream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/sstream.html">sstream</a></div></div>
-<div class="ttc" id="anamespacebeast_1_1IP_html_ab6d4810c9fcab20d3ad143fd2df49cd5"><div class="ttname"><a href="namespacebeast_1_1IP.html#ab6d4810c9fcab20d3ad143fd2df49cd5">beast::IP::get_class</a></div><div class="ttdeci">char get_class(AddressV4 const &amp;addr)</div><div class="ttdoc">Returns the address class for the given address.</div><div class="ttdef"><b>Definition:</b> <a href="IPAddressV4_8cpp_source.html#l00044">IPAddressV4.cpp:44</a></div></div>
-<div class="ttc" id="anamespacebeast_1_1IP_html_aab5302f0a96d55a125cd4e0dd5d03288"><div class="ttname"><a href="namespacebeast_1_1IP.html#aab5302f0a96d55a125cd4e0dd5d03288">beast::IP::is_private</a></div><div class="ttdeci">bool is_private(AddressV4 const &amp;addr)</div><div class="ttdoc">Returns true if the address is a private unroutable address.</div><div class="ttdef"><b>Definition:</b> <a href="IPAddressV4_8cpp_source.html#l00028">IPAddressV4.cpp:28</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1IP_html_ab6d4810c9fcab20d3ad143fd2df49cd5"><div class="ttname"><a href="namespacebeast_1_1IP.html#ab6d4810c9fcab20d3ad143fd2df49cd5">beast::IP::get_class</a></div><div class="ttdeci">char get_class(AddressV4 const &amp;addr)</div><div class="ttdoc">Returns the address class for the given address.</div><div class="ttdef"><b>Definition:</b> <a href="IPAddressV4_8cpp_source.html#l00047">IPAddressV4.cpp:47</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1IP_html_aab5302f0a96d55a125cd4e0dd5d03288"><div class="ttname"><a href="namespacebeast_1_1IP.html#aab5302f0a96d55a125cd4e0dd5d03288">beast::IP::is_private</a></div><div class="ttdeci">bool is_private(AddressV4 const &amp;addr)</div><div class="ttdoc">Returns true if the address is a private unroutable address.</div><div class="ttdef"><b>Definition:</b> <a href="IPAddressV4_8cpp_source.html#l00029">IPAddressV4.cpp:29</a></div></div>
 <div class="ttc" id="astdexcept_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/stdexcept.html">stdexcept</a></div></div>
-<div class="ttc" id="anamespacebeast_1_1IP_html_af5a04b94fad7e242325069c5f730bde6"><div class="ttname"><a href="namespacebeast_1_1IP.html#af5a04b94fad7e242325069c5f730bde6">beast::IP::is_public</a></div><div class="ttdeci">bool is_public(AddressV4 const &amp;addr)</div><div class="ttdoc">Returns true if the address is a public routable address.</div><div class="ttdef"><b>Definition:</b> <a href="IPAddressV4_8cpp_source.html#l00037">IPAddressV4.cpp:37</a></div></div>
+<div class="ttc" id="anamespacebeast_1_1IP_html_af5a04b94fad7e242325069c5f730bde6"><div class="ttname"><a href="namespacebeast_1_1IP.html#af5a04b94fad7e242325069c5f730bde6">beast::IP::is_public</a></div><div class="ttdeci">bool is_public(AddressV4 const &amp;addr)</div><div class="ttdoc">Returns true if the address is a public routable address.</div><div class="ttdef"><b>Definition:</b> <a href="IPAddressV4_8cpp_source.html#l00041">IPAddressV4.cpp:41</a></div></div>
 <div class="ttc" id="anamespacebeast_1_1IP_html_ad2074ed8068d52be937bf6895918bcb5"><div class="ttname"><a href="namespacebeast_1_1IP.html#ad2074ed8068d52be937bf6895918bcb5">beast::IP::AddressV4</a></div><div class="ttdeci">boost::asio::ip::address_v4 AddressV4</div><div class="ttdef"><b>Definition:</b> <a href="IPAddressV4_8h_source.html#l00034">IPAddressV4.h:34</a></div></div>
-<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00582">base_uint.h:582</a></div></div>
+<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00646">base_uint.h:646</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

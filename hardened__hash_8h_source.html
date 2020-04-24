@@ -97,11 +97,11 @@ $(function() {
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a>&gt;</span></div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/functional.html">functional</a>&gt;</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/mutex.html">mutex</a>&gt;</span></div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/utility.html">utility</a>&gt;</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/random.html">random</a>&gt;</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/type_traits.html">type_traits</a>&gt;</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/unordered_map.html">unordered_map</a>&gt;</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/unordered_set.html">unordered_set</a>&gt;</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/random.html">random</a>&gt;</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/type_traits.html">type_traits</a>&gt;</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/unordered_map.html">unordered_map</a>&gt;</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/unordered_set.html">unordered_set</a>&gt;</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/utility.html">utility</a>&gt;</span></div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
@@ -118,45 +118,47 @@ $(function() {
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> mutex;</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/numeric/random/random_device.html">std::random_device</a> rng;</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine.html">std::mt19937_64</a> gen;</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution.html">std::uniform_int_distribution &lt;std::uint64_t&gt;</a> dist;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution.html">std::uniform_int_distribution&lt;std::uint64_t&gt;</a> dist;</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        state_t() : gen(rng()) {}</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="comment">// state_t(state_t const&amp;) = delete;</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        <span class="comment">// state_t&amp; operator=(state_t const&amp;) = delete;</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    };</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keyword">static</span> state_t state;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(state.mutex);</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keywordflow">return</span> {state.dist(state.gen), state.dist(state.gen)};</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;}</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        state_t() : gen(rng())</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        {</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        }</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <span class="comment">// state_t(state_t const&amp;) = delete;</span></div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="comment">// state_t&amp; operator=(state_t const&amp;) = delete;</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    };</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">static</span> state_t state;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(state.mutex);</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keywordflow">return</span> {state.dist(state.gen), state.dist(state.gen)};</div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;}</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> HashAlgorithm = beast::xxhasher&gt;</div>
-<div class="line"><a name="l00094"></a><span class="lineno"><a class="line" href="classripple_1_1hardened__hash.html">   94</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1hardened__hash.html">hardened_hash</a></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;{</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00097"></a><span class="lineno"><a class="line" href="classripple_1_1hardened__hash.html#a3765aed06bf6e6296439d0fc70c709a3">   97</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">detail::seed_pair</a> <a class="code" href="classripple_1_1hardened__hash.html#a3765aed06bf6e6296439d0fc70c709a3">m_seeds</a>;</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00100"></a><span class="lineno"><a class="line" href="classripple_1_1hardened__hash.html#a0447c9ec0860439ed67f13cd9d01b732">  100</a></span>&#160;    <span class="keyword">using</span> <a class="code" href="classripple_1_1hardened__hash.html#a0447c9ec0860439ed67f13cd9d01b732">result_type</a> = <span class="keyword">typename</span> HashAlgorithm::result_type;</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
-<div class="line"><a name="l00102"></a><span class="lineno"><a class="line" href="classripple_1_1hardened__hash.html#ac5fe30a6c4b1f14433a2598323cf8ddf">  102</a></span>&#160;    <a class="code" href="classripple_1_1hardened__hash.html#ac5fe30a6c4b1f14433a2598323cf8ddf">hardened_hash</a>()</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        : <a class="code" href="classripple_1_1hardened__hash.html#a3765aed06bf6e6296439d0fc70c709a3">m_seeds</a> (detail::make_seed_pair&lt;&gt;())</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    {}</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <a class="code" href="classripple_1_1hardened__hash.html#a0447c9ec0860439ed67f13cd9d01b732">result_type</a></div>
-<div class="line"><a name="l00108"></a><span class="lineno"><a class="line" href="classripple_1_1hardened__hash.html#addb99e4c2034d9eb2027345e4f50ce34">  108</a></span>&#160;    <a class="code" href="classripple_1_1hardened__hash.html#addb99e4c2034d9eb2027345e4f50ce34">operator()</a>(T <span class="keyword">const</span>&amp; t) <span class="keyword">const</span> noexcept</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    {</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        HashAlgorithm h(<a class="code" href="classripple_1_1hardened__hash.html#a3765aed06bf6e6296439d0fc70c709a3">m_seeds</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a>, <a class="code" href="classripple_1_1hardened__hash.html#a3765aed06bf6e6296439d0fc70c709a3">m_seeds</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>);</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        <a class="code" href="namespaceripple.html#a06da0e52773c5c0841994317a3d5e3d0">hash_append</a>(h, t);</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span><a class="code" href="classripple_1_1hardened__hash.html#a0447c9ec0860439ed67f13cd9d01b732">result_type</a><span class="keyword">&gt;</span>(h);</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    }</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;};</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;}  <span class="comment">// namespace detail</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> HashAlgorithm = beast::xxhasher&gt;</div>
+<div class="line"><a name="l00096"></a><span class="lineno"><a class="line" href="classripple_1_1hardened__hash.html">   96</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1hardened__hash.html">hardened_hash</a></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;{</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00099"></a><span class="lineno"><a class="line" href="classripple_1_1hardened__hash.html#a3765aed06bf6e6296439d0fc70c709a3">   99</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">detail::seed_pair</a> <a class="code" href="classripple_1_1hardened__hash.html#a3765aed06bf6e6296439d0fc70c709a3">m_seeds</a>;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00102"></a><span class="lineno"><a class="line" href="classripple_1_1hardened__hash.html#a0447c9ec0860439ed67f13cd9d01b732">  102</a></span>&#160;    <span class="keyword">using</span> <a class="code" href="classripple_1_1hardened__hash.html#a0447c9ec0860439ed67f13cd9d01b732">result_type</a> = <span class="keyword">typename</span> HashAlgorithm::result_type;</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
+<div class="line"><a name="l00104"></a><span class="lineno"><a class="line" href="classripple_1_1hardened__hash.html#ac5fe30a6c4b1f14433a2598323cf8ddf">  104</a></span>&#160;    <a class="code" href="classripple_1_1hardened__hash.html#ac5fe30a6c4b1f14433a2598323cf8ddf">hardened_hash</a>() : <a class="code" href="classripple_1_1hardened__hash.html#a3765aed06bf6e6296439d0fc70c709a3">m_seeds</a>(detail::make_seed_pair&lt;&gt;())</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    {</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    }</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <a class="code" href="classripple_1_1hardened__hash.html#a0447c9ec0860439ed67f13cd9d01b732">result_type</a></div>
+<div class="line"><a name="l00110"></a><span class="lineno"><a class="line" href="classripple_1_1hardened__hash.html#addb99e4c2034d9eb2027345e4f50ce34">  110</a></span>&#160;    <a class="code" href="classripple_1_1hardened__hash.html#addb99e4c2034d9eb2027345e4f50ce34">operator()</a>(T <span class="keyword">const</span>&amp; t) <span class="keyword">const</span> noexcept</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    {</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        HashAlgorithm h(<a class="code" href="classripple_1_1hardened__hash.html#a3765aed06bf6e6296439d0fc70c709a3">m_seeds</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">first</a>, <a class="code" href="classripple_1_1hardened__hash.html#a3765aed06bf6e6296439d0fc70c709a3">m_seeds</a>.<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">second</a>);</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        <a class="code" href="namespaceripple.html#a06da0e52773c5c0841994317a3d5e3d0">hash_append</a>(h, t);</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span><a class="code" href="classripple_1_1hardened__hash.html#a0447c9ec0860439ed67f13cd9d01b732">result_type</a><span class="keyword">&gt;</span>(h);</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    }</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;};</div>
 <div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160; </div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160; </div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="auniform_int_distribution_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution.html">std::uniform_int_distribution</a></div></div>
 <div class="ttc" id="autility_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/utility.html">utility</a></div></div>
@@ -165,17 +167,17 @@ $(function() {
 <div class="ttc" id="apair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt; std::uint64_t, std::uint64_t &gt;</a></div></div>
 <div class="ttc" id="arandom_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/random.html">random</a></div></div>
 <div class="ttc" id="alock_guard_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="aclassripple_1_1hardened__hash_html_addb99e4c2034d9eb2027345e4f50ce34"><div class="ttname"><a href="classripple_1_1hardened__hash.html#addb99e4c2034d9eb2027345e4f50ce34">ripple::hardened_hash::operator()</a></div><div class="ttdeci">result_type operator()(T const &amp;t) const noexcept</div><div class="ttdef"><b>Definition:</b> <a href="hardened__hash_8h_source.html#l00108">hardened_hash.h:108</a></div></div>
+<div class="ttc" id="aclassripple_1_1hardened__hash_html_addb99e4c2034d9eb2027345e4f50ce34"><div class="ttname"><a href="classripple_1_1hardened__hash.html#addb99e4c2034d9eb2027345e4f50ce34">ripple::hardened_hash::operator()</a></div><div class="ttdeci">result_type operator()(T const &amp;t) const noexcept</div><div class="ttdef"><b>Definition:</b> <a href="hardened__hash_8h_source.html#l00110">hardened_hash.h:110</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1detail_html_a249a9f5f4201996e85c94a88e2364843"><div class="ttname"><a href="namespaceripple_1_1detail.html#a249a9f5f4201996e85c94a88e2364843">ripple::detail::make_seed_pair</a></div><div class="ttdeci">seed_pair make_seed_pair() noexcept</div><div class="ttdef"><b>Definition:</b> <a href="hardened__hash_8h_source.html#l00043">hardened_hash.h:43</a></div></div>
 <div class="ttc" id="amersenne_twister_engine_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine.html">std::mt19937_64</a></div></div>
-<div class="ttc" id="aclassripple_1_1hardened__hash_html_a0447c9ec0860439ed67f13cd9d01b732"><div class="ttname"><a href="classripple_1_1hardened__hash.html#a0447c9ec0860439ed67f13cd9d01b732">ripple::hardened_hash::result_type</a></div><div class="ttdeci">typename HashAlgorithm::result_type result_type</div><div class="ttdef"><b>Definition:</b> <a href="hardened__hash_8h_source.html#l00100">hardened_hash.h:100</a></div></div>
+<div class="ttc" id="aclassripple_1_1hardened__hash_html_a0447c9ec0860439ed67f13cd9d01b732"><div class="ttname"><a href="classripple_1_1hardened__hash.html#a0447c9ec0860439ed67f13cd9d01b732">ripple::hardened_hash::result_type</a></div><div class="ttdeci">typename HashAlgorithm::result_type result_type</div><div class="ttdef"><b>Definition:</b> <a href="hardened__hash_8h_source.html#l00102">hardened_hash.h:102</a></div></div>
 <div class="ttc" id="arandom_device_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/numeric/random/random_device.html">std::random_device</a></div></div>
-<div class="ttc" id="aclassripple_1_1hardened__hash_html"><div class="ttname"><a href="classripple_1_1hardened__hash.html">ripple::hardened_hash</a></div><div class="ttdoc">Seed functor once per construction.</div><div class="ttdef"><b>Definition:</b> <a href="hardened__hash_8h_source.html#l00094">hardened_hash.h:94</a></div></div>
+<div class="ttc" id="aclassripple_1_1hardened__hash_html"><div class="ttname"><a href="classripple_1_1hardened__hash.html">ripple::hardened_hash</a></div><div class="ttdoc">Seed functor once per construction.</div><div class="ttdef"><b>Definition:</b> <a href="hardened__hash_8h_source.html#l00096">hardened_hash.h:96</a></div></div>
 <div class="ttc" id="acstdint_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1hardened__hash_html_a3765aed06bf6e6296439d0fc70c709a3"><div class="ttname"><a href="classripple_1_1hardened__hash.html#a3765aed06bf6e6296439d0fc70c709a3">ripple::hardened_hash::m_seeds</a></div><div class="ttdeci">detail::seed_pair m_seeds</div><div class="ttdef"><b>Definition:</b> <a href="hardened__hash_8h_source.html#l00097">hardened_hash.h:97</a></div></div>
-<div class="ttc" id="aclassripple_1_1hardened__hash_html_ac5fe30a6c4b1f14433a2598323cf8ddf"><div class="ttname"><a href="classripple_1_1hardened__hash.html#ac5fe30a6c4b1f14433a2598323cf8ddf">ripple::hardened_hash::hardened_hash</a></div><div class="ttdeci">hardened_hash()</div><div class="ttdef"><b>Definition:</b> <a href="hardened__hash_8h_source.html#l00102">hardened_hash.h:102</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a06da0e52773c5c0841994317a3d5e3d0"><div class="ttname"><a href="namespaceripple.html#a06da0e52773c5c0841994317a3d5e3d0">ripple::hash_append</a></div><div class="ttdeci">void hash_append(Hasher &amp;h, Slice const &amp;v)</div><div class="ttdef"><b>Definition:</b> <a href="Slice_8h_source.html#l00151">Slice.h:151</a></div></div>
+<div class="ttc" id="aclassripple_1_1hardened__hash_html_a3765aed06bf6e6296439d0fc70c709a3"><div class="ttname"><a href="classripple_1_1hardened__hash.html#a3765aed06bf6e6296439d0fc70c709a3">ripple::hardened_hash::m_seeds</a></div><div class="ttdeci">detail::seed_pair m_seeds</div><div class="ttdef"><b>Definition:</b> <a href="hardened__hash_8h_source.html#l00099">hardened_hash.h:99</a></div></div>
+<div class="ttc" id="aclassripple_1_1hardened__hash_html_ac5fe30a6c4b1f14433a2598323cf8ddf"><div class="ttname"><a href="classripple_1_1hardened__hash.html#ac5fe30a6c4b1f14433a2598323cf8ddf">ripple::hardened_hash::hardened_hash</a></div><div class="ttdeci">hardened_hash()</div><div class="ttdef"><b>Definition:</b> <a href="hardened__hash_8h_source.html#l00104">hardened_hash.h:104</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a06da0e52773c5c0841994317a3d5e3d0"><div class="ttname"><a href="namespaceripple.html#a06da0e52773c5c0841994317a3d5e3d0">ripple::hash_append</a></div><div class="ttdeci">void hash_append(Hasher &amp;h, Slice const &amp;v)</div><div class="ttdef"><b>Definition:</b> <a href="Slice_8h_source.html#l00149">Slice.h:149</a></div></div>
 <div class="ttc" id="amutex_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/mutex.html">mutex</a></div></div>
 <div class="ttc" id="aunordered_map_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/unordered_map.html">unordered_map</a></div></div>
 <div class="ttc" id="atype_traits_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/type_traits.html">type_traits</a></div></div>

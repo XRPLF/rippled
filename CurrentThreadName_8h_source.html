@@ -95,25 +95,27 @@ $(function() {
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#ifndef BEAST_CORE_CURRENT_THREAD_NAME_H_INCLUDED</span></div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#define BEAST_CORE_CURRENT_THREAD_NAME_H_INCLUDED</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/string_view.html">string_view</a>&gt;</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/string.html">string</a>&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/string.html">string</a>&gt;</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/string_view.html">string_view</a>&gt;</span></div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacebeast.html">beast</a> {</div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacebeast.html#ab3bd70e6eb43bbd99b5fe518efce8c7e">setCurrentThreadName</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a> newThreadName);</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <a class="code" href="namespacebeast.html#afa60f82c45aadff5ed4da508c797e3a9">getCurrentThreadName</a> ();</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;}</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<a class="code" href="namespacebeast.html#ab3bd70e6eb43bbd99b5fe518efce8c7e">setCurrentThreadName</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a> newThreadName);</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<a class="code" href="namespacebeast.html#afa60f82c45aadff5ed4da508c797e3a9">getCurrentThreadName</a>();</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;}  <span class="comment">// namespace beast</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="abasic_string_view_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespacebeast_html_afa60f82c45aadff5ed4da508c797e3a9"><div class="ttname"><a href="namespacebeast.html#afa60f82c45aadff5ed4da508c797e3a9">beast::getCurrentThreadName</a></div><div class="ttdeci">std::string getCurrentThreadName()</div><div class="ttdoc">Returns the name of the caller thread.</div><div class="ttdef"><b>Definition:</b> <a href="CurrentThreadName_8cpp_source.html#l00108">CurrentThreadName.cpp:108</a></div></div>
-<div class="ttc" id="anamespacebeast_html_ab3bd70e6eb43bbd99b5fe518efce8c7e"><div class="ttname"><a href="namespacebeast.html#ab3bd70e6eb43bbd99b5fe518efce8c7e">beast::setCurrentThreadName</a></div><div class="ttdeci">void setCurrentThreadName(std::string_view name)</div><div class="ttdoc">Changes the name of the caller thread.</div><div class="ttdef"><b>Definition:</b> <a href="CurrentThreadName_8cpp_source.html#l00113">CurrentThreadName.cpp:113</a></div></div>
+<div class="ttc" id="anamespacebeast_html_afa60f82c45aadff5ed4da508c797e3a9"><div class="ttname"><a href="namespacebeast.html#afa60f82c45aadff5ed4da508c797e3a9">beast::getCurrentThreadName</a></div><div class="ttdeci">std::string getCurrentThreadName()</div><div class="ttdoc">Returns the name of the caller thread.</div><div class="ttdef"><b>Definition:</b> <a href="CurrentThreadName_8cpp_source.html#l00113">CurrentThreadName.cpp:113</a></div></div>
+<div class="ttc" id="anamespacebeast_html_ab3bd70e6eb43bbd99b5fe518efce8c7e"><div class="ttname"><a href="namespacebeast.html#ab3bd70e6eb43bbd99b5fe518efce8c7e">beast::setCurrentThreadName</a></div><div class="ttdeci">void setCurrentThreadName(std::string_view name)</div><div class="ttdoc">Changes the name of the caller thread.</div><div class="ttdef"><b>Definition:</b> <a href="CurrentThreadName_8cpp_source.html#l00119">CurrentThreadName.cpp:119</a></div></div>
 <div class="ttc" id="astring_view_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/string_view.html">string_view</a></div></div>
-<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00582">base_uint.h:582</a></div></div>
+<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00646">base_uint.h:646</a></div></div>
 <div class="ttc" id="astring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/string.html">string</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

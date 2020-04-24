@@ -158,16 +158,16 @@ Public Types</h2></td></tr>
 <a class="el" href="classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7a6ea28b46407abd2931a73c789ecdd944">Reason::CONSENSUS</a>
  }</td></tr>
 <tr class="separator:a3e8d7f8b5fa089a184dcc9b00b6e0da7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adcf93fb97e19cccb312e2731db6b3d6b"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#adcf93fb97e19cccb312e2731db6b3d6b">PeerDataPairType</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html">std::weak_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMLedgerData &gt; &gt;</td></tr>
-<tr class="separator:adcf93fb97e19cccb312e2731db6b3d6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8b6d8768ed645ae1e5727abebd2e6271"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a8b6d8768ed645ae1e5727abebd2e6271">neededHash_t</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; protocol::TMGetObjectByHash::ObjectType, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt;</td></tr>
-<tr class="separator:a8b6d8768ed645ae1e5727abebd2e6271"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae147b69aac46508c5134297465e09bcc"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#ae147b69aac46508c5134297465e09bcc">clock_type</a> = <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a> &gt;</td></tr>
-<tr class="separator:ae147b69aac46508c5134297465e09bcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a951d36ae2d1afc458b8dfbbdf95fd9a9"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a951d36ae2d1afc458b8dfbbdf95fd9a9">PeerDataPairType</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html">std::weak_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMLedgerData &gt; &gt;</td></tr>
+<tr class="separator:a951d36ae2d1afc458b8dfbbdf95fd9a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1a3f88e5fd872d5110795abed583ed9"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#ae1a3f88e5fd872d5110795abed583ed9">neededHash_t</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; protocol::TMGetObjectByHash::ObjectType, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt;</td></tr>
+<tr class="separator:ae1a3f88e5fd872d5110795abed583ed9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a207a1e289a2129e8993947e2df8e2d74"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a207a1e289a2129e8993947e2df8e2d74">clock_type</a> = <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a> &gt;</td></tr>
+<tr class="separator:a207a1e289a2129e8993947e2df8e2d74"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a11813939c82e02d09b56fd1261ede70c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a11813939c82e02d09b56fd1261ede70c">InboundLedger</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;<a class="el" href="classripple_1_1PeerSet.html#a1e14dc0ccaba1b137081db5ac45731b6">app</a>, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq, <a class="el" href="classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7">Reason</a> reason, <a class="el" href="classripple_1_1PeerSet.html#ae147b69aac46508c5134297465e09bcc">clock_type</a> &amp;)</td></tr>
+<tr class="memitem:a11813939c82e02d09b56fd1261ede70c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a11813939c82e02d09b56fd1261ede70c">InboundLedger</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;<a class="el" href="classripple_1_1PeerSet.html#a1e14dc0ccaba1b137081db5ac45731b6">app</a>, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq, <a class="el" href="classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7">Reason</a> reason, <a class="el" href="classripple_1_1PeerSet.html#a207a1e289a2129e8993947e2df8e2d74">clock_type</a> &amp;)</td></tr>
 <tr class="separator:a11813939c82e02d09b56fd1261ede70c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc70673dfc3d77f82742ede9978e4761"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#abc70673dfc3d77f82742ede9978e4761">~InboundLedger</a> ()</td></tr>
 <tr class="separator:abc70673dfc3d77f82742ede9978e4761"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -183,7 +183,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a5da796335a7a5dbb0303f196ec87cea0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adf5774b2251e6aece12ebf911fdd04b7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#adf5774b2251e6aece12ebf911fdd04b7">checkLocal</a> ()</td></tr>
 <tr class="separator:adf5774b2251e6aece12ebf911fdd04b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a291eb601240f81e131f7a232f3eeeb71"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a291eb601240f81e131f7a232f3eeeb71">init</a> (<a class="el" href="classripple_1_1PeerSet.html#ad09235538e0c16ca8c22fef97bf53390">ScopedLockType</a> &amp;collectionLock)</td></tr>
+<tr class="memitem:a291eb601240f81e131f7a232f3eeeb71"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a291eb601240f81e131f7a232f3eeeb71">init</a> (<a class="el" href="classripple_1_1PeerSet.html#a90a3672f3016e5d1c6128061879ec41e">ScopedLockType</a> &amp;collectionLock)</td></tr>
 <tr class="separator:a291eb601240f81e131f7a232f3eeeb71"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aee0269ce58c0a1b62f7c9d4ddbb8b891"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#aee0269ce58c0a1b62f7c9d4ddbb8b891">gotData</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html">std::weak_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMLedgerData &gt; const &amp;)</td></tr>
 <tr class="memdesc:aee0269ce58c0a1b62f7c9d4ddbb8b891"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stash a TMLedgerData received from a peer for later processing Returns 'true' if we need to dispatch.  <a href="classripple_1_1InboundLedger.html#aee0269ce58c0a1b62f7c9d4ddbb8b891">More...</a><br /></td></tr>
@@ -236,8 +236,8 @@ Static Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-types"></a>
 Protected Types</h2></td></tr>
-<tr class="memitem:ad09235538e0c16ca8c22fef97bf53390"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#ad09235538e0c16ca8c22fef97bf53390">ScopedLockType</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a> &gt;</td></tr>
-<tr class="separator:ad09235538e0c16ca8c22fef97bf53390"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90a3672f3016e5d1c6128061879ec41e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a90a3672f3016e5d1c6128061879ec41e">ScopedLockType</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a> &gt;</td></tr>
+<tr class="separator:a90a3672f3016e5d1c6128061879ec41e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -264,7 +264,7 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a706a011ba681781598055237f2d7fdaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63e0e407163a2e3f9fcd9135f519b5d1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a63e0e407163a2e3f9fcd9135f519b5d1">m_journal</a></td></tr>
 <tr class="separator:a63e0e407163a2e3f9fcd9135f519b5d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2948d22daac5896d15ba248073378d7e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1PeerSet.html#ae147b69aac46508c5134297465e09bcc">clock_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a2948d22daac5896d15ba248073378d7e">m_clock</a></td></tr>
+<tr class="memitem:a2948d22daac5896d15ba248073378d7e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1PeerSet.html#a207a1e289a2129e8993947e2df8e2d74">clock_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a2948d22daac5896d15ba248073378d7e">m_clock</a></td></tr>
 <tr class="separator:a2948d22daac5896d15ba248073378d7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab4fa0ea92f95d96e69d2149e23d02ea4"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#ab4fa0ea92f95d96e69d2149e23d02ea4">mLock</a></td></tr>
 <tr class="separator:ab4fa0ea92f95d96e69d2149e23d02ea4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -302,7 +302,7 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:a20ff87d55f0ce1bec9f613749631f743"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a20ff87d55f0ce1bec9f613749631f743">trigger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; const &amp;, <a class="el" href="classripple_1_1InboundLedger.html#a6e9a443c8f271522e38916b0f673f07c">TriggerReason</a>)</td></tr>
 <tr class="memdesc:a20ff87d55f0ce1bec9f613749631f743"><td class="mdescLeft">&#160;</td><td class="mdescRight">Request more nodes, perhaps from a specific peer.  <a href="classripple_1_1InboundLedger.html#a20ff87d55f0ce1bec9f613749631f743">More...</a><br /></td></tr>
 <tr class="separator:a20ff87d55f0ce1bec9f613749631f743"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af0959ff442612d29333b34f1c644342b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1InboundLedger.html#a8b6d8768ed645ae1e5727abebd2e6271">neededHash_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#af0959ff442612d29333b34f1c644342b">getNeededHashes</a> ()</td></tr>
+<tr class="memitem:af0959ff442612d29333b34f1c644342b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1InboundLedger.html#ae1a3f88e5fd872d5110795abed583ed9">neededHash_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#af0959ff442612d29333b34f1c644342b">getNeededHashes</a> ()</td></tr>
 <tr class="separator:af0959ff442612d29333b34f1c644342b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5108a46d0fc5c949956d9616d14a5f57"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a5108a46d0fc5c949956d9616d14a5f57">addPeers</a> ()</td></tr>
 <tr class="memdesc:a5108a46d0fc5c949956d9616d14a5f57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add more peers to the set, if possible.  <a href="classripple_1_1InboundLedger.html#a5108a46d0fc5c949956d9616d14a5f57">More...</a><br /></td></tr>
@@ -311,7 +311,7 @@ Private Member Functions</h2></td></tr>
 <tr class="separator:ae3f38b02bc1728722709dd35ac8de8b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a61ad111ca63d997473cb3e50f49de9eb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a61ad111ca63d997473cb3e50f49de9eb">done</a> ()</td></tr>
 <tr class="separator:a61ad111ca63d997473cb3e50f49de9eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abb06c0dd36a6e78848ce2bb0ff9258e7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#abb06c0dd36a6e78848ce2bb0ff9258e7">onTimer</a> (bool <a class="el" href="classripple_1_1PeerSet.html#ad7733986159c48a56d6e5049817a7c66">progress</a>, <a class="el" href="classripple_1_1PeerSet.html#ad09235538e0c16ca8c22fef97bf53390">ScopedLockType</a> &amp;peerSetLock) override</td></tr>
+<tr class="memitem:abb06c0dd36a6e78848ce2bb0ff9258e7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#abb06c0dd36a6e78848ce2bb0ff9258e7">onTimer</a> (bool <a class="el" href="classripple_1_1PeerSet.html#ad7733986159c48a56d6e5049817a7c66">progress</a>, <a class="el" href="classripple_1_1PeerSet.html#a90a3672f3016e5d1c6128061879ec41e">ScopedLockType</a> &amp;peerSetLock) override</td></tr>
 <tr class="memdesc:abb06c0dd36a6e78848ce2bb0ff9258e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called with a lock by the <a class="el" href="classripple_1_1PeerSet.html" title="Supports data retrieval by managing a set of peers.">PeerSet</a> when the timer expires.  <a href="classripple_1_1InboundLedger.html#abb06c0dd36a6e78848ce2bb0ff9258e7">More...</a><br /></td></tr>
 <tr class="separator:abb06c0dd36a6e78848ce2bb0ff9258e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9cc6de1ae6cad1533f95af82348fafe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#ae9cc6de1ae6cad1533f95af82348fafe">newPeer</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; const &amp;peer) override</td></tr>
@@ -324,13 +324,13 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:a4e0aeebcfdf9b62947ba9b7388749257"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a4e0aeebcfdf9b62947ba9b7388749257">takeHeader</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;data)</td></tr>
 <tr class="memdesc:a4e0aeebcfdf9b62947ba9b7388749257"><td class="mdescLeft">&#160;</td><td class="mdescRight">Take ledger header data Call with a lock.  <a href="classripple_1_1InboundLedger.html#a4e0aeebcfdf9b62947ba9b7388749257">More...</a><br /></td></tr>
 <tr class="separator:a4e0aeebcfdf9b62947ba9b7388749257"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a820a862b6e7c363c554982f62bca8232"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a820a862b6e7c363c554982f62bca8232">takeTxNode</a> (const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> &gt; &amp;IDs, const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a33f2e976cb41ee4a52c5df14695377ec">Blob</a> &gt; &amp;data, <a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a> &amp;)</td></tr>
+<tr class="memitem:a820a862b6e7c363c554982f62bca8232"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a820a862b6e7c363c554982f62bca8232">takeTxNode</a> (const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> &gt; &amp;IDs, const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt; &amp;data, <a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a> &amp;)</td></tr>
 <tr class="memdesc:a820a862b6e7c363c554982f62bca8232"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process TX data received from a peer Call with a lock.  <a href="classripple_1_1InboundLedger.html#a820a862b6e7c363c554982f62bca8232">More...</a><br /></td></tr>
 <tr class="separator:a820a862b6e7c363c554982f62bca8232"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae0732eada133ab96152376c95a30fefa"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#ae0732eada133ab96152376c95a30fefa">takeTxRootNode</a> (<a class="el" href="classripple_1_1Slice.html">Slice</a> const &amp;data, <a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a> &amp;)</td></tr>
 <tr class="memdesc:ae0732eada133ab96152376c95a30fefa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process AS root node received from a peer Call with a lock.  <a href="classripple_1_1InboundLedger.html#ae0732eada133ab96152376c95a30fefa">More...</a><br /></td></tr>
 <tr class="separator:ae0732eada133ab96152376c95a30fefa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4de986de4de54900724d42748cb96bf0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a4de986de4de54900724d42748cb96bf0">takeAsNode</a> (const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> &gt; &amp;IDs, const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a33f2e976cb41ee4a52c5df14695377ec">Blob</a> &gt; &amp;data, <a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a> &amp;)</td></tr>
+<tr class="memitem:a4de986de4de54900724d42748cb96bf0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a4de986de4de54900724d42748cb96bf0">takeAsNode</a> (const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> &gt; &amp;IDs, const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt; &amp;data, <a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a> &amp;)</td></tr>
 <tr class="memdesc:a4de986de4de54900724d42748cb96bf0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process AS data received from a peer Call with a lock.  <a href="classripple_1_1InboundLedger.html#a4de986de4de54900724d42748cb96bf0">More...</a><br /></td></tr>
 <tr class="separator:a4de986de4de54900724d42748cb96bf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acfbf0c63573f009a2c9f81cfa0bafa6e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#acfbf0c63573f009a2c9f81cfa0bafa6e">takeAsRootNode</a> (<a class="el" href="classripple_1_1Slice.html">Slice</a> const &amp;data, <a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a> &amp;)</td></tr>
@@ -370,7 +370,7 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a9fda4b33aa77b5e2ff68d94577be5569"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3270da7ce84b7f24d9e2146e6700a4a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#af3270da7ce84b7f24d9e2146e6700a4a">mReceivedDataLock</a></td></tr>
 <tr class="separator:af3270da7ce84b7f24d9e2146e6700a4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a950a4fa5555f757c3a1accdebdf2535c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1InboundLedger.html#adcf93fb97e19cccb312e2731db6b3d6b">PeerDataPairType</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a950a4fa5555f757c3a1accdebdf2535c">mReceivedData</a></td></tr>
+<tr class="memitem:a950a4fa5555f757c3a1accdebdf2535c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1InboundLedger.html#a951d36ae2d1afc458b8dfbbdf95fd9a9">PeerDataPairType</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a950a4fa5555f757c3a1accdebdf2535c">mReceivedData</a></td></tr>
 <tr class="separator:a950a4fa5555f757c3a1accdebdf2535c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4855f9c04470b69be6097022c6bdde5b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a4855f9c04470b69be6097022c6bdde5b">mReceiveDispatched</a></td></tr>
 <tr class="separator:a4855f9c04470b69be6097022c6bdde5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -379,40 +379,40 @@ Private Attributes</h2></td></tr>
 <div class="textblock">
 <p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00034">34</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="adcf93fb97e19cccb312e2731db6b3d6b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adcf93fb97e19cccb312e2731db6b3d6b">&#9670;&nbsp;</a></span>PeerDataPairType</h2>
+<a id="a951d36ae2d1afc458b8dfbbdf95fd9a9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a951d36ae2d1afc458b8dfbbdf95fd9a9">&#9670;&nbsp;</a></span>PeerDataPairType</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1InboundLedger.html#adcf93fb97e19cccb312e2731db6b3d6b">ripple::InboundLedger::PeerDataPairType</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html">std::weak_ptr</a>&lt;<a class="el" href="classripple_1_1Peer.html">Peer</a>&gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;protocol::TMLedgerData&gt; &gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1InboundLedger.html#a951d36ae2d1afc458b8dfbbdf95fd9a9">ripple::InboundLedger::PeerDataPairType</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html">std::weak_ptr</a>&lt;<a class="el" href="classripple_1_1Peer.html">Peer</a>&gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;protocol::TMLedgerData&gt; &gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00044">44</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00046">46</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
-<a id="a8b6d8768ed645ae1e5727abebd2e6271"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8b6d8768ed645ae1e5727abebd2e6271">&#9670;&nbsp;</a></span>neededHash_t</h2>
+<a id="ae1a3f88e5fd872d5110795abed583ed9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae1a3f88e5fd872d5110795abed583ed9">&#9670;&nbsp;</a></span>neededHash_t</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1InboundLedger.html#a8b6d8768ed645ae1e5727abebd2e6271">ripple::InboundLedger::neededHash_t</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a> &lt;protocol::TMGetObjectByHash::ObjectType, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1InboundLedger.html#ae1a3f88e5fd872d5110795abed583ed9">ripple::InboundLedger::neededHash_t</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;protocol::TMGetObjectByHash::ObjectType, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00091">91</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00102">102</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
-<a id="ae147b69aac46508c5134297465e09bcc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae147b69aac46508c5134297465e09bcc">&#9670;&nbsp;</a></span>clock_type</h2>
+<a id="a207a1e289a2129e8993947e2df8e2d74"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a207a1e289a2129e8993947e2df8e2d74">&#9670;&nbsp;</a></span>clock_type</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -421,7 +421,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1PeerSet.html#ae147b69aac46508c5134297465e09bcc">ripple::PeerSet::clock_type</a> =  <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a> &lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1PeerSet.html#a207a1e289a2129e8993947e2df8e2d74">ripple::PeerSet::clock_type</a> =  <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a>&gt;</td>
         </tr>
       </table>
   </td>
@@ -435,8 +435,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="ad09235538e0c16ca8c22fef97bf53390"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad09235538e0c16ca8c22fef97bf53390">&#9670;&nbsp;</a></span>ScopedLockType</h2>
+<a id="a90a3672f3016e5d1c6128061879ec41e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a90a3672f3016e5d1c6128061879ec41e">&#9670;&nbsp;</a></span>ScopedLockType</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -445,7 +445,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1PeerSet.html#ad09235538e0c16ca8c22fef97bf53390">ripple::PeerSet::ScopedLockType</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a> &lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1PeerSet.html#a90a3672f3016e5d1c6128061879ec41e">ripple::PeerSet::ScopedLockType</a> =  <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a>&gt;</td>
         </tr>
       </table>
   </td>
@@ -455,7 +455,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00113">113</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00123">123</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -486,7 +486,7 @@ Private Attributes</h2></td></tr>
 <tr><td class="fieldname"><a id="a3e8d7f8b5fa089a184dcc9b00b6e0da7a6ea28b46407abd2931a73c789ecdd944"></a>CONSENSUS&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00047">47</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00049">49</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -515,7 +515,7 @@ Private Attributes</h2></td></tr>
 <tr><td class="fieldname"><a id="a6e9a443c8f271522e38916b0f673f07ca90272dda245ae1fb3cf197e91a8689dc"></a>timeout&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00103">103</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00115">115</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -553,7 +553,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1PeerSet.html#ae147b69aac46508c5134297465e09bcc">clock_type</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1PeerSet.html#a207a1e289a2129e8993947e2df8e2d74">clock_type</a> &amp;&#160;</td>
           <td class="paramname"><em>clock</em>&#160;</td>
         </tr>
         <tr>
@@ -564,7 +564,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00069">69</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00074">74</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -583,7 +583,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00196">196</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00208">208</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -640,7 +640,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1PeerSet.html#afde43ea124398d0a0ab9ff95afaf85c2">ripple::PeerSet</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00147">147</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00160">160</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -660,7 +660,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00164">164</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00175">175</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -679,7 +679,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00067">67</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00074">74</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -698,7 +698,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00072">72</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00080">80</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -717,7 +717,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00078">78</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00086">86</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -736,7 +736,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00176">176</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00188">188</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -749,14 +749,14 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="memname">void ripple::InboundLedger::init </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1PeerSet.html#ad09235538e0c16ca8c22fef97bf53390">ScopedLockType</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1PeerSet.html#a90a3672f3016e5d1c6128061879ec41e">ScopedLockType</a> &amp;&#160;</td>
           <td class="paramname"><em>collectionLock</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00086">86</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00099">99</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -788,7 +788,7 @@ Private Attributes</h2></td></tr>
 
 <p>Stash a TMLedgerData received from a peer for later processing Returns 'true' if we need to dispatch. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01120">1120</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01106">1106</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -810,7 +810,7 @@ Private Attributes</h2></td></tr>
 
 <p>Return a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01301">1301</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01283">1283</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -831,7 +831,7 @@ Private Attributes</h2></td></tr>
 
 <p>Process pending TMLedgerData Query the 'best' peer. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01259">1259</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01240">1240</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -869,7 +869,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00251">251</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00261">261</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -907,7 +907,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00795">795</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00781">781</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -961,7 +961,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1InboundLedger.html#a8b6d8768ed645ae1e5727abebd2e6271">InboundLedger::neededHash_t</a> &gt; ripple::InboundLedger::getNeededHashes </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1InboundLedger.html#ae1a3f88e5fd872d5110795abed583ed9">InboundLedger::neededHash_t</a> &gt; ripple::InboundLedger::getNeededHashes </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -974,7 +974,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01080">1080</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01066">1066</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1031,7 +1031,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00278">278</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00287">287</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1058,7 +1058,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00453">453</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00456">456</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1080,7 +1080,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1PeerSet.html#ad09235538e0c16ca8c22fef97bf53390">ScopedLockType</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1PeerSet.html#a90a3672f3016e5d1c6128061879ec41e">ScopedLockType</a> &amp;&#160;</td>
           <td class="paramname"><em>peerSetLock</em>&#160;</td>
         </tr>
         <tr>
@@ -1100,7 +1100,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1PeerSet.html#ac0416d2dcd2e5eb8801f55b03f4875e1">ripple::PeerSet</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00389">389</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00390">390</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1130,7 +1130,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1PeerSet.html#acaa7bf55178186d405eed580f4641cc1">ripple::PeerSet</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00125">125</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00140">140</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -1159,7 +1159,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1PeerSet.html#af1c64f5cd21f67f9e232c42195aed820">ripple::PeerSet</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00448">448</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00450">450</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1199,7 +1199,7 @@ Private Attributes</h2></td></tr>
 
 <p>Process one TMLedgerData Returns the number of useful nodes. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01145">1145</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01133">1133</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1229,7 +1229,7 @@ Private Attributes</h2></td></tr>
 
 <p>Take ledger header data Call with a lock. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00845">845</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00827">827</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1251,7 +1251,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a33f2e976cb41ee4a52c5df14695377ec">Blob</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>data</em>, </td>
         </tr>
         <tr>
@@ -1275,7 +1275,7 @@ Private Attributes</h2></td></tr>
 
 <p>Process TX data received from a peer Call with a lock. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00893">893</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00874">874</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1315,7 +1315,7 @@ Private Attributes</h2></td></tr>
 
 <p>Process AS root node received from a peer Call with a lock. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01058">1058</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01044">1044</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1337,7 +1337,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a33f2e976cb41ee4a52c5df14695377ec">Blob</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>data</em>, </td>
         </tr>
         <tr>
@@ -1361,7 +1361,7 @@ Private Attributes</h2></td></tr>
 
 <p>Process AS data received from a peer Call with a lock. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00954">954</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00939">939</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1401,7 +1401,7 @@ Private Attributes</h2></td></tr>
 
 <p>Process AS root node received from a peer Call with a lock. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01034">1034</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01019">1019</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1439,7 +1439,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00217">217</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00229">229</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1477,7 +1477,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00234">234</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00245">245</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1506,7 +1506,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns the hash of the data we want. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00054">54</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00055">55</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1535,7 +1535,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns true if we got all the data. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00060">60</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00062">62</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1564,7 +1564,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns false if we failed to get the data. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00066">66</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00069">69</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1593,7 +1593,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns the number of times we timed out. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00072">72</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00076">76</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1620,7 +1620,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00107">107</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00114">114</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
 
 </div>
 </div>
@@ -1649,7 +1649,7 @@ Private Attributes</h2></td></tr>
 
 <p>Called to indicate that forward progress has been made. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00080">80</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00086">86</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1676,7 +1676,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00085">85</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00092">92</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1703,7 +1703,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00090">90</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00098">98</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1734,7 +1734,7 @@ Private Attributes</h2></td></tr>
 <p>Insert a peer to the managed set. </p>
 <p>This will call the derived class hook function. </p><dl class="section return"><dt>Returns</dt><dd><code>true</code> If the peer was added </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00058">58</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00062">62</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
 
 </div>
 </div>
@@ -1761,7 +1761,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00101">101</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00111">111</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1788,7 +1788,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00107">107</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00117">117</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1815,7 +1815,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00128">128</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00147">147</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1842,7 +1842,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00133">133</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00153">153</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1869,7 +1869,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00137">137</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00158">158</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -1896,7 +1896,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00083">83</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00088">88</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
 
 </div>
 </div>
@@ -1924,7 +1924,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00121">121</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00132">132</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
 
 </div>
 </div>
@@ -1962,7 +1962,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00113">113</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00121">121</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
 
 </div>
 </div>
@@ -1989,7 +1989,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00069">69</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00074">74</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
 
 </div>
 </div>
@@ -2016,7 +2016,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00137">137</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00149">149</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
 
 </div>
 </div>
@@ -2040,7 +2040,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00137">137</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00153">153</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
 
 </div>
 </div>
@@ -2065,7 +2065,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00160">160</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00182">182</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -2089,7 +2089,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00161">161</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00183">183</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -2113,7 +2113,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00162">162</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00184">184</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -2137,7 +2137,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00163">163</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00185">185</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -2161,7 +2161,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00164">164</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00186">186</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -2185,7 +2185,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00165">165</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00187">187</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -2209,7 +2209,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00166">166</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00188">188</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -2233,7 +2233,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00167">167</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00189">189</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -2257,7 +2257,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00169">169</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00191">191</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -2281,7 +2281,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00171">171</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00193">193</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -2305,7 +2305,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00174">174</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00196">196</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -2319,7 +2319,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;<a class="el" href="classripple_1_1InboundLedger.html#adcf93fb97e19cccb312e2731db6b3d6b">PeerDataPairType</a>&gt; ripple::InboundLedger::mReceivedData</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;<a class="el" href="classripple_1_1InboundLedger.html#a951d36ae2d1afc458b8dfbbdf95fd9a9">PeerDataPairType</a>&gt; ripple::InboundLedger::mReceivedData</td>
         </tr>
       </table>
   </td>
@@ -2329,7 +2329,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00175">175</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00197">197</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -2353,7 +2353,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00176">176</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00198">198</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -2377,7 +2377,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00153">153</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00181">181</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -2401,7 +2401,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00154">154</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00182">182</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -2415,7 +2415,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1PeerSet.html#ae147b69aac46508c5134297465e09bcc">clock_type</a>&amp; ripple::PeerSet::m_clock</td>
+          <td class="memname"><a class="el" href="classripple_1_1PeerSet.html#a207a1e289a2129e8993947e2df8e2d74">clock_type</a>&amp; ripple::PeerSet::m_clock</td>
         </tr>
       </table>
   </td>
@@ -2425,7 +2425,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00155">155</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00183">183</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -2449,7 +2449,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00157">157</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00185">185</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -2473,7 +2473,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00159">159</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00187">187</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -2497,7 +2497,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00160">160</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00188">188</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -2521,7 +2521,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00161">161</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00189">189</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -2545,7 +2545,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00162">162</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00190">190</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -2569,7 +2569,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00163">163</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00191">191</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -2593,7 +2593,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00164">164</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00192">192</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -2617,7 +2617,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00165">165</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00193">193</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -2641,7 +2641,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00168">168</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00196">196</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>
@@ -2665,7 +2665,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00171">171</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8h_source.html#l00199">199</a> of file <a class="el" href="PeerSet_8h_source.html">PeerSet.h</a>.</p>
 
 </div>
 </div>

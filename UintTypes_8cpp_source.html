@@ -88,90 +88,90 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/Serializer.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/SystemParameters.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/UintTypes.h&gt;</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/utility/Zero.h&gt;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/utility/Zero.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/Serializer.h&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/SystemParameters.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/UintTypes.h&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(<a class="code" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a> <span class="keyword">const</span>&amp; currency)</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;{</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="comment">// Characters we are willing to allow in the ASCII representation of a</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="comment">// three-letter currency code.</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> allowed_characters =</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <span class="stringliteral">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <span class="stringliteral">&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;</span></div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="stringliteral">&quot;0123456789&quot;</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        <span class="stringliteral">&quot;&lt;&gt;(){}[]|?!@#$%^&amp;*&quot;</span>;</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keywordflow">if</span> (currency == beast::zero)</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a17931969e24fe7e94e61d6e50f7f5cb7">systemCurrencyCode</a>();</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keywordflow">if</span> (currency == <a class="code" href="namespaceripple.html#a46d77721784151245d971c433809471f">noCurrency</a>())</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <span class="keywordflow">return</span> <span class="stringliteral">&quot;1&quot;</span>;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keyword">static</span> <a class="code" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a> <span class="keyword">const</span> sIsoBits (</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        from_hex_text&lt;Currency&gt;(<span class="stringliteral">&quot;FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF&quot;</span>));</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keywordflow">if</span> ((currency &amp; sIsoBits).isZero ())</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    {</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="comment">// The offset of the 3 character ISO code in the currency descriptor</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <span class="keywordtype">int</span> <span class="keyword">const</span> isoOffset = 12;</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> iso(</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;            currency.data () + isoOffset,</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;            currency.data () + isoOffset + 3);</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<a class="code" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string</a>(<a class="code" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a> <span class="keyword">const</span>&amp; currency)</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;{</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="comment">// Characters we are willing to allow in the ASCII representation of a</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="comment">// three-letter currency code.</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> allowed_characters =</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <span class="stringliteral">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="stringliteral">&quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        <span class="stringliteral">&quot;0123456789&quot;</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        <span class="stringliteral">&quot;&lt;&gt;(){}[]|?!@#$%^&amp;*&quot;</span>;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keywordflow">if</span> (currency == beast::zero)</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a17931969e24fe7e94e61d6e50f7f5cb7">systemCurrencyCode</a>();</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keywordflow">if</span> (currency == <a class="code" href="namespaceripple.html#a46d77721784151245d971c433809471f">noCurrency</a>())</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keywordflow">return</span> <span class="stringliteral">&quot;1&quot;</span>;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keyword">static</span> <a class="code" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a> <span class="keyword">const</span> sIsoBits(</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        from_hex_text&lt;Currency&gt;(<span class="stringliteral">&quot;FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF&quot;</span>));</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordflow">if</span> ((currency &amp; sIsoBits).isZero())</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    {</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <span class="comment">// The offset of the 3 character ISO code in the currency descriptor</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <span class="keywordtype">int</span> <span class="keyword">const</span> isoOffset = 12;</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> iso(</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;            currency.data() + isoOffset, currency.data() + isoOffset + 3);</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <span class="comment">// Specifying the system currency code using ISO-style representation</span></div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="comment">// is not allowed.</span></div>
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        <span class="keywordflow">if</span> ((iso != <a class="code" href="namespaceripple.html#a17931969e24fe7e94e61d6e50f7f5cb7">systemCurrencyCode</a>()) &amp;&amp;</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            (iso.find_first_not_of (allowed_characters) == std::string::npos))</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            (iso.find_first_not_of(allowed_characters) == std::string::npos))</div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        {</div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            <span class="keywordflow">return</span> iso;</div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        }</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    }</div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a> (currency);</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(currency);</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;}</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno"><a class="line" href="namespaceripple.html#a791ac17da7afb28eaa4c229daa4ccef5">   67</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespaceripple.html#a791ac17da7afb28eaa4c229daa4ccef5">to_currency</a>(<a class="code" href="classripple_1_1base__uint.html">Currency</a>&amp; currency, <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; code)</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;{</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordflow">if</span> (code.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a> () || !code.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/compare.html">compare</a> (<a class="code" href="namespaceripple.html#a17931969e24fe7e94e61d6e50f7f5cb7">systemCurrencyCode</a>()))</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    {</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        currency = beast::zero;</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    }</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">int</span> CURRENCY_CODE_LENGTH = 3;</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keywordflow">if</span> (code.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/size.html">size</a> () == CURRENCY_CODE_LENGTH)</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    {</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">Blob</a> codeBlob (CURRENCY_CODE_LENGTH);</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/transform.html">std::transform</a> (code.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/begin.html">begin</a> (), code.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/end.html">end</a> (), codeBlob.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/begin.html">begin</a> (),</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;                        [](<span class="keyword">auto</span> c)</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;                        {</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;                            return ::toupper(static_cast&lt;unsigned char&gt;(c));</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                        });</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <a class="code" href="classripple_1_1Serializer.html">Serializer</a>  s;</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        s.<a class="code" href="classripple_1_1Serializer.html#af9f127e708de4849795bdab51f2a4c78">addZeros</a> (96 / 8);</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        s.<a class="code" href="classripple_1_1Serializer.html#a8d8774ca938809be8323d3957a62af90">addRaw</a> (codeBlob);</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        s.<a class="code" href="classripple_1_1Serializer.html#af9f127e708de4849795bdab51f2a4c78">addZeros</a> (16 / 8);</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        s.<a class="code" href="classripple_1_1Serializer.html#af9f127e708de4849795bdab51f2a4c78">addZeros</a> (24 / 8);</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        s.<a class="code" href="classripple_1_1Serializer.html#a837e2f73ad169ba34727b902901f39d3">get160</a> (currency, 0);</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    }</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160; </div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keywordflow">if</span> (40 == code.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/size.html">size</a> ())</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        <span class="keywordflow">return</span> currency.<a class="code" href="classripple_1_1base__uint.html#aa4e88c771af37069b5cd6490ae010d52">SetHex</a> (code);</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;}</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
-<div class="line"><a name="l00103"></a><span class="lineno"><a class="line" href="namespaceripple.html#ae67baa158b271ddcd7104a382353da2a">  103</a></span>&#160;<a class="code" href="classripple_1_1base__uint.html">Currency</a> <a class="code" href="namespaceripple.html#a791ac17da7afb28eaa4c229daa4ccef5">to_currency</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; code)</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno"><a class="line" href="namespaceripple.html#a791ac17da7afb28eaa4c229daa4ccef5">   68</a></span>&#160;<a class="code" href="namespaceripple.html#a791ac17da7afb28eaa4c229daa4ccef5">to_currency</a>(<a class="code" href="classripple_1_1base__uint.html">Currency</a>&amp; currency, <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; code)</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;{</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keywordflow">if</span> (code.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>() || !code.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/compare.html">compare</a>(<a class="code" href="namespaceripple.html#a17931969e24fe7e94e61d6e50f7f5cb7">systemCurrencyCode</a>()))</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    {</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        currency = beast::zero;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    }</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">int</span> CURRENCY_CODE_LENGTH = 3;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keywordflow">if</span> (code.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/size.html">size</a>() == CURRENCY_CODE_LENGTH)</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    {</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">Blob</a> codeBlob(CURRENCY_CODE_LENGTH);</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/transform.html">std::transform</a>(code.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/begin.html">begin</a>(), code.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/end.html">end</a>(), codeBlob.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/begin.html">begin</a>(), [](<span class="keyword">auto</span> c) {</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            return ::toupper(static_cast&lt;unsigned char&gt;(c));</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        });</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <a class="code" href="classripple_1_1Serializer.html">Serializer</a> s;</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        s.<a class="code" href="classripple_1_1Serializer.html#af9f127e708de4849795bdab51f2a4c78">addZeros</a>(96 / 8);</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        s.<a class="code" href="classripple_1_1Serializer.html#a8d8774ca938809be8323d3957a62af90">addRaw</a>(codeBlob);</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        s.<a class="code" href="classripple_1_1Serializer.html#af9f127e708de4849795bdab51f2a4c78">addZeros</a>(16 / 8);</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        s.<a class="code" href="classripple_1_1Serializer.html#af9f127e708de4849795bdab51f2a4c78">addZeros</a>(24 / 8);</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        s.<a class="code" href="classripple_1_1Serializer.html#a837e2f73ad169ba34727b902901f39d3">get160</a>(currency, 0);</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    }</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keywordflow">if</span> (40 == code.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/size.html">size</a>())</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <span class="keywordflow">return</span> currency.<a class="code" href="classripple_1_1base__uint.html#aa4e88c771af37069b5cd6490ae010d52">SetHex</a>(code);</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;}</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<a class="code" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a></div>
+<div class="line"><a name="l00103"></a><span class="lineno"><a class="line" href="namespaceripple.html#ae67baa158b271ddcd7104a382353da2a">  103</a></span>&#160;<a class="code" href="namespaceripple.html#a791ac17da7afb28eaa4c229daa4ccef5">to_currency</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; code)</div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;{</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">Currency</a> currency;</div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keywordflow">if</span> (!<a class="code" href="namespaceripple.html#a791ac17da7afb28eaa4c229daa4ccef5">to_currency</a>(currency, code))</div>
@@ -179,49 +179,52 @@ $(function() {
 <div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <span class="keywordflow">return</span> currency;</div>
 <div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;}</div>
 <div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160; </div>
-<div class="line"><a name="l00111"></a><span class="lineno"><a class="line" href="namespaceripple.html#a91af9326e7f471001066b6b59f24599c">  111</a></span>&#160;<a class="code" href="classripple_1_1base__uint.html">Currency</a> <span class="keyword">const</span>&amp; <a class="code" href="namespaceripple.html#a91af9326e7f471001066b6b59f24599c">xrpCurrency</a>()</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;{</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <span class="keyword">static</span> <a class="code" href="classripple_1_1base__uint.html">Currency</a> <span class="keyword">const</span> currency(beast::zero);</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <span class="keywordflow">return</span> currency;</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;}</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160; </div>
-<div class="line"><a name="l00117"></a><span class="lineno"><a class="line" href="namespaceripple.html#a46d77721784151245d971c433809471f">  117</a></span>&#160;<a class="code" href="classripple_1_1base__uint.html">Currency</a> <span class="keyword">const</span>&amp; <a class="code" href="namespaceripple.html#a46d77721784151245d971c433809471f">noCurrency</a>()</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;{</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="keyword">static</span> <a class="code" href="classripple_1_1base__uint.html">Currency</a> <span class="keyword">const</span> currency(1);</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <span class="keywordflow">return</span> currency;</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;}</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160; </div>
-<div class="line"><a name="l00123"></a><span class="lineno"><a class="line" href="namespaceripple.html#a0d78fe5b5eff36774b5be525cbcc3972">  123</a></span>&#160;<a class="code" href="classripple_1_1base__uint.html">Currency</a> <span class="keyword">const</span>&amp; <a class="code" href="namespaceripple.html#a0d78fe5b5eff36774b5be525cbcc3972">badCurrency</a>()</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;{</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <span class="keyword">static</span> <a class="code" href="classripple_1_1base__uint.html">Currency</a> <span class="keyword">const</span> currency(0x5852500000000000);</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    <span class="keywordflow">return</span> currency;</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;}</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160; </div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;} <span class="comment">// ripple</span></div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;<a class="code" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00112"></a><span class="lineno"><a class="line" href="namespaceripple.html#a91af9326e7f471001066b6b59f24599c">  112</a></span>&#160;<a class="code" href="namespaceripple.html#a91af9326e7f471001066b6b59f24599c">xrpCurrency</a>()</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;{</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <span class="keyword">static</span> <a class="code" href="classripple_1_1base__uint.html">Currency</a> <span class="keyword">const</span> currency(beast::zero);</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <span class="keywordflow">return</span> currency;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;}</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160; </div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;<a class="code" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00119"></a><span class="lineno"><a class="line" href="namespaceripple.html#a46d77721784151245d971c433809471f">  119</a></span>&#160;<a class="code" href="namespaceripple.html#a46d77721784151245d971c433809471f">noCurrency</a>()</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;{</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="keyword">static</span> <a class="code" href="classripple_1_1base__uint.html">Currency</a> <span class="keyword">const</span> currency(1);</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="keywordflow">return</span> currency;</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;}</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;<a class="code" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00126"></a><span class="lineno"><a class="line" href="namespaceripple.html#a0d78fe5b5eff36774b5be525cbcc3972">  126</a></span>&#160;<a class="code" href="namespaceripple.html#a0d78fe5b5eff36774b5be525cbcc3972">badCurrency</a>()</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;{</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <span class="keyword">static</span> <a class="code" href="classripple_1_1base__uint.html">Currency</a> <span class="keyword">const</span> currency(0x5852500000000000);</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    <span class="keywordflow">return</span> currency;</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;}</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="anamespaceripple_html_a0d78fe5b5eff36774b5be525cbcc3972"><div class="ttname"><a href="namespaceripple.html#a0d78fe5b5eff36774b5be525cbcc3972">ripple::badCurrency</a></div><div class="ttdeci">Currency const  &amp; badCurrency()</div><div class="ttdoc">We deliberately disallow the currency that looks like &quot;XRP&quot; because too many people were using it ins...</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8cpp_source.html#l00123">UintTypes.cpp:123</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a17931969e24fe7e94e61d6e50f7f5cb7"><div class="ttname"><a href="namespaceripple.html#a17931969e24fe7e94e61d6e50f7f5cb7">ripple::systemCurrencyCode</a></div><div class="ttdeci">static std::string const  &amp; systemCurrencyCode()</div><div class="ttdef"><b>Definition:</b> <a href="SystemParameters_8h_source.html#l00057">SystemParameters.h:57</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a791ac17da7afb28eaa4c229daa4ccef5"><div class="ttname"><a href="namespaceripple.html#a791ac17da7afb28eaa4c229daa4ccef5">ripple::to_currency</a></div><div class="ttdeci">bool to_currency(Currency &amp;currency, std::string const &amp;code)</div><div class="ttdoc">Tries to convert a string to a Currency, returns true on success.</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8cpp_source.html#l00067">UintTypes.cpp:67</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a0d78fe5b5eff36774b5be525cbcc3972"><div class="ttname"><a href="namespaceripple.html#a0d78fe5b5eff36774b5be525cbcc3972">ripple::badCurrency</a></div><div class="ttdeci">Currency const  &amp; badCurrency()</div><div class="ttdoc">We deliberately disallow the currency that looks like &quot;XRP&quot; because too many people were using it ins...</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8cpp_source.html#l00126">UintTypes.cpp:126</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a17931969e24fe7e94e61d6e50f7f5cb7"><div class="ttname"><a href="namespaceripple.html#a17931969e24fe7e94e61d6e50f7f5cb7">ripple::systemCurrencyCode</a></div><div class="ttdeci">static std::string const  &amp; systemCurrencyCode()</div><div class="ttdef"><b>Definition:</b> <a href="SystemParameters_8h_source.html#l00053">SystemParameters.h:53</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a791ac17da7afb28eaa4c229daa4ccef5"><div class="ttname"><a href="namespaceripple.html#a791ac17da7afb28eaa4c229daa4ccef5">ripple::to_currency</a></div><div class="ttdeci">bool to_currency(Currency &amp;currency, std::string const &amp;code)</div><div class="ttdoc">Tries to convert a string to a Currency, returns true on success.</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8cpp_source.html#l00068">UintTypes.cpp:68</a></div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_html_a46d77721784151245d971c433809471f"><div class="ttname"><a href="namespaceripple.html#a46d77721784151245d971c433809471f">ripple::noCurrency</a></div><div class="ttdeci">Currency const  &amp; noCurrency()</div><div class="ttdoc">A placeholder for empty currencies.</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8cpp_source.html#l00117">UintTypes.cpp:117</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a46d77721784151245d971c433809471f"><div class="ttname"><a href="namespaceripple.html#a46d77721784151245d971c433809471f">ripple::noCurrency</a></div><div class="ttdeci">Currency const  &amp; noCurrency()</div><div class="ttdoc">A placeholder for empty currencies.</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8cpp_source.html#l00119">UintTypes.cpp:119</a></div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt; unsigned char &gt;</a></div></div>
 <div class="ttc" id="asize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/size.html">std::string::size</a></div><div class="ttdeci">T size(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_a96888695e8d79474e080c334f149e30a"><div class="ttname"><a href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">ripple::to_string</a></div><div class="ttdeci">std::string to_string(ListDisposition disposition)</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorList_8cpp_source.html#l00041">ValidatorList.cpp:41</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 160, detail::CurrencyTag &gt;</a></div></div>
 <div class="ttc" id="acompare_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/compare.html">std::string::compare</a></div><div class="ttdeci">T compare(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1Serializer_html_a8d8774ca938809be8323d3957a62af90"><div class="ttname"><a href="classripple_1_1Serializer.html#a8d8774ca938809be8323d3957a62af90">ripple::Serializer::addRaw</a></div><div class="ttdeci">int addRaw(Blob const &amp;vector)</div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8cpp_source.html#l00100">Serializer.cpp:100</a></div></div>
-<div class="ttc" id="aclassripple_1_1base__uint_html_aa4e88c771af37069b5cd6490ae010d52"><div class="ttname"><a href="classripple_1_1base__uint.html#aa4e88c771af37069b5cd6490ae010d52">ripple::base_uint::SetHex</a></div><div class="ttdeci">bool SetHex(const char *psz, bool bStrict=false)</div><div class="ttdoc">Parse a hex string into a base_uint The input can be:</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00362">base_uint.h:362</a></div></div>
+<div class="ttc" id="aclassripple_1_1Serializer_html_a8d8774ca938809be8323d3957a62af90"><div class="ttname"><a href="classripple_1_1Serializer.html#a8d8774ca938809be8323d3957a62af90">ripple::Serializer::addRaw</a></div><div class="ttdeci">int addRaw(Blob const &amp;vector)</div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8cpp_source.html#l00127">Serializer.cpp:127</a></div></div>
+<div class="ttc" id="aclassripple_1_1base__uint_html_aa4e88c771af37069b5cd6490ae010d52"><div class="ttname"><a href="classripple_1_1base__uint.html#aa4e88c771af37069b5cd6490ae010d52">ripple::base_uint::SetHex</a></div><div class="ttdeci">bool SetHex(const char *psz, bool bStrict=false)</div><div class="ttdoc">Parse a hex string into a base_uint The input can be:</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00406">base_uint.h:406</a></div></div>
 <div class="ttc" id="atransform_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/transform.html">std::transform</a></div><div class="ttdeci">T transform(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1Serializer_html_a837e2f73ad169ba34727b902901f39d3"><div class="ttname"><a href="classripple_1_1Serializer.html#a837e2f73ad169ba34727b902901f39d3">ripple::Serializer::get160</a></div><div class="ttdeci">bool get160(base_uint&lt; 160, Tag &gt; &amp;o, int offset) const</div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8h_source.html#l00152">Serializer.h:152</a></div></div>
+<div class="ttc" id="aclassripple_1_1Serializer_html_a837e2f73ad169ba34727b902901f39d3"><div class="ttname"><a href="classripple_1_1Serializer.html#a837e2f73ad169ba34727b902901f39d3">ripple::Serializer::get160</a></div><div class="ttdeci">bool get160(base_uint&lt; 160, Tag &gt; &amp;o, int offset) const</div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8h_source.html#l00173">Serializer.h:173</a></div></div>
 <div class="ttc" id="aclassripple_1_1Serializer_html"><div class="ttname"><a href="classripple_1_1Serializer.html">ripple::Serializer</a></div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8h_source.html#l00043">Serializer.h:43</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a8792cc3f99463ceba4e96dde34fe17a4"><div class="ttname"><a href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">ripple::Currency</a></div><div class="ttdeci">base_uint&lt; 160, detail::CurrencyTag &gt; Currency</div><div class="ttdoc">Currency is a hash representing a specific currency.</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8h_source.html#l00056">UintTypes.h:56</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1Serializer_html_af9f127e708de4849795bdab51f2a4c78"><div class="ttname"><a href="classripple_1_1Serializer.html#af9f127e708de4849795bdab51f2a4c78">ripple::Serializer::addZeros</a></div><div class="ttdeci">int addZeros(size_t uBytes)</div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8cpp_source.html#l00028">Serializer.cpp:28</a></div></div>
+<div class="ttc" id="aclassripple_1_1Serializer_html_af9f127e708de4849795bdab51f2a4c78"><div class="ttname"><a href="classripple_1_1Serializer.html#af9f127e708de4849795bdab51f2a4c78">ripple::Serializer::addZeros</a></div><div class="ttdeci">int addZeros(size_t uBytes)</div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8cpp_source.html#l00029">Serializer.cpp:29</a></div></div>
 <div class="ttc" id="abegin_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/begin.html">std::string::begin</a></div><div class="ttdeci">T begin(T... args)</div></div>
 <div class="ttc" id="aempty_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">std::string::empty</a></div><div class="ttdeci">T empty(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_html_a86e358ce3f06ff049af13c2342791cf8"><div class="ttname"><a href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">ripple::strHex</a></div><div class="ttdeci">std::string strHex(FwdIt begin, FwdIt end)</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8h_source.html#l00070">strHex.h:70</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a86e358ce3f06ff049af13c2342791cf8"><div class="ttname"><a href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">ripple::strHex</a></div><div class="ttdeci">std::string strHex(FwdIt begin, FwdIt end)</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8h_source.html#l00067">strHex.h:67</a></div></div>
 <div class="ttc" id="aend_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/end.html">std::string::end</a></div><div class="ttdeci">T end(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_html_a91af9326e7f471001066b6b59f24599c"><div class="ttname"><a href="namespaceripple.html#a91af9326e7f471001066b6b59f24599c">ripple::xrpCurrency</a></div><div class="ttdeci">Currency const  &amp; xrpCurrency()</div><div class="ttdoc">XRP currency.</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8cpp_source.html#l00111">UintTypes.cpp:111</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a91af9326e7f471001066b6b59f24599c"><div class="ttname"><a href="namespaceripple.html#a91af9326e7f471001066b6b59f24599c">ripple::xrpCurrency</a></div><div class="ttdeci">Currency const  &amp; xrpCurrency()</div><div class="ttdoc">XRP currency.</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8cpp_source.html#l00112">UintTypes.cpp:112</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

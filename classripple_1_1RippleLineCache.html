@@ -112,7 +112,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a7cb4bd513a914bbeda5978a3981e2cd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a78ccf0c1e94005e79156bdb33a0608d8"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RippleLineCache.html#a78ccf0c1e94005e79156bdb33a0608d8">getLedger</a> () const</td></tr>
 <tr class="separator:a78ccf0c1e94005e79156bdb33a0608d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a14f081e641e7202c2851231565ab7433"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1RippleState.html#ab3ce26f863cbbb3a0991c0d61df5f1d6">RippleState::pointer</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RippleLineCache.html#a14f081e641e7202c2851231565ab7433">getRippleLines</a> (<a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> const &amp;accountID)</td></tr>
+<tr class="memitem:a14f081e641e7202c2851231565ab7433"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1RippleState.html#a66a2d3c19b12efb30b7729cb3b4684dc">RippleState::pointer</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RippleLineCache.html#a14f081e641e7202c2851231565ab7433">getRippleLines</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;accountID)</td></tr>
 <tr class="separator:a14f081e641e7202c2851231565ab7433"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
@@ -123,8 +123,8 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a792a083533b510d376b6677e422680d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e20923139822c58ee1b03d592a7c0e7"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RippleLineCache.html#a5e20923139822c58ee1b03d592a7c0e7">mLedger</a></td></tr>
 <tr class="separator:a5e20923139822c58ee1b03d592a7c0e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf2fd57ee7b6440dfd034dbf30de15bf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a264a4ea9f4b2c583f442b89379832e85">hash_map</a>&lt; <a class="el" href="structripple_1_1RippleLineCache_1_1AccountKey.html">AccountKey</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1RippleState.html#ab3ce26f863cbbb3a0991c0d61df5f1d6">RippleState::pointer</a> &gt;, <a class="el" href="structripple_1_1RippleLineCache_1_1AccountKey_1_1Hash.html">AccountKey::Hash</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RippleLineCache.html#acf2fd57ee7b6440dfd034dbf30de15bf">lines_</a></td></tr>
-<tr class="separator:acf2fd57ee7b6440dfd034dbf30de15bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a591c097fc274c040e4f65df29d3cc1c0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt; <a class="el" href="structripple_1_1RippleLineCache_1_1AccountKey.html">AccountKey</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1RippleState.html#a66a2d3c19b12efb30b7729cb3b4684dc">RippleState::pointer</a> &gt;, <a class="el" href="structripple_1_1RippleLineCache_1_1AccountKey_1_1Hash.html">AccountKey::Hash</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1RippleLineCache.html#a591c097fc274c040e4f65df29d3cc1c0">lines_</a></td></tr>
+<tr class="separator:a591c097fc274c040e4f65df29d3cc1c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -174,7 +174,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RippleLineCache_8h_source.html#l00042">42</a> of file <a class="el" href="RippleLineCache_8h_source.html">RippleLineCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RippleLineCache_8h_source.html#l00040">40</a> of file <a class="el" href="RippleLineCache_8h_source.html">RippleLineCache.h</a>.</p>
 
 </div>
 </div>
@@ -185,16 +185,16 @@ Private Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1RippleState.html#ab3ce26f863cbbb3a0991c0d61df5f1d6">RippleState::pointer</a> &gt; const  &amp; ripple::RippleLineCache::getRippleLines </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1RippleState.html#a66a2d3c19b12efb30b7729cb3b4684dc">RippleState::pointer</a> &gt; const  &amp; ripple::RippleLineCache::getRippleLines </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a16ab89d505feb8a59bf35abddfe1fb2c">AccountID</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
           <td class="paramname"><em>accountID</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RippleLineCache_8cpp_source.html#l00035">35</a> of file <a class="el" href="RippleLineCache_8cpp_source.html">RippleLineCache.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RippleLineCache_8cpp_source.html#l00034">34</a> of file <a class="el" href="RippleLineCache_8cpp_source.html">RippleLineCache.cpp</a>.</p>
 
 </div>
 </div>
@@ -219,7 +219,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RippleLineCache_8h_source.html#l00051">51</a> of file <a class="el" href="RippleLineCache_8h_source.html">RippleLineCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RippleLineCache_8h_source.html#l00049">49</a> of file <a class="el" href="RippleLineCache_8h_source.html">RippleLineCache.h</a>.</p>
 
 </div>
 </div>
@@ -243,7 +243,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RippleLineCache_8h_source.html#l00053">53</a> of file <a class="el" href="RippleLineCache_8h_source.html">RippleLineCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RippleLineCache_8h_source.html#l00051">51</a> of file <a class="el" href="RippleLineCache_8h_source.html">RippleLineCache.h</a>.</p>
 
 </div>
 </div>
@@ -267,12 +267,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RippleLineCache_8h_source.html#l00054">54</a> of file <a class="el" href="RippleLineCache_8h_source.html">RippleLineCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RippleLineCache_8h_source.html#l00052">52</a> of file <a class="el" href="RippleLineCache_8h_source.html">RippleLineCache.h</a>.</p>
 
 </div>
 </div>
-<a id="acf2fd57ee7b6440dfd034dbf30de15bf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acf2fd57ee7b6440dfd034dbf30de15bf">&#9670;&nbsp;</a></span>lines_</h2>
+<a id="a591c097fc274c040e4f65df29d3cc1c0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a591c097fc274c040e4f65df29d3cc1c0">&#9670;&nbsp;</a></span>lines_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -281,7 +281,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#a264a4ea9f4b2c583f442b89379832e85">hash_map</a>&lt; <a class="el" href="structripple_1_1RippleLineCache_1_1AccountKey.html">AccountKey</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a> &lt;<a class="el" href="classripple_1_1RippleState.html#ab3ce26f863cbbb3a0991c0d61df5f1d6">RippleState::pointer</a>&gt;, <a class="el" href="structripple_1_1RippleLineCache_1_1AccountKey_1_1Hash.html">AccountKey::Hash</a>&gt; ripple::RippleLineCache::lines_</td>
+          <td class="memname"><a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt;<a class="el" href="structripple_1_1RippleLineCache_1_1AccountKey.html">AccountKey</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;<a class="el" href="classripple_1_1RippleState.html#a66a2d3c19b12efb30b7729cb3b4684dc">RippleState::pointer</a>&gt;, <a class="el" href="structripple_1_1RippleLineCache_1_1AccountKey_1_1Hash.html">AccountKey::Hash</a>&gt; ripple::RippleLineCache::lines_</td>
         </tr>
       </table>
   </td>
@@ -291,7 +291,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RippleLineCache_8h_source.html#l00097">97</a> of file <a class="el" href="RippleLineCache_8h_source.html">RippleLineCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RippleLineCache_8h_source.html#l00094">94</a> of file <a class="el" href="RippleLineCache_8h_source.html">RippleLineCache.h</a>.</p>
 
 </div>
 </div>

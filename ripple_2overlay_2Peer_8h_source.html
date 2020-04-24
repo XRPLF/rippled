@@ -91,11 +91,11 @@ $(function() {
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_OVERLAY_PEER_H_INCLUDED</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_OVERLAY_PEER_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/overlay/Message.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/base_uint.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/base_uint.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/net/IPEndpoint.h&gt;</span></div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/json/json_value.h&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/PublicKey.h&gt;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/net/IPEndpoint.h&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/overlay/Message.h&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/PublicKey.h&gt;</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
@@ -123,72 +123,69 @@ $(function() {
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="comment">// Network</span></div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="comment">//</span></div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a3c89dbf867ba814f0bf2417757d5a0f4">send</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Message&gt;</a> <span class="keyword">const</span>&amp; m) = 0;</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <a class="code" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a35b25d5a662db9a534ac4a972a8ba6b3">getRemoteAddress</a>() <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a6fb081a4c8492b9891bff272041541ab">charge</a> (<a class="code" href="classripple_1_1Resource_1_1Charge.html">Resource::Charge</a> <span class="keyword">const</span>&amp; fee) = 0;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="comment">// Identity</span></div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a3c89dbf867ba814f0bf2417757d5a0f4">send</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Message&gt;</a> <span class="keyword">const</span>&amp; m) = 0;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a35b25d5a662db9a534ac4a972a8ba6b3">getRemoteAddress</a>() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a6fb081a4c8492b9891bff272041541ab">charge</a>(<a class="code" href="classripple_1_1Resource_1_1Charge.html">Resource::Charge</a> <span class="keyword">const</span>&amp; fee) = 0;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="comment">// Identity</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">id_t</a></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <a class="code" href="classripple_1_1Peer.html#aee121254a095838be2d8040bfdfacc79">id</a>() <span class="keyword">const</span> = 0;</div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">id_t</a></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <a class="code" href="classripple_1_1Peer.html#aee121254a095838be2d8040bfdfacc79">id</a>() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a8a547a67289ee47e4998117c1ea38fe9">cluster</a>() <span class="keyword">const</span> = 0;</div>
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a8a547a67289ee47e4998117c1ea38fe9">cluster</a>() <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a03de12036ac5466b0b01a26e2ef0e729">isHighLatency</a>() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a03de12036ac5466b0b01a26e2ef0e729">isHighLatency</a>() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">int</span></div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a25952c97b91516972a84da5dac619f96">getScore</a>(<span class="keywordtype">bool</span>) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a262044337e374e312d5334458d937484">getNodePublic</a>() <span class="keyword">const</span> = 0;</div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keywordtype">int</span></div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a25952c97b91516972a84da5dac619f96">getScore</a> (<span class="keywordtype">bool</span>) <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp;</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a262044337e374e312d5334458d937484">getNodePublic</a>() <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <a class="code" href="classripple_1_1Peer.html#a3a7b97f3e4307066f4e0a6abc9f9be35">json</a>() = 0;</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a1781d176803366238413407a0815124a">supportsFeature</a>(<a class="code" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150">ProtocolFeature</a> f) <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    boost::optional&lt;std::size_t&gt;</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a973af11e1d85c35b496a942261cdc3dc">publisherListSequence</a>(<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp;) <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="keyword">virtual</span></div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <a class="code" href="classripple_1_1Peer.html#adc1069de1a8a5ff1364003caf00bb139">setPublisherListSequence</a>(<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp;, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <span class="keyword">const</span>) = 0;</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160; </div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <span class="comment">// Ledger</span></div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <span class="comment">//</span></div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160; </div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; <a class="code" href="classripple_1_1Peer.html#a7be0fe54e7f2f72ddc0ec749122b8d10">getClosedLedgerHash</a> () <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span> <a class="code" href="classripple_1_1Peer.html#a855aa29a52d98979b211ff765dbc542a">hasLedger</a> (<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; hash, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq) <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="classripple_1_1Peer.html#ac03dabc3ec86db62e3d1ea827ab0d0fa">ledgerRange</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&amp; minSeq, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&amp; maxSeq) <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span> <a class="code" href="classripple_1_1Peer.html#a0b787b9822ca410913bbc98a6bacb256">hasShard</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> shardIndex) <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span> <a class="code" href="classripple_1_1Peer.html#adc8cbc6f94f2122808ed21ac217f18fa">hasTxSet</a> (<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; hash) <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span> <a class="code" href="classripple_1_1Peer.html#a580e873a73a8000e6bdba97a2a37b9e0">cycleStatus</a> () = 0;</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span> <a class="code" href="classripple_1_1Peer.html#a95b02bf56c4332da48e7e0bc503a0d43">hasRange</a> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uMin, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uMax) = 0;</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;};</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;}</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a3a7b97f3e4307066f4e0a6abc9f9be35">json</a>() = 0;</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a1781d176803366238413407a0815124a">supportsFeature</a>(<a class="code" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150">ProtocolFeature</a> f) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160; </div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keyword">virtual</span> boost::optional&lt;std::size_t&gt;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a973af11e1d85c35b496a942261cdc3dc">publisherListSequence</a>(<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp;) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <a class="code" href="classripple_1_1Peer.html#adc1069de1a8a5ff1364003caf00bb139">setPublisherListSequence</a>(<a class="code" href="classripple_1_1PublicKey.html">PublicKey</a> <span class="keyword">const</span>&amp;, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <span class="keyword">const</span>) = 0;</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="comment">// Ledger</span></div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="comment">//</span></div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a7be0fe54e7f2f72ddc0ec749122b8d10">getClosedLedgerHash</a>() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a855aa29a52d98979b211ff765dbc542a">hasLedger</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; hash, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <a class="code" href="classripple_1_1Peer.html#ac03dabc3ec86db62e3d1ea827ab0d0fa">ledgerRange</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&amp; minSeq, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&amp; maxSeq) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a0b787b9822ca410913bbc98a6bacb256">hasShard</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> shardIndex) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <a class="code" href="classripple_1_1Peer.html#adc8cbc6f94f2122808ed21ac217f18fa">hasTxSet</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; hash) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a580e873a73a8000e6bdba97a2a37b9e0">cycleStatus</a>() = 0;</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <a class="code" href="classripple_1_1Peer.html#a95b02bf56c4332da48e7e0bc503a0d43">hasRange</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uMin, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uMax) = 0;</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;};</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160; </div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1Peer_html_ac03dabc3ec86db62e3d1ea827ab0d0fa"><div class="ttname"><a href="classripple_1_1Peer.html#ac03dabc3ec86db62e3d1ea827ab0d0fa">ripple::Peer::ledgerRange</a></div><div class="ttdeci">virtual void ledgerRange(std::uint32_t &amp;minSeq, std::uint32_t &amp;maxSeq) const =0</div></div>
 <div class="ttc" id="aclassripple_1_1Peer_html_a7be0fe54e7f2f72ddc0ec749122b8d10"><div class="ttname"><a href="classripple_1_1Peer.html#a7be0fe54e7f2f72ddc0ec749122b8d10">ripple::Peer::getClosedLedgerHash</a></div><div class="ttdeci">virtual uint256 const  &amp; getClosedLedgerHash() const =0</div></div>
@@ -221,7 +218,7 @@ $(function() {
 <div class="ttc" id="aclassbeast_1_1IP_1_1Endpoint_html"><div class="ttname"><a href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a></div><div class="ttdoc">A version-independent IP address and port combination.</div><div class="ttdef"><b>Definition:</b> <a href="IPEndpoint_8h_source.html#l00039">IPEndpoint.h:39</a></div></div>
 <div class="ttc" id="aclassripple_1_1Peer_html_a0b787b9822ca410913bbc98a6bacb256"><div class="ttname"><a href="classripple_1_1Peer.html#a0b787b9822ca410913bbc98a6bacb256">ripple::Peer::hasShard</a></div><div class="ttdeci">virtual bool hasShard(std::uint32_t shardIndex) const =0</div></div>
 <div class="ttc" id="aclassripple_1_1Peer_html_a0ddcdaf78d056347ca29979e6dc401dd"><div class="ttname"><a href="classripple_1_1Peer.html#a0ddcdaf78d056347ca29979e6dc401dd">ripple::Peer::~Peer</a></div><div class="ttdeci">virtual ~Peer()=default</div></div>
-<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00141">json_value.h:141</a></div></div>
+<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00145">json_value.h:145</a></div></div>
 <div class="ttc" id="aclassripple_1_1Peer_html"><div class="ttname"><a href="classripple_1_1Peer.html">ripple::Peer</a></div><div class="ttdoc">Represents a peer connection in the overlay.</div><div class="ttdef"><b>Definition:</b> <a href="ripple_2overlay_2Peer_8h_source.html#l00043">ripple/overlay/Peer.h:43</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

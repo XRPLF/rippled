@@ -112,16 +112,16 @@ $(function() {
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <a class="code" href="classbeast_1_1abstract__clock.html#afa9ffe22af13542f15b7098db8950c78">abstract_clock</a>() = <span class="keywordflow">default</span>;</div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <a class="code" href="classbeast_1_1abstract__clock.html#afa9ffe22af13542f15b7098db8950c78">abstract_clock</a>(<a class="code" href="classbeast_1_1abstract__clock.html">abstract_clock</a> <span class="keyword">const</span>&amp;) = <span class="keywordflow">default</span>;</div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a> <a class="code" href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">now</a>() <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;};</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno"><a class="line" href="namespacebeast_1_1detail.html">   78</a></span>&#160;<span class="keyword">namespace </span>detail {</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Facade, <span class="keyword">class</span> Clock&gt;</div>
-<div class="line"><a name="l00081"></a><span class="lineno"><a class="line" href="structbeast_1_1detail_1_1abstract__clock__wrapper.html">   81</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structbeast_1_1detail_1_1abstract__clock__wrapper.html">abstract_clock_wrapper</a></div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    : <span class="keyword">public</span> <a class="code" href="classbeast_1_1abstract__clock.html">abstract_clock</a>&lt;Facade&gt;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <a class="code" href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">now</a>() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;};</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
+<div class="line"><a name="l00079"></a><span class="lineno"><a class="line" href="namespacebeast_1_1detail.html">   79</a></span>&#160;<span class="keyword">namespace </span>detail {</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Facade, <span class="keyword">class</span> Clock&gt;</div>
+<div class="line"><a name="l00082"></a><span class="lineno"><a class="line" href="structbeast_1_1detail_1_1abstract__clock__wrapper.html">   82</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structbeast_1_1detail_1_1abstract__clock__wrapper.html">abstract_clock_wrapper</a> : <span class="keyword">public</span> <a class="code" href="classbeast_1_1abstract__clock.html">abstract_clock</a>&lt;Facade&gt;</div>
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;{</div>
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keyword">explicit</span> <a class="code" href="structbeast_1_1detail_1_1abstract__clock__wrapper.html#a0d19ff492c6a8e05af1ba88e96aecf0c">abstract_clock_wrapper</a>() = <span class="keywordflow">default</span>;</div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
@@ -135,11 +135,11 @@ $(function() {
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    }</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;};</div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;}</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;}  <span class="comment">// namespace detail</span></div>
 <div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
 <div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">class</span> Facade, <span class="keyword">class</span> Clock = Facade&gt;</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Facade, <span class="keyword">class</span> Clock = Facade&gt;</div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;abstract_clock&lt;Facade&gt;&amp;</div>
 <div class="line"><a name="l00107"></a><span class="lineno"><a class="line" href="namespacebeast.html#a4ac75429da667d3b818a083ee007f116">  107</a></span>&#160;<a class="code" href="namespacebeast.html#a4ac75429da667d3b818a083ee007f116">get_abstract_clock</a>()</div>
 <div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;{</div>
@@ -147,7 +147,7 @@ $(function() {
 <div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <span class="keywordflow">return</span> clock;</div>
 <div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;}</div>
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160; </div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;}</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;}  <span class="comment">// namespace beast</span></div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160; </div>
 <div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
@@ -159,14 +159,14 @@ $(function() {
 <div class="ttc" id="achrono_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/chrono.html">chrono</a></div></div>
 <div class="ttc" id="anamespacebeast_html_a4ac75429da667d3b818a083ee007f116"><div class="ttname"><a href="namespacebeast.html#a4ac75429da667d3b818a083ee007f116">beast::get_abstract_clock</a></div><div class="ttdeci">abstract_clock&lt; Facade &gt; &amp; get_abstract_clock()</div><div class="ttdoc">Returns a global instance of an abstract clock.</div><div class="ttdef"><b>Definition:</b> <a href="abstract__clock_8h_source.html#l00107">abstract_clock.h:107</a></div></div>
 <div class="ttc" id="aclassbeast_1_1abstract__clock_html"><div class="ttname"><a href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a></div><div class="ttdoc">Abstract interface to a clock.</div><div class="ttdef"><b>Definition:</b> <a href="abstract__clock_8h_source.html#l00057">abstract_clock.h:57</a></div></div>
-<div class="ttc" id="astructbeast_1_1detail_1_1abstract__clock__wrapper_html"><div class="ttname"><a href="structbeast_1_1detail_1_1abstract__clock__wrapper.html">beast::detail::abstract_clock_wrapper</a></div><div class="ttdef"><b>Definition:</b> <a href="abstract__clock_8h_source.html#l00081">abstract_clock.h:81</a></div></div>
+<div class="ttc" id="astructbeast_1_1detail_1_1abstract__clock__wrapper_html"><div class="ttname"><a href="structbeast_1_1detail_1_1abstract__clock__wrapper.html">beast::detail::abstract_clock_wrapper</a></div><div class="ttdef"><b>Definition:</b> <a href="abstract__clock_8h_source.html#l00082">abstract_clock.h:82</a></div></div>
 <div class="ttc" id="astructbeast_1_1detail_1_1abstract__clock__wrapper_html_a3775a924e74c34cd97d162b9f95e6bf5"><div class="ttname"><a href="structbeast_1_1detail_1_1abstract__clock__wrapper.html#a3775a924e74c34cd97d162b9f95e6bf5">beast::detail::abstract_clock_wrapper::now</a></div><div class="ttdeci">time_point now() const override</div><div class="ttdef"><b>Definition:</b> <a href="abstract__clock_8h_source.html#l00090">abstract_clock.h:90</a></div></div>
 <div class="ttc" id="aclassbeast_1_1abstract__clock_html_a4435fdfcd47c4f67bbb21940e5505208"><div class="ttname"><a href="classbeast_1_1abstract__clock.html#a4435fdfcd47c4f67bbb21940e5505208">beast::abstract_clock&lt; std::chrono::system_clock &gt;::rep</a></div><div class="ttdeci">typename std::chrono::system_clock ::rep rep</div><div class="ttdef"><b>Definition:</b> <a href="abstract__clock_8h_source.html#l00060">abstract_clock.h:60</a></div></div>
 <div class="ttc" id="astructbeast_1_1detail_1_1abstract__clock__wrapper_html_a0d19ff492c6a8e05af1ba88e96aecf0c"><div class="ttname"><a href="structbeast_1_1detail_1_1abstract__clock__wrapper.html#a0d19ff492c6a8e05af1ba88e96aecf0c">beast::detail::abstract_clock_wrapper::abstract_clock_wrapper</a></div><div class="ttdeci">abstract_clock_wrapper()=default</div></div>
 <div class="ttc" id="aclassbeast_1_1abstract__clock_html_aaa505cdf3c83a46f6c2e5727ca5878dd"><div class="ttname"><a href="classbeast_1_1abstract__clock.html#aaa505cdf3c83a46f6c2e5727ca5878dd">beast::abstract_clock::~abstract_clock</a></div><div class="ttdeci">virtual ~abstract_clock()=default</div></div>
 <div class="ttc" id="aclassbeast_1_1abstract__clock_html_a4e16832b0bdf9392c5138bbbde024d8e"><div class="ttname"><a href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">beast::abstract_clock&lt; std::chrono::system_clock &gt;::time_point</a></div><div class="ttdeci">typename std::chrono::system_clock ::time_point time_point</div><div class="ttdef"><b>Definition:</b> <a href="abstract__clock_8h_source.html#l00063">abstract_clock.h:63</a></div></div>
 <div class="ttc" id="aclassbeast_1_1abstract__clock_html_ad024b15fa67696e8d1eba3744e800d32"><div class="ttname"><a href="classbeast_1_1abstract__clock.html#ad024b15fa67696e8d1eba3744e800d32">beast::abstract_clock&lt; std::chrono::system_clock &gt;::duration</a></div><div class="ttdeci">typename std::chrono::system_clock ::duration duration</div><div class="ttdef"><b>Definition:</b> <a href="abstract__clock_8h_source.html#l00062">abstract_clock.h:62</a></div></div>
-<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00582">base_uint.h:582</a></div></div>
+<div class="ttc" id="anamespacebeast_html"><div class="ttname"><a href="namespacebeast.html">beast</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00646">base_uint.h:646</a></div></div>
 <div class="ttc" id="astring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/string.html">string</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
