@@ -413,7 +413,7 @@ SerialIter::getFieldID(int& type, int& name)
     {
         // uncommon type
         type = get8();
-        if (type == 0 || type < 16)
+        if (type < 16)
             Throw<std::runtime_error>(
                 "gFID: uncommon type out of range " + std::to_string(type));
     }
@@ -422,7 +422,7 @@ SerialIter::getFieldID(int& type, int& name)
     {
         // uncommon name
         name = get8();
-        if (name == 0 || name < 16)
+        if (name < 16)
             Throw<std::runtime_error>(
                 "gFID: uncommon name out of range " + std::to_string(name));
     }

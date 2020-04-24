@@ -774,12 +774,6 @@ private:
 TxQ::Setup
 setup_TxQ(Config const&);
 
-/**
-    @ref TxQ object factory.
-*/
-std::unique_ptr<TxQ>
-make_TxQ(TxQ::Setup const&, beast::Journal);
-
 template <class T>
 std::pair<bool, XRPAmount>
 toDrops(FeeLevel<T> const& level, XRPAmount const& baseFee)

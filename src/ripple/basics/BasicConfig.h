@@ -330,11 +330,10 @@ get(Section const& section,
 inline std::string
 get(Section const& section, std::string const& name, const char* defaultValue)
 {
-    bool found_and_valid = false;
     try
     {
         auto const val = section.get<std::string>(name);
-        if ((found_and_valid = val.is_initialized()))
+        if (val.is_initialized())
             return *val;
     }
     catch (boost::bad_lexical_cast&)

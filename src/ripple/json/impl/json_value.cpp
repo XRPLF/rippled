@@ -132,7 +132,7 @@ Value::CZString::~CZString()
 bool
 Value::CZString::operator<(const CZString& other) const
 {
-    if (cstr_)
+    if (cstr_ && other.cstr_)
         return strcmp(cstr_, other.cstr_) < 0;
 
     return index_ < other.index_;
@@ -141,7 +141,7 @@ Value::CZString::operator<(const CZString& other) const
 bool
 Value::CZString::operator==(const CZString& other) const
 {
-    if (cstr_)
+    if (cstr_ && other.cstr_)
         return strcmp(cstr_, other.cstr_) == 0;
 
     return index_ == other.index_;
