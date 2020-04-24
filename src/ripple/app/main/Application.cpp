@@ -587,7 +587,8 @@ public:
         , m_loadManager(
               make_LoadManager(*this, *this, logs_->journal("LoadManager")))
 
-        , txQ_(make_TxQ(setup_TxQ(*config_), logs_->journal("TxQ")))
+        , txQ_(
+              std::make_unique<TxQ>(setup_TxQ(*config_), logs_->journal("TxQ")))
 
         , sweepTimer_(get_io_service())
 
@@ -1832,8 +1833,8 @@ ApplicationImp::fdRequired() const
     // Standard handles, config file, misc I/O etc:
     int needed = 128;
 
-    // 1.5 times the configured peer limit for peer connections:
-    needed += static_cast<int>(0.5 + (1.5 * overlay_->limit()));
+    // 2x the configured peer limit for peer connections:
+    needed += 2 * overlay_->limit();
 
     // the number of fds needed by the backend (internally
     // doubled if online delete is enabled).

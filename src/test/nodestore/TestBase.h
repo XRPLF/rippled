@@ -86,23 +86,21 @@ public:
 
         for (int i = 0; i < numObjects; ++i)
         {
-            NodeObjectType type;
-
-            switch (rand_int(rng, 3))
-            {
-                case 0:
-                    type = hotLEDGER;
-                    break;
-                case 1:
-                    type = hotACCOUNT_NODE;
-                    break;
-                case 2:
-                    type = hotTRANSACTION_NODE;
-                    break;
-                case 3:
-                    type = hotUNKNOWN;
-                    break;
-            }
+            NodeObjectType const type = [&] {
+                switch (rand_int(rng, 3))
+                {
+                    case 0:
+                        return hotLEDGER;
+                    case 1:
+                        return hotACCOUNT_NODE;
+                    case 2:
+                        return hotTRANSACTION_NODE;
+                    case 3:
+                        return hotUNKNOWN;
+                }
+                // will never happen, but make static analysys tool happy.
+                return hotUNKNOWN;
+            }();
 
             uint256 hash;
             beast::rngfill(hash.begin(), hash.size(), rng);

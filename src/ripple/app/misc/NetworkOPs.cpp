@@ -81,7 +81,7 @@ class NetworkOPsImp final : public NetworkOPs
         bool const admin;
         bool const local;
         FailHard const failType;
-        bool applied;
+        bool applied = false;
         TER result;
 
         TransactionStatus(
