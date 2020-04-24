@@ -1549,10 +1549,4 @@ setup_TxQ(Config const& config)
     return setup;
 }
 
-std::unique_ptr<TxQ>
-make_TxQ(TxQ::Setup const& setup, beast::Journal j)
-{
-    return std::make_unique<TxQ>(setup, j);
-}
-
 }  // namespace ripple
