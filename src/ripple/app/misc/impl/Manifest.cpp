@@ -240,52 +240,44 @@ Manifest::getMasterSignature() const
     return st.getFieldVL(sfMasterSignature);
 }
 
-ValidatorToken::ValidatorToken(std::string const& m, SecretKey const& valSecret)
-    : manifest(m), validationSecret(valSecret)
-{
-}
-
 boost::optional<ValidatorToken>
-ValidatorToken::make_ValidatorToken(std::vector<std::string> const& tokenBlob)
+loadValidatorToken(std::vector<std::string> const& blob)
 {
     try
     {
         std::string tokenStr;
+
         tokenStr.reserve(std::accumulate(
-            tokenBlob.cbegin(),
-            tokenBlob.cend(),
+            blob.cbegin(),
+            blob.cend(),
             std::size_t(0),
             [](std::size_t init, std::string const& s) {
                 return init + s.size();
             }));
 
-        for (auto const& line : tokenBlob)
+        for (auto const& line : blob)
             tokenStr += beast::rfc2616::trim(line);
 
         tokenStr = base64_decode(tokenStr);
 
         Json::Reader r;
         Json::Value token;
-        if (!r.parse(tokenStr, token))
-            return boost::none;
 
-        if (token.isMember("manifest") && token["manifest"].isString() &&
-            token.isMember("validation_secret_key") &&
-            token["validation_secret_key"].isString())
+        if (r.parse(tokenStr, token))
         {
-            auto const ret =
-                strUnHex(token["validation_secret_key"].asString());
-            if (!ret || ret->empty())
-                return boost::none;
+            auto const m = token.get("manifest", Json::Value{});
+            auto const k = token.get("validation_secret_key", Json::Value{});
 
-            return ValidatorToken(
-                token["manifest"].asString(),
-                SecretKey(Slice{ret->data(), ret->size()}));
+            if (m.isString() && k.isString())
+            {
+                auto const key = strUnHex(k.asString());
+
+                if (key && key->size() == 32)
+                    return ValidatorToken{m.asString(), makeSlice(*key)};
+            }
         }
-        else
-        {
-            return boost::none;
-        }
+
+        return boost::none;
     }
     catch (std::exception const&)
     {

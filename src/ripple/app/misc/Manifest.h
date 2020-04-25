@@ -171,17 +171,10 @@ struct ValidatorToken
 {
     std::string manifest;
     SecretKey validationSecret;
-
-private:
-    ValidatorToken(std::string const& m, SecretKey const& valSecret);
-
-public:
-    ValidatorToken(ValidatorToken const&) = delete;
-    ValidatorToken(ValidatorToken&& other) = default;
-
-    static boost::optional<ValidatorToken>
-    make_ValidatorToken(std::vector<std::string> const& tokenBlob);
 };
+
+boost::optional<ValidatorToken>
+loadValidatorToken(std::vector<std::string> const& blob);
 
 enum class ManifestDisposition {
     /// Manifest is valid

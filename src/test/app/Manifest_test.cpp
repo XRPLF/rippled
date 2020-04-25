@@ -534,14 +534,14 @@ public:
                 "r7C0kw"
                 "2AiTzSCjIzditQ8=";
 
-            auto const token = ValidatorToken::make_ValidatorToken(tokenBlob);
+            auto const token = loadValidatorToken(tokenBlob);
             BEAST_EXPECT(token);
             BEAST_EXPECT(token->validationSecret == *valSecret);
             BEAST_EXPECT(token->manifest == manifest);
         }
         {
             std::vector<std::string> const badToken = {"bad token"};
-            BEAST_EXPECT(!ValidatorToken::make_ValidatorToken(badToken));
+            BEAST_EXPECT(!loadValidatorToken(badToken));
         }
     }
 
