@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# This script generates information about your rippled installation
+# and system. It can be used to help debug issues that you may face
+# in your installation. While this script endeavors to not display any 
+# sensitive information, it is recommended that you read the output
+# before sharing with any third parties.
+
+
 rippled_exe=/opt/ripple/bin/rippled
 conf_file=/etc/opt/ripple/rippled.cfg
 
