@@ -212,13 +212,13 @@ fedora_27_smoketest:
 ## this one is not LTS, but we
 ## get some extra coverage by including it
 ## consider dropping it when 20.04 is ready
-ubuntu_19_smoketest:
+ubuntu_20_smoketest:
   stage: smoketest
   dependencies:
     - dpkg_build
     - dpkg_sign
   image:
-    name: ubuntu:19.10
+    name: ubuntu:20.04
   <<: *run_local_smoketest
 
 ubuntu_18_smoketest:
@@ -375,13 +375,13 @@ fedora_27_verify_repo_test:
   <<: *only_primary
   <<: *run_repo_smoketest
 
-ubuntu_19_verify_repo_test:
+ubuntu_20_verify_repo_test:
   stage: verify_from_test
   variables:
-    DISTRO: "eoan"
+    DISTRO: "focal"
     DEB_REPO: "rippled-deb-test-mirror"
   image:
-    name: ubuntu:19.10
+    name: ubuntu:20.04
   dependencies:
     - dpkg_sign
   <<: *only_primary
@@ -521,13 +521,13 @@ fedora_27_verify_repo_prod:
   <<: *only_primary
   <<: *run_repo_smoketest
 
-ubuntu_19_verify_repo_prod:
+ubuntu_20_verify_repo_prod:
   stage: verify_from_prod
   variables:
-    DISTRO: "eoan"
+    DISTRO: "focal"
     DEB_REPO: "rippled-deb"
   image:
-    name: ubuntu:19.10
+    name: ubuntu:20.04
   dependencies:
     - dpkg_sign
   <<: *only_primary
