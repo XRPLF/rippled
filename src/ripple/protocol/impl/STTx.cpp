@@ -178,7 +178,7 @@ STTx::checkSign(RequireFullyCanonicalSig requireCanonicalSig) const
     try
     {
         // Determine whether we're single- or multi-signing by looking
-        // at the SigningPubKey.  It it's empty we must be
+        // at the SigningPubKey.  If it's empty we must be
         // multi-signing.  Otherwise we're single-signing.
         Blob const& signingPubKey = getFieldVL(sfSigningPubKey);
         ret = signingPubKey.empty() ? checkMultiSign(requireCanonicalSig)
