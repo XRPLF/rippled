@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 set -ex
 apt -y update
+DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata
 apt -y install software-properties-common curl git gnupg
 curl -sk -o rippled-pubkeys.txt "${GIT_SIGN_PUBKEYS_URL}"
 gpg --import rippled-pubkeys.txt
