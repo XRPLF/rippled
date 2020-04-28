@@ -19,7 +19,7 @@ We urge you to examine our code carefully and responsibly, and to disclose any i
 
 Responsible investigation includes, but isn't limited to, the following:
 
-- Not performing tests on the main network. If testing is necessary, use the testnet or devnet.
+- Not performing tests on the main network. If testing is necessary, use the [Testnet or Devnet](https://xrpl.org/xrp-testnet-faucet.html).
 - Not targeting physical security measures, or attempting to use social engineering, spam, distributed denial of service (DDOS) attacks, etc.
 - Investigating bugs in a way that makes a reasonable, good faith effort not to be disruptive or harmful to the XRP Ledger and the broader ecosystem.
 
@@ -31,7 +31,7 @@ information below.
 
 Your report should include the following:
 
-- Your contact information (typically, an email);
+- Your contact information (typically, an email address);
 - The description of the vulnerability;
 - The attack scenario (if any);
 - The steps to reproduce the vulnerability;
@@ -56,13 +56,13 @@ Once we receive a report, we:
 
 We will triage and respond to your disclosure within 24 hours. Beyond that, we will work to analyze the issue in more detail, formulate, develop and test a fix.
 
-While we commit to responding with 24 hours of your initial report with our triage assesment, we cannot guarantee a response time for the remaining steps. We will communicate with you throughout this process, letting you know where we are and keeping you updated on the timeframe.
+While we commit to responding with 24 hours of your initial report with our triage assessment, we cannot guarantee a response time for the remaining steps. We will communicate with you throughout this process, letting you know where we are and keeping you updated on the timeframe.
 
 ## Bug Bounty Program
 
-[Ripple](https://ripple.com) is generously sponsoring a bug bounty program for vulnerabilities in [`rippled`](https://github.com/ripple/rippled) (and other related projects, like [`ripple-lib`](https://github.com/ripple/ripple-lib).
+[Ripple](https://ripple.com) is generously sponsoring a bug bounty program for vulnerabilities in [`rippled`](https://github.com/ripple/rippled) (and other related projects, like [`ripple-lib`](https://github.com/ripple/ripple-lib)).
 
-This program allows us to recognise and reward individuals or groups that identify and report bugs. In summary, order to qualify for a bounty, the bug must be:
+This program allows us to recognize and reward individuals or groups that identify and report bugs. In summary, order to qualify for a bounty, the bug must be:
 
 1. **In scope**. Only bugs in software under the scope of the program qualify. Currently, that means `rippled` and `ripple-lib`.
 2. **Relevant**. A security issue, posing a danger to user funds, privacy or the operation of the XRP Ledger.
@@ -83,7 +83,7 @@ To report a qualifying bug, please send a detailed report to:
 |Long Key ID  | `0xCD49A0AFC57929BE`                                |
 |Fingerprint  | `24E6 3B02 37E0 FA9C 5E96 8974 CD49 A0AF C579 29BE` |
 
-The full PGP key for this address, which is also available on several key servers (e.g. on [keys.gnupg.net](https://keys.gnupg.net), is: 
+The full PGP key for this address, which is also available on several key servers (e.g. on [keys.gnupg.net](https://keys.gnupg.net)), is: 
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 mQINBFUwGHYBEAC0wpGpBPkd8W1UdQjg9+cEFzeIEJRaoZoeuJD8mofwI5Ejnjdt
@@ -147,6 +147,3 @@ KsSr9lbHEtQFRzGuBKwt6UlSFv9vPWWJkJit5XDKAlcKuGXj0J8OlltToocGElkF
 =spg4
 -----END PGP PUBLIC KEY BLOCK-----
 ```
-
-
-
