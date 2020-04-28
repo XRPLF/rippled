@@ -25,8 +25,9 @@
 #include <ripple/core/Config.h>
 #include <ripple/net/HTTPClientSSLContext.h>
 #include <boost/asio/ssl.hpp>
-#include <boost/bind.hpp>
 #include <boost/format.hpp>
+
+#include <functional>
 
 namespace ripple {
 
@@ -98,10 +99,8 @@ WorkSSL::onConnect(error_code const& ec)
 
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
-        strand_.wrap(boost::bind(
-            &WorkSSL::onHandshake,
-            shared_from_this(),
-            boost::asio::placeholders::error)));
+        strand_.wrap(std::bind(
+            &WorkSSL::onHandshake, shared_from_this(), std::placeholders::_1)));
 }
 
 void
