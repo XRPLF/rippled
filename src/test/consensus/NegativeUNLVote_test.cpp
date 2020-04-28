@@ -884,7 +884,7 @@ class NegativeUNLVoteScoreTable_test : public beast::unit_test::suite
          */
         std::array<uint, 4> unlSizes({10, 34, 35, 50});
         std::array<std::array<uint, 3>, 4> scorePattern = {
-            0, 0, 0, 50, 50, 50, 100, 100, 100, 0, 50, 100};
+            {{{0, 0, 0}}, {{50, 50, 50}}, {{100, 100, 100}}, {{0, 50, 100}}}};
 
         for (uint us = 0; us < 4; ++us)
         {
@@ -950,6 +950,7 @@ class NegativeUNLVoteScoreTable_test : public beast::unit_test::suite
                             return score == 256;
                         else
                             assert(0);
+                        return false;
                     };
                     for (; i < 2; ++i)
                     {
