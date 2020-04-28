@@ -1,0 +1,79 @@
+@startuml negativeUNL_highLevel_sequence
+
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 20
+skinparam maxmessagesize 160
+
+actor "Rippled Start" as RS
+participant "Timer" as T 
+participant "NetworkOPs" as NOP 
+participant "ValidatorList" as VL #lightgreen
+participant "Consensus" as GC
+participant "ConsensusAdaptor" as CA #lightgreen
+participant "Validations" as RM #lightgreen
+
+RS -> NOP: begin consensus
+activate NOP
+NOP -[#green]> VL: <font color=green>update negative UNL
+hnote over VL#lightgreen: store a copy of\nnegative UNL
+VL -> NOP
+NOP -> VL: update trusted validators
+activate VL
+VL -> VL: re-calculate quorum
+hnote over VL#lightgreen: ignore negative listed validators\nwhen calculate quorum 
+VL -> NOP
+deactivate VL
+NOP -> GC: start round
+activate GC
+GC -> GC: phase = OPEN
+GC -> NOP
+deactivate GC
+deactivate NOP
+
+loop at regular frequency
+T -> GC: timerEntry
+activate GC
+end
+
+alt phase == OPEN
+    alt should close ledger 
+        GC -> GC: phase = ESTABLISH
+        GC -> CA: onClose
+        activate CA
+            alt sqn%256==0 
+            CA -[#green]> RM: <font color=green>getValidations
+            CA -[#green]> CA: <font color=green>create UNLModify Tx 
+            hnote over CA#lightgreen: use validatations of the last 256 ledgers\nto figure out UNLModify Tx candidates.\nIf any, create UNLModify Tx, and add to TxSet.               
+            end
+        CA -> GC
+        GC -> CA: propose
+        deactivate CA
+    end
+else phase == ESTABLISH
+    hnote over GC: receive peer postions
+    GC -> GC : update our position
+    GC -> CA : propose \n(if position changed)
+    GC -> GC : check if have consensus
+    alt consensus reached
+        GC -> GC: phase = ACCEPT
+        GC -> CA : onAccept
+        activate CA
+            CA -> CA : build LCL
+            hnote over CA #lightgreen: copy negative UNL from parent ledger
+            alt sqn%256==0
+                CA -[#green]> CA: <font color=green>Adjust negative UNL 
+                CA -[#green]> CA: <font color=green>apply UNLModify Tx
+            end
+            CA -> CA : validate and send validation message
+            activate NOP
+                CA -> NOP : end consensus and\n<b>begin next consensus round
+            deactivate NOP
+        deactivate CA        
+        hnote over RM: receive validations
+    end
+else phase == ACCEPTED
+    hnote over GC: timerEntry hash nothing to do at this phase
+end
+deactivate GC
+
+@enduml
