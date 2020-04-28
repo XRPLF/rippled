@@ -42,7 +42,6 @@ enum {
 TransactionAcquire::TransactionAcquire(Application& app, uint256 const& hash)
     : PeerSet(app, hash, TX_ACQUIRE_TIMEOUT, app.journal("TransactionAcquire"))
     , mHaveRoot(false)
-    , j_(app.journal("TransactionAcquire"))
 {
     mMap =
         std::make_shared<SHAMap>(SHAMapType::TRANSACTION, hash, app_.family());
@@ -65,11 +64,11 @@ TransactionAcquire::done()
 
     if (mFailed)
     {
-        JLOG(j_.warn()) << "Failed to acquire TX set " << mHash;
+        JLOG(m_journal.warn()) << "Failed to acquire TX set " << mHash;
     }
     else
     {
-        JLOG(j_.debug()) << "Acquired TX set " << mHash;
+        JLOG(m_journal.debug()) << "Acquired TX set " << mHash;
         mMap->setImmutable();
 
         uint256 const& hash(mHash);
@@ -114,19 +113,19 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
 {
     if (mComplete)
     {
-        JLOG(j_.info()) << "trigger after complete";
+        JLOG(m_journal.info()) << "trigger after complete";
         return;
     }
     if (mFailed)
     {
-        JLOG(j_.info()) << "trigger after fail";
+        JLOG(m_journal.info()) << "trigger after fail";
         return;
     }
 
     if (!mHaveRoot)
     {
-        JLOG(j_.trace()) << "TransactionAcquire::trigger "
-                         << (peer ? "havePeer" : "noPeer") << " no root";
+        JLOG(m_journal.trace()) << "TransactionAcquire::trigger "
+                                << (peer ? "havePeer" : "noPeer") << " no root";
         protocol::TMGetLedger tmGL;
         tmGL.set_ledgerhash(mHash.begin(), mHash.size());
         tmGL.set_itype(protocol::liTS_CANDIDATE);
@@ -184,13 +183,13 @@ TransactionAcquire::takeNodes(
 
     if (mComplete)
     {
-        JLOG(j_.trace()) << "TX set complete";
+        JLOG(m_journal.trace()) << "TX set complete";
         return SHAMapAddNode();
     }
 
     if (mFailed)
     {
-        JLOG(j_.trace()) << "TX set failed";
+        JLOG(m_journal.trace()) << "TX set failed";
         return SHAMapAddNode();
     }
 
@@ -208,7 +207,8 @@ TransactionAcquire::takeNodes(
             if (nodeIDit->isRoot())
             {
                 if (mHaveRoot)
-                    JLOG(j_.debug()) << "Got root TXS node, already have it";
+                    JLOG(m_journal.debug())
+                        << "Got root TXS node, already have it";
                 else if (!mMap->addRootNode(
                                   SHAMapHash{mHash},
                                   makeSlice(*nodeDatait),
@@ -216,7 +216,7 @@ TransactionAcquire::takeNodes(
                                   nullptr)
                               .isGood())
                 {
-                    JLOG(j_.warn()) << "TX acquire got bad root node";
+                    JLOG(m_journal.warn()) << "TX acquire got bad root node";
                 }
                 else
                     mHaveRoot = true;
@@ -224,7 +224,7 @@ TransactionAcquire::takeNodes(
             else if (!mMap->addKnownNode(*nodeIDit, makeSlice(*nodeDatait), &sf)
                           .isGood())
             {
-                JLOG(j_.warn()) << "TX acquire got bad non-root node";
+                JLOG(m_journal.warn()) << "TX acquire got bad non-root node";
                 return SHAMapAddNode::invalid();
             }
 
@@ -238,7 +238,7 @@ TransactionAcquire::takeNodes(
     }
     catch (std::exception const&)
     {
-        JLOG(j_.error()) << "Peer sends us junky transaction node data";
+        JLOG(m_journal.error()) << "Peer sends us junky transaction node data";
         return SHAMapAddNode::invalid();
     }
 }
