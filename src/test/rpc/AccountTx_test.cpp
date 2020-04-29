@@ -415,114 +415,34 @@ class AccountTx_test : public beast::unit_test::suite
 
         Json::Value const& txs{result[jss::result][jss::transactions]};
 
+        // clang-format off
         // Do a sanity check on each returned transaction.  They should
         // be returned in the reverse order of application to the ledger.
         static const NodeSanity sanity[]{
-            //    txType,                    created, deleted, modified
-            {0,
-             jss::DepositPreauth,
-             {jss::DepositPreauth},
-             {},
-             {jss::AccountRoot, jss::DirectoryNode}},
-            {1,
-             jss::CheckCancel,
-             {},
-             {jss::Check},
-             {jss::AccountRoot,
-              jss::AccountRoot,
-              jss::DirectoryNode,
-              jss::DirectoryNode}},
-            {2,
-             jss::CheckCash,
-             {},
-             {jss::Check},
-             {jss::AccountRoot,
-              jss::AccountRoot,
-              jss::DirectoryNode,
-              jss::DirectoryNode}},
-            {3,
-             jss::CheckCreate,
-             {jss::Check},
-             {},
-             {jss::AccountRoot,
-              jss::AccountRoot,
-              jss::DirectoryNode,
-              jss::DirectoryNode}},
-            {4,
-             jss::CheckCreate,
-             {jss::Check},
-             {},
-             {jss::AccountRoot,
-              jss::AccountRoot,
-              jss::DirectoryNode,
-              jss::DirectoryNode}},
-            {5,
-             jss::PaymentChannelClaim,
-             {},
-             {jss::PayChannel},
-             {jss::AccountRoot,
-              jss::AccountRoot,
-              jss::DirectoryNode,
-              jss::DirectoryNode}},
-            {6,
-             jss::PaymentChannelFund,
-             {},
-             {},
-             {jss::AccountRoot, jss::PayChannel}},
-            {7,
-             jss::PaymentChannelCreate,
-             {jss::PayChannel},
-             {},
-             {jss::AccountRoot,
-              jss::AccountRoot,
-              jss::DirectoryNode,
-              jss::DirectoryNode}},
-            {8,
-             jss::EscrowCancel,
-             {},
-             {jss::Escrow},
-             {jss::AccountRoot, jss::DirectoryNode}},
-            {9,
-             jss::EscrowFinish,
-             {},
-             {jss::Escrow},
-             {jss::AccountRoot, jss::DirectoryNode}},
-            {10,
-             jss::EscrowCreate,
-             {jss::Escrow},
-             {},
-             {jss::AccountRoot, jss::DirectoryNode}},
-            {11,
-             jss::EscrowCreate,
-             {jss::Escrow},
-             {},
-             {jss::AccountRoot, jss::DirectoryNode}},
-            {12,
-             jss::SignerListSet,
-             {jss::SignerList},
-             {},
-             {jss::AccountRoot, jss::DirectoryNode}},
-            {13,
-             jss::OfferCancel,
-             {},
-             {jss::Offer, jss::DirectoryNode},
-             {jss::AccountRoot, jss::DirectoryNode}},
-            {14,
-             jss::OfferCreate,
-             {jss::Offer, jss::DirectoryNode},
-             {},
-             {jss::AccountRoot, jss::DirectoryNode}},
-            {15,
-             jss::TrustSet,
-             {jss::RippleState, jss::DirectoryNode, jss::DirectoryNode},
-             {},
-             {jss::AccountRoot, jss::AccountRoot}},
-            {16, jss::SetRegularKey, {}, {}, {jss::AccountRoot}},
-            {17, jss::Payment, {}, {}, {jss::AccountRoot, jss::AccountRoot}},
-            {18, jss::AccountSet, {}, {}, {jss::AccountRoot}},
-            {19, jss::AccountSet, {}, {}, {jss::AccountRoot}},
-            {20, jss::Payment, {jss::AccountRoot}, {}, {jss::AccountRoot}},
+            //    txType,                    created,                                                    deleted,                          modified
+            {  0, jss::DepositPreauth,       {jss::DepositPreauth},                                      {},                               {jss::AccountRoot, jss::DirectoryNode}},
+            {  1, jss::CheckCancel,          {},                                                         {jss::Check},                     {jss::AccountRoot, jss::AccountRoot, jss::DirectoryNode, jss::DirectoryNode}},
+            {  2, jss::CheckCash,            {},                                                         {jss::Check},                     {jss::AccountRoot, jss::AccountRoot, jss::DirectoryNode, jss::DirectoryNode}},
+            {  3, jss::CheckCreate,          {jss::Check},                                               {},                               {jss::AccountRoot, jss::AccountRoot, jss::DirectoryNode, jss::DirectoryNode}},
+            {  4, jss::CheckCreate,          {jss::Check},                                               {},                               {jss::AccountRoot, jss::AccountRoot, jss::DirectoryNode, jss::DirectoryNode}},
+            {  5, jss::PaymentChannelClaim,  {},                                                         {jss::PayChannel},                {jss::AccountRoot, jss::AccountRoot,   jss::DirectoryNode, jss::DirectoryNode}},
+            {  6, jss::PaymentChannelFund,   {},                                                         {},                               {jss::AccountRoot, jss::PayChannel   }},
+            {  7, jss::PaymentChannelCreate, {jss::PayChannel},                                          {},                               {jss::AccountRoot, jss::AccountRoot,   jss::DirectoryNode, jss::DirectoryNode}},
+            {  8, jss::EscrowCancel,         {},                                                         {jss::Escrow},                    {jss::AccountRoot, jss::DirectoryNode}},
+            {  9, jss::EscrowFinish,         {},                                                         {jss::Escrow},                    {jss::AccountRoot, jss::DirectoryNode}},
+            { 10, jss::EscrowCreate,         {jss::Escrow},                                              {},                               {jss::AccountRoot, jss::DirectoryNode}},
+            { 11, jss::EscrowCreate,         {jss::Escrow},                                              {},                               {jss::AccountRoot, jss::DirectoryNode}},
+            { 12, jss::SignerListSet,        {jss::SignerList},                                          {},                               {jss::AccountRoot, jss::DirectoryNode}},
+            { 13, jss::OfferCancel,          {},                                                         {jss::Offer, jss::DirectoryNode}, {jss::AccountRoot, jss::DirectoryNode}},
+            { 14, jss::OfferCreate,          {jss::Offer, jss::DirectoryNode},                           {},                               {jss::AccountRoot, jss::DirectoryNode}},
+            { 15, jss::TrustSet,             {jss::RippleState, jss::DirectoryNode, jss::DirectoryNode}, {},                               {jss::AccountRoot, jss::AccountRoot}},
+            { 16, jss::SetRegularKey,        {},                                                         {},                               {jss::AccountRoot}},
+            { 17, jss::Payment,              {},                                                         {},                               {jss::AccountRoot, jss::AccountRoot}},
+            { 18, jss::AccountSet,           {},                                                         {},                               {jss::AccountRoot}},
+            { 19, jss::AccountSet,           {},                                                         {},                               {jss::AccountRoot}},
+            { 20, jss::Payment,              {jss::AccountRoot},                                         {},                               {jss::AccountRoot}},
         };
+        // clang-format on
 
         BEAST_EXPECT(
             std::extent<decltype(sanity)>::value ==
@@ -574,6 +494,56 @@ class AccountTx_test : public beast::unit_test::suite
 
         // Verify that becky's account root is gone.
         BEAST_EXPECT(!env.closed()->exists(beckyAcctKey));
+        env.close();
+
+        // clang-format off
+        // Do a sanity check on each returned transaction.  They should
+        // be returned in the reverse order of application to the ledger.
+        //
+        // Note that the first two transactions in sanity have not occurred
+        // yet.  We'll see those after becky's account is resurrected.
+        static const NodeSanity sanity[]
+        {
+                                    //   txType,                    created,            deleted,            modified
+/* becky pays alice              */ { 0, jss::Payment,              {},                 {},                 {jss::AccountRoot, jss::AccountRoot}},
+/* alice resurrects becky's acct */ { 1, jss::Payment,              {jss::AccountRoot}, {},                 {jss::AccountRoot}},
+/* becky deletes her account     */ { 2, jss::AccountDelete,        {},                 {jss::AccountRoot}, {jss::AccountRoot}},
+/* becky's noop                  */ { 3, jss::AccountSet,           {},                 {},                 {jss::AccountRoot}},
+/* "fund" sets flags             */ { 4, jss::AccountSet,           {},                 {},                 {jss::AccountRoot}},
+/* "fund" creates becky's acct   */ { 5, jss::Payment,              {jss::AccountRoot}, {},                 {jss::AccountRoot}}
+        };
+        // clang-format on
+
+        // Verify that we can recover becky's account_tx information even
+        // after the account is deleted.
+        {
+            Json::Value params;
+            params[jss::account] = becky.human();
+            params[jss::ledger_index_min] = -1;
+            params[jss::ledger_index_max] = -1;
+
+            Json::Value const result{
+                env.rpc("json", "account_tx", to_string(params))};
+
+            BEAST_EXPECT(result[jss::result][jss::status] == "success");
+            BEAST_EXPECT(result[jss::result][jss::transactions].isArray());
+
+            // The first two transactions listed in sanity haven't happened yet.
+            constexpr unsigned int beckyDeletedOffest = 2;
+            BEAST_EXPECT(
+                std::extent<decltype(sanity)>::value ==
+                result[jss::result][jss::transactions].size() +
+                    beckyDeletedOffest);
+
+            Json::Value const& txs{result[jss::result][jss::transactions]};
+
+            for (unsigned int index = beckyDeletedOffest;
+                 index < std::extent<decltype(sanity)>::value;
+                 ++index)
+            {
+                checkSanity(txs[index - beckyDeletedOffest], sanity[index]);
+            }
+        }
 
         // All it takes is a large enough XRP payment to resurrect
         // becky's account.  Try too small a payment.
@@ -605,31 +575,13 @@ class AccountTx_test : public beast::unit_test::suite
         BEAST_EXPECT(result[jss::result][jss::status] == "success");
         BEAST_EXPECT(result[jss::result][jss::transactions].isArray());
 
-        Json::Value const& txs{result[jss::result][jss::transactions]};
-
-        // Do a sanity check on each returned transaction.  They should
-        // be returned in the reverse order of application to the ledger.
-        static const NodeSanity sanity[]{
-            //   txType,                    created,            deleted,
-            //   modified
-            /* becky pays alice              */ {
-                0, jss::Payment, {}, {}, {jss::AccountRoot, jss::AccountRoot}},
-            /* alice resurrects becky's acct */
-            {1, jss::Payment, {jss::AccountRoot}, {}, {jss::AccountRoot}},
-            /* becky deletes her account     */
-            {2, jss::AccountDelete, {}, {jss::AccountRoot}, {jss::AccountRoot}},
-            /* becky's noop                  */
-            {3, jss::AccountSet, {}, {}, {jss::AccountRoot}},
-            /* "fund" sets flags             */
-            {4, jss::AccountSet, {}, {}, {jss::AccountRoot}},
-            /* "fund" creates becky's acct   */
-            {5, jss::Payment, {jss::AccountRoot}, {}, {jss::AccountRoot}}};
-
         BEAST_EXPECT(
             std::extent<decltype(sanity)>::value ==
             result[jss::result][jss::transactions].size());
 
-        for (unsigned int index{0};
+        Json::Value const& txs{result[jss::result][jss::transactions]};
+
+        for (unsigned int index = 0;
              index < std::extent<decltype(sanity)>::value;
              ++index)
         {
