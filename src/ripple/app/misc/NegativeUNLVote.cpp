@@ -40,11 +40,11 @@ NegativeUNLVote::doVoting(
      * -- build a reliability score table of validators
      * -- process the table and find all candidates to disable or to re-enable
      * -- pick one to disable and one to re-enable if any
-     * -- if found candidates, add ttUNL_MODIDY Tx
+     * -- if found candidates, add ttUNL_MODIFY Tx
      */
 
     // Build NodeID set for internal use.
-    // Build NodeID to PublicKey map for lookup before creating ttUNL_MODIDY Tx.
+    // Build NodeID to PublicKey map for lookup before creating ttUNL_MODIFY Tx.
     hash_set<NodeID> unlNodeIDs;
     hash_map<NodeID, PublicKey> nidToKeyMap;
     for (auto const& k : unlKeys)
@@ -114,7 +114,7 @@ NegativeUNLVote::addTx(
     bool disabling,
     std::shared_ptr<SHAMap> const& initialSet)
 {
-    STTx nUnlTx(ttUNL_MODIDY, [&](auto& obj) {
+    STTx nUnlTx(ttUNL_MODIFY, [&](auto& obj) {
         obj.setFieldU8(sfUNLModifyDisabling, disabling ? 1 : 0);
         obj.setFieldU32(sfLedgerSequence, seq);
         obj.setFieldVL(sfUNLModifyValidator, vp.slice());
@@ -127,12 +127,12 @@ NegativeUNLVote::addTx(
     if (!initialSet->addGiveItem(tItem, true, false))
     {
         JLOG(j_.warn()) << "N-UNL: ledger seq=" << seq
-                        << ", add ttUNL_MODIDY tx failed";
+                        << ", add ttUNL_MODIFY tx failed";
     }
     else
     {
         JLOG(j_.debug()) << "N-UNL: ledger seq=" << seq
-                         << ", add a ttUNL_MODIDY Tx with txID: " << txID
+                         << ", add a ttUNL_MODIFY Tx with txID: " << txID
                          << ", the validator to "
                          << (disabling ? "disable: " : "re-enable: ") << vp;
     }

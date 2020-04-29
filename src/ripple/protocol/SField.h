@@ -376,7 +376,7 @@ extern SF_U32 const sfStampEscrow;
 extern SF_U32 const sfBondAmount;
 extern SF_U32 const sfLoadFee;
 extern SF_U32 const sfOfferSequence;
-extern SF_U32 const sfFirstLedgerSequence;  // Deprecated: do not use
+extern SF_U32 const sfFirstLedgerSequence;
 extern SF_U32 const sfLastLedgerSequence;
 extern SF_U32 const sfTransactionIndex;
 extern SF_U32 const sfOperationLimit;
@@ -390,7 +390,6 @@ extern SF_U32 const sfCancelAfter;
 extern SF_U32 const sfFinishAfter;
 extern SF_U32 const sfSignerListID;
 extern SF_U32 const sfSettleDelay;
-extern SF_U32 const sfNegativeUNLLgrSeq;
 
 // 64-bit integers
 extern SF_U64 const sfIndexNext;

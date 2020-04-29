@@ -63,7 +63,7 @@ Change::preflight(PreflightContext const& ctx)
         return temBAD_SEQUENCE;
     }
 
-    if (ctx.tx.getTxnType() == ttUNL_MODIDY &&
+    if (ctx.tx.getTxnType() == ttUNL_MODIFY &&
         !ctx.rules.enabled(featureNegativeUNL))
     {
         JLOG(ctx.j.warn()) << "Change: NegativeUNL not enabled";
@@ -85,7 +85,7 @@ Change::preclaim(PreclaimContext const& ctx)
     }
 
     if (ctx.tx.getTxnType() != ttAMENDMENT && ctx.tx.getTxnType() != ttFEE &&
-        ctx.tx.getTxnType() != ttUNL_MODIDY)
+        ctx.tx.getTxnType() != ttUNL_MODIFY)
         return temUNKNOWN;
 
     return tesSUCCESS;
@@ -96,7 +96,7 @@ Change::doApply()
 {
     assert(
         ctx_.tx.getTxnType() == ttAMENDMENT || ctx_.tx.getTxnType() == ttFEE ||
-        ctx_.tx.getTxnType() == ttUNL_MODIDY);
+        ctx_.tx.getTxnType() == ttUNL_MODIFY);
 
     if (ctx_.tx.getTxnType() == ttAMENDMENT)
         return applyAmendment();

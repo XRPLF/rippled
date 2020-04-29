@@ -90,11 +90,11 @@ VerifyPubKeyAndSeq(
 
     for (auto const& n : nUnlData)
     {
-        if (!n.isFieldPresent(sfNegativeUNLLgrSeq) ||
+        if (!n.isFieldPresent(sfFirstLedgerSequence) ||
             !n.isFieldPresent(sfPublicKey))
             return false;
 
-        auto seq = n.getFieldU32(sfNegativeUNLLgrSeq);
+        auto seq = n.getFieldU32(sfFirstLedgerSequence);
         auto d = n.getFieldVL(sfPublicKey);
         auto s = makeSlice(d);
         if (!publicKeyType(s))
@@ -251,10 +251,10 @@ class NegativeUNL_test : public beast::unit_test::suite
                 *l, env.app().timeKeeper().closeTime());
             adding = true;
             txKey = pk1;
-            STTx txAdd(ttUNL_MODIDY, fill);
+            STTx txAdd(ttUNL_MODIFY, fill);
             adding = false;
             txKey = pk2;
-            STTx txRemove_2(ttUNL_MODIDY, fill);
+            STTx txRemove_2(ttUNL_MODIFY, fill);
 
             OpenView accum(&*l);
             BEAST_EXPECT(applyAndTestResult(env, accum, txAdd, false));
@@ -275,12 +275,12 @@ class NegativeUNL_test : public beast::unit_test::suite
             // flag ledger now
             adding = true;
             txKey = pk1;
-            STTx txAdd(ttUNL_MODIDY, fill);
+            STTx txAdd(ttUNL_MODIFY, fill);
             txKey = pk2;
-            STTx txAdd_2(ttUNL_MODIDY, fill);
+            STTx txAdd_2(ttUNL_MODIFY, fill);
             adding = false;
             txKey = pk3;
-            STTx txRemove_3(ttUNL_MODIDY, fill);
+            STTx txRemove_3(ttUNL_MODIFY, fill);
 
             OpenView accum(&*l);
             BEAST_EXPECT(applyAndTestResult(env, accum, txAdd, true));
@@ -314,16 +314,16 @@ class NegativeUNL_test : public beast::unit_test::suite
             //(4) next flag ledger
             adding = true;
             txKey = pk1;
-            STTx txAdd(ttUNL_MODIDY, fill);
+            STTx txAdd(ttUNL_MODIFY, fill);
             txKey = pk2;
-            STTx txAdd_2(ttUNL_MODIDY, fill);
+            STTx txAdd_2(ttUNL_MODIFY, fill);
             adding = false;
             txKey = pk1;
-            STTx txRemove(ttUNL_MODIDY, fill);
+            STTx txRemove(ttUNL_MODIFY, fill);
             txKey = pk2;
-            STTx txRemove_2(ttUNL_MODIDY, fill);
+            STTx txRemove_2(ttUNL_MODIFY, fill);
             txKey = pk3;
-            STTx txRemove_3(ttUNL_MODIDY, fill);
+            STTx txRemove_3(ttUNL_MODIFY, fill);
             auto good_size = nUnlSizeTest(env, l, 1, false, false);
             BEAST_EXPECT(good_size);
             if (good_size)
@@ -346,7 +346,7 @@ class NegativeUNL_test : public beast::unit_test::suite
                 BEAST_EXPECT(l->nUnlToDisable() == pk2);
                 BEAST_EXPECT(l->nUnlToReEnable() == pk1);
 
-                // test sfNegativeUNLLgrSeq
+                // test sfFirstLedgerSequence
                 BEAST_EXPECT(VerifyPubKeyAndSeq(l, nUnlLedgerSeq));
             }
         }
@@ -371,7 +371,7 @@ class NegativeUNL_test : public beast::unit_test::suite
             //(6) next flag ledger
             adding = true;
             txKey = pk1;
-            STTx txAdd(ttUNL_MODIDY, fill);
+            STTx txAdd(ttUNL_MODIFY, fill);
             auto good_size = nUnlSizeTest(env, l, 1, false, false);
             BEAST_EXPECT(good_size);
             if (good_size)
@@ -412,12 +412,12 @@ class NegativeUNL_test : public beast::unit_test::suite
             //(8) next flag ledger
             adding = true;
             txKey = pk1;
-            STTx txAdd(ttUNL_MODIDY, fill);
+            STTx txAdd(ttUNL_MODIFY, fill);
             adding = false;
             txKey = pk1;
-            STTx txRemove(ttUNL_MODIDY, fill);
+            STTx txRemove(ttUNL_MODIFY, fill);
             txKey = pk2;
-            STTx txRemove_2(ttUNL_MODIDY, fill);
+            STTx txRemove_2(ttUNL_MODIFY, fill);
 
             auto good_size = nUnlSizeTest(env, l, 2, false, false);
             BEAST_EXPECT(good_size);
@@ -464,7 +464,7 @@ class NegativeUNL_test : public beast::unit_test::suite
             //(10) next flag ledger
             adding = false;
             txKey = pk2;
-            STTx txRemove_2(ttUNL_MODIDY, fill);
+            STTx txRemove_2(ttUNL_MODIFY, fill);
             auto good_size = nUnlSizeTest(env, l, 1, false, false);
             BEAST_EXPECT(good_size);
             if (good_size)

@@ -1276,7 +1276,8 @@ private:
         ManifestCache manifests;
 
         auto createValidatorList =
-            [&](uint vlSize, boost::optional<std::size_t> minimumQuorum = {})
+            [&](std::uint32_t vlSize,
+                boost::optional<std::size_t> minimumQuorum = {})
             -> std::shared_ptr<ValidatorList> {
             auto trustedKeys = std::make_shared<ValidatorList>(
                 manifests,
@@ -1322,8 +1323,8 @@ private:
         {
             hash_set<NodeID> activeValidators;
             //== Combinations ==
-            std::array<uint, 4> unlSizes({34, 35, 39, 60});
-            std::array<uint, 4> nUnlPercent({0, 20, 30, 50});
+            std::array<std::uint32_t, 4> unlSizes = {34, 35, 39, 60};
+            std::array<std::uint32_t, 4> nUnlPercent = {0, 20, 30, 50};
             for (auto us : unlSizes)
             {
                 for (auto np : nUnlPercent)
@@ -1332,11 +1333,11 @@ private:
                     BEAST_EXPECT(validators);
                     if (validators)
                     {
-                        uint nUnlSize = us * np / 100;
+                        std::uint32_t nUnlSize = us * np / 100;
                         auto unl = validators->getTrustedMasterKeys();
                         hash_set<PublicKey> nUnl;
                         auto it = unl.begin();
-                        for (uint i = 0; i < nUnlSize; ++i)
+                        for (std::uint32_t i = 0; i < nUnlSize; ++i)
                         {
                             nUnl.insert(*it);
                             ++it;
@@ -1364,10 +1365,11 @@ private:
                 {
                     //-- set == get,
                     //-- check quorum, with nUNL size: 0, 30, 18, 12
-                    auto nUnlChange = [&](uint nUnlSize, uint quorum) -> bool {
+                    auto nUnlChange = [&](std::uint32_t nUnlSize,
+                                          std::uint32_t quorum) -> bool {
                         hash_set<PublicKey> nUnl;
                         auto it = unl.begin();
-                        for (uint i = 0; i < nUnlSize; ++i)
+                        for (std::uint32_t i = 0; i < nUnlSize; ++i)
                         {
                             nUnl.insert(*it);
                             ++it;
@@ -1423,7 +1425,7 @@ private:
                 hash_set<NodeID> activeValidators;
                 hash_set<PublicKey> unl = validators->getTrustedMasterKeys();
                 auto it = unl.begin();
-                for (uint i = 0; i < 50; ++i)
+                for (std::uint32_t i = 0; i < 50; ++i)
                 {
                     activeValidators.insert(calcNodeID(*it));
                     ++it;
@@ -1432,7 +1434,7 @@ private:
                 BEAST_EXPECT(validators->quorum() == 48);
                 hash_set<PublicKey> nUnl;
                 it = unl.begin();
-                for (uint i = 0; i < 20; ++i)
+                for (std::uint32_t i = 0; i < 20; ++i)
                 {
                     nUnl.insert(*it);
                     ++it;

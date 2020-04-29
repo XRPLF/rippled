@@ -102,11 +102,8 @@ SF_U32 const sfStampEscrow(access, STI_UINT32, 22, "StampEscrow");
 SF_U32 const sfBondAmount(access, STI_UINT32, 23, "BondAmount");
 SF_U32 const sfLoadFee(access, STI_UINT32, 24, "LoadFee");
 SF_U32 const sfOfferSequence(access, STI_UINT32, 25, "OfferSequence");
-SF_U32 const sfFirstLedgerSequence(
-    access,
-    STI_UINT32,
-    26,
-    "FirstLedgerSequence");  // Deprecated: do not use
+SF_U32 const
+    sfFirstLedgerSequence(access, STI_UINT32, 26, "FirstLedgerSequence");
 SF_U32 const sfLastLedgerSequence(access, STI_UINT32, 27, "LastLedgerSequence");
 SF_U32 const sfTransactionIndex(access, STI_UINT32, 28, "TransactionIndex");
 SF_U32 const sfOperationLimit(access, STI_UINT32, 29, "OperationLimit");
@@ -120,7 +117,6 @@ SF_U32 const sfCancelAfter(access, STI_UINT32, 36, "CancelAfter");
 SF_U32 const sfFinishAfter(access, STI_UINT32, 37, "FinishAfter");
 SF_U32 const sfSignerListID(access, STI_UINT32, 38, "SignerListID");
 SF_U32 const sfSettleDelay(access, STI_UINT32, 39, "SettleDelay");
-SF_U32 const sfNegativeUNLLgrSeq(access, STI_UINT32, 40, "BeginLedgerSeq");
 
 // 64-bit integers
 SF_U64 const sfIndexNext(access, STI_UINT64, 1, "IndexNext");

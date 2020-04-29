@@ -152,7 +152,7 @@ public:
             auto& jrrnUnl = jrr[jss::NegativeUNL];
             auto jrrnUnlSize = jrrnUnl.size();
             BEAST_EXPECT(jrrnUnlSize == 2);
-            for (uint x = 0; x < jrrnUnlSize; ++x)
+            for (std::uint32_t x = 0; x < jrrnUnlSize; ++x)
             {
                 auto parsedKey = parseBase58<PublicKey>(
                     TokenType::NodePublic, jrrnUnl[x].asString());

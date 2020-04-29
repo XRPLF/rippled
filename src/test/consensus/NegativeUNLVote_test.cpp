@@ -136,7 +136,7 @@ createLedgerHistory(
             OpenView accum(&*l);
             if (l->nUnl().size() < nUNLSize)
             {
-                STTx tx(ttUNL_MODIDY, fill);
+                STTx tx(ttUNL_MODIFY, fill);
                 if (!applyAndTestResult(env, accum, tx, true))
                     break;
                 ++nidx;
@@ -145,7 +145,7 @@ createLedgerHistory(
             {
                 if (hasToAdd)
                 {
-                    STTx tx(ttUNL_MODIDY, fill);
+                    STTx tx(ttUNL_MODIFY, fill);
                     if (!applyAndTestResult(env, accum, tx, true))
                         break;
                     ++nidx;
@@ -154,7 +154,7 @@ createLedgerHistory(
                 {
                     adding = false;
                     nidx = 0;
-                    STTx tx(ttUNL_MODIDY, fill);
+                    STTx tx(ttUNL_MODIFY, fill);
                     if (!applyAndTestResult(env, accum, tx, true))
                         break;
                 }
@@ -437,7 +437,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
         hash_set<NodeID> UNL(nodeIDs.begin(), nodeIDs.end());
 
         hash_set<NodeID> nUnl;
-        for (uint i = 0; i < 3; ++i)
+        for (std::uint32_t i = 0; i < 3; ++i)
             nUnl.insert(nodeIDs[i]);
         hash_map<NodeID, unsigned int> goodScoreTable;
         for (auto& n : nodeIDs)
@@ -626,24 +626,24 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
         NodeID myId(0xA0);
         NegativeUNLVote vote(myId, env.journal);
 
-        std::array<uint, 3> unlSizes({34, 35, 80});
-        std::array<uint, 3> nUnlPercent({0, 50, 100});
-        std::array<uint, 8> scores(
-            {0,
-             NegativeUNLVote::nUnlLowWaterMark - 1,
-             NegativeUNLVote::nUnlLowWaterMark,
-             NegativeUNLVote::nUnlLowWaterMark + 1,
-             NegativeUNLVote::nUnlHighWaterMark - 1,
-             NegativeUNLVote::nUnlHighWaterMark,
-             NegativeUNLVote::nUnlHighWaterMark + 1,
-             NegativeUNLVote::nUnlMinLocalValsToVote});
+        std::array<std::uint32_t, 3> unlSizes = {34, 35, 80};
+        std::array<std::uint32_t, 3> nUnlPercent = {0, 50, 100};
+        std::array<std::uint32_t, 8> scores = {
+            0,
+            NegativeUNLVote::nUnlLowWaterMark - 1,
+            NegativeUNLVote::nUnlLowWaterMark,
+            NegativeUNLVote::nUnlLowWaterMark + 1,
+            NegativeUNLVote::nUnlHighWaterMark - 1,
+            NegativeUNLVote::nUnlHighWaterMark,
+            NegativeUNLVote::nUnlHighWaterMark + 1,
+            NegativeUNLVote::nUnlMinLocalValsToVote};
 
         //== combination 1:
         {
             auto fillScoreTable =
-                [&](uint unl_size,
-                    uint nUnl_size,
-                    uint score,
+                [&](std::uint32_t unl_size,
+                    std::uint32_t nUnl_size,
+                    std::uint32_t score,
                     hash_set<NodeID>& UNL,
                     hash_set<NodeID>& nUnl,
                     hash_map<NodeID, unsigned int>& scoreTable) {
@@ -654,7 +654,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
 
                     for (auto& n : UNL)
                         scoreTable[n] = score;
-                    for (uint i = 0; i < nUnl_size; ++i)
+                    for (std::uint32_t i = 0; i < nUnl_size; ++i)
                         nUnl.insert(nodeIDs[i]);
                 };
 
@@ -727,8 +727,8 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
         //== combination 2:
         {
             auto fillScoreTable =
-                [&](uint unl_size,
-                    uint nUnl_percent,
+                [&](std::uint32_t unl_size,
+                    std::uint32_t nUnl_percent,
                     hash_set<NodeID>& UNL,
                     hash_set<NodeID>& nUnl,
                     hash_map<NodeID, unsigned int>& scoreTable) {
@@ -737,7 +737,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
                     createNodeIDs(unl_size, nodeIDs, UNLKeys);
                     UNL.insert(nodeIDs.begin(), nodeIDs.end());
 
-                    uint nIdx = 0;
+                    std::uint32_t nIdx = 0;
                     for (auto score : scores)
                     {
                         scoreTable[nodeIDs[nIdx++]] = score;
@@ -754,7 +754,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
                     }
                     else if (nUnl_percent == 50)
                     {
-                        for (uint i = 1; i < unl_size; i += 2)
+                        for (std::uint32_t i = 1; i < unl_size; i += 2)
                             nUnl.insert(nodeIDs[i]);
                     }
                 };
@@ -882,13 +882,13 @@ class NegativeUNLVoteScoreTable_test : public beast::unit_test::suite
          * -- unl size: 10, 34, 35, 50
          * -- score pattern: all 0, all 50%, all 100%, two 0% two 50% rest 100%
          */
-        std::array<uint, 4> unlSizes({10, 34, 35, 50});
-        std::array<std::array<uint, 3>, 4> scorePattern = {
+        std::array<std::uint32_t, 4> unlSizes = {10, 34, 35, 50};
+        std::array<std::array<std::uint32_t, 3>, 4> scorePattern = {
             {{{0, 0, 0}}, {{50, 50, 50}}, {{100, 100, 100}}, {{0, 50, 100}}}};
 
-        for (uint us = 0; us < 4; ++us)
+        for (std::uint32_t us = 0; us < 4; ++us)
         {
-            for (uint sp = 0; sp < 4; ++sp)
+            for (std::uint32_t sp = 0; sp < 4; ++sp)
             {
                 jtx::Env env(*this);
 
@@ -906,11 +906,11 @@ class NegativeUNLVoteScoreTable_test : public beast::unit_test::suite
                 if (goodHistory)
                 {
                     NodeID myId = nodeIDs[3];  // Note 3
-                    uint unlSize = UNLNodeIDs.size();
+                    std::uint32_t unlSize = UNLNodeIDs.size();
                     for (auto& l : history)
                     {
-                        uint i = 0;  // looping unl
-                        auto add_v = [&](uint k) {
+                        std::uint32_t i = 0;  // looping unl
+                        auto add_v = [&](std::uint32_t k) {
                             if ((scorePattern[sp][k] == 50 &&
                                  l->seq() % 2 == 0) ||
                                 scorePattern[sp][k] == 100 ||
@@ -935,11 +935,12 @@ class NegativeUNLVoteScoreTable_test : public beast::unit_test::suite
                         }
                     }
                     NegativeUNLVote vote(myId, env.journal);
-                    hash_map<NodeID, uint> scoreTable;
+                    hash_map<NodeID, std::uint32_t> scoreTable;
                     BEAST_EXPECT(vote.buildScoreTable(
                         history.back(), UNLNodeIDs, validations, scoreTable));
-                    uint i = 0;  // looping unl
-                    auto checkScores = [&](uint score, uint k) -> bool {
+                    std::uint32_t i = 0;  // looping unl
+                    auto checkScores = [&](std::uint32_t score,
+                                           std::uint32_t k) -> bool {
                         if (nodeIDs[i] == myId)
                             return score == 256;
                         if (scorePattern[sp][k] == 0)
@@ -1202,7 +1203,7 @@ class NegativeUNLVoteMaxListed_test : public beast::unit_test::suite
             {
                 for (auto& l : history)
                 {
-                    for (uint i = 11; i < 32; ++i)
+                    for (std::uint32_t i = 11; i < 32; ++i)
                     {
                         RCLValidation v(createSTVal(env, l, nodeIDs[i]));
                         validations.add(nodeIDs[i], v);

@@ -111,7 +111,7 @@ private:
     hash_map<NodeID, LedgerIndex> newValidators_;
 
     /**
-     * Add a ttUNL_MODIDY Tx to the transaction set.
+     * Add a ttUNL_MODIFY Tx to the transaction set.
      *
      * @param seq the LedgerIndex when adding the Tx
      * @param vp the master public key of the validator
