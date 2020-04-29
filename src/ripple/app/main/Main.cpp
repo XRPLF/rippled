@@ -31,6 +31,7 @@
 #include <ripple/json/to_string.h>
 #include <ripple/net/RPCCall.h>
 #include <ripple/protocol/BuildInfo.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/RPCHandler.h>
 
