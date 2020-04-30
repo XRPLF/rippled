@@ -55,14 +55,17 @@ DatabaseRotatingImp::DatabaseRotatingImp(
     setParent(parent);
 }
 
-std::string
-DatabaseRotatingImp::rotateBackends(std::shared_ptr<Backend> newBackend)
+void
+DatabaseRotatingImp::rotateWithLock(
+    std::function<std::unique_ptr<NodeStore::Backend>(
+        std::string const& writableBackendName)> const& f)
 {
     std::lock_guard lock(mutex_);
+
+    auto newBackend = f(writableBackend_->getName());
     archiveBackend_->setDeletePath();
     archiveBackend_ = std::move(writableBackend_);
     writableBackend_ = std::move(newBackend);
-    return archiveBackend_->getName();
 }
 
 std::string
@@ -99,11 +102,7 @@ DatabaseRotatingImp::storeLedger(std::shared_ptr<Ledger const> const& srcLedger)
     }();
 
     return Database::storeLedger(
-        *srcLedger,
-        backend,
-        pCache_,
-        nCache_,
-        nullptr);
+        *srcLedger, backend, pCache_, nCache_, nullptr);
 }
 
 void
@@ -168,7 +167,7 @@ DatabaseRotatingImp::fetchFrom(uint256 const& hash, std::uint32_t seq)
 
     // Try to fetch from the writable backend
     auto nObj = fetchInternal(hash, writable);
-    if (! nObj)
+    if (!nObj)
     {
         // Otherwise try to fetch from the archive backend
         nObj = fetchInternal(hash, archive);
@@ -190,7 +189,7 @@ DatabaseRotatingImp::fetchFrom(uint256 const& hash, std::uint32_t seq)
 
 void
 DatabaseRotatingImp::for_each(
-    std::function <void(std::shared_ptr<NodeObject>)> f)
+    std::function<void(std::shared_ptr<NodeObject>)> f)
 {
     auto [writable, archive] = [&] {
         std::lock_guard lock(mutex_);
@@ -204,6 +203,5 @@ DatabaseRotatingImp::for_each(
     archive->for_each(f);
 }
 
-
-} // NodeStore
-} // ripple
+}  // namespace NodeStore
+}  // namespace ripple

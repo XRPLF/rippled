@@ -49,8 +49,10 @@ public:
         stopThreads();
     }
 
-    std::string
-    rotateBackends(std::shared_ptr<Backend> newBackend) override;
+    void
+    rotateWithLock(
+        std::function<std::unique_ptr<NodeStore::Backend>(
+            std::string const& writableBackendName)> const& f) override;
 
     std::string
     getName() const override;
@@ -125,7 +127,7 @@ private:
     fetchFrom(uint256 const& hash, std::uint32_t seq) override;
 
     void
-    for_each(std::function <void(std::shared_ptr<NodeObject>)> f) override;
+    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override;
 };
 
 }  // namespace NodeStore

@@ -427,14 +427,19 @@ SHAMapStoreImp::run()
             }
 
             lastRotated_ = validatedSeq;
-            clearCaches(validatedSeq);
 
-            SavedState savedState;
-            savedState.writableDb = newBackend->getName();
-            savedState.archiveDb = dbRotating_->rotateBackends(
-                std::move(newBackend));
-            savedState.lastRotated = lastRotated_;
-            state_db_.setState(savedState);
+            dbRotating_->rotateWithLock(
+                [&](std::string const& writableBackendName) {
+                    SavedState savedState;
+                    savedState.writableDb = newBackend->getName();
+                    savedState.archiveDb = writableBackendName;
+                    savedState.lastRotated = lastRotated_;
+                    state_db_.setState(savedState);
+
+                    clearCaches(validatedSeq);
+
+                    return std::move(newBackend);
+                });
 
             JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
         }
