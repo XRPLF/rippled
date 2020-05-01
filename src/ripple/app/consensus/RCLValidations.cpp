@@ -224,20 +224,17 @@ filterValsWithnUnl(
     std::vector<std::shared_ptr<STValidation>>& validations,
     hash_set<NodeID> const& nUnl)
 {
-    if (nUnl.empty())
-        return;
-    size_t i = 0;
-    while (i < validations.size())
+    /* Remove validations that are from validators on the negative UNL. */
+    if (!nUnl.empty())
     {
-        if (nUnl.find(validations[i]->getNodeID()) != nUnl.end())
-        {
-            validations[i] = validations.back();
-            validations.pop_back();
-        }
-        else
-        {
-            ++i;
-        }
+        validations.erase(
+            std::remove_if(
+                validations.begin(),
+                validations.end(),
+                [&nUnl](auto const& v) {
+                    return nUnl.find(v->getNodeID()) != nUnl.end();
+                }),
+            validations.end());
     }
 }
 

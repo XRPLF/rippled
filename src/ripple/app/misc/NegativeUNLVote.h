@@ -21,6 +21,11 @@
 #define RIPPLE_APP_MISC_NEGATIVEUNLVOTE_H_INCLUDED
 
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/UintTypes.h>
+
+#include <optional>
 
 namespace ripple {
 
@@ -47,22 +52,22 @@ public:
      * An unreliable validator is a candidate to be disabled by the NegativeUNL
      * protocol.
      */
-    static constexpr size_t nUnlLowWaterMark = 128;  // 256 * 0.5;
+    static constexpr size_t nUnlLowWaterMark = 256 * 0.5;
     /**
      * An unreliable validator must have more than nUnlHighWaterMark validations
      * in the last flag ledger period to be re-enabled.
      */
-    static constexpr size_t nUnlHighWaterMark = 204;  //~256 * 0.8;
+    static constexpr size_t nUnlHighWaterMark = 256 * 0.8;
     /**
      * The minimum number of validations of the local node for it to
      * participate in the voting.
      */
-    static constexpr size_t nUnlMinLocalValsToVote = 230;  //~256 * 0.9;
+    static constexpr size_t nUnlMinLocalValsToVote = 256 * 0.9;
     /**
      * We don't want to disable new validators immediately after adding them.
      * So we skip voting for disabling them for 2 flag ledgers.
      */
-    static constexpr size_t newValidatorDisableSkip = 512;  // 256 * 2;
+    static constexpr size_t newValidatorDisableSkip = 256 * 2;
     /**
      * We only want to put 25% of the UNL on the NegativeUNL.
      */
@@ -77,19 +82,17 @@ public:
     NegativeUNLVote(NodeID const& myId, beast::Journal j);
     ~NegativeUNLVote() = default;
 
-    using LedgerConstPtr = std::shared_ptr<Ledger const> const;
-
     /**
      * Cast our local vote on the NegativeUNL candidates.
      *
      * @param prevLedger the parent ledger
-     * @param unlKeys the trusted master keys
+     * @param unlKeys the trusted master keys of validators in the UNL
      * @param validations the validation message container
-     * @param initialSet the set of transactions
+     * @param initialSet the transactions set for adding ttUNL_MODIFY Tx if any
      */
     void
     doVoting(
-        LedgerConstPtr& prevLedger,
+        std::shared_ptr<Ledger const> const& prevLedger,
         hash_set<PublicKey> const& unlKeys,
         RCLValidations& validations,
         std::shared_ptr<SHAMap> const& initialSet);
@@ -107,7 +110,7 @@ public:
 private:
     NodeID const myId_;
     beast::Journal j_;
-    std::mutex mutex_;
+    mutable std::mutex mutex_;
     hash_map<NodeID, LedgerIndex> newValidators_;
 
     /**
@@ -135,7 +138,9 @@ private:
      * @return the picked candidate
      */
     NodeID
-    pickOneCandidate(uint256 randomPadData, std::vector<NodeID>& candidates);
+    pickOneCandidate(
+        uint256 const& randomPadData,
+        std::vector<NodeID> const& candidates);
 
     /**
      * Build a reliability measurement score table of validators' validation
@@ -144,22 +149,21 @@ private:
      * @param prevLedger the parent ledger
      * @param unl the trusted master keys
      * @param validations the validation container
-     * @param scoreTable the score table to be built
-     * @return if the score table was successfully filled
+     * @return the built scoreTable or empty optional if table could not be
+     * built
      */
-    bool
+    std::optional<hash_map<NodeID, std::uint32_t>>
     buildScoreTable(
-        LedgerConstPtr& prevLedger,
+        std::shared_ptr<Ledger const> const& prevLedger,
         hash_set<NodeID> const& unl,
-        RCLValidations& validations,
-        hash_map<NodeID, unsigned int>& scoreTable);
+        RCLValidations& validations);
 
     /**
      * Process the score table and find all disabling and re-enabling
      * candidates.
      *
      * @param unl the trusted master keys
-     * @param nUnl the NegativeUNL
+     * @param negUnl the NegativeUNL
      * @param scoreTable the score table
      * @param toDisableCandidates the candidates to disable
      * @param toReEnableCandidates the candidates to re-enable
@@ -167,8 +171,8 @@ private:
     void
     findAllCandidates(
         hash_set<NodeID> const& unl,
-        hash_set<NodeID> const& nUnl,
-        hash_map<NodeID, unsigned int> const& scoreTable,
+        hash_set<NodeID> const& negUnl,
+        hash_map<NodeID, std::uint32_t> const& scoreTable,
         std::vector<NodeID>& toDisableCandidates,
         std::vector<NodeID>& toReEnableCandidates);
 

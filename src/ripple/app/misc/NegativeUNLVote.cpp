@@ -30,7 +30,7 @@ NegativeUNLVote::NegativeUNLVote(NodeID const& myId, beast::Journal j)
 
 void
 NegativeUNLVote::doVoting(
-    LedgerConstPtr& prevLedger,
+    std::shared_ptr<Ledger const> const& prevLedger,
     hash_set<PublicKey> const& unlKeys,
     RCLValidations& validations,
     std::shared_ptr<SHAMap> const& initialSet)
@@ -54,8 +54,8 @@ NegativeUNLVote::doVoting(
         unlNodeIDs.emplace(nid);
     }
 
-    hash_map<NodeID, unsigned int> scoreTable;
-    if (buildScoreTable(prevLedger, unlNodeIDs, validations, scoreTable))
+    if (std::optional<hash_map<NodeID, std::uint32_t>> scoreTable =
+            buildScoreTable(prevLedger, unlNodeIDs, validations))
     {
         // build next nUNL
         auto nUnlKeys = prevLedger->nUnl();
@@ -85,7 +85,7 @@ NegativeUNLVote::doVoting(
         findAllCandidates(
             unlNodeIDs,
             nUnlNodeIDs,
-            scoreTable,
+            *scoreTable,
             toDisableCandidates,
             toReEnableCandidates);
 
@@ -123,8 +123,8 @@ NegativeUNLVote::addTx(
     uint256 txID = nUnlTx.getTransactionID();
     Serializer s;
     nUnlTx.add(s);
-    auto tItem = std::make_shared<SHAMapItem>(txID, s.peekData());
-    if (!initialSet->addGiveItem(tItem, true, false))
+    if (!initialSet->addGiveItem(
+            std::make_shared<SHAMapItem>(txID, s.peekData()), true, false))
     {
         JLOG(j_.warn()) << "N-UNL: ledger seq=" << seq
                         << ", add ttUNL_MODIFY tx failed";
@@ -140,8 +140,8 @@ NegativeUNLVote::addTx(
 
 NodeID
 NegativeUNLVote::pickOneCandidate(
-    uint256 randomPadData,
-    std::vector<NodeID>& candidates)
+    uint256 const& randomPadData,
+    std::vector<NodeID> const& candidates)
 {
     assert(!candidates.empty());
     static_assert(NodeID::bytes <= uint256::bytes);
@@ -157,15 +157,12 @@ NegativeUNLVote::pickOneCandidate(
     return txNodeID;
 }
 
-bool
+std::optional<hash_map<NodeID, std::uint32_t>>
 NegativeUNLVote::buildScoreTable(
-    LedgerConstPtr& prevLedger,
+    std::shared_ptr<Ledger const> const& prevLedger,
     hash_set<NodeID> const& unl,
-    RCLValidations& validations,
-    hash_map<NodeID, unsigned int>& scoreTable)
+    RCLValidations& validations)
 {
-    assert(scoreTable.empty());
-
     /*
      * Find agreed validation messages received for the last 256 ledgers,
      * for every validator, and fill the score table.
@@ -190,50 +187,54 @@ NegativeUNLVote::buildScoreTable(
     if (!hashIndex || !hashIndex->isFieldPresent(sfHashes))
     {
         JLOG(j_.debug()) << "N-UNL: ledger " << seq << " no history.";
-        return false;
+        return {};
     }
 
-    auto ledgerAncestors = hashIndex->getFieldV256(sfHashes).value();
-    auto numAncestors = ledgerAncestors.size();
+    auto const ledgerAncestors = hashIndex->getFieldV256(sfHashes).value();
+    auto const numAncestors = ledgerAncestors.size();
     if (numAncestors < 256)
     {
         JLOG(j_.debug()) << "N-UNL: ledger " << seq
                          << " not enough history. Can trace back only "
                          << numAncestors << " ledgers.";
-        return false;
+        return {};
     }
 
     // have enough ledger ancestors, build the score table
+    hash_map<NodeID, std::uint32_t> scoreTable;
     for (auto const& k : unl)
     {
         scoreTable[k] = 0;
     }
-    auto idx = numAncestors - 1;
+
     for (int i = 0; i < 256; ++i)
     {
-        for (auto const& v :
-             validations.getTrustedForLedger(ledgerAncestors[idx--]))
+        for (auto const& v : validations.getTrustedForLedger(
+                 ledgerAncestors[numAncestors - 1 - i]))
         {
-            if (scoreTable.find(v->getNodeID()) != scoreTable.end())
-                ++scoreTable[v->getNodeID()];
+            auto const it = scoreTable.find(v->getNodeID());
+            if (it != scoreTable.end())
+                ++it->second;
         }
     }
 
-    unsigned int myValidationCount = 0;
-    if (scoreTable.find(myId_) != scoreTable.end())
-        myValidationCount = scoreTable[myId_];
+    auto const myValidationCount = [&]() -> std::uint32_t {
+        if (auto const it = scoreTable.find(myId_); it != scoreTable.end())
+            return it->second;
+        return 0;
+    }();
     if (myValidationCount < nUnlMinLocalValsToVote)
     {
         JLOG(j_.debug()) << "N-UNL: ledger " << seq << ". I only issued "
                          << myValidationCount
                          << " validations in last 256 ledgers."
                          << " My reliability measurement could be wrong.";
-        return false;
+        return {};
     }
     else if (
         myValidationCount > nUnlMinLocalValsToVote && myValidationCount <= 256)
     {
-        return true;
+        return scoreTable;
     }
     else
     {
@@ -242,71 +243,72 @@ NegativeUNLVote::buildScoreTable(
         JLOG(j_.error()) << "N-UNL: ledger " << seq << ". I issued "
                          << myValidationCount
                          << " validations in last 256 ledgers. Too many!";
-        return false;
+        return {};
     }
 }
 
 void
 NegativeUNLVote::findAllCandidates(
     hash_set<NodeID> const& unl,
-    hash_set<NodeID> const& nUnl,
-    hash_map<NodeID, unsigned int> const& scoreTable,
+    hash_set<NodeID> const& negUnl,
+    hash_map<NodeID, std::uint32_t> const& scoreTable,
     std::vector<NodeID>& toDisableCandidates,
     std::vector<NodeID>& toReEnableCandidates)
 {
     /*
      * -- Compute if need to find more validators to disable, by checking if
-     *    canAdd = sizeof nUnl < maxNegativeListed.
+     *    canAdd = sizeof negUnl < maxNegativeListed.
      *
      * -- Find toDisableCandidates: check if
      *    (1) canAdd,
      *    (2) has less than nUnlLowWaterMark validations,
-     *    (3) is not in nUnl, and
+     *    (3) is not in negUnl, and
      *    (4) is not a new validator.
      *
      * -- Find toReEnableCandidates: check if
-     *    (1) is in nUnl and has more than nUnlHighWaterMark validations
+     *    (1) is in negUnl and has more than nUnlHighWaterMark validations
      *    (2) if did not find any by (1), try to find candidates:
-     *        (a) is in nUnl and (b) is not in unl.
+     *        (a) is in negUnl and (b) is not in unl.
      */
-    auto maxNegativeListed = (std::size_t)std::ceil(unl.size() * nUnlMaxListed);
-    std::size_t negativeListed = 0;
-    for (auto const& n : unl)
-    {
-        if (nUnl.find(n) != nUnl.end())
-            ++negativeListed;
-    }
-    bool canAdd = negativeListed < maxNegativeListed;
-    JLOG(j_.trace()) << "N-UNL: my nodeId " << myId_ << " lowWaterMark "
-                     << nUnlLowWaterMark << " highWaterMark "
-                     << nUnlHighWaterMark << " canAdd " << canAdd
-                     << " negativeListed " << negativeListed
-                     << " maxNegativeListed " << maxNegativeListed;
-
-    for (auto it = scoreTable.cbegin(); it != scoreTable.cend(); ++it)
-    {
-        JLOG(j_.trace()) << "N-UNL: node " << it->first << " score "
-                         << it->second;
-
-        if (canAdd && it->second < nUnlLowWaterMark &&
-            nUnl.find(it->first) == nUnl.end() &&
-            newValidators_.find(it->first) == newValidators_.end())
+    auto const canAdd = [&]() -> bool {
+        auto const maxNegativeListed =
+            static_cast<std::size_t>(std::ceil(unl.size() * nUnlMaxListed));
+        std::size_t negativeListed = 0;
+        for (auto const& n : unl)
         {
-            JLOG(j_.trace()) << "N-UNL: toDisable candidate " << it->first;
-            toDisableCandidates.push_back(it->first);
+            if (negUnl.find(n) != negUnl.end())
+                ++negativeListed;
+        }
+        bool const result = negativeListed < maxNegativeListed;
+        JLOG(j_.trace()) << "N-UNL: my nodeId " << myId_ << " lowWaterMark "
+                         << nUnlLowWaterMark << " highWaterMark "
+                         << nUnlHighWaterMark << " canAdd " << result
+                         << " negativeListed " << negativeListed
+                         << " maxNegativeListed " << maxNegativeListed;
+        return result;
+    }();
+    for (auto const& [nodeId, score] : scoreTable)
+    {
+        JLOG(j_.trace()) << "N-UNL: node " << nodeId << " score " << score;
+
+        if (canAdd && score < nUnlLowWaterMark &&
+            negUnl.find(nodeId) == negUnl.end() &&
+            newValidators_.find(nodeId) == newValidators_.end())
+        {
+            JLOG(j_.trace()) << "N-UNL: toDisable candidate " << nodeId;
+            toDisableCandidates.push_back(nodeId);
         }
 
-        if (it->second > nUnlHighWaterMark &&
-            nUnl.find(it->first) != nUnl.end())
+        if (score > nUnlHighWaterMark && negUnl.find(nodeId) != negUnl.end())
         {
-            JLOG(j_.trace()) << "N-UNL: toReEnable candidate " << it->first;
-            toReEnableCandidates.push_back(it->first);
+            JLOG(j_.trace()) << "N-UNL: toReEnable candidate " << nodeId;
+            toReEnableCandidates.push_back(nodeId);
         }
     }
 
     if (toReEnableCandidates.empty())
     {
-        for (auto const& n : nUnl)
+        for (auto const& n : negUnl)
         {
             if (unl.find(n) == unl.end())
             {

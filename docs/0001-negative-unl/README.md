@@ -14,7 +14,7 @@ In order to determine which validators are unreliable, we need clearly define wh
 
 To track whether or not a validator is responding to the network, we could monitor them with a “heartbeat” protocol. Instead of creating a new heartbeat protocol, we can leverage some existing protocol messages to mimic the heartbeat. We picked validation messages because validators should send one and only one validation message per ledger. In addition, we only count the validation messages that agree with the local node's validations.
 
-As David said in his [proposal](https://ripplelabs.atlassian.net/wiki/spaces/~Joel%20Katz/pages/718734824/Negative+UNL), with the negative UNL, the network could keep making forward progress safely even if the number of remaining validators gets to 60%. Say we have a network with 10 validators on the UNL and everything is operating correctly. The quorum required for this network would be 8 (80% of 10). When validators fail, the quorum required would be as low as 6 (60% of 10), which is the absolute ***minimum quorum***. We need the absolute minimum quorum to be strictly greater than 50% of the original UNL so that there cannot be two partitions of well-behaved nodes headed in different directions. We arbitrarily choose 60% as the minimum quorum to give a margin of safety.
+With the negative UNL, the network could keep making forward progress safely even if the number of remaining validators gets to 60%. Say we have a network with 10 validators on the UNL and everything is operating correctly. The quorum required for this network would be 8 (80% of 10). When validators fail, the quorum required would be as low as 6 (60% of 10), which is the absolute ***minimum quorum***. We need the absolute minimum quorum to be strictly greater than 50% of the original UNL so that there cannot be two partitions of well-behaved nodes headed in different directions. We arbitrarily choose 60% as the minimum quorum to give a margin of safety.
 
 Consider these events in the absence of negative UNL:
 1. 1:00pm - validator1 fails, votes vs. quorum: 9 >= 8, we have quorum
@@ -54,7 +54,6 @@ This section discusses the following topics about the Negative UNL design:
 * [Quorum size calculation](#Quorum-Size-Calculation)
 * [Filter validation messages](#Filter-Validation-Messages)
 * [High level sequence diagram of code changes](#High-Level-Sequence-Diagram-of-Code-Changes)
-* [Confidence Test](#Confidence-Test)
 
 ### Negative UNL Protocol Overview
 Every ledger stores a list of zero or more unreliable validators. Updates to the list must be approved by the validators using the consensus mechanism that validators use to agree on the set of transactions. The list is used only when checking if a ledger is fully validated. 
