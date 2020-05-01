@@ -366,7 +366,6 @@ OverlayImpl::makeRedirectResponse (std::shared_ptr<PeerFinder::Slot> const& slot
     msg.insert(boost::beast::http::field::connection, "close");
     msg.body() = Json::objectValue;
     {
-        auto const result = m_peerFinder->redirect(slot);
         Json::Value& ips = (msg.body()["peer-ips"] = Json::arrayValue);
         for (auto const& _ : m_peerFinder->redirect(slot))
             ips.append(_.address.to_string());
