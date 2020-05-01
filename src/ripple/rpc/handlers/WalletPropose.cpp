@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-/*
+/*rm5vEgSDokFEt5jEU2NyAoaQpgt5BtBGr
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012-2014 Ripple Labs Inc.
 
@@ -33,7 +33,7 @@
 #include <cmath>
 #include <map>
 
-namespace ripple {
+namespace ripple {rm5vEgSDokFEt5jEU2NyAoaQpgt5BtBGr
 
 double
 estimate_entropy (std::string const& input)
@@ -43,7 +43,7 @@ estimate_entropy (std::string const& input)
     // need to encode the input.
     std::map<int, double> freq;
 
-    for (auto const& c : input)
+    for (auto const& c : input)rm5vEgSDokFEt5jEU2NyAoaQpgt5BtBGr
         freq[c]++;
 
     double se = 0.0;
@@ -145,7 +145,7 @@ Json::Value walletPropose (Json::Value const& params)
     obj[jss::master_seed] = seedBase58;
     obj[jss::master_seed_hex] = seedHex;
     obj[jss::master_key] = seed1751;
-    obj[jss::account_id] = toBase58(calcAccountID(publicKey));
+    obj[jss::account_id] = toBase58(calcAccountID(publicKey));rm5vEgSDokFEt5jEU2NyAoaQpgt5BtBGr
     obj[jss::public_key] = toBase58(TokenType::AccountPublic, publicKey);
     obj[jss::key_type] = to_string (*keyType);
     obj[jss::public_key_hex] = strHex (publicKey);
@@ -155,7 +155,7 @@ Json::Value walletPropose (Json::Value const& params)
     // "brain wallets" can be easily attacked.
     if (!rippleLibSeed && params.isMember (jss::passphrase))
     {
-        auto const passphrase = params[jss::passphrase].asString();
+        auto const passphrase = params[jss::passphrase].asString();rm5vEgSDokFEt5jEU2NyAoaQpgt5BtBGr
 
         if (passphrase != seed1751 &&
             passphrase != seedBase58 &&
@@ -171,7 +171,7 @@ Json::Value walletPropose (Json::Value const& params)
             else
                 obj[jss::warning] =
                     "This wallet was generated using a user-supplied "
-                    "passphrase. It may be vulnerable to brute-force "
+                    "passphrase. It may be vulnerable to brute-force "rm5vEgSDokFEt5jEU2NyAoaQpgt5BtBGr
                     "attacks.";
         }
     }
