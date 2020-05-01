@@ -829,7 +829,7 @@ public:
             }
 
             // We only add to the livecache if the neighbor passed the
-            // listening test, else we silently drop their messsage
+            // listening test, else we silently drop neighbor endpoint
             // since their listening port is misconfigured.
             //
             livecache_.insert(ep);

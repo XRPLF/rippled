@@ -138,8 +138,8 @@ When a peer receives an Endpoint message that originates from a neighbor
 connection test on that neighbor by initiating an outgoing connection to the
 remote IP address as seen on the connection combined with the port advertised
 in the Endpoint message. If the test fails, then the peer considers its neighbor
-firewalled (intentionally or due to misconfiguration) and no longer forwards
-Endpoint messages for that peer. This prevents poor quality unconnectible
+firewalled (intentionally or due to misconfiguration) and not forward neighbor
+endpoint in Endpoint messages. This prevents poor quality unconnectible
 addresses from landing in the caches. If the incoming connection test passes,
 then the peer fills in the Endpoint message with the remote address as seen on
 the connection before storing it in its cache and forwarding it to other peers.
