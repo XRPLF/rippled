@@ -505,6 +505,25 @@ class Tx_test : public beast::unit_test::suite
         }
     };
 
+    class GrpcAccountTxClient : public GRPCTestClientBase
+    {
+    public:
+        org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest request;
+        org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse reply;
+
+        explicit GrpcAccountTxClient(std::string const& port)
+            : GRPCTestClientBase(port)
+        {
+        }
+
+        void
+        AccountTx()
+        {
+            status =
+                stub_->GetAccountTransactionHistory(&context, request, &reply);
+        }
+    };
+
     void
     testTxGrpc()
     {
@@ -674,22 +693,65 @@ class Tx_test : public beast::unit_test::suite
                     cmpPaymentTx(result.second.transaction(), tx);
                 }
 
-                if (ledger && !b)
-                {
-                    auto rawMeta = ledger->txRead(id).second;
-                    if (rawMeta)
-                    {
-                        auto txMeta = std::make_shared<TxMeta>(
-                            id, ledger->seq(), *rawMeta);
+                if (!ledger || b)
+                    continue;
 
-                        cmpMeta(result.second.meta(), txMeta);
-                        cmpDeliveredAmount(
-                            result.second.meta(),
-                            result.second.transaction(),
-                            txMeta,
-                            tx);
-                    }
-                }
+                auto rawMeta = ledger->txRead(id).second;
+                if (!rawMeta)
+                    continue;
+
+                auto txMeta =
+                    std::make_shared<TxMeta>(id, ledger->seq(), *rawMeta);
+
+                cmpMeta(result.second.meta(), txMeta);
+                cmpDeliveredAmount(
+                    result.second.meta(),
+                    result.second.transaction(),
+                    txMeta,
+                    tx);
+
+                auto grpcAccountTx = [&grpcPort](
+                                         uint256 const& id,
+                                         bool binary,
+                                         AccountID const& account)
+                    -> std::
+                        pair<bool, org::xrpl::rpc::v1::GetTransactionResponse> {
+                            GrpcAccountTxClient client(grpcPort);
+                            client.request.set_binary(binary);
+                            client.request.mutable_account()->set_address(
+                                toBase58(account));
+                            client.AccountTx();
+                            org::xrpl::rpc::v1::GetTransactionResponse res;
+
+                            for (auto const& tx : client.reply.transactions())
+                            {
+                                if (uint256::fromVoid(tx.hash().data()) == id)
+                                {
+                                    return {client.status.ok(), tx};
+                                }
+                            }
+                            return {false, res};
+                        };
+
+                // Compare result to result from account_tx
+                auto mentioned = tx->getMentionedAccounts();
+
+                if (!BEAST_EXPECT(mentioned.size()))
+                    continue;
+
+                auto account = *mentioned.begin();
+                auto const accountTxResult = grpcAccountTx(id, b, account);
+
+                if (!BEAST_EXPECT(accountTxResult.first))
+                    continue;
+
+                cmpPaymentTx(accountTxResult.second.transaction(), tx);
+                cmpMeta(accountTxResult.second.meta(), txMeta);
+                cmpDeliveredAmount(
+                    accountTxResult.second.meta(),
+                    accountTxResult.second.transaction(),
+                    txMeta,
+                    tx);
             }
             index++;
         }
