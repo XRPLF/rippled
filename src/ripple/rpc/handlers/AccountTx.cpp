@@ -373,19 +373,21 @@ populateProtoResponse(
                             closeTime->time_since_epoch().count());
                     if (txnMeta)
                     {
-                        if (!txnMeta->hasDeliveredAmount())
+                        RPC::convert(*txnProto->mutable_meta(), txnMeta);
+                        if (!txnProto->meta().has_delivered_amount())
                         {
-                            std::optional<STAmount> amount = getDeliveredAmount(
-                                context,
-                                txn->getSTransaction(),
-                                *txnMeta,
-                                txn->getLedger());
-                            if (amount)
+                            if (auto amt = getDeliveredAmount(
+                                    context,
+                                    txn->getSTransaction(),
+                                    *txnMeta,
+                                    txn->getLedger()))
                             {
-                                txnMeta->setDeliveredAmount(*amount);
+                                RPC::convert(
+                                    *txnProto->mutable_meta()
+                                         ->mutable_delivered_amount(),
+                                    *amt);
                             }
                         }
-                        RPC::convert(*txnProto->mutable_meta(), txnMeta);
                     }
                 }
             }

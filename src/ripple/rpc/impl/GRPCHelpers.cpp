@@ -1567,6 +1567,9 @@ convert(org::xrpl::rpc::v1::Meta& to, std::shared_ptr<TxMeta> const& from)
     to.mutable_transaction_result()->set_result(
         transToken(from->getResultTER()));
 
+    if (from->hasDeliveredAmount())
+        convert(*to.mutable_delivered_amount(), from->getDeliveredAmount());
+
     STArray& nodes = from->getNodes();
     for (auto it = nodes.begin(); it != nodes.end(); ++it)
     {
