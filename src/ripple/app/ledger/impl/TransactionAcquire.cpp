@@ -212,7 +212,6 @@ TransactionAcquire::takeNodes(
                 else if (!mMap->addRootNode(
                                   SHAMapHash{mHash},
                                   makeSlice(*nodeDatait),
-                                  snfWIRE,
                                   nullptr)
                               .isGood())
                 {

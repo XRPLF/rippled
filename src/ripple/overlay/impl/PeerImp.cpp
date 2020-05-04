@@ -1184,7 +1184,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetPeerShardInfo> const& m)
                 reply.set_lastlink(true);
 
             if (m->peerchain_size() > 0)
+            {
+                for (int i = 0; i < m->peerchain_size(); ++i)
+                {
+                    if (!publicKeyType(makeSlice(m->peerchain(i).nodepubkey())))
+                        return badData("Invalid peer chain public key");
+                }
+
                 *reply.mutable_peerchain() = m->peerchain();
+            }
 
             send(std::make_shared<Message>(reply, protocol::mtPEER_SHARD_INFO));
 
@@ -2209,7 +2217,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
         reply.set_type(packet.type());
 
         if (packet.has_ledgerhash())
+        {
+            if (!stringIsUint256Sized(packet.ledgerhash()))
+            {
+                fee_ = Resource::feeInvalidRequest;
+                return;
+            }
+
             reply.set_ledgerhash(packet.ledgerhash());
+        }
 
         // This is a very minimal implementation
         for (int i = 0; i < packet.objects_size(); ++i)
@@ -2290,10 +2306,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
                 {
                     uint256 const hash{obj.hash()};
 
-                    std::shared_ptr<Blob> data(std::make_shared<Blob>(
-                        obj.data().begin(), obj.data().end()));
-
-                    app_.getLedgerMaster().addFetchPack(hash, data);
+                    app_.getLedgerMaster().addFetchPack(
+                        hash,
+                        std::make_shared<Blob>(
+                            obj.data().begin(), obj.data().end()));
                 }
             }
         }
@@ -2587,16 +2603,15 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
             {
                 JLOG(p_journal_.debug()) << "GetLedger: Routing Tx set request";
 
-                auto const v = getPeerWithTree(overlay_, txHash, this);
-                if (!v)
+                if (auto const v = getPeerWithTree(overlay_, txHash, this))
                 {
-                    JLOG(p_journal_.info()) << "GetLedger: Route TX set failed";
+                    packet.set_requestcookie(id());
+                    v->send(std::make_shared<Message>(
+                        packet, protocol::mtGET_LEDGER));
                     return;
                 }
 
-                packet.set_requestcookie(id());
-                v->send(
-                    std::make_shared<Message>(packet, protocol::mtGET_LEDGER));
+                JLOG(p_journal_.info()) << "GetLedger: Route TX set failed";
                 return;
             }
 

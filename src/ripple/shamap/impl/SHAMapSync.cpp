@@ -546,7 +546,6 @@ SHAMapAddNode
 SHAMap::addRootNode(
     SHAMapHash const& hash,
     Slice const& rootNode,
-    SHANodeFormat format,
     SHAMapSyncFilter* filter)
 {
     // we already have a root_ node
@@ -558,8 +557,7 @@ SHAMap::addRootNode(
     }
 
     assert(seq_ >= 1);
-    auto node = SHAMapAbstractNode::make(
-        rootNode, 0, format, SHAMapHash{}, false, f_.journal());
+    auto node = SHAMapAbstractNode::makeFromWire(rootNode);
     if (!node || !node->isValid() || node->getNodeHash() != hash)
         return SHAMapAddNode::invalid();
 
@@ -602,8 +600,7 @@ SHAMap::addKnownNode(
     }
 
     std::uint32_t generation = f_.fullbelow().getGeneration();
-    auto newNode = SHAMapAbstractNode::make(
-        rawNode, 0, snfWIRE, SHAMapHash{}, false, f_.journal(), node);
+    auto newNode = SHAMapAbstractNode::makeFromWire(rawNode);
     SHAMapNodeID iNodeID;
     auto iNode = root_.get();
 

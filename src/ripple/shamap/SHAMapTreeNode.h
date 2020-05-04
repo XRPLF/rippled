@@ -176,14 +176,32 @@ public:
     invariants(bool is_root = false) const = 0;
 
     static std::shared_ptr<SHAMapAbstractNode>
-    make(
-        Slice const& rawNode,
+    makeFromPrefix(Slice rawNode, SHAMapHash const& hash);
+
+    static std::shared_ptr<SHAMapAbstractNode>
+    makeFromWire(Slice rawNode);
+
+private:
+    static std::shared_ptr<SHAMapAbstractNode>
+    makeTransaction(
+        Slice data,
         std::uint32_t seq,
-        SHANodeFormat format,
         SHAMapHash const& hash,
-        bool hashValid,
-        beast::Journal j,
-        SHAMapNodeID const& id = SHAMapNodeID{});
+        bool hashValid);
+
+    static std::shared_ptr<SHAMapAbstractNode>
+    makeAccountState(
+        Slice data,
+        std::uint32_t seq,
+        SHAMapHash const& hash,
+        bool hashValid);
+
+    static std::shared_ptr<SHAMapAbstractNode>
+    makeTransactionWithMeta(
+        Slice data,
+        std::uint32_t seq,
+        SHAMapHash const& hash,
+        bool hashValid);
 };
 
 class SHAMapInnerNode : public SHAMapAbstractNode
@@ -239,15 +257,15 @@ public:
     void
     invariants(bool is_root = false) const override;
 
-    friend std::shared_ptr<SHAMapAbstractNode>
-    SHAMapAbstractNode::make(
-        Slice const& rawNode,
+    static std::shared_ptr<SHAMapAbstractNode>
+    makeFullInner(
+        Slice data,
         std::uint32_t seq,
-        SHANodeFormat format,
         SHAMapHash const& hash,
-        bool hashValid,
-        beast::Journal j,
-        SHAMapNodeID const& id);
+        bool hashValid);
+
+    static std::shared_ptr<SHAMapAbstractNode>
+    makeCompressedInner(Slice data, std::uint32_t seq);
 };
 
 // SHAMapTreeNode represents a leaf, and may eventually be renamed to reflect
@@ -282,10 +300,6 @@ public:
     invariants(bool is_root = false) const override;
 
 public:  // public only to SHAMap
-    // inner node functions
-    bool
-    isInnerNode() const;
-
     // item node function
     bool
     hasItem() const;
@@ -398,12 +412,6 @@ SHAMapInnerNode::setFullBelowGen(std::uint32_t gen)
 }
 
 // SHAMapTreeNode
-
-inline bool
-SHAMapTreeNode::isInnerNode() const
-{
-    return !mItem;
-}
 
 inline bool
 SHAMapTreeNode::hasItem() const

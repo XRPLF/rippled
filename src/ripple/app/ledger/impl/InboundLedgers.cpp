@@ -247,15 +247,8 @@ public:
                 if (!node.has_nodeid() || !node.has_nodedata())
                     return;
 
-                auto id_string = node.nodeid();
-                auto newNode = SHAMapAbstractNode::make(
-                    makeSlice(node.nodedata()),
-                    0,
-                    snfWIRE,
-                    SHAMapHash{uZero},
-                    false,
-                    app_.journal("SHAMapNodeID"),
-                    SHAMapNodeID(id_string.data(), id_string.size()));
+                auto newNode = SHAMapAbstractNode::makeFromWire(
+                    makeSlice(node.nodedata()));
 
                 if (!newNode)
                     return;
@@ -263,10 +256,9 @@ public:
                 s.erase();
                 newNode->addRaw(s, snfPREFIX);
 
-                auto blob = std::make_shared<Blob>(s.begin(), s.end());
-
                 app_.getLedgerMaster().addFetchPack(
-                    newNode->getNodeHash().as_uint256(), blob);
+                    newNode->getNodeHash().as_uint256(),
+                    std::make_shared<Blob>(s.begin(), s.end()));
             }
         }
         catch (std::exception const&)

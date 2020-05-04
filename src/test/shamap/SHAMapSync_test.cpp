@@ -140,7 +140,6 @@ public:
                              .addRootNode(
                                  source.getHash(),
                                  makeSlice(*gotNodes_a.begin()),
-                                 snfWIRE,
                                  nullptr)
                              .isGood());
         }
