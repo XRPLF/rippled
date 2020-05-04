@@ -151,13 +151,8 @@ SHAMap::fetchNodeFromDB(SHAMapHash const& hash) const
         {
             try
             {
-                node = SHAMapAbstractNode::make(
-                    makeSlice(obj->getData()),
-                    0,
-                    snfPREFIX,
-                    hash,
-                    true,
-                    f_.journal());
+                node = SHAMapAbstractNode::makeFromPrefix(
+                    makeSlice(obj->getData()), 0, hash, true, f_.journal());
                 if (node)
                     canonicalize(hash, node);
             }
@@ -181,20 +176,32 @@ SHAMap::fetchNodeFromDB(SHAMapHash const& hash) const
 std::shared_ptr<SHAMapAbstractNode>
 SHAMap::checkFilter(SHAMapHash const& hash, SHAMapSyncFilter* filter) const
 {
-    std::shared_ptr<SHAMapAbstractNode> node;
     if (auto nodeData = filter->getNode(hash))
     {
-        node = SHAMapAbstractNode::make(
-            makeSlice(*nodeData), 0, snfPREFIX, hash, true, f_.journal());
-        if (node)
+        try
         {
-            filter->gotNode(
-                true, hash, ledgerSeq_, std::move(*nodeData), node->getType());
-            if (backed_)
-                canonicalize(hash, node);
+            auto node = SHAMapAbstractNode::makeFromPrefix(
+                makeSlice(*nodeData), 0, hash, true, f_.journal());
+            if (node)
+            {
+                filter->gotNode(
+                    true,
+                    hash,
+                    ledgerSeq_,
+                    std::move(*nodeData),
+                    node->getType());
+                if (backed_)
+                    canonicalize(hash, node);
+            }
+            return node;
+        }
+        catch (std::exception const& x)
+        {
+            JLOG(f_.journal().warn())
+                << "Invalid node/data, hash=" << hash << ": " << x.what();
         }
     }
-    return node;
+    return {};
 }
 
 // Get a node without throwing
@@ -374,13 +381,8 @@ SHAMap::descendAsync(
             if (!obj)
                 return nullptr;
 
-            ptr = SHAMapAbstractNode::make(
-                makeSlice(obj->getData()),
-                0,
-                snfPREFIX,
-                hash,
-                true,
-                f_.journal());
+            ptr = SHAMapAbstractNode::makeFromPrefix(
+                makeSlice(obj->getData()), 0, hash, true, f_.journal());
             if (ptr && backed_)
                 canonicalize(hash, ptr);
         }

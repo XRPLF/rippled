@@ -898,33 +898,40 @@ InboundLedger::takeTxNode(
         return true;
     }
 
-    auto nodeIDit = nodeIDs.cbegin();
-    auto nodeDatait = data.begin();
-    TransactionStateSF filter(
-        mLedger->txMap().family().db(), app_.getLedgerMaster());
-
-    while (nodeIDit != nodeIDs.cend())
+    try
     {
-        if (nodeIDit->isRoot())
-        {
-            san += mLedger->txMap().addRootNode(
-                SHAMapHash{mLedger->info().txHash},
-                makeSlice(*nodeDatait),
-                snfWIRE,
-                &filter);
-            if (!san.isGood())
-                return false;
-        }
-        else
-        {
-            san += mLedger->txMap().addKnownNode(
-                *nodeIDit, makeSlice(*nodeDatait), &filter);
-            if (!san.isGood())
-                return false;
-        }
+        auto nodeIDit = nodeIDs.cbegin();
+        auto nodeDatait = data.begin();
+        TransactionStateSF filter(
+            mLedger->txMap().family().db(), app_.getLedgerMaster());
 
-        ++nodeIDit;
-        ++nodeDatait;
+        while (nodeIDit != nodeIDs.cend())
+        {
+            if (nodeIDit->isRoot())
+            {
+                san += mLedger->txMap().addRootNode(
+                    SHAMapHash{mLedger->info().txHash},
+                    makeSlice(*nodeDatait),
+                    &filter);
+                if (!san.isGood())
+                    return false;
+            }
+            else
+            {
+                san += mLedger->txMap().addKnownNode(
+                    *nodeIDit, makeSlice(*nodeDatait), &filter);
+                if (!san.isGood())
+                    return false;
+            }
+
+            ++nodeIDit;
+            ++nodeDatait;
+        }
+    }
+    catch (std::exception const& ex)
+    {
+        JLOG(m_journal.error()) << "Peer sent bad tx node data: " << ex.what();
+        return false;
     }
 
     if (!mLedger->txMap().isSynching())
@@ -972,39 +979,47 @@ InboundLedger::takeAsNode(
         return true;
     }
 
-    auto nodeIDit = nodeIDs.cbegin();
-    auto nodeDatait = data.begin();
-    AccountStateSF filter(
-        mLedger->stateMap().family().db(), app_.getLedgerMaster());
-
-    while (nodeIDit != nodeIDs.cend())
+    try
     {
-        if (nodeIDit->isRoot())
-        {
-            san += mLedger->stateMap().addRootNode(
-                SHAMapHash{mLedger->info().accountHash},
-                makeSlice(*nodeDatait),
-                snfWIRE,
-                &filter);
-            if (!san.isGood())
-            {
-                JLOG(m_journal.warn()) << "Bad ledger header";
-                return false;
-            }
-        }
-        else
-        {
-            san += mLedger->stateMap().addKnownNode(
-                *nodeIDit, makeSlice(*nodeDatait), &filter);
-            if (!san.isGood())
-            {
-                JLOG(m_journal.warn()) << "Unable to add AS node";
-                return false;
-            }
-        }
+        auto nodeIDit = nodeIDs.cbegin();
+        auto nodeDatait = data.begin();
+        AccountStateSF filter(
+            mLedger->stateMap().family().db(), app_.getLedgerMaster());
 
-        ++nodeIDit;
-        ++nodeDatait;
+        while (nodeIDit != nodeIDs.cend())
+        {
+            if (nodeIDit->isRoot())
+            {
+                san += mLedger->stateMap().addRootNode(
+                    SHAMapHash{mLedger->info().accountHash},
+                    makeSlice(*nodeDatait),
+                    &filter);
+                if (!san.isGood())
+                {
+                    JLOG(m_journal.warn()) << "Unable to add AS root node";
+                    return false;
+                }
+            }
+            else
+            {
+                san += mLedger->stateMap().addKnownNode(
+                    *nodeIDit, makeSlice(*nodeDatait), &filter);
+                if (!san.isGood())
+                {
+                    JLOG(m_journal.warn()) << "Unable to add AS node";
+                    return false;
+                }
+            }
+
+            ++nodeIDit;
+            ++nodeDatait;
+        }
+    }
+    catch (std::exception const& ex)
+    {
+        JLOG(m_journal.error())
+            << "Peer sent bad account state node data: " << ex.what();
+        return false;
     }
 
     if (!mLedger->stateMap().isSynching())
@@ -1042,7 +1057,7 @@ InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
     AccountStateSF filter(
         mLedger->stateMap().family().db(), app_.getLedgerMaster());
     san += mLedger->stateMap().addRootNode(
-        SHAMapHash{mLedger->info().accountHash}, data, snfWIRE, &filter);
+        SHAMapHash{mLedger->info().accountHash}, data, &filter);
     return san.isGood();
 }
 
@@ -1067,7 +1082,7 @@ InboundLedger::takeTxRootNode(Slice const& data, SHAMapAddNode& san)
     TransactionStateSF filter(
         mLedger->txMap().family().db(), app_.getLedgerMaster());
     san += mLedger->txMap().addRootNode(
-        SHAMapHash{mLedger->info().txHash}, data, snfWIRE, &filter);
+        SHAMapHash{mLedger->info().txHash}, data, &filter);
     return san.isGood();
 }
 
@@ -1156,28 +1171,38 @@ InboundLedger::processData(
 
         SHAMapAddNode san;
 
-        if (!mHaveHeader)
+        try
         {
-            if (takeHeader(packet.nodes(0).nodedata()))
-                san.incUseful();
-            else
+            if (!mHaveHeader)
             {
-                JLOG(m_journal.warn()) << "Got invalid header data";
-                peer->charge(Resource::feeInvalidRequest);
-                return -1;
+                if (!takeHeader(packet.nodes(0).nodedata()))
+                {
+                    JLOG(m_journal.warn()) << "Got invalid header data";
+                    peer->charge(Resource::feeInvalidRequest);
+                    return -1;
+                }
+
+                san.incUseful();
+            }
+
+            if (!mHaveState && (packet.nodes().size() > 1) &&
+                !takeAsRootNode(makeSlice(packet.nodes(1).nodedata()), san))
+            {
+                JLOG(m_journal.warn()) << "Included AS root invalid";
+            }
+
+            if (!mHaveTransactions && (packet.nodes().size() > 2) &&
+                !takeTxRootNode(makeSlice(packet.nodes(2).nodedata()), san))
+            {
+                JLOG(m_journal.warn()) << "Included TX root invalid";
             }
         }
-
-        if (!mHaveState && (packet.nodes().size() > 1) &&
-            !takeAsRootNode(makeSlice(packet.nodes(1).nodedata()), san))
+        catch (std::exception const& ex)
         {
-            JLOG(m_journal.warn()) << "Included AS root invalid";
-        }
-
-        if (!mHaveTransactions && (packet.nodes().size() > 2) &&
-            !takeTxRootNode(makeSlice(packet.nodes(2).nodedata()), san))
-        {
-            JLOG(m_journal.warn()) << "Included TX root invalid";
+            JLOG(m_journal.warn())
+                << "Included AS/TX root invalid: " << ex.what();
+            peer->charge(Resource::feeBadData);
+            return -1;
         }
 
         if (san.isUseful())

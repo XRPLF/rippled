@@ -183,11 +183,6 @@ public:
     void
     setLedgerRangePresent(std::uint32_t minV, std::uint32_t maxV);
 
-    boost::optional<LedgerHash>
-    getLedgerHash(
-        std::uint32_t desiredSeq,
-        std::shared_ptr<ReadView const> const& knownGoodLedger);
-
     boost::optional<NetClock::time_point>
     getCloseTimeBySeq(LedgerIndex ledgerIndex);
 
@@ -264,7 +259,7 @@ public:
     gotFetchPack(bool progress, std::uint32_t seq);
 
     void
-    addFetchPack(uint256 const& hash, std::shared_ptr<Blob>& data);
+    addFetchPack(uint256 const& hash, std::shared_ptr<Blob> data);
 
     boost::optional<Blob>
     getFetchPack(uint256 const& hash) override;

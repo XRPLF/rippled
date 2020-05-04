@@ -176,14 +176,43 @@ public:
     invariants(bool is_root = false) const = 0;
 
     static std::shared_ptr<SHAMapAbstractNode>
-    make(
-        Slice const& rawNode,
+    makeFromPrefix(
+        Slice rawNode,
         std::uint32_t seq,
-        SHANodeFormat format,
+        SHAMapHash const& hash,
+        bool hashValid,
+        beast::Journal j);
+
+    static std::shared_ptr<SHAMapAbstractNode>
+    makeFromWire(
+        Slice rawNode,
+        std::uint32_t seq,
         SHAMapHash const& hash,
         bool hashValid,
         beast::Journal j,
-        SHAMapNodeID const& id = SHAMapNodeID{});
+        SHAMapNodeID const& id);
+
+private:
+    static std::shared_ptr<SHAMapAbstractNode>
+    makeTransaction(
+        Slice data,
+        std::uint32_t seq,
+        SHAMapHash const& hash,
+        bool hashValid);
+
+    static std::shared_ptr<SHAMapAbstractNode>
+    makeAccountState(
+        Slice data,
+        std::uint32_t seq,
+        SHAMapHash const& hash,
+        bool hashValid);
+
+    static std::shared_ptr<SHAMapAbstractNode>
+    makeTransactionWithMeta(
+        Slice data,
+        std::uint32_t seq,
+        SHAMapHash const& hash,
+        bool hashValid);
 };
 
 class SHAMapInnerNode : public SHAMapAbstractNode
@@ -239,15 +268,19 @@ public:
     void
     invariants(bool is_root = false) const override;
 
-    friend std::shared_ptr<SHAMapAbstractNode>
-    SHAMapAbstractNode::make(
-        Slice const& rawNode,
+    static std::shared_ptr<SHAMapAbstractNode>
+    makeFullInner(
+        Slice data,
         std::uint32_t seq,
-        SHANodeFormat format,
         SHAMapHash const& hash,
-        bool hashValid,
-        beast::Journal j,
-        SHAMapNodeID const& id);
+        bool hashValid);
+
+    static std::shared_ptr<SHAMapAbstractNode>
+    makeCompressedInner(
+        Slice data,
+        std::uint32_t seq,
+        SHAMapHash const& hash,
+        bool hashValid);
 };
 
 // SHAMapTreeNode represents a leaf, and may eventually be renamed to reflect
