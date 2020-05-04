@@ -246,7 +246,6 @@ public:
     addRootNode(
         SHAMapHash const& hash,
         Slice const& rootNode,
-        SHANodeFormat format,
         SHAMapSyncFilter* filter);
     SHAMapAddNode
     addKnownNode(

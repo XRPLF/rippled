@@ -76,220 +76,229 @@ SHAMapTreeNode::SHAMapTreeNode(
 }
 
 std::shared_ptr<SHAMapAbstractNode>
-SHAMapAbstractNode::make(
-    Slice const& rawNode,
+SHAMapAbstractNode::makeTransaction(
+    Slice data,
     std::uint32_t seq,
-    SHANodeFormat format,
+    SHAMapHash const& hash,
+    bool hashValid)
+{
+    // FIXME: using a Serializer results in a copy; avoid it?
+    Serializer s(data.begin(), data.size());
+
+    auto item = std::make_shared<SHAMapItem const>(
+        sha512Half(HashPrefix::transactionID, data), s);
+
+    if (hashValid)
+        return std::make_shared<SHAMapTreeNode>(
+            std::move(item), tnTRANSACTION_NM, seq, hash);
+
+    return std::make_shared<SHAMapTreeNode>(
+        std::move(item), tnTRANSACTION_NM, seq);
+}
+
+std::shared_ptr<SHAMapAbstractNode>
+SHAMapAbstractNode::makeTransactionWithMeta(
+    Slice data,
+    std::uint32_t seq,
+    SHAMapHash const& hash,
+    bool hashValid)
+{
+    Serializer s(data.data(), data.size());
+
+    uint256 tag;
+
+    if (s.size() < tag.bytes)
+        Throw<std::runtime_error>("Short TXN+MD node");
+
+    // FIXME: improve this interface so that the above check isn't needed
+    if (!s.getBitString(tag, s.size() - tag.bytes))
+        Throw<std::out_of_range>(
+            "Short TXN+MD node (" + std::to_string(s.size()) + ")");
+
+    s.chop(tag.bytes);
+
+    auto item = std::make_shared<SHAMapItem const>(tag, s.peekData());
+
+    if (hashValid)
+        return std::make_shared<SHAMapTreeNode>(
+            std::move(item), tnTRANSACTION_MD, seq, hash);
+
+    return std::make_shared<SHAMapTreeNode>(
+        std::move(item), tnTRANSACTION_MD, seq);
+}
+
+std::shared_ptr<SHAMapAbstractNode>
+SHAMapAbstractNode::makeAccountState(
+    Slice data,
+    std::uint32_t seq,
+    SHAMapHash const& hash,
+    bool hashValid)
+{
+    Serializer s(data.data(), data.size());
+
+    uint256 tag;
+
+    if (s.size() < tag.bytes)
+        Throw<std::runtime_error>("short AS node");
+
+    // FIXME: improve this interface so that the above check isn't needed
+    if (!s.getBitString(tag, s.size() - tag.bytes))
+        Throw<std::out_of_range>(
+            "Short AS node (" + std::to_string(s.size()) + ")");
+
+    s.chop(tag.bytes);
+
+    if (tag.isZero())
+        Throw<std::runtime_error>("Invalid AS node");
+
+    auto item = std::make_shared<SHAMapItem const>(tag, s.peekData());
+
+    if (hashValid)
+        return std::make_shared<SHAMapTreeNode>(
+            std::move(item), tnACCOUNT_STATE, seq, hash);
+
+    return std::make_shared<SHAMapTreeNode>(
+        std::move(item), tnACCOUNT_STATE, seq);
+}
+
+std::shared_ptr<SHAMapAbstractNode>
+SHAMapInnerNode::makeFullInner(
+    Slice data,
+    std::uint32_t seq,
+    SHAMapHash const& hash,
+    bool hashValid)
+{
+    if (data.size() != 512)
+        Throw<std::runtime_error>("Invalid FI node");
+
+    auto ret = std::make_shared<SHAMapInnerNode>(seq);
+
+    Serializer s(data.data(), data.size());
+
+    for (int i = 0; i < 16; ++i)
+    {
+        s.getBitString(ret->mHashes[i].as_uint256(), i * 32);
+
+        if (ret->mHashes[i].isNonZero())
+            ret->mIsBranch |= (1 << i);
+    }
+
+    if (hashValid)
+        ret->mHash = hash;
+    else
+        ret->updateHash();
+    return ret;
+}
+
+std::shared_ptr<SHAMapAbstractNode>
+SHAMapInnerNode::makeCompressedInner(
+    Slice data,
+    std::uint32_t seq,
+    SHAMapHash const& hash,
+    bool hashValid)
+{
+    Serializer s(data.data(), data.size());
+
+    int len = s.getLength();
+
+    auto ret = std::make_shared<SHAMapInnerNode>(seq);
+
+    for (int i = 0; i < (len / 33); ++i)
+    {
+        int pos;
+
+        if (!s.get8(pos, 32 + (i * 33)))
+            Throw<std::runtime_error>("short CI node");
+
+        if ((pos < 0) || (pos >= 16))
+            Throw<std::runtime_error>("invalid CI node");
+
+        s.getBitString(ret->mHashes[pos].as_uint256(), i * 33);
+
+        if (ret->mHashes[pos].isNonZero())
+            ret->mIsBranch |= (1 << pos);
+    }
+
+    if (hashValid)
+        ret->mHash = hash;
+    else
+        ret->updateHash();
+    return ret;
+}
+
+std::shared_ptr<SHAMapAbstractNode>
+SHAMapAbstractNode::makeFromWire(
+    Slice rawNode,
+    std::uint32_t seq,
     SHAMapHash const& hash,
     bool hashValid,
     beast::Journal j,
     SHAMapNodeID const& id)
 {
-    if (format == snfWIRE)
-    {
-        if (rawNode.empty())
-            return {};
+    if (rawNode.empty())
+        return {};
 
-        Serializer s(rawNode.data(), rawNode.size() - 1);
-        int type = rawNode[rawNode.size() - 1];
-        int len = s.getLength();
+    auto const type = rawNode[rawNode.size() - 1];
 
-        if ((type < 0) || (type > 6))
-            return {};
-        if (type == 0)
-        {
-            // transaction
-            auto item = std::make_shared<SHAMapItem const>(
-                sha512Half(
-                    HashPrefix::transactionID, Slice(s.data(), s.size())),
-                s.peekData());
-            if (hashValid)
-                return std::make_shared<SHAMapTreeNode>(
-                    std::move(item), tnTRANSACTION_NM, seq, hash);
-            return std::make_shared<SHAMapTreeNode>(
-                std::move(item), tnTRANSACTION_NM, seq);
-        }
-        else if (type == 1)
-        {
-            // account state
-            if (len < (256 / 8))
-                Throw<std::runtime_error>("short AS node");
+    rawNode.remove_suffix(1);
 
-            uint256 u;
-            s.getBitString(u, len - (256 / 8));
-            s.chop(256 / 8);
+    if (type == 0)
+        return makeTransaction(rawNode, seq, hash, hashValid);
 
-            if (u.isZero())
-                Throw<std::runtime_error>("invalid AS node");
+    if (type == 1)
+        return makeAccountState(rawNode, seq, hash, hashValid);
 
-            auto item = std::make_shared<SHAMapItem const>(u, s.peekData());
-            if (hashValid)
-                return std::make_shared<SHAMapTreeNode>(
-                    std::move(item), tnACCOUNT_STATE, seq, hash);
-            return std::make_shared<SHAMapTreeNode>(
-                std::move(item), tnACCOUNT_STATE, seq);
-        }
-        else if (type == 2)
-        {
-            // full inner
-            if (len != 512)
-                Throw<std::runtime_error>("invalid FI node");
+    if (type == 2)
+        return SHAMapInnerNode::makeFullInner(rawNode, seq, hash, hashValid);
 
-            auto ret = std::make_shared<SHAMapInnerNode>(seq);
-            for (int i = 0; i < 16; ++i)
-            {
-                s.getBitString(ret->mHashes[i].as_uint256(), i * 32);
+    if (type == 3)
+        return SHAMapInnerNode::makeCompressedInner(
+            rawNode, seq, hash, hashValid);
 
-                if (ret->mHashes[i].isNonZero())
-                    ret->mIsBranch |= (1 << i);
-            }
-            if (hashValid)
-                ret->mHash = hash;
-            else
-                ret->updateHash();
-            return ret;
-        }
-        else if (type == 3)
-        {
-            auto ret = std::make_shared<SHAMapInnerNode>(seq);
-            // compressed inner
-            for (int i = 0; i < (len / 33); ++i)
-            {
-                int pos;
-                if (!s.get8(pos, 32 + (i * 33)))
-                    Throw<std::runtime_error>("short CI node");
-                if ((pos < 0) || (pos >= 16))
-                    Throw<std::runtime_error>("invalid CI node");
-                s.getBitString(ret->mHashes[pos].as_uint256(), i * 33);
-                if (ret->mHashes[pos].isNonZero())
-                    ret->mIsBranch |= (1 << pos);
-            }
-            if (hashValid)
-                ret->mHash = hash;
-            else
-                ret->updateHash();
-            return ret;
-        }
-        else if (type == 4)
-        {
-            // transaction with metadata
-            if (len < (256 / 8))
-                Throw<std::runtime_error>("short TM node");
+    if (type == 4)
+        return makeTransactionWithMeta(rawNode, seq, hash, hashValid);
 
-            uint256 u;
-            s.getBitString(u, len - (256 / 8));
-            s.chop(256 / 8);
+    Throw<std::runtime_error>(
+        "wire: Unknown type (" + std::to_string(type) + ")");
+}
 
-            if (u.isZero())
-                Throw<std::runtime_error>("invalid TM node");
+std::shared_ptr<SHAMapAbstractNode>
+SHAMapAbstractNode::makeFromPrefix(
+    Slice rawNode,
+    std::uint32_t seq,
+    SHAMapHash const& hash,
+    bool hashValid,
+    beast::Journal j)
+{
+    if (rawNode.size() < 4)
+        Throw<std::runtime_error>("prefix: short node");
 
-            auto item = std::make_shared<SHAMapItem const>(u, s.peekData());
-            if (hashValid)
-                return std::make_shared<SHAMapTreeNode>(
-                    std::move(item), tnTRANSACTION_MD, seq, hash);
-            return std::make_shared<SHAMapTreeNode>(
-                std::move(item), tnTRANSACTION_MD, seq);
-        }
-    }
+    // FIXME: Use SerialIter::get32?
+    // Extract the prefix
+    auto const type = safe_cast<HashPrefix>(
+        (safe_cast<std::uint32_t>(rawNode[0]) << 24) +
+        (safe_cast<std::uint32_t>(rawNode[1]) << 16) +
+        (safe_cast<std::uint32_t>(rawNode[2]) << 8) +
+        (safe_cast<std::uint32_t>(rawNode[3])));
 
-    else if (format == snfPREFIX)
-    {
-        if (rawNode.size() < 4)
-        {
-            JLOG(j.info()) << "size < 4";
-            Throw<std::runtime_error>("invalid P node");
-        }
+    rawNode.remove_prefix(4);
 
-        std::uint32_t prefix = rawNode[0];
-        prefix <<= 8;
-        prefix |= rawNode[1];
-        prefix <<= 8;
-        prefix |= rawNode[2];
-        prefix <<= 8;
-        prefix |= rawNode[3];
-        Serializer s(rawNode.data() + 4, rawNode.size() - 4);
+    if (type == HashPrefix::transactionID)
+        return makeTransaction(rawNode, seq, hash, hashValid);
 
-        if (safe_cast<HashPrefix>(prefix) == HashPrefix::transactionID)
-        {
-            auto item = std::make_shared<SHAMapItem const>(
-                sha512Half(rawNode), s.peekData());
-            if (hashValid)
-                return std::make_shared<SHAMapTreeNode>(
-                    std::move(item), tnTRANSACTION_NM, seq, hash);
-            return std::make_shared<SHAMapTreeNode>(
-                std::move(item), tnTRANSACTION_NM, seq);
-        }
-        else if (safe_cast<HashPrefix>(prefix) == HashPrefix::leafNode)
-        {
-            if (s.getLength() < 32)
-                Throw<std::runtime_error>("short PLN node");
+    if (type == HashPrefix::leafNode)
+        return makeAccountState(rawNode, seq, hash, hashValid);
 
-            uint256 u;
-            s.getBitString(u, s.getLength() - 32);
-            s.chop(32);
+    if (type == HashPrefix::innerNode)
+        return SHAMapInnerNode::makeFullInner(rawNode, seq, hash, hashValid);
 
-            if (u.isZero())
-            {
-                JLOG(j.info()) << "invalid PLN node";
-                Throw<std::runtime_error>("invalid PLN node");
-            }
+    if (type == HashPrefix::txNode)
+        return makeTransactionWithMeta(rawNode, seq, hash, hashValid);
 
-            auto item = std::make_shared<SHAMapItem const>(u, s.peekData());
-            if (hashValid)
-                return std::make_shared<SHAMapTreeNode>(
-                    std::move(item), tnACCOUNT_STATE, seq, hash);
-            return std::make_shared<SHAMapTreeNode>(
-                std::move(item), tnACCOUNT_STATE, seq);
-        }
-        else if (safe_cast<HashPrefix>(prefix) == HashPrefix::innerNode)
-        {
-            auto len = s.getLength();
-
-            if (len != 512)
-                Throw<std::runtime_error>("invalid PIN node");
-
-            auto ret = std::make_shared<SHAMapInnerNode>(seq);
-
-            for (int i = 0; i < 16; ++i)
-            {
-                s.getBitString(ret->mHashes[i].as_uint256(), i * 32);
-
-                if (ret->mHashes[i].isNonZero())
-                    ret->mIsBranch |= (1 << i);
-            }
-
-            if (hashValid)
-                ret->mHash = hash;
-            else
-                ret->updateHash();
-            return ret;
-        }
-        else if (safe_cast<HashPrefix>(prefix) == HashPrefix::txNode)
-        {
-            // transaction with metadata
-            if (s.getLength() < 32)
-                Throw<std::runtime_error>("short TXN node");
-
-            uint256 txID;
-            s.getBitString(txID, s.getLength() - 32);
-            s.chop(32);
-            auto item = std::make_shared<SHAMapItem const>(txID, s.peekData());
-            if (hashValid)
-                return std::make_shared<SHAMapTreeNode>(
-                    std::move(item), tnTRANSACTION_MD, seq, hash);
-            return std::make_shared<SHAMapTreeNode>(
-                std::move(item), tnTRANSACTION_MD, seq);
-        }
-        else
-        {
-            JLOG(j.info()) << "Unknown node prefix " << std::hex << prefix
-                           << std::dec;
-            Throw<std::runtime_error>("invalid node prefix");
-        }
-    }
-    assert(false);
-    Throw<std::runtime_error>("Unknown format");
-    return {};  // Silence compiler warning.
+    Throw<std::runtime_error>(
+        "prefix: unknown type (" +
+        std::to_string(safe_cast<std::underlying_type_t<HashPrefix>>(type)) +
+        ")");
 }
 
 bool

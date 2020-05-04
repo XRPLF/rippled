@@ -248,10 +248,9 @@ public:
                     return;
 
                 auto id_string = node.nodeid();
-                auto newNode = SHAMapAbstractNode::make(
+                auto newNode = SHAMapAbstractNode::makeFromWire(
                     makeSlice(node.nodedata()),
                     0,
-                    snfWIRE,
                     SHAMapHash{uZero},
                     false,
                     app_.journal("SHAMapNodeID"),
@@ -263,10 +262,9 @@ public:
                 s.erase();
                 newNode->addRaw(s, snfPREFIX);
 
-                auto blob = std::make_shared<Blob>(s.begin(), s.end());
-
                 app_.getLedgerMaster().addFetchPack(
-                    newNode->getNodeHash().as_uint256(), blob);
+                    newNode->getNodeHash().as_uint256(),
+                    std::make_shared<Blob>(s.begin(), s.end()));
             }
         }
         catch (std::exception const&)

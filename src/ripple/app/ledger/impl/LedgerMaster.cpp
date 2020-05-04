@@ -1303,41 +1303,6 @@ LedgerMaster::tryAdvance()
     }
 }
 
-// Return the hash of the valid ledger with a particular sequence, given a
-// subsequent ledger known valid.
-boost::optional<LedgerHash>
-LedgerMaster::getLedgerHash(
-    std::uint32_t desiredSeq,
-    std::shared_ptr<ReadView const> const& knownGoodLedger)
-{
-    assert(desiredSeq < knownGoodLedger->info().seq);
-
-    auto hash = hashOfSeq(*knownGoodLedger, desiredSeq, m_journal);
-
-    // Not directly in the given ledger
-    if (!hash)
-    {
-        std::uint32_t seq = (desiredSeq + 255) % 256;
-        assert(seq < desiredSeq);
-
-        hash = hashOfSeq(*knownGoodLedger, seq, m_journal);
-        if (hash)
-        {
-            if (auto l = getLedgerByHash(*hash))
-            {
-                hash = hashOfSeq(*l, desiredSeq, m_journal);
-                assert(hash);
-            }
-        }
-        else
-        {
-            assert(false);
-        }
-    }
-
-    return hash;
-}
-
 void
 LedgerMaster::updatePaths(Job& job)
 {
@@ -1948,7 +1913,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
 }
 
 void
-LedgerMaster::addFetchPack(uint256 const& hash, std::shared_ptr<Blob>& data)
+LedgerMaster::addFetchPack(uint256 const& hash, std::shared_ptr<Blob> data)
 {
     fetch_packs_.canonicalize_replace_client(hash, data);
 }
