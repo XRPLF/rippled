@@ -41,7 +41,7 @@ class RCLValidations_test : public beast::unit_test::suite
             keys.first,
             keys.second,
             calcNodeID(keys.first),
-            [&](STValidation& v) {});
+            [&](STValidation& v) { v.setFieldU32(sfLedgerSequence, 123456); });
 
         BEAST_EXPECT(v->isTrusted());
         v->setUntrusted();
@@ -312,89 +312,6 @@ class RCLValidations_test : public beast::unit_test::suite
         BEAST_EXPECT(trie.branchSupport(ledg_259) == 4);
     }
 
-    void
-    testLedgerSequence()
-    {
-        testcase("Validations with and without the LedgerSequence field");
-
-        auto const nodeID =
-            from_hex_text<NodeID>("38ECC15DBD999DE4CE70A6DC69A4166AB18031A7");
-
-        try
-        {
-            std::string const withLedgerSequence =
-                "228000000126034B9FFF2926460DC55185937F7F41DD7977F21B9DF95FCB61"
-                "9E5132ABB0D7ADEA0F7CE8A9347871A34250179D85BDE824F57FFE0AC8F89B"
-                "55FCB89277272A1D83D08ADEC98096A88EF723137321029D19FB0940E5C0D8"
-                "5873FA711999944A687D129DA5C33E928C2751FC1B31EB3276463044022022"
-                "6229CF66A678EE021F62CA229BA006B41939845004D3FAF8347C6FFBB7C613"
-                "02200BE9CD3629FD67C6C672BD433A2769FCDB36B1ECA2292919C58A86224E"
-                "2BF5970313C13F00C1FC4A53E60AB02C864641002B3172F38677E29C26C540"
-                "6685179B37E1EDAC157D2D480E006395B76F948E3E07A45A05FE10230D88A7"
-                "993C71F97AE4B1F2D11F4AFA8FA1BC8827AD4C0F682C03A8B671DCDF6B5C4D"
-                "E36D44243A684103EF8825BA44241B3BD880770BFA4DA21C71805768318553"
-                "68CBEC6A3154FDE4A7676E3012E8230864E95A58C60FD61430D7E1B4D33531"
-                "95F2981DC12B0C7C0950FFAC30CD365592B8EE40489BA01AE2F7555CAC9C98"
-                "3145871DC82A42A31CF5BAE7D986E83A7D2ECE3AD5FA87AB2195AE015C9504"
-                "69ABF0B72EAACED318F74886AE9089308AF3B8B10B7192C4E613E1D2E4D9BA"
-                "64B2EE2D5232402AE82A6A7220D953";
-
-            if (auto ret = strUnHex(withLedgerSequence); ret)
-            {
-                SerialIter sit(makeSlice(*ret));
-
-                auto val = std::make_shared<STValidation>(
-                    std::ref(sit),
-                    [nodeID](PublicKey const& pk) { return nodeID; },
-                    false);
-
-                BEAST_EXPECT(val);
-                BEAST_EXPECT(calcNodeID(val->getSignerPublic()) == nodeID);
-                BEAST_EXPECT(val->isFieldPresent(sfLedgerSequence));
-            }
-        }
-        catch (std::exception const& ex)
-        {
-            fail(std::string("Unexpected exception thrown: ") + ex.what());
-        }
-
-        try
-        {
-            std::string const withoutLedgerSequence =
-                "22800000012926460DC55185937F7F41DD7977F21B9DF95FCB619E5132ABB0"
-                "D7ADEA0F7CE8A9347871A34250179D85BDE824F57FFE0AC8F89B55FCB89277"
-                "272A1D83D08ADEC98096A88EF723137321029D19FB0940E5C0D85873FA7119"
-                "99944A687D129DA5C33E928C2751FC1B31EB3276473045022100BE2EA49CF2"
-                "FFB7FE7A03F6860B8C35FEA04A064C7023FE28EC97E5A32E85DEC4022003B8"
-                "5D1D497F504B34F089D5BDB91BD888690C3D3A242A0FEF1DD52875FBA02E03"
-                "13C13F00C1FC4A53E60AB02C864641002B3172F38677E29C26C5406685179B"
-                "37E1EDAC157D2D480E006395B76F948E3E07A45A05FE10230D88A7993C71F9"
-                "7AE4B1F2D11F4AFA8FA1BC8827AD4C0F682C03A8B671DCDF6B5C4DE36D4424"
-                "3A684103EF8825BA44241B3BD880770BFA4DA21C7180576831855368CBEC6A"
-                "3154FDE4A7676E3012E8230864E95A58C60FD61430D7E1B4D3353195F2981D"
-                "C12B0C7C0950FFAC30CD365592B8EE40489BA01AE2F7555CAC9C983145871D"
-                "C82A42A31CF5BAE7D986E83A7D2ECE3AD5FA87AB2195AE015C950469ABF0B7"
-                "2EAACED318F74886AE9089308AF3B8B10B7192C4E613E1D2E4D9BA64B2EE2D"
-                "5232402AE82A6A7220D953";
-
-            if (auto ret = strUnHex(withoutLedgerSequence); ret)
-            {
-                SerialIter sit(makeSlice(*ret));
-
-                auto val = std::make_shared<STValidation>(
-                    std::ref(sit),
-                    [nodeID](PublicKey const& pk) { return nodeID; },
-                    false);
-
-                fail("Expected exception not thrown from validation");
-            }
-        }
-        catch (std::exception const& ex)
-        {
-            pass();
-        }
-    }
-
 public:
     void
     run() override
@@ -402,7 +319,6 @@ public:
         testChangeTrusted();
         testRCLValidatedLedger();
         testLedgerTrieRCLValidatedLedger();
-        testLedgerSequence();
     }
 };
 

@@ -217,7 +217,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 
     app_.getHashRouter().addSuppression(suppression);
 
-    app_.overlay().send(prop);
+    app_.overlay().broadcast(prop);
 }
 
 void
@@ -828,12 +828,17 @@ RCLConsensus::Adaptor::validate(
     // suppress it if we receive it
     app_.getHashRouter().addSuppression(
         sha512Half(makeSlice(v->getSerialized())));
+
     handleNewValidation(app_, v, "local");
+
+    // Broadcast to all our peers:
     Blob validation = v->getSerialized();
     protocol::TMValidation val;
     val.set_validation(&validation[0], validation.size());
-    // Send signed validation to all of our directly connected peers
-    app_.overlay().send(val);
+    app_.overlay().broadcast(val);
+
+    // Publish to all our subscribers:
+    app_.getOPs().pubValidation(v);
 }
 
 void

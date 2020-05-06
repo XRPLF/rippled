@@ -201,10 +201,10 @@ public:
     findPeerByPublicKey(PublicKey const& pubKey) override;
 
     void
-    send(protocol::TMProposeSet& m) override;
+    broadcast(protocol::TMProposeSet& m) override;
 
     void
-    send(protocol::TMValidation& m) override;
+    broadcast(protocol::TMValidation& m) override;
 
     void
     relay(protocol::TMProposeSet& m, uint256 const& uid) override;

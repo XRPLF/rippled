@@ -397,6 +397,30 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_SSL_VERIFY, strTemp, j_))
         SSL_VERIFY = beast::lexicalCastThrow<bool>(strTemp);
 
+    if (getSingleSection(secConfig, SECTION_RELAY_VALIDATIONS, strTemp, j_))
+    {
+        if (boost::iequals(strTemp, "all"))
+            RELAY_UNTRUSTED_VALIDATIONS = true;
+        else if (boost::iequals(strTemp, "trusted"))
+            RELAY_UNTRUSTED_VALIDATIONS = false;
+        else
+            Throw<std::runtime_error>(
+                "Invalid value specified in [" SECTION_RELAY_VALIDATIONS
+                "] section");
+    }
+
+    if (getSingleSection(secConfig, SECTION_RELAY_PROPOSALS, strTemp, j_))
+    {
+        if (boost::iequals(strTemp, "all"))
+            RELAY_UNTRUSTED_PROPOSALS = true;
+        else if (boost::iequals(strTemp, "trusted"))
+            RELAY_UNTRUSTED_PROPOSALS = false;
+        else
+            Throw<std::runtime_error>(
+                "Invalid value specified in [" SECTION_RELAY_PROPOSALS
+                "] section");
+    }
+
     if (exists(SECTION_VALIDATION_SEED) && exists(SECTION_VALIDATOR_TOKEN))
         Throw<std::runtime_error>("Cannot have both [" SECTION_VALIDATION_SEED
                                   "] "

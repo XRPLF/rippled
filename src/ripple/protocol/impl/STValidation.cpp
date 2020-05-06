@@ -43,7 +43,7 @@ STValidation::validationFormat()
         {sfReserveIncrement, soeOPTIONAL},
         {sfSigningTime, soeREQUIRED},
         {sfSigningPubKey, soeREQUIRED},
-        {sfSignature, soeOPTIONAL},
+        {sfSignature, soeREQUIRED},
         {sfConsensusHash, soeOPTIONAL},
         {sfCookie, soeDEFAULT},
         {sfValidatedHash, soeOPTIONAL},

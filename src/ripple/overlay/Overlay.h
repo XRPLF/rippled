@@ -141,11 +141,11 @@ public:
 
     /** Broadcast a proposal. */
     virtual void
-    send(protocol::TMProposeSet& m) = 0;
+    broadcast(protocol::TMProposeSet& m) = 0;
 
     /** Broadcast a validation. */
     virtual void
-    send(protocol::TMValidation& m) = 0;
+    broadcast(protocol::TMValidation& m) = 0;
 
     /** Relay a proposal. */
     virtual void
