@@ -2170,7 +2170,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
     }
     catch (std::exception const& e)
     {
-        JLOG(p_journal_.warn()) << "Validation: Exception, " << e.what();
+        JLOG(p_journal_.warn())
+            << "Exception processing validation: " << e.what();
         fee_ = Resource::feeInvalidRequest;
     }
 }
