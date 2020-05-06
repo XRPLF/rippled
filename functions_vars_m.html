@@ -169,14 +169,13 @@ $(function() {
 : <a class="el" href="classripple_1_1Stoppable.html#a8c1e09326ea6d61009b6630c9e297c89">ripple::Stoppable</a>
 </li>
 <li>m_clock
-: <a class="el" href="classripple_1_1InboundLedgersImp.html#a877e39917f64e0d99c30d2e287f6fba3">ripple::InboundLedgersImp</a>
-, <a class="el" href="classripple_1_1InboundTransactionsImp.html#a65cde81d694c6855a07df7b7be6b71ba">ripple::InboundTransactionsImp</a>
+: <a class="el" href="classripple_1_1InboundLedger.html#ad40e902635b955a8f758d831dd973cfa">ripple::InboundLedger</a>
+, <a class="el" href="classripple_1_1InboundLedgersImp.html#a877e39917f64e0d99c30d2e287f6fba3">ripple::InboundLedgersImp</a>
 , <a class="el" href="classripple_1_1KeyCache.html#ab22fb8723823503213669c5b8c6da383">ripple::KeyCache&lt; Key, Hash, KeyEqual, Mutex &gt;</a>
 , <a class="el" href="classripple_1_1NetworkOPsImp.html#a16d6bf23805417dc49d22e96c7c74731">ripple::NetworkOPsImp</a>
 , <a class="el" href="classripple_1_1PeerFinder_1_1Bootcache.html#acaa27c9e633818874bea7611a0af225d">ripple::PeerFinder::Bootcache</a>
 , <a class="el" href="classripple_1_1PeerFinder_1_1Logic.html#ab1cc102bbb96c47792c9caa28eff60ad">ripple::PeerFinder::Logic&lt; Checker &gt;</a>
 , <a class="el" href="classripple_1_1PeerFinder_1_1ManagerImp.html#a813ab1be0cbd689a0d4ccf7c0d62d275">ripple::PeerFinder::ManagerImp</a>
-, <a class="el" href="classripple_1_1PeerSet.html#a2948d22daac5896d15ba248073378d7e">ripple::PeerSet</a>
 , <a class="el" href="classripple_1_1Resource_1_1Logic.html#a7e446c761587c1cb096f00cb88f903c0">ripple::Resource::Logic</a>
 , <a class="el" href="classripple_1_1TaggedCache.html#a157fd28c6a5f2e8e1b32bb10e342c689">ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;</a>
 </li>
@@ -1290,7 +1289,7 @@ $(function() {
 </li>
 <li>mHash
 : <a class="el" href="classripple_1_1NodeObject.html#a6ad47f35682d6d6cb59c8d8c4b868cbd">ripple::NodeObject</a>
-, <a class="el" href="classripple_1_1PeerSet.html#ab1128568df615b4bd9c1a2dc1319c03e">ripple::PeerSet</a>
+, <a class="el" href="classripple_1_1PeerSet.html#a0a79a33d6012ccbc0f7e21e561d8f113">ripple::PeerSet</a>
 , <a class="el" href="classripple_1_1SHAMapAbstractNode.html#ab06fd22b6fadd92aedeb8a9f3bef273a">ripple::SHAMapAbstractNode</a>
 </li>
 <li>mHashes
@@ -1445,7 +1444,7 @@ $(function() {
 : <a class="el" href="classripple_1_1AcceptedLedgerTx.html#af2ea7b3c166ce89ef53dcca7f4de5169">ripple::AcceptedLedgerTx</a>
 </li>
 <li>mLastAction
-: <a class="el" href="classripple_1_1PeerSet.html#a4b05a07702e9788f2cccb5c94d6de8c4">ripple::PeerSet</a>
+: <a class="el" href="classripple_1_1InboundLedger.html#a2a13ec6bfca73fd260589fb12c2f7dd2">ripple::InboundLedger</a>
 </li>
 <li>mLastConsensusPhase
 : <a class="el" href="classripple_1_1NetworkOPsImp.html#aeb7df6e2e4ff2fadd4857fdbd9cb301b">ripple::NetworkOPsImp</a>
@@ -1543,7 +1542,6 @@ $(function() {
 </li>
 <li>mNodeID
 : <a class="el" href="classripple_1_1SHAMapNodeID.html#a832b1fdcce1d16cb6c01b2098b37007b">ripple::SHAMapNodeID</a>
-, <a class="el" href="classripple_1_1STValidation.html#ac91bed305ca6bdc2c948360270dec2ae">ripple::STValidation</a>
 </li>
 <li>mNodes
 : <a class="el" href="classripple_1_1TxMeta.html#a24e9687eec93402f2c9583f44d390772">ripple::TxMeta</a>
@@ -1680,9 +1678,6 @@ $(function() {
 </li>
 <li>mSecure
 : <a class="el" href="classAutoSocket.html#a0cb7739349791b0e31ffac09737b5898">AutoSocket</a>
-</li>
-<li>mSeen
-: <a class="el" href="classripple_1_1STValidation.html#ab29f386cdd64ed0e419bb52990076ad7">ripple::STValidation</a>
 </li>
 <li>mSending
 : <a class="el" href="classripple_1_1RPCSubImp.html#a04b59c82b70837edd14fd05a75a366be">ripple::RPCSubImp</a>
@@ -1871,6 +1866,7 @@ $(function() {
 , <a class="el" href="classripple_1_1LoadMonitor.html#ab5dcc5c29ad22aef80c0a1ecb7312b8c">ripple::LoadMonitor</a>
 , <a class="el" href="classripple_1_1Logs.html#a66d24e48ab866fae608bc168c55bb60c">ripple::Logs</a>
 , <a class="el" href="classripple_1_1NetworkOPsImp_1_1StateAccounting.html#aa386a8916123ef2b15c4fdcd66daca35">ripple::NetworkOPsImp::StateAccounting</a>
+, <a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#a4d803c36c8aea67c83f735814de25717">ripple::NodeStore::DatabaseRotatingImp</a>
 , <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#aa16a171bc9b238db86a9f9990d2dff8e">ripple::NodeStore::DatabaseShardImp</a>
 , <a class="el" href="classripple_1_1NodeStore_1_1ManagerImp.html#a19b1a6d9001939e7d9dfe03111cab59c">ripple::NodeStore::ManagerImp</a>
 , <a class="el" href="classripple_1_1NodeStore_1_1MemoryFactory.html#aed56d3246c20509191dcddb12b5ceb00">ripple::NodeStore::MemoryFactory</a>

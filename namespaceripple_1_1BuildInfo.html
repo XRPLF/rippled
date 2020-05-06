@@ -84,10 +84,13 @@ Functions</h2></td></tr>
 <tr class="memitem:a1e2b1646cf948c1c19ff190903c3e789"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1BuildInfo.html#a1e2b1646cf948c1c19ff190903c3e789">getFullVersionString</a> ()</td></tr>
 <tr class="memdesc:a1e2b1646cf948c1c19ff190903c3e789"><td class="mdescLeft">&#160;</td><td class="mdescRight">Full server version string.  <a href="namespaceripple_1_1BuildInfo.html#a1e2b1646cf948c1c19ff190903c3e789">More...</a><br /></td></tr>
 <tr class="separator:a1e2b1646cf948c1c19ff190903c3e789"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a035daabd8a04c8b068a503761a1a3392"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1BuildInfo.html#a035daabd8a04c8b068a503761a1a3392">getEncodedVersion</a> ()</td></tr>
+<tr class="memdesc:a035daabd8a04c8b068a503761a1a3392"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the server version packed in a 64-bit integer.  <a href="namespaceripple_1_1BuildInfo.html#a035daabd8a04c8b068a503761a1a3392">More...</a><br /></td></tr>
+<tr class="separator:a035daabd8a04c8b068a503761a1a3392"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:add98d1ad0d107ee61a6ace72d982cf36"><td class="memItemLeft" align="right" valign="top">char const  *const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1BuildInfo.html#add98d1ad0d107ee61a6ace72d982cf36">versionString</a> = &quot;1.6.0-b4&quot;</td></tr>
+<tr class="memitem:add98d1ad0d107ee61a6ace72d982cf36"><td class="memItemLeft" align="right" valign="top">char const  *const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1BuildInfo.html#add98d1ad0d107ee61a6ace72d982cf36">versionString</a> = &quot;1.6.0-b5&quot;</td></tr>
 <tr class="separator:add98d1ad0d107ee61a6ace72d982cf36"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -111,7 +114,7 @@ Variables</h2></td></tr>
 <p><a class="el" href="classripple_1_1Server.html" title="A multi-protocol server.">Server</a> version. </p>
 <p>Follows the Semantic Versioning Specification: <a href="http://semver.org/">http://semver.org/</a> </p>
 
-<p class="definition">Definition at line <a class="el" href="BuildInfo_8cpp_source.html#l00060">60</a> of file <a class="el" href="BuildInfo_8cpp_source.html">BuildInfo.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BuildInfo_8cpp_source.html#l00061">61</a> of file <a class="el" href="BuildInfo_8cpp_source.html">BuildInfo.cpp</a>.</p>
 
 </div>
 </div>
@@ -133,7 +136,39 @@ Variables</h2></td></tr>
 <p>Full server version string. </p>
 <p>This includes the name of the server. It is used in the peer protocol hello message and also the headers of some HTTP replies. </p>
 
-<p class="definition">Definition at line <a class="el" href="BuildInfo_8cpp_source.html#l00073">73</a> of file <a class="el" href="BuildInfo_8cpp_source.html">BuildInfo.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BuildInfo_8cpp_source.html#l00074">74</a> of file <a class="el" href="BuildInfo_8cpp_source.html">BuildInfo.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a035daabd8a04c8b068a503761a1a3392"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a035daabd8a04c8b068a503761a1a3392">&#9670;&nbsp;</a></span>getEncodedVersion()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> ripple::BuildInfo::getEncodedVersion </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns the server version packed in a 64-bit integer. </p>
+<p>The general format is:</p>
+<p>........-........-........-........-........-........-........-........ XXXXXXXX-XXXXXXXX-YYYYYYYY-YYYYYYYY-YYYYYYYY-YYYYYYYY-YYYYYYYY-YYYYYYYY</p>
+<p>X: 16 bits identifying the particular implementation Y: 48 bits of data specific to the implementation</p>
+<p>The rippled-specific format (implementation ID is: 0x18 0x3B) is:</p>
+<p>00011000-00111011-MMMMMMMM-mmmmmmmm-pppppppp-TTNNNNNN-00000000-00000000 </p><pre class="fragment">M: 8-bit major version (0-255)
+m: 8-bit minor version (0-255)
+p: 8-bit patch version (0-255)
+T: 11 if neither an RC nor a beta
+   10 if an RC
+   01 if a beta
+N: 6-bit rc/beta number (1-63)
+</pre> 
+<p class="definition">Definition at line <a class="el" href="BuildInfo_8cpp_source.html#l00081">81</a> of file <a class="el" href="BuildInfo_8cpp_source.html">BuildInfo.cpp</a>.</p>
 
 </div>
 </div>
@@ -145,12 +180,12 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">char const* const ripple::BuildInfo::versionString = &quot;1.6.0-b4&quot;</td>
+          <td class="memname">char const* const ripple::BuildInfo::versionString = &quot;1.6.0-b5&quot;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BuildInfo_8cpp_source.html#l00035">35</a> of file <a class="el" href="BuildInfo_8cpp_source.html">BuildInfo.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BuildInfo_8cpp_source.html#l00036">36</a> of file <a class="el" href="BuildInfo_8cpp_source.html">BuildInfo.cpp</a>.</p>
 
 </div>
 </div>

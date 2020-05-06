@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>rippled: VisitCallback.h Source File</title>
+<title>rippled: secure_erase.cpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -61,18 +61,18 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_df9c78dcf3f59a33b12284f95992a64b.html">ripple</a></li><li class="navelem"><a class="el" href="dir_ceb6d1bc218d15504336f945ff1322da.html">nodestore</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_df9c78dcf3f59a33b12284f95992a64b.html">ripple</a></li><li class="navelem"><a class="el" href="dir_d5da7ddd3d406e00ccd5e9ec8a805734.html">crypto</a></li><li class="navelem"><a class="el" href="dir_e0372dc464190647d9bdbe8304e20257.html">impl</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="headertitle">
-<div class="title">VisitCallback.h</div>  </div>
+<div class="title">secure_erase.cpp</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">/*</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">    This file is part of rippled: https://github.com/ripple/rippled</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">    Copyright (c) 2012, 2013 Ripple Labs Inc.</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">    Copyright (c) 2020 Ripple Labs Inc.</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment"></span> </div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment">    Permission to use, copy, modify, and/or distribute this software for any</span></div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">    purpose  with  or without fee is hereby granted, provided that the above</span></div>
@@ -88,27 +88,22 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">*/</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_NODESTORE_VISITCALLBACK_H_INCLUDED</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_NODESTORE_VISITCALLBACK_H_INCLUDED</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/crypto/secure_erase.h&gt;</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;openssl/crypto.h&gt;</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="keyword">namespace </span>NodeStore {</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="comment">// VFALCO DEPRECATED Use std::function instead</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="structripple_1_1NodeStore_1_1VisitCallback.html">   31</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1NodeStore_1_1VisitCallback.html">VisitCallback</a></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;{</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <a class="code" href="structripple_1_1NodeStore_1_1VisitCallback.html#a4f428c015e369346be00a55709bcf5e0">visitObject</a>(NodeObject::Ptr <span class="keyword">const</span>&amp; <span class="keywordtype">object</span>) = 0;</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;};</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;}  <span class="comment">// namespace NodeStore</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="namespaceripple.html#afce562bec88f81bc110dbdc1794eadcd">   26</a></span>&#160;<a class="code" href="namespaceripple.html#afce562bec88f81bc110dbdc1794eadcd">secure_erase</a>(<span class="keywordtype">void</span>* dest, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> bytes)</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;{</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    OPENSSL_cleanse(dest, bytes);</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;}</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="astructripple_1_1NodeStore_1_1VisitCallback_html"><div class="ttname"><a href="structripple_1_1NodeStore_1_1VisitCallback.html">ripple::NodeStore::VisitCallback</a></div><div class="ttdoc">Callback for iterating through objects.</div><div class="ttdef"><b>Definition:</b> <a href="VisitCallback_8h_source.html#l00031">VisitCallback.h:31</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="astructripple_1_1NodeStore_1_1VisitCallback_html_a4f428c015e369346be00a55709bcf5e0"><div class="ttname"><a href="structripple_1_1NodeStore_1_1VisitCallback.html#a4f428c015e369346be00a55709bcf5e0">ripple::NodeStore::VisitCallback::visitObject</a></div><div class="ttdeci">virtual void visitObject(NodeObject::Ptr const &amp;object)=0</div></div>
+<div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
+<div class="ttc" id="anamespaceripple_html_afce562bec88f81bc110dbdc1794eadcd"><div class="ttname"><a href="namespaceripple.html#afce562bec88f81bc110dbdc1794eadcd">ripple::secure_erase</a></div><div class="ttdeci">void secure_erase(void *dest, std::size_t bytes)</div><div class="ttdoc">Attempts to clear the given blob of memory.</div><div class="ttdef"><b>Definition:</b> <a href="secure__erase_8cpp_source.html#l00026">secure_erase.cpp:26</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

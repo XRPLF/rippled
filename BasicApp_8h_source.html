@@ -104,19 +104,18 @@ $(function() {
 <div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="classBasicApp.html#a53ed855cfab7fb18f9a20854051f5592">   33</a></span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::thread&gt;</a> <a class="code" href="classBasicApp.html#a53ed855cfab7fb18f9a20854051f5592">threads_</a>;</div>
 <div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="classBasicApp.html#ac7653bf5f56f12d87d7fd81b6261ad5c">   34</a></span>&#160;    boost::asio::io_service <a class="code" href="classBasicApp.html#ac7653bf5f56f12d87d7fd81b6261ad5c">io_service_</a>;</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">protected</span>:</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">public</span>:</div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <a class="code" href="classBasicApp.html#a68f281adabe9b58bf52f4c6dd7f8b560">BasicApp</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> numberOfThreads);</div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="code" href="classBasicApp.html#a54b860eec04d8478bf684abe09ba03fd">~BasicApp</a>();</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    boost::asio::io_service&amp;</div>
-<div class="line"><a name="l00042"></a><span class="lineno"><a class="line" href="classBasicApp.html#a33e6eb1c0774a3cd6ca8a6a5069e363d">   42</a></span>&#160;    <a class="code" href="classBasicApp.html#a33e6eb1c0774a3cd6ca8a6a5069e363d">get_io_service</a>()</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    {</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classBasicApp.html#ac7653bf5f56f12d87d7fd81b6261ad5c">io_service_</a>;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    }</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;};</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    boost::asio::io_service&amp;</div>
+<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="classBasicApp.html#a33e6eb1c0774a3cd6ca8a6a5069e363d">   41</a></span>&#160;    <a class="code" href="classBasicApp.html#a33e6eb1c0774a3cd6ca8a6a5069e363d">get_io_service</a>()</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    {</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classBasicApp.html#ac7653bf5f56f12d87d7fd81b6261ad5c">io_service_</a>;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    }</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;};</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassBasicApp_html_a68f281adabe9b58bf52f4c6dd7f8b560"><div class="ttname"><a href="classBasicApp.html#a68f281adabe9b58bf52f4c6dd7f8b560">BasicApp::BasicApp</a></div><div class="ttdeci">BasicApp(std::size_t numberOfThreads)</div><div class="ttdef"><b>Definition:</b> <a href="BasicApp_8cpp_source.html#l00023">BasicApp.cpp:23</a></div></div>
 <div class="ttc" id="aclassBasicApp_html_a54b860eec04d8478bf684abe09ba03fd"><div class="ttname"><a href="classBasicApp.html#a54b860eec04d8478bf684abe09ba03fd">BasicApp::~BasicApp</a></div><div class="ttdeci">~BasicApp()</div><div class="ttdef"><b>Definition:</b> <a href="BasicApp_8cpp_source.html#l00038">BasicApp.cpp:38</a></div></div>
@@ -127,7 +126,7 @@ $(function() {
 <div class="ttc" id="aclassBasicApp_html_a5c0f79e40490adeb76bfdf3417b9fd77"><div class="ttname"><a href="classBasicApp.html#a5c0f79e40490adeb76bfdf3417b9fd77">BasicApp::work_</a></div><div class="ttdeci">boost::optional&lt; boost::asio::io_service::work &gt; work_</div><div class="ttdef"><b>Definition:</b> <a href="BasicApp_8h_source.html#l00032">BasicApp.h:32</a></div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
 <div class="ttc" id="aclassBasicApp_html"><div class="ttname"><a href="classBasicApp.html">BasicApp</a></div><div class="ttdef"><b>Definition:</b> <a href="BasicApp_8h_source.html#l00029">BasicApp.h:29</a></div></div>
-<div class="ttc" id="aclassBasicApp_html_a33e6eb1c0774a3cd6ca8a6a5069e363d"><div class="ttname"><a href="classBasicApp.html#a33e6eb1c0774a3cd6ca8a6a5069e363d">BasicApp::get_io_service</a></div><div class="ttdeci">boost::asio::io_service &amp; get_io_service()</div><div class="ttdef"><b>Definition:</b> <a href="BasicApp_8h_source.html#l00042">BasicApp.h:42</a></div></div>
+<div class="ttc" id="aclassBasicApp_html_a33e6eb1c0774a3cd6ca8a6a5069e363d"><div class="ttname"><a href="classBasicApp.html#a33e6eb1c0774a3cd6ca8a6a5069e363d">BasicApp::get_io_service</a></div><div class="ttdeci">boost::asio::io_service &amp; get_io_service()</div><div class="ttdef"><b>Definition:</b> <a href="BasicApp_8h_source.html#l00041">BasicApp.h:41</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

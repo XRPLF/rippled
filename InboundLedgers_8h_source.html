@@ -122,59 +122,52 @@ $(function() {
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;protocol::TMLedgerData&gt;</a>) = 0;</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#a25c6e1edda30aa62807b8a4f3cab8135">doLedgerData</a>(<a class="code" href="classripple_1_1base__uint.html">LedgerHash</a> hash) = 0;</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#ad9450051586f5f5ae5a0297d15fdbfdf">gotStaleData</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;protocol::TMLedgerData&gt;</a> packet) = 0;</div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#ad9450051586f5f5ae5a0297d15fdbfdf">gotStaleData</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;protocol::TMLedgerData&gt;</a> packet) = 0;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#a5c5d7da0b302fc02ed81082c32fcd48d">logFailure</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; h, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq) = 0;</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">int</span></div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#a8fd697cc399ee57bbb268eaca4a5602b">getFetchCount</a>(<span class="keywordtype">int</span>&amp; timeoutCount) = 0;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#abfa7313dd062dc0f416dfa71d8dad546">isFailure</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; h) = 0;</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#a5c5d7da0b302fc02ed81082c32fcd48d">logFailure</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; h, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq) = 0;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#a0dd139449bf0efa340edb0b3265032c6">clearFailures</a>() = 0;</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#abfa7313dd062dc0f416dfa71d8dad546">isFailure</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; h) = 0;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#a51a2b07c207e628f159aa89e6402250d">getInfo</a>() = 0;</div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#a0dd139449bf0efa340edb0b3265032c6">clearFailures</a>() = 0;</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#a51a2b07c207e628f159aa89e6402250d">getInfo</a>() = 0;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#aa8e8fceb23a3f9bf00b604c9c0a69d87">fetchRate</a>() = 0;</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#aff8b120dd69c652db5c3327d7eab5f8d">onLedgerFetched</a>() = 0;</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#ac03c12b9aad2af653f21f72411205d1e">gotFetchPack</a>() = 0;</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#a2bb3b2c716ef8839a360493277a0c53d">sweep</a>() = 0;</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#a264fc685562692d9b237a7de9469e5c4">onStop</a>() = 0;</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;};</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;InboundLedgers&gt;</a></div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<a class="code" href="namespaceripple.html#af6550c765f1787e0c238e1c34e5d3836">make_InboundLedgers</a>(</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <a class="code" href="classripple_1_1Application.html">Application</a>&amp; app,</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <a class="code" href="classbeast_1_1abstract__clock.html">InboundLedgers::clock_type</a>&amp; clock,</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <a class="code" href="classripple_1_1Stoppable.html">Stoppable</a>&amp; parent,</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">beast::insight::Collector::ptr</a> <span class="keyword">const</span>&amp; collector);</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#aa8e8fceb23a3f9bf00b604c9c0a69d87">fetchRate</a>() = 0;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#aff8b120dd69c652db5c3327d7eab5f8d">onLedgerFetched</a>() = 0;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#ac03c12b9aad2af653f21f72411205d1e">gotFetchPack</a>() = 0;</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#a2bb3b2c716ef8839a360493277a0c53d">sweep</a>() = 0;</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#a264fc685562692d9b237a7de9469e5c4">onStop</a>() = 0;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;};</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;InboundLedgers&gt;</a></div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<a class="code" href="namespaceripple.html#af6550c765f1787e0c238e1c34e5d3836">make_InboundLedgers</a>(</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <a class="code" href="classripple_1_1Application.html">Application</a>&amp; app,</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <a class="code" href="classbeast_1_1abstract__clock.html">InboundLedgers::clock_type</a>&amp; clock,</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <a class="code" href="classripple_1_1Stoppable.html">Stoppable</a>&amp; parent,</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">beast::insight::Collector::ptr</a> <span class="keyword">const</span>&amp; collector);</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1Application_html"><div class="ttname"><a href="classripple_1_1Application.html">ripple::Application</a></div><div class="ttdef"><b>Definition:</b> <a href="Application_8h_source.html#l00094">Application.h:94</a></div></div>
 <div class="ttc" id="aclassripple_1_1InboundLedgers_html_a51a2b07c207e628f159aa89e6402250d"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#a51a2b07c207e628f159aa89e6402250d">ripple::InboundLedgers::getInfo</a></div><div class="ttdeci">virtual Json::Value getInfo()=0</div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1InboundLedgers_html_aa8e8fceb23a3f9bf00b604c9c0a69d87"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#aa8e8fceb23a3f9bf00b604c9c0a69d87">ripple::InboundLedgers::fetchRate</a></div><div class="ttdeci">virtual std::size_t fetchRate()=0</div><div class="ttdoc">Returns the rate of historical ledger fetches per minute.</div></div>
-<div class="ttc" id="aclassripple_1_1InboundLedgers_html_a25c6e1edda30aa62807b8a4f3cab8135"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#a25c6e1edda30aa62807b8a4f3cab8135">ripple::InboundLedgers::doLedgerData</a></div><div class="ttdeci">virtual void doLedgerData(LedgerHash hash)=0</div></div>
 <div class="ttc" id="aclassripple_1_1InboundLedgers_html_a2bb3b2c716ef8839a360493277a0c53d"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#a2bb3b2c716ef8839a360493277a0c53d">ripple::InboundLedgers::sweep</a></div><div class="ttdeci">virtual void sweep()=0</div></div>
-<div class="ttc" id="anamespaceripple_html_af6550c765f1787e0c238e1c34e5d3836"><div class="ttname"><a href="namespaceripple.html#af6550c765f1787e0c238e1c34e5d3836">ripple::make_InboundLedgers</a></div><div class="ttdeci">std::unique_ptr&lt; InboundLedgers &gt; make_InboundLedgers(Application &amp;app, InboundLedgers::clock_type &amp;clock, Stoppable &amp;parent, beast::insight::Collector::ptr const &amp;collector)</div><div class="ttdef"><b>Definition:</b> <a href="InboundLedgers_8cpp_source.html#l00465">InboundLedgers.cpp:465</a></div></div>
+<div class="ttc" id="anamespaceripple_html_af6550c765f1787e0c238e1c34e5d3836"><div class="ttname"><a href="namespaceripple.html#af6550c765f1787e0c238e1c34e5d3836">ripple::make_InboundLedgers</a></div><div class="ttdeci">std::unique_ptr&lt; InboundLedgers &gt; make_InboundLedgers(Application &amp;app, InboundLedgers::clock_type &amp;clock, Stoppable &amp;parent, beast::insight::Collector::ptr const &amp;collector)</div><div class="ttdef"><b>Definition:</b> <a href="InboundLedgers_8cpp_source.html#l00437">InboundLedgers.cpp:437</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 256 &gt;</a></div></div>
 <div class="ttc" id="aclassripple_1_1Stoppable_html"><div class="ttname"><a href="classripple_1_1Stoppable.html">ripple::Stoppable</a></div><div class="ttdoc">Provides an interface for starting and stopping.</div><div class="ttdef"><b>Definition:</b> <a href="Stoppable_8h_source.html#l00200">Stoppable.h:200</a></div></div>
 <div class="ttc" id="aclassripple_1_1InboundLedgers_html_ac03c12b9aad2af653f21f72411205d1e"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#ac03c12b9aad2af653f21f72411205d1e">ripple::InboundLedgers::gotFetchPack</a></div><div class="ttdeci">virtual void gotFetchPack()=0</div></div>
@@ -190,8 +183,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1InboundLedgers_html_a600000acda36c21ecc1f29defe89a278"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#a600000acda36c21ecc1f29defe89a278">ripple::InboundLedgers::gotLedgerData</a></div><div class="ttdeci">virtual bool gotLedgerData(LedgerHash const &amp;ledgerHash, std::shared_ptr&lt; Peer &gt;, std::shared_ptr&lt; protocol::TMLedgerData &gt;)=0</div></div>
 <div class="ttc" id="aclassripple_1_1InboundLedgers_html_a0dd139449bf0efa340edb0b3265032c6"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#a0dd139449bf0efa340edb0b3265032c6">ripple::InboundLedgers::clearFailures</a></div><div class="ttdeci">virtual void clearFailures()=0</div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
-<div class="ttc" id="aclassripple_1_1InboundLedger_html_a3e8d7f8b5fa089a184dcc9b00b6e0da7"><div class="ttname"><a href="classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7">ripple::InboundLedger::Reason</a></div><div class="ttdeci">Reason</div><div class="ttdef"><b>Definition:</b> <a href="InboundLedger_8h_source.html#l00049">InboundLedger.h:49</a></div></div>
-<div class="ttc" id="aclassripple_1_1InboundLedgers_html_a8fd697cc399ee57bbb268eaca4a5602b"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#a8fd697cc399ee57bbb268eaca4a5602b">ripple::InboundLedgers::getFetchCount</a></div><div class="ttdeci">virtual int getFetchCount(int &amp;timeoutCount)=0</div></div>
+<div class="ttc" id="aclassripple_1_1InboundLedger_html_a3e8d7f8b5fa089a184dcc9b00b6e0da7"><div class="ttname"><a href="classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7">ripple::InboundLedger::Reason</a></div><div class="ttdeci">Reason</div><div class="ttdef"><b>Definition:</b> <a href="InboundLedger_8h_source.html#l00051">InboundLedger.h:51</a></div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1InboundLedgers_html_abfa7313dd062dc0f416dfa71d8dad546"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#abfa7313dd062dc0f416dfa71d8dad546">ripple::InboundLedgers::isFailure</a></div><div class="ttdeci">virtual bool isFailure(uint256 const &amp;h)=0</div></div>
 <div class="ttc" id="aclassripple_1_1InboundLedgers_html_a264fc685562692d9b237a7de9469e5c4"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#a264fc685562692d9b237a7de9469e5c4">ripple::InboundLedgers::onStop</a></div><div class="ttdeci">virtual void onStop()=0</div></div>

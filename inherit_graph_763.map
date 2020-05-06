@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1test_1_1SSLHTTPDownloader__test_1_1DownloadCompleter.html" title=" " alt="" coords="5,5,240,47"/>
+<area shape="rect" id="node1" href="$classripple_1_1TOfferStreamBase.html" title=" " alt="" coords="5,5,192,47"/>
+<area shape="rect" id="node2" href="$classripple_1_1FlowOfferStream.html" title="Presents and consumes the offers in an order book." alt="" coords="240,5,416,47"/>
 </map>

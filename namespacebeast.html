@@ -310,9 +310,6 @@ Functions</h2></td></tr>
 <tr class="memitem:a4ac75429da667d3b818a083ee007f116"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1abstract__clock.html">abstract_clock</a>&lt; Facade &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacebeast.html#a4ac75429da667d3b818a083ee007f116">get_abstract_clock</a> ()</td></tr>
 <tr class="memdesc:a4ac75429da667d3b818a083ee007f116"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a global instance of an abstract clock.  <a href="namespacebeast.html#a4ac75429da667d3b818a083ee007f116">More...</a><br /></td></tr>
 <tr class="separator:a4ac75429da667d3b818a083ee007f116"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae7ebcb3c739aea5094f5032922e2909e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebeast.html#ae7ebcb3c739aea5094f5032922e2909e">basic_seconds_clock_main_hook</a> ()</td></tr>
-<tr class="memdesc:ae7ebcb3c739aea5094f5032922e2909e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called before main exits to terminate the utility thread.  <a href="namespacebeast.html#ae7ebcb3c739aea5094f5032922e2909e">More...</a><br /></td></tr>
-<tr class="separator:ae7ebcb3c739aea5094f5032922e2909e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0d4902fd756aee03082ffc8a6f528792"><td class="memTemplParams" colspan="2">template&lt;class AgedContainer , class Rep , class Period &gt; </td></tr>
 <tr class="memitem:a0d4902fd756aee03082ffc8a6f528792"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if</a>&lt; <a class="el" href="structbeast_1_1is__aged__container.html">is_aged_container</a>&lt; AgedContainer &gt;::value, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt;::type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacebeast.html#a0d4902fd756aee03082ffc8a6f528792">expire</a> (AgedContainer &amp;c, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a>&lt; Rep, Period &gt; const &amp;age)</td></tr>
 <tr class="memdesc:a0d4902fd756aee03082ffc8a6f528792"><td class="mdescLeft">&#160;</td><td class="mdescRight">Expire aged container items past the specified age.  <a href="namespacebeast.html#a0d4902fd756aee03082ffc8a6f528792">More...</a><br /></td></tr>
@@ -382,10 +379,6 @@ Functions</h2></td></tr>
 <tr class="separator:a5be32b6206719809af31bd797acf98da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abe13cdac8dc5b49ebcc089c4519f1cab"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacebeast.html#abe13cdac8dc5b49ebcc089c4519f1cab">operator&lt;</a> (<a class="el" href="classbeast_1_1SemanticVersion.html">SemanticVersion</a> const &amp;lhs, <a class="el" href="classbeast_1_1SemanticVersion.html">SemanticVersion</a> const &amp;rhs)</td></tr>
 <tr class="separator:abe13cdac8dc5b49ebcc089c4519f1cab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8e508b9d22973d6b6cb9ee37aaf981f7"><td class="memTemplParams" colspan="2">template&lt;class  = void&gt; </td></tr>
-<tr class="memitem:a8e508b9d22973d6b6cb9ee37aaf981f7"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacebeast.html#a8e508b9d22973d6b6cb9ee37aaf981f7">secure_erase</a> (void *dest, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> bytes)</td></tr>
-<tr class="memdesc:a8e508b9d22973d6b6cb9ee37aaf981f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Guaranteed to fill memory with zeroes.  <a href="namespacebeast.html#a8e508b9d22973d6b6cb9ee37aaf981f7">More...</a><br /></td></tr>
-<tr class="separator:a8e508b9d22973d6b6cb9ee37aaf981f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a98782cfa7110e0f66288ddd2ceb82e10"><td class="memTemplParams" colspan="2">template&lt;class Hasher &gt; </td></tr>
 <tr class="memitem:a98782cfa7110e0f66288ddd2ceb82e10"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacebeast.html#a98782cfa7110e0f66288ddd2ceb82e10">hash_append</a> (Hasher &amp;h, <a class="el" href="namespacebeast_1_1IP.html#adbe597760cb20a7aa3f2ff92f7bed2cc">beast::IP::Address</a> const &amp;addr) noexcept</td></tr>
 <tr class="separator:a98782cfa7110e0f66288ddd2ceb82e10"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -777,7 +770,7 @@ template&lt;class T , class U &gt; </div>
 <div class="line">             Y <span class="keyword">const</span> y {};</div>
 <div class="line">             Unsafe u1 (x, y);    <span class="comment">// ok</span></div>
 <div class="line">             Unsafe u2 (X (), y);  <span class="comment">// compiles, but u2.x_ becomes invalid at</span></div>
-<div class="line">the <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/end.html">end</a> of the line. Safe s1 (x, y);      <span class="comment">// ok</span></div>
+<div class="line">the <a class="codeRef" href="http://en.cppreference.com/w/cpp/iterator/end.html">end</a> of the <a class="code" href="namespaceripple_1_1keylet.html#ad7913ec52c58534ee1601ab21956123f">line</a>. Safe s1 (x, y);      <span class="comment">// ok</span></div>
 <div class="line">             <span class="comment">//  Safe s2 (X (), y);  // compile-time error</span></div>
 <div class="line">         }</div>
 <div class="line">     };</div>
@@ -916,28 +909,6 @@ template&lt;class Facade , class Clock  = Facade&gt; </div>
 </dl>
 
 <p class="definition">Definition at line <a class="el" href="abstract__clock_8h_source.html#l00107">107</a> of file <a class="el" href="abstract__clock_8h_source.html">abstract_clock.h</a>.</p>
-
-</div>
-</div>
-<a id="ae7ebcb3c739aea5094f5032922e2909e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae7ebcb3c739aea5094f5032922e2909e">&#9670;&nbsp;</a></span>basic_seconds_clock_main_hook()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void beast::basic_seconds_clock_main_hook </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Called before main exits to terminate the utility thread. </p>
-<p>This is a workaround for Visual Studio 2013: <a href="http://connect.microsoft.com/VisualStudio/feedback/details/786016/creating-a-global-c-object-that-used-thread-join-in-its-destructor-causes-a-lockup">http://connect.microsoft.com/VisualStudio/feedback/details/786016/creating-a-global-c-object-that-used-thread-join-in-its-destructor-causes-a-lockup</a> <a href="http://stackoverflow.com/questions/10915233/stdthreadjoin-hangs-if-called-after-main-exits-when-using-vs2012-rc">http://stackoverflow.com/questions/10915233/stdthreadjoin-hangs-if-called-after-main-exits-when-using-vs2012-rc</a> </p>
-
-<p class="definition">Definition at line <a class="el" href="basic__seconds__clock_8h_source.html#l00145">145</a> of file <a class="el" href="basic__seconds__clock_8h_source.html">basic_seconds_clock.h</a>.</p>
 
 </div>
 </div>
@@ -1731,40 +1702,6 @@ template&lt;class Container , bool LhsIsConst, bool RhsIsConst&gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="SemanticVersion_8h_source.html#l00111">111</a> of file <a class="el" href="SemanticVersion_8h_source.html">SemanticVersion.h</a>.</p>
-
-</div>
-</div>
-<a id="a8e508b9d22973d6b6cb9ee37aaf981f7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8e508b9d22973d6b6cb9ee37aaf981f7">&#9670;&nbsp;</a></span>secure_erase()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class  = void&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">void beast::secure_erase </td>
-          <td>(</td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>dest</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
-          <td class="paramname"><em>bytes</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Guaranteed to fill memory with zeroes. </p>
-
-<p class="definition">Definition at line <a class="el" href="secure__erase_8h_source.html#l00081">81</a> of file <a class="el" href="secure__erase_8h_source.html">secure_erase.h</a>.</p>
 
 </div>
 </div>
@@ -4048,6 +3985,7 @@ template&lt;typename T &gt; </div>
 </div>
 </div>
 </div><!-- contents -->
+<div class="ttc" id="anamespaceripple_1_1keylet_html_ad7913ec52c58534ee1601ab21956123f"><div class="ttname"><a href="namespaceripple_1_1keylet.html#ad7913ec52c58534ee1601ab21956123f">ripple::keylet::line</a></div><div class="ttdeci">Keylet line(AccountID const &amp;id0, AccountID const &amp;id1, Currency const &amp;currency) noexcept</div><div class="ttdoc">The index of a trust line for a given currency.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00172">Indexes.cpp:172</a></div></div>
 <div class="ttc" id="anamespacebeast_html_a40c1316167b3593c1ef3da5ebbc8ff63"><div class="ttname"><a href="namespacebeast.html#a40c1316167b3593c1ef3da5ebbc8ff63">beast::enable_if_lvalue_t</a></div><div class="ttdeci">typename enable_if_lvalue&lt; T, U &gt;::type enable_if_lvalue_t</div><div class="ttdoc">Ensure const reference function parameters are valid lvalues.</div><div class="ttdef"><b>Definition:</b> <a href="meta_8h_source.html#l00139">meta.h:139</a></div></div>
 <div class="ttc" id="aend_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/end.html">std::end</a></div><div class="ttdeci">T end(T... args)</div></div>
 <!-- start footer part -->

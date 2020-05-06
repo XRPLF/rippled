@@ -134,79 +134,77 @@ $(function() {
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;{</div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1Cluster.html#ab0eef88c2f27bca8f500f9eb1714bb1d">mutex_</a>);</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="comment">// We can&#39;t use auto here yet due to the libstdc++ issue</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="comment">// described at https://gcc.gnu.org/bugzilla/show_bug.cgi?id=68190</span></div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set&lt;ClusterNode, Comparator&gt;::iterator</a> iter = <a class="code" href="classripple_1_1Cluster.html#a0a33bf73955a4794a74b7f3df8ea4de9">nodes_</a>.find(identity);</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keywordflow">if</span> (iter != <a class="code" href="classripple_1_1Cluster.html#a0a33bf73955a4794a74b7f3df8ea4de9">nodes_</a>.end())</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    {</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <span class="keywordflow">if</span> (reportTime &lt;= iter-&gt;getReportTime())</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keywordflow">if</span> (name.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;            name = iter-&gt;name();</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        iter = <a class="code" href="classripple_1_1Cluster.html#a0a33bf73955a4794a74b7f3df8ea4de9">nodes_</a>.erase(iter);</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    }</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <a class="code" href="classripple_1_1Cluster.html#a0a33bf73955a4794a74b7f3df8ea4de9">nodes_</a>.emplace_hint(iter, identity, name, loadFee, reportTime);</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;}</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00086"></a><span class="lineno"><a class="line" href="classripple_1_1Cluster.html#a52adb42f90234baba096961525f94a87">   86</a></span>&#160;<a class="code" href="classripple_1_1Cluster.html#a52adb42f90234baba096961525f94a87">Cluster::for_each</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;<span class="keywordtype">void</span>(<a class="code" href="classripple_1_1ClusterNode.html">ClusterNode</a> <span class="keyword">const</span>&amp;)&gt; func)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1Cluster.html#ab0eef88c2f27bca8f500f9eb1714bb1d">mutex_</a>);</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; ni : <a class="code" href="classripple_1_1Cluster.html#a0a33bf73955a4794a74b7f3df8ea4de9">nodes_</a>)</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        func(ni);</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;}</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00094"></a><span class="lineno"><a class="line" href="classripple_1_1Cluster.html#a8fc75d3bc21adb0c8e8dea5315ec8aa5">   94</a></span>&#160;<a class="code" href="classripple_1_1Cluster.html#a8fc75d3bc21adb0c8e8dea5315ec8aa5">Cluster::load</a>(<a class="code" href="classripple_1_1Section.html">Section</a> <span class="keyword">const</span>&amp; nodes)</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;{</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keyword">static</span> boost::regex <span class="keyword">const</span> re(</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <span class="stringliteral">&quot;[[:space:]]*&quot;</span>       <span class="comment">// skip leading whitespace</span></div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        <span class="stringliteral">&quot;([[:alnum:]]+)&quot;</span>     <span class="comment">// node identity</span></div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        <span class="stringliteral">&quot;(?:&quot;</span>                <span class="comment">// begin optional comment block</span></div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <span class="stringliteral">&quot;[[:space:]]+&quot;</span>       <span class="comment">// (skip all leading whitespace)</span></div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        <span class="stringliteral">&quot;(?:&quot;</span>                <span class="comment">// begin optional comment</span></div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        <span class="stringliteral">&quot;(.*[^[:space:]]+)&quot;</span>  <span class="comment">// the comment</span></div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        <span class="stringliteral">&quot;[[:space:]]*&quot;</span>       <span class="comment">// (skip all trailing whitespace)</span></div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        <span class="stringliteral">&quot;)?&quot;</span>                 <span class="comment">// end optional comment</span></div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;        <span class="stringliteral">&quot;)?&quot;</span>                 <span class="comment">// end optional comment block</span></div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    );</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; n : nodes.<a class="code" href="classripple_1_1Section.html#a320f911d1e931b45b71a50c25561ecf7">values</a>())</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    {</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        boost::smatch match;</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        <span class="keywordflow">if</span> (!boost::regex_match(n, match, re))</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        {</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            JLOG(<a class="code" href="classripple_1_1Cluster.html#aa6664bc27d55a38c9de91f1d2ef889fa">j_</a>.<a class="code" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; <span class="stringliteral">&quot;Malformed entry: &#39;&quot;</span> &lt;&lt; n &lt;&lt; <span class="stringliteral">&quot;&#39;&quot;</span>;</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        }</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keyword">auto</span> iter = <a class="code" href="classripple_1_1Cluster.html#a0a33bf73955a4794a74b7f3df8ea4de9">nodes_</a>.find(identity);</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keywordflow">if</span> (iter != <a class="code" href="classripple_1_1Cluster.html#a0a33bf73955a4794a74b7f3df8ea4de9">nodes_</a>.end())</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    {</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="keywordflow">if</span> (reportTime &lt;= iter-&gt;getReportTime())</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        <span class="keywordflow">if</span> (name.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;            name = iter-&gt;name();</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        iter = <a class="code" href="classripple_1_1Cluster.html#a0a33bf73955a4794a74b7f3df8ea4de9">nodes_</a>.erase(iter);</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    }</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <a class="code" href="classripple_1_1Cluster.html#a0a33bf73955a4794a74b7f3df8ea4de9">nodes_</a>.emplace_hint(iter, identity, name, loadFee, reportTime);</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;}</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00084"></a><span class="lineno"><a class="line" href="classripple_1_1Cluster.html#a52adb42f90234baba096961525f94a87">   84</a></span>&#160;<a class="code" href="classripple_1_1Cluster.html#a52adb42f90234baba096961525f94a87">Cluster::for_each</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;<span class="keywordtype">void</span>(<a class="code" href="classripple_1_1ClusterNode.html">ClusterNode</a> <span class="keyword">const</span>&amp;)&gt; func)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1Cluster.html#ab0eef88c2f27bca8f500f9eb1714bb1d">mutex_</a>);</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; ni : <a class="code" href="classripple_1_1Cluster.html#a0a33bf73955a4794a74b7f3df8ea4de9">nodes_</a>)</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        func(ni);</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;}</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00092"></a><span class="lineno"><a class="line" href="classripple_1_1Cluster.html#a8fc75d3bc21adb0c8e8dea5315ec8aa5">   92</a></span>&#160;<a class="code" href="classripple_1_1Cluster.html#a8fc75d3bc21adb0c8e8dea5315ec8aa5">Cluster::load</a>(<a class="code" href="classripple_1_1Section.html">Section</a> <span class="keyword">const</span>&amp; nodes)</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;{</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="keyword">static</span> boost::regex <span class="keyword">const</span> re(</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        <span class="stringliteral">&quot;[[:space:]]*&quot;</span>       <span class="comment">// skip leading whitespace</span></div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        <span class="stringliteral">&quot;([[:alnum:]]+)&quot;</span>     <span class="comment">// node identity</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <span class="stringliteral">&quot;(?:&quot;</span>                <span class="comment">// begin optional comment block</span></div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        <span class="stringliteral">&quot;[[:space:]]+&quot;</span>       <span class="comment">// (skip all leading whitespace)</span></div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        <span class="stringliteral">&quot;(?:&quot;</span>                <span class="comment">// begin optional comment</span></div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <span class="stringliteral">&quot;(.*[^[:space:]]+)&quot;</span>  <span class="comment">// the comment</span></div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        <span class="stringliteral">&quot;[[:space:]]*&quot;</span>       <span class="comment">// (skip all trailing whitespace)</span></div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        <span class="stringliteral">&quot;)?&quot;</span>                 <span class="comment">// end optional comment</span></div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        <span class="stringliteral">&quot;)?&quot;</span>                 <span class="comment">// end optional comment block</span></div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    );</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; n : nodes.<a class="code" href="classripple_1_1Section.html#a320f911d1e931b45b71a50c25561ecf7">values</a>())</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    {</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        boost::smatch match;</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        <span class="keywordflow">if</span> (!boost::regex_match(n, match, re))</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        {</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            JLOG(<a class="code" href="classripple_1_1Cluster.html#aa6664bc27d55a38c9de91f1d2ef889fa">j_</a>.<a class="code" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; <span class="stringliteral">&quot;Malformed entry: &#39;&quot;</span> &lt;&lt; n &lt;&lt; <span class="stringliteral">&quot;&#39;&quot;</span>;</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        }</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> <span class="keywordtype">id</span> = parseBase58&lt;PublicKey&gt;(<a class="code" href="namespaceripple.html#a1bf8df553d36589191c8057c136cce03ac3fe5edb1f8a81a8e585f6a27c120be6">TokenType::NodePublic</a>, match[1]);</div>
 <div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160; </div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> <span class="keywordtype">id</span> = parseBase58&lt;PublicKey&gt;(<a class="code" href="namespaceripple.html#a1bf8df553d36589191c8057c136cce03ac3fe5edb1f8a81a8e585f6a27c120be6">TokenType::NodePublic</a>, match[1]);</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160; </div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        <span class="keywordflow">if</span> (!<span class="keywordtype">id</span>)</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;        {</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            JLOG(<a class="code" href="classripple_1_1Cluster.html#aa6664bc27d55a38c9de91f1d2ef889fa">j_</a>.<a class="code" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; <span class="stringliteral">&quot;Invalid node identity: &quot;</span> &lt;&lt; match[1];</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;        }</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1Cluster.html#a0c718ec2f55e267d3b4f484fcac27717">member</a>(*<span class="keywordtype">id</span>))</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;        {</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            JLOG(<a class="code" href="classripple_1_1Cluster.html#aa6664bc27d55a38c9de91f1d2ef889fa">j_</a>.<a class="code" href="classbeast_1_1Journal.html#ad8fefe3e8ad583e1ed1bf02094ac3d8f">warn</a>()) &lt;&lt; <span class="stringliteral">&quot;Duplicate node identity: &quot;</span> &lt;&lt; match[1];</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;            <span class="keywordflow">continue</span>;</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        }</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;        <a class="code" href="classripple_1_1Cluster.html#ab7adae2b2d93eeb0e915c0158de1ee6d">update</a>(*<span class="keywordtype">id</span>, <a class="code" href="namespaceripple.html#a4a0f163a7e357063a6b2993348d60c3c">trim_whitespace</a>(match[2]));</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    }</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160; </div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;}</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160; </div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        <span class="keywordflow">if</span> (!<span class="keywordtype">id</span>)</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        {</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            JLOG(<a class="code" href="classripple_1_1Cluster.html#aa6664bc27d55a38c9de91f1d2ef889fa">j_</a>.<a class="code" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; <span class="stringliteral">&quot;Invalid node identity: &quot;</span> &lt;&lt; match[1];</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        }</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160; </div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;        <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1Cluster.html#a0c718ec2f55e267d3b4f484fcac27717">member</a>(*<span class="keywordtype">id</span>))</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        {</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;            JLOG(<a class="code" href="classripple_1_1Cluster.html#aa6664bc27d55a38c9de91f1d2ef889fa">j_</a>.<a class="code" href="classbeast_1_1Journal.html#ad8fefe3e8ad583e1ed1bf02094ac3d8f">warn</a>()) &lt;&lt; <span class="stringliteral">&quot;Duplicate node identity: &quot;</span> &lt;&lt; match[1];</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;        }</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160; </div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        <a class="code" href="classripple_1_1Cluster.html#ab7adae2b2d93eeb0e915c0158de1ee6d">update</a>(*<span class="keywordtype">id</span>, <a class="code" href="namespaceripple.html#a4a0f163a7e357063a6b2993348d60c3c">trim_whitespace</a>(match[2]));</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;    }</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160; </div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;}</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160; </div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1Section_html"><div class="ttname"><a href="classripple_1_1Section.html">ripple::Section</a></div><div class="ttdoc">Holds a collection of configuration values.</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8h_source.html#l00043">BasicConfig.h:43</a></div></div>
 <div class="ttc" id="aclassripple_1_1ClusterNode_html"><div class="ttname"><a href="classripple_1_1ClusterNode.html">ripple::ClusterNode</a></div><div class="ttdef"><b>Definition:</b> <a href="ClusterNode_8h_source.html#l00030">ClusterNode.h:30</a></div></div>
@@ -217,7 +215,7 @@ $(function() {
 <div class="ttc" id="afunction_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a></div></div>
 <div class="ttc" id="aclassripple_1_1Cluster_html_ab7adae2b2d93eeb0e915c0158de1ee6d"><div class="ttname"><a href="classripple_1_1Cluster.html#ab7adae2b2d93eeb0e915c0158de1ee6d">ripple::Cluster::update</a></div><div class="ttdeci">bool update(PublicKey const &amp;identity, std::string name, std::uint32_t loadFee=0, NetClock::time_point reportTime=NetClock::time_point{})</div><div class="ttdoc">Store information about the state of a cluster node.</div><div class="ttdef"><b>Definition:</b> <a href="Cluster_8cpp_source.html#l00058">Cluster.cpp:58</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a4a0f163a7e357063a6b2993348d60c3c"><div class="ttname"><a href="namespaceripple.html#a4a0f163a7e357063a6b2993348d60c3c">ripple::trim_whitespace</a></div><div class="ttdeci">std::string trim_whitespace(std::string str)</div></div>
-<div class="ttc" id="aclassripple_1_1Cluster_html_a8fc75d3bc21adb0c8e8dea5315ec8aa5"><div class="ttname"><a href="classripple_1_1Cluster.html#a8fc75d3bc21adb0c8e8dea5315ec8aa5">ripple::Cluster::load</a></div><div class="ttdeci">bool load(Section const &amp;nodes)</div><div class="ttdoc">Load the list of cluster nodes.</div><div class="ttdef"><b>Definition:</b> <a href="Cluster_8cpp_source.html#l00094">Cluster.cpp:94</a></div></div>
+<div class="ttc" id="aclassripple_1_1Cluster_html_a8fc75d3bc21adb0c8e8dea5315ec8aa5"><div class="ttname"><a href="classripple_1_1Cluster.html#a8fc75d3bc21adb0c8e8dea5315ec8aa5">ripple::Cluster::load</a></div><div class="ttdeci">bool load(Section const &amp;nodes)</div><div class="ttdoc">Load the list of cluster nodes.</div><div class="ttdef"><b>Definition:</b> <a href="Cluster_8cpp_source.html#l00092">Cluster.cpp:92</a></div></div>
 <div class="ttc" id="aclassripple_1_1Section_html_a320f911d1e931b45b71a50c25561ecf7"><div class="ttname"><a href="classripple_1_1Section.html#a320f911d1e931b45b71a50c25561ecf7">ripple::Section::values</a></div><div class="ttdeci">std::vector&lt; std::string &gt; const  &amp; values() const</div><div class="ttdoc">Returns all the values in the section.</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8h_source.html#l00076">BasicConfig.h:76</a></div></div>
 <div class="ttc" id="aclassripple_1_1Cluster_html_a0c718ec2f55e267d3b4f484fcac27717"><div class="ttname"><a href="classripple_1_1Cluster.html#a0c718ec2f55e267d3b4f484fcac27717">ripple::Cluster::member</a></div><div class="ttdeci">boost::optional&lt; std::string &gt; member(PublicKey const &amp;node) const</div><div class="ttdoc">Determines whether a node belongs in the cluster.</div><div class="ttdef"><b>Definition:</b> <a href="Cluster_8cpp_source.html#l00039">Cluster.cpp:39</a></div></div>
 <div class="ttc" id="aclassripple_1_1Cluster_html_aa6664bc27d55a38c9de91f1d2ef889fa"><div class="ttname"><a href="classripple_1_1Cluster.html#aa6664bc27d55a38c9de91f1d2ef889fa">ripple::Cluster::j_</a></div><div class="ttdeci">beast::Journal j_</div><div class="ttdef"><b>Definition:</b> <a href="Cluster_8h_source.html#l00068">Cluster.h:68</a></div></div>
@@ -233,8 +231,7 @@ $(function() {
 <div class="ttc" id="aempty_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">std::string::empty</a></div><div class="ttdeci">T empty(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_a1bf8df553d36589191c8057c136cce03ac3fe5edb1f8a81a8e585f6a27c120be6"><div class="ttname"><a href="namespaceripple.html#a1bf8df553d36589191c8057c136cce03ac3fe5edb1f8a81a8e585f6a27c120be6">ripple::TokenType::NodePublic</a></div><div class="ttdeci">@ NodePublic</div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
-<div class="ttc" id="aclassripple_1_1Cluster_html_a52adb42f90234baba096961525f94a87"><div class="ttname"><a href="classripple_1_1Cluster.html#a52adb42f90234baba096961525f94a87">ripple::Cluster::for_each</a></div><div class="ttdeci">void for_each(std::function&lt; void(ClusterNode const &amp;)&gt; func) const</div><div class="ttdoc">Invokes the callback once for every cluster node.</div><div class="ttdef"><b>Definition:</b> <a href="Cluster_8cpp_source.html#l00086">Cluster.cpp:86</a></div></div>
-<div class="ttc" id="aset_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a></div><div class="ttdoc">STL class.</div></div>
+<div class="ttc" id="aclassripple_1_1Cluster_html_a52adb42f90234baba096961525f94a87"><div class="ttname"><a href="classripple_1_1Cluster.html#a52adb42f90234baba096961525f94a87">ripple::Cluster::for_each</a></div><div class="ttdeci">void for_each(std::function&lt; void(ClusterNode const &amp;)&gt; func) const</div><div class="ttdoc">Invokes the callback once for every cluster node.</div><div class="ttdef"><b>Definition:</b> <a href="Cluster_8cpp_source.html#l00084">Cluster.cpp:84</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

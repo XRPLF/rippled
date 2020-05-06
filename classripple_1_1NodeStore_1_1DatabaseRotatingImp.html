@@ -66,7 +66,6 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
@@ -145,11 +144,6 @@ Collaboration diagram for ripple::NodeStore::DatabaseRotatingImp:</div>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
-Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1NodeStore_1_1DatabaseRotatingImp_1_1Backends.html">Backends</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ac82d8cd599ee29280d5cf6796ff01332"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#ac82d8cd599ee29280d5cf6796ff01332">DatabaseRotatingImp</a> ()=delete</td></tr>
@@ -162,12 +156,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a79d6fbc2afd580003f1af12e36875bdb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7c5d2c471c6ceac28c09bb729f377c0e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#a7c5d2c471c6ceac28c09bb729f377c0e">~DatabaseRotatingImp</a> () override</td></tr>
 <tr class="separator:a7c5d2c471c6ceac28c09bb729f377c0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab9ca2428a45818428ab7728e4fe9fd1f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1Backend.html">Backend</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#ab9ca2428a45818428ab7728e4fe9fd1f">getWritableBackend</a> () const override</td></tr>
-<tr class="separator:ab9ca2428a45818428ab7728e4fe9fd1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8e1c86b282c83e020a0fe27175b6e96f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1Backend.html">Backend</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#a8e1c86b282c83e020a0fe27175b6e96f">rotateBackends</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1Backend.html">Backend</a> &gt; newBackend, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &gt; const &amp;) override</td></tr>
-<tr class="separator:a8e1c86b282c83e020a0fe27175b6e96f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab6ffefa9785f4c656bde234b04d09ef5"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#ab6ffefa9785f4c656bde234b04d09ef5">peekMutex</a> () const override</td></tr>
-<tr class="separator:ab6ffefa9785f4c656bde234b04d09ef5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a76f256f68048bc81a0d034f7226387b8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#a76f256f68048bc81a0d034f7226387b8">rotateWithLock</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1Backend.html">NodeStore::Backend</a> &gt;(<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;writableBackendName)&gt; const &amp;f) override</td></tr>
+<tr class="memdesc:a76f256f68048bc81a0d034f7226387b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Rotates the backends.  <a href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#a76f256f68048bc81a0d034f7226387b8">More...</a><br /></td></tr>
+<tr class="separator:a76f256f68048bc81a0d034f7226387b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9c3f2d7e8b7e4cca14afe2177c1466b3"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#a9c3f2d7e8b7e4cca14afe2177c1466b3">getName</a> () const override</td></tr>
 <tr class="memdesc:a9c3f2d7e8b7e4cca14afe2177c1466b3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the name associated with this backend.  <a href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#a9c3f2d7e8b7e4cca14afe2177c1466b3">More...</a><br /></td></tr>
 <tr class="separator:a9c3f2d7e8b7e4cca14afe2177c1466b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -284,8 +275,6 @@ Private Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:ae393c2bdac121a9e9d2c801a6817624d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1NodeStore_1_1DatabaseRotatingImp_1_1Backends.html">Backends</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#ae393c2bdac121a9e9d2c801a6817624d">getBackends</a> () const</td></tr>
-<tr class="separator:ae393c2bdac121a9e9d2c801a6817624d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab0571f6e63778adc6379cb263a6f21f6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#ab0571f6e63778adc6379cb263a6f21f6">fetchFrom</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq) override</td></tr>
 <tr class="separator:ab0571f6e63778adc6379cb263a6f21f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aee99c67c55042890a37368f5d17620d4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#aee99c67c55042890a37368f5d17620d4">for_each</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt;)&gt; f) override</td></tr>
@@ -318,8 +307,8 @@ Private Attributes</h2></td></tr>
 <tr class="separator:acaa8e51a8678905a0b2d831154cc91b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44b1eace70e02649d16668ca920531cb"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1Backend.html">Backend</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#a44b1eace70e02649d16668ca920531cb">archiveBackend_</a></td></tr>
 <tr class="separator:a44b1eace70e02649d16668ca920531cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9e59676838e21c35923b9afce7974816"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#a9e59676838e21c35923b9afce7974816">rotateMutex_</a></td></tr>
-<tr class="separator:a9e59676838e21c35923b9afce7974816"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d803c36c8aea67c83f735814de25717"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#a4d803c36c8aea67c83f735814de25717">mutex_</a></td></tr>
+<tr class="separator:a4d803c36c8aea67c83f735814de25717"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a743a610ca48e4585fc4fecda6c52d311"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Database.html#a743a610ca48e4585fc4fecda6c52d311">storeCount_</a> {0}</td></tr>
 <tr class="separator:a743a610ca48e4585fc4fecda6c52d311"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a53935eeab8c4e74a956fd3d70c85a35b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Database.html#a53935eeab8c4e74a956fd3d70c85a35b">fetchTotalCount_</a> {0}</td></tr>
@@ -569,8 +558,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="ab9ca2428a45818428ab7728e4fe9fd1f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab9ca2428a45818428ab7728e4fe9fd1f">&#9670;&nbsp;</a></span>getWritableBackend()</h2>
+<a id="a76f256f68048bc81a0d034f7226387b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a76f256f68048bc81a0d034f7226387b8">&#9670;&nbsp;</a></span>rotateWithLock()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -579,10 +568,11 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1NodeStore_1_1Backend.html">Backend</a>&gt; const&amp; ripple::NodeStore::DatabaseRotatingImp::getWritableBackend </td>
+          <td class="memname">void ripple::NodeStore::DatabaseRotatingImp::rotateWithLock </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1Backend.html">NodeStore::Backend</a> &gt;(<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;writableBackendName)&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>f</em></td><td>)</td>
+          <td></td>
         </tr>
       </table>
   </td>
@@ -592,78 +582,17 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implements <a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotating.html#a3b744fd3a5e87d144fd72ab4eb71c8c2">ripple::NodeStore::DatabaseRotating</a>.</p>
+<p>Rotates the backends. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">f</td><td>A function executed before the rotation and under the same lock </td></tr>
+  </table>
+  </dd>
+</dl>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00053">53</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
-
-</div>
-</div>
-<a id="a8e1c86b282c83e020a0fe27175b6e96f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8e1c86b282c83e020a0fe27175b6e96f">&#9670;&nbsp;</a></span>rotateBackends()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1Backend.html">Backend</a> &gt; ripple::NodeStore::DatabaseRotatingImp::rotateBackends </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1Backend.html">Backend</a> &gt;&#160;</td>
-          <td class="paramname"><em>newBackend</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &gt; const &amp;&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Implements <a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotating.html#a1d3263083d34f86f144fb120e641abac">ripple::NodeStore::DatabaseRotating</a>.</p>
+<p>Implements <a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotating.html#ae436a072e5a6068e819776a53fc0ab25">ripple::NodeStore::DatabaseRotating</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8cpp_source.html#l00059">59</a> of file <a class="el" href="DatabaseRotatingImp_8cpp_source.html">DatabaseRotatingImp.cpp</a>.</p>
-
-</div>
-</div>
-<a id="ab6ffefa9785f4c656bde234b04d09ef5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab6ffefa9785f4c656bde234b04d09ef5">&#9670;&nbsp;</a></span>peekMutex()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a>&amp; ripple::NodeStore::DatabaseRotatingImp::peekMutex </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Implements <a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotating.html#aa5341fb18e3622485a1932994ebc7538">ripple::NodeStore::DatabaseRotating</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00065">65</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
 
 </div>
 </div>
@@ -695,7 +624,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Database.html#a24f47bc48e8d040c662611674898fe2e">ripple::NodeStore::Database</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00071">71</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8cpp_source.html#l00072">72</a> of file <a class="el" href="DatabaseRotatingImp_8cpp_source.html">DatabaseRotatingImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -727,7 +656,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Database.html#aada6493667fd17dd426f6545bf4cac93">ripple::NodeStore::Database</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00077">77</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8cpp_source.html#l00079">79</a> of file <a class="el" href="DatabaseRotatingImp_8cpp_source.html">DatabaseRotatingImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -759,7 +688,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Database.html#ac1946e6706aecab34d6ea2207a33f6bc">ripple::NodeStore::Database</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00083">83</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8cpp_source.html#l00086">86</a> of file <a class="el" href="DatabaseRotatingImp_8cpp_source.html">DatabaseRotatingImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -824,7 +753,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Database.html#af7e6b59a295358a7c583895200b57f56">ripple::NodeStore::Database</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8cpp_source.html#l00070">70</a> of file <a class="el" href="DatabaseRotatingImp_8cpp_source.html">DatabaseRotatingImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8cpp_source.html#l00109">109</a> of file <a class="el" href="DatabaseRotatingImp_8cpp_source.html">DatabaseRotatingImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -876,7 +805,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Database.html#a530e5792a51146d9f81c92bad1fd932a">ripple::NodeStore::Database</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00096">96</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00074">74</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
 
 </div>
 </div>
@@ -935,7 +864,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Database.html#a44b4880cc7028c8171c4a901381ba21e">ripple::NodeStore::Database</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8cpp_source.html#l00084">84</a> of file <a class="el" href="DatabaseRotatingImp_8cpp_source.html">DatabaseRotatingImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8cpp_source.html#l00129">129</a> of file <a class="el" href="DatabaseRotatingImp_8cpp_source.html">DatabaseRotatingImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -974,7 +903,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Database.html#aad7aa12d0cc01006120761d23312d428">ripple::NodeStore::Database</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00108">108</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8cpp_source.html#l00097">97</a> of file <a class="el" href="DatabaseRotatingImp_8cpp_source.html">DatabaseRotatingImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -1014,7 +943,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Database.html#a4cf9f8fa6b90b740efebfccd7d12ec04">ripple::NodeStore::Database</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00115">115</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00089">89</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
 
 </div>
 </div>
@@ -1045,7 +974,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Database.html#a105cc1993a6e21fa10b5f35ec837ac89">ripple::NodeStore::Database</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00124">124</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00098">98</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
 
 </div>
 </div>
@@ -1094,7 +1023,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Database.html#a3805d90fbd3ccdaec2a4c7c4ab109eac">ripple::NodeStore::Database</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8cpp_source.html#l00099">99</a> of file <a class="el" href="DatabaseRotatingImp_8cpp_source.html">DatabaseRotatingImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8cpp_source.html#l00145">145</a> of file <a class="el" href="DatabaseRotatingImp_8cpp_source.html">DatabaseRotatingImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -1125,7 +1054,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Database.html#a40a0e5a30857e9ba3c7561748af31e29">ripple::NodeStore::Database</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8cpp_source.html#l00108">108</a> of file <a class="el" href="DatabaseRotatingImp_8cpp_source.html">DatabaseRotatingImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8cpp_source.html#l00154">154</a> of file <a class="el" href="DatabaseRotatingImp_8cpp_source.html">DatabaseRotatingImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -1154,34 +1083,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotating.html#a59d35cbe897af7c0f9f55f97b77e3046">ripple::NodeStore::DatabaseRotating</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00136">136</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
-
-</div>
-</div>
-<a id="ae393c2bdac121a9e9d2c801a6817624d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae393c2bdac121a9e9d2c801a6817624d">&#9670;&nbsp;</a></span>getBackends()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="structripple_1_1NodeStore_1_1DatabaseRotatingImp_1_1Backends.html">Backends</a> ripple::NodeStore::DatabaseRotatingImp::getBackends </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00159">159</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00110">110</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
 
 </div>
 </div>
@@ -1221,7 +1123,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Database.html#a7a4466bf521bdf460d959227e0f08c52">ripple::NodeStore::Database</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8cpp_source.html#l00115">115</a> of file <a class="el" href="DatabaseRotatingImp_8cpp_source.html">DatabaseRotatingImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8cpp_source.html#l00161">161</a> of file <a class="el" href="DatabaseRotatingImp_8cpp_source.html">DatabaseRotatingImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -1255,7 +1157,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Database.html#a2b5174a0ffb315030b96815d6ac86eaf">ripple::NodeStore::Database</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00169">169</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8cpp_source.html#l00191">191</a> of file <a class="el" href="DatabaseRotatingImp_8cpp_source.html">DatabaseRotatingImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -2301,7 +2203,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00143">143</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00117">117</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
 
 </div>
 </div>
@@ -2325,7 +2227,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00146">146</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00120">120</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
 
 </div>
 </div>
@@ -2349,7 +2251,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00148">148</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00122">122</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
 
 </div>
 </div>
@@ -2373,12 +2275,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00149">149</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00123">123</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
 
 </div>
 </div>
-<a id="a9e59676838e21c35923b9afce7974816"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9e59676838e21c35923b9afce7974816">&#9670;&nbsp;</a></span>rotateMutex_</h2>
+<a id="a4d803c36c8aea67c83f735814de25717"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d803c36c8aea67c83f735814de25717">&#9670;&nbsp;</a></span>mutex_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2387,7 +2289,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> ripple::NodeStore::DatabaseRotatingImp::rotateMutex_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> ripple::NodeStore::DatabaseRotatingImp::mutex_</td>
         </tr>
       </table>
   </td>
@@ -2397,7 +2299,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00150">150</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseRotatingImp_8h_source.html#l00124">124</a> of file <a class="el" href="DatabaseRotatingImp_8h_source.html">DatabaseRotatingImp.h</a>.</p>
 
 </div>
 </div>

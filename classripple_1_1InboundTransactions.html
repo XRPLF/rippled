@@ -102,21 +102,17 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ad6c5e57253b9a0bd5e6a2b933f57752f"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundTransactions.html#ad6c5e57253b9a0bd5e6a2b933f57752f">~InboundTransactions</a> ()=0</td></tr>
 <tr class="separator:ad6c5e57253b9a0bd5e6a2b933f57752f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3a657e7b4e071a181e7e3917d48f81dc"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMap.html">SHAMap</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundTransactions.html#a3a657e7b4e071a181e7e3917d48f81dc">getSet</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;setHash, bool acquire)=0</td></tr>
-<tr class="memdesc:a3a657e7b4e071a181e7e3917d48f81dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves a transaction set by hash.  <a href="classripple_1_1InboundTransactions.html#a3a657e7b4e071a181e7e3917d48f81dc">More...</a><br /></td></tr>
+<tr class="memdesc:a3a657e7b4e071a181e7e3917d48f81dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find and return a transaction set, or nullptr if it is missing.  <a href="classripple_1_1InboundTransactions.html#a3a657e7b4e071a181e7e3917d48f81dc">More...</a><br /></td></tr>
 <tr class="separator:a3a657e7b4e071a181e7e3917d48f81dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2664ff7c9a71d6326add614b59cd2025"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundTransactions.html#a2664ff7c9a71d6326add614b59cd2025">gotData</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;setHash, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMLedgerData &gt;)=0</td></tr>
-<tr class="memdesc:a2664ff7c9a71d6326add614b59cd2025"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gives data to an inbound transaction set.  <a href="classripple_1_1InboundTransactions.html#a2664ff7c9a71d6326add614b59cd2025">More...</a><br /></td></tr>
-<tr class="separator:a2664ff7c9a71d6326add614b59cd2025"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc34365d8412a8ae51acc35b40c26295"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundTransactions.html#afc34365d8412a8ae51acc35b40c26295">gotData</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;setHash, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; peer, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMLedgerData &gt; message)=0</td></tr>
+<tr class="memdesc:afc34365d8412a8ae51acc35b40c26295"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a transaction set from a LedgerData message.  <a href="classripple_1_1InboundTransactions.html#afc34365d8412a8ae51acc35b40c26295">More...</a><br /></td></tr>
+<tr class="separator:afc34365d8412a8ae51acc35b40c26295"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aca94ada1bea94330fa6e7b1076d7952b"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundTransactions.html#aca94ada1bea94330fa6e7b1076d7952b">giveSet</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;setHash, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMap.html">SHAMap</a> &gt; const &amp;<a class="el" href="namespaceripple.html#a53f80df10254751781250aa20704e98f">set</a>, bool acquired)=0</td></tr>
-<tr class="memdesc:aca94ada1bea94330fa6e7b1076d7952b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gives set to the container.  <a href="classripple_1_1InboundTransactions.html#aca94ada1bea94330fa6e7b1076d7952b">More...</a><br /></td></tr>
+<tr class="memdesc:aca94ada1bea94330fa6e7b1076d7952b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a transaction set.  <a href="classripple_1_1InboundTransactions.html#aca94ada1bea94330fa6e7b1076d7952b">More...</a><br /></td></tr>
 <tr class="separator:aca94ada1bea94330fa6e7b1076d7952b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3226ecf56a2d2ac47514917082d55204"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundTransactions.html#a3226ecf56a2d2ac47514917082d55204">newRound</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq)=0</td></tr>
 <tr class="memdesc:a3226ecf56a2d2ac47514917082d55204"><td class="mdescLeft">&#160;</td><td class="mdescRight">Informs the container if a new consensus round.  <a href="classripple_1_1InboundTransactions.html#a3226ecf56a2d2ac47514917082d55204">More...</a><br /></td></tr>
 <tr class="separator:a3226ecf56a2d2ac47514917082d55204"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a29a023f81dd0bbab246291266c908e80"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundTransactions.html#a29a023f81dd0bbab246291266c908e80">getInfo</a> ()=0</td></tr>
-<tr class="separator:a29a023f81dd0bbab246291266c908e80"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac17fd15b4766d585f8aec30239f3f022"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundTransactions.html#ac17fd15b4766d585f8aec30239f3f022">onStop</a> ()=0</td></tr>
-<tr class="separator:ac17fd15b4766d585f8aec30239f3f022"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Manages the acquisition and lifetime of transaction sets. </p>
@@ -277,14 +273,22 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Retrieves a transaction set by hash. </p>
+<p>Find and return a transaction set, or nullptr if it is missing. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">setHash</td><td>The transaction set ID (digest of the <a class="el" href="classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan-out of 16 and a Merkle tree.">SHAMap</a> root node). </td></tr>
+    <tr><td class="paramname">acquire</td><td>Whether to fetch the transaction set from the network if it is missing. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>The transaction set with ID setHash, or nullptr if it is missing. </dd></dl>
 
 <p>Implemented in <a class="el" href="classripple_1_1InboundTransactionsImp.html#a82da6fdf916e83b496b8d15914ead1a4">ripple::InboundTransactionsImp</a>.</p>
 
 </div>
 </div>
-<a id="a2664ff7c9a71d6326add614b59cd2025"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2664ff7c9a71d6326add614b59cd2025">&#9670;&nbsp;</a></span>gotData()</h2>
+<a id="afc34365d8412a8ae51acc35b40c26295"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc34365d8412a8ae51acc35b40c26295">&#9670;&nbsp;</a></span>gotData()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -302,13 +306,13 @@ Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt;&#160;</td>
-          <td class="paramname">, </td>
+          <td class="paramname"><em>peer</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMLedgerData &gt;&#160;</td>
-          <td class="paramname">&#160;</td>
+          <td class="paramname"><em>message</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -323,7 +327,15 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Gives data to an inbound transaction set. </p>
+<p>Add a transaction set from a LedgerData message. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">setHash</td><td>The transaction set ID (digest of the <a class="el" href="classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan-out of 16 and a Merkle tree.">SHAMap</a> root node). </td></tr>
+    <tr><td class="paramname">peer</td><td>The peer that sent the message. </td></tr>
+    <tr><td class="paramname">message</td><td>The LedgerData message. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 <p>Implemented in <a class="el" href="classripple_1_1InboundTransactionsImp.html#ac3cf03fa813190019d8ef47edd49a568">ripple::InboundTransactionsImp</a>.</p>
 
@@ -369,7 +381,15 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Gives set to the container. </p>
+<p>Add a transaction set. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">setHash</td><td>The transaction set ID (should match set.getHash()). </td></tr>
+    <tr><td class="paramname">set</td><td>The transaction set. </td></tr>
+    <tr><td class="paramname">acquired</td><td>Whether this transaction set was acquired from a peer, or constructed by ourself during consensus. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 <p>Implemented in <a class="el" href="classripple_1_1InboundTransactionsImp.html#a0ada8457dc2d6460b6f2875951917f5c">ripple::InboundTransactionsImp</a>.</p>
 
@@ -402,60 +422,6 @@ Public Member Functions</h2></td></tr>
 <p>Informs the container if a new consensus round. </p>
 
 <p>Implemented in <a class="el" href="classripple_1_1InboundTransactionsImp.html#a1707fff4d233251ab6ce2b8747b7e3ad">ripple::InboundTransactionsImp</a>.</p>
-
-</div>
-</div>
-<a id="a29a023f81dd0bbab246291266c908e80"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a29a023f81dd0bbab246291266c908e80">&#9670;&nbsp;</a></span>getInfo()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::InboundTransactions::getInfo </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Implemented in <a class="el" href="classripple_1_1InboundTransactionsImp.html#ab982fbcb3720c48b37af41f5ba4d1c69">ripple::InboundTransactionsImp</a>.</p>
-
-</div>
-</div>
-<a id="ac17fd15b4766d585f8aec30239f3f022"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac17fd15b4766d585f8aec30239f3f022">&#9670;&nbsp;</a></span>onStop()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual void ripple::InboundTransactions::onStop </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Implemented in <a class="el" href="classripple_1_1InboundTransactionsImp.html#aa7e193d3f153d0bd6c294c1b060a62aa">ripple::InboundTransactionsImp</a>.</p>
 
 </div>
 </div>

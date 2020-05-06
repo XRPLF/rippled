@@ -89,77 +89,161 @@ $(function() {
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//==============================================================================</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/contract.h&gt;</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/core/SemanticVersion.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/BuildInfo.h&gt;</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/core/LexicalCast.h&gt;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/core/SemanticVersion.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/BuildInfo.h&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;boost/preprocessor/stringize.hpp&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span>BuildInfo {</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="comment">//--------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="comment">//  The build version number. You must edit this for each release</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="comment">//  and follow the format described at http://semver.org/</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="comment">// clang-format off</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="namespaceripple_1_1BuildInfo.html#add98d1ad0d107ee61a6ace72d982cf36">   35</a></span>&#160;<span class="keywordtype">char</span> <span class="keyword">const</span>* <span class="keyword">const</span> <a class="code" href="namespaceripple_1_1BuildInfo.html#add98d1ad0d107ee61a6ace72d982cf36">versionString</a> = <span class="stringliteral">&quot;1.6.0-b4&quot;</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="comment">// clang-format on</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="preprocessor">#if defined(DEBUG) || defined(SANITIZER)</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="stringliteral">&quot;+&quot;</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="preprocessor">#ifdef DEBUG</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="stringliteral">&quot;DEBUG&quot;</span></div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="preprocessor">#ifdef SANITIZER</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="stringliteral">&quot;.&quot;</span></div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a>&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span>BuildInfo {</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="comment">//--------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="comment">//  The build version number. You must edit this for each release</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="comment">//  and follow the format described at http://semver.org/</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="comment">// clang-format off</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="namespaceripple_1_1BuildInfo.html#add98d1ad0d107ee61a6ace72d982cf36">   36</a></span>&#160;<span class="keywordtype">char</span> <span class="keyword">const</span>* <span class="keyword">const</span> <a class="code" href="namespaceripple_1_1BuildInfo.html#add98d1ad0d107ee61a6ace72d982cf36">versionString</a> = <span class="stringliteral">&quot;1.6.0-b5&quot;</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="comment">// clang-format on</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="preprocessor">#if defined(DEBUG) || defined(SANITIZER)</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="stringliteral">&quot;+&quot;</span></div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="preprocessor">#ifdef DEBUG</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="stringliteral">&quot;DEBUG&quot;</span></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="preprocessor">#ifdef SANITIZER</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="stringliteral">&quot;.&quot;</span></div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="preprocessor">#ifdef SANITIZER</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    BOOST_PP_STRINGIZE(SANITIZER)</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="preprocessor">#ifdef SANITIZER</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    BOOST_PP_STRINGIZE(SANITIZER)</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="comment">//--------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    ;</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="comment">// Don&#39;t touch anything below this line</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="comment">//</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp;</div>
-<div class="line"><a name="l00060"></a><span class="lineno"><a class="line" href="namespaceripple_1_1BuildInfo.html#a8aa97a762a323b5f5e96db0a2fc1e33a">   60</a></span>&#160;<a class="code" href="namespaceripple_1_1BuildInfo.html#a8aa97a762a323b5f5e96db0a2fc1e33a">getVersionString</a>()</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;{</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> value = [] {</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> s = <a class="code" href="namespaceripple_1_1BuildInfo.html#add98d1ad0d107ee61a6ace72d982cf36">versionString</a>;</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <a class="code" href="classbeast_1_1SemanticVersion.html">beast::SemanticVersion</a> v;</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="keywordflow">if</span> (!v.<a class="code" href="classbeast_1_1SemanticVersion.html#a01022f7948e17111af4ab0796331d7c6">parse</a>(s) || v.<a class="code" href="classbeast_1_1SemanticVersion.html#aab2063f8b5f916d56d34c81bad003ec3">print</a>() != s)</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(s + <span class="stringliteral">&quot;: Bad server version string&quot;</span>);</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="keywordflow">return</span> s;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    }();</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordflow">return</span> value;</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;}</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp;</div>
-<div class="line"><a name="l00073"></a><span class="lineno"><a class="line" href="namespaceripple_1_1BuildInfo.html#a1e2b1646cf948c1c19ff190903c3e789">   73</a></span>&#160;<a class="code" href="namespaceripple_1_1BuildInfo.html#a1e2b1646cf948c1c19ff190903c3e789">getFullVersionString</a>()</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;{</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> value = <span class="stringliteral">&quot;rippled-&quot;</span> + <a class="code" href="namespaceripple_1_1BuildInfo.html#a8aa97a762a323b5f5e96db0a2fc1e33a">getVersionString</a>();</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keywordflow">return</span> value;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;}</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;}  <span class="comment">// namespace BuildInfo</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="comment">//--------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    ;</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="comment">//</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="comment">// Don&#39;t touch anything below this line</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="comment">//</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00061"></a><span class="lineno"><a class="line" href="namespaceripple_1_1BuildInfo.html#a8aa97a762a323b5f5e96db0a2fc1e33a">   61</a></span>&#160;<a class="code" href="namespaceripple_1_1BuildInfo.html#a8aa97a762a323b5f5e96db0a2fc1e33a">getVersionString</a>()</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;{</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> value = [] {</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> s = <a class="code" href="namespaceripple_1_1BuildInfo.html#add98d1ad0d107ee61a6ace72d982cf36">versionString</a>;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <a class="code" href="classbeast_1_1SemanticVersion.html">beast::SemanticVersion</a> v;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <span class="keywordflow">if</span> (!v.<a class="code" href="classbeast_1_1SemanticVersion.html#a01022f7948e17111af4ab0796331d7c6">parse</a>(s) || v.<a class="code" href="classbeast_1_1SemanticVersion.html#aab2063f8b5f916d56d34c81bad003ec3">print</a>() != s)</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;            <a class="code" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(s + <span class="stringliteral">&quot;: Bad server version string&quot;</span>);</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="keywordflow">return</span> s;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    }();</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keywordflow">return</span> value;</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;}</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="namespaceripple_1_1BuildInfo.html#a1e2b1646cf948c1c19ff190903c3e789">   74</a></span>&#160;<a class="code" href="namespaceripple_1_1BuildInfo.html#a1e2b1646cf948c1c19ff190903c3e789">getFullVersionString</a>()</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;{</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> value = <span class="stringliteral">&quot;rippled-&quot;</span> + <a class="code" href="namespaceripple_1_1BuildInfo.html#a8aa97a762a323b5f5e96db0a2fc1e33a">getVersionString</a>();</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keywordflow">return</span> value;</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;}</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a></div>
+<div class="line"><a name="l00081"></a><span class="lineno"><a class="line" href="namespaceripple_1_1BuildInfo.html#a035daabd8a04c8b068a503761a1a3392">   81</a></span>&#160;<a class="code" href="namespaceripple_1_1BuildInfo.html#a035daabd8a04c8b068a503761a1a3392">getEncodedVersion</a>()</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;{</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> <span class="keyword">const</span> cookie = []() {</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> c = 0x183B000000000000;</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <a class="code" href="classbeast_1_1SemanticVersion.html">beast::SemanticVersion</a> v;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <span class="keywordflow">if</span> (v.<a class="code" href="classbeast_1_1SemanticVersion.html#a01022f7948e17111af4ab0796331d7c6">parse</a>(<a class="code" href="namespaceripple_1_1BuildInfo.html#add98d1ad0d107ee61a6ace72d982cf36">versionString</a>))</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        {</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            <span class="keywordflow">if</span> (v.<a class="code" href="classbeast_1_1SemanticVersion.html#a3d40c91af64add6f3e203cdc82c26fe9">majorVersion</a> &gt;= 0 &amp;&amp; v.<a class="code" href="classbeast_1_1SemanticVersion.html#a3d40c91af64add6f3e203cdc82c26fe9">majorVersion</a> &lt;= 255)</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;                c |= <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a><span class="keyword">&gt;</span>(v.<a class="code" href="classbeast_1_1SemanticVersion.html#a3d40c91af64add6f3e203cdc82c26fe9">majorVersion</a>) &lt;&lt; 40;</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            <span class="keywordflow">if</span> (v.<a class="code" href="classbeast_1_1SemanticVersion.html#a45d6e4026174cc0f6e438fe0671da05f">minorVersion</a> &gt;= 0 &amp;&amp; v.<a class="code" href="classbeast_1_1SemanticVersion.html#a45d6e4026174cc0f6e438fe0671da05f">minorVersion</a> &lt;= 255)</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                c |= <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a><span class="keyword">&gt;</span>(v.<a class="code" href="classbeast_1_1SemanticVersion.html#a45d6e4026174cc0f6e438fe0671da05f">minorVersion</a>) &lt;&lt; 32;</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;            <span class="keywordflow">if</span> (v.<a class="code" href="classbeast_1_1SemanticVersion.html#a5615f1c172f1a5bd6c2320d84a05ced8">patchVersion</a> &gt;= 0 &amp;&amp; v.<a class="code" href="classbeast_1_1SemanticVersion.html#a5615f1c172f1a5bd6c2320d84a05ced8">patchVersion</a> &lt;= 255)</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;                c |= <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a><span class="keyword">&gt;</span>(v.<a class="code" href="classbeast_1_1SemanticVersion.html#a5615f1c172f1a5bd6c2320d84a05ced8">patchVersion</a>) &lt;&lt; 24;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;            <span class="keywordflow">if</span> (!v.<a class="code" href="classbeast_1_1SemanticVersion.html#a5ba5401c0650a03066fa886650e7e497">isPreRelease</a>())</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;                c |= <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a><span class="keyword">&gt;</span>(0xC00000);</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            <span class="keywordflow">if</span> (v.<a class="code" href="classbeast_1_1SemanticVersion.html#a5ba5401c0650a03066fa886650e7e497">isPreRelease</a>())</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;            {</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> x = 0;</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keywordtype">id</span> : v.<a class="code" href="classbeast_1_1SemanticVersion.html#a4460d92c59be39768ae1e1027c4da84f">preReleaseIdentifiers</a>)</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;                {</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                    <span class="keyword">auto</span> parsePreRelease =</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                        [](<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a> identifier,</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                           <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a> prefix,</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;                           <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> key,</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                           <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> lok,</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;                           <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> hik) -&gt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> {</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;                        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> ret = 0;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;                        <span class="keywordflow">if</span> (prefix != identifier.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view/substr.html">substr</a>(0, prefix.length()))</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;                            <span class="keywordflow">return</span> 0;</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;                        <span class="keywordflow">if</span> (!<a class="code" href="namespacebeast.html#aeb241ed2f4422ea57283956ca58c5d42">beast::lexicalCastChecked</a>(</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;                                ret,</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;                                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;                                    identifier.<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view/substr.html">substr</a>(prefix.length()))))</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;                            <span class="keywordflow">return</span> 0;</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;                        <span class="keywordflow">if</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/clamp.html">std::clamp</a>(ret, lok, hik) != ret)</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;                            <span class="keywordflow">return</span> 0;</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;                        <span class="keywordflow">return</span> ret + key;</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;                    };</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160; </div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;                    x = parsePreRelease(<span class="keywordtype">id</span>, <span class="stringliteral">&quot;rc&quot;</span>, 0x80, 0, 63);</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160; </div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                    <span class="keywordflow">if</span> (x == 0)</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                        x = parsePreRelease(<span class="keywordtype">id</span>, <span class="stringliteral">&quot;b&quot;</span>, 0x40, 0, 63);</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160; </div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;                    <span class="keywordflow">if</span> (x &amp; 0xC0)</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                    {</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                        c |= <span class="keyword">static_cast&lt;</span><a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a><span class="keyword">&gt;</span>(x) &lt;&lt; 16;</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;                        <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;                    }</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                }</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;            }</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;        }</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160; </div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;        <span class="keywordflow">return</span> c;</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    }();</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160; </div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;    <span class="keywordflow">return</span> cookie;</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;}</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160; </div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;}  <span class="comment">// namespace BuildInfo</span></div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160; </div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
+<div class="ttc" id="abasic_string_view_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a></div><div class="ttdoc">STL class.</div></div>
+<div class="ttc" id="anamespaceripple_1_1BuildInfo_html_a035daabd8a04c8b068a503761a1a3392"><div class="ttname"><a href="namespaceripple_1_1BuildInfo.html#a035daabd8a04c8b068a503761a1a3392">ripple::BuildInfo::getEncodedVersion</a></div><div class="ttdeci">std::uint64_t getEncodedVersion()</div><div class="ttdoc">Returns the server version packed in a 64-bit integer.</div><div class="ttdef"><b>Definition:</b> <a href="BuildInfo_8cpp_source.html#l00081">BuildInfo.cpp:81</a></div></div>
 <div class="ttc" id="aclassbeast_1_1SemanticVersion_html_aab2063f8b5f916d56d34c81bad003ec3"><div class="ttname"><a href="classbeast_1_1SemanticVersion.html#aab2063f8b5f916d56d34c81bad003ec3">beast::SemanticVersion::print</a></div><div class="ttdeci">std::string print() const</div><div class="ttdoc">Produce a string from semantic version components.</div><div class="ttdef"><b>Definition:</b> <a href="SemanticVersion_8cpp_source.html#l00236">SemanticVersion.cpp:236</a></div></div>
+<div class="ttc" id="aclassbeast_1_1SemanticVersion_html_a5ba5401c0650a03066fa886650e7e497"><div class="ttname"><a href="classbeast_1_1SemanticVersion.html#a5ba5401c0650a03066fa886650e7e497">beast::SemanticVersion::isPreRelease</a></div><div class="ttdeci">bool isPreRelease() const noexcept</div><div class="ttdef"><b>Definition:</b> <a href="SemanticVersion_8h_source.html#l00068">SemanticVersion.h:68</a></div></div>
 <div class="ttc" id="aclassbeast_1_1SemanticVersion_html"><div class="ttname"><a href="classbeast_1_1SemanticVersion.html">beast::SemanticVersion</a></div><div class="ttdoc">A Semantic Version number.</div><div class="ttdef"><b>Definition:</b> <a href="SemanticVersion_8h_source.html#l00035">SemanticVersion.h:35</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1BuildInfo_html_a8aa97a762a323b5f5e96db0a2fc1e33a"><div class="ttname"><a href="namespaceripple_1_1BuildInfo.html#a8aa97a762a323b5f5e96db0a2fc1e33a">ripple::BuildInfo::getVersionString</a></div><div class="ttdeci">std::string const  &amp; getVersionString()</div><div class="ttdoc">Server version.</div><div class="ttdef"><b>Definition:</b> <a href="BuildInfo_8cpp_source.html#l00060">BuildInfo.cpp:60</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1BuildInfo_html_a1e2b1646cf948c1c19ff190903c3e789"><div class="ttname"><a href="namespaceripple_1_1BuildInfo.html#a1e2b1646cf948c1c19ff190903c3e789">ripple::BuildInfo::getFullVersionString</a></div><div class="ttdeci">std::string const  &amp; getFullVersionString()</div><div class="ttdoc">Full server version string.</div><div class="ttdef"><b>Definition:</b> <a href="BuildInfo_8cpp_source.html#l00073">BuildInfo.cpp:73</a></div></div>
+<div class="ttc" id="aalgorithm_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a></div></div>
+<div class="ttc" id="aclassbeast_1_1SemanticVersion_html_a45d6e4026174cc0f6e438fe0671da05f"><div class="ttname"><a href="classbeast_1_1SemanticVersion.html#a45d6e4026174cc0f6e438fe0671da05f">beast::SemanticVersion::minorVersion</a></div><div class="ttdeci">int minorVersion</div><div class="ttdef"><b>Definition:</b> <a href="SemanticVersion_8h_source.html#l00041">SemanticVersion.h:41</a></div></div>
+<div class="ttc" id="aclassbeast_1_1SemanticVersion_html_a4460d92c59be39768ae1e1027c4da84f"><div class="ttname"><a href="classbeast_1_1SemanticVersion.html#a4460d92c59be39768ae1e1027c4da84f">beast::SemanticVersion::preReleaseIdentifiers</a></div><div class="ttdeci">identifier_list preReleaseIdentifiers</div><div class="ttdef"><b>Definition:</b> <a href="SemanticVersion_8h_source.html#l00044">SemanticVersion.h:44</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1BuildInfo_html_a8aa97a762a323b5f5e96db0a2fc1e33a"><div class="ttname"><a href="namespaceripple_1_1BuildInfo.html#a8aa97a762a323b5f5e96db0a2fc1e33a">ripple::BuildInfo::getVersionString</a></div><div class="ttdeci">std::string const  &amp; getVersionString()</div><div class="ttdoc">Server version.</div><div class="ttdef"><b>Definition:</b> <a href="BuildInfo_8cpp_source.html#l00061">BuildInfo.cpp:61</a></div></div>
+<div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a></div></div>
+<div class="ttc" id="aclassbeast_1_1SemanticVersion_html_a3d40c91af64add6f3e203cdc82c26fe9"><div class="ttname"><a href="classbeast_1_1SemanticVersion.html#a3d40c91af64add6f3e203cdc82c26fe9">beast::SemanticVersion::majorVersion</a></div><div class="ttdeci">int majorVersion</div><div class="ttdef"><b>Definition:</b> <a href="SemanticVersion_8h_source.html#l00040">SemanticVersion.h:40</a></div></div>
+<div class="ttc" id="asubstr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string_view/substr.html">std::string_view::substr</a></div><div class="ttdeci">T substr(T... args)</div></div>
+<div class="ttc" id="anamespaceripple_1_1BuildInfo_html_a1e2b1646cf948c1c19ff190903c3e789"><div class="ttname"><a href="namespaceripple_1_1BuildInfo.html#a1e2b1646cf948c1c19ff190903c3e789">ripple::BuildInfo::getFullVersionString</a></div><div class="ttdeci">std::string const  &amp; getFullVersionString()</div><div class="ttdoc">Full server version string.</div><div class="ttdef"><b>Definition:</b> <a href="BuildInfo_8cpp_source.html#l00074">BuildInfo.cpp:74</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassbeast_1_1SemanticVersion_html_a01022f7948e17111af4ab0796331d7c6"><div class="ttname"><a href="classbeast_1_1SemanticVersion.html#a01022f7948e17111af4ab0796331d7c6">beast::SemanticVersion::parse</a></div><div class="ttdeci">bool parse(std::string const &amp;input)</div><div class="ttdoc">Parse a semantic version string.</div><div class="ttdef"><b>Definition:</b> <a href="SemanticVersion_8cpp_source.html#l00168">SemanticVersion.cpp:168</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1BuildInfo_html_add98d1ad0d107ee61a6ace72d982cf36"><div class="ttname"><a href="namespaceripple_1_1BuildInfo.html#add98d1ad0d107ee61a6ace72d982cf36">ripple::BuildInfo::versionString</a></div><div class="ttdeci">char const  *const versionString</div><div class="ttdef"><b>Definition:</b> <a href="BuildInfo_8cpp_source.html#l00035">BuildInfo.cpp:35</a></div></div>
+<div class="ttc" id="aclamp_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/clamp.html">std::clamp</a></div><div class="ttdeci">T clamp(T... args)</div></div>
+<div class="ttc" id="anamespaceripple_1_1BuildInfo_html_add98d1ad0d107ee61a6ace72d982cf36"><div class="ttname"><a href="namespaceripple_1_1BuildInfo.html#add98d1ad0d107ee61a6ace72d982cf36">ripple::BuildInfo::versionString</a></div><div class="ttdeci">char const  *const versionString</div><div class="ttdef"><b>Definition:</b> <a href="BuildInfo_8cpp_source.html#l00036">BuildInfo.cpp:36</a></div></div>
+<div class="ttc" id="anamespacebeast_html_aeb241ed2f4422ea57283956ca58c5d42"><div class="ttname"><a href="namespacebeast.html#aeb241ed2f4422ea57283956ca58c5d42">beast::lexicalCastChecked</a></div><div class="ttdeci">bool lexicalCastChecked(Out &amp;out, In in)</div><div class="ttdoc">Intelligently convert from one type to another.</div><div class="ttdef"><b>Definition:</b> <a href="LexicalCast_8h_source.html#l00266">LexicalCast.h:266</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aefd2f77338ce3c9a2fffc4f0b289b483"><div class="ttname"><a href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">ripple::LogicError</a></div><div class="ttdeci">void LogicError(std::string const &amp;how) noexcept</div><div class="ttdoc">Called when faulty logic causes a broken invariant.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00048">contract.cpp:48</a></div></div>
+<div class="ttc" id="aclassbeast_1_1SemanticVersion_html_a5615f1c172f1a5bd6c2320d84a05ced8"><div class="ttname"><a href="classbeast_1_1SemanticVersion.html#a5615f1c172f1a5bd6c2320d84a05ced8">beast::SemanticVersion::patchVersion</a></div><div class="ttdeci">int patchVersion</div><div class="ttdef"><b>Definition:</b> <a href="SemanticVersion_8h_source.html#l00042">SemanticVersion.h:42</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

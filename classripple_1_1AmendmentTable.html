@@ -121,14 +121,14 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a06e29d55d53a9d5f1e2b4b7e4cc2c5e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a48f050b47af8f00cafd237e2cddb2929"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#a48f050b47af8f00cafd237e2cddb2929">doValidatedLedger</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledgerSeq, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;enabled, <a class="el" href="namespaceripple.html#a9722ac6213471ba4b92259afc6edc2b1">majorityAmendments_t</a> const &amp;majority)=0</td></tr>
 <tr class="separator:a48f050b47af8f00cafd237e2cddb2929"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0ef8c954784eea2557318f9a313df97d"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#a0ef8c954784eea2557318f9a313df97d">doVoting</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> closeTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;enabledAmendments, <a class="el" href="namespaceripple.html#a9722ac6213471ba4b92259afc6edc2b1">majorityAmendments_t</a> const &amp;majorityAmendments, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1STValidation.html#a6136fd9d813b7d236830ed51bc22bbc7">STValidation::pointer</a> &gt; const &amp;valSet)=0</td></tr>
-<tr class="separator:a0ef8c954784eea2557318f9a313df97d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a879dd1b8a9991c7c281fbaf377e425e1"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#a879dd1b8a9991c7c281fbaf377e425e1">doVoting</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> closeTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;enabledAmendments, <a class="el" href="namespaceripple.html#a9722ac6213471ba4b92259afc6edc2b1">majorityAmendments_t</a> const &amp;majorityAmendments, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &gt;&gt; const &amp;valSet)=0</td></tr>
+<tr class="separator:a879dd1b8a9991c7c281fbaf377e425e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad4448eeba600656f25e54dfcd18138af"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#ad4448eeba600656f25e54dfcd18138af">doValidation</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;enabled)=0</td></tr>
 <tr class="separator:ad4448eeba600656f25e54dfcd18138af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afefe2dd72c35d616baa3acfc43832179"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#afefe2dd72c35d616baa3acfc43832179">getDesired</a> ()=0</td></tr>
 <tr class="separator:afefe2dd72c35d616baa3acfc43832179"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa9fb15a2392e55a594ac1e113a32ddc5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#aa9fb15a2392e55a594ac1e113a32ddc5">doVoting</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; const &amp;lastClosedLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1STValidation.html#a6136fd9d813b7d236830ed51bc22bbc7">STValidation::pointer</a> &gt; const &amp;parentValidations, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMap.html">SHAMap</a> &gt; const &amp;initialPosition)</td></tr>
-<tr class="separator:aa9fb15a2392e55a594ac1e113a32ddc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae4402ab8248766bc7556bdbb93225943"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#ae4402ab8248766bc7556bdbb93225943">doVoting</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; const &amp;lastClosedLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &gt;&gt; const &amp;parentValidations, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMap.html">SHAMap</a> &gt; const &amp;initialPosition)</td></tr>
+<tr class="separator:ae4402ab8248766bc7556bdbb93225943"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>The amendment table stores the list of enabled and potential amendments. </p>
@@ -570,8 +570,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a0ef8c954784eea2557318f9a313df97d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0ef8c954784eea2557318f9a313df97d">&#9670;&nbsp;</a></span>doVoting() <span class="overload">[1/2]</span></h2>
+<a id="a879dd1b8a9991c7c281fbaf377e425e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a879dd1b8a9991c7c281fbaf377e425e1">&#9670;&nbsp;</a></span>doVoting() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -600,7 +600,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1STValidation.html#a6136fd9d813b7d236830ed51bc22bbc7">STValidation::pointer</a> &gt; const &amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &gt;&gt; const &amp;&#160;</td>
           <td class="paramname"><em>valSet</em>&#160;</td>
         </tr>
         <tr>
@@ -616,7 +616,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1AmendmentTableImpl.html#a4c135cfa7edb947b1e21d88ef6632a53">ripple::AmendmentTableImpl</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1AmendmentTableImpl.html#a41864d1f10a3572d5f5a3cb203beb546">ripple::AmendmentTableImpl</a>.</p>
 
 </div>
 </div>
@@ -675,8 +675,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aa9fb15a2392e55a594ac1e113a32ddc5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa9fb15a2392e55a594ac1e113a32ddc5">&#9670;&nbsp;</a></span>doVoting() <span class="overload">[2/2]</span></h2>
+<a id="ae4402ab8248766bc7556bdbb93225943"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae4402ab8248766bc7556bdbb93225943">&#9670;&nbsp;</a></span>doVoting() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -690,7 +690,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1STValidation.html#a6136fd9d813b7d236830ed51bc22bbc7">STValidation::pointer</a> &gt; const &amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &gt;&gt; const &amp;&#160;</td>
           <td class="paramname"><em>parentValidations</em>, </td>
         </tr>
         <tr>
