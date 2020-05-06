@@ -169,10 +169,8 @@ public:
     //--------------------------------------------------------------------------
 
     // ledger proposal/close functions
-    virtual void
-    processTrustedProposal(
-        RCLCxPeerPos peerPos,
-        std::shared_ptr<protocol::TMProposeSet> set) = 0;
+    virtual bool
+    processTrustedProposal(RCLCxPeerPos peerPos) = 0;
 
     virtual bool
     recvValidation(

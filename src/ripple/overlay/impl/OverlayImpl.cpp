@@ -1134,25 +1134,10 @@ OverlayImpl::findPeerByPublicKey(PublicKey const& pubKey)
 }
 
 void
-OverlayImpl::send(protocol::TMProposeSet& m)
+OverlayImpl::broadcast(protocol::TMProposeSet& m)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
     for_each([&](std::shared_ptr<PeerImp>&& p) { p->send(sm); });
-}
-void
-OverlayImpl::send(protocol::TMValidation& m)
-{
-    auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
-    for_each([&](std::shared_ptr<PeerImp>&& p) { p->send(sm); });
-
-    SerialIter sit(m.validation().data(), m.validation().size());
-    auto val = std::make_shared<STValidation>(
-        std::ref(sit),
-        [this](PublicKey const& pk) {
-            return calcNodeID(app_.validatorManifests().getMasterKey(pk));
-        },
-        false);
-    app_.getOPs().pubValidation(val);
 }
 
 void
@@ -1167,6 +1152,13 @@ OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid)
                 p->send(sm);
         });
     }
+}
+
+void
+OverlayImpl::broadcast(protocol::TMValidation& m)
+{
+    auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
+    for_each([sm](std::shared_ptr<PeerImp>&& p) { p->send(sm); });
 }
 
 void

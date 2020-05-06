@@ -400,6 +400,7 @@ public:
                     if (!field.empty())
                         v.setFieldV256(
                             sfAmendments, STVector256(sfAmendments, field));
+                    v.setFieldU32(sfLedgerSequence, 6180339);
                 });
 
             validations.emplace_back(v);
