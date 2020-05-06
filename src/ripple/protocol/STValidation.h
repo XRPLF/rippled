@@ -88,6 +88,13 @@ public:
             Throw<std::runtime_error>("Invalid signature in validation");
         }
 
+        if (!isFieldPresent(sfLedgerSequence))
+        {
+            JLOG(debugLog().error()) << "Signature with no ledger sequence: "
+                                     << getJson(JsonOptions::none);
+            Throw<std::runtime_error>("Missing ledger sequence in validation");
+        }
+
         nodeID_ = lookupNodeID(PublicKey(makeSlice(spk)));
         assert(nodeID_.isNonZero());
     }
@@ -121,6 +128,11 @@ public:
 
         // Perform additional initialization
         f(*this);
+
+        // This is a logic error because we should never assemble a
+        // validation without a ledger sequence number.
+        if (!isFieldPresent(sfLedgerSequence))
+            LogicError("Missing ledger sequence in validation");
 
         // Finally, sign the validation and mark it as trusted:
         setFlag(vfFullyCanonicalSig);

@@ -182,13 +182,6 @@ handleNewValidation(
           << " [" << val->getSerializer().slice() << "]";
     };
 
-    if (!val->isFieldPresent(sfLedgerSequence))
-    {
-        if (j.error())
-            dmp(j.error(), "missing ledger sequence field");
-        return false;
-    }
-
     // masterKey is seated only if validator is trusted or listed
     if (masterKey)
     {
