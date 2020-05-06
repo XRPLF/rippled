@@ -122,6 +122,11 @@ public:
         // Perform additional initialization
         f(*this);
 
+        // This is a logic error because we should never assemble a
+        // validation without a ledger sequence number.
+        if (!isFieldPresent(sfLedgerSequence))
+            LogicError("Missing ledger sequence in validation");
+
         // Finally, sign the validation and mark it as trusted:
         setFlag(vfFullyCanonicalSig);
         setFieldVL(sfSignature, signDigest(pk, sk, getSigningHash()));

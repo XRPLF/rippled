@@ -34,7 +34,7 @@ STValidation::validationFormat()
     static SOTemplate const format{
         {sfFlags, soeREQUIRED},
         {sfLedgerHash, soeREQUIRED},
-        {sfLedgerSequence, soeOPTIONAL},
+        {sfLedgerSequence, soeREQUIRED},
         {sfCloseTime, soeOPTIONAL},
         {sfLoadFee, soeOPTIONAL},
         {sfAmendments, soeOPTIONAL},
