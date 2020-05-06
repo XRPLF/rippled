@@ -90,9 +90,9 @@ public:
 
         if (!isFieldPresent(sfLedgerSequence))
         {
-            JLOG(debugLog().error()) << "Signature with no ledger sequence: "
+            JLOG(debugLog().error()) << "No ledger sequence in validation: "
                                      << getJson(JsonOptions::none);
-            Throw<std::runtime_error>("Missing ledger sequence in validation");
+            Throw<std::runtime_error>("No ledger sequence in validation");
         }
 
         nodeID_ = lookupNodeID(PublicKey(makeSlice(spk)));
