@@ -1148,8 +1148,8 @@ OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid)
         auto const sm =
             std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
         for_each([&](std::shared_ptr<PeerImp>&& p) {
-          if (toSkip->find(p->id()) == toSkip->end())
-              p->send(sm);
+            if (toSkip->find(p->id()) == toSkip->end())
+                p->send(sm);
         });
     }
 }
@@ -1157,7 +1157,6 @@ OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid)
 void
 OverlayImpl::broadcast(protocol::TMValidation& m)
 {
-
     auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
     for_each([sm](std::shared_ptr<PeerImp>&& p) { p->send(sm); });
 }
@@ -1167,8 +1166,7 @@ OverlayImpl::relay(protocol::TMValidation& m, uint256 const& uid)
 {
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
-        auto const sm =
-            std::make_shared<Message>(m, protocol::mtVALIDATION);
+        auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
         for_each([&](std::shared_ptr<PeerImp>&& p) {
             if (toSkip->find(p->id()) == toSkip->end())
                 p->send(sm);
