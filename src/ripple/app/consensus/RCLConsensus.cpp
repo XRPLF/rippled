@@ -828,12 +828,15 @@ RCLConsensus::Adaptor::validate(
     // suppress it if we receive it
     app_.getHashRouter().addSuppression(
         sha512Half(makeSlice(v->getSerialized())));
-    handleNewValidation(app_, v, "local");
-    Blob validation = v->getSerialized();
-    protocol::TMValidation val;
-    val.set_validation(&validation[0], validation.size());
-    // Send signed validation to all of our directly connected peers
-    app_.overlay().send(val);
+
+    if (handleNewValidation(app_, v, "local", true))
+    {
+        Blob validation = v->getSerialized();
+        protocol::TMValidation val;
+        val.set_validation(&validation[0], validation.size());
+        // Send signed validation to all of our directly connected peers
+        app_.overlay().send(val);
+    }
 }
 
 void

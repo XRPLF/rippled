@@ -356,10 +356,8 @@ public:
         Json::Value& jvResult) override;
 
     // Ledger proposal/close functions.
-    void
-    processTrustedProposal(
-        RCLCxPeerPos proposal,
-        std::shared_ptr<protocol::TMProposeSet> set) override;
+    bool
+    processTrustedProposal(RCLCxPeerPos proposal) override;
 
     bool
     recvValidation(
@@ -1780,17 +1778,10 @@ NetworkOPsImp::getConsensusLCL()
     return mConsensus.prevLedgerID();
 }
 
-void
-NetworkOPsImp::processTrustedProposal(
-    RCLCxPeerPos peerPos,
-    std::shared_ptr<protocol::TMProposeSet> set)
+bool
+NetworkOPsImp::processTrustedProposal(RCLCxPeerPos peerPos)
 {
-    if (mConsensus.peerProposal(app_.timeKeeper().closeTime(), peerPos))
-    {
-        app_.overlay().relay(*set, peerPos.suppressionID());
-    }
-    else
-        JLOG(m_journal.info()) << "Not relaying trusted proposal";
+    return mConsensus.peerProposal(app_.timeKeeper().closeTime(), peerPos);
 }
 
 void
@@ -2482,7 +2473,8 @@ NetworkOPsImp::recvValidation(
     JLOG(m_journal.debug())
         << "recvValidation " << val->getLedgerHash() << " from " << source;
     pubValidation(val);
-    return handleNewValidation(app_, val, source);
+    return handleNewValidation(
+        app_, val, source, app_.config().RELAY_UNTRUSTED_VALIDATIONS);
 }
 
 Json::Value

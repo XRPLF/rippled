@@ -152,7 +152,8 @@ bool
 handleNewValidation(
     Application& app,
     std::shared_ptr<STValidation> const& val,
-    std::string const& source)
+    std::string const& source,
+    bool relayUntrusted)
 {
     PublicKey const& signingKey = val->getSignerPublic();
     uint256 const& hash = val->getLedgerHash();
@@ -166,7 +167,6 @@ handleNewValidation(
     if (!masterKey)
         masterKey = app.validators().getListedKey(signingKey);
 
-    bool shouldRelay = false;
     RCLValidations& validations = app.getValidations();
     beast::Journal const j = validations.adaptor().journal();
 
@@ -186,13 +186,17 @@ handleNewValidation(
     if (masterKey)
     {
         ValStatus const outcome = validations.add(calcNodeID(*masterKey), val);
+        auto const seq = val->getFieldU32(sfLedgerSequence);
 
         if (j.debug())
             dmp(j.debug(), to_string(outcome));
 
+        // One might think that we would not wish to relay validations that
+        // fail these checks. Somewhat counterintively, we actually want to
+        // do it for validations that we receive and deem to be suspicious,
+        // so that our peers will also observe them and realize they're bad.
         if (outcome == ValStatus::conflicting && j.warn())
         {
-            auto const seq = val->getFieldU32(sfLedgerSequence);
             dmp(j.warn(),
                 "conflicting validations issued for " + to_string(seq) +
                     " (likely from a Byzantine validator)");
@@ -200,25 +204,13 @@ handleNewValidation(
 
         if (outcome == ValStatus::multiple && j.warn())
         {
-            auto const seq = val->getFieldU32(sfLedgerSequence);
             dmp(j.warn(),
                 "multiple validations issued for " + to_string(seq) +
                     " (multiple validators operating with the same key?)");
         }
 
-        if (outcome == ValStatus::badSeq && j.warn())
-        {
-            auto const seq = val->getFieldU32(sfLedgerSequence);
-            dmp(j.debug(),
-                "already validated sequence at or past " + std::to_string(seq));
-        }
-
         if (val->isTrusted() && outcome == ValStatus::current)
-        {
-            app.getLedgerMaster().checkAccept(
-                hash, val->getFieldU32(sfLedgerSequence));
-            shouldRelay = true;
-        }
+            app.getLedgerMaster().checkAccept(hash, seq);
     }
     else
     {
@@ -227,15 +219,9 @@ handleNewValidation(
                         << " not added UNlisted";
     }
 
-    // This currently never forwards untrusted validations, though we may
-    // reconsider in the future. From @JoelKatz:
-    // The idea was that we would have a certain number of validation slots with
-    // priority going to validators we trusted. Remaining slots might be
-    // allocated to validators that were listed by publishers we trusted but
-    // that we didn't choose to trust. The shorter term plan was just to forward
-    // untrusted validations if peers wanted them or if we had the
-    // ability/bandwidth to. None of that was implemented.
-    return shouldRelay;
+    // We will always forward trusted validations; if configured, we will
+    // also relay all untrusted validations.
+    return relayUntrusted || val->isTrusted();
 }
 
 }  // namespace ripple

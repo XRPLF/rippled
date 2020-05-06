@@ -2461,25 +2461,15 @@ PeerImp::checkPropose(
         return;
     }
 
+    bool relay;
+
     if (isTrusted)
-    {
-        app_.getOPs().processTrustedProposal(peerPos, packet);
-    }
+        relay = app_.getOPs().processTrustedProposal(peerPos);
     else
-    {
-        if (cluster() ||
-            (app_.getOPs().getConsensusLCL() ==
-             peerPos.proposal().prevLedger()))
-        {
-            // relay untrusted proposal
-            JLOG(p_journal_.trace()) << "relaying UNTRUSTED proposal";
-            overlay_.relay(*packet, peerPos.suppressionID());
-        }
-        else
-        {
-            JLOG(p_journal_.debug()) << "Not relaying UNTRUSTED proposal";
-        }
-    }
+        relay = app_.config().RELAY_UNTRUSTED_PROPOSALS || cluster();
+
+    if (relay)
+        app_.overlay().relay(*packet, peerPos.suppressionID());
 }
 
 void

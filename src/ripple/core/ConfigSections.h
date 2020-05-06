@@ -69,6 +69,8 @@ struct ConfigSection
 #define SECTION_PATH_SEARCH_MAX "path_search_max"
 #define SECTION_PEER_PRIVATE "peer_private"
 #define SECTION_PEERS_MAX "peers_max"
+#define SECTION_RELAY_PROPOSALS "relay_proposals"
+#define SECTION_RELAY_VALIDATIONS "relay_validations"
 #define SECTION_RPC_STARTUP "rpc_startup"
 #define SECTION_SIGNING_SUPPORT "signing_support"
 #define SECTION_SNTP "sntp_servers"
