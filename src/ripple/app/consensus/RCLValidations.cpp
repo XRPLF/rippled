@@ -148,12 +148,11 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
     return RCLValidatedLedger(std::move(ledger), j_);
 }
 
-bool
+void
 handleNewValidation(
     Application& app,
     std::shared_ptr<STValidation> const& val,
-    std::string const& source,
-    bool relayUntrusted)
+    std::string const& source)
 {
     PublicKey const& signingKey = val->getSignerPublic();
     uint256 const& hash = val->getLedgerHash();
@@ -218,10 +217,6 @@ handleNewValidation(
                         << toBase58(TokenType::NodePublic, signingKey)
                         << " not added UNlisted";
     }
-
-    // We will always forward trusted validations; if configured, we will
-    // also relay all untrusted validations.
-    return relayUntrusted || val->isTrusted();
 }
 
 }  // namespace ripple

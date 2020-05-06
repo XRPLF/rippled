@@ -39,7 +39,9 @@ class RCLValidations_test : public beast::unit_test::suite
             keys.first,
             keys.second,
             calcNodeID(keys.first),
-            [&](STValidation& v) {});
+            [&](STValidation& v) {
+                v.setFieldU32(sfLedgerSequence, 123456);
+            });
 
         BEAST_EXPECT(v->isTrusted());
         v->setUntrusted();

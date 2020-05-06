@@ -2472,9 +2472,14 @@ NetworkOPsImp::recvValidation(
 {
     JLOG(m_journal.debug())
         << "recvValidation " << val->getLedgerHash() << " from " << source;
+
+    handleNewValidation(app_, val, source);
+
     pubValidation(val);
-    return handleNewValidation(
-        app_, val, source, app_.config().RELAY_UNTRUSTED_VALIDATIONS);
+
+    // We will always relay trusted validations; if configured, we will
+    // also relay all untrusted validations.
+    return app_.config().RELAY_UNTRUSTED_VALIDATIONS || val->isTrusted();
 }
 
 Json::Value

@@ -243,16 +243,12 @@ using RCLValidations = Validations<RCLValidationsAdaptor>;
     @param app Application object containing validations and ledgerMaster
     @param val The validation to add
     @param source Name associated with validation used in logging
-    @param relayUntrusted whether untrusted validations should be relayed
-    @return Whether the validation should be relayed
 */
-[[nodiscard]]
-bool
+void
 handleNewValidation(
     Application& app,
     std::shared_ptr<STValidation> const& val,
-    std::string const& source,
-    bool relayUntrusted = false);
+    std::string const& source);
 
 }  // namespace ripple
 
