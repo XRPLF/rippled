@@ -191,9 +191,9 @@ handleNewValidation(
             dmp(j.debug(), to_string(outcome));
 
         // One might think that we would not wish to relay validations that
-        // fail these checks. Somewhat counterintively, we actually want to
-        // do it for validations that we receive and deem to be suspicious,
-        // so that our peers will also observe them and realize they're bad.
+        // fail these checks. Somewhat counterintuitively, we actually want
+        // to do it for validations that we receive but deem suspicious, so
+        // that our peers will also observe them and realize they're bad.
         if (outcome == ValStatus::conflicting && j.warn())
         {
             dmp(j.warn(),
