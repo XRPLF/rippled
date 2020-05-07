@@ -88,8 +88,9 @@ RCLConsensus::Adaptor::Adaptor(
     , nodeID_{validatorKeys.nodeID}
     , valPublic_{validatorKeys.publicKey}
     , valSecret_{validatorKeys.secretKey}
-    , valCookie_{
-          rand_int<std::uint64_t>(1, std::numeric_limits<std::uint64_t>::max())}
+    , valCookie_{rand_int<std::uint64_t>(
+          1,
+          std::numeric_limits<std::uint64_t>::max())}
     , nUnlVote_(nodeID_, j_)
 {
     assert(valCookie_ != 0);
@@ -326,9 +327,10 @@ RCLConsensus::Adaptor::onClose(
         {
             // previous ledger was flag ledger, add fee and amendment
             // pseudo-transactions
-            auto validations = app_.getValidations().getTrustedForLedger(
-                prevLedger->info().parentHash);
-            filterValsWithnUnl(validations, app_.validators().getnUnlNodeIDs());
+            auto validations = negativeUNLFilter(
+                app_.getValidations().getTrustedForLedger(
+                    prevLedger->info().parentHash),
+                app_.validators().getNegativeUnlNodeIDs());
             if (validations.size() >= app_.validators().quorum())
             {
                 feeVote_->doVoting(prevLedger, validations, initialSet);

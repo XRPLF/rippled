@@ -48,21 +48,21 @@ class NegativeUNLVote final
 public:
     /**
      * A validator is considered unreliable if its validations is less than
-     * nUnlLowWaterMark in the last flag ledger period.
+     * negativeUnlLowWaterMark in the last flag ledger period.
      * An unreliable validator is a candidate to be disabled by the NegativeUNL
      * protocol.
      */
-    static constexpr size_t nUnlLowWaterMark = 256 * 0.5;
+    static constexpr size_t negativeUnlLowWaterMark = 256 * 0.5;
     /**
-     * An unreliable validator must have more than nUnlHighWaterMark validations
-     * in the last flag ledger period to be re-enabled.
+     * An unreliable validator must have more than negativeUnlHighWaterMark
+     * validations in the last flag ledger period to be re-enabled.
      */
-    static constexpr size_t nUnlHighWaterMark = 256 * 0.8;
+    static constexpr size_t negativeUnlHighWaterMark = 256 * 0.8;
     /**
      * The minimum number of validations of the local node for it to
      * participate in the voting.
      */
-    static constexpr size_t nUnlMinLocalValsToVote = 256 * 0.9;
+    static constexpr size_t negativeUnlMinLocalValsToVote = 256 * 0.9;
     /**
      * We don't want to disable new validators immediately after adding them.
      * So we skip voting for disabling them for 2 flag ledgers.
@@ -71,7 +71,7 @@ public:
     /**
      * We only want to put 25% of the UNL on the NegativeUNL.
      */
-    static constexpr float nUnlMaxListed = 0.25;
+    static constexpr float negativeUnlMaxListed = 0.25;
 
     /**
      * Constructor
@@ -88,6 +88,10 @@ public:
      * @param prevLedger the parent ledger
      * @param unlKeys the trusted master keys of validators in the UNL
      * @param validations the validation message container
+     * @note validations is an in/out parameter. It contains validation messages
+     * that will be deleted when no longer needed by other consensus logic. This
+     * function asks it to keep the validation messages long enough for this
+     * function to use.
      * @param initialSet the transactions set for adding ttUNL_MODIFY Tx if any
      */
     void
@@ -149,6 +153,10 @@ private:
      * @param prevLedger the parent ledger
      * @param unl the trusted master keys
      * @param validations the validation container
+     * @note validations is an in/out parameter. It contains validation messages
+     * that will be deleted when no longer needed by other consensus logic. This
+     * function asks it to keep the validation messages long enough for this
+     * function to use.
      * @return the built scoreTable or empty optional if table could not be
      * built
      */
@@ -165,16 +173,13 @@ private:
      * @param unl the trusted master keys
      * @param negUnl the NegativeUNL
      * @param scoreTable the score table
-     * @param toDisableCandidates the candidates to disable
-     * @param toReEnableCandidates the candidates to re-enable
+     * @return the candidates to disable and the candidates to re-enable
      */
-    void
+    std::pair<std::vector<NodeID> const, std::vector<NodeID> const>
     findAllCandidates(
         hash_set<NodeID> const& unl,
         hash_set<NodeID> const& negUnl,
-        hash_map<NodeID, std::uint32_t> const& scoreTable,
-        std::vector<NodeID>& toDisableCandidates,
-        std::vector<NodeID>& toReEnableCandidates);
+        hash_map<NodeID, std::uint32_t> const& scoreTable);
 
     /**
      * Purge validators that are not new anymore.

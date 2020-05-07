@@ -251,15 +251,16 @@ handleNewValidation(
     std::string const& source);
 
 /**
- * Remove validations that are from Negative UNL validators
+ * Remove validations that are from validators on the negative UNL.
  *
- * @param validations the validations to filter
- * @param nUnl the Negative UNL
+ * @param validations  the validations to filter
+ * @param negUnl  the Negative UNL
+ * @return a filtered copy of the validations
  */
-void
-filterValsWithnUnl(
-    std::vector<std::shared_ptr<STValidation>>& validations,
-    hash_set<NodeID> const& nUnl);
+std::vector<std::shared_ptr<STValidation>>
+negativeUNLFilter(
+    std::vector<std::shared_ptr<STValidation>> const& validations,
+    hash_set<NodeID> const& negUnl);
 
 }  // namespace ripple
 

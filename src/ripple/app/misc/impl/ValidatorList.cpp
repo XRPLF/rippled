@@ -747,10 +747,10 @@ ValidatorList::getJson() const
     });
 
     // Negative UNL
-    if (!nUnl_.empty())
+    if (!negUnl_.empty())
     {
         Json::Value& jNegativeUNL = (res[jss::NegativeUNL] = Json::arrayValue);
-        for (auto const& k : nUnl_)
+        for (auto const& k : negUnl_)
         {
             jNegativeUNL.append(toBase58(TokenType::NodePublic, k));
         }
@@ -936,27 +936,24 @@ ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
         << trustedMasterKeys_.size() << "  of " << keyListings_.size()
         << " listed validators eligible for inclusion in the trusted set";
 
-    auto numUNL = trustedMasterKeys_.size();
-    auto numEffectiveUNL = numUNL;
-    auto numSeen = seenValidators.size();
-    if (!nUnl_.empty())
+    auto unlSize = trustedMasterKeys_.size();
+    auto effectiveUnlSize = unlSize;
+    auto seenSize = seenValidators.size();
+    if (!negUnl_.empty())
     {
         for (auto const& k : trustedMasterKeys_)
         {
-            if (nUnl_.find(k) != nUnl_.end())
-                --numEffectiveUNL;
+            if (negUnl_.find(k) != negUnl_.end())
+                --effectiveUnlSize;
         }
 
-        hash_set<NodeID> nUnl;
-        for (auto const& k : nUnl_)
-            nUnl.insert(calcNodeID(k));
         for (auto const& nid : seenValidators)
         {
-            if (nUnl.find(nid) != nUnl.end())
-                --numSeen;
+            if (negUnlNodeIDs_.find(nid) != negUnlNodeIDs_.end())
+                --seenSize;
         }
     }
-    quorum_ = calculateQuorum(numUNL, numEffectiveUNL, numSeen);
+    quorum_ = calculateQuorum(unlSize, effectiveUnlSize, seenSize);
 
     JLOG(j_.debug()) << "Using quorum of " << quorum_ << " for new set of "
                      << trustedMasterKeys_.size() << " trusted validators ("
@@ -971,6 +968,39 @@ ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
     }
 
     return trustChanges;
+}
+
+hash_set<PublicKey>
+ValidatorList::getTrustedMasterKeys()
+{
+    std::lock_guard<std::shared_timed_mutex> lock{mutex_};
+    return trustedMasterKeys_;
+}
+
+hash_set<NodeID>
+ValidatorList::getNegativeUnlNodeIDs()
+{
+    std::lock_guard<std::shared_timed_mutex> lock{mutex_};
+    return negUnlNodeIDs_;
+}
+
+hash_set<PublicKey>
+ValidatorList::getNegativeUnl()
+{
+    std::lock_guard<std::shared_timed_mutex> lock{mutex_};
+    return negUnl_;
+}
+
+void
+ValidatorList::setNegativeUnl(hash_set<PublicKey> const& nUnl)
+{
+    std::lock_guard<std::shared_timed_mutex> lock{mutex_};
+    negUnl_ = nUnl;
+    negUnlNodeIDs_.clear();
+    for (auto const& k : negUnl_)
+    {
+        negUnlNodeIDs_.insert(calcNodeID(k));
+    }
 }
 
 }  // namespace ripple

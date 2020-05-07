@@ -219,23 +219,22 @@ handleNewValidation(
     }
 }
 
-void
-filterValsWithnUnl(
-    std::vector<std::shared_ptr<STValidation>>& validations,
-    hash_set<NodeID> const& nUnl)
+std::vector<std::shared_ptr<STValidation>>
+negativeUNLFilter(
+    std::vector<std::shared_ptr<STValidation>> const& validations,
+    hash_set<NodeID> const& negUnl)
 {
     /* Remove validations that are from validators on the negative UNL. */
-    if (!nUnl.empty())
+    if (negUnl.empty())
+        return validations;
+
+    std::vector<std::shared_ptr<STValidation>> res;
+    for (auto const& v : validations)
     {
-        validations.erase(
-            std::remove_if(
-                validations.begin(),
-                validations.end(),
-                [&nUnl](auto const& v) {
-                    return nUnl.find(v->getNodeID()) != nUnl.end();
-                }),
-            validations.end());
+        if (negUnl.find(v->getNodeID()) == negUnl.end())
+            res.push_back(v);
     }
+    return res;
 }
 
 }  // namespace ripple

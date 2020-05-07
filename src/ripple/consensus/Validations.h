@@ -720,6 +720,14 @@ public:
                     byLedger_.touch(i);
                 }
             }
+
+            for (auto i = bySequence_.begin(); i != bySequence_.end(); ++i)
+            {
+                if (i->first >= toKeep_)
+                {
+                    bySequence_.touch(i);
+                }
+            }
         }
 
         beast::expire(byLedger_, parms_.validationSET_EXPIRES);

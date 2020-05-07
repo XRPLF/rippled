@@ -335,7 +335,7 @@ public:
      * @return the public keys
      */
     hash_set<PublicKey>
-    nUnl() const;
+    negativeUnl() const;
 
     /**
      * get the to be disabled validator's master public key if any
@@ -343,7 +343,7 @@ public:
      * @return the public key if any
      */
     boost::optional<PublicKey>
-    nUnlToDisable() const;
+    negativeUnlToDisable() const;
 
     /**
      * get the to be re-enabled validator's master public key if any
@@ -351,7 +351,7 @@ public:
      * @return the public key if any
      */
     boost::optional<PublicKey>
-    nUnlToReEnable() const;
+    negativeUnlToReEnable() const;
 
 private:
     class sles_iter_impl;
