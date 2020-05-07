@@ -122,15 +122,19 @@ public:
         // Perform additional initialization
         f(*this);
 
-        // This is a logic error because we should never assemble a
-        // validation without a ledger sequence number.
-        if (!isFieldPresent(sfLedgerSequence))
-            LogicError("Missing ledger sequence in validation");
-
         // Finally, sign the validation and mark it as trusted:
         setFlag(vfFullyCanonicalSig);
         setFieldVL(sfSignature, signDigest(pk, sk, getSigningHash()));
         setTrusted();
+
+        // Check to ensure that all required fields are present.
+        for (auto const& e : validationFormat())
+        {
+            if (e.style() == soeREQUIRED && !isFieldPresent(e.sField()))
+                LogicError(
+                    "Required field '" + e.sField().getName() +
+                    "' missing from validation.");
+        }
     }
 
     STBase*
