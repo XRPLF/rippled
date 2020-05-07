@@ -88,13 +88,6 @@ public:
             Throw<std::runtime_error>("Invalid signature in validation");
         }
 
-        if (!isFieldPresent(sfLedgerSequence))
-        {
-            JLOG(debugLog().error()) << "No ledger sequence in validation: "
-                                     << getJson(JsonOptions::none);
-            Throw<std::runtime_error>("No ledger sequence in validation");
-        }
-
         nodeID_ = lookupNodeID(PublicKey(makeSlice(spk)));
         assert(nodeID_.isNonZero());
     }
