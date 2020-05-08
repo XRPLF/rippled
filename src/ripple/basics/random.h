@@ -162,6 +162,33 @@ rand_int()
 }
 /** @} */
 
+/** Return a random byte */
+/** @{ */
+template <class Byte, class Engine>
+std::enable_if_t<
+    (std::is_same<Byte, unsigned char>::value ||
+     std::is_same<Byte, std::uint8_t>::value) &&
+        detail::is_engine<Engine>::value,
+    Byte>
+rand_byte(Engine& engine)
+{
+    return static_cast<Byte>(rand_int<Engine, std::uint32_t>(
+        engine,
+        std::numeric_limits<Byte>::min(),
+        std::numeric_limits<Byte>::max()));
+}
+
+template <class Byte = std::uint8_t>
+std::enable_if_t<
+    (std::is_same<Byte, unsigned char>::value ||
+     std::is_same<Byte, std::uint8_t>::value),
+    Byte>
+rand_byte()
+{
+    return rand_byte<Byte>(default_prng());
+}
+/** @} */
+
 /** Return a random boolean value */
 /** @{ */
 template <class Engine>
