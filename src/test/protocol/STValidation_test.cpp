@@ -339,7 +339,7 @@ public:
                     "Mutated validation signature checked out: offset=" +
                     std::to_string(i));
             }
-            catch (std::exception const& ex)
+            catch (std::exception const&)
             {
                 pass();
             }
