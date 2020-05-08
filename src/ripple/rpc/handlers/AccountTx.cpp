@@ -177,7 +177,7 @@ parseLedgerArgs(Json::Value const& params)
     {
         LedgerSpecifier ledger;
         if (params[jss::ledger_index].isNumeric())
-            ledger = params[jss::ledger_index].asInt();
+            ledger = params[jss::ledger_index].asUInt();
         else
         {
             std::string ledgerStr = params[jss::ledger_index].asString();
