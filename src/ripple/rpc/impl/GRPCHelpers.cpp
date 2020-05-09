@@ -487,6 +487,36 @@ populateFlags(T& to, STObject const& from)
 
 template <class T>
 void
+populateFirstLedgerSequence(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_ledger_sequence(); },
+        from,
+        sfFirstLedgerSequence);
+}
+
+template <class T>
+void
+populateNegativeUNLToDisable(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_validator_to_disable(); },
+        from,
+        sfNegativeUNLToDisable);
+}
+
+template <class T>
+void
+populateNegativeUNLToReEnable(T& to, STObject const& from)
+{
+    populateProtoPrimitive(
+        [&to]() { return to.mutable_validator_to_re_enable(); },
+        from,
+        sfNegativeUNLToReEnable);
+}
+
+template <class T>
+void
 populateLastLedgerSequence(T& to, STObject const& from)
 {
     populateProtoPrimitive(
@@ -844,6 +874,21 @@ populateSignerEntries(T& to, STObject const& from)
         from,
         sfSignerEntries,
         sfSignerEntry);
+}
+
+template <class T>
+void
+populateNegativeUNLEntries(T& to, STObject const& from)
+{
+    populateProtoArray(
+        [&to]() { return to.add_negative_unl_entries(); },
+        [](auto& innerObj, auto& innerProto) {
+            populatePublicKey(innerProto, innerObj);
+            populateFirstLedgerSequence(innerProto, innerObj);
+        },
+        from,
+        sfNegativeUNL,
+        sfNegativeUNLEntry);
 }
 
 template <class T>
@@ -1418,6 +1463,16 @@ convert(org::xrpl::rpc::v1::SignerList& to, STObject const& from)
 }
 
 void
+convert(org::xrpl::rpc::v1::NegativeUnl& to, STObject const& from)
+{
+    populateNegativeUNLEntries(to, from);
+
+    populateNegativeUNLToDisable(to, from);
+
+    populateNegativeUNLToReEnable(to, from);
+}
+
+void
 setLedgerEntryType(
     org::xrpl::rpc::v1::AffectedNode& proto,
     std::uint16_t lgrType)
@@ -1472,6 +1527,10 @@ setLedgerEntryType(
             proto.set_ledger_entry_type(
                 org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_DEPOSIT_PREAUTH);
             break;
+        case ltNEGATIVE_UNL:
+            proto.set_ledger_entry_type(
+                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_NEGATIVE_UNL);
+            break;
     }
 }
 
@@ -1516,6 +1575,9 @@ convert(T& to, STObject& from, std::uint16_t type)
             break;
         case ltDEPOSIT_PREAUTH:
             RPC::convert(*to.mutable_deposit_preauth(), from);
+            break;
+        case ltNEGATIVE_UNL:
+            RPC::convert(*to.mutable_negative_unl(), from);
             break;
     }
 }

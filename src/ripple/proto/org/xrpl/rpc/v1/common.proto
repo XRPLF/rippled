@@ -7,7 +7,7 @@ option java_multiple_files = true;
 import "org/xrpl/rpc/v1/amount.proto";
 import "org/xrpl/rpc/v1/account.proto";
 
-// These fields are used in many different messsage types. They can be present
+// These fields are used in many different message types. They can be present
 // in one or more transactions, as well as metadata of one or more transactions.
 // Each is defined as its own message type with a single field "value", to
 // ensure the field is the correct type everywhere it's used
@@ -66,6 +66,11 @@ message HighQualityIn
 }
 
 message HighQualityOut
+{
+    uint32 value = 1;
+}
+
+message FirstLedgerSequence
 {
     uint32 value = 1;
 }
@@ -351,6 +356,15 @@ message TransactionSignature
     bytes value = 1;
 }
 
+message NegativeUnlToDisable
+{
+    bytes value = 1;
+}
+
+message NegativeUnlToReEnable
+{
+    bytes value = 1;
+}
 
 // *** Messages wrapping a Currency value ***
 
@@ -474,3 +488,12 @@ message SignerEntry
 
     SignerWeight signer_weight = 2;
 }
+
+// Next field: 3
+message NegativeUnlEntry
+{
+    PublicKey public_key = 1;
+
+    FirstLedgerSequence ledger_sequence = 2;
+}
+
