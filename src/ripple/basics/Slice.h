@@ -27,6 +27,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -63,7 +64,7 @@ public:
     }
 
     /** Return `true` if the byte range is empty. */
-    bool
+    [[nodiscard]] bool
     empty() const noexcept
     {
         return size_ == 0;
@@ -73,11 +74,19 @@ public:
 
         This may be zero for an empty range.
     */
+    /** @{ */
     std::size_t
     size() const noexcept
     {
         return size_;
     }
+
+    std::size_t
+    length() const noexcept
+    {
+        return size_;
+    }
+    /** @} */
 
     /** Return a pointer to beginning of the storage.
         @note The return type is guaranteed to be a pointer
@@ -117,6 +126,21 @@ public:
     }
     /** @} */
 
+    /** Shrinks the slice by moving its start forward by n characters. */
+    void
+    remove_prefix(std::size_t n)
+    {
+        data_ += n;
+        size_ -= n;
+    }
+
+    /** Shrinks the slice by moving its end backward by n characters. */
+    void
+    remove_suffix(std::size_t n)
+    {
+        size_ -= n;
+    }
+
     const_iterator
     begin() const noexcept
     {
@@ -139,6 +163,28 @@ public:
     cend() const noexcept
     {
         return data_ + size_;
+    }
+
+    /** Return a "sub slice" of given length starting at the given position
+
+        Note that the subslice encompasses the range [pos, pos + rcount),
+        where rcount is the smaller of count and size() - pos.
+
+        @param pos position of the first character
+        @count requested length
+
+        @returns The requested subslice, if the request is valid.
+        @throws std::out_of_range if pos > size()
+     */
+    Slice
+    substr(
+        std::size_t pos,
+        std::size_t count = std::numeric_limits<std::size_t>::max()) const
+    {
+        if (pos > size())
+            throw std::out_of_range("Requested sub-slice is out of bounds");
+
+        return {data_ + pos, std::min(count, size() - pos)};
     }
 };
 
