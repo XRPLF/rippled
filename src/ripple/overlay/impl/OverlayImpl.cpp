@@ -1163,8 +1163,8 @@ bool
 OverlayImpl::processRequest(http_request_type const& req, Handoff& handoff)
 {
     // Take advantage of || short-circuiting
-    return processCrawl(req, handoff) || processValidatorList(req, handoff)
-        || processHealth(req, handoff);
+    return processCrawl(req, handoff) || processValidatorList(req, handoff) ||
+        processHealth(req, handoff);
 }
 
 Overlay::PeerSequence
