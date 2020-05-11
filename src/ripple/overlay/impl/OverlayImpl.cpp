@@ -1096,13 +1096,12 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     std::string server_state = info["server_state"].asString();
     auto load_factor = info["load_factor"].asDouble();
 
-    enum {healthy, warning, critical};
+    enum { healthy, warning, critical };
     int health = healthy;
-    auto set_health = [&health](int state)
-        {
-            if (health < state)
-                health = state;
-        };
+    auto set_health = [&health](int state) {
+        if (health < state)
+            health = state;
+    };
 
     if (last_validated_ledger_age >= 7)
     {
