@@ -71,8 +71,6 @@ doGatewayBalances(RPC::JsonContext&);
 Json::Value
 doGetCounts(RPC::JsonContext&);
 Json::Value
-doHealthCheck(RPC::JsonContext&);
-Json::Value
 doLedgerAccept(RPC::JsonContext&);
 Json::Value
 doLedgerCleaner(RPC::JsonContext&);

@@ -573,7 +573,6 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/FetchInfo.cpp
   src/ripple/rpc/handlers/GatewayBalances.cpp
   src/ripple/rpc/handlers/GetCounts.cpp
-  src/ripple/rpc/handlers/HealthCheck.cpp
   src/ripple/rpc/handlers/LedgerAccept.cpp
   src/ripple/rpc/handlers/LedgerCleanerHandler.cpp
   src/ripple/rpc/handlers/LedgerClosed.cpp
