@@ -25,6 +25,7 @@
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/DatabaseRotating.h>
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <thread>
 
@@ -106,8 +107,14 @@ private:
     std::uint32_t deleteInterval_ = 0;
     bool advisoryDelete_ = false;
     std::uint32_t deleteBatch_ = 100;
-    std::uint32_t backOff_ = 100;
-    std::int32_t ageThreshold_ = 60;
+    std::chrono::milliseconds backOff_{100};
+    std::chrono::seconds ageThreshold_{60};
+    /// If set, and the node is out of sync during an
+    /// online_delete health check, sleep the thread
+    /// for this time and check again so the node can
+    /// recover.
+    /// See also: "recovery_wait_seconds" in rippled-example.cfg
+    boost::optional<std::chrono::seconds> recoveryWaitTime_;
 
     // these do not exist upon SHAMapStore creation, but do exist
     // as of onPrepare() or before
@@ -212,13 +219,11 @@ private:
         return false;
     }
 
-    /** delete from sqlite table in batches to not lock the db excessively
-     *  pause briefly to extend access time to other users
-     *  call with mutex object unlocked
-     *  @return true if any deletable rows were found (though not
-     *      necessarily deleted.
+    /** delete from sqlite table in batches to not lock the db excessively.
+     *  Pause briefly to extend access time to other users.
+     *  Call with mutex object unlocked.
      */
-    bool
+    void
     clearSql(
         DatabaseCon& database,
         LedgerIndex lastRotated,
@@ -236,6 +241,9 @@ private:
     // Assume that, once unhealthy, a necessary step has been
     // aborted, so the online-delete process needs to restart
     // at next ledger.
+    // If recoveryWaitTime_ is set, this may sleep to give rippled
+    // time to recover, so never call it from any thread other than
+    // the main "run()".
     Health
     health();
     //

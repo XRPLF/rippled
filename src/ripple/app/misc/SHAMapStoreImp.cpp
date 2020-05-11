@@ -180,13 +180,24 @@ SHAMapStoreImp::SHAMapStoreImp(
             section.set("filter_bits", "10");
     }
 
-    get_if_exists(section, "delete_batch", deleteBatch_);
-    get_if_exists(section, "backOff", backOff_);
-    get_if_exists(section, "age_threshold", ageThreshold_);
     get_if_exists(section, "online_delete", deleteInterval_);
 
     if (deleteInterval_)
     {
+        // Configuration that affects the behavior of online delete
+        get_if_exists(section, "delete_batch", deleteBatch_);
+        std::uint32_t temp;
+        if (get_if_exists(section, "back_off_milliseconds", temp) ||
+            // Included for backward compaibility with an undocumented setting
+            get_if_exists(section, "backOff", temp))
+        {
+            backOff_ = std::chrono::milliseconds{temp};
+        }
+        if (get_if_exists(section, "age_threshold_seconds", temp))
+            ageThreshold_ = std::chrono::seconds{temp};
+        if (get_if_exists(section, "recovery_wait_seconds", temp))
+            recoveryWaitTime_.emplace(std::chrono::seconds{temp});
+
         get_if_exists(section, "advisory_delete", advisoryDelete_);
 
         auto const minInterval = config.standalone()
@@ -348,23 +359,14 @@ SHAMapStoreImp::run()
 
         // will delete up to (not including) lastRotated
         if (validatedSeq >= lastRotated + deleteInterval_ &&
-            canDelete_ >= lastRotated - 1)
+            canDelete_ >= lastRotated - 1 && !health())
         {
             JLOG(journal_.warn())
                 << "rotating  validatedSeq " << validatedSeq << " lastRotated "
                 << lastRotated << " deleteInterval " << deleteInterval_
-                << " canDelete_ " << canDelete_;
-
-            switch (health())
-            {
-                case Health::stopping:
-                    stopped();
-                    return;
-                case Health::unhealthy:
-                    continue;
-                case Health::ok:
-                default:;
-            }
+                << " canDelete_ " << canDelete_ << " state "
+                << app_.getOPs().strOperatingMode(false) << " age "
+                << ledgerMaster_->getValidatedLedgerAge().count() << 's';
 
             clearPrior(lastRotated);
             switch (health())
@@ -378,27 +380,29 @@ SHAMapStoreImp::run()
                 default:;
             }
 
+            JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
             std::uint64_t nodeCount = 0;
             validatedLedger->stateMap().snapShot(false)->visitNodes(std::bind(
                 &SHAMapStoreImp::copyNode,
                 this,
                 std::ref(nodeCount),
                 std::placeholders::_1));
+            switch (health())
+            {
+                case Health::stopping:
+                    stopped();
+                    return;
+                case Health::unhealthy:
+                    continue;
+                case Health::ok:
+                default:;
+            }
+            // Only log if we completed without a "health" abort
             JLOG(journal_.debug()) << "copied ledger " << validatedSeq
                                    << " nodecount " << nodeCount;
-            switch (health())
-            {
-                case Health::stopping:
-                    stopped();
-                    return;
-                case Health::unhealthy:
-                    continue;
-                case Health::ok:
-                default:;
-            }
 
+            JLOG(journal_.debug()) << "freshening caches";
             freshenCaches();
-            JLOG(journal_.debug()) << validatedSeq << " freshened caches";
             switch (health())
             {
                 case Health::stopping:
@@ -409,7 +413,10 @@ SHAMapStoreImp::run()
                 case Health::ok:
                 default:;
             }
+            // Only log if we completed without a "health" abort
+            JLOG(journal_.debug()) << validatedSeq << " freshened caches";
 
+            JLOG(journal_.trace()) << "Making a new backend";
             auto newBackend = makeBackendRotating();
             JLOG(journal_.debug())
                 << validatedSeq << " new backend " << newBackend->getName();
@@ -559,26 +566,38 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     return backend;
 }
 
-bool
+void
 SHAMapStoreImp::clearSql(
     DatabaseCon& database,
     LedgerIndex lastRotated,
     std::string const& minQuery,
     std::string const& deleteQuery)
 {
+    assert(deleteInterval_);
     LedgerIndex min = std::numeric_limits<LedgerIndex>::max();
 
     {
-        auto db = database.checkoutDb();
         boost::optional<std::uint64_t> m;
-        *db << minQuery, soci::into(m);
+        JLOG(journal_.trace())
+            << "Begin: Look up lowest value of: " << minQuery;
+        {
+            auto db = database.checkoutDb();
+            *db << minQuery, soci::into(m);
+        }
+        JLOG(journal_.trace()) << "End: Look up lowest value of: " << minQuery;
         if (!m)
-            return false;
+            return;
         min = *m;
     }
 
     if (min > lastRotated || health() != Health::ok)
-        return false;
+        return;
+    if (min == lastRotated)
+    {
+        // Micro-optimization mainly to clarify logs
+        JLOG(journal_.trace()) << "Nothing to delete from " << deleteQuery;
+        return;
+    }
 
     boost::format formattedDeleteQuery(deleteQuery);
 
@@ -587,17 +606,24 @@ SHAMapStoreImp::clearSql(
     while (min < lastRotated)
     {
         min = std::min(lastRotated, min + deleteBatch_);
+        JLOG(journal_.trace()) << "Begin: Delete up to " << deleteBatch_
+                               << " rows with LedgerSeq < " << min
+                               << " using query: " << deleteQuery;
         {
             auto db = database.checkoutDb();
             *db << boost::str(formattedDeleteQuery % min);
         }
+        JLOG(journal_.trace())
+            << "End: Delete up to " << deleteBatch_ << " rows with LedgerSeq < "
+            << min << " using query: " << deleteQuery;
         if (health())
-            return true;
+            return;
         if (min < lastRotated)
-            std::this_thread::sleep_for(std::chrono::milliseconds(backOff_));
+            std::this_thread::sleep_for(backOff_);
+        if (health())
+            return;
     }
     JLOG(journal_.debug()) << "finished: " << deleteQuery;
-    return true;
 }
 
 void
@@ -621,13 +647,14 @@ SHAMapStoreImp::freshenCaches()
 void
 SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
 {
-    if (health())
-        return;
-
     // Do not allow ledgers to be acquired from the network
     // that are about to be deleted.
     minimumOnline_ = lastRotated + 1;
+    JLOG(journal_.trace()) << "Begin: Clear internal ledgers up to "
+                           << lastRotated;
     ledgerMaster_->clearPriorLedgers(lastRotated);
+    JLOG(journal_.trace()) << "End: Clear internal ledgers up to "
+                           << lastRotated;
     if (health())
         return;
 
@@ -666,16 +693,32 @@ SHAMapStoreImp::health()
     }
     if (!netOPs_)
         return Health::ok;
+    assert(deleteInterval_);
 
-    constexpr static std::chrono::seconds age_threshold(60);
-    auto age = ledgerMaster_->getValidatedLedgerAge();
-    OperatingMode mode = netOPs_->getOperatingMode();
-    if (mode != OperatingMode::FULL || age > age_threshold)
+    if (healthy_)
     {
-        JLOG(journal_.warn()) << "Not deleting. state: "
-                              << app_.getOPs().strOperatingMode(mode, false)
-                              << ". age " << age.count() << 's';
-        healthy_ = false;
+        auto age = ledgerMaster_->getValidatedLedgerAge();
+        OperatingMode mode = netOPs_->getOperatingMode();
+        if (recoveryWaitTime_ && mode == OperatingMode::SYNCING &&
+            age < ageThreshold_)
+        {
+            JLOG(journal_.warn())
+                << "Waiting " << recoveryWaitTime_->count()
+                << "s for node to get back into sync with network. state: "
+                << app_.getOPs().strOperatingMode(mode, false) << ". age "
+                << age.count() << 's';
+            std::this_thread::sleep_for(*recoveryWaitTime_);
+
+            age = ledgerMaster_->getValidatedLedgerAge();
+            mode = netOPs_->getOperatingMode();
+        }
+        if (mode != OperatingMode::FULL || age > ageThreshold_)
+        {
+            JLOG(journal_.warn()) << "Not deleting. state: "
+                                  << app_.getOPs().strOperatingMode(mode, false)
+                                  << ". age " << age.count() << 's';
+            healthy_ = false;
+        }
     }
 
     if (healthy_)

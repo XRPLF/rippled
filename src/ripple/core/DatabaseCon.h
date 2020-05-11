@@ -24,6 +24,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/core/SociDB.h>
 #include <boost/filesystem/path.hpp>
+#include <boost/optional.hpp>
 #include <mutex>
 #include <string>
 
@@ -89,6 +90,19 @@ public:
         Config::StartUpType startUp = Config::NORMAL;
         bool standAlone = false;
         boost::filesystem::path dataDir;
+        // Indicates whether or not to return the `globalPragma`
+        // from commonPragma()
+        bool useGlobalPragma = false;
+
+        std::vector<std::string> const*
+        commonPragma() const
+        {
+            assert(!useGlobalPragma || globalPragma);
+            return useGlobalPragma && globalPragma ? globalPragma.get()
+                                                   : nullptr;
+        }
+
+        static std::unique_ptr<std::vector<std::string> const> globalPragma;
     };
 
     template <std::size_t N, std::size_t M>
@@ -97,16 +111,17 @@ public:
         std::string const& DBName,
         std::array<char const*, N> const& pragma,
         std::array<char const*, M> const& initSQL)
-    {
         // Use temporary files or regular DB files?
-        auto const useTempFiles = setup.standAlone &&
-            setup.startUp != Config::LOAD &&
-            setup.startUp != Config::LOAD_FILE &&
-            setup.startUp != Config::REPLAY;
-        boost::filesystem::path pPath =
-            useTempFiles ? "" : (setup.dataDir / DBName);
-
-        init(pPath, pragma, initSQL);
+        : DatabaseCon(
+              setup.standAlone && setup.startUp != Config::LOAD &&
+                      setup.startUp != Config::LOAD_FILE &&
+                      setup.startUp != Config::REPLAY
+                  ? ""
+                  : (setup.dataDir / DBName),
+              setup.commonPragma(),
+              pragma,
+              initSQL)
+    {
     }
 
     template <std::size_t N, std::size_t M>
@@ -115,8 +130,8 @@ public:
         std::string const& DBName,
         std::array<char const*, N> const& pragma,
         std::array<char const*, M> const& initSQL)
+        : DatabaseCon(dataDir / DBName, nullptr, pragma, initSQL)
     {
-        init((dataDir / DBName), pragma, initSQL);
     }
 
     soci::session&
@@ -136,14 +151,22 @@ public:
 
 private:
     template <std::size_t N, std::size_t M>
-    void
-    init(
+    DatabaseCon(
         boost::filesystem::path const& pPath,
+        std::vector<std::string> const* commonPragma,
         std::array<char const*, N> const& pragma,
         std::array<char const*, M> const& initSQL)
     {
         open(session_, "sqlite", pPath.string());
 
+        if (commonPragma)
+        {
+            for (auto const& p : *commonPragma)
+            {
+                soci::statement st = session_.prepare << p;
+                st.execute(true);
+            }
+        }
         for (auto const& p : pragma)
         {
             soci::statement st = session_.prepare << p;
@@ -163,7 +186,9 @@ private:
 };
 
 DatabaseCon::Setup
-setup_DatabaseCon(Config const& c);
+setup_DatabaseCon(
+    Config const& c,
+    boost::optional<beast::Journal> j = boost::none);
 
 }  // namespace ripple
 

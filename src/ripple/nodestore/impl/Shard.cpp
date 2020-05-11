@@ -124,6 +124,7 @@ Shard::open(Scheduler& scheduler, nudb::context& ctx)
         setup.startUp = config.START_UP;
         setup.standAlone = config.standalone();
         setup.dataDir = dir_;
+        setup.useGlobalPragma = true;
 
         acquireInfo_->SQLiteDB = std::make_unique<DatabaseCon>(
             setup,
@@ -668,10 +669,14 @@ bool
 Shard::initSQLite(std::lock_guard<std::recursive_mutex> const&)
 {
     Config const& config{app_.config()};
-    DatabaseCon::Setup setup;
-    setup.startUp = config.START_UP;
-    setup.standAlone = config.standalone();
-    setup.dataDir = dir_;
+    DatabaseCon::Setup const setup = [&]() {
+        DatabaseCon::Setup result;
+        result.startUp = config.START_UP;
+        result.standAlone = config.standalone();
+        result.dataDir = dir_;
+        result.useGlobalPragma = !backendComplete_;
+        return result;
+    }();
 
     try
     {
