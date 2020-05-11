@@ -256,6 +256,7 @@ public:
         {
             DatabaseCon::Setup setup;
             setup.dataDir = getDatabasePath();
+            BEAST_EXPECT(!setup.useGlobalPragma);
             DatabaseCon dbCon(
                 setup,
                 dbName.data(),

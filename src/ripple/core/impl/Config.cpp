@@ -442,7 +442,8 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_LEDGER_HISTORY, strTemp, j_))
     {
         if (boost::iequals(strTemp, "full"))
-            LEDGER_HISTORY = 1000000000u;
+            LEDGER_HISTORY =
+                std::numeric_limits<decltype(LEDGER_HISTORY)>::max();
         else if (boost::iequals(strTemp, "none"))
             LEDGER_HISTORY = 0;
         else
@@ -454,7 +455,7 @@ Config::loadFromString(std::string const& fileContents)
         if (boost::iequals(strTemp, "none"))
             FETCH_DEPTH = 0;
         else if (boost::iequals(strTemp, "full"))
-            FETCH_DEPTH = 1000000000u;
+            FETCH_DEPTH = std::numeric_limits<decltype(FETCH_DEPTH)>::max();
         else
             FETCH_DEPTH = beast::lexicalCastThrow<std::uint32_t>(strTemp);
 

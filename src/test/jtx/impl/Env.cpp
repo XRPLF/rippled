@@ -59,12 +59,22 @@ namespace jtx {
 Env::AppBundle::AppBundle(
     beast::unit_test::suite& suite,
     std::unique_ptr<Config> config,
-    std::unique_ptr<Logs> logs)
+    std::unique_ptr<Logs> logs,
+    beast::severities::Severity thresh)
     : AppBundle()
 {
     using namespace beast::severities;
-    // Use kFatal threshold to reduce noise from STObject.
-    setDebugLogSink(std::make_unique<SuiteJournalSink>("Debug", kFatal, suite));
+    if (logs)
+    {
+        setDebugLogSink(logs->makeSink("Debug", kFatal));
+    }
+    else
+    {
+        logs = std::make_unique<SuiteLogs>(suite);
+        // Use kFatal threshold to reduce noise from STObject.
+        setDebugLogSink(
+            std::make_unique<SuiteJournalSink>("Debug", kFatal, suite));
+    }
     auto timeKeeper_ = std::make_unique<ManualTimeKeeper>();
     timeKeeper = timeKeeper_.get();
     // Hack so we don't have to call Config::setup
@@ -72,7 +82,7 @@ Env::AppBundle::AppBundle(
     owned = make_Application(
         std::move(config), std::move(logs), std::move(timeKeeper_));
     app = owned.get();
-    app->logs().threshold(kError);
+    app->logs().threshold(thresh);
     if (!app->setup())
         Throw<std::runtime_error>("Env::AppBundle: setup failed");
     timeKeeper->set(app->getLedgerMaster().getClosedLedger()->info().closeTime);

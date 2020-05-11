@@ -27,6 +27,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/cxx17/type_traits.h>  // <type_traits>
+#include <ripple/beast/utility/Journal.h>
 #include <ripple/core/Config.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
@@ -131,7 +132,8 @@ private:
         AppBundle(
             beast::unit_test::suite& suite,
             std::unique_ptr<Config> config,
-            std::unique_ptr<Logs> logs);
+            std::unique_ptr<Logs> logs,
+            beast::severities::Severity thresh);
         ~AppBundle();
     };
 
@@ -163,12 +165,10 @@ public:
     Env(beast::unit_test::suite& suite_,
         std::unique_ptr<Config> config,
         FeatureBitset features,
-        std::unique_ptr<Logs> logs = nullptr)
+        std::unique_ptr<Logs> logs = nullptr,
+        beast::severities::Severity thresh = beast::severities::kError)
         : test(suite_)
-        , bundle_(
-              suite_,
-              std::move(config),
-              logs ? std::move(logs) : std::make_unique<SuiteLogs>(suite_))
+        , bundle_(suite_, std::move(config), std::move(logs), thresh)
         , journal{bundle_.app->journal("Env")}
     {
         memoize(Account::master);
@@ -211,11 +211,13 @@ public:
      */
     Env(beast::unit_test::suite& suite_,
         std::unique_ptr<Config> config,
-        std::unique_ptr<Logs> logs = nullptr)
+        std::unique_ptr<Logs> logs = nullptr,
+        beast::severities::Severity thresh = beast::severities::kError)
         : Env(suite_,
               std::move(config),
               supported_amendments(),
-              std::move(logs))
+              std::move(logs),
+              thresh)
     {
     }
 

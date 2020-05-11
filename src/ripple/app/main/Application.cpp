@@ -1019,7 +1019,7 @@ public:
 
         try
         {
-            auto const setup = setup_DatabaseCon(*config_);
+            auto setup = setup_DatabaseCon(*config_, m_journal);
 
             // transaction database
             mTxnDB = std::make_unique<DatabaseCon>(
@@ -1069,6 +1069,7 @@ public:
             mLedgerDB->setupCheckpointing(m_jobQueue.get(), logs());
 
             // wallet database
+            setup.useGlobalPragma = false;
             mWalletDB = std::make_unique<DatabaseCon>(
                 setup,
                 WalletDBName,
@@ -1360,7 +1361,7 @@ public:
                 JLOG(m_journal.fatal())
                     << "Free SQLite space for transaction db is less than "
                        "512MB. To fix this, rippled must be executed with the "
-                       "vacuum <sqlitetmpdir> parameter before restarting. "
+                       "\"--vacuum\" parameter before restarting. "
                        "Note that this activity can take multiple days, "
                        "depending on database size.";
                 signalStop();

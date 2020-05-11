@@ -2757,12 +2757,12 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             if (std::abs(closeOffset.count()) >= 60)
                 l[jss::close_time_offset] = closeOffset.count();
 
-            constexpr std::chrono::seconds HIGH_AGE_THRESHOLD{1000000};
+            constexpr std::chrono::seconds highAgeThreshold{1000000};
             if (m_ledgerMaster.haveValidated())
             {
                 auto const age = m_ledgerMaster.getValidatedLedgerAge();
                 l[jss::age] =
-                    Json::UInt(age < HIGH_AGE_THRESHOLD ? age.count() : 0);
+                    Json::UInt(age < highAgeThreshold ? age.count() : 0);
             }
             else
             {
@@ -2773,7 +2773,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                     using namespace std::chrono_literals;
                     auto age = closeTime - lCloseTime;
                     l[jss::age] =
-                        Json::UInt(age < HIGH_AGE_THRESHOLD ? age.count() : 0);
+                        Json::UInt(age < highAgeThreshold ? age.count() : 0);
                 }
             }
         }

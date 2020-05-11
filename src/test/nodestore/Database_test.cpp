@@ -18,8 +18,12 @@
 //==============================================================================
 
 #include <ripple/beast/utility/temp_dir.h>
+#include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
+#include <test/jtx.h>
+#include <test/jtx/CheckMessageLogs.h>
+#include <test/jtx/envconfig.h>
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
@@ -34,6 +38,409 @@ public:
     Database_test() : journal_("Database_test", *this)
     {
     }
+
+    void
+    testConfig()
+    {
+        testcase("Config");
+
+        using namespace ripple::test;
+        using namespace ripple::test::jtx;
+
+        auto const integrityWarning =
+            "reducing the data integrity guarantees from the "
+            "default [sqlite] behavior is not recommended for "
+            "nodes storing large amounts of history, because of the "
+            "difficulty inherent in rebuilding corrupted data.";
+        {
+            // defaults
+            Env env(*this);
+
+            auto const s = setup_DatabaseCon(env.app().config());
+
+            if (BEAST_EXPECT(s.globalPragma->size() == 3))
+            {
+                BEAST_EXPECT(
+                    s.globalPragma->at(0) == "PRAGMA journal_mode=wal;");
+                BEAST_EXPECT(
+                    s.globalPragma->at(1) == "PRAGMA synchronous=normal;");
+                BEAST_EXPECT(
+                    s.globalPragma->at(2) == "PRAGMA temp_store=file;");
+            }
+        }
+        {
+            // High safety level
+            DatabaseCon::Setup::globalPragma.reset();
+
+            bool found = false;
+            Env env = [&]() {
+                auto p = test::jtx::envconfig();
+                {
+                    auto& section = p->section("sqlite");
+                    section.set("safety_level", "high");
+                }
+                p->LEDGER_HISTORY = 100'000'000;
+
+                return Env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(
+                        integrityWarning, &found),
+                    beast::severities::kWarning);
+            }();
+
+            BEAST_EXPECT(!found);
+            auto const s = setup_DatabaseCon(env.app().config());
+            if (BEAST_EXPECT(s.globalPragma->size() == 3))
+            {
+                BEAST_EXPECT(
+                    s.globalPragma->at(0) == "PRAGMA journal_mode=wal;");
+                BEAST_EXPECT(
+                    s.globalPragma->at(1) == "PRAGMA synchronous=normal;");
+                BEAST_EXPECT(
+                    s.globalPragma->at(2) == "PRAGMA temp_store=file;");
+            }
+        }
+        {
+            // Low safety level
+            DatabaseCon::Setup::globalPragma.reset();
+
+            bool found = false;
+            Env env = [&]() {
+                auto p = test::jtx::envconfig();
+                {
+                    auto& section = p->section("sqlite");
+                    section.set("safety_level", "low");
+                }
+                p->LEDGER_HISTORY = 100'000'000;
+
+                return Env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(
+                        integrityWarning, &found),
+                    beast::severities::kWarning);
+            }();
+
+            BEAST_EXPECT(found);
+            auto const s = setup_DatabaseCon(env.app().config());
+            if (BEAST_EXPECT(s.globalPragma->size() == 3))
+            {
+                BEAST_EXPECT(
+                    s.globalPragma->at(0) == "PRAGMA journal_mode=memory;");
+                BEAST_EXPECT(
+                    s.globalPragma->at(1) == "PRAGMA synchronous=off;");
+                BEAST_EXPECT(
+                    s.globalPragma->at(2) == "PRAGMA temp_store=memory;");
+            }
+        }
+        {
+            // Override individual settings
+            DatabaseCon::Setup::globalPragma.reset();
+
+            bool found = false;
+            Env env = [&]() {
+                auto p = test::jtx::envconfig();
+                {
+                    auto& section = p->section("sqlite");
+                    section.set("journal_mode", "off");
+                    section.set("synchronous", "extra");
+                    section.set("temp_store", "default");
+                }
+
+                return Env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(
+                        integrityWarning, &found),
+                    beast::severities::kWarning);
+            }();
+
+            // No warning, even though higher risk settings were used because
+            // LEDGER_HISTORY is small
+            BEAST_EXPECT(!found);
+            auto const s = setup_DatabaseCon(env.app().config());
+            if (BEAST_EXPECT(s.globalPragma->size() == 3))
+            {
+                BEAST_EXPECT(
+                    s.globalPragma->at(0) == "PRAGMA journal_mode=off;");
+                BEAST_EXPECT(
+                    s.globalPragma->at(1) == "PRAGMA synchronous=extra;");
+                BEAST_EXPECT(
+                    s.globalPragma->at(2) == "PRAGMA temp_store=default;");
+            }
+        }
+        {
+            // Override individual settings with large history
+            DatabaseCon::Setup::globalPragma.reset();
+
+            bool found = false;
+            Env env = [&]() {
+                auto p = test::jtx::envconfig();
+                {
+                    auto& section = p->section("sqlite");
+                    section.set("journal_mode", "off");
+                    section.set("synchronous", "extra");
+                    section.set("temp_store", "default");
+                }
+                p->LEDGER_HISTORY = 50'000'000;
+
+                return Env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(
+                        integrityWarning, &found),
+                    beast::severities::kWarning);
+            }();
+
+            // No warning, even though higher risk settings were used because
+            // LEDGER_HISTORY is small
+            BEAST_EXPECT(found);
+            auto const s = setup_DatabaseCon(env.app().config());
+            if (BEAST_EXPECT(s.globalPragma->size() == 3))
+            {
+                BEAST_EXPECT(
+                    s.globalPragma->at(0) == "PRAGMA journal_mode=off;");
+                BEAST_EXPECT(
+                    s.globalPragma->at(1) == "PRAGMA synchronous=extra;");
+                BEAST_EXPECT(
+                    s.globalPragma->at(2) == "PRAGMA temp_store=default;");
+            }
+        }
+        {
+            // Error: Mix safety_level and individual settings
+            DatabaseCon::Setup::globalPragma.reset();
+            auto const expected =
+                "Failed to initialize SQLite databases: "
+                "Configuration file may not define both \"safety_level\" and "
+                "\"journal_mode\"";
+            bool found = false;
+
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("safety_level", "low");
+                section.set("journal_mode", "off");
+                section.set("synchronous", "extra");
+                section.set("temp_store", "default");
+            }
+
+            try
+            {
+                Env env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
+                    beast::severities::kWarning);
+                fail();
+            }
+            catch (...)
+            {
+                BEAST_EXPECT(found);
+            }
+        }
+        {
+            // Error: Mix safety_level and one setting (gotta catch 'em all)
+            DatabaseCon::Setup::globalPragma.reset();
+            auto const expected =
+                "Failed to initialize SQLite databases: Configuration file may "
+                "not define both \"safety_level\" and \"journal_mode\"";
+            bool found = false;
+
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("safety_level", "high");
+                section.set("journal_mode", "off");
+            }
+
+            try
+            {
+                Env env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
+                    beast::severities::kWarning);
+                fail();
+            }
+            catch (...)
+            {
+                BEAST_EXPECT(found);
+            }
+        }
+        {
+            // Error: Mix safety_level and one setting (gotta catch 'em all)
+            DatabaseCon::Setup::globalPragma.reset();
+            auto const expected =
+                "Failed to initialize SQLite databases: Configuration file may "
+                "not define both \"safety_level\" and \"synchronous\"";
+            bool found = false;
+
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("safety_level", "low");
+                section.set("synchronous", "extra");
+            }
+
+            try
+            {
+                Env env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
+                    beast::severities::kWarning);
+                fail();
+            }
+            catch (...)
+            {
+                BEAST_EXPECT(found);
+            }
+        }
+        {
+            // Error: Mix safety_level and one setting (gotta catch 'em all)
+            DatabaseCon::Setup::globalPragma.reset();
+            auto const expected =
+                "Failed to initialize SQLite databases: Configuration file may "
+                "not define both \"safety_level\" and \"temp_store\"";
+            bool found = false;
+
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("safety_level", "high");
+                section.set("temp_store", "default");
+            }
+
+            try
+            {
+                Env env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
+                    beast::severities::kWarning);
+                fail();
+            }
+            catch (...)
+            {
+                BEAST_EXPECT(found);
+            }
+        }
+        {
+            // Error: Invalid value
+            DatabaseCon::Setup::globalPragma.reset();
+            auto const expected =
+                "Failed to initialize SQLite databases: Invalid safety_level "
+                "value: slow";
+            bool found = false;
+
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("safety_level", "slow");
+            }
+
+            try
+            {
+                Env env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
+                    beast::severities::kWarning);
+                fail();
+            }
+            catch (...)
+            {
+                BEAST_EXPECT(found);
+            }
+        }
+        {
+            // Error: Invalid value
+            DatabaseCon::Setup::globalPragma.reset();
+            auto const expected =
+                "Failed to initialize SQLite databases: Invalid journal_mode "
+                "value: fast";
+            bool found = false;
+
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("journal_mode", "fast");
+            }
+
+            try
+            {
+                Env env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
+                    beast::severities::kWarning);
+                fail();
+            }
+            catch (...)
+            {
+                BEAST_EXPECT(found);
+            }
+        }
+        {
+            // Error: Invalid value
+            DatabaseCon::Setup::globalPragma.reset();
+            auto const expected =
+                "Failed to initialize SQLite databases: Invalid synchronous "
+                "value: instant";
+            bool found = false;
+
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("synchronous", "instant");
+            }
+
+            try
+            {
+                Env env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
+                    beast::severities::kWarning);
+                fail();
+            }
+            catch (...)
+            {
+                BEAST_EXPECT(found);
+            }
+        }
+        {
+            // Error: Invalid value
+            DatabaseCon::Setup::globalPragma.reset();
+            auto const expected =
+                "Failed to initialize SQLite databases: Invalid temp_store "
+                "value: network";
+            bool found = false;
+
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("temp_store", "network");
+            }
+
+            try
+            {
+                Env env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
+                    beast::severities::kWarning);
+                fail();
+            }
+            catch (...)
+            {
+                BEAST_EXPECT(found);
+            }
+        }
+    }
+
+    //--------------------------------------------------------------------------
 
     void
     testImport(
@@ -220,6 +627,8 @@ public:
     run() override
     {
         std::int64_t const seedValue = 50;
+
+        testConfig();
 
         testNodeStore("memory", false, seedValue);
 
