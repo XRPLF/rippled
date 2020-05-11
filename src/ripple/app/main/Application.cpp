@@ -1026,7 +1026,7 @@ public:
 
             // transaction database
             mTxnDB = std::make_unique<DatabaseCon>(
-                setup, TxDBName, TxDBPragma, TxDBInit);
+                setup, TxDBName, true, TxDBPragma, TxDBInit);
             mTxnDB->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(config_->getValueFor(SizedItem::txnDBCache)));
@@ -1065,7 +1065,7 @@ public:
 
             // ledger database
             mLedgerDB = std::make_unique<DatabaseCon>(
-                setup, LgrDBName, LgrDBPragma, LgrDBInit);
+                setup, LgrDBName, true, LgrDBPragma, LgrDBInit);
             mLedgerDB->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(config_->getValueFor(SizedItem::lgrDBCache)));
@@ -1075,6 +1075,7 @@ public:
             mWalletDB = std::make_unique<DatabaseCon>(
                 setup,
                 WalletDBName,
+                false,
                 std::array<char const*, 0>(),
                 WalletDBInit);
         }

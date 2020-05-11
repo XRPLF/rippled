@@ -51,8 +51,9 @@ DatabaseBody::value_type::open(
     auto setup = setup_DatabaseCon(config);
     setup.dataDir = path.parent_path();
 
+    // Downloader ignores the "CommonPragma"
     conn_ = std::make_unique<DatabaseCon>(
-        setup, "Download", DownloaderDBPragma, DatabaseBodyDBInit);
+        setup, "Download", false, DownloaderDBPragma, DatabaseBodyDBInit);
 
     path_ = path;
 

@@ -128,6 +128,7 @@ Shard::open(Scheduler& scheduler, nudb::context& ctx)
         acquireInfo_->SQLiteDB = std::make_unique<DatabaseCon>(
             setup,
             AcquireShardDBName,
+            true,
             AcquireShardDBPragma,
             AcquireShardDBInit);
         acquireInfo_->SQLiteDB->setupCheckpointing(
@@ -684,14 +685,14 @@ Shard::initSQLite(std::lock_guard<std::recursive_mutex> const&)
         if (backendComplete_)
         {
             lgrSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup, LgrDBName, CompleteShardDBPragma, LgrDBInit);
+                setup, LgrDBName, false, CompleteShardDBPragma, LgrDBInit);
             lgrSQLiteDB_->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(
                     config.getValueFor(SizedItem::lgrDBCache, boost::none)));
 
             txSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup, TxDBName, CompleteShardDBPragma, TxDBInit);
+                setup, TxDBName, false, CompleteShardDBPragma, TxDBInit);
             txSQLiteDB_->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(
@@ -701,14 +702,14 @@ Shard::initSQLite(std::lock_guard<std::recursive_mutex> const&)
         {
             // The incomplete shard uses a Write Ahead Log for performance
             lgrSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup, LgrDBName, LgrDBPragma, LgrDBInit);
+                setup, LgrDBName, true, LgrDBPragma, LgrDBInit);
             lgrSQLiteDB_->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(config.getValueFor(SizedItem::lgrDBCache)));
             lgrSQLiteDB_->setupCheckpointing(&app_.getJobQueue(), app_.logs());
 
             txSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup, TxDBName, TxDBPragma, TxDBInit);
+                setup, TxDBName, true, TxDBPragma, TxDBInit);
             txSQLiteDB_->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(config.getValueFor(SizedItem::txnDBCache)));

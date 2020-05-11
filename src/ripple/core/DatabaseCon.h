@@ -89,12 +89,17 @@ public:
         Config::StartUpType startUp = Config::NORMAL;
         bool standAlone = false;
         boost::filesystem::path dataDir;
+        static std::unique_ptr<std::vector<std::string> const> CommonPragma;
+        /// Shortcut used by the database connections that ignore the common
+        /// pragma strings
+        static const std::vector<std::string> NoCommonPragma;
     };
 
     template <std::size_t N, std::size_t M>
     DatabaseCon(
         Setup const& setup,
         std::string const& DBName,
+        bool useCommonPragma,
         std::array<char const*, N> const& pragma,
         std::array<char const*, M> const& initSQL)
     {
@@ -106,7 +111,12 @@ public:
         boost::filesystem::path pPath =
             useTempFiles ? "" : (setup.dataDir / DBName);
 
-        init(pPath, pragma, initSQL);
+        assert(!useCommonPragma || setup.CommonPragma);
+        init(
+            pPath,
+            useCommonPragma ? *setup.CommonPragma : setup.NoCommonPragma,
+            pragma,
+            initSQL);
     }
 
     template <std::size_t N, std::size_t M>
@@ -116,7 +126,7 @@ public:
         std::array<char const*, N> const& pragma,
         std::array<char const*, M> const& initSQL)
     {
-        init((dataDir / DBName), pragma, initSQL);
+        init((dataDir / DBName), {}, pragma, initSQL);
     }
 
     soci::session&
@@ -139,11 +149,17 @@ private:
     void
     init(
         boost::filesystem::path const& pPath,
+        std::vector<std::string> const& commonPragma,
         std::array<char const*, N> const& pragma,
         std::array<char const*, M> const& initSQL)
     {
         open(session_, "sqlite", pPath.string());
 
+        for (auto const& p : commonPragma)
+        {
+            soci::statement st = session_.prepare << p;
+            st.execute(true);
+        }
         for (auto const& p : pragma)
         {
             soci::statement st = session_.prepare << p;

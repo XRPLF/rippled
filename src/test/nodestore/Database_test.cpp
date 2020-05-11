@@ -18,8 +18,11 @@
 //==============================================================================
 
 #include <ripple/beast/utility/temp_dir.h>
+#include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
+#include <test/jtx.h>
+#include <test/jtx/envconfig.h>
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
@@ -34,6 +37,194 @@ public:
     Database_test() : journal_("Database_test", *this)
     {
     }
+
+    void
+    testConfig()
+    {
+        testcase("Config");
+
+        using namespace ripple::test::jtx;
+
+        {
+            // defaults
+            Env env(*this);
+
+            auto const s = setup_DatabaseCon(env.app().config());
+
+            if (BEAST_EXPECT(s.CommonPragma->size() == 3))
+            {
+                BEAST_EXPECT(
+                    s.CommonPragma->at(0) == "PRAGMA journal_mode=wal;");
+                BEAST_EXPECT(
+                    s.CommonPragma->at(1) == "PRAGMA synchronous=normal;");
+                BEAST_EXPECT(
+                    s.CommonPragma->at(2) == "PRAGMA temp_store=file;");
+            }
+        }
+        {
+            // Low safety level
+            DatabaseCon::Setup::CommonPragma.reset();
+
+            Env env = [&]() {
+                auto p = test::jtx::envconfig();
+                {
+                    auto& section = p->section("sqlite");
+                    section.set("safety_level", "low");
+                }
+
+                return Env(*this, std::move(p));
+            }();
+
+            auto const s = setup_DatabaseCon(env.app().config());
+            if (BEAST_EXPECT(s.CommonPragma->size() == 3))
+            {
+                BEAST_EXPECT(
+                    s.CommonPragma->at(0) == "PRAGMA journal_mode=memory;");
+                BEAST_EXPECT(
+                    s.CommonPragma->at(1) == "PRAGMA synchronous=off;");
+                BEAST_EXPECT(
+                    s.CommonPragma->at(2) == "PRAGMA temp_store=memory;");
+            }
+        }
+        {
+            // Override individual settings
+            DatabaseCon::Setup::CommonPragma.reset();
+
+            Env env = [&]() {
+                auto p = test::jtx::envconfig();
+                {
+                    auto& section = p->section("sqlite");
+                    section.set("journal_mode", "off");
+                    section.set("synchronous", "extra");
+                    section.set("temp_store", "default");
+                }
+
+                return Env(*this, std::move(p));
+            }();
+
+            auto const s = setup_DatabaseCon(env.app().config());
+            if (BEAST_EXPECT(s.CommonPragma->size() == 3))
+            {
+                BEAST_EXPECT(
+                    s.CommonPragma->at(0) == "PRAGMA journal_mode=off;");
+                BEAST_EXPECT(
+                    s.CommonPragma->at(1) == "PRAGMA synchronous=extra;");
+                BEAST_EXPECT(
+                    s.CommonPragma->at(2) == "PRAGMA temp_store=default;");
+            }
+        }
+        {
+            // Override individual settings with low safety level
+            // (Low doesn't force the other settings)
+            DatabaseCon::Setup::CommonPragma.reset();
+
+            Env env = [&]() {
+                auto p = test::jtx::envconfig();
+                {
+                    auto& section = p->section("sqlite");
+                    section.set("safety_level", "low");
+                    section.set("journal_mode", "off");
+                    section.set("synchronous", "extra");
+                    section.set("temp_store", "default");
+                }
+
+                return Env(*this, std::move(p));
+            }();
+
+            auto const s = setup_DatabaseCon(env.app().config());
+            if (BEAST_EXPECT(s.CommonPragma->size() == 3))
+            {
+                BEAST_EXPECT(
+                    s.CommonPragma->at(0) == "PRAGMA journal_mode=off;");
+                BEAST_EXPECT(
+                    s.CommonPragma->at(1) == "PRAGMA synchronous=extra;");
+                BEAST_EXPECT(
+                    s.CommonPragma->at(2) == "PRAGMA temp_store=default;");
+            }
+        }
+        {
+            // Errors
+            DatabaseCon::Setup::CommonPragma.reset();
+
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("safety_level", "slow");
+            }
+
+            try
+            {
+                Env env(*this, std::move(p));
+                fail();
+            }
+            catch (std::exception const& e)
+            {
+                pass();
+            }
+        }
+        {
+            // Errors
+            DatabaseCon::Setup::CommonPragma.reset();
+
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("journal_mode", "fast");
+            }
+
+            try
+            {
+                Env env(*this, std::move(p));
+                fail();
+            }
+            catch (std::exception const& e)
+            {
+                pass();
+            }
+        }
+        {
+            // Errors
+            DatabaseCon::Setup::CommonPragma.reset();
+
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("synchronous", "instant");
+            }
+
+            try
+            {
+                Env env(*this, std::move(p));
+                fail();
+            }
+            catch (std::exception const& e)
+            {
+                pass();
+            }
+        }
+        {
+            // Errors
+            DatabaseCon::Setup::CommonPragma.reset();
+
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("temp_store", "network");
+            }
+
+            try
+            {
+                Env env(*this, std::move(p));
+                fail();
+            }
+            catch (std::exception const& e)
+            {
+                pass();
+            }
+        }
+    }
+
+    //--------------------------------------------------------------------------
 
     void
     testImport(
@@ -220,6 +411,8 @@ public:
     run() override
     {
         std::int64_t const seedValue = 50;
+
+        testConfig();
 
         testNodeStore("memory", false, seedValue);
 

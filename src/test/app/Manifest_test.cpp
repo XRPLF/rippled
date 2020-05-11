@@ -259,6 +259,7 @@ public:
             DatabaseCon dbCon(
                 setup,
                 dbName.data(),
+                false,
                 std::array<char const*, 0>(),
                 WalletDBInit);
 

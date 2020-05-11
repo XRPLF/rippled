@@ -228,14 +228,14 @@ Ledger::Ledger(
         !txMap_->fetchRoot(SHAMapHash{info_.txHash}, nullptr))
     {
         loaded = false;
-        JLOG(j.warn()) << "Don't have TX root for ledger";
+        JLOG(j.warn()) << "Don't have TX root for ledger" << info_.seq;
     }
 
     if (info_.accountHash.isNonZero() &&
         !stateMap_->fetchRoot(SHAMapHash{info_.accountHash}, nullptr))
     {
         loaded = false;
-        JLOG(j.warn()) << "Don't have AS root for ledger";
+        JLOG(j.warn()) << "Don't have AS root for ledger" << info_.seq;
     }
 
     txMap_->setImmutable();

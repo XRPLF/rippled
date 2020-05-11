@@ -25,6 +25,7 @@
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/DatabaseRotating.h>
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <thread>
 
@@ -106,8 +107,9 @@ private:
     std::uint32_t deleteInterval_ = 0;
     bool advisoryDelete_ = false;
     std::uint32_t deleteBatch_ = 100;
-    std::uint32_t backOff_ = 100;
-    std::int32_t ageThreshold_ = 60;
+    std::chrono::milliseconds backOff_{100};
+    std::chrono::seconds ageThreshold_{60};
+    boost::optional<std::chrono::seconds> recoveryBuffer_{};
 
     // these do not exist upon SHAMapStore creation, but do exist
     // as of onPrepare() or before
