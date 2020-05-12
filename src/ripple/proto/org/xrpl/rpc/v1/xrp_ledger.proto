@@ -12,6 +12,7 @@ import "org/xrpl/rpc/v1/get_account_transaction_history.proto";
 
 
 // RPCs available to interact with the XRP Ledger.
+// The gRPC API mimics the JSON API. Refer to xrpl.org for documentation
 service XRPLedgerAPIService {
 
   // Get account info for an account on the XRP Ledger.
@@ -26,5 +27,6 @@ service XRPLedgerAPIService {
   // Get the status of a transaction
   rpc GetTransaction(GetTransactionRequest) returns (GetTransactionResponse);
 
+  // Get all validated transactions associated with a given account
   rpc GetAccountTransactionHistory(GetAccountTransactionHistoryRequest) returns (GetAccountTransactionHistoryResponse);
 }

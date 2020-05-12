@@ -23,7 +23,11 @@ message GetTransactionRequest {
     // if true, return data in binary format. defaults to false
     bool binary = 2;
 
-    // search only specified range. optional
+    // If the transaction was not found, server will report whether the entire
+    // specified range was searched. The value is contained in the error message.
+    // The error message is of the form:
+    // "txn not found. searched_all = [true,false]"
+    // If the transaction was found, this parameter is ignored.
     LedgerRange ledger_range = 3;
 }
 
