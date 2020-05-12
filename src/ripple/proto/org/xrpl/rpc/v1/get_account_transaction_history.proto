@@ -16,6 +16,13 @@ message GetAccountTransactionHistoryRequest
     // What ledger to include results from. Specifying a not yet validated
     // ledger results in an error. Not specifying a ledger uses the entire
     // range of validated ledgers available to the server.
+    // Note, this parameter acts as a filter, and can only reduce the number of
+    // results. Specifying a single ledger will return only transactions from
+    // that ledger. This includes specifying a ledger with a Shortcut. For
+    // example, specifying SHORTCUT_VALIDATED will result in only transactions
+    // that were part of the most recently validated ledger being returned.
+    // Specifying a range of ledgers results in only transactions that were
+    // included in a ledger within the specified range being returned.
     oneof ledger
     {
         LedgerSpecifier ledger_specifier = 2;
