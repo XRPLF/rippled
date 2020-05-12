@@ -225,16 +225,21 @@ negativeUNLFilter(
     hash_set<NodeID> const& negUnl)
 {
     /* Remove validations that are from validators on the negative UNL. */
-    if (negUnl.empty())
-        return validations;
+    auto ret = validations;
 
-    std::vector<std::shared_ptr<STValidation>> res;
-    for (auto const& v : validations)
+    if (!negUnl.empty())
     {
-        if (negUnl.find(v->getNodeID()) == negUnl.end())
-            res.push_back(v);
+        ret.erase(
+            std::remove_if(
+                ret.begin(),
+                ret.end(),
+                [&negUnl](auto const& v) {
+                    return negUnl.find(v->getNodeID()) != negUnl.end();
+                }),
+            ret.end());
     }
-    return res;
+
+    return ret;
 }
 
 }  // namespace ripple

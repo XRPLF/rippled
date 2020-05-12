@@ -42,8 +42,8 @@ enum LedgerEntryType
     LEDGER_ENTRY_TYPE_OFFER           = 9;
     LEDGER_ENTRY_TYPE_PAY_CHANNEL     = 10;
     LEDGER_ENTRY_TYPE_RIPPLE_STATE    = 11;
-    LEDGER_ENTRY_TYPE_SIGNER_LIST = 12;
-    LEDGER_ENTRY_TYPE_NEGATIVE_UNL = 13;
+    LEDGER_ENTRY_TYPE_SIGNER_LIST     = 12;
+    LEDGER_ENTRY_TYPE_NEGATIVE_UNL    = 13;
 }
 
 // Next field: 15
@@ -332,7 +332,7 @@ message SignerList
     SignerQuorum signer_quorum = 7;
 }
 
-// Next field:
+// Next field: 4
 message NegativeUnl
 {
     repeated NegativeUnlEntry negative_unl_entries = 1;

@@ -615,7 +615,7 @@ struct NetworkHistory
                 *l, env.app().timeKeeper().closeTime());
             history.push_back(l);
 
-            if (l->seq() % 256 == 0)
+            if (isFlagLedger(l->seq()))
             {
                 OpenView accum(&*l);
                 if (l->negativeUnl().size() < param.negUNLSize)

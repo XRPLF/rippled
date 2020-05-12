@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/app/misc/NetworkOPs.h>
@@ -244,7 +245,7 @@ Change::applyFee()
 TER
 Change::applyUNLModify()
 {
-    if (view().seq() % 256 != 0)
+    if (!isFlagLedger(view().seq()))
     {
         JLOG(j_.warn()) << "N-UNL: applyUNLModify, not a flag ledger, seq="
                         << view().seq();

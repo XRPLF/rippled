@@ -22,6 +22,7 @@
 #include <ripple/app/ledger/BuildLedger.h>
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/InboundTransactions.h>
+#include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LocalTxs.h>
 #include <ripple/app/ledger/OpenLedger.h>
@@ -323,7 +324,7 @@ RCLConsensus::Adaptor::onClose(
     if (app_.config().standalone() || (proposing && !wrongLCL))
     {
         auto seq = prevLedger->info().seq + 1;
-        if (((seq - 1) % 256) == 0)
+        if (isFlagLedger(seq - 1))
         {
             // previous ledger was flag ledger, add fee and amendment
             // pseudo-transactions
@@ -339,7 +340,8 @@ RCLConsensus::Adaptor::onClose(
             }
         }
         else if (
-            (seq % 256) == 0 && prevLedger->rules().enabled(featureNegativeUNL))
+            isFlagLedger(seq) &&
+            prevLedger->rules().enabled(featureNegativeUNL))
         {
             // flag ledger now, add negative UNL pseudo-transactions
             nUnlVote_.doVoting(
@@ -811,7 +813,7 @@ RCLConsensus::Adaptor::validate(
                 v.setFieldU64(sfCookie, valCookie_);
 
                 // Report our server version every flag ledger:
-                if ((ledger.seq() + 1) % 256 == 0)
+                if (isFlagLedger(ledger.seq() + 1))
                     v.setFieldU64(
                         sfServerVersion, BuildInfo::getEncodedVersion());
             }
@@ -826,7 +828,7 @@ RCLConsensus::Adaptor::validate(
 
             // If the next ledger is a flag ledger, suggest fee changes and
             // new features:
-            if ((ledger.seq() + 1) % 256 == 0)
+            if (isFlagLedger(ledger.seq() + 1))
             {
                 // Fees:
                 feeVote_->doValidation(ledger.ledger_->fees(), v);

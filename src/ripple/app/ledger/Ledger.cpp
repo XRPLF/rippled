@@ -663,7 +663,7 @@ Ledger::negativeUnlToReEnable() const
 void
 Ledger::updateNegativeUNL()
 {
-    if (info_.seq % 256 != 0)
+    if (!isFlagLedger(info_.seq))
         return;
 
     auto sle = peek(keylet::negativeUNL());
@@ -848,6 +848,12 @@ Ledger::updateSkipList()
         rawInsert(sle);
     else
         rawReplace(sle);
+}
+
+bool
+isFlagLedger(LedgerIndex seq)
+{
+    return seq % FLAG_LEDGER == 0;
 }
 
 static bool

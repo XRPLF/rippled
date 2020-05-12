@@ -385,6 +385,10 @@ private:
 /** A ledger wrapped in a CachedView. */
 using CachedLedger = CachedView<Ledger>;
 
+std::uint32_t constexpr FLAG_LEDGER = 256;
+bool
+isFlagLedger(LedgerIndex seq);
+
 //------------------------------------------------------------------------------
 //
 // API

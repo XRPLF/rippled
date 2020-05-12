@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/consensus/RCLValidations.h>
+#include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/ledger/OrderBookDB.h>
@@ -360,7 +361,7 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
                                        "activated: server blocked.";
             app_.getOPs().setAmendmentBlocked();
         }
-        else if (!app_.getOPs().isAmendmentWarned() || ((l->seq() % 256) == 0))
+        else if (!app_.getOPs().isAmendmentWarned() || isFlagLedger(l->seq()))
         {
             // Amendments can lose majority, so re-check periodically (every
             // flag ledger), and clear the flag if appropriate. If an unknown
