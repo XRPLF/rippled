@@ -19,6 +19,11 @@ message GetAccountInfoRequest
 
     bool strict = 2;
 
+    // Which ledger to use to retrieve data.
+    // If this field is not set, the server will use the open ledger.
+    // The open ledger includes data that is not validated or final.
+    // To retrieve the most up to date and validated data, use
+    // SHORTCUT_VALIDATED
     LedgerSpecifier ledger = 3;
 
     bool queue = 4;
