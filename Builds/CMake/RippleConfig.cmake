@@ -46,6 +46,7 @@ endif ()
 set (OPENSSL_MSVC_STATIC_RT ON)
 find_dependency (OpenSSL 1.0.2 REQUIRED)
 find_dependency (ZLIB)
+find_dependency (date)
 if (TARGET ZLIB::ZLIB)
   set_target_properties(OpenSSL::Crypto PROPERTIES
     INTERFACE_LINK_LIBRARIES ZLIB::ZLIB)
