@@ -37,7 +37,6 @@
 #include <boost/endian/conversion.hpp>
 #include <boost/optional.hpp>
 #include <cstdint>
-#include <deque>
 #include <queue>
 #include <shared_mutex>
 
@@ -134,8 +133,9 @@ private:
     LedgerIndex maxLedger_ = 0;
     uint256 closedLedgerHash_;
     uint256 previousLedgerHash_;
-    std::deque<uint256> recentLedgers_;
-    std::deque<uint256> recentTxSets_;
+
+    boost::circular_buffer<uint256> recentLedgers_{128};
+    boost::circular_buffer<uint256> recentTxSets_{128};
 
     boost::optional<std::chrono::milliseconds> latency_;
     boost::optional<std::uint32_t> lastPingSeq_;
@@ -495,13 +495,6 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    static error_code
-    invalid_argument_error()
-    {
-        return boost::system::errc::make_error_code(
-            boost::system::errc::invalid_argument);
-    }
-
     void
     onMessageUnknown(std::uint16_t type);
 
@@ -565,9 +558,6 @@ private:
     }
 
     //--------------------------------------------------------------------------
-    void
-    setLedgerState();
-
     // lockedRecentLock is passed as a reminder to callers that recentLock_
     // must be locked.
     void

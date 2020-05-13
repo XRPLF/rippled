@@ -1961,9 +1961,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactionSet> const& m)
             return;
         }
 
-        if (recentTxSets_.size() == 128)
-            recentTxSets_.pop_front();
-
         recentTxSets_.push_back(hash);
     }
 }
@@ -2323,11 +2320,6 @@ PeerImp::addLedger(
     if (std::find(recentLedgers_.begin(), recentLedgers_.end(), hash) !=
         recentLedgers_.end())
         return;
-
-    // VFALCO TODO See if a sorted vector would be better.
-
-    if (recentLedgers_.size() == 128)
-        recentLedgers_.pop_front();
 
     recentLedgers_.push_back(hash);
 }
