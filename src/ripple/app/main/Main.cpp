@@ -611,7 +611,7 @@ run(int argc, char** argv)
         if ((config->START_UP == Config::LOAD) ||
             (config->START_UP == Config::REPLAY))
         {
-            std::cerr << "Net and load/reply options are incompatible"
+            std::cerr << "Net and load/replay options are incompatible"
                       << std::endl;
             return -1;
         }
