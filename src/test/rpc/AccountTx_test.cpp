@@ -445,12 +445,9 @@ class AccountTx_test : public beast::unit_test::suite
         // clang-format on
 
         BEAST_EXPECT(
-            std::extent<decltype(sanity)>::value ==
-            result[jss::result][jss::transactions].size());
+            std::size(sanity) == result[jss::result][jss::transactions].size());
 
-        for (unsigned int index{0};
-             index < std::extent<decltype(sanity)>::value;
-             ++index)
+        for (unsigned int index{0}; index < std::size(sanity); ++index)
         {
             checkSanity(txs[index], sanity[index]);
         }
@@ -531,14 +528,14 @@ class AccountTx_test : public beast::unit_test::suite
             // The first two transactions listed in sanity haven't happened yet.
             constexpr unsigned int beckyDeletedOffest = 2;
             BEAST_EXPECT(
-                std::extent<decltype(sanity)>::value ==
+                std::size(sanity) ==
                 result[jss::result][jss::transactions].size() +
                     beckyDeletedOffest);
 
             Json::Value const& txs{result[jss::result][jss::transactions]};
 
             for (unsigned int index = beckyDeletedOffest;
-                 index < std::extent<decltype(sanity)>::value;
+                 index < std::size(sanity);
                  ++index)
             {
                 checkSanity(txs[index - beckyDeletedOffest], sanity[index]);
@@ -576,14 +573,11 @@ class AccountTx_test : public beast::unit_test::suite
         BEAST_EXPECT(result[jss::result][jss::transactions].isArray());
 
         BEAST_EXPECT(
-            std::extent<decltype(sanity)>::value ==
-            result[jss::result][jss::transactions].size());
+            std::size(sanity) == result[jss::result][jss::transactions].size());
 
         Json::Value const& txs{result[jss::result][jss::transactions]};
 
-        for (unsigned int index = 0;
-             index < std::extent<decltype(sanity)>::value;
-             ++index)
+        for (unsigned int index = 0; index < std::size(sanity); ++index)
         {
             checkSanity(txs[index], sanity[index]);
         }
