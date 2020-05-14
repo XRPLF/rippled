@@ -321,11 +321,8 @@ public:
                 LedgerSeq       BIGINT UNSIGNED             \
             );",
                 "CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);"};
-            int dbInitCount = std::extent<decltype(dbInit)>::value;
-            for (int i = 0; i < dbInitCount; ++i)
-            {
-                s << dbInit[i];
-            }
+            for (auto const c : dbInit)
+                s << c;
             char lh[65];
             memset(lh, 'a', 64);
             lh[64] = '\0';

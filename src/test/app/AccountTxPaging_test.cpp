@@ -1871,9 +1871,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
         if (!BEAST_EXPECT(status.error_code() == 0))
             return;
 
-        if (!BEAST_EXPECT(
-                res.transactions().size() ==
-                std::extent<decltype(txCheck)>::value))
+        if (!BEAST_EXPECT(res.transactions().size() == std::size(txCheck)))
             return;
         for (int i = 0; i < res.transactions().size(); ++i)
         {
