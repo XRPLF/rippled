@@ -23,7 +23,6 @@
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/nodestore/impl/Shard.h>
 #include <ripple/nodestore/impl/TaskQueue.h>
-#include <ripple/nodestore/RetryFinalize.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
 
@@ -192,9 +191,6 @@ private:
 
         std::shared_ptr<Shard> shard;
         State state{State::none};
-
-        // Used during the validation of imported shards
-        std::unique_ptr<RetryFinalize> retryFinalize;
     };
 
     Application& app_;
@@ -267,12 +263,6 @@ private:
         std::uint32_t validLedgerSeq,
         std::lock_guard<std::mutex>&);
 
-public:
-    // Attempts to retrieve a reference last ledger hash
-    // for a shard and finalize it
-    void
-    finalizeWithRefHash(std::uint32_t shardIndex);
-
 private:
     // Queue a task to finalize a shard by validating its databases
     // Lock must be held
@@ -280,7 +270,8 @@ private:
     finalizeShard(
         ShardInfo& shardInfo,
         bool writeSQLite,
-        std::lock_guard<std::mutex>&);
+        std::lock_guard<std::mutex>&,
+        boost::optional<uint256> const& expectedHash);
 
     // Set storage and file descriptor usage stats
     // Lock must NOT be held

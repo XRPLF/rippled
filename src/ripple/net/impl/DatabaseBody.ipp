@@ -27,11 +27,11 @@ DatabaseBody::value_type::close()
 
         // Stop all scheduled and currently
         // executing handlers before closing.
-        if (handler_count_)
+        if (handlerCount_)
         {
             closing_ = true;
 
-            auto predicate = [&] { return !handler_count_; };
+            auto predicate = [&] { return !handlerCount_; };
             c_.wait(lock, predicate);
         }
 
@@ -76,12 +76,12 @@ DatabaseBody::value_type::open(
         // Continuing a file download.
         else
         {
-            boost::optional<uint64_t> size;
+            boost::optional<std::uint64_t> size;
 
             *db << "SELECT SUM(LENGTH(Data)) FROM Download;", soci::into(size);
 
             if (size)
-                file_size_ = size.get();
+                fileSize_ = size.get();
         }
     }
 }
@@ -155,10 +155,10 @@ DatabaseBody::reader::put(
             {
                 std::lock_guard lock(body_.m_);
 
-                if (body_.handler_count_ >= MAX_HANDLERS)
+                if (body_.handlerCount_ >= MAX_HANDLERS)
                     post = false;
                 else
-                    ++body_.handler_count_;
+                    ++body_.handlerCount_;
             }
 
             if (post)
@@ -191,7 +191,7 @@ DatabaseBody::reader::do_put(std::string data)
         // The download is being halted.
         if (body_.closing_)
         {
-            if (--body_.handler_count_ == 0)
+            if (--body_.handlerCount_ == 0)
             {
                 lock.unlock();
                 body_.c_.notify_one();
@@ -202,10 +202,10 @@ DatabaseBody::reader::do_put(std::string data)
     }
 
     auto path = body_.path_.string();
-    uint64_t rowSize;
+    std::uint64_t rowSize = 0;
     soci::indicator rti;
 
-    uint64_t remainingInRow;
+    std::uint64_t remainingInRow = 0;
 
     auto db = body_.conn_->checkoutDb();
 
@@ -236,9 +236,9 @@ DatabaseBody::reader::do_put(std::string data)
     else
         remainingInRow = blobMaxSize - rowSize;
 
-    auto insert = [&db, &rowSize, &part = body_.part_, &fs = body_.file_size_](
+    auto insert = [&db, &rowSize, &part = body_.part_, &fs = body_.fileSize_](
                       auto const& data) {
-        uint64_t updatedSize = rowSize + data.size();
+        std::uint64_t updatedSize = rowSize + data.size();
 
         *db << "UPDATE Download SET Data = CAST(Data || :data AS blob), "
                "Size = :size WHERE Part = :part;",
@@ -263,7 +263,7 @@ DatabaseBody::reader::do_put(std::string data)
 
     bool const notify = [this] {
         std::lock_guard lock(body_.m_);
-        return --body_.handler_count_ == 0;
+        return --body_.handlerCount_ == 0;
     }();
 
     if (notify)
@@ -279,9 +279,9 @@ DatabaseBody::reader::finish(boost::system::error_code& ec)
 
         // Wait for scheduled DB writes
         // to complete.
-        if (body_.handler_count_)
+        if (body_.handlerCount_)
         {
-            auto predicate = [&] { return !body_.handler_count_; };
+            auto predicate = [&] { return !body_.handlerCount_; };
             body_.c_.wait(lock, predicate);
         }
     }

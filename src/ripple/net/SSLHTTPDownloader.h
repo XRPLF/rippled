@@ -41,7 +41,7 @@ namespace ripple {
 
 /** Provides an asynchronous HTTPS file downloader
  */
-class SSLHTTPDownloader : public std::enable_shared_from_this<SSLHTTPDownloader>
+class SSLHTTPDownloader
 {
 public:
     using error_code = boost::system::error_code;
@@ -49,8 +49,7 @@ public:
     SSLHTTPDownloader(
         boost::asio::io_service& io_service,
         beast::Journal j,
-        Config const& config,
-        bool isPaused = false);
+        Config const& config);
 
     bool
     download(
@@ -71,13 +70,13 @@ protected:
 
     beast::Journal const j_;
 
-    bool
+    void
     fail(
         boost::filesystem::path dstPath,
         std::function<void(boost::filesystem::path)> const& complete,
         boost::system::error_code const& ec,
         std::string const& errMsg,
-        std::shared_ptr<parser> parser = nullptr);
+        std::shared_ptr<parser> parser);
 
 private:
     HTTPClientSSLContext ssl_ctx_;
@@ -85,9 +84,11 @@ private:
     boost::optional<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>
         stream_;
     boost::beast::flat_buffer read_buf_;
-    std::atomic<bool> isStopped_;
-    bool sessionActive_;
+    std::atomic<bool> cancelDownloads_;
+
+    // Used to protect sessionActive_
     std::mutex m_;
+    bool sessionActive_;
     std::condition_variable c_;
 
     void

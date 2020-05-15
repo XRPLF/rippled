@@ -349,6 +349,7 @@ public:
     detail::AppFamily family_;
     std::unique_ptr<NodeStore::DatabaseShard> shardStore_;
     std::unique_ptr<detail::AppFamily> shardFamily_;
+    std::unique_ptr<RPC::ShardArchiveHandler> shardArchiveHandler_;
     // VFALCO TODO Make OrderBookDB abstract
     OrderBookDB m_orderBookDB;
     std::unique_ptr<PathRequests> m_pathRequests;
@@ -784,6 +785,64 @@ public:
     getShardStore() override
     {
         return shardStore_.get();
+    }
+
+    RPC::ShardArchiveHandler*
+    getShardArchiveHandler(bool tryRecovery) override
+    {
+        static std::mutex handlerMutex;
+        std::lock_guard lock(handlerMutex);
+
+        // After constructing the handler, try to
+        // initialize it. Log on error; set the
+        // member variable on success.
+        auto initAndSet =
+            [this](std::unique_ptr<RPC::ShardArchiveHandler>&& handler) {
+                if (!handler)
+                    return false;
+
+                if (!handler->init())
+                {
+                    JLOG(m_journal.error())
+                        << "Failed to initialize ShardArchiveHandler.";
+
+                    return false;
+                }
+
+                shardArchiveHandler_ = std::move(handler);
+                return true;
+            };
+
+        // Need to resume based on state from a previous
+        // run.
+        if (tryRecovery)
+        {
+            if (shardArchiveHandler_ != nullptr)
+            {
+                JLOG(m_journal.error())
+                    << "ShardArchiveHandler already created at startup.";
+
+                return nullptr;
+            }
+
+            auto handler = RPC::ShardArchiveHandler::tryMakeRecoveryHandler(
+                *this, *m_jobQueue);
+
+            if (!initAndSet(std::move(handler)))
+                return nullptr;
+        }
+
+        // Construct the ShardArchiveHandler
+        if (shardArchiveHandler_ == nullptr)
+        {
+            auto handler = RPC::ShardArchiveHandler::makeShardArchiveHandler(
+                *this, *m_jobQueue);
+
+            if (!initAndSet(std::move(handler)))
+                return nullptr;
+        }
+
+        return shardArchiveHandler_.get();
     }
 
     Application::MutexType&
@@ -1714,30 +1773,16 @@ ApplicationImp::setup()
 
     if (shardStore_)
     {
-        using namespace boost::filesystem;
-
-        auto stateDb(
-            RPC::ShardArchiveHandler::getDownloadDirectory(*config_) /
-            stateDBName);
-
         try
         {
-            if (exists(stateDb) && is_regular_file(stateDb) &&
-                !RPC::ShardArchiveHandler::hasInstance())
+            // Create a ShardArchiveHandler if recovery
+            // is needed (there's a state database left
+            // over from a previous run).
+            auto handler = getShardArchiveHandler(true);
+
+            // Recovery is needed.
+            if (handler)
             {
-                auto handler = RPC::ShardArchiveHandler::recoverInstance(
-                    *this, *m_jobQueue);
-
-                assert(handler);
-
-                if (!handler->initFromDB())
-                {
-                    JLOG(m_journal.fatal())
-                        << "Failed to initialize ShardArchiveHandler.";
-
-                    return false;
-                }
-
                 if (!handler->start())
                 {
                     JLOG(m_journal.fatal())

@@ -34,7 +34,7 @@ namespace test {
 
 class ShardArchiveHandler_test : public beast::unit_test::suite
 {
-    using Downloads = std::vector<std::pair<uint32_t, std::string>>;
+    using Downloads = std::vector<std::pair<std::uint32_t, std::string>>;
 
     TrustedPublisherServer
     createServer(jtx::Env& env, bool ssl = true)
@@ -49,196 +49,210 @@ class ShardArchiveHandler_test : public beast::unit_test::suite
     }
 
 public:
+    // Test the shard downloading module by initiating
+    // and completing a download and verifying the
+    // contents of the state database.
     void
-    testStateDatabase1()
+    testSingleDownloadAndStateDB()
     {
-        testcase("testStateDatabase1");
+        testcase("testSingleDownloadAndStateDB");
+
+        beast::temp_dir tempDir;
+
+        auto c = jtx::envconfig();
+        auto& section = c->section(ConfigSection::shardDatabase());
+        section.set("path", tempDir.path());
+        section.set("max_size_gb", "100");
+        c->setupControl(true, true, true);
+
+        jtx::Env env(*this, std::move(c));
+        auto handler = env.app().getShardArchiveHandler();
+        BEAST_EXPECT(handler);
+        BEAST_EXPECT(dynamic_cast<RPC::RecoveryHandler*>(handler) == nullptr);
+
+        std::string const rawUrl = "https://foo:443/1.tar.lz4";
+        parsedURL url;
+
+        parseUrl(url, rawUrl);
+        handler->add(1, {url, rawUrl});
 
         {
-            beast::temp_dir tempDir;
+            std::lock_guard<std::mutex> lock(handler->m_);
 
-            auto c = jtx::envconfig();
-            auto& section = c->section(ConfigSection::shardDatabase());
-            section.set("path", tempDir.path());
-            section.set("max_size_gb", "100");
-            c->setupControl(true, true, true);
+            auto& session{handler->sqliteDB_->getSession()};
 
-            jtx::Env env(*this, std::move(c));
-            auto handler = RPC::ShardArchiveHandler::getInstance(
-                env.app(), env.app().getJobQueue());
-            BEAST_EXPECT(handler);
+            soci::rowset<soci::row> rs =
+                (session.prepare << "SELECT * FROM State;");
 
-            BEAST_EXPECT(handler->init());
+            std::uint64_t rowCount = 0;
 
-            std::string const rawUrl = "https://foo:443/1.tar.lz4";
+            for (auto it = rs.begin(); it != rs.end(); ++it, ++rowCount)
+            {
+                BEAST_EXPECT(it->get<int>(0) == 1);
+                BEAST_EXPECT(it->get<std::string>(1) == rawUrl);
+            }
+
+            BEAST_EXPECT(rowCount == 1);
+        }
+
+        handler->release();
+    }
+
+    // Test the shard downloading module by initiating
+    // and completing three downloads and verifying
+    // the contents of the state database.
+    void
+    testDownloadsAndStateDB()
+    {
+        testcase("testDownloadsAndStateDB");
+
+        beast::temp_dir tempDir;
+
+        auto c = jtx::envconfig();
+        auto& section = c->section(ConfigSection::shardDatabase());
+        section.set("path", tempDir.path());
+        section.set("max_size_gb", "100");
+        c->setupControl(true, true, true);
+
+        jtx::Env env(*this, std::move(c));
+        auto handler = env.app().getShardArchiveHandler();
+        BEAST_EXPECT(handler);
+        BEAST_EXPECT(dynamic_cast<RPC::RecoveryHandler*>(handler) == nullptr);
+
+        Downloads const dl = {
+            {1, "https://foo:443/1.tar.lz4"},
+            {2, "https://foo:443/2.tar.lz4"},
+            {3, "https://foo:443/3.tar.lz4"}};
+
+        for (auto const& entry : dl)
+        {
             parsedURL url;
-
-            parseUrl(url, rawUrl);
-            handler->add(1, {url, rawUrl});
-
-            {
-                std::lock_guard<std::mutex> lock(handler->m_);
-
-                auto& session{handler->sqliteDB_->getSession()};
-
-                soci::rowset<soci::row> rs =
-                    (session.prepare << "SELECT * FROM State;");
-
-                uint64_t rowCount = 0;
-
-                for (auto it = rs.begin(); it != rs.end(); ++it, ++rowCount)
-                {
-                    BEAST_EXPECT(it->get<int>(0) == 1);
-                    BEAST_EXPECT(it->get<std::string>(1) == rawUrl);
-                }
-
-                BEAST_EXPECT(rowCount == 1);
-            }
-
-            handler->release();
+            parseUrl(url, entry.second);
+            handler->add(entry.first, {url, entry.second});
         }
-
-        // Destroy the singleton so we start fresh in
-        // the next testcase.
-        RPC::ShardArchiveHandler::instance_.reset();
-    }
-
-    void
-    testStateDatabase2()
-    {
-        testcase("testStateDatabase2");
 
         {
-            beast::temp_dir tempDir;
+            std::lock_guard<std::mutex> lock(handler->m_);
 
-            auto c = jtx::envconfig();
-            auto& section = c->section(ConfigSection::shardDatabase());
-            section.set("path", tempDir.path());
-            section.set("max_size_gb", "100");
-            c->setupControl(true, true, true);
+            auto& session{handler->sqliteDB_->getSession()};
+            soci::rowset<soci::row> rs =
+                (session.prepare << "SELECT * FROM State;");
 
-            jtx::Env env(*this, std::move(c));
-            auto handler = RPC::ShardArchiveHandler::getInstance(
-                env.app(), env.app().getJobQueue());
-            BEAST_EXPECT(handler);
-
-            BEAST_EXPECT(handler->init());
-
-            Downloads const dl = {
-                {1, "https://foo:443/1.tar.lz4"},
-                {2, "https://foo:443/2.tar.lz4"},
-                {3, "https://foo:443/3.tar.lz4"}};
-
-            for (auto const& entry : dl)
+            std::uint64_t pos = 0;
+            for (auto it = rs.begin(); it != rs.end(); ++it, ++pos)
             {
-                parsedURL url;
-                parseUrl(url, entry.second);
-                handler->add(entry.first, {url, entry.second});
+                BEAST_EXPECT(it->get<int>(0) == dl[pos].first);
+                BEAST_EXPECT(it->get<std::string>(1) == dl[pos].second);
             }
 
-            {
-                std::lock_guard<std::mutex> lock(handler->m_);
-
-                auto& session{handler->sqliteDB_->getSession()};
-                soci::rowset<soci::row> rs =
-                    (session.prepare << "SELECT * FROM State;");
-
-                uint64_t pos = 0;
-                for (auto it = rs.begin(); it != rs.end(); ++it, ++pos)
-                {
-                    BEAST_EXPECT(it->get<int>(0) == dl[pos].first);
-                    BEAST_EXPECT(it->get<std::string>(1) == dl[pos].second);
-                }
-
-                BEAST_EXPECT(pos == dl.size());
-            }
-
-            handler->release();
+            BEAST_EXPECT(pos == dl.size());
         }
 
-        // Destroy the singleton so we start fresh in
-        // the next testcase.
-        RPC::ShardArchiveHandler::instance_.reset();
+        handler->release();
     }
 
+    // Test the shard downloading module by initiating
+    // and completing ten downloads and verifying the
+    // contents of the filesystem and the handler's
+    // archives.
     void
-    testStateDatabase3()
+    testDownloadsAndFileSystem()
     {
-        testcase("testStateDatabase3");
+        testcase("testDownloadsAndFileSystem");
 
+        beast::temp_dir tempDir;
+
+        auto c = jtx::envconfig();
+        auto& section = c->section(ConfigSection::shardDatabase());
+        section.set("path", tempDir.path());
+        section.set("max_size_gb", "100");
+        section.set("ledgers_per_shard", "256");
+        c->setupControl(true, true, true);
+
+        jtx::Env env(*this, std::move(c));
+
+        std::uint8_t const numberOfDownloads = 10;
+
+        // Create some ledgers so that the ShardArchiveHandler
+        // can verify the last ledger hash for the shard
+        // downloads.
+        for (int i = 0; i < env.app().getShardStore()->ledgersPerShard() *
+                 (numberOfDownloads + 1);
+             ++i)
         {
-            beast::temp_dir tempDir;
-
-            auto c = jtx::envconfig();
-            auto& section = c->section(ConfigSection::shardDatabase());
-            section.set("path", tempDir.path());
-            section.set("max_size_gb", "100");
-            c->setupControl(true, true, true);
-
-            jtx::Env env(*this, std::move(c));
-            auto handler = RPC::ShardArchiveHandler::getInstance(
-                env.app(), env.app().getJobQueue());
-            BEAST_EXPECT(handler);
-
-            BEAST_EXPECT(handler->init());
-
-            auto server = createServer(env);
-            auto host = server.local_endpoint().address().to_string();
-            auto port = std::to_string(server.local_endpoint().port());
-            server.stop();
-
-            Downloads const dl = [&host, &port] {
-                Downloads ret;
-
-                for (int i = 1; i <= 10; ++i)
-                {
-                    ret.push_back(
-                        {i,
-                         (boost::format("https://%s:%d/%d.tar.lz4") % host %
-                          port % i)
-                             .str()});
-                }
-
-                return ret;
-            }();
-
-            for (auto const& entry : dl)
-            {
-                parsedURL url;
-                parseUrl(url, entry.second);
-                handler->add(entry.first, {url, entry.second});
-            }
-
-            BEAST_EXPECT(handler->start());
-
-            auto stateDir = RPC::ShardArchiveHandler::getDownloadDirectory(
-                env.app().config());
-
-            std::unique_lock<std::mutex> lock(handler->m_);
-
-            BEAST_EXPECT(
-                boost::filesystem::exists(stateDir) ||
-                handler->archives_.empty());
-
-            while (!handler->archives_.empty())
-            {
-                lock.unlock();
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                lock.lock();
-            }
-
-            BEAST_EXPECT(!boost::filesystem::exists(stateDir));
+            env.close();
         }
 
-        // Destroy the singleton so we start fresh in
-        // the next testcase.
-        RPC::ShardArchiveHandler::instance_.reset();
+        auto handler = env.app().getShardArchiveHandler();
+        BEAST_EXPECT(handler);
+        BEAST_EXPECT(dynamic_cast<RPC::RecoveryHandler*>(handler) == nullptr);
+
+        auto server = createServer(env);
+        auto host = server.local_endpoint().address().to_string();
+        auto port = std::to_string(server.local_endpoint().port());
+        server.stop();
+
+        Downloads const dl = [count = numberOfDownloads, &host, &port] {
+            Downloads ret;
+
+            for (int i = 1; i <= count; ++i)
+            {
+                ret.push_back(
+                    {i,
+                     (boost::format("https://%s:%d/%d.tar.lz4") % host % port %
+                      i)
+                         .str()});
+            }
+
+            return ret;
+        }();
+
+        for (auto const& entry : dl)
+        {
+            parsedURL url;
+            parseUrl(url, entry.second);
+            handler->add(entry.first, {url, entry.second});
+        }
+
+        BEAST_EXPECT(handler->start());
+
+        auto stateDir =
+            RPC::ShardArchiveHandler::getDownloadDirectory(env.app().config());
+
+        std::unique_lock<std::mutex> lock(handler->m_);
+
+        BEAST_EXPECT(
+            boost::filesystem::exists(stateDir) || handler->archives_.empty());
+
+        using namespace std::chrono_literals;
+        auto waitMax = 60s;
+
+        while (!handler->archives_.empty())
+        {
+            lock.unlock();
+            std::this_thread::sleep_for(1s);
+
+            if (waitMax -= 1s; waitMax <= 0s)
+            {
+                BEAST_EXPECT(false);
+                break;
+            }
+
+            lock.lock();
+        }
+
+        BEAST_EXPECT(!boost::filesystem::exists(stateDir));
     }
 
+    // Test the shard downloading module by initiating
+    // and completing ten downloads and verifying the
+    // contents of the filesystem and the handler's
+    // archives. Then restart the application and ensure
+    // that the handler is created and started automatically.
     void
-    testStateDatabase4()
+    testDownloadsAndRestart()
     {
-        testcase("testStateDatabase4");
+        testcase("testDownloadsAndRestart");
 
         beast::temp_dir tempDir;
 
@@ -247,24 +261,37 @@ public:
             auto& section = c->section(ConfigSection::shardDatabase());
             section.set("path", tempDir.path());
             section.set("max_size_gb", "100");
+            section.set("ledgers_per_shard", "256");
             c->setupControl(true, true, true);
 
             jtx::Env env(*this, std::move(c));
-            auto handler = RPC::ShardArchiveHandler::getInstance(
-                env.app(), env.app().getJobQueue());
-            BEAST_EXPECT(handler);
 
-            BEAST_EXPECT(handler->init());
+            std::uint8_t const numberOfDownloads = 10;
+
+            // Create some ledgers so that the ShardArchiveHandler
+            // can verify the last ledger hash for the shard
+            // downloads.
+            for (int i = 0; i < env.app().getShardStore()->ledgersPerShard() *
+                     (numberOfDownloads + 1);
+                 ++i)
+            {
+                env.close();
+            }
+
+            auto handler = env.app().getShardArchiveHandler();
+            BEAST_EXPECT(handler);
+            BEAST_EXPECT(
+                dynamic_cast<RPC::RecoveryHandler*>(handler) == nullptr);
 
             auto server = createServer(env);
             auto host = server.local_endpoint().address().to_string();
             auto port = std::to_string(server.local_endpoint().port());
             server.stop();
 
-            Downloads const dl = [&host, &port] {
+            Downloads const dl = [count = numberOfDownloads, &host, &port] {
                 Downloads ret;
 
-                for (int i = 1; i <= 10; ++i)
+                for (int i = 1; i <= count; ++i)
                 {
                     ret.push_back(
                         {i,
@@ -298,10 +325,20 @@ public:
                 boost::filesystem::exists(stateDir) ||
                 handler->archives_.empty());
 
+            using namespace std::chrono_literals;
+            auto waitMax = 60s;
+
             while (!handler->archives_.empty())
             {
                 lock.unlock();
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                std::this_thread::sleep_for(1s);
+
+                if (waitMax -= 1s; waitMax <= 0s)
+                {
+                    BEAST_EXPECT(false);
+                    break;
+                }
+
                 lock.lock();
             }
 
@@ -314,24 +351,31 @@ public:
                 stateDir / stateDBName);
         }
 
-        // Destroy the singleton so we start fresh in
-        // the new scope.
-        RPC::ShardArchiveHandler::instance_.reset();
-
         auto c = jtx::envconfig();
         auto& section = c->section(ConfigSection::shardDatabase());
         section.set("path", tempDir.path());
         section.set("max_size_gb", "100");
+        section.set("ledgers_per_shard", "256");
+        section.set("shard_verification_retry_interval", "1");
+        section.set("shard_verification_max_attempts", "10000");
         c->setupControl(true, true, true);
 
         jtx::Env env(*this, std::move(c));
 
-        while (!RPC::ShardArchiveHandler::hasInstance())
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::uint8_t const numberOfDownloads = 10;
 
-        BEAST_EXPECT(RPC::ShardArchiveHandler::hasInstance());
+        // Create some ledgers so that the ShardArchiveHandler
+        // can verify the last ledger hash for the shard
+        // downloads.
+        for (int i = 0; i < env.app().getShardStore()->ledgersPerShard() *
+                 (numberOfDownloads + 1);
+             ++i)
+        {
+            env.close();
+        }
 
-        auto handler = RPC::ShardArchiveHandler::getInstance();
+        auto handler = env.app().getShardArchiveHandler();
+        BEAST_EXPECT(dynamic_cast<RPC::RecoveryHandler*>(handler) != nullptr);
 
         auto stateDir =
             RPC::ShardArchiveHandler::getDownloadDirectory(env.app().config());
@@ -341,10 +385,20 @@ public:
         BEAST_EXPECT(
             boost::filesystem::exists(stateDir) || handler->archives_.empty());
 
+        using namespace std::chrono_literals;
+        auto waitMax = 60s;
+
         while (!handler->archives_.empty())
         {
             lock.unlock();
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(1s);
+
+            if (waitMax -= 1s; waitMax <= 0s)
+            {
+                BEAST_EXPECT(false);
+                break;
+            }
+
             lock.lock();
         }
 
@@ -354,10 +408,10 @@ public:
     void
     run() override
     {
-        testStateDatabase1();
-        testStateDatabase2();
-        testStateDatabase3();
-        testStateDatabase4();
+        testSingleDownloadAndStateDB();
+        testDownloadsAndStateDB();
+        testDownloadsAndFileSystem();
+        testDownloadsAndRestart();
     }
 };
 

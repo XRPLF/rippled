@@ -1,17 +1,18 @@
-# Shard Downloader Process
+# Shard Downloader
 
 ## Overview
 
 This document describes mechanics of the `SSLHTTPDownloader`, a class that performs the task of downloading shards from remote web servers via
 SSL HTTP. The downloader utilizes a strand (`boost::asio::io_service::strand`) to ensure that downloads are never executed concurrently. Hence, if a download is in progress when another download is initiated, the second download will be queued and invoked only when the first download is completed.
 
-## New Features
+## Motivation
 
-The downloader has been recently (March 2020) been modified to provide some key features:
+In March 2020 the downloader was modified to include some key features:
 
 - The ability to stop downloads during a graceful shutdown.
 - The ability to resume partial downloads after a crash or shutdown.
-- <span style="color:gray">*(Deferred) The ability to download from multiple servers to a single file.*</span>
+
+This document was created to document the changes introduced by this change.
 
 ## Classes
 
@@ -42,17 +43,15 @@ Much of the shard downloading process concerns the following classes:
    start();
    ```
 
-   When a client submits a `download_shard` command via the RPC interface, each of the requested files is registered with the handler via the `add` method. After all the files have been registered, the handler's `start` method is invoked, which in turn creates an instance of the `SSLHTTPDownloader` and begins the first download. When the download is completed, the downloader invokes the handler's `complete` method, which will initiate the download of the next file, or simply return if there are no more downloads to process. When `complete` is invoked with no remaining files to be downloaded, the handler and downloader  are not destroyed automatically, but persist for the duration of the application.
-
-Additionally, we leverage a novel class to provide customized parsing for downloaded files:
+   When a client submits a `download_shard` command via the RPC interface, each of the requested files is registered with the handler via the `add` method. After all the files have been registered, the handler's `start` method is invoked, which in turn creates an instance of the `SSLHTTPDownloader` and begins the first download. When the download is completed, the downloader invokes the handler's `complete` method, which will initiate the download of the next file, or simply return if there are no more downloads to process. When `complete` is invoked with no remaining files to be downloaded, the handler and downloader are not destroyed automatically, but persist for the duration of the application to assist with graceful shutdowns by `Stoppable`.
 
 - `DatabaseBody`
 
-   This class will define a custom message body type, allowing an `http::response_parser` to write to a SQLite database rather than to a flat file. This class is discussed in further detail in the Recovery section.
+   This class defines a custom message body type, allowing an `http::response_parser` to write to an SQLite database rather than to a flat file. This class is discussed in further detail in the Recovery section.
 
-## Execution Concept
+## Graceful Shutdowns & Recovery
 
-This section describes in greater detail how the key features of the downloader are implemented in C++ using the `boost::asio` framework.
+This section describes in greater detail how the shutdown and recovery features of the downloader are implemented in C++ using the `boost::asio` framework.
 
 ##### Member Variables:
 
@@ -65,7 +64,7 @@ using boost::asio::ip::tcp::socket;
 
 stream<socket>          stream_;
 std::condition_variable c_;
-std::atomic<bool>       isStopped_;
+std::atomic<bool>       cancelDownloads_;
 ```
 
 ### Graceful Shutdowns
@@ -90,7 +89,7 @@ ShardArchiveHandler::onStop()
 }
 ```
 
-Inside of `SSLHTTPDownloader::onStop()`, if a download is currently in progress, the `isStopped_` member variable is set and the thread waits for the download to stop:
+Inside of `SSLHTTPDownloader::onStop()`, if a download is currently in progress, the `cancelDownloads_` member variable is set and the thread waits for the download to stop:
 
 ```c++
 void
@@ -98,7 +97,7 @@ SSLHTTPDownloader::onStop()
 {
     std::unique_lock lock(m_);
 
-    isStopped_ = true;
+    cancelDownloads_ = true;
 
     if(sessionActive_)
     {
@@ -114,28 +113,23 @@ SSLHTTPDownloader::onStop()
 
 ##### Thread 2:
 
-The graceful shutdown is realized when the thread executing the download polls `isStopped_`  after this variable has been set to `true`. Polling only occurs while the file is being downloaded, in between calls to `async_read_some()`. The stop takes effect when the socket is closed and the handler function ( `do_session()` ) is exited.
+The graceful shutdown is realized when the thread executing the download polls `cancelDownloads_`  after this variable has been set to `true`. Polling occurs while the file is being downloaded, in between calls to `async_read_some()`. The stop takes effect when the socket is closed and the handler function ( `do_session()` ) is exited.
 
 ```c++
 void SSLHTTPDownloader::do_session()
 {
 
-   // (Connection initialization logic)
+   // (Connection initialization logic) . . .
 
-   .
-   .
-   .
 
    // (In between calls to async_read_some):
-   if(isStopped_.load())
+   if(cancelDownloads_.load())
    {
        close(p);
        return exit();
    }
 
-   .
-   .
-   .
+   // . . .
 
    break;
 }
@@ -143,11 +137,11 @@ void SSLHTTPDownloader::do_session()
 
 ### Recovery
 
-Persisting the current state of both the archive handler and the downloader is achieved by leveraging a SQLite database rather than flat files, as the database protects against data corruption that could result from a system crash.
+Persisting the current state of both the archive handler and the downloader is achieved by leveraging an SQLite database rather than flat files, as the database protects against data corruption that could result from a system crash.
 
 ##### ShardArchiveHandler
 
-Although `SSLHTTPDownloader` is a generic class that could be used to download a variety of file types, currently it is used exclusively by the `ShardArchiveHandler` to download shards. In order to provide resilience, the `ShardArchiveHandler` will utilize a SQLite database to preserve its current state whenever there are active, paused, or queued downloads. The `shard_db` section in the configuration file allows users to specify the location of the database to use for this purpose.
+Although `SSLHTTPDownloader` is a generic class that could be used to download a variety of file types, currently it is used exclusively by the `ShardArchiveHandler` to download shards. In order to provide resilience, the `ShardArchiveHandler` will use an SQLite database to preserve its current state whenever there are active, paused, or queued downloads. The `shard_db` section in the configuration file allows users to specify the location of the database to use for this purpose.
 
 ###### SQLite Table Format
 
@@ -159,11 +153,11 @@ Although `SSLHTTPDownloader` is a generic class that could be used to download a
 
 ##### SSLHTTPDownloader
 
-While the archive handler maintains a list of all partial and queued downloads, the `SSLHTTPDownloader` stores the raw bytes of the file currently being downloaded. The partially downloaded file will be represented as one or more `BLOB` entries in a SQLite database. As the maximum size of a `BLOB` entry is currently limited to roughly 2.1 GB, a 5 GB shard file for instance will occupy three database entries upon completion.
+While the archive handler maintains a list of all partial and queued downloads, the `SSLHTTPDownloader` stores the raw bytes of the file currently being downloaded. The partially downloaded file will be represented as one or more `BLOB` entries in an SQLite database. As the maximum size of a `BLOB` entry is currently limited to roughly 2.1 GB, a 5 GB shard file for instance will occupy three database entries upon completion.
 
 ###### SQLite Table Format
 
-Since downloads execute serially by design, the entries in this table always correspond to the content of a single file.
+Since downloads execute serially by design, the entries in this table always correspond to the contents of a single file.
 
 | Bytes  | Size       | Part |
 |:------:|:----------:|:----:|
@@ -172,7 +166,7 @@ Since downloads execute serially by design, the entries in this table always cor
 | 0x...  | 705032706  | 2    |
 
 ##### Config File Entry
-The `download_path` field of the `shard_db` entry will be used to determine where to store the recovery database. If this field is omitted, the `path` field will be used instead.
+The `download_path` field of the `shard_db` entry is used to determine where to store the recovery database. If this field is omitted, the `path` field will be used instead.
 
 ```dosini
 # This is the persistent datastore for shards. It is important for the health
@@ -187,7 +181,7 @@ max_size_gb=50
 ```
 
 ##### Resuming Partial Downloads
-When resuming downloads after a crash or other interruption, the `SSLHTTPDownloader` will utilize the `range` field of the HTTP header to download only the remainder of the partially downloaded file.
+When resuming downloads after a shutdown, crash, or other interruption, the `SSLHTTPDownloader` will utilize the `range` field of the HTTP header to download only the remainder of the partially downloaded file.
 
 ```C++
 auto downloaded = getPartialFileSize();
@@ -199,14 +193,14 @@ http::request<http::file_body> req {http::verb::head,
 
 if (downloaded < total)
 {
-  // If we already download 1000 bytes to the partial file,
+  // If we already downloaded 1000 bytes to the database,
   // the range header will look like:
   // Range: "bytes=1000-"
   req.set(http::field::range, "bytes=" + to_string(downloaded) + "-");
 }
 else if(downloaded == total)
 {
-  // Download is already complete. (Interruption Must
+  // Download is already complete. (Interruption must
   // have occurred after file was downloaded but before
   // the state file was updated.)
 }
@@ -242,6 +236,7 @@ struct body
 }
 
 ```
+Note that the `DatabaseBody` class is specifically designed to work with `asio` and follows `asio` conventions.
 
 The method invoked to write data to the filesystem (or SQLite database in our case) has the following signature:
 
@@ -252,7 +247,7 @@ body::reader::put(ConstBufferSequence const& buffers, error_code& ec);
 
 ## Sequence Diagram
 
-This sequence diagram demonstrates a scenario wherein the `ShardArchiveHandler` leverages the state persisted in the database to recover from a crash and resume the scheduled downloads.
+This sequence diagram demonstrates a scenario wherein the `ShardArchiveHandler` leverages the state persisted in the database to recover from a crash and resume the requested downloads.
 
 ![alt_text](./images/interrupt_sequence.png "Resuming downloads post abort")
 

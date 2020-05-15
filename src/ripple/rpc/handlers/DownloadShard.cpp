@@ -60,7 +60,7 @@ doDownloadShard(RPC::JsonContext& context)
     auto preShards{shardStore->getPreShards()};
     if (!preShards.empty())
     {
-        std::string s{"Download in progress. Shard"};
+        std::string s{"Download already in progress. Shard"};
         if (!std::all_of(preShards.begin(), preShards.end(), ::isdigit))
             s += "s";
         return RPC::makeObjectValue(s + " " + preShards);
@@ -129,22 +129,15 @@ doDownloadShard(RPC::JsonContext& context)
         }
     }
 
-    RPC::ShardArchiveHandler::pointer handler;
+    RPC::ShardArchiveHandler* handler = nullptr;
 
     try
     {
-        handler = RPC::ShardArchiveHandler::hasInstance()
-            ? RPC::ShardArchiveHandler::getInstance()
-            : RPC::ShardArchiveHandler::getInstance(
-                  context.app, context.app.getJobQueue());
+        handler = context.app.getShardArchiveHandler();
 
         if (!handler)
             return RPC::make_error(
                 rpcINTERNAL, "Failed to create ShardArchiveHandler.");
-
-        if (!handler->init())
-            return RPC::make_error(
-                rpcINTERNAL, "Failed to initiate ShardArchiveHandler.");
     }
     catch (std::exception const& e)
     {

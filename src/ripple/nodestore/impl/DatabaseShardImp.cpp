@@ -156,7 +156,8 @@ DatabaseShardImp::init()
                     auto const result{shards_.emplace(
                         shardIndex,
                         ShardInfo(std::move(shard), ShardInfo::State::none))};
-                    finalizeShard(result.first->second, true, lock);
+                    finalizeShard(
+                        result.first->second, true, lock, boost::none);
                 }
                 else
                 {
@@ -355,6 +356,16 @@ DatabaseShardImp::importShard(
         return false;
     }
 
+    auto expectedHash =
+        app_.getLedgerMaster().walkHashBySeq(lastLedgerSeq(shardIndex));
+
+    if (!expectedHash)
+    {
+        JLOG(j_.error()) << "shard " << shardIndex
+                         << " expected hash not found";
+        return false;
+    }
+
     auto renameDir = [&](path const& src, path const& dst) {
         try
         {
@@ -376,8 +387,7 @@ DatabaseShardImp::importShard(
 
         // Check shard is prepared
         if (auto const it{shards_.find(shardIndex)}; it == shards_.end() ||
-            it->second.shard || it->second.state != ShardInfo::State::import ||
-            it->second.retryFinalize)
+            it->second.shard || it->second.state != ShardInfo::State::import)
         {
             JLOG(j_.error()) << "shard " << shardIndex << " failed to import";
             return false;
@@ -404,8 +414,7 @@ DatabaseShardImp::importShard(
         std::lock_guard lock(mutex_);
         auto const it{shards_.find(shardIndex)};
         if (it == shards_.end() || it->second.shard ||
-            it->second.state != ShardInfo::State::import ||
-            it->second.retryFinalize)
+            it->second.state != ShardInfo::State::import)
         {
             JLOG(j_.error()) << "shard " << shardIndex << " failed to import";
             shard.reset();
@@ -414,10 +423,9 @@ DatabaseShardImp::importShard(
         }
 
         it->second.shard = std::move(shard);
-        it->second.retryFinalize = std::make_unique<RetryFinalize>();
+        finalizeShard(it->second, true, lock, expectedHash);
     }
 
-    finalizeWithRefHash(shardIndex);
     return true;
 }
 
@@ -611,9 +619,6 @@ DatabaseShardImp::onStop()
     {
         if (e.second.shard)
             e.second.shard->stop();
-
-        if (e.second.retryFinalize)
-            e.second.retryFinalize.reset();
     }
     shards_.clear();
 }
@@ -813,7 +818,8 @@ DatabaseShardImp::import(Database& source)
                     auto const result{shards_.emplace(
                         shardIndex,
                         ShardInfo(std::move(shard), ShardInfo::State::none))};
-                    finalizeShard(result.first->second, true, lock);
+                    finalizeShard(
+                        result.first->second, true, lock, boost::none);
                 }
                 catch (std::exception const& e)
                 {
@@ -1186,93 +1192,11 @@ DatabaseShardImp::findAcquireIndex(
 }
 
 void
-DatabaseShardImp::finalizeWithRefHash(std::uint32_t shardIndex)
-{
-    // We use the presence (or absence) of the validated
-    // ledger as a heuristic for determining whether or
-    // not we have stored a ledger that comes after the
-    // last ledger in this shard. A later ledger must
-    // be present in order to reliably retrieve the hash
-    // of the shard's last ledger.
-    boost::optional<uint256> referenceHash;
-    if (app_.getLedgerMaster().getValidatedLedger())
-    {
-        referenceHash =
-            app_.getLedgerMaster().walkHashBySeq(lastLedgerSeq(shardIndex));
-    }
-
-    // Make sure the shard was found in an
-    // expected state.
-    auto confirmShard = [this, shardIndex](
-                            auto const it, std::lock_guard<std::mutex>&) {
-        if (it == shards_.end() ||
-            it->second.state != ShardInfo::State::import ||
-            !it->second.retryFinalize)
-        {
-            JLOG(j_.error()) << "shard " << shardIndex << " failed to import";
-            return false;
-        }
-
-        return true;
-    };
-
-    // The node is shutting down; remove the shard
-    // and return.
-    if (isStopping())
-    {
-        std::shared_ptr<Shard> shard;
-
-        {
-            std::lock_guard lock(mutex_);
-            auto const it{shards_.find(shardIndex)};
-
-            if(!confirmShard(it, lock))
-                return;
-
-            shard = it->second.shard;
-        }
-
-        JLOG(j_.warn())
-            << "shard " << shardIndex
-            << " will not be imported due to system shutdown, removing";
-
-        removeFailedShard(shard);
-        return;
-    }
-
-    std::lock_guard lock(mutex_);
-    auto const it{shards_.find(shardIndex)};
-
-    if(!confirmShard(it, lock))
-        return;
-
-    if (referenceHash && referenceHash->isNonZero())
-    {
-        it->second.retryFinalize->referenceHash = *referenceHash;
-        finalizeShard(it->second, true, lock);
-        return;
-    }
-
-    // Failed to find a reference hash, schedule to try again
-    if (!it->second.retryFinalize->retry(
-            app_,
-            std::bind(
-                &DatabaseShardImp::finalizeWithRefHash,
-                this,
-                std::placeholders::_1),
-            shardIndex))
-    {
-        JLOG(j_.error()) << "shard " << shardIndex
-                         << " failed to import, maximum attempts reached";
-        removeFailedShard(it->second.shard);
-    }
-}
-
-void
 DatabaseShardImp::finalizeShard(
     ShardInfo& shardInfo,
     bool writeSQLite,
-    std::lock_guard<std::mutex>&)
+    std::lock_guard<std::mutex>&,
+    boost::optional<uint256> const& expectedHash)
 {
     assert(shardInfo.shard);
     assert(shardInfo.shard->index() != acquireIndex_);
@@ -1282,19 +1206,16 @@ DatabaseShardImp::finalizeShard(
     auto const shardIndex{shardInfo.shard->index()};
 
     shardInfo.state = ShardInfo::State::finalize;
-    taskQueue_->addTask([this, shardIndex, writeSQLite]() {
+    taskQueue_->addTask([this, shardIndex, writeSQLite, expectedHash]() {
         if (isStopping())
             return;
 
         std::shared_ptr<Shard> shard;
-        boost::optional<uint256> referenceHash;
         {
             std::lock_guard lock(mutex_);
-            if (auto const it {shards_.find(shardIndex)}; it != shards_.end())
+            if (auto const it{shards_.find(shardIndex)}; it != shards_.end())
             {
                 shard = it->second.shard;
-                if (it->second.retryFinalize)
-                    *referenceHash = it->second.retryFinalize->referenceHash;
             }
             else
             {
@@ -1303,7 +1224,7 @@ DatabaseShardImp::finalizeShard(
             }
         }
 
-        if (!shard->finalize(writeSQLite, referenceHash))
+        if (!shard->finalize(writeSQLite, expectedHash))
         {
             if (isStopping())
                 return;
@@ -1466,7 +1387,7 @@ DatabaseShardImp::storeLedgerInShard(
                 acquireIndex_ = 0;
 
             if (it->second.state != ShardInfo::State::finalize)
-                finalizeShard(it->second, false, lock);
+                finalizeShard(it->second, false, lock, boost::none);
         }
         else
         {
@@ -1480,17 +1401,15 @@ DatabaseShardImp::storeLedgerInShard(
 }
 
 void
-DatabaseShardImp::removeFailedShard(
-    std::shared_ptr<Shard> shard)
+DatabaseShardImp::removeFailedShard(std::shared_ptr<Shard> shard)
 {
     {
         std::lock_guard lock(mutex_);
-        shards_.erase(shard->index());
 
         if (shard->index() == acquireIndex_)
             acquireIndex_ = 0;
 
-        if(shard->isFinal())
+        if ((shards_.erase(shard->index()) > 0) && shard->isFinal())
             updateStatus(lock);
     }
 
