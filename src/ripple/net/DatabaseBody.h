@@ -28,6 +28,10 @@
 
 namespace ripple {
 
+// DatabaseBody needs to meet requirements
+// from asio which is why some conventions
+// used elsewhere in this code base are not
+// followed.
 struct DatabaseBody
 {
     // Algorithm for storing buffers when parsing.
@@ -53,15 +57,15 @@ class DatabaseBody::value_type
     friend struct DatabaseBody;
 
     // The cached file size
-    std::uint64_t file_size_ = 0;
+    std::uint64_t fileSize_ = 0;
     boost::filesystem::path path_;
     std::unique_ptr<DatabaseCon> conn_;
     std::string batch_;
     std::shared_ptr<boost::asio::io_service::strand> strand_;
     std::mutex m_;
     std::condition_variable c_;
-    uint64_t handler_count_ = 0;
-    uint64_t part_ = 0;
+    std::uint64_t handlerCount_ = 0;
+    std::uint64_t part_ = 0;
     bool closing_ = false;
 
 public:
@@ -75,14 +79,14 @@ public:
     bool
     is_open() const
     {
-        return bool{conn_};
+        return static_cast<bool>(conn_);
     }
 
     /// Returns the size of the file if open
     std::uint64_t
     size() const
     {
-        return file_size_;
+        return fileSize_;
     }
 
     /// Close the file if open
@@ -93,7 +97,9 @@ public:
 
         @param path The utf-8 encoded path to the file
 
-        @param mode The file mode to use
+        @param config The configuration settings
+
+        @param io_service The asio context for running a strand.
 
         @param ec Set to the error, if any occurred
     */
@@ -114,9 +120,9 @@ class DatabaseBody::reader
 {
     value_type& body_;  // The body we are writing to
 
-    static const uint32_t FLUSH_SIZE = 50000000;
-    static const uint8_t MAX_HANDLERS = 3;
-    static const uint16_t MAX_ROW_SIZE_PAD = 500;
+    static constexpr std::uint32_t FLUSH_SIZE = 50000000;
+    static constexpr std::uint8_t MAX_HANDLERS = 3;
+    static constexpr std::uint16_t MAX_ROW_SIZE_PAD = 500;
 
 public:
     // Constructor.

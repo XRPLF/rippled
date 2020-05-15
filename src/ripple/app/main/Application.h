@@ -46,6 +46,9 @@ class DatabaseShard;
 namespace perf {
 class PerfLog;
 }
+namespace RPC {
+class ShardArchiveHandler;
+}
 
 // VFALCO TODO Fix forward declares required for header dependency loops
 class AmendmentTable;
@@ -185,6 +188,8 @@ public:
     getNodeStore() = 0;
     virtual NodeStore::DatabaseShard*
     getShardStore() = 0;
+    virtual RPC::ShardArchiveHandler*
+    getShardArchiveHandler(bool tryRecovery = false) = 0;
     virtual InboundLedgers&
     getInboundLedgers() = 0;
     virtual InboundTransactions&

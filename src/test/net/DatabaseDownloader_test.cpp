@@ -29,7 +29,7 @@
 namespace ripple {
 namespace test {
 
-class SSLHTTPDownloader_test : public beast::unit_test::suite
+class DatabaseDownloader_test : public beast::unit_test::suite
 {
     TrustedPublisherServer
     createServer(jtx::Env& env, bool ssl = true)
@@ -80,7 +80,7 @@ class SSLHTTPDownloader_test : public beast::unit_test::suite
     {
         test::StreamSink sink_;
         beast::Journal journal_;
-        // The SSLHTTPDownloader must be created as shared_ptr
+        // The DatabaseDownloader must be created as shared_ptr
         // because it uses shared_from_this
         std::shared_ptr<DatabaseDownloader> ptr_;
 
@@ -265,6 +265,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SSLHTTPDownloader, net, ripple);
+BEAST_DEFINE_TESTSUITE(DatabaseDownloader, net, ripple);
 }  // namespace test
 }  // namespace ripple

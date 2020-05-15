@@ -34,7 +34,8 @@ public:
         Config const& config);
 
 private:
-    static const uint8_t MAX_PATH_LEN = std::numeric_limits<uint8_t>::max();
+    static const std::uint8_t MAX_PATH_LEN =
+        std::numeric_limits<std::uint8_t>::max();
 
     std::shared_ptr<parser>
     getParser(
@@ -48,7 +49,7 @@ private:
     void
     closeBody(std::shared_ptr<parser> p) override;
 
-    uint64_t
+    std::uint64_t
     size(std::shared_ptr<parser> p) override;
 
     Config const& config_;

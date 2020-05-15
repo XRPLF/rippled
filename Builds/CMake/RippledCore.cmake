@@ -513,7 +513,6 @@ target_sources (rippled PRIVATE
   src/ripple/nodestore/impl/EncodedBlob.cpp
   src/ripple/nodestore/impl/ManagerImp.cpp
   src/ripple/nodestore/impl/NodeObject.cpp
-  src/ripple/nodestore/impl/RetryFinalize.cpp
   src/ripple/nodestore/impl/Shard.cpp
   src/ripple/nodestore/impl/TaskQueue.cpp
   #[===============================[
@@ -623,6 +622,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/impl/Role.cpp
   src/ripple/rpc/impl/ServerHandlerImp.cpp
   src/ripple/rpc/impl/ShardArchiveHandler.cpp
+  src/ripple/rpc/impl/ShardVerificationScheduler.cpp
   src/ripple/rpc/impl/Status.cpp
   src/ripple/rpc/impl/TransactionSign.cpp
 
@@ -837,7 +837,7 @@ target_sources (rippled PRIVATE
      test sources:
        subdir: net
   #]===============================]
-  src/test/net/SSLHTTPDownloader_test.cpp
+  src/test/net/DatabaseDownloader_test.cpp
   #[===============================[
      test sources:
        subdir: nodestore
