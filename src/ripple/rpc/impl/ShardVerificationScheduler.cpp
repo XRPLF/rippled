@@ -18,36 +18,51 @@
 //==============================================================================
 
 #include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/nodestore/RetryFinalize.h>
+#include <ripple/rpc/ShardVerificationScheduler.h>
 
 namespace ripple {
-namespace NodeStore {
+namespace RPC {
+
+ShardVerificationScheduler::ShardVerificationScheduler(
+    std::chrono::seconds retryInterval,
+    std::uint32_t maxAttempts)
+    : retryInterval_(
+          (retryInterval == std::chrono::seconds(0) ? defaultRetryInterval_
+                                                    : retryInterval))
+    , maxAttempts_(maxAttempts == 0 ? defaultmaxAttempts_ : maxAttempts)
+{
+}
 
 bool
-RetryFinalize::retry(
+ShardVerificationScheduler::retry(
     Application& app,
-    retryFunction f,
-    std::uint32_t shardIndex)
+    bool shouldHaveHash,
+    retryFunction f)
 {
     if (numAttempts_ >= maxAttempts_)
         return false;
 
-    // Retry attempts only count when we have a validated ledger
-    if (app.getLedgerMaster().getValidatedLedger())
+    // Retry attempts only count when we
+    // have a validated ledger with a
+    // sequence later than the shard's
+    // last ledger.
+    if (shouldHaveHash)
         ++numAttempts_;
 
     if (!timer_)
         timer_ = std::make_unique<waitable_timer>(app.getIOService());
 
     timer_->expires_from_now(retryInterval_);
-    timer_->async_wait([f{std::move(f)}, shardIndex_ = shardIndex](
-                           boost::system::error_code const& ec) {
-        if (ec != boost::asio::error::operation_aborted)
-            f(shardIndex_);
-    });
+    timer_->async_wait(f);
 
     return true;
 }
 
-}  // namespace NodeStore
+void
+ShardVerificationScheduler::reset()
+{
+    numAttempts_ = 0;
+}
+
+}  // namespace RPC
 }  // namespace ripple

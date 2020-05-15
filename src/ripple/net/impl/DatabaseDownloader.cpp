@@ -45,7 +45,7 @@ DatabaseDownloader::getParser(
     if (ec)
     {
         p->get().body().close();
-        fail(dstPath, complete, ec, "open");
+        fail(dstPath, complete, ec, "open", nullptr);
     }
 
     return p;
@@ -69,7 +69,7 @@ DatabaseDownloader::closeBody(std::shared_ptr<parser> p)
     databaseBodyParser->get().body().close();
 }
 
-uint64_t
+std::uint64_t
 DatabaseDownloader::size(std::shared_ptr<parser> p)
 {
     using namespace boost::beast;
