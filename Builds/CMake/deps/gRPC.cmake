@@ -63,20 +63,23 @@ else ()
     if (cares_FOUND)
       if (static)
         set (_search "${CMAKE_STATIC_LIBRARY_PREFIX}cares${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set (_prefix cares_STATIC)
+        set (_static STATIC)
       else ()
         set (_search "${CMAKE_SHARED_LIBRARY_PREFIX}cares${CMAKE_SHARED_LIBRARY_SUFFIX}")
+        set (_prefix cares)
+        set (_static)
       endif()
-      find_library(_cares
-        NAMES ${_search}
-        HINTS ${cares_LIBRARY_DIRS})
-      if (NOT _cares)
+      find_library(_location NAMES ${_search} HINTS ${cares_LIBRARY_DIRS})
+      if (NOT _location)
         message (FATAL_ERROR "using pkg-config for grpc, can't find c-ares")
       endif ()
-      add_library (c-ares::cares STATIC IMPORTED GLOBAL)
-      set_target_properties (c-ares::cares PROPERTIES IMPORTED_LOCATION ${_cares})
-      if (cares_INCLUDE_DIRS)
-        set_target_properties (c-ares::cares PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${cares_INCLUDE_DIRS})
-      endif ()
+      add_library (c-ares::cares ${_static} IMPORTED GLOBAL)
+      set_target_properties (c-ares::cares PROPERTIES
+        IMPORTED_LOCATION ${_location}
+        INTERFACE_INCLUDE_DIRECTORIES "${${_prefix}_INCLUDE_DIRS}"
+        INTERFACE_LINK_OPTIONS "${${_prefix}_LDFLAGS}"
+      )
       exclude_if_included (c-ares::cares)
     else ()
       message (FATAL_ERROR "using pkg-config for grpc, can't find c-ares")
