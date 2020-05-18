@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_SYSTEMPARAMETERS_H_INCLUDED
 
 #include <ripple/basics/XRPAmount.h>
+#include <ripple/basics/chrono.h>
 #include <cstdint>
 #include <string>
 
@@ -58,6 +59,18 @@ systemCurrencyCode()
 
 /** The XRP ledger network's earliest allowed sequence */
 static std::uint32_t constexpr XRP_LEDGER_EARLIEST_SEQ{32570};
+
+/** The minimum amount of support an amendment should have.
+
+    @note This value is used by legacy code and will become obsolete
+          once the fixAmendmentMajorityCalc amendment activates.
+*/
+constexpr std::ratio<204, 256> preFixAmendmentMajorityCalcThreshold;
+
+constexpr std::ratio<80, 100> postFixAmendmentMajorityCalcThreshold;
+
+/** The minimum amount of time an amendment must hold a majority */
+constexpr std::chrono::seconds const defaultAmendmentMajorityTime = weeks{2};
 
 }  // namespace ripple
 

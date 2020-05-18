@@ -1015,6 +1015,57 @@ r.ripple.com 51235
     }
 
     void
+    testAmendment()
+    {
+        testcase("amendment");
+        struct ConfigUnit
+        {
+            std::string unit;
+            std::uint32_t numSeconds;
+            std::uint32_t configVal;
+            bool shouldPass;
+        };
+
+        std::vector<ConfigUnit> units = {
+            {"seconds", 1, 15 * 60, false},
+            {"minutes", 60, 14, false},
+            {"minutes", 60, 15, true},
+            {"hours", 3600, 10, true},
+            {"days", 86400, 10, true},
+            {"weeks", 604800, 2, true},
+            {"months", 2592000, 1, false},
+            {"years", 31536000, 1, false}};
+
+        std::string space = "";
+        for (auto& [unit, sec, val, shouldPass] : units)
+        {
+            Config c;
+            std::string toLoad(R"rippleConfig(
+[amendment_majority_time]
+)rippleConfig");
+            toLoad += std::to_string(val) + space + unit;
+            space = space == "" ? " " : "";
+
+            try
+            {
+                c.loadFromString(toLoad);
+                if (shouldPass)
+                    BEAST_EXPECT(
+                        c.AMENDMENT_MAJORITY_TIME.count() == val * sec);
+                else
+                    fail();
+            }
+            catch (std::runtime_error&)
+            {
+                if (!shouldPass)
+                    pass();
+                else
+                    fail();
+            }
+        }
+    }
+
+    void
     run() override
     {
         testLegacy();
@@ -1027,6 +1078,7 @@ r.ripple.com 51235
         testWhitespace();
         testComments();
         testGetters();
+        testAmendment();
     }
 };
 

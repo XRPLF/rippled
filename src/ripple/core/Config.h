@@ -31,6 +31,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <map>
 #include <string>
@@ -171,6 +172,9 @@ public:
 
     // Compression
     bool COMPRESSION = false;
+
+    // Amendment majority time
+    std::chrono::seconds AMENDMENT_MAJORITY_TIME = defaultAmendmentMajorityTime;
 
     // Thread pool configuration
     std::size_t WORKERS = 0;

@@ -99,6 +99,7 @@ public:
     // inject pseudo-transactions
     virtual std::map<uint256, std::uint32_t>
     doVoting(
+        Rules const& rules,
         NetClock::time_point closeTime,
         std::set<uint256> const& enabledAmendments,
         majorityAmendments_t const& majorityAmendments,
@@ -130,6 +131,7 @@ public:
     {
         // Ask implementation what to do
         auto actions = doVoting(
+            lastClosedLedger->rules(),
             lastClosedLedger->parentCloseTime(),
             getEnabledAmendments(*lastClosedLedger),
             getMajorityAmendments(*lastClosedLedger),
@@ -164,7 +166,6 @@ public:
 std::unique_ptr<AmendmentTable>
 make_AmendmentTable(
     std::chrono::seconds majorityTime,
-    int majorityFraction,
     Section const& supported,
     Section const& enabled,
     Section const& vetoed,

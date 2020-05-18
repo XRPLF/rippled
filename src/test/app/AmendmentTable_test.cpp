@@ -38,9 +38,6 @@ namespace ripple {
 class AmendmentTable_test final : public beast::unit_test::suite
 {
 private:
-    // 204/256 about 80% (we round down because the implementation rounds up)
-    static int const majorityFraction{204};
-
     static uint256
     amendmentId(std::string in)
     {
@@ -100,12 +97,7 @@ public:
         Section const vetoed)
     {
         return make_AmendmentTable(
-            majorityTime,
-            majorityFraction,
-            supported,
-            enabled,
-            vetoed,
-            journal);
+            majorityTime, supported, enabled, vetoed, journal);
     }
 
     std::unique_ptr<AmendmentTable>
@@ -373,6 +365,7 @@ public:
     // Execute a pretend consensus round for a flag ledger
     void
     doRound(
+        uint256 const& feat,
         AmendmentTable& table,
         weeks week,
         std::vector<std::pair<PublicKey, SecretKey>> const& validators,
@@ -399,25 +392,25 @@ public:
         validations.reserve(validators.size());
 
         int i = 0;
-        for (auto const& val : validators)
+        for (auto const& [pub, sec] : validators)
         {
             ++i;
             std::vector<uint256> field;
 
-            for (auto const& amendment : votes)
+            for (auto const& [hash, nVotes] : votes)
             {
-                if ((256 * i) < (validators.size() * amendment.second))
+                if (feat == fixAmendmentMajorityCalc ? nVotes >= i : nVotes > i)
                 {
                     // We vote yes on this amendment
-                    field.push_back(amendment.first);
+                    field.push_back(hash);
                 }
             }
 
             auto v = std::make_shared<STValidation>(
                 ripple::NetClock::time_point{},
-                val.first,
-                val.second,
-                calcNodeID(val.first),
+                pub,
+                sec,
+                calcNodeID(pub),
                 [&field](STValidation& v) {
                     if (!field.empty())
                         v.setFieldV256(
@@ -430,14 +423,13 @@ public:
 
         ourVotes = table.doValidation(enabled);
 
-        auto actions =
-            table.doVoting(roundTime, enabled, majority, validations);
-        for (auto const& action : actions)
+        auto actions = table.doVoting(
+            Rules({feat}), roundTime, enabled, majority, validations);
+        for (auto const& [hash, action] : actions)
         {
             // This code assumes other validators do as we do
 
-            auto const& hash = action.first;
-            switch (action.second)
+            switch (action)
             {
                 case 0:
                     // amendment goes from majority to enabled
@@ -471,7 +463,7 @@ public:
 
     // No vote on unknown amendment
     void
-    testNoOnUnknown()
+    testNoOnUnknown(uint256 const& feat)
     {
         testcase("Vote NO on unknown");
 
@@ -487,15 +479,29 @@ public:
         majorityAmendments_t majority;
 
         doRound(
-            *table, weeks{1}, validators, votes, ourVotes, enabled, majority);
+            feat,
+            *table,
+            weeks{1},
+            validators,
+            votes,
+            ourVotes,
+            enabled,
+            majority);
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
         BEAST_EXPECT(majority.empty());
 
-        votes.emplace_back(testAmendment, 256);
+        votes.emplace_back(testAmendment, validators.size());
 
         doRound(
-            *table, weeks{2}, validators, votes, ourVotes, enabled, majority);
+            feat,
+            *table,
+            weeks{2},
+            validators,
+            votes,
+            ourVotes,
+            enabled,
+            majority);
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
 
@@ -504,14 +510,21 @@ public:
         // Note that the simulation code assumes others behave as we do,
         // so the amendment won't get enabled
         doRound(
-            *table, weeks{5}, validators, votes, ourVotes, enabled, majority);
+            feat,
+            *table,
+            weeks{5},
+            validators,
+            votes,
+            ourVotes,
+            enabled,
+            majority);
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
     }
 
     // No vote on vetoed amendment
     void
-    testNoOnVetoed()
+    testNoOnVetoed(uint256 const& feat)
     {
         testcase("Vote NO on vetoed");
 
@@ -528,29 +541,50 @@ public:
         majorityAmendments_t majority;
 
         doRound(
-            *table, weeks{1}, validators, votes, ourVotes, enabled, majority);
+            feat,
+            *table,
+            weeks{1},
+            validators,
+            votes,
+            ourVotes,
+            enabled,
+            majority);
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
         BEAST_EXPECT(majority.empty());
 
-        votes.emplace_back(testAmendment, 256);
+        votes.emplace_back(testAmendment, validators.size());
 
         doRound(
-            *table, weeks{2}, validators, votes, ourVotes, enabled, majority);
+            feat,
+            *table,
+            weeks{2},
+            validators,
+            votes,
+            ourVotes,
+            enabled,
+            majority);
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
 
         majority[testAmendment] = weekTime(weeks{1});
 
         doRound(
-            *table, weeks{5}, validators, votes, ourVotes, enabled, majority);
+            feat,
+            *table,
+            weeks{5},
+            validators,
+            votes,
+            ourVotes,
+            enabled,
+            majority);
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
     }
 
     // Vote on and enable known, not-enabled amendment
     void
-    testVoteEnable()
+    testVoteEnable(uint256 const& feat)
     {
         testcase("voteEnable");
 
@@ -565,7 +599,14 @@ public:
 
         // Week 1: We should vote for all known amendments not enabled
         doRound(
-            *table, weeks{1}, validators, votes, ourVotes, enabled, majority);
+            feat,
+            *table,
+            weeks{1},
+            validators,
+            votes,
+            ourVotes,
+            enabled,
+            majority);
         BEAST_EXPECT(ourVotes.size() == supported_.size());
         BEAST_EXPECT(enabled.empty());
         for (auto const& i : supported_)
@@ -573,11 +614,18 @@ public:
 
         // Now, everyone votes for this feature
         for (auto const& i : supported_)
-            votes.emplace_back(amendmentId(i), 256);
+            votes.emplace_back(amendmentId(i), validators.size());
 
         // Week 2: We should recognize a majority
         doRound(
-            *table, weeks{2}, validators, votes, ourVotes, enabled, majority);
+            feat,
+            *table,
+            weeks{2},
+            validators,
+            votes,
+            ourVotes,
+            enabled,
+            majority);
         BEAST_EXPECT(ourVotes.size() == supported_.size());
         BEAST_EXPECT(enabled.empty());
 
@@ -586,12 +634,26 @@ public:
 
         // Week 5: We should enable the amendment
         doRound(
-            *table, weeks{5}, validators, votes, ourVotes, enabled, majority);
+            feat,
+            *table,
+            weeks{5},
+            validators,
+            votes,
+            ourVotes,
+            enabled,
+            majority);
         BEAST_EXPECT(enabled.size() == supported_.size());
 
         // Week 6: We should remove it from our votes and from having a majority
         doRound(
-            *table, weeks{6}, validators, votes, ourVotes, enabled, majority);
+            feat,
+            *table,
+            weeks{6},
+            validators,
+            votes,
+            ourVotes,
+            enabled,
+            majority);
         BEAST_EXPECT(enabled.size() == supported_.size());
         BEAST_EXPECT(ourVotes.empty());
         for (auto const& i : supported_)
@@ -600,7 +662,7 @@ public:
 
     // Detect majority at 80%, enable later
     void
-    testDetectMajority()
+    testDetectMajority(uint256 const& feat)
     {
         testcase("detectMajority");
 
@@ -619,9 +681,10 @@ public:
             std::vector<uint256> ourVotes;
 
             if ((i > 0) && (i < 17))
-                votes.emplace_back(testAmendment, i * 16);
+                votes.emplace_back(testAmendment, i);
 
             doRound(
+                feat,
                 *table,
                 weeks{i},
                 validators,
@@ -630,7 +693,7 @@ public:
                 enabled,
                 majority);
 
-            if (i < 13)
+            if (i < 13)  // 13 => 13/16 = 0.8125 => > 80%
             {
                 // We are voting yes, not enabled, no majority
                 BEAST_EXPECT(!ourVotes.empty());
@@ -663,7 +726,7 @@ public:
 
     // Detect loss of majority
     void
-    testLostMajority()
+    testLostMajority(uint256 const& feat)
     {
         testcase("lostMajority");
 
@@ -681,9 +744,10 @@ public:
             std::vector<std::pair<uint256, int>> votes;
             std::vector<uint256> ourVotes;
 
-            votes.emplace_back(testAmendment, 250);
+            votes.emplace_back(testAmendment, validators.size());
 
             doRound(
+                feat,
                 *table,
                 weeks{1},
                 validators,
@@ -696,15 +760,16 @@ public:
             BEAST_EXPECT(!majority.empty());
         }
 
-        for (int i = 1; i < 16; ++i)
+        for (int i = 1; i < 8; ++i)
         {
             std::vector<std::pair<uint256, int>> votes;
             std::vector<uint256> ourVotes;
 
             // Gradually reduce support
-            votes.emplace_back(testAmendment, 256 - i * 8);
+            votes.emplace_back(testAmendment, validators.size() - i);
 
             doRound(
+                feat,
                 *table,
                 weeks{i + 1},
                 validators,
@@ -713,8 +778,8 @@ public:
                 enabled,
                 majority);
 
-            if (i < 8)
-            {
+            if (i < 4)  // 16 - 3 = 13 => 13/16 = 0.8125 => > 80%
+            {           // 16 - 4 = 12 => 12/16 = 0.75 => < 80%
                 // We are voting yes, not enabled, majority
                 BEAST_EXPECT(!ourVotes.empty());
                 BEAST_EXPECT(enabled.empty());
@@ -776,18 +841,25 @@ public:
     }
 
     void
+    testFeature(uint256 const& feat)
+    {
+        testNoOnUnknown(feat);
+        testNoOnVetoed(feat);
+        testVoteEnable(feat);
+        testDetectMajority(feat);
+        testLostMajority(feat);
+    }
+
+    void
     run() override
     {
         testConstruct();
         testGet();
         testBadConfig();
         testEnableVeto();
-        testNoOnUnknown();
-        testNoOnVetoed();
-        testVoteEnable();
-        testDetectMajority();
-        testLostMajority();
         testHasUnsupported();
+        testFeature({});
+        testFeature(fixAmendmentMajorityCalc);
     }
 };
 
