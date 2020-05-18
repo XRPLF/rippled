@@ -129,7 +129,8 @@ enum {
 };
 
 // How often we send or accept mtENDPOINTS messages per peer
-static std::chrono::seconds const secondsPerMessage(5);
+// (we use a prime number of purpose)
+static std::chrono::seconds const secondsPerMessage(61);
 
 // How long an Endpoint will stay in the cache
 // This should be a small multiple of the broadcast frequency
