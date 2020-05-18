@@ -98,7 +98,7 @@ public:
         : sink_(partition, threshold, suite), journal_(sink_)
     {
     }
-    operator beast::Journal &()
+    operator beast::Journal&()
     {
         return journal_;
     }
