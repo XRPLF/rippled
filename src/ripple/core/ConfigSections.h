@@ -60,6 +60,7 @@ struct ConfigSection
 #define SECTION_INSIGHT "insight"
 #define SECTION_IPS "ips"
 #define SECTION_IPS_FIXED "ips_fixed"
+#define SECTION_AMENDMENT_MAJORITY_TIME "amendment_majority_time"
 #define SECTION_NETWORK_QUORUM "network_quorum"
 #define SECTION_NODE_SEED "node_seed"
 #define SECTION_NODE_SIZE "node_size"

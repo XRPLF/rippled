@@ -218,10 +218,9 @@ class Feature_test : public beast::unit_test::suite
             BEAST_EXPECTS(
                 feature.isMember(jss::validations),
                 feature[jss::name].asString() + " validations");
-            BEAST_EXPECTS(
-                feature.isMember(jss::vote),
-                feature[jss::name].asString() + " vote");
-            BEAST_EXPECT(feature[jss::vote] == 256);
+            BEAST_EXPECT(feature[jss::count] == 1);
+            BEAST_EXPECT(feature[jss::threshold] == 1);
+            BEAST_EXPECT(feature[jss::validations] == 1);
             BEAST_EXPECT(feature[jss::majority] == 2740);
         }
     }
