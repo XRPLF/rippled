@@ -21,6 +21,7 @@
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/jss.h>
@@ -148,8 +149,8 @@ protected:
     std::chrono::seconds const majorityTime_;
 
     // The amount of support that an amendment must receive
-    // 0 = 0% and 256 = 100%
-    int const majorityFraction_;
+    // 0 = 0% and 256 = 100%(old) 8 = 100%(new)
+    MajorityFraction const majorityFraction_;
 
     // The results of the last voting round - may be empty if
     // we haven't participated in one yet.
@@ -187,7 +188,7 @@ protected:
 public:
     AmendmentTableImpl(
         std::chrono::seconds majorityTime,
-        int majorityFraction,
+        MajorityFraction const& majorityFraction,
         Section const& supported,
         Section const& enabled,
         Section const& vetoed,
@@ -237,6 +238,7 @@ public:
 
     std::map<uint256, std::uint32_t>
     doVoting(
+        Rules const& rules,
         NetClock::time_point closeTime,
         std::set<uint256> const& enabledAmendments,
         majorityAmendments_t const& majorityAmendments,
@@ -247,7 +249,7 @@ public:
 
 AmendmentTableImpl::AmendmentTableImpl(
     std::chrono::seconds majorityTime,
-    int majorityFraction,
+    MajorityFraction const& majorityFraction,
     Section const& supported,
     Section const& enabled,
     Section const& vetoed,
@@ -258,7 +260,7 @@ AmendmentTableImpl::AmendmentTableImpl(
     , unsupportedEnabled_(false)
     , j_(journal)
 {
-    assert(majorityFraction_ != 0);
+    assert(majorityFraction_.old_ != 0 && majorityFraction_.new_ != 0);
 
     std::lock_guard sl(mutex_);
 
@@ -461,6 +463,7 @@ AmendmentTableImpl::getDesired() const
 
 std::map<uint256, std::uint32_t>
 AmendmentTableImpl::doVoting(
+    Rules const& rules,
     NetClock::time_point closeTime,
     std::set<uint256> const& enabledAmendments,
     majorityAmendments_t const& majorityAmendments,
@@ -489,8 +492,10 @@ AmendmentTableImpl::doVoting(
         }
     }
 
-    vote->mThreshold =
-        std::max(1, (vote->mTrustedValidations * majorityFraction_) / 256);
+    vote->mThreshold = rules.enabled(ripple::fix3396)
+        ? std::max(1, (vote->mTrustedValidations * majorityFraction_.new_) / 10)
+        : std::max(
+              1, (vote->mTrustedValidations * majorityFraction_.old_) / 256);
 
     JLOG(j_.debug()) << "Received " << vote->mTrustedValidations
                      << " trusted validations, threshold is: "
@@ -507,8 +512,9 @@ AmendmentTableImpl::doVoting(
     {
         NetClock::time_point majorityTime = {};
 
-        bool const hasValMajority =
-            (vote->votes(entry.first) >= vote->mThreshold);
+        bool const hasValMajority = rules.enabled(ripple::fix3396)
+            ? (vote->votes(entry.first) > vote->mThreshold)
+            : (vote->votes(entry.first) >= vote->mThreshold);
 
         {
             auto const it = majorityAmendments.find(entry.first);
@@ -666,7 +672,7 @@ AmendmentTableImpl::getJson(uint256 const& amendmentID) const
 std::unique_ptr<AmendmentTable>
 make_AmendmentTable(
     std::chrono::seconds majorityTime,
-    int majorityFraction,
+    MajorityFraction const& majorityFraction,
     Section const& supported,
     Section const& enabled,
     Section const& vetoed,

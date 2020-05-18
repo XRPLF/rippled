@@ -1015,6 +1015,68 @@ r.ripple.com 51235
     }
 
     void
+    testAmendment()
+    {
+        testcase("amendment");
+
+        std::vector<std::pair<std::string, std::uint32_t>> units = {
+            {"seconds", 1},
+            {"minutes", 60},
+            {"hours", 3600},
+            {"days", 86400},
+            {"weeks", 604800}};
+
+        std::string space = "";
+        for (auto& [unit, m] : units)
+        {
+            Config c;
+            std::string toLoad(R"rippleConfig(
+[amendment_majority_time]
+10)rippleConfig");
+            toLoad += space + unit;
+            space = space == "" ? " " : "";
+
+            c.loadFromString(toLoad);
+
+            BEAST_EXPECT(c.AMENDMENT_MAJORITY_TIME.count() == 10 * m);
+        }
+        {
+            Config c;
+            std::string toLoad(R"rippleConfig(
+[amendment_majority_time]
+10years
+)rippleConfig");
+
+            try
+            {
+                c.loadFromString(toLoad);
+                fail();
+            }
+            catch (std::runtime_error&)
+            {
+                pass();
+            }
+        }
+        {
+            Config c;
+            std::string toLoad(R"rippleConfig(
+[amendment_majority_time]
+seconds10
+)rippleConfig");
+
+            try
+            {
+                c.loadFromString(toLoad);
+                fail();
+            }
+            catch (std::runtime_error&)
+            {
+                pass();
+            }
+        }
+    }
+
+    void
     run() override
     {
         testLegacy();
@@ -1027,6 +1089,7 @@ r.ripple.com 51235
         testWhitespace();
         testComments();
         testGetters();
+        testAmendment();
     }
 };
 

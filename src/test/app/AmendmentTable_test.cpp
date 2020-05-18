@@ -39,7 +39,21 @@ class AmendmentTable_test final : public beast::unit_test::suite
 {
 private:
     // 204/256 about 80% (we round down because the implementation rounds up)
-    static int const majorityFraction{204};
+    // 8/10 is 80%
+    static MajorityFraction constexpr majorityFraction{204, 8};
+    uint256 fix3396_ = {};
+
+    bool
+    enabled3396()
+    {
+        return fix3396_ == fix3396;
+    }
+
+    void
+    enable3396(bool enable)
+    {
+        fix3396_ = enable ? fix3396 : uint256{};
+    }
 
     static uint256
     amendmentId(std::string in)
@@ -399,25 +413,25 @@ public:
         validations.reserve(validators.size());
 
         int i = 0;
-        for (auto const& val : validators)
+        for (auto const& [pub, sec] : validators)
         {
             ++i;
             std::vector<uint256> field;
 
-            for (auto const& amendment : votes)
+            for (auto const& [hash, nVotes] : votes)
             {
-                if ((256 * i) < (validators.size() * amendment.second))
+                if (auto yes = enabled3396() ? nVotes >= i : nVotes > i; yes)
                 {
                     // We vote yes on this amendment
-                    field.push_back(amendment.first);
+                    field.push_back(hash);
                 }
             }
 
             auto v = std::make_shared<STValidation>(
                 ripple::NetClock::time_point{},
-                val.first,
-                val.second,
-                calcNodeID(val.first),
+                pub,
+                sec,
+                calcNodeID(pub),
                 [&field](STValidation& v) {
                     if (!field.empty())
                         v.setFieldV256(
@@ -430,14 +444,13 @@ public:
 
         ourVotes = table.doValidation(enabled);
 
-        auto actions =
-            table.doVoting(roundTime, enabled, majority, validations);
-        for (auto const& action : actions)
+        auto actions = table.doVoting(
+            Rules({fix3396_}), roundTime, enabled, majority, validations);
+        for (auto const& [hash, action] : actions)
         {
             // This code assumes other validators do as we do
 
-            auto const& hash = action.first;
-            switch (action.second)
+            switch (action)
             {
                 case 0:
                     // amendment goes from majority to enabled
@@ -492,7 +505,7 @@ public:
         BEAST_EXPECT(enabled.empty());
         BEAST_EXPECT(majority.empty());
 
-        votes.emplace_back(testAmendment, 256);
+        votes.emplace_back(testAmendment, validators.size());
 
         doRound(
             *table, weeks{2}, validators, votes, ourVotes, enabled, majority);
@@ -533,7 +546,7 @@ public:
         BEAST_EXPECT(enabled.empty());
         BEAST_EXPECT(majority.empty());
 
-        votes.emplace_back(testAmendment, 256);
+        votes.emplace_back(testAmendment, validators.size());
 
         doRound(
             *table, weeks{2}, validators, votes, ourVotes, enabled, majority);
@@ -573,7 +586,7 @@ public:
 
         // Now, everyone votes for this feature
         for (auto const& i : supported_)
-            votes.emplace_back(amendmentId(i), 256);
+            votes.emplace_back(amendmentId(i), validators.size());
 
         // Week 2: We should recognize a majority
         doRound(
@@ -619,7 +632,7 @@ public:
             std::vector<uint256> ourVotes;
 
             if ((i > 0) && (i < 17))
-                votes.emplace_back(testAmendment, i * 16);
+                votes.emplace_back(testAmendment, i);
 
             doRound(
                 *table,
@@ -630,7 +643,7 @@ public:
                 enabled,
                 majority);
 
-            if (i < 13)
+            if (i < 13)  // 13 => 13/16 = 0.8125 => > 80%
             {
                 // We are voting yes, not enabled, no majority
                 BEAST_EXPECT(!ourVotes.empty());
@@ -681,7 +694,7 @@ public:
             std::vector<std::pair<uint256, int>> votes;
             std::vector<uint256> ourVotes;
 
-            votes.emplace_back(testAmendment, 250);
+            votes.emplace_back(testAmendment, validators.size());
 
             doRound(
                 *table,
@@ -696,13 +709,13 @@ public:
             BEAST_EXPECT(!majority.empty());
         }
 
-        for (int i = 1; i < 16; ++i)
+        for (int i = 1; i < 8; ++i)
         {
             std::vector<std::pair<uint256, int>> votes;
             std::vector<uint256> ourVotes;
 
             // Gradually reduce support
-            votes.emplace_back(testAmendment, 256 - i * 8);
+            votes.emplace_back(testAmendment, validators.size() - i);
 
             doRound(
                 *table,
@@ -713,8 +726,8 @@ public:
                 enabled,
                 majority);
 
-            if (i < 8)
-            {
+            if (i < 4)  // 16 - 3 = 13 => 13/16 = 0.8125 => > 80%
+            {           // 16 - 4 = 12 => 12/16 = 0.75 => < 80%
                 // We are voting yes, not enabled, majority
                 BEAST_EXPECT(!ourVotes.empty());
                 BEAST_EXPECT(enabled.empty());
@@ -778,6 +791,7 @@ public:
     void
     run() override
     {
+        enable3396(false);
         testConstruct();
         testGet();
         testBadConfig();
@@ -788,6 +802,9 @@ public:
         testDetectMajority();
         testLostMajority();
         testHasUnsupported();
+        enable3396(true);
+        testDetectMajority();
+        testLostMajority();
     }
 };
 

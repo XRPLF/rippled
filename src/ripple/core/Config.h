@@ -23,6 +23,7 @@
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/FeeUnits.h>
 #include <ripple/basics/base_uint.h>
+#include <ripple/basics/chrono.h>
 #include <ripple/beast/net/IPEndpoint.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/SystemParameters.h>  // VFALCO Breaks levelization
@@ -171,6 +172,9 @@ public:
 
     // Compression
     bool COMPRESSION = false;
+
+    // Amendment majority time
+    std::chrono::seconds AMENDMENT_MAJORITY_TIME = weeks{2};
 
     // Thread pool configuration
     std::size_t WORKERS = 0;
