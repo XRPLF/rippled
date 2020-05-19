@@ -144,28 +144,16 @@ static constexpr std::chrono::minutes MAX_LEDGER_AGE_ACQUIRE{1};
 static constexpr int MAX_WRITE_LOAD_ACQUIRE{8192};
 
 // Helper function for LedgerMaster::doAdvance()
-// Returns the minimum ledger sequence in SQL database, if any.
-static boost::optional<LedgerIndex>
-minSqlSeq(Application& app)
-{
-    boost::optional<LedgerIndex> seq;
-    auto db = app.getLedgerDB().checkoutDb();
-    *db << "SELECT MIN(LedgerSeq) FROM Ledgers", soci::into(seq);
-    return seq;
-}
-
-// Helper function for LedgerMaster::doAdvance()
 // Return true if candidateLedger should be fetched from the network.
 static bool
 shouldAcquire(
     std::uint32_t const currentLedger,
     std::uint32_t const ledgerHistory,
-    boost::optional<LedgerIndex> minSeq,
-    std::uint32_t const lastRotated,
+    boost::optional<LedgerIndex> const minimumOnline,
     std::uint32_t const candidateLedger,
     beast::Journal j)
 {
-    bool ret = [&]() {
+    bool const ret = [&]() {
         // Fetch ledger if it may be the current ledger
         if (candidateLedger >= currentLedger)
             return true;
@@ -174,15 +162,9 @@ shouldAcquire(
         if (currentLedger - candidateLedger <= ledgerHistory)
             return true;
 
-        // Or it's greater than or equal to both:
-        // - the minimum persisted ledger or the maximum possible
-        //   sequence value, if no persisted ledger, and
-        // - minimum ledger that will be persisted as of the next online
-        //   deletion interval, or 1 if online deletion is disabled.
-        return candidateLedger >=
-            std::max(
-                   minSeq.value_or(std::numeric_limits<LedgerIndex>::max()),
-                   lastRotated + 1);
+        // Or if greater than or equal to a specific minimum ledger.
+        // Do nothing if the minimum ledger to keep online is unknown.
+        return minimumOnline.has_value() && candidateLedger >= *minimumOnline;
     }();
 
     JLOG(j.trace()) << "Missing ledger " << candidateLedger
@@ -1899,8 +1881,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
                         shouldAcquire(
                             mValidLedgerSeq,
                             ledger_history_,
-                            minSqlSeq(app_),
-                            app_.getSHAMapStore().getLastRotated(),
+                            app_.getSHAMapStore().minimumOnline(),
                             *missing,
                             m_journal))
                     {
@@ -2147,6 +2128,16 @@ std::size_t
 LedgerMaster::getFetchPackCacheSize() const
 {
     return fetch_packs_.getCacheSize();
+}
+
+// Returns the minimum ledger sequence in SQL database, if any.
+boost::optional<LedgerIndex>
+LedgerMaster::minSqlSeq()
+{
+    boost::optional<LedgerIndex> seq;
+    auto db = app_.getLedgerDB().checkoutDb();
+    *db << "SELECT MIN(LedgerSeq) FROM Ledgers", soci::into(seq);
+    return seq;
 }
 
 }  // namespace ripple

@@ -24,6 +24,7 @@
 #include <ripple/core/Stoppable.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <boost/optional.hpp>
 
 namespace ripple {
 
@@ -74,6 +75,25 @@ public:
     /** Returns the number of file descriptors that are needed. */
     virtual int
     fdRequired() const = 0;
+
+    /** The minimum ledger to try and maintain in our database.
+
+        This defines the lower bound for attempting to acquire historical
+        ledgers over the peer to peer network.
+
+        If online_delete is enabled, then each time online_delete executes
+        and just prior to clearing SQL databases of historical ledgers,
+        move the value forward to one past the greatest ledger being deleted.
+        This minimizes fetching of ledgers that are in the process of being
+        deleted. Without online_delete or before online_delete is
+        executed, this value is always the minimum value persisted in the
+        ledger database, if any.
+
+        @return The minimum ledger sequence to keep online based on the
+            description above. If not set, then an unseated optional.
+    */
+    virtual boost::optional<LedgerIndex>
+    minimumOnline() const = 0;
 };
 
 //------------------------------------------------------------------------------
