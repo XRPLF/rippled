@@ -305,7 +305,7 @@ void
 SHAMapStoreImp::run()
 {
     beast::setCurrentThreadName("SHAMapStore");
-    lastRotated_ = state_db_.getState().lastRotated;
+    LedgerIndex lastRotated = state_db_.getState().lastRotated;
     netOPs_ = &app_.getOPs();
     ledgerMaster_ = &app_.getLedgerMaster();
     fullBelowCache_ = &app_.family().fullbelow();
@@ -340,19 +340,19 @@ SHAMapStoreImp::run()
         }
 
         LedgerIndex const validatedSeq = validatedLedger->info().seq;
-        if (!lastRotated_)
+        if (!lastRotated)
         {
-            lastRotated_ = validatedSeq;
-            state_db_.setLastRotated(lastRotated_);
+            lastRotated = validatedSeq;
+            state_db_.setLastRotated(lastRotated);
         }
 
-        // will delete up to (not including) lastRotated_
-        if (validatedSeq >= lastRotated_ + deleteInterval_ &&
-            canDelete_ >= lastRotated_ - 1)
+        // will delete up to (not including) lastRotated
+        if (validatedSeq >= lastRotated + deleteInterval_ &&
+            canDelete_ >= lastRotated - 1)
         {
             JLOG(journal_.warn())
-                << "rotating  validatedSeq " << validatedSeq << " lastRotated_ "
-                << lastRotated_ << " deleteInterval " << deleteInterval_
+                << "rotating  validatedSeq " << validatedSeq << " lastRotated "
+                << lastRotated << " deleteInterval " << deleteInterval_
                 << " canDelete_ " << canDelete_;
 
             switch (health())
@@ -366,7 +366,7 @@ SHAMapStoreImp::run()
                 default:;
             }
 
-            clearPrior(lastRotated_);
+            clearPrior(lastRotated);
             switch (health())
             {
                 case Health::stopping:
@@ -426,14 +426,14 @@ SHAMapStoreImp::run()
                 default:;
             }
 
-            lastRotated_ = validatedSeq;
+            lastRotated = validatedSeq;
 
             dbRotating_->rotateWithLock(
                 [&](std::string const& writableBackendName) {
                     SavedState savedState;
                     savedState.writableDb = newBackend->getName();
                     savedState.archiveDb = writableBackendName;
-                    savedState.lastRotated = lastRotated_;
+                    savedState.lastRotated = lastRotated;
                     state_db_.setState(savedState);
 
                     clearCaches(validatedSeq);
@@ -624,6 +624,9 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     if (health())
         return;
 
+    // Do not allow ledgers to be acquired from the network
+    // that are about to be deleted.
+    minimumOnline_ = lastRotated + 1;
     ledgerMaster_->clearPriorLedgers(lastRotated);
     if (health())
         return;
@@ -713,6 +716,16 @@ SHAMapStoreImp::onChildrenStopped()
     {
         stopped();
     }
+}
+
+boost::optional<LedgerIndex>
+SHAMapStoreImp::minimumOnline() const
+{
+    // minimumOnline_ with 0 value is equivalent to unknown/not set.
+    // Don't attempt to acquire ledgers if that value is unknown.
+    if (deleteInterval_ && minimumOnline_)
+        return minimumOnline_.load();
+    return app_.getLedgerMaster().minSqlSeq();
 }
 
 //------------------------------------------------------------------------------

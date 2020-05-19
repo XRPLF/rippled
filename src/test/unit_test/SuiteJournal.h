@@ -98,7 +98,11 @@ public:
         : sink_(partition, threshold, suite), journal_(sink_)
     {
     }
+    // Clang 10.0.0 and 10.0.1 disagree about formatting operator&
+    // TBD Re-enable formatting when we upgrade to clang 11
+    // clang-format off
     operator beast::Journal &()
+    // clang-format on
     {
         return journal_;
     }

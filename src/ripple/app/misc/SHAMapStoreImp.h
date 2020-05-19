@@ -24,7 +24,6 @@
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/DatabaseRotating.h>
-
 #include <atomic>
 #include <condition_variable>
 #include <thread>
@@ -86,13 +85,8 @@ private:
     static std::uint32_t const minimumDeletionInterval_ = 256;
     // minimum # of ledgers required for standalone mode.
     static std::uint32_t const minimumDeletionIntervalSA_ = 8;
-    // Ledger sequence at which the last deletion interval was triggered,
-    // or the current validated sequence as of first use
-    // if there have been no prior deletions. Deletion occurs up to (but
-    // not including) this value. All ledgers past this value are accumulated
-    // until the next online deletion. This value is persisted to SQLite
-    // nearly immediately after modification.
-    std::atomic<LedgerIndex> lastRotated_{};
+    // minimum ledger to maintain online.
+    std::atomic<LedgerIndex> minimumOnline_{};
 
     NodeStore::Scheduler& scheduler_;
     beast::Journal const journal_;
@@ -168,7 +162,7 @@ public:
     LedgerIndex
     getLastRotated() override
     {
-        return lastRotated_;
+        return state_db_.getState().lastRotated;
     }
 
     // All ledgers before and including this are unprotected
@@ -186,6 +180,9 @@ public:
     rendezvous() const override;
     int
     fdRequired() const override;
+
+    boost::optional<LedgerIndex>
+    minimumOnline() const override;
 
 private:
     // callback for visitNodes
