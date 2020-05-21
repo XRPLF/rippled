@@ -444,7 +444,8 @@ isValidated(
         // Use the skip list in the last validated ledger to see if ledger
         // comes before the last validated ledger (and thus has been
         // validated).
-        auto hash = ledgerMaster.walkHashBySeq(seq);
+        auto hash =
+            ledgerMaster.walkHashBySeq(seq, InboundLedger::Reason::GENERIC);
 
         if (!hash || ledger.info().hash != *hash)
         {

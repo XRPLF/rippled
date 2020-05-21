@@ -164,7 +164,7 @@ public:
 
     /** Walk to a ledger's hash using the skip list */
     boost::optional<LedgerHash>
-    walkHashBySeq(std::uint32_t index);
+    walkHashBySeq(std::uint32_t index, InboundLedger::Reason reason);
 
     /** Walk the chain of ledger hashes to determine the hash of the
         ledger with the specified index. The referenceLedger is used as
@@ -176,7 +176,8 @@ public:
     boost::optional<LedgerHash>
     walkHashBySeq(
         std::uint32_t index,
-        std::shared_ptr<ReadView const> const& referenceLedger);
+        std::shared_ptr<ReadView const> const& referenceLedger,
+        InboundLedger::Reason reason);
 
     std::shared_ptr<Ledger const>
     getLedgerBySeq(std::uint32_t index);
