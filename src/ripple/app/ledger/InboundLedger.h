@@ -142,8 +142,9 @@ private:
 
     void
     addPeers();
+
     void
-    tryDB(Family& f);
+    tryDB(NodeStore::Database& srcDB);
 
     void
     done();

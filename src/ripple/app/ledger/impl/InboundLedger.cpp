@@ -97,9 +97,11 @@ InboundLedger::init(ScopedLockType& collectionLock)
 {
     ScopedLockType sl(mLock);
     collectionLock.unlock();
-    tryDB(app_.family());
+
+    tryDB(app_.family().db());
     if (mFailed)
         return;
+
     if (!mComplete)
     {
         auto shardStore = app_.getShardStore();
@@ -112,11 +114,13 @@ InboundLedger::init(ScopedLockType& collectionLock)
                 mFailed = true;
                 return;
             }
+
             mHaveHeader = false;
             mHaveTransactions = false;
             mHaveState = false;
             mLedger.reset();
-            tryDB(*app_.shardFamily());
+
+            tryDB(app_.shardFamily()->db());
             if (mFailed)
                 return;
         }
@@ -197,11 +201,11 @@ InboundLedger::checkLocal()
     if (!isDone())
     {
         if (mLedger)
-            tryDB(mLedger->stateMap().family());
+            tryDB(mLedger->stateMap().family().db());
         else if (mReason == Reason::SHARD)
-            tryDB(*app_.shardFamily());
+            tryDB(app_.shardFamily()->db());
         else
-            tryDB(app_.family());
+            tryDB(app_.family().db());
         if (mFailed || mComplete)
         {
             done();
@@ -293,14 +297,17 @@ deserializePrefixedHeader(Slice data)
 // See how much of the ledger data is stored locally
 // Data found in a fetch pack will be stored
 void
-InboundLedger::tryDB(Family& f)
+InboundLedger::tryDB(NodeStore::Database& srcDB)
 {
     if (!mHaveHeader)
     {
         auto makeLedger = [&, this](Blob const& data) {
             JLOG(m_journal.trace()) << "Ledger header found in fetch pack";
             mLedger = std::make_shared<Ledger>(
-                deserializePrefixedHeader(makeSlice(data)), app_.config(), f);
+                deserializePrefixedHeader(makeSlice(data)),
+                app_.config(),
+                mReason == Reason::SHARD ? *app_.shardFamily()
+                                         : app_.family());
             if (mLedger->info().hash != mHash ||
                 (mSeq != 0 && mSeq != mLedger->info().seq))
             {
@@ -314,25 +321,41 @@ InboundLedger::tryDB(Family& f)
         };
 
         // Try to fetch the ledger header from the DB
-        auto node = f.db().fetch(mHash, mSeq);
-        if (!node)
+        if (auto node = srcDB.fetch(mHash, mSeq))
         {
-            auto data = app_.getLedgerMaster().getFetchPack(mHash);
-            if (!data)
+            JLOG(m_journal.trace()) << "Ledger header found in local store";
+
+            makeLedger(node->getData());
+            if (mFailed)
                 return;
-            JLOG(m_journal.trace()) << "Ledger header found in fetch pack";
-            makeLedger(*data);
-            if (mLedger)
-                f.db().store(
-                    hotLEDGER, std::move(*data), mHash, mLedger->info().seq);
+
+            // Store the ledger header if the source and destination differ
+            auto& dstDB{mLedger->stateMap().family().db()};
+            if (std::addressof(dstDB) != std::addressof(srcDB))
+            {
+                Blob blob{node->getData()};
+                dstDB.store(
+                    hotLEDGER, std::move(blob), mHash, mLedger->info().seq);
+            }
         }
         else
         {
-            JLOG(m_journal.trace()) << "Ledger header found in node store";
-            makeLedger(node->getData());
+            // Try to fetch the ledger header from a fetch pack
+            auto data = app_.getLedgerMaster().getFetchPack(mHash);
+            if (!data)
+                return;
+
+            JLOG(m_journal.trace()) << "Ledger header found in fetch pack";
+
+            makeLedger(*data);
+            if (mFailed)
+                return;
+
+            // Store the ledger header in the ledger's database
+            mLedger->stateMap().family().db().store(
+                hotLEDGER, std::move(*data), mHash, mLedger->info().seq);
         }
-        if (mFailed)
-            return;
+
         if (mSeq == 0)
             mSeq = mLedger->info().seq;
         mLedger->stateMap().setLedgerSeq(mSeq);
@@ -540,7 +563,9 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
     if (!mHaveHeader)
     {
-        tryDB(mReason == Reason::SHARD ? *app_.shardFamily() : app_.family());
+        tryDB(
+            mReason == Reason::SHARD ? app_.shardFamily()->db()
+                                     : app_.family().db());
         if (mFailed)
         {
             JLOG(m_journal.warn()) << " failed local for " << mHash;
