@@ -183,11 +183,8 @@ Shard::open(Scheduler& scheduler, nudb::context& ctx)
                 }
 
                 if (boost::icl::length(storedSeqs) == maxLedgers_)
-                {
                     // All ledgers have been acquired, shard is complete
-                    acquireInfo_.reset();
                     backendComplete_ = true;
-                }
             }
         }
         else
@@ -291,7 +288,6 @@ Shard::store(std::shared_ptr<Ledger const> const& ledger)
         if (!initSQLite(lock))
             return false;
 
-        acquireInfo_.reset();
         backendComplete_ = true;
         setBackendCache(lock);
     }
@@ -558,8 +554,8 @@ Shard::finalize(
         }
 
         hash = ledger->info().parentHash;
+        next = std::move(ledger);
         --seq;
-        next = ledger;
     }
 
     JLOG(j_.debug()) << "shard " << index_ << " is valid";
