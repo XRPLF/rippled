@@ -737,7 +737,18 @@ LedgerMaster::tryFill(Job& job, std::shared_ptr<Ledger const> ledger)
 void
 LedgerMaster::getFetchPack(LedgerIndex missing, InboundLedger::Reason reason)
 {
-    auto haveHash{getLedgerHashForHistory(missing + 1, reason)};
+    LedgerIndex ledgerIndex{missing + 1};
+    if (reason == InboundLedger::Reason::SHARD)
+    {
+        // Do not acquire a ledger sequence greater
+        // than the last ledger in the shard
+        auto const shardStore{app_.getShardStore()};
+        auto const shardIndex{shardStore->seqToShardIndex(missing)};
+        ledgerIndex =
+            std::min(ledgerIndex, shardStore->lastLedgerSeq(shardIndex));
+    }
+
+    auto haveHash{getLedgerHashForHistory(ledgerIndex, reason)};
     if (!haveHash || haveHash->isZero())
     {
         if (reason == InboundLedger::Reason::SHARD)
@@ -1244,11 +1255,11 @@ LedgerMaster::getLedgerHashForHistory(
     {
         ret = hashOfSeq(*l, index, m_journal);
         if (!ret)
-            ret = walkHashBySeq(index, l);
+            ret = walkHashBySeq(index, l, reason);
     }
 
     if (!ret)
-        ret = walkHashBySeq(index);
+        ret = walkHashBySeq(index, reason);
 
     return ret;
 }
@@ -1581,12 +1592,12 @@ LedgerMaster::getHashBySeq(std::uint32_t index)
 }
 
 boost::optional<LedgerHash>
-LedgerMaster::walkHashBySeq(std::uint32_t index)
+LedgerMaster::walkHashBySeq(std::uint32_t index, InboundLedger::Reason reason)
 {
     boost::optional<LedgerHash> ledgerHash;
 
     if (auto referenceLedger = mValidLedger.get())
-        ledgerHash = walkHashBySeq(index, referenceLedger);
+        ledgerHash = walkHashBySeq(index, referenceLedger, reason);
 
     return ledgerHash;
 }
@@ -1594,7 +1605,8 @@ LedgerMaster::walkHashBySeq(std::uint32_t index)
 boost::optional<LedgerHash>
 LedgerMaster::walkHashBySeq(
     std::uint32_t index,
-    std::shared_ptr<ReadView const> const& referenceLedger)
+    std::shared_ptr<ReadView const> const& referenceLedger,
+    InboundLedger::Reason reason)
 {
     if (!referenceLedger || (referenceLedger->info().seq < index))
     {
@@ -1633,7 +1645,7 @@ LedgerMaster::walkHashBySeq(
         if (!ledger)
         {
             if (auto const l = app_.getInboundLedgers().acquire(
-                    *refHash, refIndex, InboundLedger::Reason::GENERIC))
+                    *refHash, refIndex, reason))
             {
                 ledgerHash = hashOfSeq(*l, index, m_journal);
                 assert(ledgerHash);

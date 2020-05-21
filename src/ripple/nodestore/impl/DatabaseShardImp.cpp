@@ -355,8 +355,8 @@ DatabaseShardImp::importShard(
         return false;
     }
 
-    auto expectedHash =
-        app_.getLedgerMaster().walkHashBySeq(lastLedgerSeq(shardIndex));
+    auto expectedHash = app_.getLedgerMaster().walkHashBySeq(
+        lastLedgerSeq(shardIndex), InboundLedger::Reason::GENERIC);
 
     if (!expectedHash)
     {

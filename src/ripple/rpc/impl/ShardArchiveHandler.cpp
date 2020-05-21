@@ -328,7 +328,8 @@ ShardArchiveHandler::next(std::lock_guard<std::mutex> const& l)
     if (auto const seq = app_.getShardStore()->lastLedgerSeq(shardIndex);
         (shouldHaveHash = app_.getLedgerMaster().getValidLedgerIndex() > seq))
     {
-        expectedHash = app_.getLedgerMaster().walkHashBySeq(seq);
+        expectedHash = app_.getLedgerMaster().walkHashBySeq(
+            seq, InboundLedger::Reason::GENERIC);
     }
 
     if (!expectedHash)
