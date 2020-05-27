@@ -1,6 +1,6 @@
 find_package (PkgConfig)
 if (PKG_CONFIG_FOUND)
-  pkg_search_module (lz4_PC QUIET liblz4>=1.8)
+  pkg_search_module (lz4_PC QUIET liblz4>=1.9)
 endif ()
 
 if(static)
