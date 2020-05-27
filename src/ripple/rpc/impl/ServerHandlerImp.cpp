@@ -443,9 +443,9 @@ ServerHandlerImp::processSession(
                  is->getConsumer(),
                  role,
                  coro,
-                 is},
+                 is,
+                 apiVersion},
                 jv,
-                apiVersion,
                 {is->user(), is->forwarded_for()}};
 
             RPC::doCommand(context, jr[jss::result]);
@@ -829,9 +829,9 @@ ServerHandlerImp::processRequest(
              usage,
              role,
              coro,
-             InfoSub::pointer()},
+             InfoSub::pointer(),
+             apiVersion},
             params,
-            apiVersion,
             {user, forwardedFor}};
         Json::Value result;
         RPC::doCommand(context, result);

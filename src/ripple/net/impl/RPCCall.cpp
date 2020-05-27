@@ -314,7 +314,10 @@ private:
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
-                return rpcError(rpcLGR_IDXS_INVALID);
+                // The command line always follows ApiMaximumSupportedVersion
+                if (RPC::ApiMaximumSupportedVersion == 1)
+                    return rpcError(rpcLGR_IDXS_INVALID);
+                return rpcError(rpcNOT_SYNCED);
             }
 
             jvRequest[jss::ledger_index_min] = jvParams[1u].asInt();
@@ -384,7 +387,10 @@ private:
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
-                return rpcError(rpcLGR_IDXS_INVALID);
+                // The command line always follows ApiMaximumSupportedVersion
+                if (RPC::ApiMaximumSupportedVersion == 1)
+                    return rpcError(rpcLGR_IDXS_INVALID);
+                return rpcError(rpcNOT_SYNCED);
             }
 
             jvRequest[jss::ledger_index_min] = jvParams[1u].asInt();

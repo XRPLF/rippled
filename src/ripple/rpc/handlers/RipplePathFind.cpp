@@ -49,7 +49,9 @@ doRipplePathFind(RPC::JsonContext& context)
         if (context.app.getLedgerMaster().getValidatedLedgerAge() >
             RPC::Tuning::maxValidatedLedgerAge)
         {
-            return rpcError(rpcNO_NETWORK);
+            if (context.apiVersion == 1)
+                return rpcError(rpcNO_NETWORK);
+            return rpcError(rpcNOT_SYNCED);
         }
 
         PathRequest::pointer request;
