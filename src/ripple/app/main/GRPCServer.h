@@ -105,6 +105,8 @@ private:
     template <class Request, class Response>
     using Handler = std::function<std::pair<Response, grpc::Status>(
         RPC::GRPCContext<Request>&)>;
+    // This implementation is currently limited to v1 of the API
+    static unsigned constexpr apiVersion = 1;
 
 public:
     explicit GRPCServerImpl(Application& app);

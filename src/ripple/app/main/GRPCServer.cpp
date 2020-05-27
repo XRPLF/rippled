@@ -142,7 +142,8 @@ GRPCServerImpl::CallData<Request, Response>::process(
                  usage,
                  role,
                  coro,
-                 InfoSub::pointer()},
+                 InfoSub::pointer(),
+                 apiVersion},
                 request_};
 
             // Make sure we can currently handle the rpc

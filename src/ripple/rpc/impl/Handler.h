@@ -83,7 +83,9 @@ conditionMet(Condition condition_required, T& context)
         JLOG(context.j.info()) << "Insufficient network mode for RPC: "
                                << context.netOps.strOperatingMode();
 
-        return rpcNO_NETWORK;
+        if (context.apiVersion == 1)
+            return rpcNO_NETWORK;
+        return rpcNOT_SYNCED;
     }
 
     if (context.app.getOPs().isAmendmentBlocked() &&
@@ -99,7 +101,9 @@ conditionMet(Condition condition_required, T& context)
         if (context.ledgerMaster.getValidatedLedgerAge() >
             Tuning::maxValidatedLedgerAge)
         {
-            return rpcNO_CURRENT;
+            if (context.apiVersion == 1)
+                return rpcNO_CURRENT;
+            return rpcNOT_SYNCED;
         }
 
         auto const cID = context.ledgerMaster.getCurrentLedgerIndex();
@@ -110,14 +114,18 @@ conditionMet(Condition condition_required, T& context)
             JLOG(context.j.debug())
                 << "Current ledger ID(" << cID
                 << ") is less than validated ledger ID(" << vID << ")";
-            return rpcNO_CURRENT;
+            if (context.apiVersion == 1)
+                return rpcNO_CURRENT;
+            return rpcNOT_SYNCED;
         }
     }
 
     if ((condition_required & NEEDS_CLOSED_LEDGER) &&
         !context.ledgerMaster.getClosedLedger())
     {
-        return rpcNO_CLOSED;
+        if (context.apiVersion == 1)
+            return rpcNO_CLOSED;
+        return rpcNOT_SYNCED;
     }
 
     return rpcSUCCESS;

@@ -1437,13 +1437,25 @@ static RPCCallTestData const rpcCallTestArray[] = {
         __LINE__,
         {"account_tx", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "580", "579"},
         RPCCallTestData::no_exception,
-        R"({
+        RPC::ApiMaximumSupportedVersion == 1 ?
+                                             R"({
     "method" : "account_tx",
     "params" : [
        {
          "error" : "lgrIdxsInvalid",
          "error_code" : 55,
          "error_message" : "Ledger indexes invalid."
+       }
+    ]
+    })"
+                                             :
+                                             R"({
+    "method" : "account_tx",
+    "params" : [
+       {
+         "error" : "notSynced",
+         "error_code" : 55,
+         "error_message" : "Not synced to the network."
        }
     ]
     })",
@@ -5905,13 +5917,25 @@ static RPCCallTestData const rpcCallTestArray[] = {
         __LINE__,
         {"tx_account", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "580", "579"},
         RPCCallTestData::no_exception,
-        R"({
+        RPC::ApiMaximumSupportedVersion == 1 ?
+                                             R"({
     "method" : "tx_account",
     "params" : [
        {
          "error" : "lgrIdxsInvalid",
          "error_code" : 55,
          "error_message" : "Ledger indexes invalid."
+       }
+    ]
+    })"
+                                             :
+                                             R"({
+    "method" : "tx_account",
+    "params" : [
+       {
+         "error" : "notSynced",
+         "error_code" : 55,
+         "error_message" : "Not synced to the network."
        }
     ]
     })",
