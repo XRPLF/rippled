@@ -211,7 +211,7 @@ extern beast::SemanticVersion const lastVersion;
 constexpr unsigned int APIInvalidVersion = 0;
 constexpr unsigned int APIVersionIfUnspecified = 1;
 constexpr unsigned int ApiMinimumSupportedVersion = 1;
-constexpr unsigned int ApiMaximumSupportedVersion = 1;
+constexpr unsigned int ApiMaximumSupportedVersion = 2;
 constexpr unsigned int APINumberVersionSupported =
     ApiMaximumSupportedVersion - ApiMinimumSupportedVersion + 1;
 

@@ -1759,9 +1759,11 @@ ApplicationImp::setup()
              getOPs(),
              getLedgerMaster(),
              c,
-             Role::ADMIN},
-            jvCommand,
-            RPC::ApiMaximumSupportedVersion};
+             Role::ADMIN,
+             {},
+             {},
+             RPC::ApiMaximumSupportedVersion},
+            jvCommand};
 
         Json::Value jvResult;
         RPC::doCommand(context, jvResult);

@@ -1441,9 +1441,9 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "account_tx",
     "params" : [
        {
-         "error" : "lgrIdxsInvalid",
+         "error" : "notSynced",
          "error_code" : 55,
-         "error_message" : "Ledger indexes invalid."
+         "error_message" : "Not synced to the network."
        }
     ]
     })",
@@ -5909,9 +5909,9 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "tx_account",
     "params" : [
        {
-         "error" : "lgrIdxsInvalid",
+         "error" : "notSynced",
          "error_code" : 55,
-         "error_message" : "Ledger indexes invalid."
+         "error_message" : "Not synced to the network."
        }
     ]
     })",

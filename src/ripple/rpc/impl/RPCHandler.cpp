@@ -65,9 +65,16 @@ namespace {
      Failure:
         {
            "result" : {
+              // api_version == 1
               "error" : "noNetwork",
-              "error_code" : 16,
-              "error_message" : "Not synced to Ripple network.",
+              "error_code" : 17,
+              "error_message" : "Not synced to the network.",
+
+              // api_version == 2
+              "error" : "notSynced",
+              "error_code" : 18,
+              "error_message" : "Not synced to the network.",
+
               "request" : {
                  "command" : "ledger",
                  "ledger_index" : 10300865
@@ -95,9 +102,16 @@ namespace {
 
      Failure:
         {
+          // api_version == 1
           "error" : "noNetwork",
-          "error_code" : 16,
-          "error_message" : "Not synced to Ripple network.",
+          "error_code" : 17,
+          "error_message" : "Not synced to the network.",
+
+          // api_version == 2
+          "error" : "notSynced",
+          "error_code" : 18,
+          "error_message" : "Not synced to the network.",
+
           "request" : {
              "command" : "ledger",
              "ledger_index" : 10300865

@@ -314,7 +314,9 @@ private:
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
-                return rpcError(rpcLGR_IDXS_INVALID);
+                // This is an api_version 2 response
+                // because it is a command line request
+                return rpcError(rpcNOT_SYNCED);
             }
 
             jvRequest[jss::ledger_index_min] = jvParams[1u].asInt();
@@ -384,7 +386,9 @@ private:
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
-                return rpcError(rpcLGR_IDXS_INVALID);
+                // This is an api_version 2 response
+                // because it is a command line request
+                return rpcError(rpcNOT_SYNCED);
             }
 
             jvRequest[jss::ledger_index_min] = jvParams[1u].asInt();

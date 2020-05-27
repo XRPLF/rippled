@@ -7,6 +7,11 @@ This document contains the release notes for `rippled`, the reference server imp
  
 Have new ideas? Need help with setting up your node? Come visit us [here](https://github.com/ripple/rippled/issues/new/choose)
 
+# Change Log
+
+- Work on a version 2 of the XRP Network API has begun.  The new API returns the code `notSynced` in place of `noClosed`, `noCurrent`, and `noNetwork`.  And `invalidParams` is returned in place of `lgrIdxInvalid`.
+- The version 2 API can be specified by adding "api_version" = 2 to your json request.  The default version remains 1 (if unspecified), except for the command line interface which tracks version 2.
+
 # Releases
 
 ## Version 1.5.0

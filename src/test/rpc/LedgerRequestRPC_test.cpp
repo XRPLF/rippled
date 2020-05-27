@@ -297,10 +297,10 @@ public:
         // date check to trigger
         env.timeKeeper().adjustCloseTime(weeks{3});
         result = env.rpc("ledger_request", "1")[jss::result];
-        BEAST_EXPECT(result[jss::error] == "noCurrent");
+        BEAST_EXPECT(result[jss::error] == "notSynced");
         BEAST_EXPECT(result[jss::status] == "error");
         BEAST_EXPECT(
-            result[jss::error_message] == "Current ledger is unavailable.");
+            result[jss::error_message] == "Not synced to the network.");
     }
 
     void

@@ -270,7 +270,8 @@ checkTxJsonFields(
     bool const verify,
     std::chrono::seconds validatedLedgerAge,
     Config const& config,
-    LoadFeeTrack const& feeTrack)
+    LoadFeeTrack const& feeTrack,
+    unsigned apiVersion)
 {
     std::pair<Json::Value, AccountID> ret;
 
@@ -308,7 +309,10 @@ checkTxJsonFields(
     if (verify && !config.standalone() &&
         (validatedLedgerAge > Tuning::maxValidatedLedgerAge))
     {
-        ret.first = rpcError(rpcNO_CURRENT);
+        if (apiVersion == 1)
+            ret.first = rpcError(rpcNO_CURRENT);
+        else
+            ret.first = rpcError(rpcNOT_SYNCED);
         return ret;
     }
 
@@ -384,7 +388,8 @@ transactionPreProcessImpl(
         verify,
         validatedLedgerAge,
         app.config(),
-        app.getFeeTrack());
+        app.getFeeTrack(),
+        getAPIVersionNumber(params));
 
     if (RPC::contains_error(txJsonResult))
         return std::move(txJsonResult);
@@ -1068,7 +1073,8 @@ transactionSubmitMultiSigned(
         true,
         validatedLedgerAge,
         app.config(),
-        app.getFeeTrack());
+        app.getFeeTrack(),
+        getAPIVersionNumber(jvRequest));
 
     if (RPC::contains_error(txJsonResult))
         return std::move(txJsonResult);
