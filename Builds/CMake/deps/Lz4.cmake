@@ -21,7 +21,7 @@ else()
   ExternalProject_Add (lz4
     PREFIX ${nih_cache_path}
     GIT_REPOSITORY https://github.com/lz4/lz4.git
-    GIT_TAG v1.8.2
+    GIT_TAG v1.9.2
     SOURCE_SUBDIR contrib/cmake_unofficial
     CMAKE_ARGS
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
