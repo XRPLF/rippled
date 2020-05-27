@@ -156,8 +156,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a2eacb63fdf26723bfd4cb7505f3ea0d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aef72d5d8b2687f3fdbdfba3fa87b2e8f"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#aef72d5d8b2687f3fdbdfba3fa87b2e8f">getBookPage</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; &amp;lpLedger, <a class="el" href="classripple_1_1Book.html">Book</a> const &amp;book, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;uTakerID, bool const bProof, unsigned int iLimit, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvMarker, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;jvResult)=0</td></tr>
 <tr class="separator:aef72d5d8b2687f3fdbdfba3fa87b2e8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abdeb3aca1c28319bb548dff23c80ccbf"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#abdeb3aca1c28319bb548dff23c80ccbf">processTrustedProposal</a> (<a class="el" href="classripple_1_1RCLCxPeerPos.html">RCLCxPeerPos</a> peerPos, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMProposeSet &gt; <a class="el" href="namespaceripple.html#a53f80df10254751781250aa20704e98f">set</a>)=0</td></tr>
-<tr class="separator:abdeb3aca1c28319bb548dff23c80ccbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa137da1002861227d3e7b346de52020d"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#aa137da1002861227d3e7b346de52020d">processTrustedProposal</a> (<a class="el" href="classripple_1_1RCLCxPeerPos.html">RCLCxPeerPos</a> peerPos)=0</td></tr>
+<tr class="separator:aa137da1002861227d3e7b346de52020d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa0f61ec21b1c950dc46892cea846faf4"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#aa0f61ec21b1c950dc46892cea846faf4">recvValidation</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &gt; const &amp;val, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;source)=0</td></tr>
 <tr class="separator:aa0f61ec21b1c950dc46892cea846faf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a554532c5230a96a9a76b157144a37eb8"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#a554532c5230a96a9a76b157144a37eb8">mapComplete</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMap.html">SHAMap</a> &gt; const &amp;map, bool fromAcquire)=0</td></tr>
@@ -396,7 +396,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8h_source.html#l00257">257</a> of file <a class="el" href="NetworkOPs_8h_source.html">NetworkOPs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8h_source.html#l00255">255</a> of file <a class="el" href="NetworkOPs_8h_source.html">NetworkOPs.h</a>.</p>
 
 </div>
 </div>
@@ -412,7 +412,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8h_source.html#l00258">258</a> of file <a class="el" href="NetworkOPs_8h_source.html">NetworkOPs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8h_source.html#l00256">256</a> of file <a class="el" href="NetworkOPs_8h_source.html">NetworkOPs.h</a>.</p>
 
 </div>
 </div>
@@ -428,7 +428,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8h_source.html#l00280">280</a> of file <a class="el" href="NetworkOPs_8h_source.html">NetworkOPs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8h_source.html#l00278">278</a> of file <a class="el" href="NetworkOPs_8h_source.html">NetworkOPs.h</a>.</p>
 
 </div>
 </div>
@@ -444,7 +444,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8h_source.html#l00281">281</a> of file <a class="el" href="NetworkOPs_8h_source.html">NetworkOPs.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8h_source.html#l00279">279</a> of file <a class="el" href="NetworkOPs_8h_source.html">NetworkOPs.h</a>.</p>
 
 </div>
 </div>
@@ -526,7 +526,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l03850">3850</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l03847">3847</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -873,8 +873,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="abdeb3aca1c28319bb548dff23c80ccbf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abdeb3aca1c28319bb548dff23c80ccbf">&#9670;&nbsp;</a></span>processTrustedProposal()</h2>
+<a id="aa137da1002861227d3e7b346de52020d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa137da1002861227d3e7b346de52020d">&#9670;&nbsp;</a></span>processTrustedProposal()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -883,21 +883,11 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual void ripple::NetworkOPs::processTrustedProposal </td>
+          <td class="memname">virtual bool ripple::NetworkOPs::processTrustedProposal </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1RCLCxPeerPos.html">RCLCxPeerPos</a>&#160;</td>
-          <td class="paramname"><em>peerPos</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
+          <td class="paramname"><em>peerPos</em></td><td>)</td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMProposeSet &gt;&#160;</td>
-          <td class="paramname"><em>set</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -907,7 +897,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#ae0ca4920e104d687c33d39c0716dbcfd">ripple::NetworkOPsImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#aa5d3cc02cbc53b8e171b531fe4b2b8db">ripple::NetworkOPsImp</a>.</p>
 
 </div>
 </div>
@@ -3187,7 +3177,7 @@ Private Attributes</h2></td></tr>
 <p>The default implementation simply calls <a class="el" href="classripple_1_1Stoppable.html#a65a95f9c14637491df60d3a07518fa09" title="Called by derived classes to indicate that the stoppable has stopped.">stopped()</a>. This is applicable when the <a class="el" href="classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping.">Stoppable</a> has a trivial stop operation (or no stop operation), and we are merely using the <a class="el" href="classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping.">Stoppable</a> API to position it as a dependency of some parent service.</p>
 <p>Thread safety: May not block for long periods. Guaranteed only to be called once. Must be safe to call from any thread at any time. </p>
 
-<p>Reimplemented in <a class="el" href="classripple_1_1ApplicationImp.html#ac3e552208e87d45c4c4283ec92d8f597">ripple::ApplicationImp</a>, <a class="el" href="classripple_1_1NetworkOPsImp.html#a566af9184de6a79e72afeb03a2b9ef70">ripple::NetworkOPsImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1Root.html#a7d8b2b342d239b17ac4363483faa30f8">ripple::test::Stoppable_test::Root</a>, <a class="el" href="classripple_1_1OverlayImpl.html#ac252980b7a02834b5a4577456ad8f7a3">ripple::OverlayImpl</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1C.html#a0c231bfc40280225d0503fb038d7f3c1">ripple::test::Stoppable_test::C</a>, <a class="el" href="classripple_1_1InboundLedgersImp.html#a13863a89515101f87c811717eff67560">ripple::InboundLedgersImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1I.html#adfef651261465710ea126b92a4bea7a2">ripple::test::Stoppable_test::I</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1B.html#a4ba31e326d2e5c40012be3b7f771243a">ripple::test::Stoppable_test::B</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1H.html#a77d515e8d04274637def495440544e03">ripple::test::Stoppable_test::H</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1G.html#ab05f8bc37eef6d54af615290f2331f44">ripple::test::Stoppable_test::G</a>, <a class="el" href="classripple_1_1JobQueue.html#a699f1396dab44ca8f0593e43e2b3f04b">ripple::JobQueue</a>, <a class="el" href="classripple_1_1SHAMapStoreImp.html#ad51f8995dc2a26e24a6057ea904dcb4a">ripple::SHAMapStoreImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1A.html#ac4c9c208f2ba41c717841f4d34d198ec">ripple::test::Stoppable_test::A</a>, <a class="el" href="classripple_1_1InboundTransactionsImp.html#aa7e193d3f153d0bd6c294c1b060a62aa">ripple::InboundTransactionsImp</a>, <a class="el" href="classripple_1_1PeerFinder_1_1ManagerImp.html#a24a58d109ca55cd2e7926974bc9645f8">ripple::PeerFinder::ManagerImp</a>, <a class="el" href="classripple_1_1NodeStore_1_1Database.html#a0923c37ede6c7ffeca02f59f566cf588">ripple::NodeStore::Database</a>, <a class="el" href="classripple_1_1perf_1_1PerfLogImp.html#a3ecaa02f9bbc6c0cd3990688f8e5ee4b">ripple::perf::PerfLogImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1F.html#a4dc097199a6b09417838bca44fe29809">ripple::test::Stoppable_test::F</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1E.html#a72d702ae8591244422a5d8335f71e18f">ripple::test::Stoppable_test::E</a>, <a class="el" href="classripple_1_1ServerHandlerImp.html#adb3155b91ed400c237732dc331b69d43">ripple::ServerHandlerImp</a>, <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a9f17f5785642cce8324c56de29a14770">ripple::NodeStore::DatabaseShardImp</a>, <a class="el" href="classripple_1_1detail_1_1LedgerCleanerImp.html#ab4b28d4a1d4ebcba9c5b3c855dc2ace2">ripple::detail::LedgerCleanerImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1J.html#aaebc0ea2a7765741af4e28235c387f0b">ripple::test::Stoppable_test::J</a>, <a class="el" href="classripple_1_1RPC_1_1ShardArchiveHandler.html#a12e34fdf5bd82be5f3738391578a9020">ripple::RPC::ShardArchiveHandler</a>, <a class="el" href="classripple_1_1LoadManager.html#a7db1c4190e9152cefdaa35d7f1d242f9">ripple::LoadManager</a>, <a class="el" href="structripple_1_1PerfLog__test_1_1PerfLogParent.html#a5089e33090d781c5f0d959dc568b3244">ripple::PerfLog_test::PerfLogParent</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1D.html#ad20ec39dd30bd1ed235760fe8be4d644">ripple::test::Stoppable_test::D</a>, <a class="el" href="classripple_1_1NodeStoreScheduler.html#afb4cb30f4a2af0a88ed51eee872689f3">ripple::NodeStoreScheduler</a>, and <a class="el" href="classripple_1_1NodeStore_1_1TaskQueue.html#a621ef5d4bf00e8499bef58c8789686c3">ripple::NodeStore::TaskQueue</a>.</p>
+<p>Reimplemented in <a class="el" href="classripple_1_1ApplicationImp.html#ac3e552208e87d45c4c4283ec92d8f597">ripple::ApplicationImp</a>, <a class="el" href="classripple_1_1NetworkOPsImp.html#a566af9184de6a79e72afeb03a2b9ef70">ripple::NetworkOPsImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1Root.html#a7d8b2b342d239b17ac4363483faa30f8">ripple::test::Stoppable_test::Root</a>, <a class="el" href="classripple_1_1OverlayImpl.html#ac252980b7a02834b5a4577456ad8f7a3">ripple::OverlayImpl</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1C.html#a0c231bfc40280225d0503fb038d7f3c1">ripple::test::Stoppable_test::C</a>, <a class="el" href="classripple_1_1InboundLedgersImp.html#a13863a89515101f87c811717eff67560">ripple::InboundLedgersImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1I.html#adfef651261465710ea126b92a4bea7a2">ripple::test::Stoppable_test::I</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1B.html#a4ba31e326d2e5c40012be3b7f771243a">ripple::test::Stoppable_test::B</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1H.html#a77d515e8d04274637def495440544e03">ripple::test::Stoppable_test::H</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1G.html#ab05f8bc37eef6d54af615290f2331f44">ripple::test::Stoppable_test::G</a>, <a class="el" href="classripple_1_1JobQueue.html#a699f1396dab44ca8f0593e43e2b3f04b">ripple::JobQueue</a>, <a class="el" href="classripple_1_1SHAMapStoreImp.html#ad51f8995dc2a26e24a6057ea904dcb4a">ripple::SHAMapStoreImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1A.html#ac4c9c208f2ba41c717841f4d34d198ec">ripple::test::Stoppable_test::A</a>, <a class="el" href="classripple_1_1InboundTransactionsImp.html#aa7e193d3f153d0bd6c294c1b060a62aa">ripple::InboundTransactionsImp</a>, <a class="el" href="classripple_1_1PeerFinder_1_1ManagerImp.html#a24a58d109ca55cd2e7926974bc9645f8">ripple::PeerFinder::ManagerImp</a>, <a class="el" href="classripple_1_1NodeStore_1_1Database.html#a0923c37ede6c7ffeca02f59f566cf588">ripple::NodeStore::Database</a>, <a class="el" href="classripple_1_1perf_1_1PerfLogImp.html#a3ecaa02f9bbc6c0cd3990688f8e5ee4b">ripple::perf::PerfLogImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1F.html#a4dc097199a6b09417838bca44fe29809">ripple::test::Stoppable_test::F</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1E.html#a72d702ae8591244422a5d8335f71e18f">ripple::test::Stoppable_test::E</a>, <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a9f17f5785642cce8324c56de29a14770">ripple::NodeStore::DatabaseShardImp</a>, <a class="el" href="classripple_1_1ServerHandlerImp.html#adb3155b91ed400c237732dc331b69d43">ripple::ServerHandlerImp</a>, <a class="el" href="classripple_1_1detail_1_1LedgerCleanerImp.html#ab4b28d4a1d4ebcba9c5b3c855dc2ace2">ripple::detail::LedgerCleanerImp</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1J.html#aaebc0ea2a7765741af4e28235c387f0b">ripple::test::Stoppable_test::J</a>, <a class="el" href="classripple_1_1LoadManager.html#a7db1c4190e9152cefdaa35d7f1d242f9">ripple::LoadManager</a>, <a class="el" href="classripple_1_1RPC_1_1ShardArchiveHandler.html#a12e34fdf5bd82be5f3738391578a9020">ripple::RPC::ShardArchiveHandler</a>, <a class="el" href="structripple_1_1PerfLog__test_1_1PerfLogParent.html#a5089e33090d781c5f0d959dc568b3244">ripple::PerfLog_test::PerfLogParent</a>, <a class="el" href="classripple_1_1test_1_1Stoppable__test_1_1D.html#ad20ec39dd30bd1ed235760fe8be4d644">ripple::test::Stoppable_test::D</a>, <a class="el" href="classripple_1_1NodeStoreScheduler.html#afb4cb30f4a2af0a88ed51eee872689f3">ripple::NodeStoreScheduler</a>, and <a class="el" href="classripple_1_1NodeStore_1_1TaskQueue.html#a621ef5d4bf00e8499bef58c8789686c3">ripple::NodeStore::TaskQueue</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="Stoppable_8cpp_source.html#l00090">90</a> of file <a class="el" href="Stoppable_8cpp_source.html">Stoppable.cpp</a>.</p>
 

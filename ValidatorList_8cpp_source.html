@@ -254,7 +254,7 @@ $(function() {
 <div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;        <span class="comment">// Config listed keys never expire</span></div>
 <div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;        <span class="keywordflow">if</span> (it.second)</div>
 <div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;            it.first-&gt;second.expiration = TimeKeeper::time_point::max();</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;        it.first-&gt;second.list.emplace_back(std::move(*<span class="keywordtype">id</span>));</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;        it.first-&gt;second.list.emplace_back(*<span class="keywordtype">id</span>);</div>
 <div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        it.first-&gt;second.available = <span class="keyword">true</span>;</div>
 <div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;        ++<a class="code" href="classripple_1_1ValidatorList.html#a002fda13878b813249f3fd49e64577fd">count</a>;</div>
 <div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    }</div>

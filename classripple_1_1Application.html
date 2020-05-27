@@ -180,6 +180,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a25c5851322f6cb3762563fd1278c6143"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5ea4991eb9c4d29e8de734016293ba33"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html">NodeStore::DatabaseShard</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a5ea4991eb9c4d29e8de734016293ba33">getShardStore</a> ()=0</td></tr>
 <tr class="separator:a5ea4991eb9c4d29e8de734016293ba33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae51f5437efa746b90d7d8b1ba16a153c"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1RPC_1_1ShardArchiveHandler.html">RPC::ShardArchiveHandler</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#ae51f5437efa746b90d7d8b1ba16a153c">getShardArchiveHandler</a> (bool tryRecovery=false)=0</td></tr>
+<tr class="separator:ae51f5437efa746b90d7d8b1ba16a153c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d349a4ada03689eae062c0399762dad"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1InboundLedgers.html">InboundLedgers</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a6d349a4ada03689eae062c0399762dad">getInboundLedgers</a> ()=0</td></tr>
 <tr class="separator:a6d349a4ada03689eae062c0399762dad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acad1f0fbf3789743a56db3f9907d7c1c"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1InboundTransactions.html">InboundTransactions</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#acad1f0fbf3789743a56db3f9907d7c1c">getInboundTransactions</a> ()=0</td></tr>
@@ -294,7 +296,7 @@ Private Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="Application_8h_source.html#l00094">94</a> of file <a class="el" href="Application_8h_source.html">Application.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8h_source.html#l00097">97</a> of file <a class="el" href="Application_8h_source.html">Application.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="af49bed1dd2fb49345992a96347c50f76"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af49bed1dd2fb49345992a96347c50f76">&#9670;&nbsp;</a></span>MutexType</h2>
@@ -308,7 +310,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8h_source.html#l00108">108</a> of file <a class="el" href="Application_8h_source.html">Application.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8h_source.html#l00111">111</a> of file <a class="el" href="Application_8h_source.html">Application.h</a>.</p>
 
 </div>
 </div>
@@ -328,7 +330,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02341">2341</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02387">2387</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1248,6 +1250,34 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Implemented in <a class="el" href="classripple_1_1ApplicationImp.html#a64b18cd02d5b89e13e4951fe3ee75aae">ripple::ApplicationImp</a>.</p>
+
+</div>
+</div>
+<a id="ae51f5437efa746b90d7d8b1ba16a153c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae51f5437efa746b90d7d8b1ba16a153c">&#9670;&nbsp;</a></span>getShardArchiveHandler()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classripple_1_1RPC_1_1ShardArchiveHandler.html">RPC::ShardArchiveHandler</a>* ripple::Application::getShardArchiveHandler </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>tryRecovery</em> = <code>false</code></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classripple_1_1ApplicationImp.html#a24955f36eab6fd0fdd098ed81e0fadec">ripple::ApplicationImp</a>.</p>
 
 </div>
 </div>

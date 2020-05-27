@@ -484,7 +484,7 @@ $(function() {
 <div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;    {</div>
 <div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;        <span class="comment">// uncommon type</span></div>
 <div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;        type = <a class="code" href="classripple_1_1SerialIter.html#abd5f83aa8b3943ca9cbfa005aaa33734">get8</a>();</div>
-<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;        <span class="keywordflow">if</span> (type == 0 || type &lt; 16)</div>
+<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;        <span class="keywordflow">if</span> (type &lt; 16)</div>
 <div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
 <div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;                <span class="stringliteral">&quot;gFID: uncommon type out of range &quot;</span> + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(type));</div>
 <div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;    }</div>
@@ -493,7 +493,7 @@ $(function() {
 <div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;    {</div>
 <div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;        <span class="comment">// uncommon name</span></div>
 <div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;        name = <a class="code" href="classripple_1_1SerialIter.html#abd5f83aa8b3943ca9cbfa005aaa33734">get8</a>();</div>
-<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;        <span class="keywordflow">if</span> (name == 0 || name &lt; 16)</div>
+<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;        <span class="keywordflow">if</span> (name &lt; 16)</div>
 <div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;            Throw&lt;std::runtime_error&gt;(</div>
 <div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;                <span class="stringliteral">&quot;gFID: uncommon name out of range &quot;</span> + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(name));</div>
 <div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;    }</div>

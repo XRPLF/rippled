@@ -576,267 +576,329 @@ $(function() {
 <div class="line"><a name="l00505"></a><span class="lineno">  505</span>&#160;        }</div>
 <div class="line"><a name="l00506"></a><span class="lineno">  506</span>&#160;    };</div>
 <div class="line"><a name="l00507"></a><span class="lineno">  507</span>&#160; </div>
-<div class="line"><a name="l00508"></a><span class="lineno">  508</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00509"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1Tx__test.html#acb273a1ee3b529d2648d0da9809945a7">  509</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1Tx__test.html#acb273a1ee3b529d2648d0da9809945a7">testTxGrpc</a>()</div>
-<div class="line"><a name="l00510"></a><span class="lineno">  510</span>&#160;    {</div>
-<div class="line"><a name="l00511"></a><span class="lineno">  511</span>&#160;        testcase(<span class="stringliteral">&quot;Test Tx Grpc&quot;</span>);</div>
-<div class="line"><a name="l00512"></a><span class="lineno">  512</span>&#160; </div>
-<div class="line"><a name="l00513"></a><span class="lineno">  513</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a name="l00514"></a><span class="lineno">  514</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Config&gt;</a> config = <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a287cf5b6a71db097fe1678c88926efb4">envconfig</a>(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a8da073628362c9cf1db481fb48c09d10">addGrpcConfig</a>);</div>
-<div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> grpcPort = *(*config)[<span class="stringliteral">&quot;port_grpc&quot;</span>].get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&gt;(<span class="stringliteral">&quot;port&quot;</span>);</div>
-<div class="line"><a name="l00516"></a><span class="lineno">  516</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>, std::move(config));</div>
-<div class="line"><a name="l00517"></a><span class="lineno">  517</span>&#160; </div>
-<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160;        <span class="keyword">using namespace </span>std::chrono_literals;</div>
-<div class="line"><a name="l00519"></a><span class="lineno">  519</span>&#160;        <span class="comment">// Set time to this value (or greater) to get delivered_amount in meta</span></div>
-<div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160;        env.timeKeeper().set(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a>{446000001s});</div>
-<div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160; </div>
-<div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;        <span class="keyword">auto</span> grpcTx = [&amp;grpcPort](<span class="keyword">auto</span> hash, <span class="keyword">auto</span> binary) {</div>
-<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;            <a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcTxClient.html">GrpcTxClient</a> client(grpcPort);</div>
-<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;            client.<a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcTxClient.html#a5289e3d3df86ee3bb7e0d9f733246e54">request</a>.set_hash(&amp;hash, <span class="keyword">sizeof</span>(hash));</div>
-<div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;            client.<a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcTxClient.html#a5289e3d3df86ee3bb7e0d9f733246e54">request</a>.set_binary(binary);</div>
-<div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;            client.<a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcTxClient.html#a92409803f4f6c0b1ef30777eed87fb3c">Tx</a>();</div>
-<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;            <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;bool, org::xrpl::rpc::v1::GetTransactionResponse&gt;</a>(</div>
-<div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;                client.<a class="code" href="structripple_1_1test_1_1GRPCTestClientBase.html#aa10315a3d1766936e53f33210ac435ac">status</a>.ok(), client.<a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcTxClient.html#ae697fee5eb4cc37d20e3ca0ca561b922">reply</a>);</div>
-<div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;        };</div>
-<div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160; </div>
-<div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> A1{<span class="stringliteral">&quot;A1&quot;</span>};</div>
-<div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> A2{<span class="stringliteral">&quot;A2&quot;</span>};</div>
-<div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> A3{<span class="stringliteral">&quot;A3&quot;</span>};</div>
-<div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;        env.fund(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10000), A1);</div>
-<div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160;        env.fund(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10000), A2);</div>
-<div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160;        env.close();</div>
-<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;        env.trust(A2[<span class="stringliteral">&quot;USD&quot;</span>](1000), A1);</div>
-<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160;        env.close();</div>
-<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a50cacef3867fc01273aa9c29231f9a7c">fset</a>(A2, 5));  <span class="comment">// set asfAccountTxnID flag</span></div>
+<div class="line"><a name="l00508"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html">  508</a></span>&#160;    <span class="keyword">class </span><a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html">GrpcAccountTxClient</a> : <span class="keyword">public</span> <a class="code" href="structripple_1_1test_1_1GRPCTestClientBase.html">GRPCTestClientBase</a></div>
+<div class="line"><a name="l00509"></a><span class="lineno">  509</span>&#160;    {</div>
+<div class="line"><a name="l00510"></a><span class="lineno">  510</span>&#160;    <span class="keyword">public</span>:</div>
+<div class="line"><a name="l00511"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#a0d0391aafb49970814c4290abd4ef64e">  511</a></span>&#160;        org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest <a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#a0d0391aafb49970814c4290abd4ef64e">request</a>;</div>
+<div class="line"><a name="l00512"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#a68c964e8343cbc1c4741292ac99856c4">  512</a></span>&#160;        org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse <a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#a68c964e8343cbc1c4741292ac99856c4">reply</a>;</div>
+<div class="line"><a name="l00513"></a><span class="lineno">  513</span>&#160; </div>
+<div class="line"><a name="l00514"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#aab59fab05973650cd0af4c6473374682">  514</a></span>&#160;        <span class="keyword">explicit</span> <a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#aab59fab05973650cd0af4c6473374682">GrpcAccountTxClient</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; port)</div>
+<div class="line"><a name="l00515"></a><span class="lineno">  515</span>&#160;            : <a class="code" href="structripple_1_1test_1_1GRPCTestClientBase.html">GRPCTestClientBase</a>(port)</div>
+<div class="line"><a name="l00516"></a><span class="lineno">  516</span>&#160;        {</div>
+<div class="line"><a name="l00517"></a><span class="lineno">  517</span>&#160;        }</div>
+<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160; </div>
+<div class="line"><a name="l00519"></a><span class="lineno">  519</span>&#160;        <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00520"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#abe369758270ab5c2d7351497cd695c02">  520</a></span>&#160;        <a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#abe369758270ab5c2d7351497cd695c02">AccountTx</a>()</div>
+<div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;        {</div>
+<div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;            <a class="code" href="structripple_1_1test_1_1GRPCTestClientBase.html#aa10315a3d1766936e53f33210ac435ac">status</a> =</div>
+<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;                <a class="code" href="structripple_1_1test_1_1GRPCTestClientBase.html#ad7f22d68c721c8362822215819cf6162">stub_</a>-&gt;GetAccountTransactionHistory(&amp;<a class="code" href="structripple_1_1test_1_1GRPCTestClientBase.html#aee052bae4886450a25a7a934ce6672f1">context</a>, <a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#a0d0391aafb49970814c4290abd4ef64e">request</a>, &amp;<a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#a68c964e8343cbc1c4741292ac99856c4">reply</a>);</div>
+<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;        }</div>
+<div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;    };</div>
+<div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160; </div>
+<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00528"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1Tx__test.html#acb273a1ee3b529d2648d0da9809945a7">  528</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1Tx__test.html#acb273a1ee3b529d2648d0da9809945a7">testTxGrpc</a>()</div>
+<div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;    {</div>
+<div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;        testcase(<span class="stringliteral">&quot;Test Tx Grpc&quot;</span>);</div>
+<div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160; </div>
+<div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Config&gt;</a> config = <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a287cf5b6a71db097fe1678c88926efb4">envconfig</a>(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a8da073628362c9cf1db481fb48c09d10">addGrpcConfig</a>);</div>
+<div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> grpcPort = *(*config)[<span class="stringliteral">&quot;port_grpc&quot;</span>].get&lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&gt;(<span class="stringliteral">&quot;port&quot;</span>);</div>
+<div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>, std::move(config));</div>
+<div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160; </div>
+<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;        <span class="keyword">using namespace </span>std::chrono_literals;</div>
+<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160;        <span class="comment">// Set time to this value (or greater) to get delivered_amount in meta</span></div>
+<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;        env.timeKeeper().set(<a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a>{446000001s});</div>
 <div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160; </div>
-<div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;        <span class="comment">// SignerListSet</span></div>
-<div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;        env(signers(A2, 1, {{<span class="stringliteral">&quot;bogie&quot;</span>, 1}, {<span class="stringliteral">&quot;demon&quot;</span>, 1}, {A1, 1}, {A3, 1}}),</div>
-<div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1sig.html">sig</a>(A2));</div>
-<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;        env.close();</div>
-<div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::shared_ptr&lt;STTx const&gt;</a>&gt; txns;</div>
-<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> startLegSeq = env.current()-&gt;info().seq;</div>
-<div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160; </div>
-<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;        <a class="code" href="classripple_1_1base__uint.html">uint256</a> prevHash;</div>
-<div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 14; ++i)</div>
-<div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;        {</div>
-<div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> baseFee = env.current()-&gt;fees().base;</div>
-<div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160;            <span class="keyword">auto</span> txfee = <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(i + (2 * baseFee));</div>
-<div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160;            <span class="keyword">auto</span> lls = <a class="code" href="structripple_1_1test_1_1jtx_1_1last__ledger__seq.html">last_ledger_seq</a>(i + startLegSeq + 20);</div>
-<div class="line"><a name="l00554"></a><span class="lineno">  554</span>&#160;            <span class="keyword">auto</span> dsttag = <a class="code" href="structripple_1_1test_1_1jtx_1_1dtag.html">dtag</a>(i * 456);</div>
-<div class="line"><a name="l00555"></a><span class="lineno">  555</span>&#160;            <span class="keyword">auto</span> srctag = <a class="code" href="structripple_1_1test_1_1jtx_1_1stag.html">stag</a>(i * 321);</div>
-<div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;            <span class="keyword">auto</span> sm = <a class="code" href="classripple_1_1test_1_1jtx_1_1sendmax.html">sendmax</a>(A2[<span class="stringliteral">&quot;USD&quot;</span>](1000));</div>
-<div class="line"><a name="l00557"></a><span class="lineno">  557</span>&#160;            <span class="keyword">auto</span> dm = <a class="code" href="classripple_1_1test_1_1jtx_1_1delivermin.html">delivermin</a>(A2[<span class="stringliteral">&quot;USD&quot;</span>](50));</div>
-<div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160;            <span class="keyword">auto</span> txf = <a class="code" href="classripple_1_1test_1_1jtx_1_1txflags.html">txflags</a>(131072);  <span class="comment">// partial payment flag</span></div>
-<div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160;            <span class="keyword">auto</span> txnid = <a class="code" href="structripple_1_1test_1_1jtx_1_1account__txn__id.html">account_txn_id</a>(prevHash);</div>
-<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;            <span class="keyword">auto</span> inv = <a class="code" href="structripple_1_1test_1_1jtx_1_1invoice__id.html">invoice_id</a>(prevHash);</div>
-<div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;            <span class="keyword">auto</span> mem1 = <a class="code" href="classripple_1_1test_1_1jtx_1_1memo.html">memo</a>(<span class="stringliteral">&quot;foo&quot;</span>, <span class="stringliteral">&quot;bar&quot;</span>, <span class="stringliteral">&quot;baz&quot;</span>);</div>
-<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;            <span class="keyword">auto</span> mem2 = <a class="code" href="classripple_1_1test_1_1jtx_1_1memo.html">memo</a>(<span class="stringliteral">&quot;dragons&quot;</span>, <span class="stringliteral">&quot;elves&quot;</span>, <span class="stringliteral">&quot;goblins&quot;</span>);</div>
-<div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160; </div>
-<div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;            <span class="keywordflow">if</span> (i &amp; 1)</div>
-<div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160;            {</div>
-<div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160;                <span class="keywordflow">if</span> (i &amp; 2)</div>
-<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;                {</div>
-<div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;                    env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(A2, A1, A2[<span class="stringliteral">&quot;USD&quot;</span>](100)),</div>
-<div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;                        txfee,</div>
-<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;                        srctag,</div>
-<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;                        dsttag,</div>
-<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;                        lls,</div>
-<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;                        sm,</div>
-<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;                        dm,</div>
-<div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160;                        txf,</div>
-<div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160;                        txnid,</div>
-<div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160;                        inv,</div>
-<div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160;                        mem1,</div>
-<div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;                        mem2,</div>
-<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;                        <a class="code" href="classripple_1_1test_1_1jtx_1_1sig.html">sig</a>(A2));</div>
-<div class="line"><a name="l00581"></a><span class="lineno">  581</span>&#160;                }</div>
-<div class="line"><a name="l00582"></a><span class="lineno">  582</span>&#160;                <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00583"></a><span class="lineno">  583</span>&#160;                {</div>
-<div class="line"><a name="l00584"></a><span class="lineno">  584</span>&#160;                    env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(A2, A1, A2[<span class="stringliteral">&quot;USD&quot;</span>](100)),</div>
-<div class="line"><a name="l00585"></a><span class="lineno">  585</span>&#160;                        txfee,</div>
-<div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160;                        srctag,</div>
-<div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160;                        dsttag,</div>
-<div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160;                        lls,</div>
-<div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;                        sm,</div>
-<div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160;                        dm,</div>
-<div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;                        txf,</div>
-<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;                        txnid,</div>
-<div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;                        inv,</div>
-<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;                        mem1,</div>
-<div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160;                        mem2,</div>
-<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;                        <a class="code" href="classripple_1_1test_1_1jtx_1_1msig.html">msig</a>(A3));</div>
-<div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160;                }</div>
-<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;            }</div>
-<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160;            {</div>
-<div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;                <span class="keywordflow">if</span> (i &amp; 2)</div>
+<div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;        <span class="keyword">auto</span> grpcTx = [&amp;grpcPort](<span class="keyword">auto</span> hash, <span class="keyword">auto</span> binary) {</div>
+<div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;            <a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcTxClient.html">GrpcTxClient</a> client(grpcPort);</div>
+<div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;            client.<a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcTxClient.html#a5289e3d3df86ee3bb7e0d9f733246e54">request</a>.set_hash(&amp;hash, <span class="keyword">sizeof</span>(hash));</div>
+<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;            client.<a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcTxClient.html#a5289e3d3df86ee3bb7e0d9f733246e54">request</a>.set_binary(binary);</div>
+<div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;            client.<a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcTxClient.html#a92409803f4f6c0b1ef30777eed87fb3c">Tx</a>();</div>
+<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;            <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;bool, org::xrpl::rpc::v1::GetTransactionResponse&gt;</a>(</div>
+<div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;                client.<a class="code" href="structripple_1_1test_1_1GRPCTestClientBase.html#aa10315a3d1766936e53f33210ac435ac">status</a>.ok(), client.<a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcTxClient.html#ae697fee5eb4cc37d20e3ca0ca561b922">reply</a>);</div>
+<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;        };</div>
+<div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160; </div>
+<div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> A1{<span class="stringliteral">&quot;A1&quot;</span>};</div>
+<div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> A2{<span class="stringliteral">&quot;A2&quot;</span>};</div>
+<div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> A3{<span class="stringliteral">&quot;A3&quot;</span>};</div>
+<div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160;        env.fund(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10000), A1);</div>
+<div class="line"><a name="l00554"></a><span class="lineno">  554</span>&#160;        env.fund(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10000), A2);</div>
+<div class="line"><a name="l00555"></a><span class="lineno">  555</span>&#160;        env.close();</div>
+<div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;        env.trust(A2[<span class="stringliteral">&quot;USD&quot;</span>](1000), A1);</div>
+<div class="line"><a name="l00557"></a><span class="lineno">  557</span>&#160;        env.close();</div>
+<div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a50cacef3867fc01273aa9c29231f9a7c">fset</a>(A2, 5));  <span class="comment">// set asfAccountTxnID flag</span></div>
+<div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160; </div>
+<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;        <span class="comment">// SignerListSet</span></div>
+<div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;        env(signers(A2, 1, {{<span class="stringliteral">&quot;bogie&quot;</span>, 1}, {<span class="stringliteral">&quot;demon&quot;</span>, 1}, {A1, 1}, {A3, 1}}),</div>
+<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1sig.html">sig</a>(A2));</div>
+<div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160;        env.close();</div>
+<div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::shared_ptr&lt;STTx const&gt;</a>&gt; txns;</div>
+<div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> startLegSeq = env.current()-&gt;info().seq;</div>
+<div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160; </div>
+<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;        <a class="code" href="classripple_1_1base__uint.html">uint256</a> prevHash;</div>
+<div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 14; ++i)</div>
+<div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;        {</div>
+<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> baseFee = env.current()-&gt;fees().base;</div>
+<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;            <span class="keyword">auto</span> txfee = <a class="code" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(i + (2 * baseFee));</div>
+<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;            <span class="keyword">auto</span> lls = <a class="code" href="structripple_1_1test_1_1jtx_1_1last__ledger__seq.html">last_ledger_seq</a>(i + startLegSeq + 20);</div>
+<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;            <span class="keyword">auto</span> dsttag = <a class="code" href="structripple_1_1test_1_1jtx_1_1dtag.html">dtag</a>(i * 456);</div>
+<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;            <span class="keyword">auto</span> srctag = <a class="code" href="structripple_1_1test_1_1jtx_1_1stag.html">stag</a>(i * 321);</div>
+<div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160;            <span class="keyword">auto</span> sm = <a class="code" href="classripple_1_1test_1_1jtx_1_1sendmax.html">sendmax</a>(A2[<span class="stringliteral">&quot;USD&quot;</span>](1000));</div>
+<div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160;            <span class="keyword">auto</span> dm = <a class="code" href="classripple_1_1test_1_1jtx_1_1delivermin.html">delivermin</a>(A2[<span class="stringliteral">&quot;USD&quot;</span>](50));</div>
+<div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160;            <span class="keyword">auto</span> txf = <a class="code" href="classripple_1_1test_1_1jtx_1_1txflags.html">txflags</a>(131072);  <span class="comment">// partial payment flag</span></div>
+<div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160;            <span class="keyword">auto</span> txnid = <a class="code" href="structripple_1_1test_1_1jtx_1_1account__txn__id.html">account_txn_id</a>(prevHash);</div>
+<div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;            <span class="keyword">auto</span> inv = <a class="code" href="structripple_1_1test_1_1jtx_1_1invoice__id.html">invoice_id</a>(prevHash);</div>
+<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;            <span class="keyword">auto</span> mem1 = <a class="code" href="classripple_1_1test_1_1jtx_1_1memo.html">memo</a>(<span class="stringliteral">&quot;foo&quot;</span>, <span class="stringliteral">&quot;bar&quot;</span>, <span class="stringliteral">&quot;baz&quot;</span>);</div>
+<div class="line"><a name="l00581"></a><span class="lineno">  581</span>&#160;            <span class="keyword">auto</span> mem2 = <a class="code" href="classripple_1_1test_1_1jtx_1_1memo.html">memo</a>(<span class="stringliteral">&quot;dragons&quot;</span>, <span class="stringliteral">&quot;elves&quot;</span>, <span class="stringliteral">&quot;goblins&quot;</span>);</div>
+<div class="line"><a name="l00582"></a><span class="lineno">  582</span>&#160; </div>
+<div class="line"><a name="l00583"></a><span class="lineno">  583</span>&#160;            <span class="keywordflow">if</span> (i &amp; 1)</div>
+<div class="line"><a name="l00584"></a><span class="lineno">  584</span>&#160;            {</div>
+<div class="line"><a name="l00585"></a><span class="lineno">  585</span>&#160;                <span class="keywordflow">if</span> (i &amp; 2)</div>
+<div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160;                {</div>
+<div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160;                    env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(A2, A1, A2[<span class="stringliteral">&quot;USD&quot;</span>](100)),</div>
+<div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160;                        txfee,</div>
+<div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;                        srctag,</div>
+<div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160;                        dsttag,</div>
+<div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;                        lls,</div>
+<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;                        sm,</div>
+<div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;                        dm,</div>
+<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;                        txf,</div>
+<div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160;                        txnid,</div>
+<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;                        inv,</div>
+<div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160;                        mem1,</div>
+<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;                        mem2,</div>
+<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;                        <a class="code" href="classripple_1_1test_1_1jtx_1_1sig.html">sig</a>(A2));</div>
+<div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160;                }</div>
+<div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;                <span class="keywordflow">else</span></div>
 <div class="line"><a name="l00602"></a><span class="lineno">  602</span>&#160;                {</div>
-<div class="line"><a name="l00603"></a><span class="lineno">  603</span>&#160;                    env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(A2, A1, A2[<span class="stringliteral">&quot;XRP&quot;</span>](200)),</div>
+<div class="line"><a name="l00603"></a><span class="lineno">  603</span>&#160;                    env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(A2, A1, A2[<span class="stringliteral">&quot;USD&quot;</span>](100)),</div>
 <div class="line"><a name="l00604"></a><span class="lineno">  604</span>&#160;                        txfee,</div>
 <div class="line"><a name="l00605"></a><span class="lineno">  605</span>&#160;                        srctag,</div>
 <div class="line"><a name="l00606"></a><span class="lineno">  606</span>&#160;                        dsttag,</div>
 <div class="line"><a name="l00607"></a><span class="lineno">  607</span>&#160;                        lls,</div>
-<div class="line"><a name="l00608"></a><span class="lineno">  608</span>&#160;                        txnid,</div>
-<div class="line"><a name="l00609"></a><span class="lineno">  609</span>&#160;                        inv,</div>
-<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;                        mem1,</div>
-<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;                        mem2,</div>
-<div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160;                        <a class="code" href="classripple_1_1test_1_1jtx_1_1sig.html">sig</a>(A2));</div>
-<div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;                }</div>
-<div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;                <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160;                {</div>
-<div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;                    env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(A2, A1, A2[<span class="stringliteral">&quot;XRP&quot;</span>](200)),</div>
-<div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;                        txfee,</div>
-<div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160;                        srctag,</div>
-<div class="line"><a name="l00619"></a><span class="lineno">  619</span>&#160;                        dsttag,</div>
-<div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160;                        lls,</div>
-<div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160;                        txnid,</div>
-<div class="line"><a name="l00622"></a><span class="lineno">  622</span>&#160;                        inv,</div>
-<div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160;                        mem1,</div>
-<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;                        mem2,</div>
-<div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;                        <a class="code" href="classripple_1_1test_1_1jtx_1_1msig.html">msig</a>(A3));</div>
-<div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160;                }</div>
-<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;            }</div>
-<div class="line"><a name="l00628"></a><span class="lineno">  628</span>&#160;            txns.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(env.tx());</div>
-<div class="line"><a name="l00629"></a><span class="lineno">  629</span>&#160;            prevHash = txns.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()-&gt;getTransactionID();</div>
-<div class="line"><a name="l00630"></a><span class="lineno">  630</span>&#160;            env.close();</div>
-<div class="line"><a name="l00631"></a><span class="lineno">  631</span>&#160;        }</div>
-<div class="line"><a name="l00632"></a><span class="lineno">  632</span>&#160; </div>
-<div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;        <span class="comment">// Payment with Paths</span></div>
-<div class="line"><a name="l00634"></a><span class="lineno">  634</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> gw = <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a>(<span class="stringliteral">&quot;gateway&quot;</span>);</div>
-<div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> USD = gw[<span class="stringliteral">&quot;USD&quot;</span>];</div>
-<div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160;        env.fund(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10000), <span class="stringliteral">&quot;alice&quot;</span>, <span class="stringliteral">&quot;bob&quot;</span>, gw);</div>
-<div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160;        env.trust(USD(600), <span class="stringliteral">&quot;alice&quot;</span>);</div>
-<div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;        env.trust(USD(700), <span class="stringliteral">&quot;bob&quot;</span>);</div>
-<div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(gw, <span class="stringliteral">&quot;alice&quot;</span>, USD(70)));</div>
-<div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;        txns.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(env.tx());</div>
-<div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160;        env.close();</div>
-<div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(gw, <span class="stringliteral">&quot;bob&quot;</span>, USD(50)));</div>
-<div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;        txns.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(env.tx());</div>
-<div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160;        env.close();</div>
-<div class="line"><a name="l00645"></a><span class="lineno">  645</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(<span class="stringliteral">&quot;alice&quot;</span>, <span class="stringliteral">&quot;bob&quot;</span>, <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a>(<span class="stringliteral">&quot;bob&quot;</span>)[<span class="stringliteral">&quot;USD&quot;</span>](5)), <a class="code" href="classripple_1_1test_1_1jtx_1_1path.html">path</a>(gw));</div>
-<div class="line"><a name="l00646"></a><span class="lineno">  646</span>&#160;        txns.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(env.tx());</div>
-<div class="line"><a name="l00647"></a><span class="lineno">  647</span>&#160;        env.close();</div>
-<div class="line"><a name="l00648"></a><span class="lineno">  648</span>&#160; </div>
-<div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> endLegSeq = env.closed()-&gt;info().seq;</div>
-<div class="line"><a name="l00650"></a><span class="lineno">  650</span>&#160; </div>
-<div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160;        <span class="comment">// Find the existing transactions</span></div>
-<div class="line"><a name="l00652"></a><span class="lineno">  652</span>&#160;        <span class="keyword">auto</span>&amp; <a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda7fa2267e9b1bf739a70bb1860ab2a99c">ledgerMaster</a> = env.app().getLedgerMaster();</div>
-<div class="line"><a name="l00653"></a><span class="lineno">  653</span>&#160;        <span class="keywordtype">int</span> index = startLegSeq;</div>
-<div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp;&amp; tx : txns)</div>
-<div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;        {</div>
-<div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;            <span class="keyword">auto</span> <span class="keywordtype">id</span> = tx-&gt;getTransactionID();</div>
-<div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;            <span class="keyword">auto</span> ledger = <a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda7fa2267e9b1bf739a70bb1860ab2a99c">ledgerMaster</a>.getLedgerBySeq(index);</div>
-<div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160; </div>
-<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">bool</span> b : {<span class="keyword">false</span>, <span class="keyword">true</span>})</div>
-<div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160;            {</div>
-<div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> result = grpcTx(<span class="keywordtype">id</span>, b);</div>
-<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160; </div>
-<div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160;                BEAST_EXPECT(result.first == <span class="keyword">true</span>);</div>
-<div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;                BEAST_EXPECT(result.second.ledger_index() == index);</div>
-<div class="line"><a name="l00665"></a><span class="lineno">  665</span>&#160;                BEAST_EXPECT(result.second.validated() == <span class="keyword">true</span>);</div>
-<div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160;                <span class="keywordflow">if</span> (b)</div>
-<div class="line"><a name="l00667"></a><span class="lineno">  667</span>&#160;                {</div>
-<div class="line"><a name="l00668"></a><span class="lineno">  668</span>&#160;                    <a class="code" href="classripple_1_1Serializer.html">Serializer</a> s = tx-&gt;getSerializer();</div>
-<div class="line"><a name="l00669"></a><span class="lineno">  669</span>&#160;                    BEAST_EXPECT(</div>
-<div class="line"><a name="l00670"></a><span class="lineno">  670</span>&#160;                        result.second.transaction_binary() == <a class="code" href="classripple_1_1test_1_1Tx__test.html#a3969cabf9958fb62100d7503c9e4f063">toByteString</a>(s));</div>
-<div class="line"><a name="l00671"></a><span class="lineno">  671</span>&#160;                }</div>
-<div class="line"><a name="l00672"></a><span class="lineno">  672</span>&#160;                <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00673"></a><span class="lineno">  673</span>&#160;                {</div>
-<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;                    <a class="code" href="classripple_1_1test_1_1Tx__test.html#aa15303a5ada4bf9072d7b903c3969fa4">cmpPaymentTx</a>(result.second.transaction(), tx);</div>
-<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;                }</div>
-<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160; </div>
-<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;                <span class="keywordflow">if</span> (ledger &amp;&amp; !b)</div>
-<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;                {</div>
-<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;                    <span class="keyword">auto</span> rawMeta = ledger-&gt;txRead(<span class="keywordtype">id</span>).second;</div>
-<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;                    <span class="keywordflow">if</span> (rawMeta)</div>
-<div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;                    {</div>
-<div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;                        <span class="keyword">auto</span> txMeta = std::make_shared&lt;TxMeta&gt;(</div>
-<div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;                            <span class="keywordtype">id</span>, ledger-&gt;seq(), *rawMeta);</div>
-<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160; </div>
-<div class="line"><a name="l00685"></a><span class="lineno">  685</span>&#160;                        <a class="code" href="classripple_1_1test_1_1Tx__test.html#aca0551cb6c64492685779424d8b4096e">cmpMeta</a>(result.second.meta(), txMeta);</div>
-<div class="line"><a name="l00686"></a><span class="lineno">  686</span>&#160;                        <a class="code" href="classripple_1_1test_1_1Tx__test.html#a134d3e27c7739f35090517cc01329cf7">cmpDeliveredAmount</a>(</div>
-<div class="line"><a name="l00687"></a><span class="lineno">  687</span>&#160;                            result.second.meta(),</div>
-<div class="line"><a name="l00688"></a><span class="lineno">  688</span>&#160;                            result.second.transaction(),</div>
-<div class="line"><a name="l00689"></a><span class="lineno">  689</span>&#160;                            txMeta,</div>
-<div class="line"><a name="l00690"></a><span class="lineno">  690</span>&#160;                            tx);</div>
-<div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160;                    }</div>
-<div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;                }</div>
-<div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160;            }</div>
-<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;            index++;</div>
-<div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160;        }</div>
-<div class="line"><a name="l00696"></a><span class="lineno">  696</span>&#160; </div>
-<div class="line"><a name="l00697"></a><span class="lineno">  697</span>&#160;        <span class="comment">// Find not existing transaction</span></div>
-<div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> tx = env.jt(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(A1), <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>(env.seq(A1))).stx;</div>
-<div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">bool</span> b : {<span class="keyword">false</span>, <span class="keyword">true</span>})</div>
-<div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160;        {</div>
-<div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = grpcTx(tx-&gt;getTransactionID(), b);</div>
+<div class="line"><a name="l00608"></a><span class="lineno">  608</span>&#160;                        sm,</div>
+<div class="line"><a name="l00609"></a><span class="lineno">  609</span>&#160;                        dm,</div>
+<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;                        txf,</div>
+<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;                        txnid,</div>
+<div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160;                        inv,</div>
+<div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;                        mem1,</div>
+<div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;                        mem2,</div>
+<div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160;                        <a class="code" href="classripple_1_1test_1_1jtx_1_1msig.html">msig</a>(A3));</div>
+<div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;                }</div>
+<div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;            }</div>
+<div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00619"></a><span class="lineno">  619</span>&#160;            {</div>
+<div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160;                <span class="keywordflow">if</span> (i &amp; 2)</div>
+<div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160;                {</div>
+<div class="line"><a name="l00622"></a><span class="lineno">  622</span>&#160;                    env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(A2, A1, A2[<span class="stringliteral">&quot;XRP&quot;</span>](200)),</div>
+<div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160;                        txfee,</div>
+<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;                        srctag,</div>
+<div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;                        dsttag,</div>
+<div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160;                        lls,</div>
+<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;                        txnid,</div>
+<div class="line"><a name="l00628"></a><span class="lineno">  628</span>&#160;                        inv,</div>
+<div class="line"><a name="l00629"></a><span class="lineno">  629</span>&#160;                        mem1,</div>
+<div class="line"><a name="l00630"></a><span class="lineno">  630</span>&#160;                        mem2,</div>
+<div class="line"><a name="l00631"></a><span class="lineno">  631</span>&#160;                        <a class="code" href="classripple_1_1test_1_1jtx_1_1sig.html">sig</a>(A2));</div>
+<div class="line"><a name="l00632"></a><span class="lineno">  632</span>&#160;                }</div>
+<div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;                <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00634"></a><span class="lineno">  634</span>&#160;                {</div>
+<div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;                    env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(A2, A1, A2[<span class="stringliteral">&quot;XRP&quot;</span>](200)),</div>
+<div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160;                        txfee,</div>
+<div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160;                        srctag,</div>
+<div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;                        dsttag,</div>
+<div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;                        lls,</div>
+<div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;                        txnid,</div>
+<div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160;                        inv,</div>
+<div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;                        mem1,</div>
+<div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;                        mem2,</div>
+<div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160;                        <a class="code" href="classripple_1_1test_1_1jtx_1_1msig.html">msig</a>(A3));</div>
+<div class="line"><a name="l00645"></a><span class="lineno">  645</span>&#160;                }</div>
+<div class="line"><a name="l00646"></a><span class="lineno">  646</span>&#160;            }</div>
+<div class="line"><a name="l00647"></a><span class="lineno">  647</span>&#160;            txns.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(env.tx());</div>
+<div class="line"><a name="l00648"></a><span class="lineno">  648</span>&#160;            prevHash = txns.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()-&gt;getTransactionID();</div>
+<div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160;            env.close();</div>
+<div class="line"><a name="l00650"></a><span class="lineno">  650</span>&#160;        }</div>
+<div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160; </div>
+<div class="line"><a name="l00652"></a><span class="lineno">  652</span>&#160;        <span class="comment">// Payment with Paths</span></div>
+<div class="line"><a name="l00653"></a><span class="lineno">  653</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> gw = <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a>(<span class="stringliteral">&quot;gateway&quot;</span>);</div>
+<div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> USD = gw[<span class="stringliteral">&quot;USD&quot;</span>];</div>
+<div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;        env.fund(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10000), <span class="stringliteral">&quot;alice&quot;</span>, <span class="stringliteral">&quot;bob&quot;</span>, gw);</div>
+<div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;        env.trust(USD(600), <span class="stringliteral">&quot;alice&quot;</span>);</div>
+<div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;        env.trust(USD(700), <span class="stringliteral">&quot;bob&quot;</span>);</div>
+<div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(gw, <span class="stringliteral">&quot;alice&quot;</span>, USD(70)));</div>
+<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;        txns.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(env.tx());</div>
+<div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160;        env.close();</div>
+<div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(gw, <span class="stringliteral">&quot;bob&quot;</span>, USD(50)));</div>
+<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160;        txns.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(env.tx());</div>
+<div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160;        env.close();</div>
+<div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(<span class="stringliteral">&quot;alice&quot;</span>, <span class="stringliteral">&quot;bob&quot;</span>, <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a>(<span class="stringliteral">&quot;bob&quot;</span>)[<span class="stringliteral">&quot;USD&quot;</span>](5)), <a class="code" href="classripple_1_1test_1_1jtx_1_1path.html">path</a>(gw));</div>
+<div class="line"><a name="l00665"></a><span class="lineno">  665</span>&#160;        txns.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(env.tx());</div>
+<div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160;        env.close();</div>
+<div class="line"><a name="l00667"></a><span class="lineno">  667</span>&#160; </div>
+<div class="line"><a name="l00668"></a><span class="lineno">  668</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> endLegSeq = env.closed()-&gt;info().seq;</div>
+<div class="line"><a name="l00669"></a><span class="lineno">  669</span>&#160; </div>
+<div class="line"><a name="l00670"></a><span class="lineno">  670</span>&#160;        <span class="comment">// Find the existing transactions</span></div>
+<div class="line"><a name="l00671"></a><span class="lineno">  671</span>&#160;        <span class="keyword">auto</span>&amp; <a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda7fa2267e9b1bf739a70bb1860ab2a99c">ledgerMaster</a> = env.app().getLedgerMaster();</div>
+<div class="line"><a name="l00672"></a><span class="lineno">  672</span>&#160;        <span class="keywordtype">int</span> index = startLegSeq;</div>
+<div class="line"><a name="l00673"></a><span class="lineno">  673</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp;&amp; tx : txns)</div>
+<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;        {</div>
+<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;            <span class="keyword">auto</span> <span class="keywordtype">id</span> = tx-&gt;getTransactionID();</div>
+<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;            <span class="keyword">auto</span> ledger = <a class="code" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda7fa2267e9b1bf739a70bb1860ab2a99c">ledgerMaster</a>.getLedgerBySeq(index);</div>
+<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160; </div>
+<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">bool</span> b : {<span class="keyword">false</span>, <span class="keyword">true</span>})</div>
+<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;            {</div>
+<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> result = grpcTx(<span class="keywordtype">id</span>, b);</div>
+<div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160; </div>
+<div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;                BEAST_EXPECT(result.first == <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;                BEAST_EXPECT(result.second.ledger_index() == index);</div>
+<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160;                BEAST_EXPECT(result.second.validated() == <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00685"></a><span class="lineno">  685</span>&#160;                <span class="keywordflow">if</span> (b)</div>
+<div class="line"><a name="l00686"></a><span class="lineno">  686</span>&#160;                {</div>
+<div class="line"><a name="l00687"></a><span class="lineno">  687</span>&#160;                    <a class="code" href="classripple_1_1Serializer.html">Serializer</a> s = tx-&gt;getSerializer();</div>
+<div class="line"><a name="l00688"></a><span class="lineno">  688</span>&#160;                    BEAST_EXPECT(</div>
+<div class="line"><a name="l00689"></a><span class="lineno">  689</span>&#160;                        result.second.transaction_binary() == <a class="code" href="classripple_1_1test_1_1Tx__test.html#a3969cabf9958fb62100d7503c9e4f063">toByteString</a>(s));</div>
+<div class="line"><a name="l00690"></a><span class="lineno">  690</span>&#160;                }</div>
+<div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160;                <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;                {</div>
+<div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160;                    <a class="code" href="classripple_1_1test_1_1Tx__test.html#aa15303a5ada4bf9072d7b903c3969fa4">cmpPaymentTx</a>(result.second.transaction(), tx);</div>
+<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;                }</div>
+<div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160; </div>
+<div class="line"><a name="l00696"></a><span class="lineno">  696</span>&#160;                <span class="keywordflow">if</span> (!ledger || b)</div>
+<div class="line"><a name="l00697"></a><span class="lineno">  697</span>&#160;                    <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160; </div>
+<div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160;                <span class="keyword">auto</span> rawMeta = ledger-&gt;txRead(<span class="keywordtype">id</span>).second;</div>
+<div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160;                <span class="keywordflow">if</span> (!rawMeta)</div>
+<div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;                    <span class="keywordflow">continue</span>;</div>
 <div class="line"><a name="l00702"></a><span class="lineno">  702</span>&#160; </div>
-<div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;            BEAST_EXPECT(result.first == <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;        }</div>
+<div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;                <span class="keyword">auto</span> txMeta =</div>
+<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;                    std::make_shared&lt;TxMeta&gt;(<span class="keywordtype">id</span>, ledger-&gt;seq(), *rawMeta);</div>
 <div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160; </div>
-<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;        <span class="comment">// Delete one transaction</span></div>
-<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span> deletedLedger = (startLegSeq + endLegSeq) / 2;</div>
-<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;        {</div>
-<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;            <span class="comment">// Remove one of the ledgers from the database directly</span></div>
-<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;            <span class="keyword">auto</span> db = env.app().getTxnDB().checkoutDb();</div>
-<div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;            *db &lt;&lt; <span class="stringliteral">&quot;DELETE FROM Transactions WHERE LedgerSeq == &quot;</span></div>
-<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;                &lt;&lt; deletedLedger &lt;&lt; <span class="stringliteral">&quot;;&quot;</span>;</div>
-<div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;        }</div>
-<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160; </div>
-<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">bool</span> b : {<span class="keyword">false</span>, <span class="keyword">true</span>})</div>
-<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;        {</div>
-<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = grpcTx(tx-&gt;getTransactionID(), b);</div>
-<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160; </div>
-<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;            BEAST_EXPECT(result.first == <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;        }</div>
-<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160; </div>
-<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;        <span class="comment">// non final transaction</span></div>
-<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(A2, A1, A2[<span class="stringliteral">&quot;XRP&quot;</span>](200)));</div>
-<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;        <span class="keyword">auto</span> res = grpcTx(env.tx()-&gt;getTransactionID(), <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;        BEAST_EXPECT(res.first);</div>
-<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;        BEAST_EXPECT(res.second.has_transaction());</div>
-<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(res.second.has_meta()))</div>
-<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(res.second.meta().has_transaction_result()))</div>
-<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160; </div>
-<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;        BEAST_EXPECT(</div>
-<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;            res.second.meta().transaction_result().result() == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
-<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;        BEAST_EXPECT(</div>
-<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;            res.second.meta().transaction_result().result_type() ==</div>
-<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;            org::xrpl::rpc::v1::TransactionResult::RESULT_TYPE_TES);</div>
-<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;        BEAST_EXPECT(!res.second.validated());</div>
-<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;        BEAST_EXPECT(!res.second.meta().has_delivered_amount());</div>
-<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;        env.close();</div>
-<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160; </div>
-<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;        res = grpcTx(env.tx()-&gt;getTransactionID(), <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;        BEAST_EXPECT(res.first);</div>
-<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;        BEAST_EXPECT(res.second.has_transaction());</div>
-<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(res.second.has_meta()))</div>
-<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(res.second.meta().has_transaction_result()))</div>
-<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160; </div>
-<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;        BEAST_EXPECT(</div>
-<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;            res.second.meta().transaction_result().result() == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
-<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;        BEAST_EXPECT(</div>
-<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;            res.second.meta().transaction_result().result_type() ==</div>
-<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;            org::xrpl::rpc::v1::TransactionResult::RESULT_TYPE_TES);</div>
-<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;        BEAST_EXPECT(res.second.validated());</div>
-<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;        BEAST_EXPECT(res.second.meta().has_delivered_amount());</div>
-<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;    }</div>
-<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160; </div>
-<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00760"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1Tx__test.html#a6c771277b4c11206a190e9a9333a213b">  760</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1Tx__test.html#a6c771277b4c11206a190e9a9333a213b">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;        <a class="code" href="classripple_1_1test_1_1Tx__test.html#acb273a1ee3b529d2648d0da9809945a7">testTxGrpc</a>();</div>
-<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;    }</div>
-<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;};</div>
-<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160; </div>
-<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">BEAST_DEFINE_TESTSUITE</a>(Tx, app, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;}  <span class="comment">// namespace test</span></div>
-<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;                <a class="code" href="classripple_1_1test_1_1Tx__test.html#aca0551cb6c64492685779424d8b4096e">cmpMeta</a>(result.second.meta(), txMeta);</div>
+<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;                <a class="code" href="classripple_1_1test_1_1Tx__test.html#a134d3e27c7739f35090517cc01329cf7">cmpDeliveredAmount</a>(</div>
+<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;                    result.second.meta(),</div>
+<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;                    result.second.transaction(),</div>
+<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;                    txMeta,</div>
+<div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;                    tx);</div>
+<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160; </div>
+<div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;                <span class="keyword">auto</span> grpcAccountTx = [&amp;grpcPort](</div>
+<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;                                         <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; id,</div>
+<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;                                         <span class="keywordtype">bool</span> binary,</div>
+<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;                                         <a class="code" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account)</div>
+<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;                    -&gt; <a class="code" href="namespacestd.html">std</a>::</div>
+<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160;                        pair&lt;bool, org::xrpl::rpc::v1::GetTransactionResponse&gt; {</div>
+<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;                            <a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html">GrpcAccountTxClient</a> client(grpcPort);</div>
+<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;                            client.<a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#a0d0391aafb49970814c4290abd4ef64e">request</a>.set_binary(binary);</div>
+<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160;                            client.<a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#a0d0391aafb49970814c4290abd4ef64e">request</a>.mutable_account()-&gt;set_address(</div>
+<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;                                <a class="code" href="namespaceripple.html#a08a13b62b18272366f788632359e8793">toBase58</a>(account));</div>
+<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;                            client.<a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#abe369758270ab5c2d7351497cd695c02">AccountTx</a>();</div>
+<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;                            org::xrpl::rpc::v1::GetTransactionResponse res;</div>
+<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160; </div>
+<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;                            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; tx : client.<a class="code" href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#a68c964e8343cbc1c4741292ac99856c4">reply</a>.transactions())</div>
+<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;                            {</div>
+<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;                                <span class="keywordflow">if</span> (<a class="code" href="classripple_1_1base__uint.html#a4e9de7a706374a3d016b89c9ecb4f80d">uint256::fromVoid</a>(tx.hash().data()) == <span class="keywordtype">id</span>)</div>
+<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;                                {</div>
+<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;                                    <span class="keywordflow">return</span> {client.<a class="code" href="structripple_1_1test_1_1GRPCTestClientBase.html#aa10315a3d1766936e53f33210ac435ac">status</a>.ok(), tx};</div>
+<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;                                }</div>
+<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;                            }</div>
+<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;                            <span class="keywordflow">return</span> {<span class="keyword">false</span>, res};</div>
+<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;                        };</div>
+<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160; </div>
+<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;                <span class="comment">// Compare result to result from account_tx</span></div>
+<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;                <span class="keyword">auto</span> mentioned = tx-&gt;getMentionedAccounts();</div>
+<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160; </div>
+<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;                <span class="keywordflow">if</span> (!BEAST_EXPECT(mentioned.size()))</div>
+<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;                    <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160; </div>
+<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;                <span class="keyword">auto</span> account = *mentioned.begin();</div>
+<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> accountTxResult = grpcAccountTx(<span class="keywordtype">id</span>, b, account);</div>
+<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160; </div>
+<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;                <span class="keywordflow">if</span> (!BEAST_EXPECT(accountTxResult.first))</div>
+<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;                    <span class="keywordflow">continue</span>;</div>
+<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160; </div>
+<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;                <a class="code" href="classripple_1_1test_1_1Tx__test.html#aa15303a5ada4bf9072d7b903c3969fa4">cmpPaymentTx</a>(accountTxResult.second.transaction(), tx);</div>
+<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;                <a class="code" href="classripple_1_1test_1_1Tx__test.html#aca0551cb6c64492685779424d8b4096e">cmpMeta</a>(accountTxResult.second.meta(), txMeta);</div>
+<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;                <a class="code" href="classripple_1_1test_1_1Tx__test.html#a134d3e27c7739f35090517cc01329cf7">cmpDeliveredAmount</a>(</div>
+<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;                    accountTxResult.second.meta(),</div>
+<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;                    accountTxResult.second.transaction(),</div>
+<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;                    txMeta,</div>
+<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;                    tx);</div>
+<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;            }</div>
+<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;            index++;</div>
+<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;        }</div>
+<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160; </div>
+<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;        <span class="comment">// Find not existing transaction</span></div>
+<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> tx = env.jt(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(A1), <a class="code" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>(env.seq(A1))).stx;</div>
+<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">bool</span> b : {<span class="keyword">false</span>, <span class="keyword">true</span>})</div>
+<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;        {</div>
+<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = grpcTx(tx-&gt;getTransactionID(), b);</div>
+<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160; </div>
+<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;            BEAST_EXPECT(result.first == <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;        }</div>
+<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160; </div>
+<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;        <span class="comment">// Delete one transaction</span></div>
+<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span> deletedLedger = (startLegSeq + endLegSeq) / 2;</div>
+<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;        {</div>
+<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;            <span class="comment">// Remove one of the ledgers from the database directly</span></div>
+<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;            <span class="keyword">auto</span> db = env.app().getTxnDB().checkoutDb();</div>
+<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;            *db &lt;&lt; <span class="stringliteral">&quot;DELETE FROM Transactions WHERE LedgerSeq == &quot;</span></div>
+<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;                &lt;&lt; deletedLedger &lt;&lt; <span class="stringliteral">&quot;;&quot;</span>;</div>
+<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;        }</div>
+<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160; </div>
+<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">bool</span> b : {<span class="keyword">false</span>, <span class="keyword">true</span>})</div>
+<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;        {</div>
+<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = grpcTx(tx-&gt;getTransactionID(), b);</div>
+<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160; </div>
+<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;            BEAST_EXPECT(result.first == <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;        }</div>
+<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160; </div>
+<div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;        <span class="comment">// non final transaction</span></div>
+<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(A2, A1, A2[<span class="stringliteral">&quot;XRP&quot;</span>](200)));</div>
+<div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;        <span class="keyword">auto</span> res = grpcTx(env.tx()-&gt;getTransactionID(), <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160;        BEAST_EXPECT(res.first);</div>
+<div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;        BEAST_EXPECT(res.second.has_transaction());</div>
+<div class="line"><a name="l00789"></a><span class="lineno">  789</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(res.second.has_meta()))</div>
+<div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00791"></a><span class="lineno">  791</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(res.second.meta().has_transaction_result()))</div>
+<div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160; </div>
+<div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160;        BEAST_EXPECT(</div>
+<div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160;            res.second.meta().transaction_result().result() == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
+<div class="line"><a name="l00796"></a><span class="lineno">  796</span>&#160;        BEAST_EXPECT(</div>
+<div class="line"><a name="l00797"></a><span class="lineno">  797</span>&#160;            res.second.meta().transaction_result().result_type() ==</div>
+<div class="line"><a name="l00798"></a><span class="lineno">  798</span>&#160;            org::xrpl::rpc::v1::TransactionResult::RESULT_TYPE_TES);</div>
+<div class="line"><a name="l00799"></a><span class="lineno">  799</span>&#160;        BEAST_EXPECT(!res.second.validated());</div>
+<div class="line"><a name="l00800"></a><span class="lineno">  800</span>&#160;        BEAST_EXPECT(!res.second.meta().has_delivered_amount());</div>
+<div class="line"><a name="l00801"></a><span class="lineno">  801</span>&#160;        env.close();</div>
+<div class="line"><a name="l00802"></a><span class="lineno">  802</span>&#160; </div>
+<div class="line"><a name="l00803"></a><span class="lineno">  803</span>&#160;        res = grpcTx(env.tx()-&gt;getTransactionID(), <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00804"></a><span class="lineno">  804</span>&#160;        BEAST_EXPECT(res.first);</div>
+<div class="line"><a name="l00805"></a><span class="lineno">  805</span>&#160;        BEAST_EXPECT(res.second.has_transaction());</div>
+<div class="line"><a name="l00806"></a><span class="lineno">  806</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(res.second.has_meta()))</div>
+<div class="line"><a name="l00807"></a><span class="lineno">  807</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00808"></a><span class="lineno">  808</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(res.second.meta().has_transaction_result()))</div>
+<div class="line"><a name="l00809"></a><span class="lineno">  809</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00810"></a><span class="lineno">  810</span>&#160; </div>
+<div class="line"><a name="l00811"></a><span class="lineno">  811</span>&#160;        BEAST_EXPECT(</div>
+<div class="line"><a name="l00812"></a><span class="lineno">  812</span>&#160;            res.second.meta().transaction_result().result() == <span class="stringliteral">&quot;tesSUCCESS&quot;</span>);</div>
+<div class="line"><a name="l00813"></a><span class="lineno">  813</span>&#160;        BEAST_EXPECT(</div>
+<div class="line"><a name="l00814"></a><span class="lineno">  814</span>&#160;            res.second.meta().transaction_result().result_type() ==</div>
+<div class="line"><a name="l00815"></a><span class="lineno">  815</span>&#160;            org::xrpl::rpc::v1::TransactionResult::RESULT_TYPE_TES);</div>
+<div class="line"><a name="l00816"></a><span class="lineno">  816</span>&#160;        BEAST_EXPECT(res.second.validated());</div>
+<div class="line"><a name="l00817"></a><span class="lineno">  817</span>&#160;        BEAST_EXPECT(res.second.meta().has_delivered_amount());</div>
+<div class="line"><a name="l00818"></a><span class="lineno">  818</span>&#160;    }</div>
+<div class="line"><a name="l00819"></a><span class="lineno">  819</span>&#160; </div>
+<div class="line"><a name="l00820"></a><span class="lineno">  820</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00821"></a><span class="lineno">  821</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00822"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1Tx__test.html#a6c771277b4c11206a190e9a9333a213b">  822</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1Tx__test.html#a6c771277b4c11206a190e9a9333a213b">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;        <a class="code" href="classripple_1_1test_1_1Tx__test.html#acb273a1ee3b529d2648d0da9809945a7">testTxGrpc</a>();</div>
+<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;    }</div>
+<div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160;};</div>
+<div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160; </div>
+<div class="line"><a name="l00828"></a><span class="lineno">  828</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a52909fdbfa7f29626f24005ed12e6ef4">BEAST_DEFINE_TESTSUITE</a>(Tx, app, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00829"></a><span class="lineno">  829</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00830"></a><span class="lineno">  830</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a95abf901db0a698e0c97d00476c95f34"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">ripple::test::jtx::noop</a></div><div class="ttdeci">Json::Value noop(Account const &amp;account)</div><div class="ttdoc">The null transaction.</div><div class="ttdef"><b>Definition:</b> <a href="noop_8h_source.html#l00031">noop.h:31</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ad5143ceada01141772ae4aab984f94bda7fa2267e9b1bf739a70bb1860ab2a99c"><div class="ttname"><a href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda7fa2267e9b1bf739a70bb1860ab2a99c">ripple::HashPrefix::ledgerMaster</a></div><div class="ttdeci">@ ledgerMaster</div><div class="ttdoc">ledger master data for signing</div></div>
@@ -865,12 +927,14 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a08a13b62b18272366f788632359e8793"><div class="ttname"><a href="namespaceripple.html#a08a13b62b18272366f788632359e8793">ripple::toBase58</a></div><div class="ttdeci">std::string toBase58(AccountID const &amp;v)</div><div class="ttdoc">Convert AccountID to base58 checked string.</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00029">AccountID.cpp:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1Tx__test_1_1GrpcTxClient_html_ae697fee5eb4cc37d20e3ca0ca561b922"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test_1_1GrpcTxClient.html#ae697fee5eb4cc37d20e3ca0ca561b922">ripple::test::Tx_test::GrpcTxClient::reply</a></div><div class="ttdeci">org::xrpl::rpc::v1::GetTransactionResponse reply</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00494">Tx_test.cpp:494</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a875ae996b37ed036597d70628ae053e3"><div class="ttname"><a href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">ripple::transToken</a></div><div class="ttdeci">std::string transToken(TER code)</div><div class="ttdef"><b>Definition:</b> <a href="TER_8cpp_source.html#l00279">TER.cpp:279</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1Tx__test_html_acb273a1ee3b529d2648d0da9809945a7"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test.html#acb273a1ee3b529d2648d0da9809945a7">ripple::test::Tx_test::testTxGrpc</a></div><div class="ttdeci">void testTxGrpc()</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00509">Tx_test.cpp:509</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient_html_aab59fab05973650cd0af4c6473374682"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#aab59fab05973650cd0af4c6473374682">ripple::test::Tx_test::GrpcAccountTxClient::GrpcAccountTxClient</a></div><div class="ttdeci">GrpcAccountTxClient(std::string const &amp;port)</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00514">Tx_test.cpp:514</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1Tx__test_html_acb273a1ee3b529d2648d0da9809945a7"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test.html#acb273a1ee3b529d2648d0da9809945a7">ripple::test::Tx_test::testTxGrpc</a></div><div class="ttdeci">void testTxGrpc()</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00528">Tx_test.cpp:528</a></div></div>
 <div class="ttc" id="aclassripple_1_1STPathElement_html_a6f9e3519809a9bdb22dc489de2da6aa4"><div class="ttname"><a href="classripple_1_1STPathElement.html#a6f9e3519809a9bdb22dc489de2da6aa4">ripple::STPathElement::getCurrency</a></div><div class="ttdeci">Currency const  &amp; getCurrency() const</div><div class="ttdef"><b>Definition:</b> <a href="STPathSet_8h_source.html#l00177">STPathSet.h:177</a></div></div>
 <div class="ttc" id="aback_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/back.html">std::vector::back</a></div><div class="ttdeci">T back(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html_a96888695e8d79474e080c334f149e30a"><div class="ttname"><a href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">ripple::to_string</a></div><div class="ttdeci">std::string to_string(ListDisposition disposition)</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorList_8cpp_source.html#l00041">ValidatorList.cpp:41</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a287cf5b6a71db097fe1678c88926efb4"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a287cf5b6a71db097fe1678c88926efb4">ripple::test::jtx::envconfig</a></div><div class="ttdeci">std::unique_ptr&lt; Config &gt; envconfig()</div><div class="ttdoc">creates and initializes a default configuration for jtx::Env</div><div class="ttdef"><b>Definition:</b> <a href="envconfig_8h_source.html#l00049">envconfig.h:49</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ae9a68b1471828c45f17351005e7f79fb"><div class="ttname"><a href="namespaceripple.html#ae9a68b1471828c45f17351005e7f79fb">ripple::sfAmount</a></div><div class="ttdeci">const SF_Amount sfAmount(access, STI_AMOUNT, 1, &quot;Amount&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00439">SField.h:439</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient_html_abe369758270ab5c2d7351497cd695c02"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#abe369758270ab5c2d7351497cd695c02">ripple::test::Tx_test::GrpcAccountTxClient::AccountTx</a></div><div class="ttdeci">void AccountTx()</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00520">Tx_test.cpp:520</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1jtx_1_1invoice__id_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1invoice__id.html">ripple::test::jtx::invoice_id</a></div><div class="ttdef"><b>Definition:</b> <a href="invoice__id_8h_source.html#l00029">invoice_id.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1msig_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1msig.html">ripple::test::jtx::msig</a></div><div class="ttdoc">Set a multisignature on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="multisign_8h_source.html#l00058">multisign.h:58</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_a094bda660d23e258021a2c63112ebc9a"><div class="ttname"><a href="classripple_1_1STAmount.html#a094bda660d23e258021a2c63112ebc9a">ripple::STAmount::iou</a></div><div class="ttdeci">IOUAmount iou() const</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8cpp_source.html#l00314">STAmount.cpp:314</a></div></div>
@@ -917,10 +981,13 @@ $(function() {
 <div class="ttc" id="aemplace_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">std::vector::emplace_back</a></div><div class="ttdeci">T emplace_back(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1Tx__test_1_1GrpcTxClient_html"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test_1_1GrpcTxClient.html">ripple::test::Tx_test::GrpcTxClient</a></div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00490">Tx_test.cpp:490</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient_html"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html">ripple::test::Tx_test::GrpcAccountTxClient</a></div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00508">Tx_test.cpp:508</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a7816b23daf9b325ea1f88cc121a53d05"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">ripple::test::jtx::pay</a></div><div class="ttdeci">Json::Value pay(Account const &amp;account, Account const &amp;to, AnyAmount amount)</div><div class="ttdoc">Create a payment.</div><div class="ttdef"><b>Definition:</b> <a href="pay_8cpp_source.html#l00029">pay.cpp:29</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a8b79cabb8e3d05da528d61e86f470439"><div class="ttname"><a href="namespaceripple.html#a8b79cabb8e3d05da528d61e86f470439">ripple::sfDeliverMin</a></div><div class="ttdeci">const SF_Amount sfDeliverMin(access, STI_AMOUNT, 10, &quot;DeliverMin&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00448">SField.h:448</a></div></div>
 <div class="ttc" id="aclassripple_1_1STPathElement_html"><div class="ttname"><a href="classripple_1_1STPathElement.html">ripple::STPathElement</a></div><div class="ttdef"><b>Definition:</b> <a href="STPathSet_8h_source.html#l00033">STPathSet.h:33</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html_a60d8449d2915fa495f12994f56ceca34"><div class="ttname"><a href="classripple_1_1STAmount.html#a60d8449d2915fa495f12994f56ceca34">ripple::STAmount::issue</a></div><div class="ttdeci">Issue const  &amp; issue() const</div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00197">STAmount.h:197</a></div></div>
+<div class="ttc" id="anamespacestd_html"><div class="ttname"><a href="namespacestd.html">std</a></div><div class="ttdoc">STL namespace.</div></div>
+<div class="ttc" id="aclassripple_1_1base__uint_html_a4e9de7a706374a3d016b89c9ecb4f80d"><div class="ttname"><a href="classripple_1_1base__uint.html#a4e9de7a706374a3d016b89c9ecb4f80d">ripple::base_uint&lt; 256 &gt;::fromVoid</a></div><div class="ttdeci">static base_uint fromVoid(void const *data)</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00213">base_uint.h:213</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1Tx__test_html_aa15303a5ada4bf9072d7b903c3969fa4"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test.html#aa15303a5ada4bf9072d7b903c3969fa4">ripple::test::Tx_test::cmpPaymentTx</a></div><div class="ttdeci">void cmpPaymentTx(const org::xrpl::rpc::v1::Transaction &amp;proto, std::shared_ptr&lt; STTx const &gt; txnSt)</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00083">Tx_test.cpp:83</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a20441c38ff3ef727e513e33e4bca1e0b"><div class="ttname"><a href="namespaceripple.html#a20441c38ff3ef727e513e33e4bca1e0b">ripple::sfPaths</a></div><div class="ttdeci">const SField sfPaths(access, STI_PATHSET, 1, &quot;Paths&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00486">SField.h:486</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a920e70ffb678e79103010040fb223fd3"><div class="ttname"><a href="namespaceripple.html#a920e70ffb678e79103010040fb223fd3">ripple::sfMemos</a></div><div class="ttdeci">const SField sfMemos(access, STI_ARRAY, 9, &quot;Memos&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00517">SField.h:517</a></div></div>
@@ -929,7 +996,9 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a902fa1f41357ca087dfc0cd8aa3c517f"><div class="ttname"><a href="namespaceripple.html#a902fa1f41357ca087dfc0cd8aa3c517f">ripple::sfDestination</a></div><div class="ttdeci">const SF_Account sfDestination(access, STI_ACCOUNT, 3, &quot;Destination&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00478">SField.h:478</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1jtx_1_1dtag_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1dtag.html">ripple::test::jtx::dtag</a></div><div class="ttdoc">Set the destination tag on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="tag_8h_source.html#l00031">tag.h:31</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Account_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Account.html">ripple::test::jtx::Account</a></div><div class="ttdoc">Immutable cryptographic account descriptor.</div><div class="ttdef"><b>Definition:</b> <a href="Account_8h_source.html#l00037">Account.h:37</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1Tx__test_html_a6c771277b4c11206a190e9a9333a213b"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test.html#a6c771277b4c11206a190e9a9333a213b">ripple::test::Tx_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00760">Tx_test.cpp:760</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient_html_a68c964e8343cbc1c4741292ac99856c4"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#a68c964e8343cbc1c4741292ac99856c4">ripple::test::Tx_test::GrpcAccountTxClient::reply</a></div><div class="ttdeci">org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse reply</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00512">Tx_test.cpp:512</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1Tx__test_html_a6c771277b4c11206a190e9a9333a213b"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test.html#a6c771277b4c11206a190e9a9333a213b">ripple::test::Tx_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00822">Tx_test.cpp:822</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient_html_a0d0391aafb49970814c4290abd4ef64e"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test_1_1GrpcAccountTxClient.html#a0d0391aafb49970814c4290abd4ef64e">ripple::test::Tx_test::GrpcAccountTxClient::request</a></div><div class="ttdeci">org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest request</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00511">Tx_test.cpp:511</a></div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1STPath_html"><div class="ttname"><a href="classripple_1_1STPath.html">ripple::STPath</a></div><div class="ttdef"><b>Definition:</b> <a href="STPathSet_8h_source.html#l00212">STPathSet.h:212</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1Tx__test_html_aca0551cb6c64492685779424d8b4096e"><div class="ttname"><a href="classripple_1_1test_1_1Tx__test.html#aca0551cb6c64492685779424d8b4096e">ripple::test::Tx_test::cmpMeta</a></div><div class="ttdeci">void cmpMeta(const org::xrpl::rpc::v1::Meta &amp;proto, std::shared_ptr&lt; TxMeta &gt; txMeta)</div><div class="ttdef"><b>Definition:</b> <a href="Tx__test_8cpp_source.html#l00438">Tx_test.cpp:438</a></div></div>

@@ -284,6 +284,9 @@ $(function() {
 <li>defaultCacheTargetSize
 : <a class="el" href="classripple_1_1detail_1_1BasicFullBelowCache.html#a3f2955e956ccdadc9995b0052b6bdb70ae10ce03f09b314faadeff8cff304c326">ripple::detail::BasicFullBelowCache&lt; Key &gt;</a>
 </li>
+<li>defaultmaxAttempts_
+: <a class="el" href="classripple_1_1RPC_1_1ShardVerificationScheduler.html#af875073cb8e1ba184b43662781c6539c">ripple::RPC::ShardVerificationScheduler</a>
+</li>
 <li>defaultObject_t()
 : <a class="el" href="structripple_1_1detail_1_1defaultObject__t.html#a79c0b818673f1115700a24bf8e8487d6">ripple::detail::defaultObject_t</a>
 </li>
@@ -292,6 +295,9 @@ $(function() {
 </li>
 <li>defaultPathsAllowed
 : <a class="el" href="structripple_1_1path_1_1RippleCalc_1_1Input.html#a5913b8a574634a704a8359529c5deff9">ripple::path::RippleCalc::Input</a>
+</li>
+<li>defaultRetryInterval_
+: <a class="el" href="classripple_1_1RPC_1_1ShardVerificationScheduler.html#a4b96ab5bcddb7b738edec54049820fc0">ripple::RPC::ShardVerificationScheduler</a>
 </li>
 <li>deferred
 : <a class="el" href="structripple_1_1JobTypeData.html#a127a2756ebd66d4901a4d18aaa26cd30">ripple::JobTypeData</a>
@@ -418,7 +424,7 @@ $(function() {
 , <a class="el" href="classripple_1_1SignerEntries.html#a9fe5442ae56854033a250bde56cec61a">ripple::SignerEntries</a>
 </li>
 <li>dest
-: <a class="el" href="structripple_1_1test_1_1SSLHTTPDownloader__test_1_1DownloadCompleter.html#aba5f5e8344e2dc9ad15e61478820b6a4">ripple::test::SSLHTTPDownloader_test::DownloadCompleter</a>
+: <a class="el" href="structripple_1_1test_1_1DatabaseDownloader__test_1_1DownloadCompleter.html#a14ca53e06be6e8a3da87ea237f8c62eb">ripple::test::DatabaseDownloader_test::DownloadCompleter</a>
 </li>
 <li>dest_tag()
 : <a class="el" href="classripple_1_1test_1_1jtx_1_1dest__tag.html#a95488f720d20f47b512b2414295c1fe4">ripple::test::jtx::dest_tag</a>
@@ -546,14 +552,10 @@ $(function() {
 : <a class="el" href="classripple_1_1ApplyView.html#ac157168b6d8afa47ec1956546dd268cb">ripple::ApplyView</a>
 </li>
 <li>dirRemove()
-: <a class="el" href="classripple_1_1ApplyView.html#a5a06441ef4fdb9b7f6e51437ce4a959f">ripple::ApplyView</a>
+: <a class="el" href="classripple_1_1ApplyView.html#add05adf228213dde2bc48821c0f7cc75">ripple::ApplyView</a>
 </li>
 <li>dirtyUp()
 : <a class="el" href="classripple_1_1SHAMap.html#aceb83fa84aec5a5f96210e27a506009a">ripple::SHAMap</a>
-</li>
-<li>disable()
-: <a class="el" href="classripple_1_1AmendmentTable.html#a2f163c02ecd10e7f108023f97840bc2c">ripple::AmendmentTable</a>
-, <a class="el" href="classripple_1_1AmendmentTableImpl.html#add86959a39f8701193ebcae668625b84">ripple::AmendmentTableImpl</a>
 </li>
 <li>disable_sigs()
 : <a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html#ad90d04ecd91b98b8ffeab5e8eceb271b">ripple::test::jtx::Env</a>
@@ -865,12 +867,12 @@ $(function() {
 : <a class="el" href="classripple_1_1PathRequest.html#a1c768c91db09df17dc03cf9c34f780ef">ripple::PathRequest</a>
 </li>
 <li>doValidatedLedger()
-: <a class="el" href="classripple_1_1AmendmentTable.html#ac721ac20262609226483f1436b0df02f">ripple::AmendmentTable</a>
+: <a class="el" href="classripple_1_1AmendmentTable.html#a48f050b47af8f00cafd237e2cddb2929">ripple::AmendmentTable</a>
 , <a class="el" href="classripple_1_1AmendmentTableImpl.html#a5a1de10b5b7e51cc4f20f2636503c2e6">ripple::AmendmentTableImpl</a>
 </li>
 <li>doValidation()
-: <a class="el" href="classripple_1_1AmendmentTable.html#ad4448eeba600656f25e54dfcd18138af">ripple::AmendmentTable</a>
-, <a class="el" href="classripple_1_1AmendmentTableImpl.html#af0904a2a84102ca9615d05706d6c0bed">ripple::AmendmentTableImpl</a>
+: <a class="el" href="classripple_1_1AmendmentTable.html#af8412c322ac2c2f3410548358630c9d7">ripple::AmendmentTable</a>
+, <a class="el" href="classripple_1_1AmendmentTableImpl.html#a941314eb1dff68fb625f7a44378845b9">ripple::AmendmentTableImpl</a>
 , <a class="el" href="classripple_1_1FeeVote.html#a00796ab7d861859bd50b17e2bc09e314">ripple::FeeVote</a>
 , <a class="el" href="classripple_1_1FeeVoteImpl.html#a87db6cbe91285e207fc9c752ed33bb78">ripple::FeeVoteImpl</a>
 </li>
@@ -890,13 +892,13 @@ $(function() {
 : <a class="el" href="classripple_1_1RPC_1_1ShardArchiveHandler.html#a3ff9ae0459edf9d27608ecce2dbf7e66">ripple::RPC::ShardArchiveHandler</a>
 </li>
 <li>Downloader()
-: <a class="el" href="structripple_1_1test_1_1SSLHTTPDownloader__test_1_1Downloader.html#a8e5e260eeb4072e1ee8bfa67e0a4f21a">ripple::test::SSLHTTPDownloader_test::Downloader</a>
+: <a class="el" href="structripple_1_1test_1_1DatabaseDownloader__test_1_1Downloader.html#ae7ca422030aab51060a78c4fcb655669">ripple::test::DatabaseDownloader_test::Downloader</a>
 </li>
 <li>downloader_
-: <a class="el" href="classripple_1_1RPC_1_1ShardArchiveHandler.html#a34d3fabb2e65c099599876069e7e7b0e">ripple::RPC::ShardArchiveHandler</a>
+: <a class="el" href="classripple_1_1RPC_1_1ShardArchiveHandler.html#a854a548b77c0fd9589bff1727b53b8ec">ripple::RPC::ShardArchiveHandler</a>
 </li>
 <li>Downloads
-: <a class="el" href="classripple_1_1test_1_1ShardArchiveHandler__test.html#a9acd2bb4d13e34edaec3def40dce4a9f">ripple::test::ShardArchiveHandler_test</a>
+: <a class="el" href="classripple_1_1test_1_1ShardArchiveHandler__test.html#a97b9e0d6a3a92441be67d1ce77fb9198">ripple::test::ShardArchiveHandler_test</a>
 </li>
 <li>doWSRequest()
 : <a class="el" href="classripple_1_1test_1_1ServerStatus__test.html#a52fe19d6d344ed5382e8f1e390f4800a">ripple::test::ServerStatus_test</a>

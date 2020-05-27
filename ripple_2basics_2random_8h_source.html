@@ -201,22 +201,46 @@ $(function() {
 <div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;{</div>
 <div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a71a6227fec78db0b06595d62c06b25dc">rand_int</a>(<a class="code" href="namespaceripple.html#a8439f02fc1834046d791febb643887cb">default_prng</a>(), <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits&lt;Integral&gt;::max</a>());</div>
 <div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;}</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Engine&gt;</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00169"></a><span class="lineno"><a class="line" href="namespaceripple.html#a37fc7093cfe63d4e2cab63d40aa813dd">  169</a></span>&#160;<a class="code" href="namespaceripple.html#a37fc7093cfe63d4e2cab63d40aa813dd">rand_bool</a>(Engine&amp; engine)</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;{</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a71a6227fec78db0b06595d62c06b25dc">rand_int</a>(engine, 1) == 1;</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;}</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160; </div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00175"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad7f6ed671155855d566c0adb954b188b">  175</a></span>&#160;<a class="code" href="namespaceripple.html#a37fc7093cfe63d4e2cab63d40aa813dd">rand_bool</a>()</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;{</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a37fc7093cfe63d4e2cab63d40aa813dd">rand_bool</a>(<a class="code" href="namespaceripple.html#a8439f02fc1834046d791febb643887cb">default_prng</a>());</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;}</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160; </div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;<span class="preprocessor">#endif  // RIPPLE_BASICS_RANDOM_H_INCLUDED</span></div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Byte, <span class="keyword">class</span> Engine&gt;</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a>&lt;</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;    (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same&lt;Byte, unsigned char&gt;::value</a> ||</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;     <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same&lt;Byte, std::uint8_t&gt;::value</a>) &amp;&amp;</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;        detail::is_engine&lt;Engine&gt;::value,</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;    Byte&gt;</div>
+<div class="line"><a name="l00173"></a><span class="lineno"><a class="line" href="namespaceripple.html#a49379951733bfc8bc00ea5d33c94eaa6">  173</a></span>&#160;<a class="code" href="namespaceripple.html#a49379951733bfc8bc00ea5d33c94eaa6">rand_byte</a>(Engine&amp; engine)</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;{</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span>Byte<span class="keyword">&gt;</span>(rand_int&lt;Engine, std::uint32_t&gt;(</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;        engine,</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits&lt;Byte&gt;::min</a>(),</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits&lt;Byte&gt;::max</a>()));</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;}</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160; </div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Byte = std::u<span class="keywordtype">int</span>8_t&gt;</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a>&lt;</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;    (<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same&lt;Byte, unsigned char&gt;::value</a> ||</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;     <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same&lt;Byte, std::uint8_t&gt;::value</a>),</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;    Byte&gt;</div>
+<div class="line"><a name="l00186"></a><span class="lineno"><a class="line" href="namespaceripple.html#aa6ae7a62d7bb87fc818b4e568bda26c7">  186</a></span>&#160;<a class="code" href="namespaceripple.html#a49379951733bfc8bc00ea5d33c94eaa6">rand_byte</a>()</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;{</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    <span class="keywordflow">return</span> rand_byte&lt;Byte&gt;(<a class="code" href="namespaceripple.html#a8439f02fc1834046d791febb643887cb">default_prng</a>());</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;}</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> Engine&gt;</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00196"></a><span class="lineno"><a class="line" href="namespaceripple.html#a37fc7093cfe63d4e2cab63d40aa813dd">  196</a></span>&#160;<a class="code" href="namespaceripple.html#a37fc7093cfe63d4e2cab63d40aa813dd">rand_bool</a>(Engine&amp; engine)</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;{</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a71a6227fec78db0b06595d62c06b25dc">rand_int</a>(engine, 1) == 1;</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;}</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160; </div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00202"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad7f6ed671155855d566c0adb954b188b">  202</a></span>&#160;<a class="code" href="namespaceripple.html#a37fc7093cfe63d4e2cab63d40aa813dd">rand_bool</a>()</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;{</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a37fc7093cfe63d4e2cab63d40aa813dd">rand_bool</a>(<a class="code" href="namespaceripple.html#a8439f02fc1834046d791febb643887cb">default_prng</a>());</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;}</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160; </div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;<span class="preprocessor">#endif  // RIPPLE_BASICS_RANDOM_H_INCLUDED</span></div>
 </div><!-- fragment --></div><!-- contents -->
+<div class="ttc" id="ais_same_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same</a></div></div>
 <div class="ttc" id="anamespacebeast_html_a3a89b040ab5ccff1b2ce7692464c6a48"><div class="ttname"><a href="namespacebeast.html#a3a89b040ab5ccff1b2ce7692464c6a48">beast::xor_shift_engine</a></div><div class="ttdeci">detail::xor_shift_engine&lt;&gt; xor_shift_engine</div><div class="ttdoc">XOR-shift Generator.</div><div class="ttdef"><b>Definition:</b> <a href="xor__shift__engine_8h_source.html#l00114">xor_shift_engine.h:114</a></div></div>
 <div class="ttc" id="ais_unsigned_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_unsigned.html">std::is_unsigned</a></div></div>
 <div class="ttc" id="auniform_int_distribution_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution.html">std::uniform_int_distribution</a></div></div>
@@ -227,6 +251,7 @@ $(function() {
 <div class="ttc" id="arandom_device_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/numeric/random/random_device.html">std::random_device</a></div></div>
 <div class="ttc" id="aenable_if_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a></div></div>
 <div class="ttc" id="acstddef_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstddef.html">cstddef</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a49379951733bfc8bc00ea5d33c94eaa6"><div class="ttname"><a href="namespaceripple.html#a49379951733bfc8bc00ea5d33c94eaa6">ripple::rand_byte</a></div><div class="ttdeci">std::enable_if_t&lt;(std::is_same&lt; Byte, unsigned char &gt;::value||std::is_same&lt; Byte, std::uint8_t &gt;::value) &amp;&amp;detail::is_engine&lt; Engine &gt;::value, Byte &gt; rand_byte(Engine &amp;engine)</div><div class="ttdoc">Return a random byte.</div><div class="ttdef"><b>Definition:</b> <a href="ripple_2basics_2random_8h_source.html#l00173">ripple/basics/random.h:173</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a8439f02fc1834046d791febb643887cb"><div class="ttname"><a href="namespaceripple.html#a8439f02fc1834046d791febb643887cb">ripple::default_prng</a></div><div class="ttdeci">beast::xor_shift_engine &amp; default_prng()</div><div class="ttdoc">Return the default random engine.</div><div class="ttdef"><b>Definition:</b> <a href="ripple_2basics_2random_8h_source.html#l00065">ripple/basics/random.h:65</a></div></div>
 <div class="ttc" id="acstdint_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a></div></div>
 <div class="ttc" id="ais_invocable_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_invocable.html">std::is_invocable_r</a></div></div>
@@ -237,7 +262,7 @@ $(function() {
 <div class="ttc" id="acassert_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cassert.html">cassert</a></div></div>
 <div class="ttc" id="amutex_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/mutex.html">mutex</a></div></div>
 <div class="ttc" id="aclassbeast_1_1detail_1_1xor__shift__engine_html"><div class="ttname"><a href="classbeast_1_1detail_1_1xor__shift__engine.html">beast::detail::xor_shift_engine</a></div><div class="ttdef"><b>Definition:</b> <a href="xor__shift__engine_8h_source.html#l00032">xor_shift_engine.h:32</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a37fc7093cfe63d4e2cab63d40aa813dd"><div class="ttname"><a href="namespaceripple.html#a37fc7093cfe63d4e2cab63d40aa813dd">ripple::rand_bool</a></div><div class="ttdeci">bool rand_bool(Engine &amp;engine)</div><div class="ttdoc">Return a random boolean value.</div><div class="ttdef"><b>Definition:</b> <a href="ripple_2basics_2random_8h_source.html#l00169">ripple/basics/random.h:169</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a37fc7093cfe63d4e2cab63d40aa813dd"><div class="ttname"><a href="namespaceripple.html#a37fc7093cfe63d4e2cab63d40aa813dd">ripple::rand_bool</a></div><div class="ttdeci">bool rand_bool(Engine &amp;engine)</div><div class="ttdoc">Return a random boolean value.</div><div class="ttdef"><b>Definition:</b> <a href="ripple_2basics_2random_8h_source.html#l00196">ripple/basics/random.h:196</a></div></div>
 <div class="ttc" id="anumeric_limits_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

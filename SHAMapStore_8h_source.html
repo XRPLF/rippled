@@ -95,74 +95,79 @@ $(function() {
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/core/Stoppable.h&gt;</span></div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;ripple/nodestore/Manager.h&gt;</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/ErrorCodes.h&gt;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">class </span>TransactionMaster;</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="classripple_1_1SHAMapStore.html">   36</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1SHAMapStore.html">SHAMapStore</a> : <span class="keyword">public</span> <a class="code" href="classripple_1_1Stoppable.html">Stoppable</a></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;{</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00039"></a><span class="lineno"><a class="line" href="classripple_1_1SHAMapStore.html#a45e54d3a7fd8dff60d4dcb780914f40f">   39</a></span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a45e54d3a7fd8dff60d4dcb780914f40f">SHAMapStore</a>(<a class="code" href="classripple_1_1Stoppable.html">Stoppable</a>&amp; parent) : <a class="code" href="classripple_1_1Stoppable.html">Stoppable</a>(<span class="stringliteral">&quot;SHAMapStore&quot;</span>, parent)</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    {</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    }</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a3a16eedab60b2fdc51c616369d5f3969">onLedgerClosed</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger const&gt;</a> <span class="keyword">const</span>&amp; ledger) = 0;</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a96ae0b236ea08f5178309d80d27a7c5f">rendezvous</a>() <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a6bd103dd779634de40c59681605874e6">clampFetchDepth</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> fetch_depth) <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;NodeStore::Database&gt;</a></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a5a3879e1b305de3f9a8c4341d9471ef1">makeNodeStore</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; name, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a> readThreads) = 0;</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a2b1a46d6f878575eeea6730c8fc367f2">setCanDelete</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a> canDelete) = 0;</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a737537b2e26dd540a14ac7c7a98a0701">advisoryDelete</a>() <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a></div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a7d926beeaf7fe6baf9fa95ee2b4d85d1">getLastRotated</a>() = 0;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a90d0d6d4d070628e340c78cd818e9ae0">getCanDelete</a>() = 0;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">int</span></div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a90ce3f79e011586bc87d6fdcb4cf9a0e">fdRequired</a>() <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;};</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;boost/optional.hpp&gt;</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">class </span>TransactionMaster;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
+<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="classripple_1_1SHAMapStore.html">   37</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1SHAMapStore.html">SHAMapStore</a> : <span class="keyword">public</span> <a class="code" href="classripple_1_1Stoppable.html">Stoppable</a></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;{</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="classripple_1_1SHAMapStore.html#a45e54d3a7fd8dff60d4dcb780914f40f">   40</a></span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a45e54d3a7fd8dff60d4dcb780914f40f">SHAMapStore</a>(<a class="code" href="classripple_1_1Stoppable.html">Stoppable</a>&amp; parent) : <a class="code" href="classripple_1_1Stoppable.html">Stoppable</a>(<span class="stringliteral">&quot;SHAMapStore&quot;</span>, parent)</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    {</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    }</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a3a16eedab60b2fdc51c616369d5f3969">onLedgerClosed</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger const&gt;</a> <span class="keyword">const</span>&amp; ledger) = 0;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a96ae0b236ea08f5178309d80d27a7c5f">rendezvous</a>() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a6bd103dd779634de40c59681605874e6">clampFetchDepth</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> fetch_depth) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;NodeStore::Database&gt;</a></div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a5a3879e1b305de3f9a8c4341d9471ef1">makeNodeStore</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; name, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a> readThreads) = 0;</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a2b1a46d6f878575eeea6730c8fc367f2">setCanDelete</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a> canDelete) = 0;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a737537b2e26dd540a14ac7c7a98a0701">advisoryDelete</a>() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a7d926beeaf7fe6baf9fa95ee2b4d85d1">getLastRotated</a>() = 0;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a90d0d6d4d070628e340c78cd818e9ae0">getCanDelete</a>() = 0;</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">int</span></div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a90ce3f79e011586bc87d6fdcb4cf9a0e">fdRequired</a>() <span class="keyword">const</span> = 0;</div>
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;SHAMapStore&gt;</a></div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<a class="code" href="namespaceripple.html#acde3d7e2f059202351f714545da5b233">make_SHAMapStore</a>(</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    Application&amp; app,</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    Stoppable&amp; parent,</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    NodeStore::Scheduler&amp; scheduler,</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal);</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keyword">virtual</span> boost::optional&lt;LedgerIndex&gt;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <a class="code" href="classripple_1_1SHAMapStore.html#a05bec537a1aea25f251635dafc755900">minimumOnline</a>() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;};</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;SHAMapStore&gt;</a></div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<a class="code" href="namespaceripple.html#acde3d7e2f059202351f714545da5b233">make_SHAMapStore</a>(</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    Application&amp; app,</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    Stoppable&amp; parent,</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    NodeStore::Scheduler&amp; scheduler,</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <a class="code" href="classbeast_1_1Journal.html">beast::Journal</a> journal);</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1SHAMapStore_html_a5a3879e1b305de3f9a8c4341d9471ef1"><div class="ttname"><a href="classripple_1_1SHAMapStore.html#a5a3879e1b305de3f9a8c4341d9471ef1">ripple::SHAMapStore::makeNodeStore</a></div><div class="ttdeci">virtual std::unique_ptr&lt; NodeStore::Database &gt; makeNodeStore(std::string const &amp;name, std::int32_t readThreads)=0</div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1SHAMapStore_html_a3a16eedab60b2fdc51c616369d5f3969"><div class="ttname"><a href="classripple_1_1SHAMapStore.html#a3a16eedab60b2fdc51c616369d5f3969">ripple::SHAMapStore::onLedgerClosed</a></div><div class="ttdeci">virtual void onLedgerClosed(std::shared_ptr&lt; Ledger const &gt; const &amp;ledger)=0</div><div class="ttdoc">Called by LedgerMaster every time a ledger validates.</div></div>
-<div class="ttc" id="aclassripple_1_1SHAMapStore_html"><div class="ttname"><a href="classripple_1_1SHAMapStore.html">ripple::SHAMapStore</a></div><div class="ttdoc">class to create database, launch online delete thread, and related SQLite database</div><div class="ttdef"><b>Definition:</b> <a href="SHAMapStore_8h_source.html#l00036">SHAMapStore.h:36</a></div></div>
+<div class="ttc" id="aclassripple_1_1SHAMapStore_html"><div class="ttname"><a href="classripple_1_1SHAMapStore.html">ripple::SHAMapStore</a></div><div class="ttdoc">class to create database, launch online delete thread, and related SQLite database</div><div class="ttdef"><b>Definition:</b> <a href="SHAMapStore_8h_source.html#l00037">SHAMapStore.h:37</a></div></div>
 <div class="ttc" id="aclassripple_1_1SHAMapStore_html_a96ae0b236ea08f5178309d80d27a7c5f"><div class="ttname"><a href="classripple_1_1SHAMapStore.html#a96ae0b236ea08f5178309d80d27a7c5f">ripple::SHAMapStore::rendezvous</a></div><div class="ttdeci">virtual void rendezvous() const =0</div></div>
 <div class="ttc" id="aclassripple_1_1SHAMapStore_html_a7d926beeaf7fe6baf9fa95ee2b4d85d1"><div class="ttname"><a href="classripple_1_1SHAMapStore.html#a7d926beeaf7fe6baf9fa95ee2b4d85d1">ripple::SHAMapStore::getLastRotated</a></div><div class="ttdeci">virtual LedgerIndex getLastRotated()=0</div><div class="ttdoc">Maximum ledger that has been deleted, or will be deleted if currently in the act of online deletion.</div></div>
 <div class="ttc" id="aclassripple_1_1SHAMapStore_html_a737537b2e26dd540a14ac7c7a98a0701"><div class="ttname"><a href="classripple_1_1SHAMapStore.html#a737537b2e26dd540a14ac7c7a98a0701">ripple::SHAMapStore::advisoryDelete</a></div><div class="ttdeci">virtual bool advisoryDelete() const =0</div><div class="ttdoc">Whether advisory delete is enabled.</div></div>
 <div class="ttc" id="aclassripple_1_1SHAMapStore_html_a6bd103dd779634de40c59681605874e6"><div class="ttname"><a href="classripple_1_1SHAMapStore.html#a6bd103dd779634de40c59681605874e6">ripple::SHAMapStore::clampFetchDepth</a></div><div class="ttdeci">virtual std::uint32_t clampFetchDepth(std::uint32_t fetch_depth) const =0</div></div>
 <div class="ttc" id="aclassripple_1_1Stoppable_html"><div class="ttname"><a href="classripple_1_1Stoppable.html">ripple::Stoppable</a></div><div class="ttdoc">Provides an interface for starting and stopping.</div><div class="ttdef"><b>Definition:</b> <a href="Stoppable_8h_source.html#l00200">Stoppable.h:200</a></div></div>
 <div class="ttc" id="aclassripple_1_1SHAMapStore_html_a2b1a46d6f878575eeea6730c8fc367f2"><div class="ttname"><a href="classripple_1_1SHAMapStore.html#a2b1a46d6f878575eeea6730c8fc367f2">ripple::SHAMapStore::setCanDelete</a></div><div class="ttdeci">virtual LedgerIndex setCanDelete(LedgerIndex canDelete)=0</div><div class="ttdoc">Highest ledger that may be deleted.</div></div>
+<div class="ttc" id="aclassripple_1_1SHAMapStore_html_a05bec537a1aea25f251635dafc755900"><div class="ttname"><a href="classripple_1_1SHAMapStore.html#a05bec537a1aea25f251635dafc755900">ripple::SHAMapStore::minimumOnline</a></div><div class="ttdeci">virtual boost::optional&lt; LedgerIndex &gt; minimumOnline() const =0</div><div class="ttdoc">The minimum ledger to try and maintain in our database.</div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00058">Journal.h:58</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="anamespaceripple_html_acde3d7e2f059202351f714545da5b233"><div class="ttname"><a href="namespaceripple.html#acde3d7e2f059202351f714545da5b233">ripple::make_SHAMapStore</a></div><div class="ttdeci">std::unique_ptr&lt; SHAMapStore &gt; make_SHAMapStore(Application &amp;app, Stoppable &amp;parent, NodeStore::Scheduler &amp;scheduler, beast::Journal journal)</div><div class="ttdef"><b>Definition:</b> <a href="SHAMapStoreImp_8cpp_source.html#l00721">SHAMapStoreImp.cpp:721</a></div></div>
-<div class="ttc" id="aclassripple_1_1SHAMapStore_html_a45e54d3a7fd8dff60d4dcb780914f40f"><div class="ttname"><a href="classripple_1_1SHAMapStore.html#a45e54d3a7fd8dff60d4dcb780914f40f">ripple::SHAMapStore::SHAMapStore</a></div><div class="ttdeci">SHAMapStore(Stoppable &amp;parent)</div><div class="ttdef"><b>Definition:</b> <a href="SHAMapStore_8h_source.html#l00039">SHAMapStore.h:39</a></div></div>
+<div class="ttc" id="anamespaceripple_html_acde3d7e2f059202351f714545da5b233"><div class="ttname"><a href="namespaceripple.html#acde3d7e2f059202351f714545da5b233">ripple::make_SHAMapStore</a></div><div class="ttdeci">std::unique_ptr&lt; SHAMapStore &gt; make_SHAMapStore(Application &amp;app, Stoppable &amp;parent, NodeStore::Scheduler &amp;scheduler, beast::Journal journal)</div><div class="ttdef"><b>Definition:</b> <a href="SHAMapStoreImp_8cpp_source.html#l00734">SHAMapStoreImp.cpp:734</a></div></div>
+<div class="ttc" id="aclassripple_1_1SHAMapStore_html_a45e54d3a7fd8dff60d4dcb780914f40f"><div class="ttname"><a href="classripple_1_1SHAMapStore.html#a45e54d3a7fd8dff60d4dcb780914f40f">ripple::SHAMapStore::SHAMapStore</a></div><div class="ttdeci">SHAMapStore(Stoppable &amp;parent)</div><div class="ttdef"><b>Definition:</b> <a href="SHAMapStore_8h_source.html#l00040">SHAMapStore.h:40</a></div></div>
 <div class="ttc" id="aclassripple_1_1SHAMapStore_html_a90d0d6d4d070628e340c78cd818e9ae0"><div class="ttname"><a href="classripple_1_1SHAMapStore.html#a90d0d6d4d070628e340c78cd818e9ae0">ripple::SHAMapStore::getCanDelete</a></div><div class="ttdeci">virtual LedgerIndex getCanDelete()=0</div><div class="ttdoc">Highest ledger that may be deleted.</div></div>
 <div class="ttc" id="aclassripple_1_1SHAMapStore_html_a90ce3f79e011586bc87d6fdcb4cf9a0e"><div class="ttname"><a href="classripple_1_1SHAMapStore.html#a90ce3f79e011586bc87d6fdcb4cf9a0e">ripple::SHAMapStore::fdRequired</a></div><div class="ttdeci">virtual int fdRequired() const =0</div><div class="ttdoc">Returns the number of file descriptors that are needed.</div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div><div class="ttdoc">STL class.</div></div>

@@ -86,9 +86,8 @@ Inheritance diagram for ripple::SSLHTTPDownloader:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1SSLHTTPDownloader__inherit__graph.png" border="0" usemap="#ripple_1_1SSLHTTPDownloader_inherit__map" alt="Inheritance graph"/></div>
 <map name="ripple_1_1SSLHTTPDownloader_inherit__map" id="ripple_1_1SSLHTTPDownloader_inherit__map">
-<area shape="rect" title="Provides an asynchronous HTTPS file downloader." alt="" coords="32,95,235,121"/>
-<area shape="rect" href="classripple_1_1DatabaseDownloader.html" title=" " alt="" coords="30,169,237,196"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,261,47"/>
+<area shape="rect" title="Provides an asynchronous HTTPS file downloader." alt="" coords="7,5,210,32"/>
+<area shape="rect" href="classripple_1_1DatabaseDownloader.html" title=" " alt="" coords="5,80,212,107"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -96,14 +95,13 @@ Collaboration diagram for ripple::SSLHTTPDownloader:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1SSLHTTPDownloader__coll__graph.png" border="0" usemap="#ripple_1_1SSLHTTPDownloader_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1SSLHTTPDownloader_coll__map" id="ripple_1_1SSLHTTPDownloader_coll__map">
-<area shape="rect" title="Provides an asynchronous HTTPS file downloader." alt="" coords="807,147,1009,174"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="427,5,683,47"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="478,71,631,98"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/condition_variable.html" title=" " alt="" coords="469,122,640,149"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/mutex.html" title="STL class." alt="" coords="509,173,601,199"/>
-<area shape="rect" href="classripple_1_1HTTPClientSSLContext.html" title=" " alt="" coords="448,286,661,313"/>
-<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="252,255,363,282"/>
-<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,255,152,282"/>
+<area shape="rect" title="Provides an asynchronous HTTPS file downloader." alt="" coords="813,107,1016,133"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="457,5,610,32"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/condition_variable.html" title=" " alt="" coords="448,56,619,83"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/mutex.html" title="STL class." alt="" coords="487,107,579,133"/>
+<area shape="rect" href="classripple_1_1HTTPClientSSLContext.html" title=" " alt="" coords="427,220,640,247"/>
+<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="252,189,363,216"/>
+<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,189,152,216"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -114,18 +112,14 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:aa27e982bb2d446ee3d8b8c7137e60d0a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLHTTPDownloader.html#aa27e982bb2d446ee3d8b8c7137e60d0a">SSLHTTPDownloader</a> (boost::asio::io_service &amp;io_service, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config, bool isPaused=false)</td></tr>
-<tr class="separator:aa27e982bb2d446ee3d8b8c7137e60d0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a684239e6c215f5b938a6aceef56ec93a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLHTTPDownloader.html#a684239e6c215f5b938a6aceef56ec93a">SSLHTTPDownloader</a> (boost::asio::io_service &amp;io_service, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config)</td></tr>
+<tr class="separator:a684239e6c215f5b938a6aceef56ec93a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af7b8454d335a0f18df271ca8b18f4aa0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLHTTPDownloader.html#af7b8454d335a0f18df271ca8b18f4aa0">download</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;host, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;port, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;target, int version, boost::filesystem::path const &amp;dstPath, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(boost::filesystem::path)&gt; complete)</td></tr>
 <tr class="separator:af7b8454d335a0f18df271ca8b18f4aa0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a59d921dde32fb9bf94d94b0e16162c00"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLHTTPDownloader.html#a59d921dde32fb9bf94d94b0e16162c00">onStop</a> ()</td></tr>
 <tr class="separator:a59d921dde32fb9bf94d94b0e16162c00"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abcd88cd5db6813b25b030b03e5092d3a"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLHTTPDownloader.html#abcd88cd5db6813b25b030b03e5092d3a">~SSLHTTPDownloader</a> ()=default</td></tr>
 <tr class="separator:abcd88cd5db6813b25b030b03e5092d3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this/shared_from_this.html">shared_from_this</a> (T... args)</td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this/weak_from_this.html">weak_from_this</a> (T... args)</td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-types"></a>
 Protected Types</h2></td></tr>
@@ -134,8 +128,8 @@ Protected Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:aa0f1553c2041573692fe63fe187dff6a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLHTTPDownloader.html#aa0f1553c2041573692fe63fe187dff6a">fail</a> (boost::filesystem::path dstPath, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(boost::filesystem::path)&gt; const &amp;complete, boost::system::error_code const &amp;ec, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;errMsg, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SSLHTTPDownloader.html#a9084b729657b32e48b356ea34ce68d6a">parser</a> &gt; <a class="el" href="classripple_1_1SSLHTTPDownloader.html#a9084b729657b32e48b356ea34ce68d6a">parser</a>=nullptr)</td></tr>
-<tr class="separator:aa0f1553c2041573692fe63fe187dff6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22acb463b6ede4b58dff1441e13355ae"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLHTTPDownloader.html#a22acb463b6ede4b58dff1441e13355ae">fail</a> (boost::filesystem::path dstPath, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(boost::filesystem::path)&gt; const &amp;complete, boost::system::error_code const &amp;ec, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;errMsg, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SSLHTTPDownloader.html#a9084b729657b32e48b356ea34ce68d6a">parser</a> &gt; <a class="el" href="classripple_1_1SSLHTTPDownloader.html#a9084b729657b32e48b356ea34ce68d6a">parser</a>)</td></tr>
+<tr class="separator:a22acb463b6ede4b58dff1441e13355ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -165,12 +159,12 @@ Private Attributes</h2></td></tr>
 <tr class="separator:ae8d9c18bfe26e21fbdc0b73af955cf21"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aca648df73c16d9b54a0d0b726cc48628"><td class="memItemLeft" align="right" valign="top">boost::beast::flat_buffer&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLHTTPDownloader.html#aca648df73c16d9b54a0d0b726cc48628">read_buf_</a></td></tr>
 <tr class="separator:aca648df73c16d9b54a0d0b726cc48628"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a04ebac64d7e7a669b6040a454a41c536"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLHTTPDownloader.html#a04ebac64d7e7a669b6040a454a41c536">isStopped_</a></td></tr>
-<tr class="separator:a04ebac64d7e7a669b6040a454a41c536"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a203144c66e8d6f3dbc7742935b810ded"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLHTTPDownloader.html#a203144c66e8d6f3dbc7742935b810ded">sessionActive_</a></td></tr>
-<tr class="separator:a203144c66e8d6f3dbc7742935b810ded"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abefff973ebc175b6780b1ac02a36c019"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLHTTPDownloader.html#abefff973ebc175b6780b1ac02a36c019">cancelDownloads_</a></td></tr>
+<tr class="separator:abefff973ebc175b6780b1ac02a36c019"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af7f673c50f813cb9df7f988bf7ca0c6f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLHTTPDownloader.html#af7f673c50f813cb9df7f988bf7ca0c6f">m_</a></td></tr>
 <tr class="separator:af7f673c50f813cb9df7f988bf7ca0c6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a203144c66e8d6f3dbc7742935b810ded"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLHTTPDownloader.html#a203144c66e8d6f3dbc7742935b810ded">sessionActive_</a></td></tr>
+<tr class="separator:a203144c66e8d6f3dbc7742935b810ded"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a94e04d19f22a81e7cf13cac8f37d55fa"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/condition_variable.html">std::condition_variable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SSLHTTPDownloader.html#a94e04d19f22a81e7cf13cac8f37d55fa">c_</a></td></tr>
 <tr class="separator:a94e04d19f22a81e7cf13cac8f37d55fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -215,13 +209,13 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8h_source.html#l00070">70</a> of file <a class="el" href="SSLHTTPDownloader_8h_source.html">SSLHTTPDownloader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8h_source.html#l00069">69</a> of file <a class="el" href="SSLHTTPDownloader_8h_source.html">SSLHTTPDownloader.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="aa27e982bb2d446ee3d8b8c7137e60d0a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa27e982bb2d446ee3d8b8c7137e60d0a">&#9670;&nbsp;</a></span>SSLHTTPDownloader()</h2>
+<a id="a684239e6c215f5b938a6aceef56ec93a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a684239e6c215f5b938a6aceef56ec93a">&#9670;&nbsp;</a></span>SSLHTTPDownloader()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -242,13 +236,7 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="classripple_1_1Config.html">Config</a> const &amp;&#160;</td>
-          <td class="paramname"><em>config</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>isPaused</em> = <code>false</code>&#160;</td>
+          <td class="paramname"><em>config</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -338,7 +326,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8cpp_source.html#l00039">39</a> of file <a class="el" href="SSLHTTPDownloader_8cpp_source.html">SSLHTTPDownloader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8cpp_source.html#l00038">38</a> of file <a class="el" href="SSLHTTPDownloader_8cpp_source.html">SSLHTTPDownloader.cpp</a>.</p>
 
 </div>
 </div>
@@ -357,12 +345,12 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8cpp_source.html#l00077">77</a> of file <a class="el" href="SSLHTTPDownloader_8cpp_source.html">SSLHTTPDownloader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8cpp_source.html#l00085">85</a> of file <a class="el" href="SSLHTTPDownloader_8cpp_source.html">SSLHTTPDownloader.cpp</a>.</p>
 
 </div>
 </div>
-<a id="aa0f1553c2041573692fe63fe187dff6a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa0f1553c2041573692fe63fe187dff6a">&#9670;&nbsp;</a></span>fail()</h2>
+<a id="a22acb463b6ede4b58dff1441e13355ae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a22acb463b6ede4b58dff1441e13355ae">&#9670;&nbsp;</a></span>fail()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -371,7 +359,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool ripple::SSLHTTPDownloader::fail </td>
+          <td class="memname">void ripple::SSLHTTPDownloader::fail </td>
           <td>(</td>
           <td class="paramtype">boost::filesystem::path&#160;</td>
           <td class="paramname"><em>dstPath</em>, </td>
@@ -398,7 +386,7 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SSLHTTPDownloader.html#a9084b729657b32e48b356ea34ce68d6a">parser</a> &gt;&#160;</td>
-          <td class="paramname"><em>parser</em> = <code>nullptr</code>&#160;</td>
+          <td class="paramname"><em>parser</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -413,7 +401,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8cpp_source.html#l00340">340</a> of file <a class="el" href="SSLHTTPDownloader_8cpp_source.html">SSLHTTPDownloader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8cpp_source.html#l00315">315</a> of file <a class="el" href="SSLHTTPDownloader_8cpp_source.html">SSLHTTPDownloader.cpp</a>.</p>
 
 </div>
 </div>
@@ -481,7 +469,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8cpp_source.html#l00091">91</a> of file <a class="el" href="SSLHTTPDownloader_8cpp_source.html">SSLHTTPDownloader.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8cpp_source.html#l00099">99</a> of file <a class="el" href="SSLHTTPDownloader_8cpp_source.html">SSLHTTPDownloader.cpp</a>.</p>
 
 </div>
 </div>
@@ -609,7 +597,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1DatabaseDownloader.html#ab5479e207135cb365a13ea952dcb0c10">ripple::DatabaseDownloader</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1DatabaseDownloader.html#aa67aa36b5aa312676ba4fbca836ca0ed">ripple::DatabaseDownloader</a>.</p>
 
 </div>
 </div>
@@ -634,7 +622,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8h_source.html#l00072">72</a> of file <a class="el" href="SSLHTTPDownloader_8h_source.html">SSLHTTPDownloader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8h_source.html#l00071">71</a> of file <a class="el" href="SSLHTTPDownloader_8h_source.html">SSLHTTPDownloader.h</a>.</p>
 
 </div>
 </div>
@@ -658,7 +646,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8h_source.html#l00083">83</a> of file <a class="el" href="SSLHTTPDownloader_8h_source.html">SSLHTTPDownloader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8h_source.html#l00082">82</a> of file <a class="el" href="SSLHTTPDownloader_8h_source.html">SSLHTTPDownloader.h</a>.</p>
 
 </div>
 </div>
@@ -682,7 +670,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8h_source.html#l00084">84</a> of file <a class="el" href="SSLHTTPDownloader_8h_source.html">SSLHTTPDownloader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8h_source.html#l00083">83</a> of file <a class="el" href="SSLHTTPDownloader_8h_source.html">SSLHTTPDownloader.h</a>.</p>
 
 </div>
 </div>
@@ -706,7 +694,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8h_source.html#l00086">86</a> of file <a class="el" href="SSLHTTPDownloader_8h_source.html">SSLHTTPDownloader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8h_source.html#l00085">85</a> of file <a class="el" href="SSLHTTPDownloader_8h_source.html">SSLHTTPDownloader.h</a>.</p>
 
 </div>
 </div>
@@ -730,55 +718,31 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8h_source.html#l00086">86</a> of file <a class="el" href="SSLHTTPDownloader_8h_source.html">SSLHTTPDownloader.h</a>.</p>
+
+</div>
+</div>
+<a id="abefff973ebc175b6780b1ac02a36c019"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abefff973ebc175b6780b1ac02a36c019">&#9670;&nbsp;</a></span>cancelDownloads_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt;bool&gt; ripple::SSLHTTPDownloader::cancelDownloads_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
 <p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8h_source.html#l00087">87</a> of file <a class="el" href="SSLHTTPDownloader_8h_source.html">SSLHTTPDownloader.h</a>.</p>
-
-</div>
-</div>
-<a id="a04ebac64d7e7a669b6040a454a41c536"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a04ebac64d7e7a669b6040a454a41c536">&#9670;&nbsp;</a></span>isStopped_</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt;bool&gt; ripple::SSLHTTPDownloader::isStopped_</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8h_source.html#l00088">88</a> of file <a class="el" href="SSLHTTPDownloader_8h_source.html">SSLHTTPDownloader.h</a>.</p>
-
-</div>
-</div>
-<a id="a203144c66e8d6f3dbc7742935b810ded"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a203144c66e8d6f3dbc7742935b810ded">&#9670;&nbsp;</a></span>sessionActive_</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::SSLHTTPDownloader::sessionActive_</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8h_source.html#l00089">89</a> of file <a class="el" href="SSLHTTPDownloader_8h_source.html">SSLHTTPDownloader.h</a>.</p>
 
 </div>
 </div>
@@ -806,6 +770,30 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a203144c66e8d6f3dbc7742935b810ded"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a203144c66e8d6f3dbc7742935b810ded">&#9670;&nbsp;</a></span>sessionActive_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::SSLHTTPDownloader::sessionActive_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8h_source.html#l00091">91</a> of file <a class="el" href="SSLHTTPDownloader_8h_source.html">SSLHTTPDownloader.h</a>.</p>
+
+</div>
+</div>
 <a id="a94e04d19f22a81e7cf13cac8f37d55fa"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a94e04d19f22a81e7cf13cac8f37d55fa">&#9670;&nbsp;</a></span>c_</h2>
 
@@ -826,7 +814,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8h_source.html#l00091">91</a> of file <a class="el" href="SSLHTTPDownloader_8h_source.html">SSLHTTPDownloader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SSLHTTPDownloader_8h_source.html#l00092">92</a> of file <a class="el" href="SSLHTTPDownloader_8h_source.html">SSLHTTPDownloader.h</a>.</p>
 
 </div>
 </div>

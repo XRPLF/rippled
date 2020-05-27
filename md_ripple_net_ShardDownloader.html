@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>rippled: Shard Downloader Process</title>
+<title>rippled: Shard Downloader</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -62,20 +62,20 @@ $(function() {
 </div><!-- top -->
 <div class="PageDoc"><div class="header">
   <div class="headertitle">
-<div class="title">Shard Downloader Process </div>  </div>
+<div class="title">Shard Downloader </div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><h1><a class="anchor" id="autotoc_md130"></a>
 Overview</h1>
 <p>This document describes mechanics of the <code>SSLHTTPDownloader</code>, a class that performs the task of downloading shards from remote web servers via SSL HTTP. The downloader utilizes a strand (<code>boost::asio::io_service::strand</code>) to ensure that downloads are never executed concurrently. Hence, if a download is in progress when another download is initiated, the second download will be queued and invoked only when the first download is completed.</p>
 <h1><a class="anchor" id="autotoc_md131"></a>
-New Features</h1>
-<p>The downloader has been recently (March 2020) been modified to provide some key features:</p>
+Motivation</h1>
+<p>In March 2020 the downloader was modified to include some key features:</p>
 <ul>
 <li>The ability to stop downloads during a graceful shutdown.</li>
 <li>The ability to resume partial downloads after a crash or shutdown.</li>
-<li><span style="color:gray">*(Deferred) The ability to download from multiple servers to a single file.*</span></li>
 </ul>
+<p>This document was created to document the changes introduced by this change.</p>
 <h1><a class="anchor" id="autotoc_md132"></a>
 Classes</h1>
 <p>Much of the shard downloading process concerns the following classes:</p>
@@ -101,16 +101,15 @@ Classes</h1>
 <div class="line">  /** Starts downloading and importing archives. */</div>
 <div class="line">  bool</div>
 <div class="line">  start();</div>
-</div><!-- fragment --><p>When a client submits a <code>download_shard</code> command via the RPC interface, each of the requested files is registered with the handler via the <code>add</code> method. After all the files have been registered, the handler's <code>start</code> method is invoked, which in turn creates an instance of the <code>SSLHTTPDownloader</code> and begins the first download. When the download is completed, the downloader invokes the handler's <code>complete</code> method, which will initiate the download of the next file, or simply return if there are no more downloads to process. When <code>complete</code> is invoked with no remaining files to be downloaded, the handler and downloader are not destroyed automatically, but persist for the duration of the application.</p>
-<p>Additionally, we leverage a novel class to provide customized parsing for downloaded files:</p>
+</div><!-- fragment --><p>When a client submits a <code>download_shard</code> command via the RPC interface, each of the requested files is registered with the handler via the <code>add</code> method. After all the files have been registered, the handler's <code>start</code> method is invoked, which in turn creates an instance of the <code>SSLHTTPDownloader</code> and begins the first download. When the download is completed, the downloader invokes the handler's <code>complete</code> method, which will initiate the download of the next file, or simply return if there are no more downloads to process. When <code>complete</code> is invoked with no remaining files to be downloaded, the handler and downloader are not destroyed automatically, but persist for the duration of the application to assist with graceful shutdowns by <code>Stoppable</code>.</p>
 <ul>
 <li><p class="startli"><code>DatabaseBody</code></p>
-<p class="startli">This class will define a custom message body type, allowing an <code><a href="http::response_parser">http::response_parser</a></code> to write to a SQLite database rather than to a flat file. This class is discussed in further detail in the Recovery section.</p>
+<p class="startli">This class defines a custom message body type, allowing an <code><a href="http::response_parser">http::response_parser</a></code> to write to an SQLite database rather than to a flat file. This class is discussed in further detail in the Recovery section.</p>
 </li>
 </ul>
 <h1><a class="anchor" id="autotoc_md133"></a>
-Execution Concept</h1>
-<p>This section describes in greater detail how the key features of the downloader are implemented in C++ using the <code><a class="el" href="namespaceboost_1_1asio.html">boost::asio</a></code> framework.</p>
+Graceful Shutdowns &amp; Recovery</h1>
+<p>This section describes in greater detail how the shutdown and recovery features of the downloader are implemented in C++ using the <code><a class="el" href="namespaceboost_1_1asio.html">boost::asio</a></code> framework.</p>
 <h4><a class="anchor" id="autotoc_md134"></a>
 Member Variables:</h4>
 <p>The variables shown here are members of the <code>SSLHTTPDownloader</code> class and will be used in the following code examples.</p>
@@ -120,7 +119,7 @@ Member Variables:</h4>
 <div class="line"> </div>
 <div class="line">stream&lt;socket&gt;          stream_;</div>
 <div class="line">std::condition_variable c_;</div>
-<div class="line">std::atomic&lt;bool&gt;       isStopped_;</div>
+<div class="line">std::atomic&lt;bool&gt;       cancelDownloads_;</div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md135"></a>
 Graceful Shutdowns</h2>
 <h4><a class="anchor" id="autotoc_md136"></a>
@@ -140,14 +139,14 @@ Thread 1:</h4>
 <div class="line"> </div>
 <div class="line">    stopped();</div>
 <div class="line">}</div>
-</div><!-- fragment --><p>Inside of <code>SSLHTTPDownloader::onStop()</code>, if a download is currently in progress, the <code>isStopped_</code> member variable is set and the thread waits for the download to stop:</p>
+</div><!-- fragment --><p>Inside of <code>SSLHTTPDownloader::onStop()</code>, if a download is currently in progress, the <code>cancelDownloads_</code> member variable is set and the thread waits for the download to stop:</p>
 <div class="fragment"><div class="line"> {c++}</div>
 <div class="line">void</div>
 <div class="line">SSLHTTPDownloader::onStop()</div>
 <div class="line">{</div>
 <div class="line">    std::unique_lock lock(m_);</div>
 <div class="line"> </div>
-<div class="line">    isStopped_ = true;</div>
+<div class="line">    cancelDownloads_ = true;</div>
 <div class="line"> </div>
 <div class="line">    if(sessionActive_)</div>
 <div class="line">    {</div>
@@ -161,36 +160,31 @@ Thread 1:</h4>
 <div class="line">}</div>
 </div><!-- fragment --><h4><a class="anchor" id="autotoc_md137"></a>
 Thread 2:</h4>
-<p>The graceful shutdown is realized when the thread executing the download polls <code>isStopped_</code> after this variable has been set to <code>true</code>. Polling only occurs while the file is being downloaded, in between calls to <code>async_read_some()</code>. The stop takes effect when the socket is closed and the handler function ( <code>do_session()</code> ) is exited.</p>
+<p>The graceful shutdown is realized when the thread executing the download polls <code>cancelDownloads_</code> after this variable has been set to <code>true</code>. Polling occurs while the file is being downloaded, in between calls to <code>async_read_some()</code>. The stop takes effect when the socket is closed and the handler function ( <code>do_session()</code> ) is exited.</p>
 <div class="fragment"><div class="line"> {c++}</div>
 <div class="line">void SSLHTTPDownloader::do_session()</div>
 <div class="line">{</div>
 <div class="line"> </div>
-<div class="line">   // (Connection initialization logic)</div>
+<div class="line">   // (Connection initialization logic) . . .</div>
 <div class="line"> </div>
-<div class="line">   .</div>
-<div class="line">   .</div>
-<div class="line">   .</div>
 <div class="line"> </div>
 <div class="line">   // (In between calls to async_read_some):</div>
-<div class="line">   if(isStopped_.load())</div>
+<div class="line">   if(cancelDownloads_.load())</div>
 <div class="line">   {</div>
 <div class="line">       close(p);</div>
 <div class="line">       return exit();</div>
 <div class="line">   }</div>
 <div class="line"> </div>
-<div class="line">   .</div>
-<div class="line">   .</div>
-<div class="line">   .</div>
+<div class="line">   // . . .</div>
 <div class="line"> </div>
 <div class="line">   break;</div>
 <div class="line">}</div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md138"></a>
 Recovery</h2>
-<p>Persisting the current state of both the archive handler and the downloader is achieved by leveraging a SQLite database rather than flat files, as the database protects against data corruption that could result from a system crash.</p>
+<p>Persisting the current state of both the archive handler and the downloader is achieved by leveraging an SQLite database rather than flat files, as the database protects against data corruption that could result from a system crash.</p>
 <h4><a class="anchor" id="autotoc_md139"></a>
 ShardArchiveHandler</h4>
-<p>Although <code>SSLHTTPDownloader</code> is a generic class that could be used to download a variety of file types, currently it is used exclusively by the <code>ShardArchiveHandler</code> to download shards. In order to provide resilience, the <code>ShardArchiveHandler</code> will utilize a SQLite database to preserve its current state whenever there are active, paused, or queued downloads. The <code>shard_db</code> section in the configuration file allows users to specify the location of the database to use for this purpose.</p>
+<p>Although <code>SSLHTTPDownloader</code> is a generic class that could be used to download a variety of file types, currently it is used exclusively by the <code>ShardArchiveHandler</code> to download shards. In order to provide resilience, the <code>ShardArchiveHandler</code> will use an SQLite database to preserve its current state whenever there are active, paused, or queued downloads. The <code>shard_db</code> section in the configuration file allows users to specify the location of the database to use for this purpose.</p>
 <h5>SQLite Table Format</h5>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -204,9 +198,9 @@ ShardArchiveHandler</h4>
 </table>
 <h4><a class="anchor" id="autotoc_md140"></a>
 SSLHTTPDownloader</h4>
-<p>While the archive handler maintains a list of all partial and queued downloads, the <code>SSLHTTPDownloader</code> stores the raw bytes of the file currently being downloaded. The partially downloaded file will be represented as one or more <code>BLOB</code> entries in a SQLite database. As the maximum size of a <code>BLOB</code> entry is currently limited to roughly 2.1 GB, a 5 GB shard file for instance will occupy three database entries upon completion.</p>
+<p>While the archive handler maintains a list of all partial and queued downloads, the <code>SSLHTTPDownloader</code> stores the raw bytes of the file currently being downloaded. The partially downloaded file will be represented as one or more <code>BLOB</code> entries in an SQLite database. As the maximum size of a <code>BLOB</code> entry is currently limited to roughly 2.1 GB, a 5 GB shard file for instance will occupy three database entries upon completion.</p>
 <h5>SQLite Table Format</h5>
-<p>Since downloads execute serially by design, the entries in this table always correspond to the content of a single file.</p>
+<p>Since downloads execute serially by design, the entries in this table always correspond to the contents of a single file.</p>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadCenter">Bytes </th><th class="markdownTableHeadCenter">Size </th><th class="markdownTableHeadCenter">Part  </th></tr>
@@ -219,7 +213,7 @@ SSLHTTPDownloader</h4>
 </table>
 <h4><a class="anchor" id="autotoc_md141"></a>
 Config File Entry</h4>
-<p>The <code>download_path</code> field of the <code>shard_db</code> entry will be used to determine where to store the recovery database. If this field is omitted, the <code>path</code> field will be used instead.</p>
+<p>The <code>download_path</code> field of the <code>shard_db</code> entry is used to determine where to store the recovery database. If this field is omitted, the <code>path</code> field will be used instead.</p>
 <div class="fragment"><div class="line"># This is the persistent datastore for shards. It is important for the health</div>
 <div class="line"># of the ripple network that rippled operators shard as much as practical.</div>
 <div class="line"># NuDB requires SSD storage. Helpful information can be found here</div>
@@ -231,7 +225,7 @@ Config File Entry</h4>
 <div class="line">max_size_gb=50</div>
 </div><!-- fragment --><h4><a class="anchor" id="autotoc_md142"></a>
 Resuming Partial Downloads</h4>
-<p>When resuming downloads after a crash or other interruption, the <code>SSLHTTPDownloader</code> will utilize the <code>range</code> field of the HTTP header to download only the remainder of the partially downloaded file.</p>
+<p>When resuming downloads after a shutdown, crash, or other interruption, the <code>SSLHTTPDownloader</code> will utilize the <code>range</code> field of the HTTP header to download only the remainder of the partially downloaded file.</p>
 <div class="fragment"><div class="line"> {C++}</div>
 <div class="line">auto downloaded = getPartialFileSize();</div>
 <div class="line">auto total = getTotalFileSize();</div>
@@ -242,14 +236,14 @@ Resuming Partial Downloads</h4>
 <div class="line"> </div>
 <div class="line">if (downloaded &lt; total)</div>
 <div class="line">{</div>
-<div class="line">  // If we already download 1000 bytes to the partial file,</div>
+<div class="line">  // If we already downloaded 1000 bytes to the database,</div>
 <div class="line">  // the range header will look like:</div>
 <div class="line">  // Range: &quot;bytes=1000-&quot;</div>
 <div class="line">  req.set(http::field::range, &quot;bytes=&quot; + to_string(downloaded) + &quot;-&quot;);</div>
 <div class="line">}</div>
 <div class="line">else if(downloaded == total)</div>
 <div class="line">{</div>
-<div class="line">  // Download is already complete. (Interruption Must</div>
+<div class="line">  // Download is already complete. (Interruption must</div>
 <div class="line">  // have occurred after file was downloaded but before</div>
 <div class="line">  // the state file was updated.)</div>
 <div class="line">}</div>
@@ -280,13 +274,14 @@ DatabaseBody</h4>
 <div class="line">    /// The algorithm used for inserting buffers</div>
 <div class="line">    class writer;</div>
 <div class="line">}</div>
-</div><!-- fragment --><p>The method invoked to write data to the filesystem (or SQLite database in our case) has the following signature:</p>
+</div><!-- fragment --><p>Note that the <code>DatabaseBody</code> class is specifically designed to work with <code>asio</code> and follows <code>asio</code> conventions.</p>
+<p>The method invoked to write data to the filesystem (or SQLite database in our case) has the following signature:</p>
 <div class="fragment"><div class="line"> {C++}</div>
 <div class="line">std::size_t</div>
 <div class="line">body::reader::put(ConstBufferSequence const&amp; buffers, error_code&amp; ec);</div>
 </div><!-- fragment --><h1><a class="anchor" id="autotoc_md144"></a>
 Sequence Diagram</h1>
-<p>This sequence diagram demonstrates a scenario wherein the <code>ShardArchiveHandler</code> leverages the state persisted in the database to recover from a crash and resume the scheduled downloads.</p>
+<p>This sequence diagram demonstrates a scenario wherein the <code>ShardArchiveHandler</code> leverages the state persisted in the database to recover from a crash and resume the requested downloads.</p>
 <p><img src="./images/interrupt_sequence.png" alt="alt_text" title="Resuming downloads post abort" class="inline"/></p>
 <h1><a class="anchor" id="autotoc_md145"></a>
 State Diagram</h1>

@@ -1,10 +1,9 @@
 <map id="ripple::SSLHTTPDownloader" name="ripple::SSLHTTPDownloader">
-<area shape="rect" id="node1" title="Provides an asynchronous HTTPS file downloader." alt="" coords="807,147,1009,174"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="427,5,683,47"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="478,71,631,98"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="469,122,640,149"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="509,173,601,199"/>
-<area shape="rect" id="node6" href="$classripple_1_1HTTPClientSSLContext.html" title=" " alt="" coords="448,286,661,313"/>
-<area shape="rect" id="node7" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="252,255,363,282"/>
-<area shape="rect" id="node8" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,255,152,282"/>
+<area shape="rect" id="node1" title="Provides an asynchronous HTTPS file downloader." alt="" coords="813,107,1016,133"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="457,5,610,32"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="448,56,619,83"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="487,107,579,133"/>
+<area shape="rect" id="node5" href="$classripple_1_1HTTPClientSSLContext.html" title=" " alt="" coords="427,220,640,247"/>
+<area shape="rect" id="node6" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="252,189,363,216"/>
+<area shape="rect" id="node7" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,189,152,216"/>
 </map>

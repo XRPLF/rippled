@@ -1,5 +1,4 @@
 <map id="ripple::SSLHTTPDownloader" name="ripple::SSLHTTPDownloader">
-<area shape="rect" id="node1" title="Provides an asynchronous HTTPS file downloader." alt="" coords="32,95,235,121"/>
-<area shape="rect" id="node3" href="$classripple_1_1DatabaseDownloader.html" title=" " alt="" coords="30,169,237,196"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,261,47"/>
+<area shape="rect" id="node1" title="Provides an asynchronous HTTPS file downloader." alt="" coords="7,5,210,32"/>
+<area shape="rect" id="node2" href="$classripple_1_1DatabaseDownloader.html" title=" " alt="" coords="5,80,212,107"/>
 </map>

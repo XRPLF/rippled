@@ -183,6 +183,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac502b9f3e8822e3111bce648c7375d32"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#ac502b9f3e8822e3111bce648c7375d32">fdRequired</a> () const override</td></tr>
 <tr class="memdesc:ac502b9f3e8822e3111bce648c7375d32"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of file descriptors that are needed.  <a href="classripple_1_1SHAMapStoreImp.html#ac502b9f3e8822e3111bce648c7375d32">More...</a><br /></td></tr>
 <tr class="separator:ac502b9f3e8822e3111bce648c7375d32"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a83852c52d91ffb7fe55092d7b07bce"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#a6a83852c52d91ffb7fe55092d7b07bce">minimumOnline</a> () const override</td></tr>
+<tr class="memdesc:a6a83852c52d91ffb7fe55092d7b07bce"><td class="mdescLeft">&#160;</td><td class="mdescRight">The minimum ledger to try and maintain in our database.  <a href="classripple_1_1SHAMapStoreImp.html#a6a83852c52d91ffb7fe55092d7b07bce">More...</a><br /></td></tr>
+<tr class="separator:a6a83852c52d91ffb7fe55092d7b07bce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9b6cb02b4e1128bd2c4e1a81c9d695c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1RootStoppable.html">RootStoppable</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#ae9b6cb02b4e1128bd2c4e1a81c9d695c">getRoot</a> ()</td></tr>
 <tr class="separator:ae9b6cb02b4e1128bd2c4e1a81c9d695c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adea135697761febf430a8628814c7902"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Stoppable.html#adea135697761febf430a8628814c7902">setParent</a> (<a class="el" href="classripple_1_1Stoppable.html">Stoppable</a> &amp;parent)</td></tr>
@@ -274,8 +277,8 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a3596d0251740f6199a9f561ded944a16"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0590c11a4bee1ea9e35ee73dd28442df"><td class="memItemLeft" align="right" valign="top">const <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#a0590c11a4bee1ea9e35ee73dd28442df">checkHealthInterval_</a> = 1000</td></tr>
 <tr class="separator:a0590c11a4bee1ea9e35ee73dd28442df"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a291e9a338c73869cc7c39f18e652b22f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#a291e9a338c73869cc7c39f18e652b22f">lastRotated_</a> {}</td></tr>
-<tr class="separator:a291e9a338c73869cc7c39f18e652b22f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8efdb3bebe1162a54fc87c08e55dcf44"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#a8efdb3bebe1162a54fc87c08e55dcf44">minimumOnline_</a> {}</td></tr>
+<tr class="separator:a8efdb3bebe1162a54fc87c08e55dcf44"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac0b7612948a6c06b661d5b67a03280f6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1NodeStore_1_1Scheduler.html">NodeStore::Scheduler</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#ac0b7612948a6c06b661d5b67a03280f6">scheduler_</a></td></tr>
 <tr class="separator:ac0b7612948a6c06b661d5b67a03280f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ababf604811e61ccb7ec884f0c660821a"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapStoreImp.html#ababf604811e61ccb7ec884f0c660821a">journal_</a></td></tr>
@@ -358,7 +361,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00036">36</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00035">35</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a43594a8835ccb53d7b80983694d26cad"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a43594a8835ccb53d7b80983694d26cad">&#9670;&nbsp;</a></span>Children</h2>
@@ -410,7 +413,7 @@ Static Private Attributes</h2></td></tr>
 <tr><td class="fieldname"><a id="ada256179ba2ac337d7f4bb6c70d8fe8ea369c321441d63c3199a640392afcdcbe"></a>unhealthy&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00046">46</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00045">45</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -472,7 +475,7 @@ Static Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00136">136</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00130">130</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -503,7 +506,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1SHAMapStore.html#a6bd103dd779634de40c59681605874e6">ripple::SHAMapStore</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00143">143</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00137">137</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -575,7 +578,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1SHAMapStore.html#a2b1a46d6f878575eeea6730c8fc367f2">ripple::SHAMapStore</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00153">153</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00147">147</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -606,7 +609,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1SHAMapStore.html#a737537b2e26dd540a14ac7c7a98a0701">ripple::SHAMapStore</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00161">161</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00155">155</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -637,7 +640,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1SHAMapStore.html#a7d926beeaf7fe6baf9fa95ee2b4d85d1">ripple::SHAMapStore</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00169">169</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00163">163</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -668,7 +671,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1SHAMapStore.html#a90d0d6d4d070628e340c78cd818e9ae0">ripple::SHAMapStore</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00177">177</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00171">171</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -761,6 +764,40 @@ Static Private Attributes</h2></td></tr>
 <p>Implements <a class="el" href="classripple_1_1SHAMapStore.html#a90ce3f79e011586bc87d6fdcb4cf9a0e">ripple::SHAMapStore</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8cpp_source.html#l00283">283</a> of file <a class="el" href="SHAMapStoreImp_8cpp_source.html">SHAMapStoreImp.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a6a83852c52d91ffb7fe55092d7b07bce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a83852c52d91ffb7fe55092d7b07bce">&#9670;&nbsp;</a></span>minimumOnline()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">boost::optional&lt; <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> &gt; ripple::SHAMapStoreImp::minimumOnline </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The minimum ledger to try and maintain in our database. </p>
+<p>This defines the lower bound for attempting to acquire historical ledgers over the peer to peer network.</p>
+<p>If online_delete is enabled, then each time online_delete executes and just prior to clearing SQL databases of historical ledgers, move the value forward to one past the greatest ledger being deleted. This minimizes fetching of ledgers that are in the process of being deleted. Without online_delete or before online_delete is executed, this value is always the minimum value persisted in the ledger database, if any.</p>
+<dl class="section return"><dt>Returns</dt><dd>The minimum ledger sequence to keep online based on the description above. If not set, then an unseated optional. </dd></dl>
+
+<p>Implements <a class="el" href="classripple_1_1SHAMapStore.html#a05bec537a1aea25f251635dafc755900">ripple::SHAMapStore</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8cpp_source.html#l00722">722</a> of file <a class="el" href="SHAMapStoreImp_8cpp_source.html">SHAMapStoreImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -910,7 +947,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00204">204</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00201">201</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1073,7 +1110,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8cpp_source.html#l00657">657</a> of file <a class="el" href="SHAMapStoreImp_8cpp_source.html">SHAMapStoreImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8cpp_source.html#l00660">660</a> of file <a class="el" href="SHAMapStoreImp_8cpp_source.html">SHAMapStoreImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -1105,7 +1142,7 @@ template&lt;class CacheInstance &gt; </div>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1Stoppable.html#ab2a5544b4bfc0dccdc6a2a46f6ff5d84">ripple::Stoppable</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00248">248</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00245">245</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1136,7 +1173,7 @@ template&lt;class CacheInstance &gt; </div>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1Stoppable.html#a0f24b7fcb7e8679dfd3783e9ffe3bbde">ripple::Stoppable</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00253">253</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00250">250</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1171,7 +1208,7 @@ template&lt;class CacheInstance &gt; </div>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1Stoppable.html#a4278b4c199fbe20a75d69610a8970c03">ripple::Stoppable</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8cpp_source.html#l00685">685</a> of file <a class="el" href="SHAMapStoreImp_8cpp_source.html">SHAMapStoreImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8cpp_source.html#l00688">688</a> of file <a class="el" href="SHAMapStoreImp_8cpp_source.html">SHAMapStoreImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -1206,7 +1243,7 @@ template&lt;class CacheInstance &gt; </div>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1Stoppable.html#a944a3ffe59dc8f41185fe7b740aa3e8f">ripple::Stoppable</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8cpp_source.html#l00702">702</a> of file <a class="el" href="SHAMapStoreImp_8cpp_source.html">SHAMapStoreImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8cpp_source.html#l00705">705</a> of file <a class="el" href="SHAMapStoreImp_8cpp_source.html">SHAMapStoreImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -1573,7 +1610,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00077">77</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00076">76</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1597,7 +1634,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00080">80</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00079">79</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1621,7 +1658,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00082">82</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00081">81</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1645,7 +1682,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00084">84</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00083">83</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1669,7 +1706,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00086">86</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00085">85</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1693,12 +1730,12 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00088">88</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00087">87</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
-<a id="a291e9a338c73869cc7c39f18e652b22f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a291e9a338c73869cc7c39f18e652b22f">&#9670;&nbsp;</a></span>lastRotated_</h2>
+<a id="a8efdb3bebe1162a54fc87c08e55dcf44"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8efdb3bebe1162a54fc87c08e55dcf44">&#9670;&nbsp;</a></span>minimumOnline_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1707,7 +1744,7 @@ template&lt;class CacheInstance &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt;<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&gt; ripple::SHAMapStoreImp::lastRotated_ {}</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt;<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&gt; ripple::SHAMapStoreImp::minimumOnline_ {}</td>
         </tr>
       </table>
   </td>
@@ -1717,7 +1754,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00095">95</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00089">89</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1741,7 +1778,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00097">97</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00091">91</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1765,7 +1802,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00098">98</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00092">92</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1789,7 +1826,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00099">99</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00093">93</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1813,7 +1850,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00100">100</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00094">94</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1837,7 +1874,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00101">101</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00095">95</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1861,7 +1898,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00102">102</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00096">96</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1885,7 +1922,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00103">103</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00097">97</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1909,7 +1946,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00104">104</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00098">98</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1933,7 +1970,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00105">105</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00099">99</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1957,7 +1994,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00106">106</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00100">100</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -1981,7 +2018,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00107">107</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00101">101</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -2005,7 +2042,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00108">108</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00102">102</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -2029,7 +2066,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00109">109</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00103">103</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -2053,7 +2090,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00110">110</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00104">104</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -2077,7 +2114,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00112">112</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00106">106</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -2101,7 +2138,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00113">113</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00107">107</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -2125,7 +2162,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00114">114</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00108">108</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -2149,7 +2186,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00115">115</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00109">109</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -2173,7 +2210,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00116">116</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00110">110</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -2197,7 +2234,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00120">120</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00114">114</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -2221,7 +2258,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00121">121</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00115">115</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -2245,7 +2282,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00122">122</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00116">116</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -2269,7 +2306,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00123">123</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00117">117</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -2293,7 +2330,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00124">124</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00118">118</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -2317,7 +2354,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00125">125</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00119">119</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>
@@ -2341,7 +2378,7 @@ template&lt;class CacheInstance &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00127">127</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8h_source.html#l00121">121</a> of file <a class="el" href="SHAMapStoreImp_8h_source.html">SHAMapStoreImp.h</a>.</p>
 
 </div>
 </div>

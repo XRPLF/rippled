@@ -1,5 +1,5 @@
 <map id="ripple::RPC::ShardArchiveHandler" name="ripple::RPC::ShardArchiveHandler">
-<area shape="rect" id="node1" title="Handles the download and import one or more shard archives." alt="" coords="87,95,274,136"/>
-<area shape="rect" id="node2" href="$classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping." alt="" coords="5,13,137,39"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="162,5,421,47"/>
+<area shape="rect" id="node1" title="Handles the download and import of one or more shard archives." alt="" coords="18,80,205,121"/>
+<area shape="rect" id="node3" href="$classripple_1_1RPC_1_1RecoveryHandler.html" title=" " alt="" coords="5,169,217,196"/>
+<area shape="rect" id="node2" href="$classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping." alt="" coords="45,5,177,32"/>
 </map>

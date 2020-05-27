@@ -316,7 +316,7 @@ $(function() {
 <div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160; </div>
 <div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;        <span class="keyword">auto</span> tItem = std::make_shared&lt;SHAMapItem&gt;(txID, s.<a class="code" href="classripple_1_1Serializer.html#a5f8c275ba7cfa80e56671b6935e29242">peekData</a>());</div>
 <div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160; </div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;        <span class="keywordflow">if</span> (!initialPosition-&gt;addGiveItem(tItem, <span class="keyword">true</span>, <span class="keyword">false</span>))</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;        <span class="keywordflow">if</span> (!initialPosition-&gt;addGiveItem(std::move(tItem), <span class="keyword">true</span>, <span class="keyword">false</span>))</div>
 <div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;        {</div>
 <div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;            JLOG(<a class="code" href="classripple_1_1FeeVoteImpl.html#a2de72b0b3f3a4dc5b412843d25fc57be">journal_</a>.<a class="code" href="classbeast_1_1Journal.html#ad8fefe3e8ad583e1ed1bf02094ac3d8f">warn</a>()) &lt;&lt; <span class="stringliteral">&quot;Ledger already had fee change&quot;</span>;</div>
 <div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        }</div>

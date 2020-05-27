@@ -110,54 +110,55 @@ $(function() {
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keywordflow">if</span> (config.<a class="code" href="classripple_1_1BasicConfig.html#a09b31b8ed3c769b4c23b040c3d4798ed">exists</a>(SECTION_VALIDATOR_TOKEN))</div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    {</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> token = <a class="code" href="namespaceripple.html#a0a461157157590061aa7ba80f42c816c">loadValidatorToken</a>(</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;                config.<a class="code" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(SECTION_VALIDATOR_TOKEN).<a class="code" href="classripple_1_1Section.html#ad6acd93afdf9fc50942f9c6c10f21942">lines</a>()))</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        {</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> pk =</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;                <a class="code" href="namespaceripple.html#ac2e5e1557daef529932fd0a047d5c5d6">derivePublicKey</a>(<a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>, token-&gt;validationSecret);</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> m = <a class="code" href="namespaceripple.html#a4f4d968c386163c7286107610908902b">deserializeManifest</a>(<a class="code" href="namespaceripple.html#a551be32de1cc0f8a8ff1f14ee84d892b">base64_decode</a>(token-&gt;manifest));</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;            <span class="keywordflow">if</span> (!m || pk != m-&gt;signingKey)</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            {</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;                <a class="code" href="classripple_1_1ValidatorKeys.html#af157e199cda90e0e55b004c185483091">configInvalid_</a> = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                JLOG(j.<a class="code" href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">fatal</a>())</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                    &lt;&lt; <span class="stringliteral">&quot;Invalid token specified in [&quot;</span> SECTION_VALIDATOR_TOKEN</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;                       <span class="stringliteral">&quot;]&quot;</span>;</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            }</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            {</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;                <a class="code" href="classripple_1_1ValidatorKeys.html#ac7e727d95ac78a9c25e89de9c0c76b14">secretKey</a> = token-&gt;validationSecret;</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;                <a class="code" href="classripple_1_1ValidatorKeys.html#ac71b02b7b075bff4fcebdb750999cddc">publicKey</a> = pk;</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;                <a class="code" href="classripple_1_1ValidatorKeys.html#aaf43add83ef3a8968e1457e1d8e380ee">nodeID</a> = <a class="code" href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">calcNodeID</a>(m-&gt;masterKey);</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;                <a class="code" href="classripple_1_1ValidatorKeys.html#a183b4ce6c755f2788f75bfabd9a8dcb7">manifest</a> = std::move(token-&gt;manifest);</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            }</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        }</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        {</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;            <a class="code" href="classripple_1_1ValidatorKeys.html#af157e199cda90e0e55b004c185483091">configInvalid_</a> = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;            JLOG(j.<a class="code" href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">fatal</a>())</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;                &lt;&lt; <span class="stringliteral">&quot;Invalid token specified in [&quot;</span> SECTION_VALIDATOR_TOKEN <span class="stringliteral">&quot;]&quot;</span>;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        }</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    }</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (config.<a class="code" href="classripple_1_1BasicConfig.html#a09b31b8ed3c769b4c23b040c3d4798ed">exists</a>(SECTION_VALIDATION_SEED))</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    {</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> seed = parseBase58&lt;Seed&gt;(</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;            config.<a class="code" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(SECTION_VALIDATION_SEED).<a class="code" href="classripple_1_1Section.html#ad6acd93afdf9fc50942f9c6c10f21942">lines</a>().<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/front.html">front</a>());</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keywordflow">if</span> (!seed)</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        {</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <a class="code" href="classripple_1_1ValidatorKeys.html#af157e199cda90e0e55b004c185483091">configInvalid_</a> = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            JLOG(j.<a class="code" href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">fatal</a>())</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;                &lt;&lt; <span class="stringliteral">&quot;Invalid seed specified in [&quot;</span> SECTION_VALIDATION_SEED <span class="stringliteral">&quot;]&quot;</span>;</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        }</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        {</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            <a class="code" href="classripple_1_1ValidatorKeys.html#ac7e727d95ac78a9c25e89de9c0c76b14">secretKey</a> = <a class="code" href="namespaceripple.html#a16bc1df1e559042ebb40c73b573de885">generateSecretKey</a>(<a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>, *seed);</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            <a class="code" href="classripple_1_1ValidatorKeys.html#ac71b02b7b075bff4fcebdb750999cddc">publicKey</a> = <a class="code" href="namespaceripple.html#ac2e5e1557daef529932fd0a047d5c5d6">derivePublicKey</a>(<a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>, <a class="code" href="classripple_1_1ValidatorKeys.html#ac7e727d95ac78a9c25e89de9c0c76b14">secretKey</a>);</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            <a class="code" href="classripple_1_1ValidatorKeys.html#aaf43add83ef3a8968e1457e1d8e380ee">nodeID</a> = <a class="code" href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">calcNodeID</a>(<a class="code" href="classripple_1_1ValidatorKeys.html#ac71b02b7b075bff4fcebdb750999cddc">publicKey</a>);</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        }</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    }</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;}</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="comment">// token is non-const so it can be moved from</span></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keywordflow">if</span> (<span class="keyword">auto</span> token = <a class="code" href="namespaceripple.html#a0a461157157590061aa7ba80f42c816c">loadValidatorToken</a>(</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;                config.<a class="code" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(SECTION_VALIDATOR_TOKEN).<a class="code" href="classripple_1_1Section.html#ad6acd93afdf9fc50942f9c6c10f21942">lines</a>()))</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        {</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> pk =</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;                <a class="code" href="namespaceripple.html#ac2e5e1557daef529932fd0a047d5c5d6">derivePublicKey</a>(<a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>, token-&gt;validationSecret);</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> m = <a class="code" href="namespaceripple.html#a4f4d968c386163c7286107610908902b">deserializeManifest</a>(<a class="code" href="namespaceripple.html#a551be32de1cc0f8a8ff1f14ee84d892b">base64_decode</a>(token-&gt;manifest));</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            <span class="keywordflow">if</span> (!m || pk != m-&gt;signingKey)</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;            {</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                <a class="code" href="classripple_1_1ValidatorKeys.html#af157e199cda90e0e55b004c185483091">configInvalid_</a> = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                JLOG(j.<a class="code" href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">fatal</a>())</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;                    &lt;&lt; <span class="stringliteral">&quot;Invalid token specified in [&quot;</span> SECTION_VALIDATOR_TOKEN</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;                       <span class="stringliteral">&quot;]&quot;</span>;</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;            }</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            {</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;                <a class="code" href="classripple_1_1ValidatorKeys.html#ac7e727d95ac78a9c25e89de9c0c76b14">secretKey</a> = token-&gt;validationSecret;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;                <a class="code" href="classripple_1_1ValidatorKeys.html#ac71b02b7b075bff4fcebdb750999cddc">publicKey</a> = pk;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;                <a class="code" href="classripple_1_1ValidatorKeys.html#aaf43add83ef3a8968e1457e1d8e380ee">nodeID</a> = <a class="code" href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">calcNodeID</a>(m-&gt;masterKey);</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;                <a class="code" href="classripple_1_1ValidatorKeys.html#a183b4ce6c755f2788f75bfabd9a8dcb7">manifest</a> = std::move(token-&gt;manifest);</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            }</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        }</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        {</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;            <a class="code" href="classripple_1_1ValidatorKeys.html#af157e199cda90e0e55b004c185483091">configInvalid_</a> = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            JLOG(j.<a class="code" href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">fatal</a>())</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;                &lt;&lt; <span class="stringliteral">&quot;Invalid token specified in [&quot;</span> SECTION_VALIDATOR_TOKEN <span class="stringliteral">&quot;]&quot;</span>;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        }</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    }</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (config.<a class="code" href="classripple_1_1BasicConfig.html#a09b31b8ed3c769b4c23b040c3d4798ed">exists</a>(SECTION_VALIDATION_SEED))</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    {</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> seed = parseBase58&lt;Seed&gt;(</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            config.<a class="code" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(SECTION_VALIDATION_SEED).<a class="code" href="classripple_1_1Section.html#ad6acd93afdf9fc50942f9c6c10f21942">lines</a>().<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/front.html">front</a>());</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <span class="keywordflow">if</span> (!seed)</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        {</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            <a class="code" href="classripple_1_1ValidatorKeys.html#af157e199cda90e0e55b004c185483091">configInvalid_</a> = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            JLOG(j.<a class="code" href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">fatal</a>())</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;                &lt;&lt; <span class="stringliteral">&quot;Invalid seed specified in [&quot;</span> SECTION_VALIDATION_SEED <span class="stringliteral">&quot;]&quot;</span>;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        }</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        {</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            <a class="code" href="classripple_1_1ValidatorKeys.html#ac7e727d95ac78a9c25e89de9c0c76b14">secretKey</a> = <a class="code" href="namespaceripple.html#a16bc1df1e559042ebb40c73b573de885">generateSecretKey</a>(<a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>, *seed);</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            <a class="code" href="classripple_1_1ValidatorKeys.html#ac71b02b7b075bff4fcebdb750999cddc">publicKey</a> = <a class="code" href="namespaceripple.html#ac2e5e1557daef529932fd0a047d5c5d6">derivePublicKey</a>(<a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>, <a class="code" href="classripple_1_1ValidatorKeys.html#ac7e727d95ac78a9c25e89de9c0c76b14">secretKey</a>);</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            <a class="code" href="classripple_1_1ValidatorKeys.html#aaf43add83ef3a8968e1457e1d8e380ee">nodeID</a> = <a class="code" href="namespaceripple.html#a984ddd646f1e1a5032a9a17f96c6fc55">calcNodeID</a>(<a class="code" href="classripple_1_1ValidatorKeys.html#ac71b02b7b075bff4fcebdb750999cddc">publicKey</a>);</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        }</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    }</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;}</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1ValidatorKeys_html_ac71b02b7b075bff4fcebdb750999cddc"><div class="ttname"><a href="classripple_1_1ValidatorKeys.html#ac71b02b7b075bff4fcebdb750999cddc">ripple::ValidatorKeys::publicKey</a></div><div class="ttdeci">PublicKey publicKey</div><div class="ttdef"><b>Definition:</b> <a href="ValidatorKeys_8h_source.html#l00039">ValidatorKeys.h:39</a></div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html_a3dfb8e2e3eecccdb5cf78ff21bca069c"><div class="ttname"><a href="classbeast_1_1Journal.html#a3dfb8e2e3eecccdb5cf78ff21bca069c">beast::Journal::fatal</a></div><div class="ttdeci">Stream fatal() const</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00339">Journal.h:339</a></div></div>

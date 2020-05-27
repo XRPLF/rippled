@@ -82,17 +82,20 @@ Collaboration diagram for ripple::DatabaseBody::reader:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1DatabaseBody_1_1reader__coll__graph.png" border="0" usemap="#ripple_1_1DatabaseBody_1_1reader_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1DatabaseBody_1_1reader_coll__map" id="ripple_1_1DatabaseBody_1_1reader_coll__map">
-<area shape="rect" title="Algorithm for storing buffers when parsing." alt="" coords="1332,125,1495,166"/>
-<area shape="rect" href="classripple_1_1DatabaseBody_1_1value__type.html" title=" " alt="" coords="1077,125,1240,166"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/condition_variable.html" title=" " alt="" coords="781,5,952,32"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="815,56,918,83"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/mutex.html" title="STL class." alt="" coords="821,107,913,133"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="823,157,910,184"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="769,209,964,250"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="781,274,952,315"/>
-<area shape="rect" href="classripple_1_1DatabaseCon.html" title=" " alt="" coords="544,281,699,308"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="229,274,400,315"/>
-<area shape="rect" href="classripple_1_1Checkpointer.html" title=" " alt="" coords="5,281,159,308"/>
+<area shape="rect" title="Algorithm for storing buffers when parsing." alt="" coords="1459,74,1621,115"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="1137,5,1239,32"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="1137,56,1239,83"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="1141,107,1235,133"/>
+<area shape="rect" href="classripple_1_1DatabaseBody_1_1value__type.html" title=" " alt="" coords="1107,158,1269,199"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/condition_variable.html" title=" " alt="" coords="781,17,952,44"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="815,89,918,116"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/mutex.html" title="STL class." alt="" coords="821,140,913,167"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="823,191,910,217"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="769,242,964,283"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="781,307,952,349"/>
+<area shape="rect" href="classripple_1_1DatabaseCon.html" title=" " alt="" coords="544,315,699,341"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="229,307,400,349"/>
+<area shape="rect" href="classripple_1_1Checkpointer.html" title=" " alt="" coords="5,315,159,341"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -118,18 +121,18 @@ Private Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-attribs"></a>
 Static Private Attributes</h2></td></tr>
-<tr class="memitem:ab3bfaff8d55a670646109c3a2ff4f89f"><td class="memItemLeft" align="right" valign="top">static const uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DatabaseBody_1_1reader.html#ab3bfaff8d55a670646109c3a2ff4f89f">FLUSH_SIZE</a> = 50000000</td></tr>
-<tr class="separator:ab3bfaff8d55a670646109c3a2ff4f89f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adf02164837615c22e6e2d5fdee06f9ce"><td class="memItemLeft" align="right" valign="top">static const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DatabaseBody_1_1reader.html#adf02164837615c22e6e2d5fdee06f9ce">MAX_HANDLERS</a> = 3</td></tr>
-<tr class="separator:adf02164837615c22e6e2d5fdee06f9ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa0335c77e2e25aa156c0ad60b694f903"><td class="memItemLeft" align="right" valign="top">static const uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DatabaseBody_1_1reader.html#aa0335c77e2e25aa156c0ad60b694f903">MAX_ROW_SIZE_PAD</a> = 500</td></tr>
-<tr class="separator:aa0335c77e2e25aa156c0ad60b694f903"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6201fe5baf0b8d62c9b77521e391257f"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DatabaseBody_1_1reader.html#a6201fe5baf0b8d62c9b77521e391257f">FLUSH_SIZE</a> = 50000000</td></tr>
+<tr class="separator:a6201fe5baf0b8d62c9b77521e391257f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26f00f9d0063c6885f34fca8329dba24"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DatabaseBody_1_1reader.html#a26f00f9d0063c6885f34fca8329dba24">MAX_HANDLERS</a> = 3</td></tr>
+<tr class="separator:a26f00f9d0063c6885f34fca8329dba24"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2da1cd86d38a7334fbbe68736cedecc9"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DatabaseBody_1_1reader.html#a2da1cd86d38a7334fbbe68736cedecc9">MAX_ROW_SIZE_PAD</a> = 500</td></tr>
+<tr class="separator:a2da1cd86d38a7334fbbe68736cedecc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Algorithm for storing buffers when parsing. </p>
 <p>Objects of this type are created during parsing to store incoming buffers representing the body. </p>
 
-<p class="definition">Definition at line <a class="el" href="DatabaseBody_8h_source.html#l00113">113</a> of file <a class="el" href="DatabaseBody_8h_source.html">DatabaseBody.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseBody_8h_source.html#l00119">119</a> of file <a class="el" href="DatabaseBody_8h_source.html">DatabaseBody.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a81d2c5b2cd575bf14ab66b9f305a39da"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a81d2c5b2cd575bf14ab66b9f305a39da">&#9670;&nbsp;</a></span>reader()</h2>
@@ -285,12 +288,12 @@ template&lt;class ConstBufferSequence &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DatabaseBody_8h_source.html#l00115">115</a> of file <a class="el" href="DatabaseBody_8h_source.html">DatabaseBody.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseBody_8h_source.html#l00121">121</a> of file <a class="el" href="DatabaseBody_8h_source.html">DatabaseBody.h</a>.</p>
 
 </div>
 </div>
-<a id="ab3bfaff8d55a670646109c3a2ff4f89f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab3bfaff8d55a670646109c3a2ff4f89f">&#9670;&nbsp;</a></span>FLUSH_SIZE</h2>
+<a id="a6201fe5baf0b8d62c9b77521e391257f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6201fe5baf0b8d62c9b77521e391257f">&#9670;&nbsp;</a></span>FLUSH_SIZE</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -299,22 +302,22 @@ template&lt;class ConstBufferSequence &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const uint32_t ripple::DatabaseBody::reader::FLUSH_SIZE = 50000000</td>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::DatabaseBody::reader::FLUSH_SIZE = 50000000</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DatabaseBody_8h_source.html#l00117">117</a> of file <a class="el" href="DatabaseBody_8h_source.html">DatabaseBody.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseBody_8h_source.html#l00123">123</a> of file <a class="el" href="DatabaseBody_8h_source.html">DatabaseBody.h</a>.</p>
 
 </div>
 </div>
-<a id="adf02164837615c22e6e2d5fdee06f9ce"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adf02164837615c22e6e2d5fdee06f9ce">&#9670;&nbsp;</a></span>MAX_HANDLERS</h2>
+<a id="a26f00f9d0063c6885f34fca8329dba24"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a26f00f9d0063c6885f34fca8329dba24">&#9670;&nbsp;</a></span>MAX_HANDLERS</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -323,22 +326,22 @@ template&lt;class ConstBufferSequence &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const uint8_t ripple::DatabaseBody::reader::MAX_HANDLERS = 3</td>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> ripple::DatabaseBody::reader::MAX_HANDLERS = 3</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DatabaseBody_8h_source.html#l00118">118</a> of file <a class="el" href="DatabaseBody_8h_source.html">DatabaseBody.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseBody_8h_source.html#l00124">124</a> of file <a class="el" href="DatabaseBody_8h_source.html">DatabaseBody.h</a>.</p>
 
 </div>
 </div>
-<a id="aa0335c77e2e25aa156c0ad60b694f903"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa0335c77e2e25aa156c0ad60b694f903">&#9670;&nbsp;</a></span>MAX_ROW_SIZE_PAD</h2>
+<a id="a2da1cd86d38a7334fbbe68736cedecc9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2da1cd86d38a7334fbbe68736cedecc9">&#9670;&nbsp;</a></span>MAX_ROW_SIZE_PAD</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -347,17 +350,17 @@ template&lt;class ConstBufferSequence &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const uint16_t ripple::DatabaseBody::reader::MAX_ROW_SIZE_PAD = 500</td>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> ripple::DatabaseBody::reader::MAX_ROW_SIZE_PAD = 500</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DatabaseBody_8h_source.html#l00119">119</a> of file <a class="el" href="DatabaseBody_8h_source.html">DatabaseBody.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseBody_8h_source.html#l00125">125</a> of file <a class="el" href="DatabaseBody_8h_source.html">DatabaseBody.h</a>.</p>
 
 </div>
 </div>

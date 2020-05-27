@@ -87,7 +87,7 @@ Configuration</h1>
 Amendment</h1>
 <p>An Amendment is a new or proposed change to a ledger rule. Ledger rules affect transaction processing and consensus; peers must use the same set of rules for consensus to succeed, otherwise different instances of rippled will get different results. Amendments can be almost anything but they must be accepted by a network majority through a consensus process before they are utilized. An Amendment must receive at least an 80% approval rate from validating nodes for a period of two weeks before being accepted. The following example outlines the process of an Amendment from its conception to approval and usage.</p>
 <ul>
-<li>A community member makes proposes to change transaction processing in some way. The proposal is discussed amongst the community and receives its support creating a community or human consensus.</li>
+<li>A community member proposes to change transaction processing in some way. The proposal is discussed amongst the community and receives its support creating a community or human consensus.</li>
 <li>Some members contribute their time and work to develop the Amendment.</li>
 <li>A pull request is created and the new code is folded into a rippled build and made available for use.</li>
 <li>The consensus process begins with the validating nodes.</li>
@@ -97,7 +97,7 @@ Amendment</h1>
 <p>Validators that support an amendment that is not yet enabled announce their support in their validations. If 80% support is achieved, they will introduce a pseudo-transaction to track the amendment's majority status in the ledger.</p>
 <p>If an amendment whose majority status is reported in a ledger loses that majority status, validators will introduce pseudo-transactions to remove the majority status from the ledger.</p>
 <p>If an amendment holds majority status for two weeks, validators will introduce a pseudo-transaction to enable the amendment.</p>
-<p>All amednements are assumed to be critical and irreversible. Thus there is no mechanism to disable or revoke an amendment, nor is there a way for a server to operate while an amendment it does not understand is enabled.</p>
+<p>All amendments are assumed to be critical and irreversible. Thus there is no mechanism to disable or revoke an amendment, nor is there a way for a server to operate while an amendment it does not understand is enabled.</p>
 <hr  />
 <h1><a class="anchor" id="autotoc_md94"></a>
 SHAMapStore: Online Delete</h1>
