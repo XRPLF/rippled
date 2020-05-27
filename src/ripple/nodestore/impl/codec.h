@@ -51,13 +51,12 @@ lz4_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
         Throw<std::runtime_error>("lz4 decompress: n == 0");
     void* const out = bf(result.second);
     result.first = out;
-    if (LZ4_decompress_fast(
+    if (LZ4_decompress_safe(
             reinterpret_cast<char const*>(in) + n,
             reinterpret_cast<char*>(out),
-            result.second) +
-            n !=
-        in_size)
-        Throw<std::runtime_error>("lz4 decompress: LZ4_decompress_fast");
+            in_size - n,
+            result.second) != result.second)
+        Throw<std::runtime_error>("lz4 decompress: LZ4_decompress_safe");
     return result;
 }
 
