@@ -282,7 +282,7 @@ tag_bld_images:
   variables:
     docker_driver: overlay2
   image:
-    name: docker:latest
+    name: docker:19.03.8
   services:
     # workaround for TLS issues - consider going back
     # back to unversioned `dind` when issues are resolved
