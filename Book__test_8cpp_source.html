@@ -170,7 +170,7 @@ $(function() {
 <div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;            <span class="comment">// Create an ask: TakerPays 700, TakerGets 100/USD</span></div>
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(700), USD(100)),</div>
 <div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;                <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 1)));</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -186,7 +186,7 @@ $(function() {
 <div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        {</div>
 <div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            <span class="comment">// Create a bid: TakerPays 100/USD, TakerGets 75</span></div>
 <div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, USD(100), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(75)), <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 2)));</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            BEAST_EXPECT(!wsc-&gt;getMsg(10ms));</div>
 <div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        }</div>
 <div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160; </div>
@@ -220,7 +220,7 @@ $(function() {
 <div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160; </div>
 <div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        <span class="comment">// Create a bid: TakerPays 100/USD, TakerGets 200</span></div>
 <div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        env(offer(<span class="stringliteral">&quot;alice&quot;</span>, USD(100), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(200)), <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 2)));</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160; </div>
 <div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        {</div>
 <div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;            <span class="comment">// RPC subscribe to books stream</span></div>
@@ -261,7 +261,7 @@ $(function() {
 <div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;            <span class="comment">// Create an ask: TakerPays 700, TakerGets 100/USD</span></div>
 <div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(700), USD(100)),</div>
 <div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;                <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 3)));</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160; </div>
 <div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -277,7 +277,7 @@ $(function() {
 <div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;        {</div>
 <div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;            <span class="comment">// Create a bid: TakerPays 100/USD, TakerGets 75</span></div>
 <div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, USD(100), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(75)), <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 4)));</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;            BEAST_EXPECT(!wsc-&gt;getMsg(10ms));</div>
 <div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        }</div>
 <div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160; </div>
@@ -342,7 +342,7 @@ $(function() {
 <div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;            <span class="comment">// Create an ask: TakerPays 700, TakerGets 100/USD</span></div>
 <div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(700), USD(100)),</div>
 <div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;                <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 1)));</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160; </div>
 <div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -358,7 +358,7 @@ $(function() {
 <div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;        {</div>
 <div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;            <span class="comment">// Create a bid: TakerPays 100/USD, TakerGets 75</span></div>
 <div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, USD(100), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(75)), <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 2)));</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160; </div>
 <div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -401,7 +401,7 @@ $(function() {
 <div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160; </div>
 <div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;        <span class="comment">// Create a bid: TakerPays 100/USD, TakerGets 200</span></div>
 <div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;        env(offer(<span class="stringliteral">&quot;alice&quot;</span>, USD(100), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(200)), <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 2)));</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160; </div>
 <div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;        {</div>
 <div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            <span class="comment">// RPC subscribe to books stream</span></div>
@@ -451,7 +451,7 @@ $(function() {
 <div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;            <span class="comment">// Create an ask: TakerPays 700, TakerGets 100/USD</span></div>
 <div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(700), USD(100)),</div>
 <div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;                <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 3)));</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160; </div>
 <div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -467,7 +467,7 @@ $(function() {
 <div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;        {</div>
 <div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;            <span class="comment">// Create a bid: TakerPays 100/USD, TakerGets 75</span></div>
 <div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, USD(100), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(75)), <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 4)));</div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160; </div>
 <div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -548,7 +548,7 @@ $(function() {
 <div class="line"><a name="l00477"></a><span class="lineno">  477</span>&#160;            <span class="comment">// Create an ask: TakerPays 700, TakerGets 100/USD</span></div>
 <div class="line"><a name="l00478"></a><span class="lineno">  478</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(700), USD(100)),</div>
 <div class="line"><a name="l00479"></a><span class="lineno">  479</span>&#160;                <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 1)));</div>
-<div class="line"><a name="l00480"></a><span class="lineno">  480</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00480"></a><span class="lineno">  480</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00481"></a><span class="lineno">  481</span>&#160; </div>
 <div class="line"><a name="l00482"></a><span class="lineno">  482</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00483"></a><span class="lineno">  483</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -564,7 +564,7 @@ $(function() {
 <div class="line"><a name="l00493"></a><span class="lineno">  493</span>&#160;        {</div>
 <div class="line"><a name="l00494"></a><span class="lineno">  494</span>&#160;            <span class="comment">// Create a bid: TakerPays 100/USD, TakerGets 75</span></div>
 <div class="line"><a name="l00495"></a><span class="lineno">  495</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, USD(100), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(75)), <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 2)));</div>
-<div class="line"><a name="l00496"></a><span class="lineno">  496</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00496"></a><span class="lineno">  496</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00497"></a><span class="lineno">  497</span>&#160;            BEAST_EXPECT(!wsc-&gt;getMsg(10ms));</div>
 <div class="line"><a name="l00498"></a><span class="lineno">  498</span>&#160;        }</div>
 <div class="line"><a name="l00499"></a><span class="lineno">  499</span>&#160; </div>
@@ -572,7 +572,7 @@ $(function() {
 <div class="line"><a name="l00501"></a><span class="lineno">  501</span>&#160;            <span class="comment">// Create an ask: TakerPays 700/CNY, TakerGets 100/JPY</span></div>
 <div class="line"><a name="l00502"></a><span class="lineno">  502</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, CNY(700), JPY(100)),</div>
 <div class="line"><a name="l00503"></a><span class="lineno">  503</span>&#160;                <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 3)));</div>
-<div class="line"><a name="l00504"></a><span class="lineno">  504</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00504"></a><span class="lineno">  504</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00505"></a><span class="lineno">  505</span>&#160; </div>
 <div class="line"><a name="l00506"></a><span class="lineno">  506</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00507"></a><span class="lineno">  507</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -588,7 +588,7 @@ $(function() {
 <div class="line"><a name="l00517"></a><span class="lineno">  517</span>&#160;        {</div>
 <div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160;            <span class="comment">// Create a bid: TakerPays 100/JPY, TakerGets 75/CNY</span></div>
 <div class="line"><a name="l00519"></a><span class="lineno">  519</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, JPY(100), CNY(75)), <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 4)));</div>
-<div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;            BEAST_EXPECT(!wsc-&gt;getMsg(10ms));</div>
 <div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;        }</div>
 <div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160; </div>
@@ -630,7 +630,7 @@ $(function() {
 <div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160; </div>
 <div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;        <span class="comment">// Create a bid: TakerPays 100/JPY, TakerGets 200/CNY</span></div>
 <div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;        env(offer(<span class="stringliteral">&quot;alice&quot;</span>, JPY(100), CNY(200)), <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 4)));</div>
-<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160; </div>
 <div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;        {</div>
 <div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160;            <span class="comment">// RPC subscribe to books stream</span></div>
@@ -685,7 +685,7 @@ $(function() {
 <div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;            <span class="comment">// Create an ask: TakerPays 700, TakerGets 100/USD</span></div>
 <div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(700), USD(100)),</div>
 <div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;                <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 5)));</div>
-<div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160; </div>
 <div class="line"><a name="l00619"></a><span class="lineno">  619</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -701,7 +701,7 @@ $(function() {
 <div class="line"><a name="l00630"></a><span class="lineno">  630</span>&#160;        {</div>
 <div class="line"><a name="l00631"></a><span class="lineno">  631</span>&#160;            <span class="comment">// Create a bid: TakerPays 100/USD, TakerGets 75</span></div>
 <div class="line"><a name="l00632"></a><span class="lineno">  632</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, USD(100), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(75)), <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 6)));</div>
-<div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00634"></a><span class="lineno">  634</span>&#160;            BEAST_EXPECT(!wsc-&gt;getMsg(10ms));</div>
 <div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;        }</div>
 <div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160; </div>
@@ -709,7 +709,7 @@ $(function() {
 <div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;            <span class="comment">// Create an ask: TakerPays 700/CNY, TakerGets 100/JPY</span></div>
 <div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, CNY(700), JPY(100)),</div>
 <div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;                <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 7)));</div>
-<div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160; </div>
 <div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -725,7 +725,7 @@ $(function() {
 <div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160;        {</div>
 <div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;            <span class="comment">// Create a bid: TakerPays 100/JPY, TakerGets 75/CNY</span></div>
 <div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, JPY(100), CNY(75)), <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 8)));</div>
-<div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160;            BEAST_EXPECT(!wsc-&gt;getMsg(10ms));</div>
 <div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;        }</div>
 <div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160; </div>
@@ -801,7 +801,7 @@ $(function() {
 <div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;            <span class="comment">// Create an ask: TakerPays 700, TakerGets 100/USD</span></div>
 <div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(700), USD(100)),</div>
 <div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;                <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 1)));</div>
-<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160; </div>
 <div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -817,7 +817,7 @@ $(function() {
 <div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;        {</div>
 <div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;            <span class="comment">// Create a bid: TakerPays 100/USD, TakerGets 75</span></div>
 <div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, USD(100), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(75)), <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 2)));</div>
-<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160; </div>
 <div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -834,7 +834,7 @@ $(function() {
 <div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;            <span class="comment">// Create an ask: TakerPays 700/CNY, TakerGets 100/JPY</span></div>
 <div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, CNY(700), JPY(100)),</div>
 <div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;                <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 3)));</div>
-<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160; </div>
 <div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -850,7 +850,7 @@ $(function() {
 <div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;        {</div>
 <div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;            <span class="comment">// Create a bid: TakerPays 100/JPY, TakerGets 75/CNY</span></div>
 <div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, JPY(100), CNY(75)), <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 4)));</div>
-<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160; </div>
 <div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -901,7 +901,7 @@ $(function() {
 <div class="line"><a name="l00830"></a><span class="lineno">  830</span>&#160; </div>
 <div class="line"><a name="l00831"></a><span class="lineno">  831</span>&#160;        <span class="comment">// Create a bid: TakerPays 100/JPY, TakerGets 200/CNY</span></div>
 <div class="line"><a name="l00832"></a><span class="lineno">  832</span>&#160;        env(offer(<span class="stringliteral">&quot;alice&quot;</span>, JPY(100), CNY(200)), <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 4)));</div>
-<div class="line"><a name="l00833"></a><span class="lineno">  833</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00833"></a><span class="lineno">  833</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00834"></a><span class="lineno">  834</span>&#160; </div>
 <div class="line"><a name="l00835"></a><span class="lineno">  835</span>&#160;        {</div>
 <div class="line"><a name="l00836"></a><span class="lineno">  836</span>&#160;            <span class="comment">// RPC subscribe to books stream</span></div>
@@ -973,7 +973,7 @@ $(function() {
 <div class="line"><a name="l00902"></a><span class="lineno">  902</span>&#160;            <span class="comment">// Create an ask: TakerPays 700, TakerGets 100/USD</span></div>
 <div class="line"><a name="l00903"></a><span class="lineno">  903</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(700), USD(100)),</div>
 <div class="line"><a name="l00904"></a><span class="lineno">  904</span>&#160;                <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 5)));</div>
-<div class="line"><a name="l00905"></a><span class="lineno">  905</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00905"></a><span class="lineno">  905</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00906"></a><span class="lineno">  906</span>&#160; </div>
 <div class="line"><a name="l00907"></a><span class="lineno">  907</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00908"></a><span class="lineno">  908</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -989,7 +989,7 @@ $(function() {
 <div class="line"><a name="l00918"></a><span class="lineno">  918</span>&#160;        {</div>
 <div class="line"><a name="l00919"></a><span class="lineno">  919</span>&#160;            <span class="comment">// Create a bid: TakerPays 100/USD, TakerGets 75</span></div>
 <div class="line"><a name="l00920"></a><span class="lineno">  920</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, USD(100), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(75)), <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 6)));</div>
-<div class="line"><a name="l00921"></a><span class="lineno">  921</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00921"></a><span class="lineno">  921</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00922"></a><span class="lineno">  922</span>&#160; </div>
 <div class="line"><a name="l00923"></a><span class="lineno">  923</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00924"></a><span class="lineno">  924</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -1006,7 +1006,7 @@ $(function() {
 <div class="line"><a name="l00935"></a><span class="lineno">  935</span>&#160;            <span class="comment">// Create an ask: TakerPays 700/CNY, TakerGets 100/JPY</span></div>
 <div class="line"><a name="l00936"></a><span class="lineno">  936</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, CNY(700), JPY(100)),</div>
 <div class="line"><a name="l00937"></a><span class="lineno">  937</span>&#160;                <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 7)));</div>
-<div class="line"><a name="l00938"></a><span class="lineno">  938</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00938"></a><span class="lineno">  938</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00939"></a><span class="lineno">  939</span>&#160; </div>
 <div class="line"><a name="l00940"></a><span class="lineno">  940</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00941"></a><span class="lineno">  941</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -1022,7 +1022,7 @@ $(function() {
 <div class="line"><a name="l00951"></a><span class="lineno">  951</span>&#160;        {</div>
 <div class="line"><a name="l00952"></a><span class="lineno">  952</span>&#160;            <span class="comment">// Create a bid: TakerPays 100/JPY, TakerGets 75/CNY</span></div>
 <div class="line"><a name="l00953"></a><span class="lineno">  953</span>&#160;            env(offer(<span class="stringliteral">&quot;alice&quot;</span>, JPY(100), CNY(75)), <a class="code" href="classripple_1_1test_1_1jtx_1_1require.html">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owners.html">owners</a>(<span class="stringliteral">&quot;alice&quot;</span>, 8)));</div>
-<div class="line"><a name="l00954"></a><span class="lineno">  954</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00954"></a><span class="lineno">  954</span>&#160;            env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00955"></a><span class="lineno">  955</span>&#160; </div>
 <div class="line"><a name="l00956"></a><span class="lineno">  956</span>&#160;            <span class="comment">// Check stream update</span></div>
 <div class="line"><a name="l00957"></a><span class="lineno">  957</span>&#160;            BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jv) {</div>
@@ -1059,7 +1059,7 @@ $(function() {
 <div class="line"><a name="l00988"></a><span class="lineno">  988</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> bob{<span class="stringliteral">&quot;bob&quot;</span>};</div>
 <div class="line"><a name="l00989"></a><span class="lineno">  989</span>&#160;        <span class="keyword">auto</span> wsc = <a class="code" href="namespaceripple_1_1test.html#aa4c787a68f386968ba9901187fa01873">makeWSClient</a>(env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a9e55bbdb66a785bfd0dda93802b514b6">app</a>().<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>());</div>
 <div class="line"><a name="l00990"></a><span class="lineno">  990</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">fund</a>(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(20000), alice, bob, gw);</div>
-<div class="line"><a name="l00991"></a><span class="lineno">  991</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l00991"></a><span class="lineno">  991</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l00992"></a><span class="lineno">  992</span>&#160;        <span class="keyword">auto</span> USD = gw[<span class="stringliteral">&quot;USD&quot;</span>];</div>
 <div class="line"><a name="l00993"></a><span class="lineno">  993</span>&#160; </div>
 <div class="line"><a name="l00994"></a><span class="lineno">  994</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> books;</div>
@@ -1092,13 +1092,13 @@ $(function() {
 <div class="line"><a name="l01021"></a><span class="lineno"> 1021</span>&#160;        }</div>
 <div class="line"><a name="l01022"></a><span class="lineno"> 1022</span>&#160; </div>
 <div class="line"><a name="l01023"></a><span class="lineno"> 1023</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a8e8d814b8820ce0b6979abde0d6a2618">rate</a>(gw, 1.1));</div>
-<div class="line"><a name="l01024"></a><span class="lineno"> 1024</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l01024"></a><span class="lineno"> 1024</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l01025"></a><span class="lineno"> 1025</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a90fecf3c0f6cdc1c40761e19917bf65a">trust</a>(USD(1000), alice);</div>
 <div class="line"><a name="l01026"></a><span class="lineno"> 1026</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a90fecf3c0f6cdc1c40761e19917bf65a">trust</a>(USD(1000), bob);</div>
 <div class="line"><a name="l01027"></a><span class="lineno"> 1027</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(gw, alice, USD(100)));</div>
 <div class="line"><a name="l01028"></a><span class="lineno"> 1028</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(gw, bob, USD(50)));</div>
 <div class="line"><a name="l01029"></a><span class="lineno"> 1029</span>&#160;        env(offer(alice, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(4000), USD(10)));</div>
-<div class="line"><a name="l01030"></a><span class="lineno"> 1030</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l01030"></a><span class="lineno"> 1030</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l01031"></a><span class="lineno"> 1031</span>&#160; </div>
 <div class="line"><a name="l01032"></a><span class="lineno"> 1032</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
 <div class="line"><a name="l01033"></a><span class="lineno"> 1033</span>&#160;        jvParams[jss::taker] = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc9bfd942ee848f3a9f16ab0e34e0c28">master</a>.<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#aee0c1b197f33ad230162080a4ff2be16">human</a>();</div>
@@ -1151,7 +1151,7 @@ $(function() {
 <div class="line"><a name="l01080"></a><span class="lineno"> 1080</span>&#160;        }));</div>
 <div class="line"><a name="l01081"></a><span class="lineno"> 1081</span>&#160; </div>
 <div class="line"><a name="l01082"></a><span class="lineno"> 1082</span>&#160;        env(offer(bob, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(2000), USD(5)));</div>
-<div class="line"><a name="l01083"></a><span class="lineno"> 1083</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l01083"></a><span class="lineno"> 1083</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l01084"></a><span class="lineno"> 1084</span>&#160; </div>
 <div class="line"><a name="l01085"></a><span class="lineno"> 1085</span>&#160;        BEAST_EXPECT(wsc-&gt;findMsg(5s, [&amp;](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; jval) {</div>
 <div class="line"><a name="l01086"></a><span class="lineno"> 1086</span>&#160;            auto const&amp; t = jval[jss::transaction];</div>
@@ -1254,20 +1254,20 @@ $(function() {
 <div class="line"><a name="l01183"></a><span class="lineno"> 1183</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> USD = gw[<span class="stringliteral">&quot;USD&quot;</span>];</div>
 <div class="line"><a name="l01184"></a><span class="lineno"> 1184</span>&#160; </div>
 <div class="line"><a name="l01185"></a><span class="lineno"> 1185</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">fund</a>(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1000000), gw, alice, bob, charlie);</div>
-<div class="line"><a name="l01186"></a><span class="lineno"> 1186</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l01186"></a><span class="lineno"> 1186</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l01187"></a><span class="lineno"> 1187</span>&#160; </div>
 <div class="line"><a name="l01188"></a><span class="lineno"> 1188</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47cac3a8bfbc8c14ae8da735ec52ebbf">trust</a>(alice, USD(500)));</div>
 <div class="line"><a name="l01189"></a><span class="lineno"> 1189</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47cac3a8bfbc8c14ae8da735ec52ebbf">trust</a>(bob, USD(500)));</div>
-<div class="line"><a name="l01190"></a><span class="lineno"> 1190</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l01190"></a><span class="lineno"> 1190</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l01191"></a><span class="lineno"> 1191</span>&#160; </div>
 <div class="line"><a name="l01192"></a><span class="lineno"> 1192</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(gw, alice, USD(500)));</div>
 <div class="line"><a name="l01193"></a><span class="lineno"> 1193</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(gw, bob, USD(500)));</div>
-<div class="line"><a name="l01194"></a><span class="lineno"> 1194</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l01194"></a><span class="lineno"> 1194</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l01195"></a><span class="lineno"> 1195</span>&#160; </div>
 <div class="line"><a name="l01196"></a><span class="lineno"> 1196</span>&#160;        <span class="comment">// Alice and Bob offer $500 for 500 XRP</span></div>
 <div class="line"><a name="l01197"></a><span class="lineno"> 1197</span>&#160;        env(offer(alice, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(500), USD(500)));</div>
 <div class="line"><a name="l01198"></a><span class="lineno"> 1198</span>&#160;        env(offer(bob, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(500), USD(500)));</div>
-<div class="line"><a name="l01199"></a><span class="lineno"> 1199</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l01199"></a><span class="lineno"> 1199</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l01200"></a><span class="lineno"> 1200</span>&#160; </div>
 <div class="line"><a name="l01201"></a><span class="lineno"> 1201</span>&#160;        <span class="keyword">auto</span> wsc = <a class="code" href="namespaceripple_1_1test.html#aa4c787a68f386968ba9901187fa01873">makeWSClient</a>(env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a9e55bbdb66a785bfd0dda93802b514b6">app</a>().<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>());</div>
 <div class="line"><a name="l01202"></a><span class="lineno"> 1202</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> books;</div>
@@ -1289,7 +1289,7 @@ $(function() {
 <div class="line"><a name="l01218"></a><span class="lineno"> 1218</span>&#160; </div>
 <div class="line"><a name="l01219"></a><span class="lineno"> 1219</span>&#160;        <span class="comment">// Charlie places an offer that crosses Alice and Charlie&#39;s offers</span></div>
 <div class="line"><a name="l01220"></a><span class="lineno"> 1220</span>&#160;        env(offer(charlie, USD(1000), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1000)));</div>
-<div class="line"><a name="l01221"></a><span class="lineno"> 1221</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l01221"></a><span class="lineno"> 1221</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l01222"></a><span class="lineno"> 1222</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a34c9d58eaca6b7238258eadaf94b4a46">require</a>(<a class="code" href="classripple_1_1test_1_1jtx_1_1owner__count.html">offers</a>(alice, 0), <a class="code" href="classripple_1_1test_1_1jtx_1_1owner__count.html">offers</a>(bob, 0), <a class="code" href="classripple_1_1test_1_1jtx_1_1owner__count.html">offers</a>(charlie, 0));</div>
 <div class="line"><a name="l01223"></a><span class="lineno"> 1223</span>&#160;        <span class="keyword">using namespace </span>std::chrono_literals;</div>
 <div class="line"><a name="l01224"></a><span class="lineno"> 1224</span>&#160;        BEAST_EXPECT(<a class="code" href="classripple_1_1test_1_1Book__test.html#ae1305badb2b126a8bc19e1f75182d642">offerOnlyOnceInStream</a>(wsc, 1s, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1000), USD(1000)));</div>
@@ -1325,7 +1325,7 @@ $(function() {
 <div class="line"><a name="l01254"></a><span class="lineno"> 1254</span>&#160;        <span class="keyword">auto</span> <span class="keyword">const</span> EUR = gw[<span class="stringliteral">&quot;EUR&quot;</span>];</div>
 <div class="line"><a name="l01255"></a><span class="lineno"> 1255</span>&#160; </div>
 <div class="line"><a name="l01256"></a><span class="lineno"> 1256</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">fund</a>(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1000000), gw, alice, bob, charlie);</div>
-<div class="line"><a name="l01257"></a><span class="lineno"> 1257</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l01257"></a><span class="lineno"> 1257</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l01258"></a><span class="lineno"> 1258</span>&#160; </div>
 <div class="line"><a name="l01259"></a><span class="lineno"> 1259</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; account : {alice, bob, charlie})</div>
 <div class="line"><a name="l01260"></a><span class="lineno"> 1260</span>&#160;        {</div>
@@ -1334,15 +1334,15 @@ $(function() {
 <div class="line"><a name="l01263"></a><span class="lineno"> 1263</span>&#160;                env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a47cac3a8bfbc8c14ae8da735ec52ebbf">trust</a>(account, iou(1)));</div>
 <div class="line"><a name="l01264"></a><span class="lineno"> 1264</span>&#160;            }</div>
 <div class="line"><a name="l01265"></a><span class="lineno"> 1265</span>&#160;        }</div>
-<div class="line"><a name="l01266"></a><span class="lineno"> 1266</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l01266"></a><span class="lineno"> 1266</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l01267"></a><span class="lineno"> 1267</span>&#160; </div>
 <div class="line"><a name="l01268"></a><span class="lineno"> 1268</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(gw, alice, USD(1)));</div>
 <div class="line"><a name="l01269"></a><span class="lineno"> 1269</span>&#160;        env(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">pay</a>(gw, charlie, EUR(1)));</div>
-<div class="line"><a name="l01270"></a><span class="lineno"> 1270</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l01270"></a><span class="lineno"> 1270</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l01271"></a><span class="lineno"> 1271</span>&#160; </div>
 <div class="line"><a name="l01272"></a><span class="lineno"> 1272</span>&#160;        env(offer(alice, <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(100), USD(1)));</div>
 <div class="line"><a name="l01273"></a><span class="lineno"> 1273</span>&#160;        env(offer(bob, EUR(1), <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(100)));</div>
-<div class="line"><a name="l01274"></a><span class="lineno"> 1274</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l01274"></a><span class="lineno"> 1274</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l01275"></a><span class="lineno"> 1275</span>&#160; </div>
 <div class="line"><a name="l01276"></a><span class="lineno"> 1276</span>&#160;        <span class="keyword">auto</span> wsc = <a class="code" href="namespaceripple_1_1test.html#aa4c787a68f386968ba9901187fa01873">makeWSClient</a>(env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a9e55bbdb66a785bfd0dda93802b514b6">app</a>().<a class="code" href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">config</a>());</div>
 <div class="line"><a name="l01277"></a><span class="lineno"> 1277</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> books;</div>
@@ -1373,7 +1373,7 @@ $(function() {
 <div class="line"><a name="l01302"></a><span class="lineno"> 1302</span>&#160; </div>
 <div class="line"><a name="l01303"></a><span class="lineno"> 1303</span>&#160;        <span class="comment">// Charlies places an on offer for EUR -&gt; USD that should auto-bridge</span></div>
 <div class="line"><a name="l01304"></a><span class="lineno"> 1304</span>&#160;        env(offer(charlie, USD(1), EUR(1)));</div>
-<div class="line"><a name="l01305"></a><span class="lineno"> 1305</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l01305"></a><span class="lineno"> 1305</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l01306"></a><span class="lineno"> 1306</span>&#160;        <span class="keyword">using namespace </span>std::chrono_literals;</div>
 <div class="line"><a name="l01307"></a><span class="lineno"> 1307</span>&#160;        BEAST_EXPECT(<a class="code" href="classripple_1_1test_1_1Book__test.html#ae1305badb2b126a8bc19e1f75182d642">offerOnlyOnceInStream</a>(wsc, 1s, EUR(1), USD(1)));</div>
 <div class="line"><a name="l01308"></a><span class="lineno"> 1308</span>&#160; </div>
@@ -1391,7 +1391,7 @@ $(function() {
 <div class="line"><a name="l01320"></a><span class="lineno"> 1320</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> gw{<span class="stringliteral">&quot;gw&quot;</span>};</div>
 <div class="line"><a name="l01321"></a><span class="lineno"> 1321</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
 <div class="line"><a name="l01322"></a><span class="lineno"> 1322</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">fund</a>(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(10000), alice, gw);</div>
-<div class="line"><a name="l01323"></a><span class="lineno"> 1323</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">close</a>();</div>
+<div class="line"><a name="l01323"></a><span class="lineno"> 1323</span>&#160;        env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">close</a>();</div>
 <div class="line"><a name="l01324"></a><span class="lineno"> 1324</span>&#160;        <span class="keyword">auto</span> USD = gw[<span class="stringliteral">&quot;USD&quot;</span>];</div>
 <div class="line"><a name="l01325"></a><span class="lineno"> 1325</span>&#160; </div>
 <div class="line"><a name="l01326"></a><span class="lineno"> 1326</span>&#160;        {</div>
@@ -1813,7 +1813,7 @@ $(function() {
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="anamespaceripple_html_a17d40ddaaa1efdd012235e36224df2e8"><div class="ttname"><a href="namespaceripple.html#a17d40ddaaa1efdd012235e36224df2e8">ripple::sfLedgerEntryType</a></div><div class="ttdeci">const SF_U16 sfLedgerEntryType(access, STI_UINT16, 1, &quot;LedgerEntryType&quot;, SField::sMD_Never)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00345">SField.h:345</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1owners_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1owners.html">ripple::test::jtx::owners</a></div><div class="ttdoc">Match the number of items in the account's owner directory.</div><div class="ttdef"><b>Definition:</b> <a href="owners_8h_source.html#l00069">owners.h:69</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_a34c9d58eaca6b7238258eadaf94b4a46"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#a34c9d58eaca6b7238258eadaf94b4a46">ripple::test::jtx::Env::require</a></div><div class="ttdeci">void require(Args const &amp;... args)</div><div class="ttdoc">Check a set of requirements.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00458">Env.h:458</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_a34c9d58eaca6b7238258eadaf94b4a46"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#a34c9d58eaca6b7238258eadaf94b4a46">ripple::test::jtx::Env::require</a></div><div class="ttdeci">void require(Args const &amp;... args)</div><div class="ttdoc">Check a set of requirements.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00464">Env.h:464</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_ae449949223905ec9bd5b8dbc1c9e9ded"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#ae449949223905ec9bd5b8dbc1c9e9ded">ripple::test::jtx::Env::closed</a></div><div class="ttdeci">std::shared_ptr&lt; ReadView const  &gt; closed()</div><div class="ttdoc">Returns the last closed ledger.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8cpp_source.html#l00105">Env.cpp:105</a></div></div>
 <div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a></div><div class="ttdeci">@ arrayValue</div><div class="ttdoc">array value (ordered list)</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00042">json_value.h:42</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aeb5ef72b34cf7a324641e7a7f696d4cc"><div class="ttname"><a href="namespaceripple.html#aeb5ef72b34cf7a324641e7a7f696d4cc">ripple::getBookBase</a></div><div class="ttdeci">uint256 getBookBase(Book const &amp;book)</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00077">Indexes.cpp:77</a></div></div>
@@ -1841,7 +1841,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_1_1RPC_1_1Tuning_html_a5a1ef6eab0bf47b572e7d27142ee4d3d"><div class="ttname"><a href="namespaceripple_1_1RPC_1_1Tuning.html#a5a1ef6eab0bf47b572e7d27142ee4d3d">ripple::RPC::Tuning::bookOffers</a></div><div class="ttdeci">static constexpr LimitRange bookOffers</div><div class="ttdoc">Limits for the book_offers command.</div><div class="ttdef"><b>Definition:</b> <a href="rpc_2impl_2Tuning_8h_source.html#l00049">rpc/impl/Tuning.h:49</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1Book__test_html_add1ee38c70526a0fea8f82e10f6961b3"><div class="ttname"><a href="classripple_1_1test_1_1Book__test.html#add1ee38c70526a0fea8f82e10f6961b3">ripple::test::Book_test::testCrossingSingleBookOffer</a></div><div class="ttdeci">void testCrossingSingleBookOffer()</div><div class="ttdef"><b>Definition:</b> <a href="Book__test_8cpp_source.html#l01164">Book_test.cpp:1164</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1Book__test_html_a8c32f8ac989e95b89234cb83a7d6defb"><div class="ttname"><a href="classripple_1_1test_1_1Book__test.html#a8c32f8ac989e95b89234cb83a7d6defb">ripple::test::Book_test::testOneSideOffersInBook</a></div><div class="ttdeci">void testOneSideOffersInBook()</div><div class="ttdef"><b>Definition:</b> <a href="Book__test_8cpp_source.html#l00136">Book_test.cpp:136</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_a90fecf3c0f6cdc1c40761e19917bf65a"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#a90fecf3c0f6cdc1c40761e19917bf65a">ripple::test::jtx::Env::trust</a></div><div class="ttdeci">void trust(STAmount const &amp;amount, Account const &amp;account)</div><div class="ttdoc">Establish trust lines.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8cpp_source.html#l00232">Env.cpp:232</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_a90fecf3c0f6cdc1c40761e19917bf65a"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#a90fecf3c0f6cdc1c40761e19917bf65a">ripple::test::jtx::Env::trust</a></div><div class="ttdeci">void trust(STAmount const &amp;amount, Account const &amp;account)</div><div class="ttdoc">Establish trust lines.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8cpp_source.html#l00240">Env.cpp:240</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 256 &gt;</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1Book__test_html_aafe2742fa2a7925f247cb781ab9c12db"><div class="ttname"><a href="classripple_1_1test_1_1Book__test.html#aafe2742fa2a7925f247cb781ab9c12db">ripple::test::Book_test::testBookOfferErrors</a></div><div class="ttdeci">void testBookOfferErrors()</div><div class="ttdef"><b>Definition:</b> <a href="Book__test_8cpp_source.html#l01315">Book_test.cpp:1315</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a587a5b3e8e1aac7c5c0c3fbc9e986410"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a587a5b3e8e1aac7c5c0c3fbc9e986410">ripple::test::jtx::no_admin</a></div><div class="ttdeci">std::unique_ptr&lt; Config &gt; no_admin(std::unique_ptr&lt; Config &gt;)</div><div class="ttdoc">adjust config so no admin ports are enabled</div><div class="ttdef"><b>Definition:</b> <a href="envconfig_8cpp_source.html#l00070">envconfig.cpp:70</a></div></div>
@@ -1862,8 +1862,8 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1Book__test_html_ab416fb75e2b08e8196ea21d51a31687d"><div class="ttname"><a href="classripple_1_1test_1_1Book__test.html#ab416fb75e2b08e8196ea21d51a31687d">ripple::test::Book_test::testMultipleBooksOneSideOffersInBook</a></div><div class="ttdeci">void testMultipleBooksOneSideOffersInBook()</div><div class="ttdef"><b>Definition:</b> <a href="Book__test_8cpp_source.html#l00538">Book_test.cpp:538</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a7816b23daf9b325ea1f88cc121a53d05"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a7816b23daf9b325ea1f88cc121a53d05">ripple::test::jtx::pay</a></div><div class="ttdeci">Json::Value pay(Account const &amp;account, Account const &amp;to, AnyAmount amount)</div><div class="ttdoc">Create a payment.</div><div class="ttdef"><b>Definition:</b> <a href="pay_8cpp_source.html#l00029">pay.cpp:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_abc1dc9c86060f4d385dc66b2a31c0bd6"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#abc1dc9c86060f4d385dc66b2a31c0bd6">ripple::test::jtx::Env::close</a></div><div class="ttdeci">void close(NetClock::time_point closeTime, boost::optional&lt; std::chrono::milliseconds &gt; consensusDelay=boost::none)</div><div class="ttdoc">Close and advance the ledger.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8cpp_source.html#l00111">Env.cpp:111</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_ae2349266cb09d1f1c3de06606ebdf9e2"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">ripple::test::jtx::Env::fund</a></div><div class="ttdeci">void fund(bool setDefaultRipple, STAmount const &amp;amount, Account const &amp;account)</div><div class="ttdef"><b>Definition:</b> <a href="Env_8cpp_source.html#l00201">Env.cpp:201</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_a2c5dcd5bbad5c5b767ff713b6f7cb1ed"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#a2c5dcd5bbad5c5b767ff713b6f7cb1ed">ripple::test::jtx::Env::close</a></div><div class="ttdeci">bool close(NetClock::time_point closeTime, boost::optional&lt; std::chrono::milliseconds &gt; consensusDelay=boost::none)</div><div class="ttdoc">Close and advance the ledger.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8cpp_source.html#l00111">Env.cpp:111</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_ae2349266cb09d1f1c3de06606ebdf9e2"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">ripple::test::jtx::Env::fund</a></div><div class="ttdeci">void fund(bool setDefaultRipple, STAmount const &amp;amount, Account const &amp;account)</div><div class="ttdef"><b>Definition:</b> <a href="Env_8cpp_source.html#l00209">Env.cpp:209</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_abc9bfd942ee848f3a9f16ab0e34e0c28"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#abc9bfd942ee848f3a9f16ab0e34e0c28">ripple::test::jtx::Env::master</a></div><div class="ttdeci">Account const  &amp; master</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00119">Env.h:119</a></div></div>
 <div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391">Json::nullValue</a></div><div class="ttdeci">@ nullValue</div><div class="ttdoc">'null' value</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00036">json_value.h:36</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_html_aa4c787a68f386968ba9901187fa01873"><div class="ttname"><a href="namespaceripple_1_1test.html#aa4c787a68f386968ba9901187fa01873">ripple::test::makeWSClient</a></div><div class="ttdeci">std::unique_ptr&lt; WSClient &gt; makeWSClient(Config const &amp;cfg, bool v2, unsigned rpc_version, std::unordered_map&lt; std::string, std::string &gt; const &amp;headers)</div><div class="ttdoc">Returns a client operating through WebSockets/S.</div><div class="ttdef"><b>Definition:</b> <a href="WSClient_8cpp_source.html#l00299">WSClient.cpp:299</a></div></div>
@@ -1877,7 +1877,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1test_1_1Book__test_html_a301030655f84dee3dbcede83966e7611"><div class="ttname"><a href="classripple_1_1test_1_1Book__test.html#a301030655f84dee3dbcede83966e7611">ripple::test::Book_test::testBothSidesOffersInBook</a></div><div class="ttdeci">void testBothSidesOffersInBook()</div><div class="ttdef"><b>Definition:</b> <a href="Book__test_8cpp_source.html#l00317">Book_test.cpp:317</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a065cda95aed9cb1d66fb81cad0867ef6"><div class="ttname"><a href="namespaceripple.html#a065cda95aed9cb1d66fb81cad0867ef6">ripple::noAccount</a></div><div class="ttdeci">AccountID const  &amp; noAccount()</div><div class="ttdoc">A placeholder for empty accounts.</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00150">AccountID.cpp:150</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00114">Env.h:114</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_a0f3a59ffc07ea469d2999d1ae0aeea77"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">ripple::test::jtx::Env::rpc</a></div><div class="ttdeci">Json::Value rpc(std::unordered_map&lt; std::string, std::string &gt; const &amp;headers, std::string const &amp;cmd, Args &amp;&amp;... args)</div><div class="ttdoc">Execute an RPC command.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00676">Env.h:676</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_a0f3a59ffc07ea469d2999d1ae0aeea77"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#a0f3a59ffc07ea469d2999d1ae0aeea77">ripple::test::jtx::Env::rpc</a></div><div class="ttdeci">Json::Value rpc(std::unordered_map&lt; std::string, std::string &gt; const &amp;headers, std::string const &amp;cmd, Args &amp;&amp;... args)</div><div class="ttdoc">Execute an RPC command.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00682">Env.h:682</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00145">json_value.h:145</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1jtx_1_1PrettyAmount_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1PrettyAmount.html">ripple::test::jtx::PrettyAmount</a></div><div class="ttdoc">Represents an XRP or IOU quantity This customizes the string conversion and supports XRP conversions ...</div><div class="ttdef"><b>Definition:</b> <a href="amount_8h_source.html#l00073">amount.h:73</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1owner__count_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1owner__count.html">ripple::test::jtx::owner_count</a></div><div class="ttdef"><b>Definition:</b> <a href="owners_8h_source.html#l00049">owners.h:49</a></div></div>

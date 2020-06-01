@@ -1,0 +1,14 @@
+<map id="ripple::NodeStore::DatabaseShard_test" name="ripple::NodeStore::DatabaseShard_test">
+<area shape="rect" id="node1" title=" " alt="" coords="995,179,1148,221"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1TestBase.html" title=" " alt="" coords="657,23,799,65"/>
+<area shape="rect" id="node3" title=" " alt="" coords="343,5,397,32"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="326,56,414,83"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="677,136,779,163"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="651,187,805,213"/>
+<area shape="rect" id="node7" href="$classripple_1_1test_1_1SuiteJournal.html" title=" " alt="" coords="639,237,817,264"/>
+<area shape="rect" id="node8" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="315,213,425,240"/>
+<area shape="rect" id="node9" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,228,152,255"/>
+<area shape="rect" id="node10" href="$classripple_1_1test_1_1SuiteJournalSink.html" title=" " alt="" coords="267,264,473,291"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="35,292,122,319"/>
+<area shape="rect" id="node12" href="$classbeast_1_1temp__dir.html" title="RAII temporary directory." alt="" coords="666,288,790,315"/>
+</map>
