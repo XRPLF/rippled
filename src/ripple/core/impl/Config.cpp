@@ -506,8 +506,9 @@ Config::loadFromString(std::string const& fileContents)
 
         if (AMENDMENT_MAJORITY_TIME < defaultAmendmentMajorityTime)
             Throw<std::runtime_error>(
-                    "Invalid " SECTION_AMENDMENT_MAJORITY_TIME
-                    ", the minimum amount of time an amendment must hold a majority is 15 minutes");
+                "Invalid " SECTION_AMENDMENT_MAJORITY_TIME
+                ", the minimum amount of time an amendment must hold a "
+                "majority is 15 minutes");
     }
 
     // Do not load trusted validator configuration for standalone mode
