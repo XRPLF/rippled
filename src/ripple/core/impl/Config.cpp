@@ -504,7 +504,7 @@ Config::loadFromString(std::string const& fileContents)
         else if (boost::iequals(match[2], "weeks"))
             AMENDMENT_MAJORITY_TIME = weeks(duration);
 
-        if (AMENDMENT_MAJORITY_TIME < defaultAmendmentMajorityTime)
+        if (AMENDMENT_MAJORITY_TIME < minutes(15))
             Throw<std::runtime_error>(
                 "Invalid " SECTION_AMENDMENT_MAJORITY_TIME
                 ", the minimum amount of time an amendment must hold a "
