@@ -21,11 +21,8 @@
 #define RIPPLE_SHAMAP_TREENODECACHE_H_INCLUDED
 
 #include <ripple/shamap/SHAMapTreeNode.h>
-#include <ripple/shamap/TreeNodeCache.h>
 
 namespace ripple {
-
-class SHAMapAbstractNode;
 
 using TreeNodeCache = TaggedCache<uint256, SHAMapAbstractNode>;
 

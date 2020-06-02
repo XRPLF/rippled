@@ -77,7 +77,10 @@ class RCLValidations_test : public beast::unit_test::suite
         jtx::Env env(*this);
         Config config;
         auto prev = std::make_shared<Ledger const>(
-            create_genesis, config, std::vector<uint256>{}, env.app().family());
+            create_genesis,
+            config,
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
         history.push_back(prev);
         for (auto i = 0; i < (2 * maxAncestors + 1); ++i)
         {
@@ -237,7 +240,10 @@ class RCLValidations_test : public beast::unit_test::suite
         auto& j = env.journal;
         Config config;
         auto prev = std::make_shared<Ledger const>(
-            create_genesis, config, std::vector<uint256>{}, env.app().family());
+            create_genesis,
+            config,
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
         history.push_back(prev);
         for (auto i = 0; i < (maxAncestors + 10); ++i)
         {
