@@ -77,11 +77,6 @@
 
 namespace ripple {
 
-// 204/256 about 80%
-static int const MAJORITY_FRACTION_OLD(204);
-// 8/10 = 80%
-static int const MAJORITY_FRACTION(8);
-
 //------------------------------------------------------------------------------
 
 namespace detail {
@@ -1536,7 +1531,7 @@ ApplicationImp::setup()
 
         m_amendmentTable = make_AmendmentTable(
             config().AMENDMENT_MAJORITY_TIME,
-            {MAJORITY_FRACTION_OLD, MAJORITY_FRACTION},
+            {amendmentMajorityFractionOld, amendmentMajorityFraction},
             supportedAmendments,
             enabledAmendments,
             config_->section(SECTION_VETO_AMENDMENTS),

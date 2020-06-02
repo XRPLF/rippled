@@ -485,17 +485,17 @@ Config::loadFromString(std::string const& fileContents)
     {
         using namespace std::chrono;
         boost::regex const re(
-            "^\\s*(\\d+)\\s*(seconds|minutes|hours|days|weeks)\\s*(\\s+.*)?$");
+            "^\\s*(\\d+)\\s*(minutes|hours|days|weeks)\\s*(\\s+.*)?$");
         boost::smatch match;
         if (!boost::regex_match(strTemp, match, re))
             Throw<std::runtime_error>(
                 "Invalid " SECTION_AMENDMENT_MAJORITY_TIME
-                ", must be: [0-9]+ [seconds|minutes|hours|days|weeks]");
+                ", must be: [0-9]+ [minutes|hours|days|weeks]");
+
         std::uint32_t duration =
             beast::lexicalCastThrow<std::uint32_t>(match[1].str());
-        if (boost::iequals(match[2], "seconds"))
-            AMENDMENT_MAJORITY_TIME = seconds(duration);
-        else if (boost::iequals(match[2], "minutes"))
+
+        if (boost::iequals(match[2], "minutes"))
             AMENDMENT_MAJORITY_TIME = minutes(duration);
         else if (boost::iequals(match[2], "hours"))
             AMENDMENT_MAJORITY_TIME = hours(duration);
@@ -503,6 +503,11 @@ Config::loadFromString(std::string const& fileContents)
             AMENDMENT_MAJORITY_TIME = days(duration);
         else if (boost::iequals(match[2], "weeks"))
             AMENDMENT_MAJORITY_TIME = weeks(duration);
+
+        if (AMENDMENT_MAJORITY_TIME < defaultAmendmentMajorityTime)
+            Throw<std::runtime_error>(
+                    "Invalid " SECTION_AMENDMENT_MAJORITY_TIME
+                    ", the minimum amount of time an amendment must hold a majority is 15 minutes");
     }
 
     // Do not load trusted validator configuration for standalone mode

@@ -174,7 +174,7 @@ public:
     bool COMPRESSION = false;
 
     // Amendment majority time
-    std::chrono::seconds AMENDMENT_MAJORITY_TIME = weeks{2};
+    std::chrono::seconds AMENDMENT_MAJORITY_TIME = defaultAmendmentMajorityTime;
 
     // Thread pool configuration
     std::size_t WORKERS = 0;
