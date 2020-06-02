@@ -208,7 +208,7 @@ private:
     std::unique_ptr<DatabaseCon> txSQLiteDB_;
 
     // Tracking information used only when acquiring a shard from the network.
-    // If the shard is complete, this member will be null.
+    // If the shard is final, this member will be null.
     std::unique_ptr<AcquireInfo> acquireInfo_;
 
     beast::Journal const j_;

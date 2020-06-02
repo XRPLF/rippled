@@ -32,6 +32,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
+#include <ripple/shamap/ShardFamily.h>
 
 namespace ripple {
 
@@ -103,9 +104,11 @@ getCountsJson(Application& app, int minObjectCount)
     ret[jss::AL_hit_rate] = app.getAcceptedLedgerCache().getHitRate();
 
     ret[jss::fullbelow_size] =
-        static_cast<int>(app.family().fullbelow().size());
-    ret[jss::treenode_cache_size] = app.family().treecache().getCacheSize();
-    ret[jss::treenode_track_size] = app.family().treecache().getTrackSize();
+        static_cast<int>(app.getNodeFamily().getFullBelowCache(0)->size());
+    ret[jss::treenode_cache_size] =
+        app.getNodeFamily().getTreeNodeCache(0)->getCacheSize();
+    ret[jss::treenode_track_size] =
+        app.getNodeFamily().getTreeNodeCache(0)->getTrackSize();
 
     std::string uptime;
     auto s = UptimeClock::now();
@@ -125,13 +128,13 @@ getCountsJson(Application& app, int minObjectCount)
 
     if (auto shardStore = app.getShardStore())
     {
+        auto shardFamily{dynamic_cast<ShardFamily*>(app.getShardFamily())};
+        auto const [cacheSz, trackSz] = shardFamily->getTreeNodeCacheSize();
         Json::Value& jv = (ret[jss::shards] = Json::objectValue);
-        jv[jss::fullbelow_size] =
-            static_cast<int>(app.shardFamily()->fullbelow().size());
-        jv[jss::treenode_cache_size] =
-            app.shardFamily()->treecache().getCacheSize();
-        jv[jss::treenode_track_size] =
-            app.shardFamily()->treecache().getTrackSize();
+
+        jv[jss::fullbelow_size] = shardFamily->getFullBelowCacheSize();
+        jv[jss::treenode_cache_size] = cacheSz;
+        jv[jss::treenode_track_size] = trackSz;
         ret[jss::write_load] = shardStore->getWriteLoad();
         ret[jss::node_hit_rate] = shardStore->getCacheHitRate();
         jv[jss::node_writes] = shardStore->getStoreCount();

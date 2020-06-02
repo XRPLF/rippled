@@ -147,9 +147,9 @@ public:
     virtual CollectorManager&
     getCollectorManager() = 0;
     virtual Family&
-    family() = 0;
+    getNodeFamily() = 0;
     virtual Family*
-    shardFamily() = 0;
+    getShardFamily() = 0;
     virtual TimeKeeper&
     timeKeeper() = 0;
     virtual JobQueue&

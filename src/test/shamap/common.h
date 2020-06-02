@@ -29,22 +29,31 @@
 namespace ripple {
 namespace tests {
 
-class TestFamily : public Family
+class TestNodeFamily : public Family
 {
 private:
+    std::unique_ptr<NodeStore::Database> db_;
+
+    std::shared_ptr<FullBelowCache> fbCache_;
+    std::shared_ptr<TreeNodeCache> tnCache_;
+
     TestStopwatch clock_;
     NodeStore::DummyScheduler scheduler_;
-    TreeNodeCache treecache_;
-    FullBelowCache fullbelow_;
     RootStoppable parent_;
-    std::unique_ptr<NodeStore::Database> db_;
-    bool shardBacked_;
-    beast::Journal j_;
+
+    beast::Journal const j_;
 
 public:
-    TestFamily(beast::Journal j)
-        : treecache_("TreeNodeCache", 65536, std::chrono::minutes{1}, clock_, j)
-        , fullbelow_("full_below", clock_)
+    TestNodeFamily(beast::Journal j)
+        : fbCache_(std::make_shared<FullBelowCache>(
+              "App family full below cache",
+              clock_))
+        , tnCache_(std::make_shared<TreeNodeCache>(
+              "App family tree node cache",
+              65536,
+              std::chrono::minutes{1},
+              clock_,
+              j))
         , parent_("TestRootStoppable")
         , j_(j)
     {
@@ -53,44 +62,6 @@ public:
         testSection.set("Path", "SHAMap_test");
         db_ = NodeStore::Manager::instance().make_Database(
             "test", scheduler_, 1, parent_, testSection, j);
-        shardBacked_ =
-            dynamic_cast<NodeStore::DatabaseShard*>(db_.get()) != nullptr;
-    }
-
-    beast::manual_clock<std::chrono::steady_clock>
-    clock()
-    {
-        return clock_;
-    }
-
-    beast::Journal const&
-    journal() override
-    {
-        return j_;
-    }
-
-    FullBelowCache&
-    fullbelow() override
-    {
-        return fullbelow_;
-    }
-
-    FullBelowCache const&
-    fullbelow() const override
-    {
-        return fullbelow_;
-    }
-
-    TreeNodeCache&
-    treecache() override
-    {
-        return treecache_;
-    }
-
-    TreeNodeCache const&
-    treecache() const override
-    {
-        return treecache_;
     }
 
     NodeStore::Database&
@@ -105,20 +76,43 @@ public:
         return *db_;
     }
 
-    bool
-    isShardBacked() const override
+    beast::Journal const&
+    journal() override
     {
-        return shardBacked_;
+        return j_;
+    }
+
+    std::shared_ptr<FullBelowCache> getFullBelowCache(std::uint32_t) override
+    {
+        return fbCache_;
+    }
+
+    std::shared_ptr<TreeNodeCache> getTreeNodeCache(std::uint32_t) override
+    {
+        return tnCache_;
     }
 
     void
-    missing_node(std::uint32_t refNum) override
+    sweep() override
+    {
+        fbCache_->sweep();
+        tnCache_->sweep();
+    }
+
+    bool
+    isShardBacked() const override
+    {
+        return true;
+    }
+
+    void
+    missingNode(std::uint32_t refNum) override
     {
         Throw<std::runtime_error>("missing node");
     }
 
     void
-    missing_node(uint256 const& refHash, std::uint32_t refNum) override
+    missingNode(uint256 const& refHash, std::uint32_t refNum) override
     {
         Throw<std::runtime_error>("missing node");
     }
@@ -126,8 +120,14 @@ public:
     void
     reset() override
     {
-        fullbelow_.reset();
-        treecache_.reset();
+        fbCache_->reset();
+        tnCache_->reset();
+    }
+
+    beast::manual_clock<std::chrono::steady_clock>
+    clock()
+    {
+        return clock_;
     }
 };
 

@@ -139,7 +139,7 @@ public:
         else
             testcase("add/traverse unbacked");
 
-        tests::TestFamily f(journal);
+        tests::TestNodeFamily f(journal);
 
         // h3 and h4 differ only in the leaf, same terminal node (level 19)
         uint256 h1, h2, h3, h4, h5;
@@ -327,7 +327,7 @@ public:
                 "292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6c"
                 "a8");
 
-            tests::TestFamily tf{journal};
+            tests::TestNodeFamily tf{journal};
             SHAMap map{SHAMapType::FREE, tf};
             if (!backed)
                 map.setUnbacked();

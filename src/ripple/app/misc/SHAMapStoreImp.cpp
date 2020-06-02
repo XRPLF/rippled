@@ -319,8 +319,8 @@ SHAMapStoreImp::run()
     LedgerIndex lastRotated = state_db_.getState().lastRotated;
     netOPs_ = &app_.getOPs();
     ledgerMaster_ = &app_.getLedgerMaster();
-    fullBelowCache_ = &app_.family().fullbelow();
-    treeNodeCache_ = &app_.family().treecache();
+    fullBelowCache_ = &(*app_.getNodeFamily().getFullBelowCache(0));
+    treeNodeCache_ = &(*app_.getNodeFamily().getTreeNodeCache(0));
     transactionDb_ = &app_.getTxnDB();
     ledgerDb_ = &app_.getLedgerDB();
 

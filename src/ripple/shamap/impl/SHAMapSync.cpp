@@ -198,7 +198,9 @@ SHAMap::gmn_ProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
             fullBelow = false;
         }
         else if (
-            !backed_ || !f_.fullbelow().touch_if_exists(childHash.as_uint256()))
+            !backed_ ||
+            !f_.getFullBelowCache(ledgerSeq_)
+                 ->touch_if_exists(childHash.as_uint256()))
         {
             SHAMapNodeID childID = nodeID.getChildNodeID(branch);
             bool pending = false;
@@ -243,7 +245,10 @@ SHAMap::gmn_ProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
     {  // No partial node encountered below this node
         node->setFullBelowGen(mn.generation_);
         if (backed_)
-            f_.fullbelow().insert(node->getNodeHash().as_uint256());
+        {
+            f_.getFullBelowCache(ledgerSeq_)
+                ->insert(node->getNodeHash().as_uint256());
+        }
     }
 
     node = nullptr;
@@ -323,7 +328,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
         max,
         filter,
         f_.db().getDesiredAsyncReadCount(ledgerSeq_),
-        f_.fullbelow().getGeneration());
+        f_.getFullBelowCache(ledgerSeq_)->getGeneration());
 
     if (!root_->isInner() ||
         std::static_pointer_cast<SHAMapInnerNode>(root_)->isFullBelow(
@@ -599,7 +604,7 @@ SHAMap::addKnownNode(
         return SHAMapAddNode::duplicate();
     }
 
-    std::uint32_t generation = f_.fullbelow().getGeneration();
+    auto const generation = f_.getFullBelowCache(ledgerSeq_)->getGeneration();
     auto newNode = SHAMapAbstractNode::makeFromWire(rawNode);
     SHAMapNodeID iNodeID;
     auto iNode = root_.get();
@@ -618,8 +623,11 @@ SHAMap::addKnownNode(
         }
 
         auto childHash = inner->getChildHash(branch);
-        if (f_.fullbelow().touch_if_exists(childHash.as_uint256()))
+        if (f_.getFullBelowCache(ledgerSeq_)
+                ->touch_if_exists(childHash.as_uint256()))
+        {
             return SHAMapAddNode::duplicate();
+        }
 
         auto prevNode = inner;
         std::tie(iNode, iNodeID) = descend(inner, iNodeID, branch, filter);
