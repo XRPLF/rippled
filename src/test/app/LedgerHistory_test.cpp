@@ -57,7 +57,7 @@ public:
                 create_genesis,
                 env.app().config(),
                 std::vector<uint256>{},
-                env.app().family());
+                env.app().getNodeFamily());
         }
         auto res = std::make_shared<Ledger>(
             *prev, prev->info().closeTime + closeOffset);

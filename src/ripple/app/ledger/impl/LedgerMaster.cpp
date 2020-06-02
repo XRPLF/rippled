@@ -737,18 +737,19 @@ LedgerMaster::tryFill(Job& job, std::shared_ptr<Ledger const> ledger)
 void
 LedgerMaster::getFetchPack(LedgerIndex missing, InboundLedger::Reason reason)
 {
-    LedgerIndex ledgerIndex{missing + 1};
-    if (reason == InboundLedger::Reason::SHARD)
-    {
-        // Do not acquire a ledger sequence greater
-        // than the last ledger in the shard
-        auto const shardStore{app_.getShardStore()};
-        auto const shardIndex{shardStore->seqToShardIndex(missing)};
-        ledgerIndex =
-            std::min(ledgerIndex, shardStore->lastLedgerSeq(shardIndex));
-    }
+    LedgerIndex const ledgerIndex([&]() {
+        if (reason == InboundLedger::Reason::SHARD)
+        {
+            // Do not acquire a ledger sequence greater
+            // than the last ledger in the shard
+            auto const shardStore{app_.getShardStore()};
+            auto const shardIndex{shardStore->seqToShardIndex(missing)};
+            return std::min(missing + 1, shardStore->lastLedgerSeq(shardIndex));
+        }
+        return missing + 1;
+    }());
 
-    auto haveHash{getLedgerHashForHistory(ledgerIndex, reason)};
+    auto const haveHash{getLedgerHashForHistory(ledgerIndex, reason)};
     if (!haveHash || haveHash->isZero())
     {
         if (reason == InboundLedger::Reason::SHARD)

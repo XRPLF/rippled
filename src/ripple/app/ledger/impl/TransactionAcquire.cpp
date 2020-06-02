@@ -43,8 +43,8 @@ TransactionAcquire::TransactionAcquire(Application& app, uint256 const& hash)
     : PeerSet(app, hash, TX_ACQUIRE_TIMEOUT, app.journal("TransactionAcquire"))
     , mHaveRoot(false)
 {
-    mMap =
-        std::make_shared<SHAMap>(SHAMapType::TRANSACTION, hash, app_.family());
+    mMap = std::make_shared<SHAMap>(
+        SHAMapType::TRANSACTION, hash, app_.getNodeFamily());
     mMap->setUnbacked();
 }
 
