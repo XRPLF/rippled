@@ -164,7 +164,7 @@ SHAMap::fetchNodeFromDB(SHAMapHash const& hash) const
         }
         else if (full_)
         {
-            f_.missing_node(ledgerSeq_);
+            f_.missingNode(ledgerSeq_);
             const_cast<bool&>(full_) = false;
         }
     }
@@ -332,10 +332,10 @@ SHAMap::descend(
     assert(!parent->isEmptyBranch(branch));
 
     SHAMapAbstractNode* child = parent->getChildPointer(branch);
-    auto const& childHash = parent->getChildHash(branch);
 
     if (!child)
     {
+        auto const& childHash = parent->getChildHash(branch);
         std::shared_ptr<SHAMapAbstractNode> childNode =
             fetchNodeNT(childHash, filter);
 
@@ -1115,7 +1115,7 @@ SHAMap::dump(bool hash) const
 std::shared_ptr<SHAMapAbstractNode>
 SHAMap::getCache(SHAMapHash const& hash) const
 {
-    auto ret = f_.treecache().fetch(hash.as_uint256());
+    auto ret = f_.getTreeNodeCache(ledgerSeq_)->fetch(hash.as_uint256());
     assert(!ret || !ret->getSeq());
     return ret;
 }
@@ -1129,7 +1129,8 @@ SHAMap::canonicalize(
     assert(node->getSeq() == 0);
     assert(node->getNodeHash() == hash);
 
-    f_.treecache().canonicalize_replace_client(hash.as_uint256(), node);
+    f_.getTreeNodeCache(ledgerSeq_)
+        ->canonicalize_replace_client(hash.as_uint256(), node);
 }
 
 void

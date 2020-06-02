@@ -475,7 +475,7 @@ DatabaseShardImp::fetchLedger(uint256 const& hash, std::uint32_t seq)
     auto ledger{std::make_shared<Ledger>(
         deserializePrefixedHeader(makeSlice(nObj->getData())),
         app_.config(),
-        *app_.shardFamily())};
+        *app_.getShardFamily())};
 
     if (ledger->info().seq != seq)
     {
@@ -600,7 +600,7 @@ DatabaseShardImp::validate()
             shard->finalize(true, boost::none);
     }
 
-    app_.shardFamily()->reset();
+    app_.getShardFamily()->reset();
 }
 
 void
@@ -742,7 +742,6 @@ DatabaseShardImp::import(Database& source)
             }
 
             // Create the new shard
-            app_.shardFamily()->reset();
             auto shard{std::make_unique<Shard>(app_, *this, shardIndex, j_)};
             if (!shard->open(scheduler_, *ctx_))
                 continue;

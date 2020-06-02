@@ -300,7 +300,7 @@ RCLConsensus::Adaptor::onClose(
     auto initialLedger = app_.openLedger().current();
 
     auto initialSet =
-        std::make_shared<SHAMap>(SHAMapType::TRANSACTION, app_.family());
+        std::make_shared<SHAMap>(SHAMapType::TRANSACTION, app_.getNodeFamily());
     initialSet->setUnbacked();
 
     // Build SHAMap containing all transactions in our open ledger

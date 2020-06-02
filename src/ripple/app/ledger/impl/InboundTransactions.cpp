@@ -75,7 +75,7 @@ public:
         , m_gotSet(std::move(gotSet))
     {
         m_zeroSet.mSet = std::make_shared<SHAMap>(
-            SHAMapType::TRANSACTION, uint256(), app_.family());
+            SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());
         m_zeroSet.mSet->setUnbacked();
     }
 

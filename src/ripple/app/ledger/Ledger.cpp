@@ -248,7 +248,7 @@ Ledger::Ledger(
     {
         info_.hash = calculateLedgerHash(info_);
         if (acquire)
-            family.missing_node(info_.hash, info_.seq);
+            family.missingNode(info_.hash, info_.seq);
     }
 }
 
@@ -1077,7 +1077,7 @@ loadLedgerHelper(std::string const& sqlSuffix, Application& app, bool acquire)
         loaded,
         acquire,
         app.config(),
-        app.family(),
+        app.getNodeFamily(),
         app.journal("Ledger"));
 
     if (!loaded)

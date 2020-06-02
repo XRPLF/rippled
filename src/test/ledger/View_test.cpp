@@ -134,7 +134,10 @@ class View_test : public beast::unit_test::suite
         Env env(*this);
         Config config;
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            create_genesis, config, std::vector<uint256>{}, env.app().family());
+            create_genesis,
+            config,
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
         auto const ledger = std::make_shared<Ledger>(
             *genesis, env.app().timeKeeper().closeTime());
         wipe(*ledger);
@@ -388,7 +391,10 @@ class View_test : public beast::unit_test::suite
         Env env(*this);
         Config config;
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            create_genesis, config, std::vector<uint256>{}, env.app().family());
+            create_genesis,
+            config,
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
         auto const ledger = std::make_shared<Ledger>(
             *genesis, env.app().timeKeeper().closeTime());
         auto setup123 = [&ledger, this]() {
@@ -769,7 +775,7 @@ class View_test : public beast::unit_test::suite
                     create_genesis,
                     config,
                     std::vector<uint256>{},
-                    env.app().family());
+                    env.app().getNodeFamily());
             auto const ledger = std::make_shared<Ledger>(
                 *genesis, env.app().timeKeeper().closeTime());
             wipe(*ledger);

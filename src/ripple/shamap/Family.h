@@ -32,22 +32,17 @@ namespace ripple {
 class Family
 {
 public:
+    Family(Family const&) = delete;
+    Family(Family&&) = delete;
+
+    Family&
+    operator=(Family const&) = delete;
+
+    Family&
+    operator=(Family&&) = delete;
+
+    explicit Family() = default;
     virtual ~Family() = default;
-
-    virtual beast::Journal const&
-    journal() = 0;
-
-    virtual FullBelowCache&
-    fullbelow() = 0;
-
-    virtual FullBelowCache const&
-    fullbelow() const = 0;
-
-    virtual TreeNodeCache&
-    treecache() = 0;
-
-    virtual TreeNodeCache const&
-    treecache() const = 0;
 
     virtual NodeStore::Database&
     db() = 0;
@@ -55,14 +50,36 @@ public:
     virtual NodeStore::Database const&
     db() const = 0;
 
+    virtual beast::Journal const&
+    journal() = 0;
+
+    /** Return a pointer to the Family Full Below Cache
+
+        @param ledgerSeq ledger sequence determines a corresponding shard cache
+        @note ledgerSeq is used by ShardFamily and ignored by NodeFamily
+    */
+    virtual std::shared_ptr<FullBelowCache>
+    getFullBelowCache(std::uint32_t ledgerSeq) = 0;
+
+    /** Return a pointer to the Family Tree Node Cache
+
+        @param ledgerSeq ledger sequence determines a corresponding shard cache
+        @note ledgerSeq is used by ShardFamily and ignored by NodeFamily
+    */
+    virtual std::shared_ptr<TreeNodeCache>
+    getTreeNodeCache(std::uint32_t ledgerSeq) = 0;
+
+    virtual void
+    sweep() = 0;
+
     virtual bool
     isShardBacked() const = 0;
 
     virtual void
-    missing_node(std::uint32_t refNum) = 0;
+    missingNode(std::uint32_t refNum) = 0;
 
     virtual void
-    missing_node(uint256 const& refHash, std::uint32_t refNum) = 0;
+    missingNode(uint256 const& refHash, std::uint32_t refNum) = 0;
 
     virtual void
     reset() = 0;
