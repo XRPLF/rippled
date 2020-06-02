@@ -184,7 +184,7 @@ Shard::open(Scheduler& scheduler, nudb::context& ctx)
                 }
 
                 if (boost::icl::length(storedSeqs) == maxLedgers_)
-                    // All ledgers have been acquired, shard is complete
+                    // All ledgers have been acquired, shard backend is complete
                     backendComplete_ = true;
             }
         }
@@ -238,7 +238,7 @@ Shard::prepare()
     if (backendComplete_)
     {
         JLOG(j_.warn()) << "shard " << index_
-                        << " prepare called when shard is complete";
+                        << " prepare called when shard backend is complete";
         return {};
     }
 
@@ -417,7 +417,7 @@ Shard::finalize(
     {
         std::unique_lock lock(mutex_);
         if (!backendComplete_)
-            return fail("incomplete");
+            return fail("backend incomplete");
 
         /*
         TODO MP
@@ -535,7 +535,7 @@ Shard::finalize(
         ledger = std::make_shared<Ledger>(
             deserializePrefixedHeader(makeSlice(nObj->getData())),
             app_.config(),
-            *app_.shardFamily());
+            *app_.getShardFamily());
         if (ledger->info().seq != seq)
             return fail("invalid ledger sequence");
         if (ledger->info().hash != hash)

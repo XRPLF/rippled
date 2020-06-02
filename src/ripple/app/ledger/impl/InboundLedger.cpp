@@ -98,7 +98,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
     ScopedLockType sl(mLock);
     collectionLock.unlock();
 
-    tryDB(app_.family().db());
+    tryDB(app_.getNodeFamily().db());
     if (mFailed)
         return;
 
@@ -107,7 +107,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
         auto shardStore = app_.getShardStore();
         if (mReason == Reason::SHARD)
         {
-            if (!shardStore || !app_.shardFamily())
+            if (!shardStore)
             {
                 JLOG(m_journal.error())
                     << "Acquiring shard with no shard store available";
@@ -120,7 +120,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
             mHaveState = false;
             mLedger.reset();
 
-            tryDB(app_.shardFamily()->db());
+            tryDB(app_.getShardFamily()->db());
             if (mFailed)
                 return;
         }
@@ -203,9 +203,9 @@ InboundLedger::checkLocal()
         if (mLedger)
             tryDB(mLedger->stateMap().family().db());
         else if (mReason == Reason::SHARD)
-            tryDB(app_.shardFamily()->db());
+            tryDB(app_.getShardFamily()->db());
         else
-            tryDB(app_.family().db());
+            tryDB(app_.getNodeFamily().db());
         if (mFailed || mComplete)
         {
             done();
@@ -306,8 +306,8 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
             mLedger = std::make_shared<Ledger>(
                 deserializePrefixedHeader(makeSlice(data)),
                 app_.config(),
-                mReason == Reason::SHARD ? *app_.shardFamily()
-                                         : app_.family());
+                mReason == Reason::SHARD ? *app_.getShardFamily()
+                                         : app_.getNodeFamily());
             if (mLedger->info().hash != mHash ||
                 (mSeq != 0 && mSeq != mLedger->info().seq))
             {
@@ -564,8 +564,8 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     if (!mHaveHeader)
     {
         tryDB(
-            mReason == Reason::SHARD ? app_.shardFamily()->db()
-                                     : app_.family().db());
+            mReason == Reason::SHARD ? app_.getShardFamily()->db()
+                                     : app_.getNodeFamily().db());
         if (mFailed)
         {
             JLOG(m_journal.warn()) << " failed local for " << mHash;
@@ -866,7 +866,8 @@ InboundLedger::takeHeader(std::string const& data)
     if (mComplete || mFailed || mHaveHeader)
         return true;
 
-    auto* f = mReason == Reason::SHARD ? app_.shardFamily() : &app_.family();
+    auto* f = mReason == Reason::SHARD ? app_.getShardFamily()
+                                       : &app_.getNodeFamily();
     mLedger = std::make_shared<Ledger>(
         deserializeHeader(makeSlice(data)), app_.config(), *f);
     if (mLedger->info().hash != mHash ||
