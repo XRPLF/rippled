@@ -143,7 +143,7 @@ Message::setHeader(
     std::uint8_t* in,
     std::uint32_t payloadBytes,
     int type,
-    Algorithm comprAlgorithm,
+    Algorithm compression,
     std::uint32_t uncompressedBytes)
 {
     auto h = in;
@@ -161,10 +161,10 @@ Message::setHeader(
     *in++ = static_cast<std::uint8_t>((type >> 8) & 0xFF);
     *in++ = static_cast<std::uint8_t>(type & 0xFF);
 
-    if (comprAlgorithm != Algorithm::None)
+    if (compression != Algorithm::None)
     {
         pack(in, uncompressedBytes);
-        *h |= 0x80 | (static_cast<uint8_t>(comprAlgorithm) << 4);
+        *h |= static_cast<std::uint8_t>(compression);
     }
 }
 

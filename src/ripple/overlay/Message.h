@@ -84,7 +84,7 @@ private:
      * @param in Pointer to the payload
      * @param payloadBytes Size of the payload excluding the header size
      * @param type Protocol message type
-     * @param comprAlgorithm Compression algorithm used in compression,
+     * @param compression Compression algorithm used in compression,
      *   currently LZ4 only. If None then the message is uncompressed.
      * @param uncompressedBytes Size of the uncompressed message
      */
@@ -93,7 +93,7 @@ private:
         std::uint8_t* in,
         std::uint32_t payloadBytes,
         int type,
-        Algorithm comprAlgorithm,
+        Algorithm compression,
         std::uint32_t uncompressedBytes);
 
     /** Try to compress the payload.
