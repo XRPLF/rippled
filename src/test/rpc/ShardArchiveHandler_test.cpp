@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/rdb/RelationalDBInterface_shards.h>
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/DummyScheduler.h>
@@ -81,19 +82,14 @@ public:
 
         {
             std::lock_guard<std::mutex> lock(handler->m_);
-
-            auto& session{handler->sqliteDB_->getSession()};
-
-            soci::rowset<soci::row> rs =
-                (session.prepare << "SELECT * FROM State;");
-
             std::uint64_t rowCount = 0;
 
-            for (auto it = rs.begin(); it != rs.end(); ++it, ++rowCount)
-            {
-                BEAST_EXPECT(it->get<int>(0) == 1);
-                BEAST_EXPECT(it->get<std::string>(1) == rawUrl);
-            }
+            readArchiveDB(
+                *handler->sqlDB_, [&](std::string const& url, int state) {
+                    BEAST_EXPECT(state == 1);
+                    BEAST_EXPECT(url == rawUrl);
+                    ++rowCount;
+                });
 
             BEAST_EXPECT(rowCount == 1);
         }
@@ -136,17 +132,14 @@ public:
 
         {
             std::lock_guard<std::mutex> lock(handler->m_);
-
-            auto& session{handler->sqliteDB_->getSession()};
-            soci::rowset<soci::row> rs =
-                (session.prepare << "SELECT * FROM State;");
-
             std::uint64_t pos = 0;
-            for (auto it = rs.begin(); it != rs.end(); ++it, ++pos)
-            {
-                BEAST_EXPECT(it->get<int>(0) == dl[pos].first);
-                BEAST_EXPECT(it->get<std::string>(1) == dl[pos].second);
-            }
+
+            readArchiveDB(
+                *handler->sqlDB_, [&](std::string const& url, int state) {
+                    BEAST_EXPECT(state == dl[pos].first);
+                    BEAST_EXPECT(url == dl[pos].second);
+                    ++pos;
+                });
 
             BEAST_EXPECT(pos == dl.size());
         }

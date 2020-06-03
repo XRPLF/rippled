@@ -22,8 +22,8 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
 #include <ripple/basics/UptimeClock.h>
-#include <ripple/core/DatabaseCon.h>
 #include <ripple/json/json_value.h>
 #include <ripple/ledger/CachedSLEs.h>
 #include <ripple/net/RPCErr.h>
@@ -75,17 +75,23 @@ getCountsJson(Application& app, int minObjectCount)
 
     if (!app.config().reporting() && app.config().useTxTables())
     {
-        int dbKB = getKBUsedAll(app.getLedgerDB().getSession());
+        int dbKB = dynamic_cast<RelationalDBInterfaceSqlite*>(
+                       &app.getRelationalDBInterface())
+                       ->getKBUsedAll();
 
         if (dbKB > 0)
             ret[jss::dbKBTotal] = dbKB;
 
-        dbKB = getKBUsedDB(app.getLedgerDB().getSession());
+        dbKB = dynamic_cast<RelationalDBInterfaceSqlite*>(
+                   &app.getRelationalDBInterface())
+                   ->getKBUsedLedger();
 
         if (dbKB > 0)
             ret[jss::dbKBLedger] = dbKB;
 
-        dbKB = getKBUsedDB(app.getTxnDB().getSession());
+        dbKB = dynamic_cast<RelationalDBInterfaceSqlite*>(
+                   &app.getRelationalDBInterface())
+                   ->getKBUsedTransaction();
 
         if (dbKB > 0)
             ret[jss::dbKBTransaction] = dbKB;

@@ -431,30 +431,14 @@ pendSaveValidated(
     bool isSynchronous,
     bool isCurrent);
 
-extern std::shared_ptr<Ledger>
+std::shared_ptr<Ledger>
+loadLedgerHelper(LedgerInfo const& sinfo, Application& app, bool acquire);
+
+std::shared_ptr<Ledger>
 loadByIndex(std::uint32_t ledgerIndex, Application& app, bool acquire = true);
 
-extern std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
-loadLedgerHelper(
-    std::string const& sqlSuffix,
-    Application& app,
-    bool acquire = true);
-
-extern std::shared_ptr<Ledger>
+std::shared_ptr<Ledger>
 loadByHash(uint256 const& ledgerHash, Application& app, bool acquire = true);
-
-extern uint256
-getHashByIndex(std::uint32_t index, Application& app);
-
-extern bool
-getHashesByIndex(
-    std::uint32_t index,
-    uint256& ledgerHash,
-    uint256& parentHash,
-    Application& app);
-
-extern std::map<std::uint32_t, std::pair<uint256, uint256>>
-getHashesByIndex(std::uint32_t minSeq, std::uint32_t maxSeq, Application& app);
 
 // Fetch the ledger with the highest sequence contained in the database
 extern std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
