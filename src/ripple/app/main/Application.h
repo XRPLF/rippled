@@ -74,7 +74,6 @@ class OrderBookDB;
 class Overlay;
 class PathRequests;
 class PendingSaves;
-class PgPool;
 class PublicKey;
 class SecretKey;
 class AccountIDCache;
@@ -87,6 +86,7 @@ class ValidatorList;
 class ValidatorSite;
 class Cluster;
 
+class RelationalDBInterface;
 class DatabaseCon;
 class SHAMapStore;
 
@@ -236,10 +236,8 @@ public:
     openLedger() = 0;
     virtual OpenLedger const&
     openLedger() const = 0;
-    virtual DatabaseCon&
-    getTxnDB() = 0;
-    virtual DatabaseCon&
-    getLedgerDB() = 0;
+    virtual RelationalDBInterface&
+    getRelationalDBInterface() = 0;
 
     virtual std::chrono::milliseconds
     getIOLatency() = 0;
@@ -249,11 +247,6 @@ public:
 
     virtual bool
     serverOkay(std::string& reason) = 0;
-
-#ifdef RIPPLED_REPORTING
-    virtual std::shared_ptr<PgPool> const&
-    getPgPool() = 0;
-#endif
 
     virtual beast::Journal
     journal(std::string const& name) = 0;

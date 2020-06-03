@@ -29,7 +29,7 @@ namespace ripple {
 
 /** The cryptographic credentials identifying this server instance. */
 std::pair<PublicKey, SecretKey>
-loadNodeIdentity(Application& app);
+getNodeIdentity(Application& app);
 
 }  // namespace ripple
 

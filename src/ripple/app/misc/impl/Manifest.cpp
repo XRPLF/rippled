@@ -18,10 +18,12 @@
 //==============================================================================
 
 #include <ripple/app/misc/Manifest.h>
+#include <ripple/app/rdb/RelationalDBInterface_global.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/base64.h>
 #include <ripple/basics/contract.h>
+#include <ripple/beast/rfc2616.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/PublicKey.h>
@@ -476,31 +478,8 @@ ManifestCache::applyManifest(Manifest m)
 void
 ManifestCache::load(DatabaseCon& dbCon, std::string const& dbTable)
 {
-    // Load manifests stored in database
-    std::string const sql = "SELECT RawData FROM " + dbTable + ";";
     auto db = dbCon.checkoutDb();
-    soci::blob sociRawData(*db);
-    soci::statement st = (db->prepare << sql, soci::into(sociRawData));
-    st.execute();
-    while (st.fetch())
-    {
-        std::string serialized;
-        convert(sociRawData, serialized);
-        if (auto mo = deserializeManifest(serialized))
-        {
-            if (!mo->verify())
-            {
-                JLOG(j_.warn()) << "Unverifiable manifest in db";
-                continue;
-            }
-
-            applyManifest(std::move(*mo));
-        }
-        else
-        {
-            JLOG(j_.warn()) << "Malformed manifest in database";
-        }
-    }
+    ripple::getManifests(*db, dbTable, *this, j_);
 }
 
 bool
@@ -567,30 +546,8 @@ ManifestCache::save(
     std::function<bool(PublicKey const&)> isTrusted)
 {
     std::lock_guard lock{apply_mutex_};
-
     auto db = dbCon.checkoutDb();
 
-    soci::transaction tr(*db);
-    *db << "DELETE FROM " << dbTable;
-    std::string const sql =
-        "INSERT INTO " + dbTable + " (RawData) VALUES (:rawData);";
-    for (auto const& v : map_)
-    {
-        // Save all revocation manifests,
-        // but only save trusted non-revocation manifests.
-        if (!v.second.revoked() && !isTrusted(v.second.masterKey))
-        {
-            JLOG(j_.info()) << "Untrusted manifest in cache not saved to db";
-            continue;
-        }
-
-        // soci does not support bulk insertion of blob data
-        // Do not reuse blob because manifest ecdsa signatures vary in length
-        // but blob write length is expected to be >= the last write
-        soci::blob rawData(*db);
-        convert(v.second.serialized, rawData);
-        *db << sql, soci::use(rawData);
-    }
-    tr.commit();
+    saveManifests(*db, dbTable, isTrusted, map_, j_);
 }
 }  // namespace ripple

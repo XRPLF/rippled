@@ -21,6 +21,9 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/Transaction.h>
+#include <ripple/app/rdb/RelationalDBInterface_postgres.h>
+#include <ripple/app/rdb/backend/RelationalDBInterfacePostgres.h>
+#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/safe_cast.h>
@@ -131,77 +134,9 @@ Transaction::load(
 Transaction::Locator
 Transaction::locate(uint256 const& id, Application& app)
 {
-#ifdef RIPPLED_REPORTING
-    auto baseCmd = boost::format(R"(SELECT tx('%s');)");
-
-    std::string txHash = "\\x" + strHex(id);
-    std::string sql = boost::str(baseCmd % txHash);
-
-    auto res = PgQuery(app.getPgPool())(sql.data());
-
-    if (!res)
-    {
-        JLOG(app.journal("Transaction").error())
-            << __func__
-            << " : Postgres response is null - tx ID = " << strHex(id);
-        assert(false);
-        return {};
-    }
-    else if (res.status() != PGRES_TUPLES_OK)
-    {
-        JLOG(app.journal("Transaction").error())
-            << __func__
-            << " : Postgres response should have been "
-               "PGRES_TUPLES_OK but instead was "
-            << res.status() << " - msg  = " << res.msg()
-            << " - tx ID = " << strHex(id);
-        assert(false);
-        return {};
-    }
-
-    JLOG(app.journal("Transaction").trace())
-        << __func__ << " Postgres result msg  : " << res.msg();
-    if (res.isNull() || res.ntuples() == 0)
-    {
-        JLOG(app.journal("Transaction").debug())
-            << __func__
-            << " : No data returned from Postgres : tx ID = " << strHex(id);
-        // This shouldn't happen
-        assert(false);
-        return {};
-    }
-
-    char const* resultStr = res.c_str();
-    JLOG(app.journal("Transaction").debug())
-        << "postgres result = " << resultStr;
-
-    Json::Value v;
-    Json::Reader reader;
-    bool success = reader.parse(resultStr, resultStr + strlen(resultStr), v);
-    if (success)
-    {
-        if (v.isMember("nodestore_hash") && v.isMember("ledger_seq"))
-        {
-            uint256 nodestoreHash;
-            if (!nodestoreHash.parseHex(
-                    v["nodestore_hash"].asString().substr(2)))
-                assert(false);
-            uint32_t ledgerSeq = v["ledger_seq"].asUInt();
-            if (nodestoreHash.isNonZero())
-                return {std::make_pair(nodestoreHash, ledgerSeq)};
-        }
-        if (v.isMember("min_seq") && v.isMember("max_seq"))
-        {
-            return {ClosedInterval<uint32_t>(
-                v["min_seq"].asUInt(), v["max_seq"].asUInt())};
-        }
-    }
-#endif
-    // Shouldn' happen. Postgres should return the ledger range searched if
-    // the transaction was not found
-    assert(false);
-    Throw<std::runtime_error>(
-        "Transaction::Locate - Invalid Postgres response");
+    return dynamic_cast<RelationalDBInterfacePostgres*>(
+               &app.getRelationalDBInterface())
+        ->locateTransaction(id);
 }
 
 std::variant<
@@ -213,77 +148,9 @@ Transaction::load(
     std::optional<ClosedInterval<uint32_t>> const& range,
     error_code_i& ec)
 {
-    std::string sql =
-        "SELECT LedgerSeq,Status,RawTxn,TxnMeta "
-        "FROM Transactions WHERE TransID='";
-
-    sql.append(to_string(id));
-    sql.append("';");
-
-    // SOCI requires boost::optional (not std::optional) as parameters.
-    boost::optional<std::uint64_t> ledgerSeq;
-    boost::optional<std::string> status;
-    Blob rawTxn, rawMeta;
-    {
-        auto db = app.getTxnDB().checkoutDb();
-        soci::blob sociRawTxnBlob(*db), sociRawMetaBlob(*db);
-        soci::indicator txn, meta;
-
-        *db << sql, soci::into(ledgerSeq), soci::into(status),
-            soci::into(sociRawTxnBlob, txn), soci::into(sociRawMetaBlob, meta);
-
-        auto const got_data = db->got_data();
-
-        if ((!got_data || txn != soci::i_ok || meta != soci::i_ok) && !range)
-            return TxSearched::unknown;
-
-        if (!got_data)
-        {
-            uint64_t count = 0;
-            soci::indicator rti;
-
-            *db << "SELECT COUNT(DISTINCT LedgerSeq) FROM Transactions WHERE "
-                   "LedgerSeq BETWEEN "
-                << range->first() << " AND " << range->last() << ";",
-                soci::into(count, rti);
-
-            if (!db->got_data() || rti != soci::i_ok)
-                return TxSearched::some;
-
-            return count == (range->last() - range->first() + 1)
-                ? TxSearched::all
-                : TxSearched::some;
-        }
-
-        convert(sociRawTxnBlob, rawTxn);
-        convert(sociRawMetaBlob, rawMeta);
-    }
-
-    try
-    {
-        auto txn =
-            Transaction::transactionFromSQL(ledgerSeq, status, rawTxn, app);
-
-        if (!ledgerSeq)
-            return std::pair{std::move(txn), nullptr};
-
-        std::uint32_t inLedger =
-            rangeCheckedCast<std::uint32_t>(ledgerSeq.value());
-
-        auto txMeta = std::make_shared<TxMeta>(id, inLedger, rawMeta);
-
-        return std::pair{std::move(txn), std::move(txMeta)};
-    }
-    catch (std::exception& e)
-    {
-        JLOG(app.journal("Ledger").warn())
-            << "Unable to deserialize transaction from raw SQL value. Error: "
-            << e.what();
-
-        ec = rpcDB_DESERIALIZATION;
-    }
-
-    return TxSearched::unknown;
+    return dynamic_cast<RelationalDBInterfaceSqlite*>(
+               &app.getRelationalDBInterface())
+        ->getTransaction(id, range, ec);
 }
 
 // options 1 to include the date of the transaction
