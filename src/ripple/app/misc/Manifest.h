@@ -203,7 +203,7 @@ to_string(ManifestDisposition m)
     }
 }
 
-class DatabaseCon;
+class SQLDatabase;
 
 /** Remembers manifests with the highest sequence number. */
 class ManifestCache
@@ -319,7 +319,7 @@ public:
     */
     bool
     load(
-        DatabaseCon& dbCon,
+        SQLDatabase& dbCon,
         std::string const& dbTable,
         std::string const& configManifest,
         std::vector<std::string> const& configRevocation);
@@ -335,7 +335,7 @@ public:
         May be called concurrently
     */
     void
-    load(DatabaseCon& dbCon, std::string const& dbTable);
+    load(SQLDatabase& dbCon, std::string const& dbTable);
 
     /** Save cached manifests to database.
 
@@ -349,7 +349,7 @@ public:
     */
     void
     save(
-        DatabaseCon& dbCon,
+        SQLDatabase& dbCon,
         std::string const& dbTable,
         std::function<bool(PublicKey const&)> isTrusted);
 

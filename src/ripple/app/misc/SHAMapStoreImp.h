@@ -22,7 +22,7 @@
 
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/SHAMapStore.h>
-#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/SQLInterface.h>
 #include <ripple/nodestore/DatabaseRotating.h>
 #include <atomic>
 #include <chrono>
@@ -36,19 +36,14 @@ class NetworkOPs;
 class SHAMapStoreImp : public SHAMapStore
 {
 private:
-    struct SavedState
-    {
-        std::string writableDb;
-        std::string archiveDb;
-        LedgerIndex lastRotated;
-    };
+    typedef SQLInterface::SavedState SavedState;
 
     enum Health : std::uint8_t { ok = 0, stopping, unhealthy };
 
     class SavedStateDB
     {
     public:
-        soci::session session_;
+        SQLDatabase sqlDb_;
         std::mutex mutex_;
         beast::Journal const journal_;
 
@@ -122,8 +117,8 @@ private:
     LedgerMaster* ledgerMaster_ = nullptr;
     FullBelowCache* fullBelowCache_ = nullptr;
     TreeNodeCache* treeNodeCache_ = nullptr;
-    DatabaseCon* transactionDb_ = nullptr;
-    DatabaseCon* ledgerDb_ = nullptr;
+    SQLDatabase* transactionDb_ = nullptr;
+    SQLDatabase* ledgerDb_ = nullptr;
 
     static constexpr auto nodeStoreName_ = "NodeStore";
 
@@ -225,10 +220,9 @@ private:
      */
     void
     clearSql(
-        DatabaseCon& database,
+        SQLDatabase& database,
         LedgerIndex lastRotated,
-        std::string const& minQuery,
-        std::string const& deleteQuery);
+        SQLInterface::TableType type);
     void
     clearCaches(LedgerIndex validatedSeq);
     void

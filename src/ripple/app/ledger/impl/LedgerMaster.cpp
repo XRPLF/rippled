@@ -40,7 +40,7 @@
 #include <ripple/basics/UptimeClock.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>
-#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/SQLInterface.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Overlay.h>
@@ -698,8 +698,11 @@ LedgerMaster::tryFill(Job& job, std::shared_ptr<Ledger const> ledger)
                 mCompleteLedgers.insert(range(minHas, maxHas));
             }
             maxHas = minHas;
-            ledgerHashes =
-                getHashesByIndex((seq < 500) ? 0 : (seq - 499), seq, app_);
+            ledgerHashes = app_.getLedgerDB()->getInterface()->getHashesByIndex(
+                app_.getLedgerDB(),
+                app_.journal("Ledger"),
+                (seq < 500) ? 0 : (seq - 499),
+                seq);
             it = ledgerHashes.find(seq);
 
             if (it == ledgerHashes.end())
@@ -882,7 +885,8 @@ LedgerMaster::setFullLedger(
     {
         // Check the SQL database's entry for the sequence before this
         // ledger, if it's not this ledger's parent, invalidate it
-        uint256 prevHash = getHashByIndex(ledger->info().seq - 1, app_);
+        uint256 prevHash = app_.getLedgerDB()->getInterface()->getHashByIndex(
+            app_.getLedgerDB(), ledger->info().seq - 1);
         if (prevHash.isNonZero() && prevHash != ledger->info().parentHash)
             clearLedger(ledger->info().seq - 1);
     }
@@ -1598,7 +1602,8 @@ LedgerMaster::getHashBySeq(std::uint32_t index)
     if (hash.isNonZero())
         return hash;
 
-    return getHashByIndex(index, app_);
+    return app_.getLedgerDB()->getInterface()->getHashByIndex(
+        app_.getLedgerDB(), index);
 }
 
 boost::optional<LedgerHash>
@@ -1837,7 +1842,9 @@ LedgerMaster::fetchForHistory(
                     fillInProgress = mFillInProgress;
                 }
                 if (fillInProgress == 0 &&
-                    getHashByIndex(seq - 1, app_) == ledger->info().parentHash)
+                    app_.getLedgerDB()->getInterface()->getHashByIndex(
+                        app_.getLedgerDB(), seq - 1) ==
+                        ledger->info().parentHash)
                 {
                     {
                         // Previous ledger is in DB
@@ -2190,10 +2197,8 @@ LedgerMaster::getFetchPackCacheSize() const
 boost::optional<LedgerIndex>
 LedgerMaster::minSqlSeq()
 {
-    boost::optional<LedgerIndex> seq;
-    auto db = app_.getLedgerDB().checkoutDb();
-    *db << "SELECT MIN(LedgerSeq) FROM Ledgers", soci::into(seq);
-    return seq;
+    return app_.getLedgerDB()->getInterface()->getMinLedgerSeq(
+        app_.getLedgerDB(), SQLInterface::LEDGERS);
 }
 
 }  // namespace ripple

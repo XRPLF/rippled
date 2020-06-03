@@ -19,8 +19,8 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/basics/contract.h>
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/core/SociDB.h>
+#include <ripple/core/sql_backend/DatabaseCon.h>
+#include <ripple/core/sql_backend/SociDB.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <memory>

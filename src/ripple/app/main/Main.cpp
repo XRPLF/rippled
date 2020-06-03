@@ -26,7 +26,7 @@
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
-#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/SQLInterface.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/json/to_string.h>
 #include <ripple/net/RPCCall.h>
@@ -516,48 +516,11 @@ run(int argc, char** argv)
             return -1;
         }
 
-        using namespace boost::filesystem;
-        DatabaseCon::Setup const dbSetup = setup_DatabaseCon(*config);
-        path dbPath = dbSetup.dataDir / TxDBName;
-
         try
         {
-            uintmax_t const dbSize = file_size(dbPath);
-            assert(dbSize != static_cast<uintmax_t>(-1));
-
-            if (auto available = space(dbPath.parent_path()).available;
-                available < dbSize)
-            {
-                std::cerr << "The database filesystem must have at least as "
-                             "much free space as the size of "
-                          << dbPath.string() << ", which is " << dbSize
-                          << " bytes. Only " << available
-                          << " bytes are available.\n";
+            if (!SQLInterface::getInterface(SQLInterface::VACUUM)
+                     ->makeVacuumDB(*config))
                 return -1;
-            }
-
-            auto txnDB = std::make_unique<DatabaseCon>(
-                dbSetup, TxDBName, TxDBPragma, TxDBInit);
-            auto& session = txnDB->getSession();
-            std::uint32_t pageSize;
-
-            // Only the most trivial databases will fit in memory on typical
-            // (recommended) software. Force temp files to be written to disk
-            // regardless of the config settings.
-            session << boost::format(CommonDBPragmaTemp) % "file";
-            session << "PRAGMA page_size;", soci::into(pageSize);
-
-            std::cout << "VACUUM beginning. page_size: " << pageSize
-                      << std::endl;
-
-            session << "VACUUM;";
-            assert(dbSetup.globalPragma);
-            for (auto const& p : *dbSetup.globalPragma)
-                session << p;
-            session << "PRAGMA page_size;", soci::into(pageSize);
-
-            std::cout << "VACUUM finished. page_size: " << pageSize
-                      << std::endl;
         }
         catch (std::exception const& e)
         {

@@ -24,7 +24,7 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/safe_cast.h>
-#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/SQLInterface.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
@@ -108,7 +108,8 @@ Transaction::transactionFromSQL(
 Transaction::pointer
 Transaction::load(uint256 const& id, Application& app, error_code_i& ec)
 {
-    return boost::get<pointer>(load(id, app, boost::none, ec));
+    return boost::get<pointer>(app.getTxnDB()->getInterface()->loadTransaction(
+        app.getTxnDB(), app, id, boost::none, ec));
 }
 
 boost::variant<Transaction::pointer, bool>
@@ -120,71 +121,8 @@ Transaction::load(
 {
     using op = boost::optional<ClosedInterval<uint32_t>>;
 
-    return load(id, app, op{range}, ec);
-}
-
-boost::variant<Transaction::pointer, bool>
-Transaction::load(
-    uint256 const& id,
-    Application& app,
-    boost::optional<ClosedInterval<uint32_t>> const& range,
-    error_code_i& ec)
-{
-    std::string sql =
-        "SELECT LedgerSeq,Status,RawTxn "
-        "FROM Transactions WHERE TransID='";
-
-    sql.append(to_string(id));
-    sql.append("';");
-
-    boost::optional<std::uint64_t> ledgerSeq;
-    boost::optional<std::string> status;
-    Blob rawTxn;
-    {
-        auto db = app.getTxnDB().checkoutDb();
-        soci::blob sociRawTxnBlob(*db);
-        soci::indicator rti;
-
-        *db << sql, soci::into(ledgerSeq), soci::into(status),
-            soci::into(sociRawTxnBlob, rti);
-
-        auto const got_data = db->got_data();
-
-        if ((!got_data || rti != soci::i_ok) && !range)
-            return nullptr;
-
-        if (!got_data)
-        {
-            uint64_t count = 0;
-
-            *db << "SELECT COUNT(DISTINCT LedgerSeq) FROM Transactions WHERE "
-                   "LedgerSeq BETWEEN "
-                << range->first() << " AND " << range->last() << ";",
-                soci::into(count, rti);
-
-            if (!db->got_data() || rti != soci::i_ok)
-                return false;
-
-            return count == (range->last() - range->first() + 1);
-        }
-
-        convert(sociRawTxnBlob, rawTxn);
-    }
-
-    try
-    {
-        return Transaction::transactionFromSQL(ledgerSeq, status, rawTxn, app);
-    }
-    catch (std::exception& e)
-    {
-        JLOG(app.journal("Ledger").warn())
-            << "Unable to deserialize transaction from raw SQL value. Error: "
-            << e.what();
-
-        ec = rpcDB_DESERIALIZATION;
-    }
-
-    return nullptr;
+    return app.getTxnDB()->getInterface()->loadTransaction(
+        app.getTxnDB(), app, id, op{range}, ec);
 }
 
 // options 1 to include the date of the transaction

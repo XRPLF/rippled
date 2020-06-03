@@ -49,7 +49,7 @@
 #include <ripple/basics/safe_cast.h>
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>
-#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/SQLInterface.h>
 #include <ripple/core/Stoppable.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/nodestore/DatabaseShard.h>
@@ -206,9 +206,9 @@ public:
     boost::asio::steady_timer entropyTimer_;
     bool startTimers_;
 
-    std::unique_ptr<DatabaseCon> mTxnDB;
-    std::unique_ptr<DatabaseCon> mLedgerDB;
-    std::unique_ptr<DatabaseCon> mWalletDB;
+    SQLDatabase mTxnDB;
+    SQLDatabase mLedgerDB;
+    SQLDatabase mWalletDB;
     std::unique_ptr<Overlay> overlay_;
     std::vector<std::unique_ptr<Stoppable>> websocketServers_;
 
@@ -462,6 +462,8 @@ public:
         m_nodeStoreScheduler.setJobQueue(*m_jobQueue);
 
         add(m_ledgerMaster->getPropertySource());
+
+        SQLInterface::init(*config_);
     }
 
     //--------------------------------------------------------------------------
@@ -820,23 +822,24 @@ public:
         return *txQ_;
     }
 
-    DatabaseCon&
+    SQLDatabase&
     getTxnDB() override
     {
         assert(mTxnDB.get() != nullptr);
-        return *mTxnDB;
+        return mTxnDB;
     }
-    DatabaseCon&
+
+    SQLDatabase&
     getLedgerDB() override
     {
         assert(mLedgerDB.get() != nullptr);
-        return *mLedgerDB;
+        return mLedgerDB;
     }
-    DatabaseCon&
+    SQLDatabase&
     getWalletDB() override
     {
         assert(mWalletDB.get() != nullptr);
-        return *mWalletDB;
+        return mWalletDB;
     }
 
     bool
@@ -856,62 +859,31 @@ public:
 
         try
         {
-            auto setup = setup_DatabaseCon(*config_, m_journal);
-
-            // transaction database
-            mTxnDB = std::make_unique<DatabaseCon>(
-                setup, TxDBName, TxDBPragma, TxDBInit);
-            mTxnDB->getSession() << boost::str(
-                boost::format("PRAGMA cache_size=-%d;") %
-                kilobytes(config_->getValueFor(SizedItem::txnDBCache)));
-            mTxnDB->setupCheckpointing(m_jobQueue.get(), logs());
-
-            if (!setup.standAlone || setup.startUp == Config::LOAD ||
-                setup.startUp == Config::LOAD_FILE ||
-                setup.startUp == Config::REPLAY)
+            bool res;
+            std::tie(res, mTxnDB, mLedgerDB) =
+                SQLInterface::getInterface(SQLInterface::LEDGER)
+                    ->makeLedgerDBs(
+                        *this,
+                        *config_,
+                        m_journal,
+                        true,
+                        -1u,
+                        false,
+                        boost::filesystem::path());
+            if (!res)
             {
-                // Check if AccountTransactions has primary key
-                std::string cid, name, type;
-                std::size_t notnull, dflt_value, pk;
-                soci::indicator ind;
-                soci::statement st =
-                    (mTxnDB->getSession().prepare
-                         << ("PRAGMA table_info(AccountTransactions);"),
-                     soci::into(cid),
-                     soci::into(name),
-                     soci::into(type),
-                     soci::into(notnull),
-                     soci::into(dflt_value, ind),
-                     soci::into(pk));
-
-                st.execute();
-                while (st.fetch())
-                {
-                    if (pk == 1)
-                    {
-                        JLOG(m_journal.fatal())
-                            << "AccountTransactions database "
-                               "should not have a primary key";
-                        return false;
-                    }
-                }
+                JLOG(m_journal.fatal()) << "AccountTransactions database "
+                                           "should not have a primary key";
+                return false;
             }
 
-            // ledger database
-            mLedgerDB = std::make_unique<DatabaseCon>(
-                setup, LgrDBName, LgrDBPragma, LgrDBInit);
-            mLedgerDB->getSession() << boost::str(
-                boost::format("PRAGMA cache_size=-%d;") %
-                kilobytes(config_->getValueFor(SizedItem::lgrDBCache)));
-            mLedgerDB->setupCheckpointing(m_jobQueue.get(), logs());
-
-            // wallet database
-            setup.useGlobalPragma = false;
-            mWalletDB = std::make_unique<DatabaseCon>(
-                setup,
-                WalletDBName,
-                std::array<char const*, 0>(),
-                WalletDBInit);
+            mWalletDB = SQLInterface::getInterface(SQLInterface::WALLET)
+                            ->makeWalletDB(
+                                true,
+                                *config_,
+                                m_journal,
+                                std::string(),
+                                boost::filesystem::path());
         }
         catch (std::exception const& e)
         {
@@ -1138,66 +1110,10 @@ public:
     void
     doSweep()
     {
-        if (!config_->standalone())
+        if (!config_->standalone() &&
+            !mTxnDB->getInterface()->checkDBSpace(mTxnDB, *config_, m_journal))
         {
-            boost::filesystem::space_info space =
-                boost::filesystem::space(config_->legacy("database_path"));
-
-            if (space.available < megabytes(512))
-            {
-                JLOG(m_journal.fatal())
-                    << "Remaining free disk space is less than 512MB";
-                signalStop();
-            }
-
-            DatabaseCon::Setup dbSetup = setup_DatabaseCon(*config_);
-            boost::filesystem::path dbPath = dbSetup.dataDir / TxDBName;
-            boost::system::error_code ec;
-            boost::optional<std::uint64_t> dbSize =
-                boost::filesystem::file_size(dbPath, ec);
-            if (ec)
-            {
-                JLOG(m_journal.error())
-                    << "Error checking transaction db file size: "
-                    << ec.message();
-                dbSize.reset();
-            }
-
-            auto db = mTxnDB->checkoutDb();
-            static auto const pageSize = [&] {
-                std::uint32_t ps;
-                *db << "PRAGMA page_size;", soci::into(ps);
-                return ps;
-            }();
-            static auto const maxPages = [&] {
-                std::uint32_t mp;
-                *db << "PRAGMA max_page_count;", soci::into(mp);
-                return mp;
-            }();
-            std::uint32_t pageCount;
-            *db << "PRAGMA page_count;", soci::into(pageCount);
-            std::uint32_t freePages = maxPages - pageCount;
-            std::uint64_t freeSpace =
-                safe_cast<std::uint64_t>(freePages) * pageSize;
-            JLOG(m_journal.info())
-                << "Transaction DB pathname: " << dbPath.string()
-                << "; file size: " << dbSize.value_or(-1) << " bytes"
-                << "; SQLite page size: " << pageSize << " bytes"
-                << "; Free pages: " << freePages
-                << "; Free space: " << freeSpace << " bytes; "
-                << "Note that this does not take into account available disk "
-                   "space.";
-
-            if (freeSpace < megabytes(512))
-            {
-                JLOG(m_journal.fatal())
-                    << "Free SQLite space for transaction db is less than "
-                       "512MB. To fix this, rippled must be executed with the "
-                       "\"--vacuum\" parameter before restarting. "
-                       "Note that this activity can take multiple days, "
-                       "depending on database size.";
-                signalStop();
-            }
+            signalStop();
         }
 
         // VFALCO NOTE Does the order of calls matter?
@@ -1741,6 +1657,12 @@ ApplicationImp::startGenesisLedger()
     m_ledgerMaster->switchLCL(next);
 }
 
+extern std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
+loadLedgerHelper(
+    SQLInterface::SQLLedgerInfo const& sinfo,
+    Application& app,
+    bool acquire);
+
 std::shared_ptr<Ledger>
 ApplicationImp::getLastFullLedger()
 {
@@ -1748,8 +1670,11 @@ ApplicationImp::getLastFullLedger()
 
     try
     {
-        auto const [ledger, seq, hash] =
-            loadLedgerHelper("order by LedgerSeq desc limit 1", *this);
+        SQLInterface::SQLLedgerInfo sinfo;
+        if (!getLedgerDB()->getInterface()->loadLedgerInfoByIndexSorted(
+                getLedgerDB(), sinfo, j, false))
+            return std::shared_ptr<Ledger>();
+        auto const [ledger, seq, hash] = loadLedgerHelper(sinfo, *this, true);
 
         if (!ledger)
             return ledger;
@@ -2192,11 +2117,8 @@ ApplicationImp::validateShards()
 void
 ApplicationImp::setMaxDisallowedLedger()
 {
-    boost::optional<LedgerIndex> seq;
-    {
-        auto db = getLedgerDB().checkoutDb();
-        *db << "SELECT MAX(LedgerSeq) FROM Ledgers;", soci::into(seq);
-    }
+    auto seq = getLedgerDB()->getInterface()->getMaxLedgerSeq(
+        getLedgerDB(), SQLInterface::LEDGERS);
     if (seq)
         maxDisallowedLedger_ = *seq;
 

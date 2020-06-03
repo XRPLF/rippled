@@ -59,6 +59,8 @@ ShardArchiveHandler::tryMakeRecoveryHandler(Application& app, Stoppable& parent)
 
     // Create the handler iff the database
     // is present.
+    auto stateDBName = SQLInterface::getInterface(SQLInterface::ARCHIVE)
+                           ->getDBName(SQLInterface::ARCHIVE);
     if (exists(downloadDir / stateDBName) &&
         is_regular_file(downloadDir / stateDBName))
     {
@@ -92,13 +94,15 @@ ShardArchiveHandler::init()
 {
     std::lock_guard lock(m_);
 
-    if (process_ || downloader_ != nullptr || sqliteDB_ != nullptr)
+    if (process_ || downloader_ != nullptr || sqlDB_ != nullptr)
     {
         JLOG(j_.warn()) << "Archives already being processed";
         return false;
     }
 
     // Initialize from pre-existing database
+    auto stateDBName = SQLInterface::getInterface(SQLInterface::ARCHIVE)
+                           ->getDBName(SQLInterface::ARCHIVE);
     if (exists(downloadDir_ / stateDBName) &&
         is_regular_file(downloadDir_ / stateDBName))
     {
@@ -115,11 +119,8 @@ ShardArchiveHandler::init()
         {
             create_directories(downloadDir_);
 
-            sqliteDB_ = std::make_unique<DatabaseCon>(
-                downloadDir_,
-                stateDBName,
-                DownloaderDBPragma,
-                ShardArchiveHandlerDBInit);
+            sqlDB_ = SQLInterface::getInterface(SQLInterface::ARCHIVE)
+                         ->makeArchiveDB(downloadDir_, stateDBName);
         }
         catch (std::exception const& e)
         {
@@ -140,35 +141,28 @@ ShardArchiveHandler::initFromDB(std::lock_guard<std::mutex> const& lock)
     {
         using namespace boost::filesystem;
 
+        auto stateDBName = SQLInterface::getInterface(SQLInterface::ARCHIVE)
+                               ->getDBName(SQLInterface::ARCHIVE);
         assert(
             exists(downloadDir_ / stateDBName) &&
             is_regular_file(downloadDir_ / stateDBName));
 
-        sqliteDB_ = std::make_unique<DatabaseCon>(
-            downloadDir_,
-            stateDBName,
-            DownloaderDBPragma,
-            ShardArchiveHandlerDBInit);
+        sqlDB_ = SQLInterface::getInterface(SQLInterface::ARCHIVE)
+                     ->makeArchiveDB(downloadDir_, stateDBName);
 
-        auto& session{sqliteDB_->getSession()};
+        sqlDB_->getInterface()->readArchiveDB(
+            sqlDB_, [&](std::string const& url_, int state) {
+                parsedURL url;
 
-        soci::rowset<soci::row> rs =
-            (session.prepare << "SELECT * FROM State;");
+                if (!parseUrl(url, url_))
+                {
+                    JLOG(j_.error()) << "Failed to parse url: " << url_;
 
-        for (auto it = rs.begin(); it != rs.end(); ++it)
-        {
-            parsedURL url;
+                    return;
+                }
 
-            if (!parseUrl(url, it->get<std::string>(1)))
-            {
-                JLOG(j_.error())
-                    << "Failed to parse url: " << it->get<std::string>(1);
-
-                continue;
-            }
-
-            add(it->get<int>(0), std::move(url), lock);
-        }
+                add(state, std::move(url), lock);
+            });
 
         // Failed to load anything
         // from the state database.
@@ -223,10 +217,7 @@ ShardArchiveHandler::add(
     if (!add(shardIndex, std::forward<parsedURL>(url.first), lock))
         return false;
 
-    auto& session{sqliteDB_->getSession()};
-
-    session << "INSERT INTO State VALUES (:index, :url);",
-        soci::use(shardIndex), soci::use(url.second);
+    sqlDB_->getInterface()->insertArchiveDB(sqlDB_, shardIndex, url.second);
 
     return true;
 }
@@ -526,10 +517,7 @@ ShardArchiveHandler::remove(std::lock_guard<std::mutex> const&)
     app_.getShardStore()->removePreShard(shardIndex);
     archives_.erase(shardIndex);
 
-    auto& session{sqliteDB_->getSession()};
-
-    session << "DELETE FROM State WHERE ShardIndex = :index;",
-        soci::use(shardIndex);
+    sqlDB_->getInterface()->deleteFromArchiveDB(sqlDB_, shardIndex);
 
     auto const dstDir{downloadDir_ / std::to_string(shardIndex)};
     try
@@ -550,13 +538,9 @@ ShardArchiveHandler::doRelease(std::lock_guard<std::mutex> const&)
         app_.getShardStore()->removePreShard(ar.first);
     archives_.clear();
 
-    {
-        auto& session{sqliteDB_->getSession()};
+    sqlDB_->getInterface()->dropArchiveDB(sqlDB_);
 
-        session << "DROP TABLE State;";
-    }
-
-    sqliteDB_.reset();
+    sqlDB_.reset();
 
     // Remove temp root download directory
     try

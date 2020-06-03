@@ -20,7 +20,7 @@
 #ifndef RIPPLE_NET_DATABASEBODY_H
 #define RIPPLE_NET_DATABASEBODY_H
 
-#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/SQLInterface.h>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/beast/http/message.hpp>
@@ -59,7 +59,7 @@ class DatabaseBody::value_type
     // The cached file size
     std::uint64_t fileSize_ = 0;
     boost::filesystem::path path_;
-    std::unique_ptr<DatabaseCon> conn_;
+    SQLDatabase conn_;
     std::string batch_;
     std::shared_ptr<boost::asio::io_service::strand> strand_;
     std::mutex m_;

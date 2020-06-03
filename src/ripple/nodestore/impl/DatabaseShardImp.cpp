@@ -24,6 +24,7 @@
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/random.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/core/SQLInterface.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/impl/DatabaseShardImp.h>
 #include <ripple/overlay/Overlay.h>
@@ -33,6 +34,13 @@
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {
+
+extern std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
+loadLedgerHelper(
+    SQLInterface::SQLLedgerInfo const& sinfo,
+    Application& app,
+    bool acquire);
+
 namespace NodeStore {
 
 DatabaseShardImp::DatabaseShardImp(
@@ -643,14 +651,18 @@ DatabaseShardImp::import(Database& source)
             auto loadLedger = [&](bool ascendSort =
                                       true) -> boost::optional<std::uint32_t> {
                 std::shared_ptr<Ledger> ledger;
-                std::uint32_t seq;
-                std::tie(ledger, seq, std::ignore) = loadLedgerHelper(
-                    "WHERE LedgerSeq >= " +
-                        std::to_string(earliestLedgerSeq()) +
-                        " order by LedgerSeq " + (ascendSort ? "asc" : "desc") +
-                        " limit 1",
-                    app_,
-                    false);
+                std::uint32_t seq{0};
+                SQLInterface::SQLLedgerInfo sinfo;
+                if (app_.getLedgerDB()
+                        ->getInterface()
+                        ->loadLedgerInfoByIndexLimitedSorted(
+                            app_.getLedgerDB(),
+                            sinfo,
+                            app_.journal("Ledger"),
+                            earliestLedgerSeq(),
+                            ascendSort))
+                    std::tie(ledger, seq, std::ignore) =
+                        loadLedgerHelper(sinfo, app_, false);
                 if (!ledger || seq == 0)
                 {
                     JLOG(j_.error()) << "no suitable ledgers were found in"
@@ -722,7 +734,12 @@ DatabaseShardImp::import(Database& source)
                 auto const numLedgers{
                     shardIndex == earliestShardIndex() ? lastSeq - firstSeq + 1
                                                        : ledgersPerShard_};
-                auto ledgerHashes{getHashesByIndex(firstSeq, lastSeq, app_)};
+                auto ledgerHashes{
+                    app_.getLedgerDB()->getInterface()->getHashesByIndex(
+                        app_.getLedgerDB(),
+                        app_.journal("Ledger"),
+                        firstSeq,
+                        lastSeq)};
                 if (ledgerHashes.size() != numLedgers)
                     continue;
 

@@ -23,7 +23,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/UptimeClock.h>
-#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/SQLInterface.h>
 #include <ripple/json/json_value.h>
 #include <ripple/ledger/CachedSLEs.h>
 #include <ripple/net/RPCErr.h>
@@ -73,17 +73,18 @@ getCountsJson(Application& app, int minObjectCount)
         ret[k] = v;
     }
 
-    int dbKB = getKBUsedAll(app.getLedgerDB().getSession());
+    int dbKB =
+        app.getLedgerDB()->getInterface()->getKBUsedAll(app.getLedgerDB());
 
     if (dbKB > 0)
         ret[jss::dbKBTotal] = dbKB;
 
-    dbKB = getKBUsedDB(app.getLedgerDB().getSession());
+    dbKB = app.getLedgerDB()->getInterface()->getKBUsedDB(app.getLedgerDB());
 
     if (dbKB > 0)
         ret[jss::dbKBLedger] = dbKB;
 
-    dbKB = getKBUsedDB(app.getTxnDB().getSession());
+    dbKB = app.getTxnDB()->getInterface()->getKBUsedDB(app.getTxnDB());
 
     if (dbKB > 0)
         ret[jss::dbKBTransaction] = dbKB;

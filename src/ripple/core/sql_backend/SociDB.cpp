@@ -26,7 +26,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
-#include <ripple/core/SociDB.h>
+#include <ripple/core/sql_backend/SociDB.h>
 #include <boost/filesystem.hpp>
 #include <memory>
 #include <soci/sqlite3/soci-sqlite3.h>

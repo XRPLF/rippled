@@ -47,25 +47,6 @@ struct sqlite3;
 
 namespace ripple {
 
-template <class T, class C>
-T
-rangeCheckedCast(C c)
-{
-    if ((c > std::numeric_limits<T>::max()) ||
-        (!std::numeric_limits<T>::is_signed && c < 0) ||
-        (std::numeric_limits<T>::is_signed &&
-         std::numeric_limits<C>::is_signed &&
-         c < std::numeric_limits<T>::lowest()))
-    {
-        JLOG(debugLog().error())
-            << "rangeCheckedCast domain error:"
-            << " value = " << c << " min = " << std::numeric_limits<T>::lowest()
-            << " max: " << std::numeric_limits<T>::max();
-    }
-
-    return static_cast<T>(c);
-}
-
 class BasicConfig;
 
 /**

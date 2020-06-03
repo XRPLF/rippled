@@ -20,6 +20,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/misc/Transaction.h>
+#include <ripple/core/SQLInterface.h>
 #include <ripple/ledger/View.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/AccountID.h>
@@ -453,7 +454,9 @@ isValidated(
             if (hash)
             {
                 assert(hash->isNonZero());
-                uint256 valHash = getHashByIndex(seq, app);
+                uint256 valHash =
+                    app.getLedgerDB()->getInterface()->getHashByIndex(
+                        app.getLedgerDB(), seq);
                 if (valHash == ledger.info().hash)
                 {
                     // SQL database doesn't match ledger chain

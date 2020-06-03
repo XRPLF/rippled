@@ -21,6 +21,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/core/SQLInterface.h>
 #include <ripple/protocol/STTx.h>
 
 namespace ripple {
@@ -86,7 +87,8 @@ TransactionMaster::fetch(
         return txn;
 
     boost::variant<Transaction::pointer, bool> v =
-        Transaction::load(txnID, mApp, range, ec);
+        mApp.getTxnDB()->getInterface()->loadTransaction(
+            mApp.getTxnDB(), mApp, txnID, range, ec);
 
     if (v.which() == 0 && boost::get<pointer>(v))
         mCache.canonicalize_replace_client(txnID, boost::get<pointer>(v));

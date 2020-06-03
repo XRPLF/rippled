@@ -451,16 +451,18 @@ target_sources (rippled PRIVATE
        subdir: core
   #]===============================]
   src/ripple/core/impl/Config.cpp
-  src/ripple/core/impl/DatabaseCon.cpp
   src/ripple/core/impl/Job.cpp
   src/ripple/core/impl/JobQueue.cpp
   src/ripple/core/impl/LoadEvent.cpp
   src/ripple/core/impl/LoadMonitor.cpp
   src/ripple/core/impl/SNTPClock.cpp
-  src/ripple/core/impl/SociDB.cpp
+  src/ripple/core/impl/SQLInterface.cpp
   src/ripple/core/impl/Stoppable.cpp
   src/ripple/core/impl/TimeKeeper.cpp
   src/ripple/core/impl/Workers.cpp
+  src/ripple/core/sql_backend/DatabaseCon.cpp
+  src/ripple/core/sql_backend/SociDB.cpp
+  src/ripple/core/sql_backend/SQLInterface_sqlite.cpp
   #[===============================[
      main sources:
        subdir: consensus

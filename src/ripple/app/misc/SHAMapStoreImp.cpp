@@ -33,66 +33,16 @@ SHAMapStoreImp::SavedStateDB::init(
     std::string const& dbName)
 {
     std::lock_guard lock(mutex_);
-
-    open(session_, config, dbName);
-
-    session_ << "PRAGMA synchronous=FULL;";
-
-    session_ << "CREATE TABLE IF NOT EXISTS DbState ("
-                "  Key                    INTEGER PRIMARY KEY,"
-                "  WritableDb             TEXT,"
-                "  ArchiveDb              TEXT,"
-                "  LastRotatedLedger      INTEGER"
-                ");";
-
-    session_ << "CREATE TABLE IF NOT EXISTS CanDelete ("
-                "  Key                    INTEGER PRIMARY KEY,"
-                "  CanDeleteSeq           INTEGER"
-                ");";
-
-    std::int64_t count = 0;
-    {
-        boost::optional<std::int64_t> countO;
-        session_ << "SELECT COUNT(Key) FROM DbState WHERE Key = 1;",
-            soci::into(countO);
-        if (!countO)
-            Throw<std::runtime_error>(
-                "Failed to fetch Key Count from DbState.");
-        count = *countO;
-    }
-
-    if (!count)
-    {
-        session_ << "INSERT INTO DbState VALUES (1, '', '', 0);";
-    }
-
-    {
-        boost::optional<std::int64_t> countO;
-        session_ << "SELECT COUNT(Key) FROM CanDelete WHERE Key = 1;",
-            soci::into(countO);
-        if (!countO)
-            Throw<std::runtime_error>(
-                "Failed to fetch Key Count from CanDelete.");
-        count = *countO;
-    }
-
-    if (!count)
-    {
-        session_ << "INSERT INTO CanDelete VALUES (1, 0);";
-    }
+    SQLInterface::getInterface(SQLInterface::STATE)
+        ->initStateDB(sqlDb_, config, dbName);
 }
 
 LedgerIndex
 SHAMapStoreImp::SavedStateDB::getCanDelete()
 {
-    LedgerIndex seq;
     std::lock_guard lock(mutex_);
 
-    session_ << "SELECT CanDeleteSeq FROM CanDelete WHERE Key = 1;",
-        soci::into(seq);
-    ;
-
-    return seq;
+    return sqlDb_->getInterface()->getCanDelete(sqlDb_);
 }
 
 LedgerIndex
@@ -100,47 +50,29 @@ SHAMapStoreImp::SavedStateDB::setCanDelete(LedgerIndex canDelete)
 {
     std::lock_guard lock(mutex_);
 
-    session_ << "UPDATE CanDelete SET CanDeleteSeq = :canDelete WHERE Key = 1;",
-        soci::use(canDelete);
-
-    return canDelete;
+    return sqlDb_->getInterface()->setCanDelete(sqlDb_, canDelete);
 }
 
 SHAMapStoreImp::SavedState
 SHAMapStoreImp::SavedStateDB::getState()
 {
-    SavedState state;
-
     std::lock_guard lock(mutex_);
 
-    session_ << "SELECT WritableDb, ArchiveDb, LastRotatedLedger"
-                " FROM DbState WHERE Key = 1;",
-        soci::into(state.writableDb), soci::into(state.archiveDb),
-        soci::into(state.lastRotated);
-
-    return state;
+    return sqlDb_->getInterface()->getSavedState(sqlDb_);
 }
 
 void
 SHAMapStoreImp::SavedStateDB::setState(SavedState const& state)
 {
     std::lock_guard lock(mutex_);
-    session_ << "UPDATE DbState"
-                " SET WritableDb = :writableDb,"
-                " ArchiveDb = :archiveDb,"
-                " LastRotatedLedger = :lastRotated"
-                " WHERE Key = 1;",
-        soci::use(state.writableDb), soci::use(state.archiveDb),
-        soci::use(state.lastRotated);
+    sqlDb_->getInterface()->setSavedState(sqlDb_, state);
 }
 
 void
 SHAMapStoreImp::SavedStateDB::setLastRotated(LedgerIndex seq)
 {
     std::lock_guard lock(mutex_);
-    session_ << "UPDATE DbState SET LastRotatedLedger = :seq"
-                " WHERE Key = 1;",
-        soci::use(seq);
+    sqlDb_->getInterface()->setLastRotated(sqlDb_, seq);
 }
 
 //------------------------------------------------------------------------------
@@ -568,23 +500,19 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
 
 void
 SHAMapStoreImp::clearSql(
-    DatabaseCon& database,
+    SQLDatabase& database,
     LedgerIndex lastRotated,
-    std::string const& minQuery,
-    std::string const& deleteQuery)
+    SQLInterface::TableType type)
 {
     assert(deleteInterval_);
     LedgerIndex min = std::numeric_limits<LedgerIndex>::max();
 
     {
-        boost::optional<std::uint64_t> m;
-        JLOG(journal_.trace())
-            << "Begin: Look up lowest value of: " << minQuery;
-        {
-            auto db = database.checkoutDb();
-            *db << minQuery, soci::into(m);
-        }
-        JLOG(journal_.trace()) << "End: Look up lowest value of: " << minQuery;
+        JLOG(journal_.trace()) << "Begin: Look up lowest value of: "
+                               << SQLInterface::tableName(type);
+        auto m = database->getInterface()->getMinLedgerSeq(database, type);
+        JLOG(journal_.trace()) << "End: Look up lowest value of: "
+                               << SQLInterface::tableName(type);
         if (!m)
             return;
         min = *m;
@@ -595,27 +523,25 @@ SHAMapStoreImp::clearSql(
     if (min == lastRotated)
     {
         // Micro-optimization mainly to clarify logs
-        JLOG(journal_.trace()) << "Nothing to delete from " << deleteQuery;
+        JLOG(journal_.trace())
+            << "Nothing to delete from " << SQLInterface::tableName(type);
         return;
     }
 
-    boost::format formattedDeleteQuery(deleteQuery);
-
-    JLOG(journal_.debug()) << "start: " << deleteQuery << " from " << min
+    JLOG(journal_.debug()) << "start deleting in: "
+                           << SQLInterface::tableName(type) << " from " << min
                            << " to " << lastRotated;
     while (min < lastRotated)
     {
         min = std::min(lastRotated, min + deleteBatch_);
-        JLOG(journal_.trace()) << "Begin: Delete up to " << deleteBatch_
-                               << " rows with LedgerSeq < " << min
-                               << " using query: " << deleteQuery;
-        {
-            auto db = database.checkoutDb();
-            *db << boost::str(formattedDeleteQuery % min);
-        }
+        JLOG(journal_.trace())
+            << "Begin: Delete up to " << deleteBatch_
+            << " rows with LedgerSeq < " << min
+            << " using deleting in: " << SQLInterface::tableName(type);
+        database->getInterface()->deleteBeforeLedgerSeq(database, type, min);
         JLOG(journal_.trace())
             << "End: Delete up to " << deleteBatch_ << " rows with LedgerSeq < "
-            << min << " using query: " << deleteQuery;
+            << min << " using deleting in: " << SQLInterface::tableName(type);
         if (health())
             return;
         if (min < lastRotated)
@@ -623,7 +549,8 @@ SHAMapStoreImp::clearSql(
         if (health())
             return;
     }
-    JLOG(journal_.debug()) << "finished: " << deleteQuery;
+    JLOG(journal_.debug()) << "finished deleting in: "
+                           << SQLInterface::tableName(type);
 }
 
 void
@@ -658,27 +585,19 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     if (health())
         return;
 
+    clearSql(*ledgerDb_, lastRotated, SQLInterface::TableType::LEDGERS);
+    if (health())
+        return;
+
     clearSql(
-        *ledgerDb_,
-        lastRotated,
-        "SELECT MIN(LedgerSeq) FROM Ledgers;",
-        "DELETE FROM Ledgers WHERE LedgerSeq < %u;");
+        *transactionDb_, lastRotated, SQLInterface::TableType::TRANSACTIONS);
     if (health())
         return;
 
     clearSql(
         *transactionDb_,
         lastRotated,
-        "SELECT MIN(LedgerSeq) FROM Transactions;",
-        "DELETE FROM Transactions WHERE LedgerSeq < %u;");
-    if (health())
-        return;
-
-    clearSql(
-        *transactionDb_,
-        lastRotated,
-        "SELECT MIN(LedgerSeq) FROM AccountTransactions;",
-        "DELETE FROM AccountTransactions WHERE LedgerSeq < %u;");
+        SQLInterface::TableType::ACCOUNT_TRANSACTIONS);
     if (health())
         return;
 }

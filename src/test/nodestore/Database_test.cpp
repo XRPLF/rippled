@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/beast/utility/temp_dir.h>
-#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/sql_backend/DatabaseCon.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <test/jtx.h>

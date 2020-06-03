@@ -20,8 +20,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/core/ConfigSections.h>
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/core/SociDB.h>
+#include <ripple/core/SQLInterface.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
@@ -64,31 +63,25 @@ class SHAMapStore_test : public beast::unit_test::suite
             return good;
 
         auto const seq = json[jss::result][jss::ledger_index].asUInt();
-        std::string outHash;
-        LedgerIndex outSeq;
-        std::string outParentHash;
-        std::string outDrops;
-        std::uint64_t outCloseTime;
-        std::uint64_t outParentCloseTime;
-        std::uint64_t outCloseTimeResolution;
-        std::uint64_t outCloseFlags;
-        std::string outAccountHash;
-        std::string outTxHash;
 
-        {
-            auto db = env.app().getLedgerDB().checkoutDb();
+        SQLInterface::SQLLedgerInfo info;
+        if (!env.app().getLedgerDB()->getInterface()->loadLedgerInfoByIndex(
+                env.app().getLedgerDB(),
+                info,
+                env.app().journal("Ledger"),
+                seq))
+            return false;
 
-            *db << "SELECT LedgerHash,LedgerSeq,PrevHash,TotalCoins, "
-                   "ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags, "
-                   "AccountSetHash,TransSetHash "
-                   "FROM Ledgers "
-                   "WHERE LedgerSeq = :seq",
-                soci::use(seq), soci::into(outHash), soci::into(outSeq),
-                soci::into(outParentHash), soci::into(outDrops),
-                soci::into(outCloseTime), soci::into(outParentCloseTime),
-                soci::into(outCloseTimeResolution), soci::into(outCloseFlags),
-                soci::into(outAccountHash), soci::into(outTxHash);
-        }
+        std::string outHash = *info.sLedgerHash;
+        LedgerIndex outSeq = *info.ledgerSeq64;
+        std::string outParentHash = *info.sPrevHash;
+        std::string outDrops = std::to_string(*info.totDrops);
+        std::uint64_t outCloseTime = *info.closingTime;
+        std::uint64_t outParentCloseTime = *info.prevClosingTime;
+        std::uint64_t outCloseTimeResolution = *info.closeResolution;
+        std::uint64_t outCloseFlags = *info.closeFlags;
+        std::string outAccountHash = *info.sAccountHash;
+        std::string outTxHash = *info.sTransHash;
 
         auto const& ledger = json[jss::result][jss::ledger];
         return outHash == ledger[jss::hash].asString() && outSeq == seq &&
@@ -125,15 +118,9 @@ class SHAMapStore_test : public beast::unit_test::suite
     void
     ledgerCheck(jtx::Env& env, int const rows, int const first)
     {
-        auto db = env.app().getLedgerDB().checkoutDb();
-
-        int actualRows, actualFirst, actualLast;
-        *db << "SELECT count(*) AS rows, "
-               "min(LedgerSeq) as first, "
-               "max(LedgerSeq) as last "
-               "FROM Ledgers;",
-            soci::into(actualRows), soci::into(actualFirst),
-            soci::into(actualLast);
+        auto [actualRows, actualFirst, actualLast] =
+            env.app().getLedgerDB()->getInterface()->getRowsMinMax(
+                env.app().getLedgerDB(), SQLInterface::LEDGERS);
 
         BEAST_EXPECT(actualRows == rows);
         BEAST_EXPECT(actualFirst == first);
@@ -143,12 +130,8 @@ class SHAMapStore_test : public beast::unit_test::suite
     void
     transactionCheck(jtx::Env& env, int const rows)
     {
-        auto db = env.app().getTxnDB().checkoutDb();
-
-        int actualRows;
-        *db << "SELECT count(*) AS rows "
-               "FROM Transactions;",
-            soci::into(actualRows);
+        int actualRows = env.app().getTxnDB()->getInterface()->getRows(
+            env.app().getTxnDB(), SQLInterface::TRANSACTIONS);
 
         BEAST_EXPECT(actualRows == rows);
     }
@@ -156,12 +139,8 @@ class SHAMapStore_test : public beast::unit_test::suite
     void
     accountTransactionCheck(jtx::Env& env, int const rows)
     {
-        auto db = env.app().getTxnDB().checkoutDb();
-
-        int actualRows;
-        *db << "SELECT count(*) AS rows "
-               "FROM AccountTransactions;",
-            soci::into(actualRows);
+        int actualRows = env.app().getTxnDB()->getInterface()->getRows(
+            env.app().getTxnDB(), SQLInterface::ACCOUNT_TRANSACTIONS);
 
         BEAST_EXPECT(actualRows == rows);
     }

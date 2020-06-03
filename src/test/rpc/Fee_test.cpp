@@ -20,7 +20,6 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/mulDiv.h>
-#include <ripple/core/DatabaseCon.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/GRPCHandlers.h>

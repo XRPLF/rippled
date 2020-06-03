@@ -20,7 +20,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/mulDiv.h>
-#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/SQLInterface.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
@@ -769,9 +769,10 @@ class Tx_test : public beast::unit_test::suite
         const auto deletedLedger = (startLegSeq + endLegSeq) / 2;
         {
             // Remove one of the ledgers from the database directly
-            auto db = env.app().getTxnDB().checkoutDb();
-            *db << "DELETE FROM Transactions WHERE LedgerSeq == "
-                << deletedLedger << ";";
+            env.app().getTxnDB()->getInterface()->deleteByLedgerSeq(
+                env.app().getTxnDB(),
+                SQLInterface::TRANSACTIONS,
+                deletedLedger);
         }
 
         for (bool b : {false, true})

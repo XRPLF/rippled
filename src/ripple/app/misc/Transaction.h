@@ -311,13 +311,6 @@ public:
         error_code_i& ec);
 
 private:
-    static boost::variant<Transaction::pointer, bool>
-    load(
-        uint256 const& id,
-        Application& app,
-        boost::optional<ClosedInterval<uint32_t>> const& range,
-        error_code_i& ec);
-
     uint256 mTransactionID;
 
     LedgerIndex mInLedger = 0;

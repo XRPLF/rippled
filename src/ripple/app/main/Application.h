@@ -84,7 +84,7 @@ class ValidatorList;
 class ValidatorSite;
 class Cluster;
 
-class DatabaseCon;
+class SQLDatabase;
 class SHAMapStore;
 
 using NodeCache = TaggedCache<SHAMapHash, Blob>;
@@ -229,9 +229,9 @@ public:
     openLedger() = 0;
     virtual OpenLedger const&
     openLedger() const = 0;
-    virtual DatabaseCon&
+    virtual SQLDatabase&
     getTxnDB() = 0;
-    virtual DatabaseCon&
+    virtual SQLDatabase&
     getLedgerDB() = 0;
 
     virtual std::chrono::milliseconds
@@ -248,7 +248,7 @@ public:
     fdRequired() const = 0;
 
     /** Retrieve the "wallet database" */
-    virtual DatabaseCon&
+    virtual SQLDatabase&
     getWalletDB() = 0;
 
     /** Ensure that a newly-started validator does not sign proposals older

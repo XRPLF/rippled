@@ -22,7 +22,7 @@
 
 #include <ripple/app/main/DBInit.h>
 #include <ripple/core/Config.h>
-#include <ripple/core/SociDB.h>
+#include <ripple/core/sql_backend/SociDB.h>
 #include <boost/filesystem/path.hpp>
 #include <boost/optional.hpp>
 #include <mutex>

@@ -20,7 +20,6 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
 #include <ripple/core/ConfigSections.h>
-#include <ripple/core/DatabaseCon.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/protocol/TxFlags.h>

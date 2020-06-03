@@ -23,7 +23,7 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/RangeSet.h>
-#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/SQLInterface.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <ripple/nodestore/Scheduler.h>
 #include <ripple/nodestore/impl/DeterministicShard.h>
@@ -165,7 +165,7 @@ private:
     struct AcquireInfo
     {
         // SQLite database to track information about what has been acquired
-        std::unique_ptr<DatabaseCon> SQLiteDB;
+        SQLDatabase SQLiteDB;
 
         // Tracks the sequences of ledgers acquired and stored in the backend
         RangeSet<std::uint32_t> storedSeqs;
@@ -208,10 +208,10 @@ private:
     std::shared_ptr<Backend> backend_;
 
     // Ledger SQLite database used for indexes
-    std::unique_ptr<DatabaseCon> lgrSQLiteDB_;
+    SQLDatabase lgrSQLiteDB_;
 
     // Transaction SQLite database used for indexes
-    std::unique_ptr<DatabaseCon> txSQLiteDB_;
+    SQLDatabase txSQLiteDB_;
 
     // Tracking information used only when acquiring a shard from the network.
     // If the shard is final, this member will be null.

@@ -49,6 +49,7 @@
 #include <ripple/consensus/Consensus.h>
 #include <ripple/consensus/ConsensusParms.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/core/SQLInterface.h>
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/json/to_string.h>
@@ -479,20 +480,6 @@ public:
     {
         return m_localTX->size();
     }
-
-    // Helper function to generate SQL query to get transactions.
-    std::string
-    transactionsSQL(
-        std::string selection,
-        AccountID const& account,
-        std::int32_t minLedger,
-        std::int32_t maxLedger,
-        bool descending,
-        std::uint32_t offset,
-        int limit,
-        bool binary,
-        bool count,
-        bool bUnlimited);
 
     // Client information retrieval functions.
     using NetworkOPs::AccountTxMarker;
@@ -2169,88 +2156,6 @@ NetworkOPsImp::setMode(OperatingMode om)
     pubServer();
 }
 
-std::string
-NetworkOPsImp::transactionsSQL(
-    std::string selection,
-    AccountID const& account,
-    std::int32_t minLedger,
-    std::int32_t maxLedger,
-    bool descending,
-    std::uint32_t offset,
-    int limit,
-    bool binary,
-    bool count,
-    bool bUnlimited)
-{
-    std::uint32_t NONBINARY_PAGE_LENGTH = 200;
-    std::uint32_t BINARY_PAGE_LENGTH = 500;
-
-    std::uint32_t numberOfResults;
-
-    if (count)
-    {
-        numberOfResults = 1000000000;
-    }
-    else if (limit < 0)
-    {
-        numberOfResults = binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH;
-    }
-    else if (!bUnlimited)
-    {
-        numberOfResults = std::min(
-            binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH,
-            static_cast<std::uint32_t>(limit));
-    }
-    else
-    {
-        numberOfResults = limit;
-    }
-
-    std::string maxClause = "";
-    std::string minClause = "";
-
-    if (maxLedger != -1)
-    {
-        maxClause = boost::str(
-            boost::format("AND AccountTransactions.LedgerSeq <= '%u'") %
-            maxLedger);
-    }
-
-    if (minLedger != -1)
-    {
-        minClause = boost::str(
-            boost::format("AND AccountTransactions.LedgerSeq >= '%u'") %
-            minLedger);
-    }
-
-    std::string sql;
-
-    if (count)
-        sql = boost::str(
-            boost::format("SELECT %s FROM AccountTransactions "
-                          "WHERE Account = '%s' %s %s LIMIT %u, %u;") %
-            selection % app_.accountIDCache().toBase58(account) % maxClause %
-            minClause % beast::lexicalCastThrow<std::string>(offset) %
-            beast::lexicalCastThrow<std::string>(numberOfResults));
-    else
-        sql = boost::str(
-            boost::format(
-                "SELECT %s FROM "
-                "AccountTransactions INNER JOIN Transactions "
-                "ON Transactions.TransID = AccountTransactions.TransID "
-                "WHERE Account = '%s' %s %s "
-                "ORDER BY AccountTransactions.LedgerSeq %s, "
-                "AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
-                "LIMIT %u, %u;") %
-            selection % app_.accountIDCache().toBase58(account) % maxClause %
-            minClause % (descending ? "DESC" : "ASC") %
-            (descending ? "DESC" : "ASC") % (descending ? "DESC" : "ASC") %
-            beast::lexicalCastThrow<std::string>(offset) %
-            beast::lexicalCastThrow<std::string>(numberOfResults));
-    JLOG(m_journal.trace()) << "txSQL query: " << sql;
-    return sql;
-}
-
 NetworkOPs::AccountTxs
 NetworkOPsImp::getAccountTxs(
     AccountID const& account,
@@ -2261,74 +2166,18 @@ NetworkOPsImp::getAccountTxs(
     int limit,
     bool bUnlimited)
 {
-    // can be called with no locks
-    AccountTxs ret;
-
-    std::string sql = transactionsSQL(
-        "AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta",
+    return app_.getTxnDB()->getInterface()->getAccountTxs(
+        app_.getTxnDB(),
+        app_,
+        m_ledgerMaster,
+        m_journal,
         account,
         minLedger,
         maxLedger,
         descending,
         offset,
         limit,
-        false,
-        false,
         bUnlimited);
-
-    {
-        auto db = app_.getTxnDB().checkoutDb();
-
-        boost::optional<std::uint64_t> ledgerSeq;
-        boost::optional<std::string> status;
-        soci::blob sociTxnBlob(*db), sociTxnMetaBlob(*db);
-        soci::indicator rti, tmi;
-        Blob rawTxn, txnMeta;
-
-        soci::statement st =
-            (db->prepare << sql,
-             soci::into(ledgerSeq),
-             soci::into(status),
-             soci::into(sociTxnBlob, rti),
-             soci::into(sociTxnMetaBlob, tmi));
-
-        st.execute();
-        while (st.fetch())
-        {
-            if (soci::i_ok == rti)
-                convert(sociTxnBlob, rawTxn);
-            else
-                rawTxn.clear();
-
-            if (soci::i_ok == tmi)
-                convert(sociTxnMetaBlob, txnMeta);
-            else
-                txnMeta.clear();
-
-            auto txn = Transaction::transactionFromSQL(
-                ledgerSeq, status, rawTxn, app_);
-
-            if (txnMeta.empty())
-            {  // Work around a bug that could leave the metadata missing
-                auto const seq =
-                    rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
-
-                JLOG(m_journal.warn())
-                    << "Recovering ledger " << seq << ", txn " << txn->getID();
-
-                if (auto l = m_ledgerMaster.getLedgerBySeq(seq))
-                    pendSaveValidated(app_, l, false, false);
-            }
-
-            if (txn)
-                ret.emplace_back(
-                    txn,
-                    std::make_shared<TxMeta>(
-                        txn->getID(), txn->getLedger(), txnMeta));
-        }
-    }
-
-    return ret;
 }
 
 std::vector<NetworkOPsImp::txnMetaLedgerType>
@@ -2341,54 +2190,17 @@ NetworkOPsImp::getAccountTxsB(
     int limit,
     bool bUnlimited)
 {
-    // can be called with no locks
-    std::vector<txnMetaLedgerType> ret;
-
-    std::string sql = transactionsSQL(
-        "AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta",
+    return app_.getTxnDB()->getInterface()->getAccountTxsB(
+        app_.getTxnDB(),
+        app_,
+        m_journal,
         account,
         minLedger,
         maxLedger,
         descending,
         offset,
         limit,
-        true /*binary*/,
-        false,
         bUnlimited);
-
-    {
-        auto db = app_.getTxnDB().checkoutDb();
-
-        boost::optional<std::uint64_t> ledgerSeq;
-        boost::optional<std::string> status;
-        soci::blob sociTxnBlob(*db), sociTxnMetaBlob(*db);
-        soci::indicator rti, tmi;
-
-        soci::statement st =
-            (db->prepare << sql,
-             soci::into(ledgerSeq),
-             soci::into(status),
-             soci::into(sociTxnBlob, rti),
-             soci::into(sociTxnMetaBlob, tmi));
-
-        st.execute();
-        while (st.fetch())
-        {
-            Blob rawTxn;
-            if (soci::i_ok == rti)
-                convert(sociTxnBlob, rawTxn);
-            Blob txnMeta;
-            if (soci::i_ok == tmi)
-                convert(sociTxnMetaBlob, txnMeta);
-
-            auto const seq =
-                rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
-
-            ret.emplace_back(std::move(rawTxn), std::move(txnMeta), seq);
-        }
-    }
-
-    return ret;
 }
 
 NetworkOPsImp::AccountTxs
@@ -2414,7 +2226,7 @@ NetworkOPsImp::getTxsAccount(
         convertBlobsToTxResult(ret, ledger_index, status, rawTxn, rawMeta, app);
     };
 
-    accountTxPage(
+    app_.getTxnDB()->getInterface()->accountTxPage(
         app_.getTxnDB(),
         app_.accountIDCache(),
         std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1),
@@ -2453,7 +2265,7 @@ NetworkOPsImp::getTxsAccountB(
         ret.emplace_back(std::move(rawTxn), std::move(rawMeta), ledgerIndex);
     };
 
-    accountTxPage(
+    app_.getTxnDB()->getInterface()->accountTxPage(
         app_.getTxnDB(),
         app_.accountIDCache(),
         std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1),

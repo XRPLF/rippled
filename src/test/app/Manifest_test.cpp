@@ -23,7 +23,7 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/base64.h>
 #include <ripple/basics/contract.h>
-#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/SQLInterface.h>
 #include <ripple/protocol/STExchange.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/Sign.h>
@@ -254,14 +254,14 @@ public:
 
         std::string const dbName("ManifestCacheTestDB");
         {
-            DatabaseCon::Setup setup;
-            setup.dataDir = getDatabasePath();
-            BEAST_EXPECT(!setup.useGlobalPragma);
-            DatabaseCon dbCon(
-                setup,
-                dbName.data(),
-                std::array<char const*, 0>(),
-                WalletDBInit);
+            jtx::Env env(*this);
+            auto dbCon = SQLInterface::getInterface(SQLInterface::WALLET)
+                             ->makeWalletDB(
+                                 false,
+                                 Config(),
+                                 env.journal,
+                                 dbName,
+                                 getDatabasePath());
 
             auto getPopulatedManifests =
                 [](ManifestCache const& cache) -> std::vector<Manifest const*> {
@@ -284,7 +284,6 @@ public:
             std::vector<Manifest const*> const inManifests(
                 sort(getPopulatedManifests(m)));
 
-            jtx::Env env(*this);
             auto& app = env.app();
             auto unl = std::make_unique<ValidatorList>(
                 m,

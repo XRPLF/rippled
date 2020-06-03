@@ -22,7 +22,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
-#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/SQLInterface.h>
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
 
@@ -47,48 +47,8 @@ loadNodeIdentity(Application& app)
         return {publicKey, secretKey};
     }
 
-    // Try to load a node identity from the database:
-    boost::optional<PublicKey> publicKey;
-    boost::optional<SecretKey> secretKey;
-
-    auto db = app.getWalletDB().checkoutDb();
-
-    {
-        boost::optional<std::string> pubKO, priKO;
-        soci::statement st =
-            (db->prepare << "SELECT PublicKey, PrivateKey FROM NodeIdentity;",
-             soci::into(pubKO),
-             soci::into(priKO));
-        st.execute();
-        while (st.fetch())
-        {
-            auto const sk = parseBase58<SecretKey>(
-                TokenType::NodePrivate, priKO.value_or(""));
-            auto const pk = parseBase58<PublicKey>(
-                TokenType::NodePublic, pubKO.value_or(""));
-
-            // Only use if the public and secret keys are a pair
-            if (sk && pk && (*pk == derivePublicKey(KeyType::secp256k1, *sk)))
-            {
-                secretKey = sk;
-                publicKey = pk;
-            }
-        }
-    }
-
-    // If a valid identity wasn't found, we randomly generate a new one:
-    if (!publicKey || !secretKey)
-    {
-        std::tie(publicKey, secretKey) = randomKeyPair(KeyType::secp256k1);
-
-        *db << str(
-            boost::format("INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
-                          "VALUES ('%s','%s');") %
-            toBase58(TokenType::NodePublic, *publicKey) %
-            toBase58(TokenType::NodePrivate, *secretKey));
-    }
-
-    return {*publicKey, *secretKey};
+    return app.getWalletDB()->getInterface()->loadNodeIdentity(
+        app.getWalletDB());
 }
 
 }  // namespace ripple
