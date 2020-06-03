@@ -21,6 +21,7 @@
 #define RIPPLE_APP_REPORTING_REPORTINGETL_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
+#include <ripple/app/rdb/RelationalDBInterface.h>
 #include <ripple/app/reporting/ETLHelpers.h>
 #include <ripple/app/reporting/ETLSource.h>
 #include <ripple/core/JobQueue.h>
@@ -50,7 +51,7 @@
 #include <chrono>
 namespace ripple {
 
-struct AccountTransactionsData;
+using AccountTransactionsData = RelationalDBInterface::AccountTransactionsData;
 
 /**
  * This class is responsible for continuously extracting data from a

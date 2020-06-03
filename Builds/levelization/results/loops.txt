@@ -13,6 +13,9 @@ Loop: ripple.app ripple.nodestore
 Loop: ripple.app ripple.overlay
   ripple.overlay ~= ripple.app
 
+Loop: ripple.app ripple.peerfinder
+  ripple.peerfinder ~= ripple.app
+
 Loop: ripple.app ripple.rpc
   ripple.rpc > ripple.app
 

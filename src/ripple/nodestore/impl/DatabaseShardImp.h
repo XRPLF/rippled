@@ -161,6 +161,42 @@ public:
     void
     sweep() override;
 
+    bool
+    callForLedgerSQL(
+        LedgerIndex ledgerSeq,
+        std::function<bool(soci::session& session, std::uint32_t index)> const&
+            callback) override;
+
+    bool
+    callForTransactionSQL(
+        LedgerIndex ledgerSeq,
+        std::function<bool(soci::session& session, std::uint32_t index)> const&
+            callback) override;
+
+    bool
+    iterateLedgerSQLsForward(
+        std::optional<std::uint32_t> minShardIndex,
+        std::function<bool(soci::session& session, std::uint32_t index)> const&
+            callback) override;
+
+    bool
+    iterateTransactionSQLsForward(
+        std::optional<std::uint32_t> minShardIndex,
+        std::function<bool(soci::session& session, std::uint32_t index)> const&
+            callback) override;
+
+    bool
+    iterateLedgerSQLsBack(
+        std::optional<std::uint32_t> maxShardIndex,
+        std::function<bool(soci::session& session, std::uint32_t index)> const&
+            callback) override;
+
+    bool
+    iterateTransactionSQLsBack(
+        std::optional<std::uint32_t> maxShardIndex,
+        std::function<bool(soci::session& session, std::uint32_t index)> const&
+            callback) override;
+
 private:
     enum class PathDesignation : uint8_t {
         none,       // No path specified
@@ -179,7 +215,7 @@ private:
     std::unique_ptr<TaskQueue> taskQueue_;
 
     // Shards held by this server
-    std::unordered_map<std::uint32_t, std::shared_ptr<Shard>> shards_;
+    std::map<std::uint32_t, std::shared_ptr<Shard>> shards_;
 
     // Shard indexes being imported
     std::set<std::uint32_t> preparedIndexes_;
@@ -327,6 +363,34 @@ private:
 
     bool
     checkHistoricalPaths() const;
+
+    /**
+     * @brief iterateShardsForward Visits all shards starting from given
+     *        in ascending order and calls given callback function to each
+     *        of them passing shard as parameter.
+     * @param minShardIndex Start shard index to visit or none if all shards
+     *        should be visited.
+     * @param visit Callback function to call.
+     * @return True if each callback function returned true, false otherwise.
+     */
+    bool
+    iterateShardsForward(
+        std::optional<std::uint32_t> minShardIndex,
+        std::function<bool(Shard& shard)> const& visit);
+
+    /**
+     * @brief iterateShardsBack Visits all shards starting from given
+     *        in descending order and calls given callback function to each
+     *        of them passing shard as parameter.
+     * @param maxShardIndex Start shard index to visit or none if all shards
+     *        should be visited.
+     * @param visit Callback function to call.
+     * @return True if each callback function returned true, false otherwise.
+     */
+    bool
+    iterateShardsBack(
+        std::optional<std::uint32_t> maxShardIndex,
+        std::function<bool(Shard& shard)> const& visit);
 };
 
 }  // namespace NodeStore

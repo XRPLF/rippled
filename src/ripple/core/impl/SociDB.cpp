@@ -38,7 +38,7 @@ static auto checkpointPageCount = 1000;
 
 namespace detail {
 
-std::pair<std::string, soci::backend_factory const&>
+std::string
 getSociSqliteInit(
     std::string const& name,
     std::string const& dir,
@@ -53,10 +53,10 @@ getSociSqliteInit(
     boost::filesystem::path file(dir);
     if (is_directory(file))
         file /= name + ext;
-    return std::make_pair(file.string(), std::ref(soci::sqlite3));
+    return file.string();
 }
 
-std::pair<std::string, soci::backend_factory const&>
+std::string
 getSociInit(BasicConfig const& config, std::string const& dbName)
 {
     auto const& section = config.section("sqdb");
@@ -73,33 +73,31 @@ getSociInit(BasicConfig const& config, std::string const& dbName)
 
 }  // namespace detail
 
-SociConfig::SociConfig(
-    std::pair<std::string, soci::backend_factory const&> init)
-    : connectionString_(std::move(init.first)), backendFactory_(init.second)
+DBConfig::DBConfig(std::string const& dbPath) : connectionString_(dbPath)
 {
 }
 
-SociConfig::SociConfig(BasicConfig const& config, std::string const& dbName)
-    : SociConfig(detail::getSociInit(config, dbName))
+DBConfig::DBConfig(BasicConfig const& config, std::string const& dbName)
+    : DBConfig(detail::getSociInit(config, dbName))
 {
 }
 
 std::string
-SociConfig::connectionString() const
+DBConfig::connectionString() const
 {
     return connectionString_;
 }
 
 void
-SociConfig::open(soci::session& s) const
+DBConfig::open(soci::session& s) const
 {
-    s.open(backendFactory_, connectionString());
+    s.open(soci::sqlite3, connectionString());
 }
 
 void
 open(soci::session& s, BasicConfig const& config, std::string const& dbName)
 {
-    SociConfig(config, dbName).open(s);
+    DBConfig(config, dbName).open(s);
 }
 
 void

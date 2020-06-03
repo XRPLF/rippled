@@ -21,6 +21,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
+#include <ripple/app/rdb/backend/RelationalDBInterfaceSqlite.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -49,9 +50,9 @@ doAccountTxOld(RPC::JsonContext& context)
     std::uint32_t offset = context.params.isMember(jss::offset)
         ? context.params[jss::offset].asUInt()
         : 0;
-    int limit = context.params.isMember(jss::limit)
+    std::uint32_t limit = context.params.isMember(jss::limit)
         ? context.params[jss::limit].asUInt()
-        : -1;
+        : UINT32_MAX;
     bool bBinary = context.params.isMember(jss::binary) &&
         context.params[jss::binary].asBool();
     bool bDescending = context.params.isMember(jss::descending) &&
@@ -151,16 +152,26 @@ doAccountTxOld(RPC::JsonContext& context)
         ret[jss::account] = context.app.accountIDCache().toBase58(*raAccount);
         Json::Value& jvTxns = (ret[jss::transactions] = Json::arrayValue);
 
+        RelationalDBInterface::AccountTxOptions options = {
+            *raAccount,
+            uLedgerMin,
+            uLedgerMax,
+            offset,
+            limit,
+            isUnlimited(context.role)};
+
         if (bBinary)
         {
-            auto txns = context.netOps.getAccountTxsB(
-                *raAccount,
-                uLedgerMin,
-                uLedgerMax,
-                bDescending,
-                offset,
-                limit,
-                isUnlimited(context.role));
+            std::vector<RelationalDBInterface::txnMetaLedgerType> txns;
+
+            if (bDescending)
+                txns = dynamic_cast<RelationalDBInterfaceSqlite*>(
+                           &context.app.getRelationalDBInterface())
+                           ->getNewestAccountTxsB(options);
+            else
+                txns = dynamic_cast<RelationalDBInterfaceSqlite*>(
+                           &context.app.getRelationalDBInterface())
+                           ->getOldestAccountTxsB(options);
 
             for (auto it = txns.begin(), end = txns.end(); it != end; ++it)
             {
@@ -178,14 +189,16 @@ doAccountTxOld(RPC::JsonContext& context)
         }
         else
         {
-            auto txns = context.netOps.getAccountTxs(
-                *raAccount,
-                uLedgerMin,
-                uLedgerMax,
-                bDescending,
-                offset,
-                limit,
-                isUnlimited(context.role));
+            RelationalDBInterface::AccountTxs txns;
+
+            if (bDescending)
+                txns = dynamic_cast<RelationalDBInterfaceSqlite*>(
+                           &context.app.getRelationalDBInterface())
+                           ->getNewestAccountTxs(options);
+            else
+                txns = dynamic_cast<RelationalDBInterfaceSqlite*>(
+                           &context.app.getRelationalDBInterface())
+                           ->getOldestAccountTxs(options);
 
             for (auto it = txns.begin(), end = txns.end(); it != end; ++it)
             {

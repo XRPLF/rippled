@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012, 2013 Ripple Labs Inc.
@@ -250,60 +250,6 @@ public:
     updateLocalTx(ReadView const& newValidLedger) = 0;
     virtual std::size_t
     getLocalTxCount() = 0;
-
-    struct AccountTxMarker
-    {
-        uint32_t ledgerSeq = 0;
-        uint32_t txnSeq = 0;
-    };
-
-    // client information retrieval functions
-    using AccountTx =
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
-    using AccountTxs = std::vector<AccountTx>;
-
-    virtual AccountTxs
-    getAccountTxs(
-        AccountID const& account,
-        std::int32_t minLedger,
-        std::int32_t maxLedger,
-        bool descending,
-        std::uint32_t offset,
-        int limit,
-        bool bUnlimited) = 0;
-
-    virtual AccountTxs
-    getTxsAccount(
-        AccountID const& account,
-        std::int32_t minLedger,
-        std::int32_t maxLedger,
-        bool forward,
-        std::optional<AccountTxMarker>& marker,
-        int limit,
-        bool bUnlimited) = 0;
-
-    using txnMetaLedgerType = std::tuple<Blob, Blob, std::uint32_t>;
-    using MetaTxsList = std::vector<txnMetaLedgerType>;
-
-    virtual MetaTxsList
-    getAccountTxsB(
-        AccountID const& account,
-        std::int32_t minLedger,
-        std::int32_t maxLedger,
-        bool descending,
-        std::uint32_t offset,
-        int limit,
-        bool bUnlimited) = 0;
-
-    virtual MetaTxsList
-    getTxsAccountB(
-        AccountID const& account,
-        std::int32_t minLedger,
-        std::int32_t maxLedger,
-        bool forward,
-        std::optional<AccountTxMarker>& marker,
-        int limit,
-        bool bUnlimited) = 0;
 
     //--------------------------------------------------------------------------
     //
