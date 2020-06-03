@@ -12,7 +12,7 @@ if (is_root_project) # NuDB not needed in the case of xrpl_core inclusion build
     FetchContent_Declare(
       nudb_src
       GIT_REPOSITORY https://github.com/CPPAlliance/NuDB.git
-      GIT_TAG        2.0.1
+      GIT_TAG        2.0.3
     )
     FetchContent_GetProperties(nudb_src)
     if(NOT nudb_src_POPULATED)
@@ -23,7 +23,7 @@ if (is_root_project) # NuDB not needed in the case of xrpl_core inclusion build
     ExternalProject_Add (nudb_src
       PREFIX ${nih_cache_path}
       GIT_REPOSITORY https://github.com/CPPAlliance/NuDB.git
-      GIT_TAG 2.0.1
+      GIT_TAG 2.0.3
       CONFIGURE_COMMAND ""
       BUILD_COMMAND ""
       TEST_COMMAND ""
