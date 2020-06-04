@@ -157,7 +157,7 @@ public:
                 Env env(*this, std::move(p));
                 fail();
             }
-            catch (std::exception const& e)
+            catch (...)
             {
                 pass();
             }
@@ -177,7 +177,7 @@ public:
                 Env env(*this, std::move(p));
                 fail();
             }
-            catch (std::exception const& e)
+            catch (...)
             {
                 pass();
             }
@@ -197,7 +197,7 @@ public:
                 Env env(*this, std::move(p));
                 fail();
             }
-            catch (std::exception const& e)
+            catch (...)
             {
                 pass();
             }
@@ -217,7 +217,7 @@ public:
                 Env env(*this, std::move(p));
                 fail();
             }
-            catch (std::exception const& e)
+            catch (...)
             {
                 pass();
             }
