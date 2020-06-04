@@ -429,7 +429,7 @@ public:
     getPeerShardInfo() const;
 
     bool
-    compressionEnabled () const override
+    compressionEnabled() const override
     {
         return compressionEnabled_ == Compressed::On;
     }

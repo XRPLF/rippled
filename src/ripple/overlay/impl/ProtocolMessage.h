@@ -278,7 +278,7 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler)
     // larger message size may be supported in the future or negotiated as
     // part of a protocol upgrade.
     if (header->payload_wire_size > megabytes(64) ||
-            header->uncompressed_size > megabytes(64))
+        header->uncompressed_size > megabytes(64))
     {
         result.second = make_error_code(boost::system::errc::message_size);
         return result;
