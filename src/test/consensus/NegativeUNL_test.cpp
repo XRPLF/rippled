@@ -227,7 +227,7 @@ class NegativeUNL_test : public beast::unit_test::suite
 
         testcase("Create UNLModify Tx and apply to ledgers");
 
-        jtx::Env env(*this, jtx::supported_amendments());
+        jtx::Env env(*this, jtx::supported_amendments() | featureNegativeUNL);
         std::vector<PublicKey> publicKeys = createPublicKeys(3);
         // genesis ledger
         auto l = std::make_shared<Ledger>(
@@ -568,7 +568,7 @@ struct NetworkHistory
     };
 
     NetworkHistory(beast::unit_test::suite& suite, Parameter const& p)
-        : env(suite, jtx::supported_amendments())
+        : env(suite, jtx::supported_amendments() | featureNegativeUNL)
         , param(p)
         , validations(env.app().getValidations())
     {

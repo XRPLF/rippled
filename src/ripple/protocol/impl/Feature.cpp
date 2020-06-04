@@ -132,7 +132,8 @@ detail::supportedAmendments()
         "fix1781",
         "HardenedValidations",
         "fixAmendmentMajorityCalc",
-        "NegativeUNL"};
+        //"NegativeUNL"      // Commented out to prevent automatic enablement
+    };
     return supported;
 }
 

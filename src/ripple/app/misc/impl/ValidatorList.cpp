@@ -973,28 +973,28 @@ ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
 hash_set<PublicKey>
 ValidatorList::getTrustedMasterKeys()
 {
-    std::lock_guard<std::shared_timed_mutex> lock{mutex_};
+    std::shared_lock lock{mutex_};
     return trustedMasterKeys_;
 }
 
 hash_set<NodeID>
 ValidatorList::getNegativeUnlNodeIDs()
 {
-    std::lock_guard<std::shared_timed_mutex> lock{mutex_};
+    std::shared_lock lock{mutex_};
     return negUnlNodeIDs_;
 }
 
 hash_set<PublicKey>
 ValidatorList::getNegativeUnl()
 {
-    std::lock_guard<std::shared_timed_mutex> lock{mutex_};
+    std::shared_lock lock{mutex_};
     return negUnl_;
 }
 
 void
 ValidatorList::setNegativeUnl(hash_set<PublicKey> const& nUnl)
 {
-    std::lock_guard<std::shared_timed_mutex> lock{mutex_};
+    std::lock_guard lock{mutex_};
     negUnl_ = nUnl;
     negUnlNodeIDs_.clear();
     for (auto const& k : negUnl_)
