@@ -1022,11 +1022,11 @@ public:
 
         try
         {
-            auto const setup = setup_DatabaseCon(*config_);
+            auto setup = setup_DatabaseCon(*config_);
 
             // transaction database
             mTxnDB = std::make_unique<DatabaseCon>(
-                setup, TxDBName, true, TxDBPragma, TxDBInit);
+                setup, TxDBName, TxDBPragma, TxDBInit);
             mTxnDB->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(config_->getValueFor(SizedItem::txnDBCache)));
@@ -1065,17 +1065,17 @@ public:
 
             // ledger database
             mLedgerDB = std::make_unique<DatabaseCon>(
-                setup, LgrDBName, true, LgrDBPragma, LgrDBInit);
+                setup, LgrDBName, LgrDBPragma, LgrDBInit);
             mLedgerDB->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(config_->getValueFor(SizedItem::lgrDBCache)));
             mLedgerDB->setupCheckpointing(m_jobQueue.get(), logs());
 
             // wallet database
+            setup.noPragma();
             mWalletDB = std::make_unique<DatabaseCon>(
                 setup,
                 WalletDBName,
-                false,
                 std::array<char const*, 0>(),
                 WalletDBInit);
         }

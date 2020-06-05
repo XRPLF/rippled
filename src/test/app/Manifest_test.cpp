@@ -256,10 +256,10 @@ public:
         {
             DatabaseCon::Setup setup;
             setup.dataDir = getDatabasePath();
+            BEAST_EXPECT(!setup.commonPragma);
             DatabaseCon dbCon(
                 setup,
                 dbName.data(),
-                false,
                 std::array<char const*, 0>(),
                 WalletDBInit);
 

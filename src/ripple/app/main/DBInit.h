@@ -31,12 +31,12 @@ namespace ripple {
 inline constexpr char const* CommonDBPragmaJournal{"PRAGMA journal_mode=%s;"};
 inline constexpr char const* CommonDBPragmaSync{"PRAGMA synchronous=%s;"};
 inline constexpr char const* CommonDBPragmaTemp{"PRAGMA temp_store=%s;"};
-// Default values will always be used for the common pragmas if
-// at least this much ledger history is configured. This includes
-// full history nodes. This is because such a large amount of data will
-// be more difficult to recover if a rare failure occurs, which are
-// more likely with some of the other available tuning settings.
-inline constexpr std::uint32_t SQLITE_TUNING_CUTOFF = 100'000'000;
+// A warning will be logged if any lower-safety sqlite tuning settings
+// are used and at least this much ledger history is configured. This
+// includes full history nodes. This is because such a large amount of
+// data will be more difficult to recover if a rare failure occurs,
+// which are more likely with some of the other available tuning settings.
+inline constexpr std::uint32_t SQLITE_TUNING_CUTOFF = 10'000'000;
 
 // Ledger database holds ledgers and ledger confirmations
 inline constexpr auto LgrDBName{"ledger.db"};

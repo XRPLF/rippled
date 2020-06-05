@@ -541,8 +541,9 @@ run(int argc, char** argv)
                 return -1;
             }
 
+            dbSetup.noPragma();
             auto txnDB = std::make_unique<DatabaseCon>(
-                dbSetup, TxDBName, false, TxDBPragma, TxDBInit);
+                dbSetup, TxDBName, TxDBPragma, TxDBInit);
             auto& session = txnDB->getSession();
             std::uint32_t pageSize;
 
@@ -555,8 +556,8 @@ run(int argc, char** argv)
             session << "PRAGMA temp_store_directory=\"" << tmpPath.string()
                     << "\";";
             session << "VACUUM;";
-            assert(dbSetup.CommonPragma);
-            for (auto const& p : *dbSetup.CommonPragma)
+            assert(dbSetup.globalPragma);
+            for (auto const& p : *dbSetup.globalPragma)
                 session << p;
             session << "PRAGMA page_size;", soci::into(pageSize);
 

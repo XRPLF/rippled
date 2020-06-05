@@ -124,11 +124,11 @@ Shard::open(Scheduler& scheduler, nudb::context& ctx)
         setup.startUp = config.START_UP;
         setup.standAlone = config.standalone();
         setup.dataDir = dir_;
+        setup.usePragma();
 
         acquireInfo_->SQLiteDB = std::make_unique<DatabaseCon>(
             setup,
             AcquireShardDBName,
-            true,
             AcquireShardDBPragma,
             AcquireShardDBInit);
         acquireInfo_->SQLiteDB->setupCheckpointing(
@@ -684,15 +684,16 @@ Shard::initSQLite(std::lock_guard<std::recursive_mutex> const&)
 
         if (backendComplete_)
         {
+            setup.noPragma();
             lgrSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup, LgrDBName, false, CompleteShardDBPragma, LgrDBInit);
+                setup, LgrDBName, CompleteShardDBPragma, LgrDBInit);
             lgrSQLiteDB_->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(
                     config.getValueFor(SizedItem::lgrDBCache, boost::none)));
 
             txSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup, TxDBName, false, CompleteShardDBPragma, TxDBInit);
+                setup, TxDBName, CompleteShardDBPragma, TxDBInit);
             txSQLiteDB_->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(
@@ -701,15 +702,16 @@ Shard::initSQLite(std::lock_guard<std::recursive_mutex> const&)
         else
         {
             // The incomplete shard uses a Write Ahead Log for performance
+            setup.usePragma();
             lgrSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup, LgrDBName, true, LgrDBPragma, LgrDBInit);
+                setup, LgrDBName, LgrDBPragma, LgrDBInit);
             lgrSQLiteDB_->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(config.getValueFor(SizedItem::lgrDBCache)));
             lgrSQLiteDB_->setupCheckpointing(&app_.getJobQueue(), app_.logs());
 
             txSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup, TxDBName, true, TxDBPragma, TxDBInit);
+                setup, TxDBName, TxDBPragma, TxDBInit);
             txSQLiteDB_->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(config.getValueFor(SizedItem::txnDBCache)));

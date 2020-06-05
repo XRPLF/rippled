@@ -24,6 +24,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/core/SociDB.h>
 #include <boost/filesystem/path.hpp>
+#include <boost/optional.hpp>
 #include <mutex>
 #include <string>
 
@@ -89,17 +90,28 @@ public:
         Config::StartUpType startUp = Config::NORMAL;
         bool standAlone = false;
         boost::filesystem::path dataDir;
-        static std::unique_ptr<std::vector<std::string> const> CommonPragma;
-        /// Shortcut used by the database connections that ignore the common
-        /// pragma strings
-        static const std::vector<std::string> NoCommonPragma;
+        // If unseated, then the `globalPragma` are not used,
+        // otherwise should point to `globalPragma`
+        std::shared_ptr<std::vector<std::string> const> commonPragma;
+        void
+        noPragma()
+        {
+            commonPragma.reset();
+        }
+        void
+        usePragma()
+        {
+            assert(globalPragma);
+            commonPragma = globalPragma;
+        }
+
+        static std::shared_ptr<std::vector<std::string> const> globalPragma;
     };
 
     template <std::size_t N, std::size_t M>
     DatabaseCon(
         Setup const& setup,
         std::string const& DBName,
-        bool useCommonPragma,
         std::array<char const*, N> const& pragma,
         std::array<char const*, M> const& initSQL)
     {
@@ -111,12 +123,7 @@ public:
         boost::filesystem::path pPath =
             useTempFiles ? "" : (setup.dataDir / DBName);
 
-        assert(!useCommonPragma || setup.CommonPragma);
-        init(
-            pPath,
-            useCommonPragma ? *setup.CommonPragma : setup.NoCommonPragma,
-            pragma,
-            initSQL);
+        init(pPath, setup.commonPragma, pragma, initSQL);
     }
 
     template <std::size_t N, std::size_t M>
@@ -149,16 +156,19 @@ private:
     void
     init(
         boost::filesystem::path const& pPath,
-        std::vector<std::string> const& commonPragma,
+        std::shared_ptr<std::vector<std::string> const> const& commonPragma,
         std::array<char const*, N> const& pragma,
         std::array<char const*, M> const& initSQL)
     {
         open(session_, "sqlite", pPath.string());
 
-        for (auto const& p : commonPragma)
+        if (commonPragma)
         {
-            soci::statement st = session_.prepare << p;
-            st.execute(true);
+            for (auto const& p : *commonPragma)
+            {
+                soci::statement st = session_.prepare << p;
+                st.execute(true);
+            }
         }
         for (auto const& p : pragma)
         {
@@ -179,7 +189,9 @@ private:
 };
 
 DatabaseCon::Setup
-setup_DatabaseCon(Config const& c);
+setup_DatabaseCon(
+    Config const& c,
+    boost::optional<beast::Journal> j = boost::none);
 
 }  // namespace ripple
 

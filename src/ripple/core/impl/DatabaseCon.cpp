@@ -28,7 +28,7 @@
 namespace ripple {
 
 DatabaseCon::Setup
-setup_DatabaseCon(Config const& c)
+setup_DatabaseCon(Config const& c, boost::optional<beast::Journal> j)
 {
     DatabaseCon::Setup setup;
 
@@ -40,9 +40,9 @@ setup_DatabaseCon(Config const& c)
         Throw<std::runtime_error>("database_path must be set.");
     }
 
-    if (!setup.CommonPragma)
+    if (!setup.globalPragma)
     {
-        setup.CommonPragma = [&c]() {
+        setup.globalPragma = [&c, &j]() {
             auto const& sqlite = c.section("sqlite");
             auto result = std::make_unique<std::vector<std::string>>();
             result->reserve(3);
@@ -53,8 +53,8 @@ setup_DatabaseCon(Config const& c)
             std::string synchronous = "normal";
             std::string temp_store = "file";
 
-            if (c.LEDGER_HISTORY < SQLITE_TUNING_CUTOFF &&
-                set(safety_level, "safety_level", sqlite))
+            bool showWarning = false;
+            if (set(safety_level, "safety_level", sqlite))
             {
                 if (boost::iequals(safety_level, "low"))
                 {
@@ -62,6 +62,7 @@ setup_DatabaseCon(Config const& c)
                     journal_mode = "memory";
                     synchronous = "off";
                     temp_store = "memory";
+                    showWarning = true;
                 }
                 else if (!boost::iequals(safety_level, "high"))
                 {
@@ -70,70 +71,87 @@ setup_DatabaseCon(Config const& c)
                 }
             }
 
-            // #journal_mode Valid values : delete, truncate, persist, memory,
-            // wal, off
-            if (c.LEDGER_HISTORY < SQLITE_TUNING_CUTOFF)
-                set(journal_mode, "journal_mode", sqlite);
-            if (boost::iequals(journal_mode, "delete") ||
-                boost::iequals(journal_mode, "truncate") ||
-                boost::iequals(journal_mode, "persist") ||
-                boost::iequals(journal_mode, "memory") ||
-                boost::iequals(journal_mode, "wal") ||
-                boost::iequals(journal_mode, "off"))
             {
-                result->emplace_back(boost::str(
-                    boost::format(CommonDBPragmaJournal) % journal_mode));
-            }
-            else
-            {
-                Throw<std::runtime_error>(
-                    "Invalid journal_mode value: " + journal_mode);
-            }
-
-            //#synchronous Valid values : off, normal, full, extra
-            if (c.LEDGER_HISTORY < SQLITE_TUNING_CUTOFF)
-                set(synchronous, "synchronous", sqlite);
-            if (boost::iequals(synchronous, "off") ||
-                boost::iequals(synchronous, "normal") ||
-                boost::iequals(synchronous, "full") ||
-                boost::iequals(synchronous, "extra"))
-            {
-                result->emplace_back(boost::str(
-                    boost::format(CommonDBPragmaSync) % synchronous));
-            }
-            else
-            {
-                Throw<std::runtime_error>(
-                    "Invalid synchronous value: " + synchronous);
+                // #journal_mode Valid values : delete, truncate, persist,
+                // memory, wal, off
+                if (c.LEDGER_HISTORY < SQLITE_TUNING_CUTOFF)
+                    set(journal_mode, "journal_mode", sqlite);
+                bool higherRisk = boost::iequals(journal_mode, "memory") ||
+                    boost::iequals(journal_mode, "off");
+                showWarning = showWarning || higherRisk;
+                if (higherRisk || boost::iequals(journal_mode, "delete") ||
+                    boost::iequals(journal_mode, "truncate") ||
+                    boost::iequals(journal_mode, "persist") ||
+                    boost::iequals(journal_mode, "wal"))
+                {
+                    result->emplace_back(boost::str(
+                        boost::format(CommonDBPragmaJournal) % journal_mode));
+                }
+                else
+                {
+                    Throw<std::runtime_error>(
+                        "Invalid journal_mode value: " + journal_mode);
+                }
             }
 
-            // #temp_store Valid values : default, file, memory
-            if (c.LEDGER_HISTORY < SQLITE_TUNING_CUTOFF)
-                set(temp_store, "temp_store", sqlite);
-            if (boost::iequals(temp_store, "default") ||
-                boost::iequals(temp_store, "file") ||
-                boost::iequals(temp_store, "memory"))
             {
-                result->emplace_back(
-                    boost::str(boost::format(CommonDBPragmaTemp) % temp_store));
-            }
-            else
-            {
-                Throw<std::runtime_error>(
-                    "Invalid temp_store value: " + temp_store);
+                //#synchronous Valid values : off, normal, full, extra
+                if (c.LEDGER_HISTORY < SQLITE_TUNING_CUTOFF)
+                    set(synchronous, "synchronous", sqlite);
+                bool higherRisk = boost::iequals(synchronous, "off");
+                showWarning = showWarning || higherRisk;
+                if (higherRisk || boost::iequals(synchronous, "normal") ||
+                    boost::iequals(synchronous, "full") ||
+                    boost::iequals(synchronous, "extra"))
+                {
+                    result->emplace_back(boost::str(
+                        boost::format(CommonDBPragmaSync) % synchronous));
+                }
+                else
+                {
+                    Throw<std::runtime_error>(
+                        "Invalid synchronous value: " + synchronous);
+                }
             }
 
+            {
+                // #temp_store Valid values : default, file, memory
+                if (c.LEDGER_HISTORY < SQLITE_TUNING_CUTOFF)
+                    set(temp_store, "temp_store", sqlite);
+                bool higherRisk = boost::iequals(temp_store, "memory");
+                showWarning = showWarning || higherRisk;
+                if (higherRisk || boost::iequals(temp_store, "default") ||
+                    boost::iequals(temp_store, "file"))
+                {
+                    result->emplace_back(boost::str(
+                        boost::format(CommonDBPragmaTemp) % temp_store));
+                }
+                else
+                {
+                    Throw<std::runtime_error>(
+                        "Invalid temp_store value: " + temp_store);
+                }
+            }
+
+            if (showWarning && j && c.LEDGER_HISTORY > SQLITE_TUNING_CUTOFF)
+            {
+                JLOG(j->warn())
+                    << "reducing the data integrity guarantees from the "
+                       "default [sqlite] behavior is not recommended for "
+                       "nodes storing large amounts of history, because of the "
+                       "difficulty inherent in rebuilding corrupted data.";
+            }
             assert(result->size() == 3);
             return result;
         }();
     }
+    setup.commonPragma = setup.globalPragma;
 
     return setup;
 }
 
-std::unique_ptr<std::vector<std::string> const>
-    DatabaseCon::Setup::CommonPragma;
-const std::vector<std::string> DatabaseCon::Setup::NoCommonPragma;
+std::shared_ptr<std::vector<std::string> const>
+    DatabaseCon::Setup::globalPragma;
 
 void
 DatabaseCon::setupCheckpointing(JobQueue* q, Logs& l)

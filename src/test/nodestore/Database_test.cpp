@@ -51,19 +51,19 @@ public:
 
             auto const s = setup_DatabaseCon(env.app().config());
 
-            if (BEAST_EXPECT(s.CommonPragma->size() == 3))
+            if (BEAST_EXPECT(s.globalPragma->size() == 3))
             {
                 BEAST_EXPECT(
-                    s.CommonPragma->at(0) == "PRAGMA journal_mode=wal;");
+                    s.globalPragma->at(0) == "PRAGMA journal_mode=wal;");
                 BEAST_EXPECT(
-                    s.CommonPragma->at(1) == "PRAGMA synchronous=normal;");
+                    s.globalPragma->at(1) == "PRAGMA synchronous=normal;");
                 BEAST_EXPECT(
-                    s.CommonPragma->at(2) == "PRAGMA temp_store=file;");
+                    s.globalPragma->at(2) == "PRAGMA temp_store=file;");
             }
         }
         {
             // Low safety level
-            DatabaseCon::Setup::CommonPragma.reset();
+            DatabaseCon::Setup::globalPragma.reset();
 
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
@@ -76,19 +76,19 @@ public:
             }();
 
             auto const s = setup_DatabaseCon(env.app().config());
-            if (BEAST_EXPECT(s.CommonPragma->size() == 3))
+            if (BEAST_EXPECT(s.globalPragma->size() == 3))
             {
                 BEAST_EXPECT(
-                    s.CommonPragma->at(0) == "PRAGMA journal_mode=memory;");
+                    s.globalPragma->at(0) == "PRAGMA journal_mode=memory;");
                 BEAST_EXPECT(
-                    s.CommonPragma->at(1) == "PRAGMA synchronous=off;");
+                    s.globalPragma->at(1) == "PRAGMA synchronous=off;");
                 BEAST_EXPECT(
-                    s.CommonPragma->at(2) == "PRAGMA temp_store=memory;");
+                    s.globalPragma->at(2) == "PRAGMA temp_store=memory;");
             }
         }
         {
             // Override individual settings
-            DatabaseCon::Setup::CommonPragma.reset();
+            DatabaseCon::Setup::globalPragma.reset();
 
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
@@ -103,20 +103,20 @@ public:
             }();
 
             auto const s = setup_DatabaseCon(env.app().config());
-            if (BEAST_EXPECT(s.CommonPragma->size() == 3))
+            if (BEAST_EXPECT(s.globalPragma->size() == 3))
             {
                 BEAST_EXPECT(
-                    s.CommonPragma->at(0) == "PRAGMA journal_mode=off;");
+                    s.globalPragma->at(0) == "PRAGMA journal_mode=off;");
                 BEAST_EXPECT(
-                    s.CommonPragma->at(1) == "PRAGMA synchronous=extra;");
+                    s.globalPragma->at(1) == "PRAGMA synchronous=extra;");
                 BEAST_EXPECT(
-                    s.CommonPragma->at(2) == "PRAGMA temp_store=default;");
+                    s.globalPragma->at(2) == "PRAGMA temp_store=default;");
             }
         }
         {
             // Override individual settings with low safety level
             // (Low doesn't force the other settings)
-            DatabaseCon::Setup::CommonPragma.reset();
+            DatabaseCon::Setup::globalPragma.reset();
 
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
@@ -132,19 +132,19 @@ public:
             }();
 
             auto const s = setup_DatabaseCon(env.app().config());
-            if (BEAST_EXPECT(s.CommonPragma->size() == 3))
+            if (BEAST_EXPECT(s.globalPragma->size() == 3))
             {
                 BEAST_EXPECT(
-                    s.CommonPragma->at(0) == "PRAGMA journal_mode=off;");
+                    s.globalPragma->at(0) == "PRAGMA journal_mode=off;");
                 BEAST_EXPECT(
-                    s.CommonPragma->at(1) == "PRAGMA synchronous=extra;");
+                    s.globalPragma->at(1) == "PRAGMA synchronous=extra;");
                 BEAST_EXPECT(
-                    s.CommonPragma->at(2) == "PRAGMA temp_store=default;");
+                    s.globalPragma->at(2) == "PRAGMA temp_store=default;");
             }
         }
         {
             // Errors
-            DatabaseCon::Setup::CommonPragma.reset();
+            DatabaseCon::Setup::globalPragma.reset();
 
             auto p = test::jtx::envconfig();
             {
@@ -164,7 +164,7 @@ public:
         }
         {
             // Errors
-            DatabaseCon::Setup::CommonPragma.reset();
+            DatabaseCon::Setup::globalPragma.reset();
 
             auto p = test::jtx::envconfig();
             {
@@ -184,7 +184,7 @@ public:
         }
         {
             // Errors
-            DatabaseCon::Setup::CommonPragma.reset();
+            DatabaseCon::Setup::globalPragma.reset();
 
             auto p = test::jtx::envconfig();
             {
@@ -204,7 +204,7 @@ public:
         }
         {
             // Errors
-            DatabaseCon::Setup::CommonPragma.reset();
+            DatabaseCon::Setup::globalPragma.reset();
 
             auto p = test::jtx::envconfig();
             {
