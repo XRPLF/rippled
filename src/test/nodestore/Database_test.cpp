@@ -22,6 +22,7 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <test/jtx.h>
+#include <test/jtx/CheckMessageLogs.h>
 #include <test/jtx/envconfig.h>
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
@@ -43,8 +44,14 @@ public:
     {
         testcase("Config");
 
+        using namespace ripple::test;
         using namespace ripple::test::jtx;
 
+        auto const integrityWarning =
+            "reducing the data integrity guarantees from the "
+            "default [sqlite] behavior is not recommended for "
+            "nodes storing large amounts of history, because of the "
+            "difficulty inherent in rebuilding corrupted data.";
         {
             // defaults
             Env env(*this);
@@ -65,16 +72,23 @@ public:
             // Low safety level
             DatabaseCon::Setup::globalPragma.reset();
 
+            bool found = false;
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
                     auto& section = p->section("sqlite");
                     section.set("safety_level", "low");
                 }
+                p->LEDGER_HISTORY = 100'000'000;
 
-                return Env(*this, std::move(p));
+                return Env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(integrityWarning, found),
+                    beast::severities::kWarning);
             }();
 
+            BEAST_EXPECT(found);
             auto const s = setup_DatabaseCon(env.app().config());
             if (BEAST_EXPECT(s.globalPragma->size() == 3))
             {
@@ -90,6 +104,7 @@ public:
             // Override individual settings
             DatabaseCon::Setup::globalPragma.reset();
 
+            bool found = false;
             Env env = [&]() {
                 auto p = test::jtx::envconfig();
                 {
@@ -99,9 +114,14 @@ public:
                     section.set("temp_store", "default");
                 }
 
-                return Env(*this, std::move(p));
+                return Env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(integrityWarning, found),
+                    beast::severities::kWarning);
             }();
 
+            BEAST_EXPECT(!found);
             auto const s = setup_DatabaseCon(env.app().config());
             if (BEAST_EXPECT(s.globalPragma->size() == 3))
             {

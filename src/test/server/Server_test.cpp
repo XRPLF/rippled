@@ -31,6 +31,7 @@
 #include <chrono>
 #include <stdexcept>
 #include <test/jtx.h>
+#include <test/jtx/CaptureLogs.h>
 #include <test/jtx/envconfig.h>
 #include <test/unit_test/SuiteJournal.h>
 #include <thread>
@@ -374,60 +375,6 @@ public:
         }
         pass();
     }
-
-    /**
-     * @brief sink for writing all log messages to a stringstream
-     */
-    class CaptureSink : public beast::Journal::Sink
-    {
-        std::stringstream& strm_;
-
-    public:
-        CaptureSink(
-            beast::severities::Severity threshold,
-            std::stringstream& strm)
-            : beast::Journal::Sink(threshold, false), strm_(strm)
-        {
-        }
-
-        void
-        write(beast::severities::Severity level, std::string const& text)
-            override
-        {
-            strm_ << text;
-        }
-    };
-
-    /**
-     * @brief Log manager for CaptureSinks. This class holds the stream
-     * instance that is written to by the sinks. Upon destruction, all
-     * contents of the stream are assigned to the string specified in the
-     * ctor
-     */
-    class CaptureLogs : public Logs
-    {
-        std::stringstream strm_;
-        std::string& result_;
-
-    public:
-        explicit CaptureLogs(std::string& result)
-            : Logs(beast::severities::kInfo), result_(result)
-        {
-        }
-
-        ~CaptureLogs() override
-        {
-            result_ = strm_.str();
-        }
-
-        std::unique_ptr<beast::Journal::Sink>
-        makeSink(
-            std::string const& partition,
-            beast::severities::Severity threshold) override
-        {
-            return std::make_unique<CaptureSink>(threshold, strm_);
-        }
-    };
 
     void
     testBadConfig()

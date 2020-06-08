@@ -59,7 +59,8 @@ namespace jtx {
 Env::AppBundle::AppBundle(
     beast::unit_test::suite& suite,
     std::unique_ptr<Config> config,
-    std::unique_ptr<Logs> logs)
+    std::unique_ptr<Logs> logs,
+    beast::severities::Severity thresh)
     : AppBundle()
 {
     using namespace beast::severities;
@@ -72,7 +73,7 @@ Env::AppBundle::AppBundle(
     owned = make_Application(
         std::move(config), std::move(logs), std::move(timeKeeper_));
     app = owned.get();
-    app->logs().threshold(kError);
+    app->logs().threshold(thresh);
     if (!app->setup())
         Throw<std::runtime_error>("Env::AppBundle: setup failed");
     timeKeeper->set(app->getLedgerMaster().getClosedLedger()->info().closeTime);

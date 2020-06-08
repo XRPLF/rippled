@@ -1022,7 +1022,7 @@ public:
 
         try
         {
-            auto setup = setup_DatabaseCon(*config_);
+            auto setup = setup_DatabaseCon(*config_, m_journal);
 
             // transaction database
             mTxnDB = std::make_unique<DatabaseCon>(

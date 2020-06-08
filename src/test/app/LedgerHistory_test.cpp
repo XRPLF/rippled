@@ -27,6 +27,7 @@
 #include <memory>
 #include <sstream>
 #include <test/jtx.h>
+#include <test/jtx/CheckMessageLogs.h>
 
 namespace ripple {
 namespace test {
@@ -34,56 +35,6 @@ namespace test {
 class LedgerHistory_test : public beast::unit_test::suite
 {
 public:
-    /** Log manager that searches for a specific message substring
-     */
-    class CheckMessageLogs : public Logs
-    {
-        std::string msg_;
-        bool& found_;
-
-        class CheckMessageSink : public beast::Journal::Sink
-        {
-            CheckMessageLogs& owner_;
-
-        public:
-            CheckMessageSink(
-                beast::severities::Severity threshold,
-                CheckMessageLogs& owner)
-                : beast::Journal::Sink(threshold, false), owner_(owner)
-            {
-            }
-
-            void
-            write(beast::severities::Severity level, std::string const& text)
-                override
-            {
-                if (text.find(owner_.msg_) != std::string::npos)
-                    owner_.found_ = true;
-            }
-        };
-
-    public:
-        /** Constructor
-
-            @param msg The message string to search for
-            @param found The variable to set to true if the message is found
-        */
-        CheckMessageLogs(std::string msg, bool& found)
-            : Logs{beast::severities::kDebug}
-            , msg_{std::move(msg)}
-            , found_{found}
-        {
-        }
-
-        std::unique_ptr<beast::Journal::Sink>
-        makeSink(
-            std::string const& partition,
-            beast::severities::Severity threshold) override
-        {
-            return std::make_unique<CheckMessageSink>(threshold, *this);
-        }
-    };
-
     /** Generate a new ledger by hand, applying a specific close time offset
         and optionally inserting a transaction.
 
