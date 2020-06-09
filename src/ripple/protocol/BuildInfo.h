@@ -68,6 +68,18 @@ getFullVersionString();
 std::uint64_t
 getEncodedVersion();
 
+/** Compare the local node's rippled server software version with the given one.
+
+    @note We only compare the major version, minor version, and patch version.
+    @param othersVersion another node's rippled server software version
+    @return true if local node's rippled server software version is lower,
+            false otherwise.
+*/
+bool
+localVersionLow(std::uint64_t othersVersion);
+
+static constexpr float versionUpgradeWarningThreshold = 0.6;
+
 }  // namespace BuildInfo
 
 }  // namespace ripple

@@ -148,6 +148,13 @@ getEncodedVersion()
     return cookie;
 }
 
+bool
+localVersionLow(std::uint64_t othersVersion)
+{
+    static std::uint64_t const mask = 0x0000ffffff000000;
+    return (getEncodedVersion() & mask) < (othersVersion & mask);
+}
+
 }  // namespace BuildInfo
 
 }  // namespace ripple

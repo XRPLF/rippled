@@ -43,6 +43,8 @@
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/Peer.h>
+#include <ripple/protocol/BuildInfo.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/resource/Fees.h>
@@ -1037,6 +1039,51 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     app_.getFeeTrack().setRemoteFee(fee);
 
     tryAdvance();
+
+    if (ledger->seq() % 256 == 0)
+    {
+        /*
+         * Check if the majority of validators run a higher version rippled
+         * software. If so print a warning.
+         *
+         * Once the HardenedValidations amendment is enabled, validators include
+         * their rippled software version in the validation messages of every
+         * (flag - 1) ledger. We wait for one ledger time before checking the
+         * version information to accumulate more validation messages.
+         */
+        auto const& patentHash = ledger->info().parentHash;
+        auto const parentLedger = getLedgerByHash(patentHash);
+        if (parentLedger &&
+            parentLedger->rules().enabled(featureHardenedValidations))
+        {
+            auto const vals =
+                app_.getValidations().getTrustedForLedger(patentHash);
+            auto higherVersionCount = std::count_if(
+                vals.begin(), vals.end(), [](auto const& v) -> bool {
+                    if (v->isFieldPresent(sfServerVersion))
+                        return BuildInfo::localVersionLow(
+                            v->getFieldU64(sfServerVersion));
+                    else
+                        return false;
+                });
+            auto const threshold = static_cast<std::size_t>(std::ceil(
+                app_.validators().getQuorumKeys().second.size() *
+                BuildInfo::versionUpgradeWarningThreshold));
+            if (higherVersionCount >= threshold)
+            {
+                std::cerr << "***********************************************"
+                          << std::endl;
+                std::cerr << "* Majority of your trusted validators run a   *"
+                          << std::endl;
+                std::cerr << "* higher version of rippled server software.  *"
+                          << std::endl;
+                std::cerr << "* Please upgrade your rippled server software.*"
+                          << std::endl;
+                std::cerr << "***********************************************"
+                          << std::endl;
+            }
+        }
+    }
 }
 
 /** Report that the consensus process built a particular ledger */
