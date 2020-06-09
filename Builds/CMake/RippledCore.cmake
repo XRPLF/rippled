@@ -150,6 +150,7 @@ install (
     src/ripple/basics/IOUAmount.h
     src/ripple/basics/LocalValue.h
     src/ripple/basics/Log.h
+    src/ripple/basics/MathUtilities.h
     src/ripple/basics/safe_cast.h
     src/ripple/basics/Slice.h
     src/ripple/basics/StringUtilities.h
@@ -870,6 +871,7 @@ target_sources (rippled PRIVATE
      test sources:
        subdir: protocol
   #]===============================]
+  src/test/protocol/BuildInfo_test.cpp
   src/test/protocol/InnerObjectFormats_test.cpp
   src/test/protocol/Issue_test.cpp
   src/test/protocol/PublicKey_test.cpp
