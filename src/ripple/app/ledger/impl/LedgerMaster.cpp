@@ -34,6 +34,7 @@
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/MathUtilities.h>
 #include <ripple/basics/TaggedCache.h>
 #include <ripple/basics/UptimeClock.h>
 #include <ripple/basics/contract.h>
@@ -43,6 +44,7 @@
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/Peer.h>
+#include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/resource/Fees.h>
@@ -1049,6 +1051,78 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     app_.getFeeTrack().setRemoteFee(fee);
 
     tryAdvance();
+
+    if (ledger->seq() % 256 == 0)
+    {
+        // Check if the majority of validators run a higher version rippled
+        // software. If so print a warning.
+        //
+        // Once the HardenedValidations amendment is enabled, validators include
+        // their rippled software version in the validation messages of every
+        // (flag - 1) ledger. We wait for one ledger time before checking the
+        // version information to accumulate more validation messages.
+
+        auto currentTime = app_.timeKeeper().now();
+        bool needPrint = false;
+
+        // The variable upgradeWarningPrevTime_ will be set when and only when
+        // the warning is printed.
+        if (upgradeWarningPrevTime_ == TimeKeeper::time_point())
+        {
+            // Have not printed the warning before, check if need to print.
+            auto const vals = app_.getValidations().getTrustedForLedger(
+                ledger->info().parentHash);
+            std::size_t higherVersionCount = 0;
+            std::size_t rippledCount = 0;
+            for (auto const& v : vals)
+            {
+                if (v->isFieldPresent(sfServerVersion))
+                {
+                    auto version = v->getFieldU64(sfServerVersion);
+                    higherVersionCount +=
+                        BuildInfo::isNewerVersion(version) ? 1 : 0;
+                    rippledCount +=
+                        BuildInfo::isRippledVersion(version) ? 1 : 0;
+                }
+            }
+            // We report only if (1) we have accumulated validation messages
+            // from 90% validators from the UNL, (2) 60% of validators
+            // running the rippled implementation have higher version numbers,
+            // and (3) the calculation won't cause divide-by-zero.
+            if (higherVersionCount > 0 && rippledCount > 0)
+            {
+                constexpr std::size_t reportingPercent = 90;
+                constexpr std::size_t cutoffPercent = 60;
+                auto const unlSize{
+                    app_.validators().getQuorumKeys().second.size()};
+                needPrint = unlSize > 0 &&
+                    calculatePercent(vals.size(), unlSize) >=
+                        reportingPercent &&
+                    calculatePercent(higherVersionCount, rippledCount) >=
+                        cutoffPercent;
+            }
+        }
+        // To throttle the warning messages, instead of printing a warning
+        // every flag ledger, we print every week.
+        else if (currentTime - upgradeWarningPrevTime_ >= weeks{1})
+        {
+            // Printed the warning before, and assuming most validators
+            // do not downgrade, we keep printing the warning
+            // until the local server is restarted.
+            needPrint = true;
+        }
+
+        if (needPrint)
+        {
+            upgradeWarningPrevTime_ = currentTime;
+            auto const upgradeMsg =
+                "Check for upgrade: "
+                "A majority of trusted validators are "
+                "running a newer version.";
+            std::cerr << upgradeMsg << std::endl;
+            JLOG(m_journal.error()) << upgradeMsg;
+        }
+    }
 }
 
 /** Report that the consensus process built a particular ledger */
