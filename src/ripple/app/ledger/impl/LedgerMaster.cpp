@@ -1042,45 +1042,45 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
 
     if (ledger->seq() % 256 == 0)
     {
-        /*
-         * Check if the majority of validators run a higher version rippled
-         * software. If so print a warning.
-         *
-         * Once the HardenedValidations amendment is enabled, validators include
-         * their rippled software version in the validation messages of every
-         * (flag - 1) ledger. We wait for one ledger time before checking the
-         * version information to accumulate more validation messages.
-         */
-        auto const& patentHash = ledger->info().parentHash;
-        auto const parentLedger = getLedgerByHash(patentHash);
+        // Check if the majority of validators run a higher version rippled
+        // software. If so print a warning.
+        //
+        // Once the HardenedValidations amendment is enabled, validators include
+        // their rippled software version in the validation messages of every
+        // (flag - 1) ledger. We wait for one ledger time before checking the
+        // version information to accumulate more validation messages.
+
+        auto const& parentHash = ledger->info().parentHash;
+        auto const parentLedger = getLedgerByHash(parentHash);
         if (parentLedger &&
             parentLedger->rules().enabled(featureHardenedValidations))
         {
-            auto const vals =
-                app_.getValidations().getTrustedForLedger(patentHash);
-            auto higherVersionCount = std::count_if(
-                vals.begin(), vals.end(), [](auto const& v) -> bool {
-                    if (v->isFieldPresent(sfServerVersion))
-                        return BuildInfo::localVersionLow(
-                            v->getFieldU64(sfServerVersion));
-                    else
-                        return false;
-                });
-            auto const threshold = static_cast<std::size_t>(std::ceil(
-                app_.validators().getQuorumKeys().second.size() *
-                BuildInfo::versionUpgradeWarningThreshold));
-            if (higherVersionCount >= threshold)
+            // To throttle the warning messages, instead of printing a warning
+            // every flag ledger, we print every week.
+            static TimeKeeper::time_point lastTime{};
+            auto currentTime = app_.timeKeeper().now();
+            if (currentTime - lastTime >= weeks{1})
             {
-                std::cerr << "***********************************************"
-                          << std::endl;
-                std::cerr << "* Majority of your trusted validators run a   *"
-                          << std::endl;
-                std::cerr << "* higher version of rippled server software.  *"
-                          << std::endl;
-                std::cerr << "* Please upgrade your rippled server software.*"
-                          << std::endl;
-                std::cerr << "***********************************************"
-                          << std::endl;
+                auto const vals =
+                    app_.getValidations().getTrustedForLedger(parentHash);
+                auto higherVersionCount = std::count_if(
+                    vals.begin(), vals.end(), [](auto const& v) -> bool {
+                        if (v->isFieldPresent(sfServerVersion))
+                            return BuildInfo::isNewerVersion(
+                                v->getFieldU64(sfServerVersion));
+                        else
+                            return false;
+                    });
+                // We set the threshold of majority to be 60% of the UNL
+                auto const threshold =
+                    app_.validators().getQuorumKeys().second.size() * 60 / 100;
+                if (higherVersionCount >= threshold)
+                {
+                    lastTime = currentTime;
+                    std::cerr << "Check for upgrade: "
+                                 "A majority of trusted validators are "
+                                 "running a newer version.\n";
+                }
             }
         }
     }

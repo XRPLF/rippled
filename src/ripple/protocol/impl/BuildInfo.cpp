@@ -149,10 +149,12 @@ getEncodedVersion()
 }
 
 bool
-localVersionLow(std::uint64_t othersVersion)
+isNewerVersion(std::uint64_t version)
 {
-    static std::uint64_t const mask = 0x0000ffffff000000;
-    return (getEncodedVersion() & mask) < (othersVersion & mask);
+    std::uint64_t constexpr mask = 0x183B000000000000;
+    if ((version & mask) == mask)
+        return version > getEncodedVersion();
+    return false;
 }
 
 }  // namespace BuildInfo
