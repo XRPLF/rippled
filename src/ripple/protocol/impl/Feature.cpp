@@ -131,7 +131,7 @@ detail::supportedAmendments()
         "RequireFullyCanonicalSig",
         "fix1781",
         "HardenedValidations",
-        "fix3396"};
+        "fixAmendmentMajorityCalc"};
     return supported;
 }
 
@@ -183,7 +183,7 @@ uint256 const
     featureRequireFullyCanonicalSig = *getRegisteredFeature("RequireFullyCanonicalSig"),
     fix1781                         = *getRegisteredFeature("fix1781"),
     featureHardenedValidations      = *getRegisteredFeature("HardenedValidations"),
-    fix3396                         = *getRegisteredFeature("fix3396");
+    fixAmendmentMajorityCalc        = *getRegisteredFeature("fixAmendmentMajorityCalc");
 
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.

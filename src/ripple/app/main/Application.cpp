@@ -1531,7 +1531,6 @@ ApplicationImp::setup()
 
         m_amendmentTable = make_AmendmentTable(
             config().AMENDMENT_MAJORITY_TIME,
-            {amendmentMajorityFractionOld, amendmentMajorityFraction},
             supportedAmendments,
             enabledAmendments,
             config_->section(SECTION_VETO_AMENDMENTS),

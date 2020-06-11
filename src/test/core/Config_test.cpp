@@ -1018,60 +1018,50 @@ r.ripple.com 51235
     testAmendment()
     {
         testcase("amendment");
+        struct ConfigUnit
+        {
+            std::string unit;
+            std::uint32_t numSeconds;
+            std::uint32_t configVal;
+            bool shouldPass;
+        };
 
-        std::vector<std::pair<std::string, std::uint32_t>> units = {
-            {"seconds", 1},
-            {"minutes", 60},
-            {"hours", 3600},
-            {"days", 86400},
-            {"weeks", 604800}};
+        std::vector<ConfigUnit> units = {
+            {"seconds", 1, 15 * 60 - 1, false},
+            {"seconds", 1, 15 * 60, true},
+            {"minutes", 60, 14, false},
+            {"minutes", 60, 15, true},
+            {"hours", 3600, 10, true},
+            {"days", 86400, 10, true},
+            {"weeks", 604800, 2, true},
+            {"months", 2592000, 1, false},
+            {"years", 31536000, 1, false}};
 
         std::string space = "";
-        for (auto& [unit, m] : units)
+        for (auto& [unit, sec, val, shouldPass] : units)
         {
             Config c;
             std::string toLoad(R"rippleConfig(
 [amendment_majority_time]
-10)rippleConfig");
-            toLoad += space + unit;
+)rippleConfig");
+            toLoad += std::to_string(val) + space + unit;
             space = space == "" ? " " : "";
 
-            c.loadFromString(toLoad);
-
-            BEAST_EXPECT(c.AMENDMENT_MAJORITY_TIME.count() == 10 * m);
-        }
-        {
-            Config c;
-            std::string toLoad(R"rippleConfig(
-[amendment_majority_time]
-10years
-)rippleConfig");
-
             try
             {
                 c.loadFromString(toLoad);
-                fail();
+                if (shouldPass)
+                    BEAST_EXPECT(
+                        c.AMENDMENT_MAJORITY_TIME.count() == val * sec);
+                else
+                    fail();
             }
             catch (std::runtime_error&)
             {
-                pass();
-            }
-        }
-        {
-            Config c;
-            std::string toLoad(R"rippleConfig(
-[amendment_majority_time]
-seconds10
-)rippleConfig");
-
-            try
-            {
-                c.loadFromString(toLoad);
-                fail();
-            }
-            catch (std::runtime_error&)
-            {
-                pass();
+                if (!shouldPass)
+                    pass();
+                else
+                    fail();
             }
         }
     }

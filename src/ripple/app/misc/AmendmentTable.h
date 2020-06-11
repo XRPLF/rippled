@@ -27,12 +27,6 @@
 
 namespace ripple {
 
-struct MajorityFraction
-{
-    int old_ = 0;
-    int new_ = 0;
-};
-
 /** The amendment table stores the list of enabled and potential amendments.
     Individuals amendments are voted on by validators during the consensus
     process.
@@ -172,7 +166,6 @@ public:
 std::unique_ptr<AmendmentTable>
 make_AmendmentTable(
     std::chrono::seconds majorityTime,
-    MajorityFraction const& majorityFraction,
     Section const& supported,
     Section const& enabled,
     Section const& vetoed,

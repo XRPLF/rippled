@@ -98,24 +98,67 @@ struct AmendmentSet
 private:
     // How many yes votes each amendment received
     hash_map<uint256, int> votes_;
+    Rules const& rules_;
 
 public:
+    AmendmentSet(
+        Rules const& rules,
+        std::vector<std::shared_ptr<STValidation>> const& valSet)
+        : rules_(rules)
+    {
+        // process validations for ledger before flag ledger
+        for (auto const& val : valSet)
+        {
+            if (val->isTrusted())
+            {
+                if (val->isFieldPresent(sfAmendments))
+                {
+                    auto const choices = val->getFieldV256(sfAmendments);
+                    std::for_each(
+                        choices.begin(),
+                        choices.end(),
+                        [&](auto const& amendment) { ++votes_[amendment]; });
+                }
+
+                ++mTrustedValidations;
+            }
+        }
+
+        mThreshold = rules_.enabled(fixAmendmentMajorityCalc)
+            ? std::max(
+                  1L,
+                  (mTrustedValidations *
+                   amendmentSuperMajorityThresholdPre3396.num) /
+                      amendmentSuperMajorityThresholdPre3396.den)
+            : std::max(
+                  1L,
+                  (mTrustedValidations *
+                   amendmentSuperMajorityThresholdPost3396.num) /
+                      amendmentSuperMajorityThresholdPost3396.den);
+    }
+
+    bool
+    passes(uint256 const& amendment) const
+    {
+        auto const& it = votes_.find(amendment);
+
+        if (it == votes_.end())
+            return false;
+
+        // Before this fix, it was possible for an amendment to activate with a
+        // percentage slightly less than 80% because we compared for "greater
+        // than or equal to" instead of strictly "greater than".
+        if (!rules_.enabled(fixAmendmentMajorityCalc))
+            return it->second >= mThreshold;
+
+        return it->second > mThreshold;
+    }
+
     // number of trusted validations
     int mTrustedValidations = 0;
 
     // number of votes needed
     int mThreshold = 0;
-
-    AmendmentSet() = default;
-
-    void
-    tally(std::set<uint256> const& amendments)
-    {
-        ++mTrustedValidations;
-
-        for (auto const& amendment : amendments)
-            ++votes_[amendment];
-    }
 
     int
     votes(uint256 const& amendment) const
@@ -139,7 +182,7 @@ public:
 */
 class AmendmentTableImpl final : public AmendmentTable
 {
-protected:
+private:
     mutable std::mutex mutex_;
 
     hash_map<uint256, AmendmentState> amendmentMap_;
@@ -147,10 +190,6 @@ protected:
 
     // Time that an amendment must hold a majority for
     std::chrono::seconds const majorityTime_;
-
-    // The amount of support that an amendment must receive
-    // 0 = 0% and 256 = 100%(old) 8 = 100%(new)
-    MajorityFraction const majorityFraction_;
 
     // The results of the last voting round - may be empty if
     // we haven't participated in one yet.
@@ -188,7 +227,6 @@ protected:
 public:
     AmendmentTableImpl(
         std::chrono::seconds majorityTime,
-        MajorityFraction const& majorityFraction,
         Section const& supported,
         Section const& enabled,
         Section const& vetoed,
@@ -249,19 +287,15 @@ public:
 
 AmendmentTableImpl::AmendmentTableImpl(
     std::chrono::seconds majorityTime,
-    MajorityFraction const& majorityFraction,
     Section const& supported,
     Section const& enabled,
     Section const& vetoed,
     beast::Journal journal)
     : lastUpdateSeq_(0)
     , majorityTime_(majorityTime)
-    , majorityFraction_(majorityFraction)
     , unsupportedEnabled_(false)
     , j_(journal)
 {
-    assert(majorityFraction_.old_ != 0 && majorityFraction_.new_ != 0);
-
     std::lock_guard sl(mutex_);
 
     for (auto const& a : parseSection(supported))
@@ -473,29 +507,7 @@ AmendmentTableImpl::doVoting(
                      << ": " << enabledAmendments.size() << ", "
                      << majorityAmendments.size() << ", " << valSet.size();
 
-    auto vote = std::make_unique<AmendmentSet>();
-
-    // process validations for ledger before flag ledger
-    for (auto const& val : valSet)
-    {
-        if (val->isTrusted())
-        {
-            std::set<uint256> ballot;
-
-            if (val->isFieldPresent(sfAmendments))
-            {
-                auto const choices = val->getFieldV256(sfAmendments);
-                ballot.insert(choices.begin(), choices.end());
-            }
-
-            vote->tally(ballot);
-        }
-    }
-
-    vote->mThreshold = rules.enabled(ripple::fix3396)
-        ? std::max(1, (vote->mTrustedValidations * majorityFraction_.new_) / 10)
-        : std::max(
-              1, (vote->mTrustedValidations * majorityFraction_.old_) / 256);
+    auto vote = std::make_unique<AmendmentSet>(rules, valSet);
 
     JLOG(j_.debug()) << "Received " << vote->mTrustedValidations
                      << " trusted validations, threshold is: "
@@ -512,9 +524,7 @@ AmendmentTableImpl::doVoting(
     {
         NetClock::time_point majorityTime = {};
 
-        bool const hasValMajority = rules.enabled(ripple::fix3396)
-            ? (vote->votes(entry.first) > vote->mThreshold)
-            : (vote->votes(entry.first) >= vote->mThreshold);
+        bool const hasValMajority = vote->passes(entry.first);
 
         {
             auto const it = majorityAmendments.find(entry.first);
@@ -672,14 +682,13 @@ AmendmentTableImpl::getJson(uint256 const& amendmentID) const
 std::unique_ptr<AmendmentTable>
 make_AmendmentTable(
     std::chrono::seconds majorityTime,
-    MajorityFraction const& majorityFraction,
     Section const& supported,
     Section const& enabled,
     Section const& vetoed,
     beast::Journal journal)
 {
     return std::make_unique<AmendmentTableImpl>(
-        majorityTime, majorityFraction, supported, enabled, vetoed, journal);
+        majorityTime, supported, enabled, vetoed, journal);
 }
 
 }  // namespace ripple

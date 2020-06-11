@@ -63,11 +63,11 @@ static std::uint32_t constexpr XRP_LEDGER_EARLIEST_SEQ{32570};
 /** The minimum amount of support an amendment should have.
 
     @note This value is used by legacy code and will become obsolete
-          once the fix3396 amendment activates.
+          once the fixAmendmentMajorityCalc amendment activates.
 */
-constexpr int const amendmentMajorityFractionOld = 204;
+constexpr std::ratio<205, 256> amendmentSuperMajorityThresholdPre3396;
 
-constexpr int const amendmentMajorityFraction = 8;
+constexpr std::ratio<80, 100> amendmentSuperMajorityThresholdPost3396;
 
 /** The minimum amount of time an amendment must hold a majority */
 constexpr std::chrono::seconds const defaultAmendmentMajorityTime = weeks{2};
