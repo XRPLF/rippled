@@ -28,7 +28,7 @@ if (coverage)
 
     set (extract_pattern "")
     if (coverage_core_only)
-      set (extract_pattern "${CMAKE_SOURCE_DIR}/src/ripple/")
+      set (extract_pattern "${CMAKE_CURRENT_SOURCE_DIR}/src/ripple/")
     endif ()
 
     if (LLVM_COV AND LLVM_PROFDATA)
@@ -72,14 +72,14 @@ if (coverage)
         COMMAND ${CMAKE_COMMAND} -E echo "Generating coverage- results will be in ${CMAKE_BINARY_DIR}/coverage/index.html."
         # create baseline info file
         COMMAND ${LCOV}
-          --no-external -d "${CMAKE_SOURCE_DIR}" -c -d . -i -o baseline.info
+          --no-external -d "${CMAKE_CURRENT_SOURCE_DIR}" -c -d . -i -o baseline.info
           | grep -v "ignoring data for external file"
         # run tests
         COMMAND ${CMAKE_COMMAND} -E echo "Running rippled tests for coverage report."
         COMMAND rippled --unittest$<$<BOOL:${coverage_test}>:=${coverage_test}> --quiet --unittest-log
         # Create test coverage data file
         COMMAND ${LCOV}
-          --no-external -d "${CMAKE_SOURCE_DIR}" -c -d . -o tests.info
+          --no-external -d "${CMAKE_CURRENT_SOURCE_DIR}" -c -d . -o tests.info
           | grep -v "ignoring data for external file"
         # Combine baseline and test coverage data
         COMMAND ${LCOV}

@@ -61,7 +61,7 @@ if (is_root_project)
       docker run
         -e NIH_CACHE_ROOT=/opt/rippled_bld/pkg/.nih_c
         -v ${NIH_CACHE_ROOT}/pkgbuild:/opt/rippled_bld/pkg/.nih_c
-        -v ${CMAKE_SOURCE_DIR}:/opt/rippled_bld/pkg/rippled
+        -v ${CMAKE_CURRENT_SOURCE_DIR}:/opt/rippled_bld/pkg/rippled
         -v ${CMAKE_CURRENT_BINARY_DIR}/packages:/opt/rippled_bld/pkg/out
         "$<$<BOOL:${map_user}>:--volume=/etc/passwd:/etc/passwd;--volume=/etc/group:/etc/group;--user=${DOCKER_USER_ID}:${DOCKER_GROUP_ID}>"
         -t rippled-rpm-builder:${container_label}
@@ -124,7 +124,7 @@ if (is_root_project)
       docker run
         -e NIH_CACHE_ROOT=/opt/rippled_bld/pkg/.nih_c
         -v ${NIH_CACHE_ROOT}/pkgbuild:/opt/rippled_bld/pkg/.nih_c
-        -v ${CMAKE_SOURCE_DIR}:/opt/rippled_bld/pkg/rippled
+        -v ${CMAKE_CURRENT_SOURCE_DIR}:/opt/rippled_bld/pkg/rippled
         -v ${CMAKE_CURRENT_BINARY_DIR}/packages:/opt/rippled_bld/pkg/out
         "$<$<BOOL:${map_user}>:--volume=/etc/passwd:/etc/passwd;--volume=/etc/group:/etc/group;--user=${DOCKER_USER_ID}:${DOCKER_GROUP_ID}>"
         -t rippled-dpkg-builder:${container_label}

@@ -64,13 +64,13 @@ if (local_rocksdb)
     PATCH_COMMAND
       # only used by windows build
       ${CMAKE_COMMAND} -E copy
-      ${CMAKE_SOURCE_DIR}/Builds/CMake/rocks_thirdparty.inc
+      ${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake/rocks_thirdparty.inc
       <SOURCE_DIR>/thirdparty.inc
     COMMAND
       # fixup their build version file to keep the values
       # from changing always
       ${CMAKE_COMMAND} -E copy_if_different
-      ${CMAKE_SOURCE_DIR}/Builds/CMake/rocksdb_build_version.cc.in
+      ${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake/rocksdb_build_version.cc.in
       <SOURCE_DIR>/util/build_version.cc.in
     CMAKE_ARGS
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
