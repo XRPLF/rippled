@@ -9,7 +9,7 @@ if (NOT TARGET Doxygen::doxygen)
 endif ()
 
 set (doxygen_output_directory "${CMAKE_BINARY_DIR}/docs")
-set (doxygen_include_path "${CMAKE_SOURCE_DIR}/src")
+set (doxygen_include_path "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set (doxygen_index_file "${doxygen_output_directory}/html/index.html")
 set (doxyfile "${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile")
 

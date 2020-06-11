@@ -35,10 +35,10 @@ function (print_ep_logs _target)
     COMMENT "${_target} BUILD OUTPUT"
     COMMAND ${CMAKE_COMMAND}
       -DIN_FILE=${STAMP_DIR}/${_target}-build-out.log
-      -P ${CMAKE_SOURCE_DIR}/Builds/CMake/echo_file.cmake
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake/echo_file.cmake
     COMMAND ${CMAKE_COMMAND}
       -DIN_FILE=${STAMP_DIR}/${_target}-build-err.log
-      -P ${CMAKE_SOURCE_DIR}/Builds/CMake/echo_file.cmake)
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake/echo_file.cmake)
 endfunction ()
 
 #[=========================================================[
@@ -177,7 +177,7 @@ function (git_hash hash_val)
     endif ()
   endif ()
   execute_process (COMMAND ${GIT_EXECUTABLE} "log" "--pretty=${_format}" "-n1"
-                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                    RESULT_VARIABLE _git_exit_code
                    OUTPUT_VARIABLE _temp_hash
                    OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -194,7 +194,7 @@ function (git_branch branch_val)
   endif ()
   set (_branch "")
   execute_process (COMMAND ${GIT_EXECUTABLE} "rev-parse" "--abbrev-ref" "HEAD"
-                   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                    RESULT_VARIABLE _git_exit_code
                    OUTPUT_VARIABLE _temp_branch
                    OUTPUT_STRIP_TRAILING_WHITESPACE

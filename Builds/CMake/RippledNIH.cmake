@@ -13,7 +13,7 @@ if (NOT DEFINED NIH_CACHE_ROOT)
   if (DEFINED ENV{NIH_CACHE_ROOT})
     set (NIH_CACHE_ROOT $ENV{NIH_CACHE_ROOT})
   else ()
-    set (NIH_CACHE_ROOT "${CMAKE_SOURCE_DIR}/.nih_c")
+    set (NIH_CACHE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/.nih_c")
   endif ()
 endif ()
 set (nih_cache_path
