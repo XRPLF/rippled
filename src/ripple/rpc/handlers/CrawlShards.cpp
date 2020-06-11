@@ -32,7 +32,7 @@ namespace ripple {
     {
         // Determines if the result includes node public key.
         // optional, default is false
-        pubkey: <bool>
+        public_key: <bool>
 
         // The maximum number of peer hops to attempt.
         // optional, default is zero, maximum is 3
