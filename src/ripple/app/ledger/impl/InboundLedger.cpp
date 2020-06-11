@@ -47,7 +47,7 @@ enum {
     ,
     peerCountAdd = 2
 
-    // how many timeouts before we giveup
+    // how many timeouts before we give up
     ,
     ledgerTimeoutRetriesMax = 10
 
@@ -876,164 +876,87 @@ InboundLedger::takeHeader(std::string const& data)
     return true;
 }
 
-/** Process TX data received from a peer
+/** Process node data received from a peer
     Call with a lock
 */
-bool
-InboundLedger::takeTxNode(
-    const std::vector<SHAMapNodeID>& nodeIDs,
-    const std::vector<Blob>& data,
-    SHAMapAddNode& san)
+void
+InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
 {
     if (!mHaveHeader)
     {
-        JLOG(m_journal.warn()) << "TX node without header";
+        JLOG(m_journal.warn()) << "Missing ledger header";
         san.incInvalid();
-        return false;
+        return;
     }
-
-    if (mHaveTransactions || mFailed)
+    if (packet.type() == protocol::liTX_NODE)
+    {
+        if (mHaveTransactions || mFailed)
+        {
+            san.incDuplicate();
+            return;
+        }
+    }
+    else if (mHaveState || mFailed)
     {
         san.incDuplicate();
-        return true;
+        return;
     }
+
+    auto [map, filter] =
+        [&]() -> std::pair<SHAMap&, std::unique_ptr<SHAMapSyncFilter>> {
+        if (packet.type() == protocol::liTX_NODE)
+            return {
+                mLedger->txMap(),
+                std::make_unique<TransactionStateSF>(
+                    mLedger->txMap().family().db(), app_.getLedgerMaster())};
+        return {
+            mLedger->stateMap(),
+            std::make_unique<AccountStateSF>(
+                mLedger->stateMap().family().db(), app_.getLedgerMaster())};
+    }();
 
     try
     {
-        auto nodeIDit = nodeIDs.cbegin();
-        auto nodeDatait = data.begin();
-        TransactionStateSF filter(
-            mLedger->txMap().family().db(), app_.getLedgerMaster());
-
-        while (nodeIDit != nodeIDs.cend())
+        for (auto const& node : packet.nodes())
         {
-            if (nodeIDit->isRoot())
-            {
-                san += mLedger->txMap().addRootNode(
-                    SHAMapHash{mLedger->info().txHash},
-                    makeSlice(*nodeDatait),
-                    &filter);
-                if (!san.isGood())
-                    return false;
-            }
-            else
-            {
-                san += mLedger->txMap().addKnownNode(
-                    *nodeIDit, makeSlice(*nodeDatait), &filter);
-                if (!san.isGood())
-                    return false;
-            }
-
-            ++nodeIDit;
-            ++nodeDatait;
-        }
-    }
-    catch (std::exception const& ex)
-    {
-        JLOG(m_journal.error()) << "Peer sent bad tx node data: " << ex.what();
-        return false;
-    }
-
-    if (!mLedger->txMap().isSynching())
-    {
-        mHaveTransactions = true;
-
-        if (mHaveState)
-        {
-            mComplete = true;
-            done();
-        }
-    }
-
-    return true;
-}
-
-/** Process AS data received from a peer
-    Call with a lock
-*/
-bool
-InboundLedger::takeAsNode(
-    const std::vector<SHAMapNodeID>& nodeIDs,
-    const std::vector<Blob>& data,
-    SHAMapAddNode& san)
-{
-    JLOG(m_journal.trace())
-        << "got ASdata (" << nodeIDs.size() << ") acquiring ledger " << mHash;
-    if (nodeIDs.size() == 1)
-    {
-        JLOG(m_journal.trace()) << "got AS node: " << nodeIDs.front();
-    }
-
-    ScopedLockType sl(mLock);
-
-    if (!mHaveHeader)
-    {
-        JLOG(m_journal.warn()) << "Don't have ledger header";
-        san.incInvalid();
-        return false;
-    }
-
-    if (mHaveState || mFailed)
-    {
-        san.incDuplicate();
-        return true;
-    }
-
-    try
-    {
-        auto nodeIDit = nodeIDs.cbegin();
-        auto nodeDatait = data.begin();
-        AccountStateSF filter(
-            mLedger->stateMap().family().db(), app_.getLedgerMaster());
-
-        while (nodeIDit != nodeIDs.cend())
-        {
-            if (nodeIDit->isRoot())
-            {
-                san += mLedger->stateMap().addRootNode(
+            SHAMapNodeID const nodeID(
+                node.nodeid().data(), node.nodeid().size());
+            if (nodeID.isRoot())
+                san += map.addRootNode(
                     SHAMapHash{mLedger->info().accountHash},
-                    makeSlice(*nodeDatait),
-                    &filter);
-                if (!san.isGood())
-                {
-                    JLOG(m_journal.warn()) << "Unable to add AS root node";
-                    return false;
-                }
-            }
+                    makeSlice(node.nodedata()),
+                    filter.get());
             else
-            {
-                san += mLedger->stateMap().addKnownNode(
-                    *nodeIDit, makeSlice(*nodeDatait), &filter);
-                if (!san.isGood())
-                {
-                    JLOG(m_journal.warn()) << "Unable to add AS node";
-                    return false;
-                }
-            }
+                san += map.addKnownNode(
+                    nodeID, makeSlice(node.nodedata()), filter.get());
 
-            ++nodeIDit;
-            ++nodeDatait;
+            if (!san.isGood())
+            {
+                JLOG(m_journal.warn()) << "Received bad node data";
+                return;
+            }
         }
     }
-    catch (std::exception const& ex)
+    catch (std::exception const& e)
     {
-        JLOG(m_journal.error())
-            << "Peer sent bad account state node data: " << ex.what();
-        return false;
+        JLOG(m_journal.error()) << "Received bad node data: " << e.what();
+        san.incInvalid();
+        return;
     }
 
-    if (!mLedger->stateMap().isSynching())
+    if (!map.isSynching())
     {
-        mHaveState = true;
+        if (packet.type() == protocol::liTX_NODE)
+            mHaveTransactions = true;
+        else
+            mHaveState = true;
 
-        if (mHaveTransactions)
+        if (mHaveTransactions && mHaveState)
         {
             mComplete = true;
             done();
         }
     }
-
-    return true;
 }
 
 /** Process AS root node received from a peer
@@ -1222,38 +1145,26 @@ InboundLedger::processData(
             return -1;
         }
 
-        std::vector<SHAMapNodeID> nodeIDs;
-        nodeIDs.reserve(packet.nodes().size());
-        std::vector<Blob> nodeData;
-        nodeData.reserve(packet.nodes().size());
-
-        for (int i = 0; i < packet.nodes().size(); ++i)
+        // Verify node IDs and data are complete
+        for (auto const& node : packet.nodes())
         {
-            const protocol::TMLedgerNode& node = packet.nodes(i);
-
             if (!node.has_nodeid() || !node.has_nodedata())
             {
                 JLOG(m_journal.warn()) << "Got bad node";
                 peer->charge(Resource::feeInvalidRequest);
                 return -1;
             }
-
-            nodeIDs.push_back(
-                SHAMapNodeID(node.nodeid().data(), node.nodeid().size()));
-            nodeData.push_back(
-                Blob(node.nodedata().begin(), node.nodedata().end()));
         }
 
         SHAMapAddNode san;
+        receiveNode(packet, san);
 
         if (packet.type() == protocol::liTX_NODE)
         {
-            takeTxNode(nodeIDs, nodeData, san);
             JLOG(m_journal.debug()) << "Ledger TX node stats: " << san.get();
         }
         else
         {
-            takeAsNode(nodeIDs, nodeData, san);
             JLOG(m_journal.debug()) << "Ledger AS node stats: " << san.get();
         }
 

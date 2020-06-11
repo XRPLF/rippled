@@ -247,14 +247,8 @@ public:
                 if (!node.has_nodeid() || !node.has_nodedata())
                     return;
 
-                auto id_string = node.nodeid();
                 auto newNode = SHAMapAbstractNode::makeFromWire(
-                    makeSlice(node.nodedata()),
-                    0,
-                    SHAMapHash{uZero},
-                    false,
-                    app_.journal("SHAMapNodeID"),
-                    SHAMapNodeID(id_string.data(), id_string.size()));
+                    makeSlice(node.nodedata()));
 
                 if (!newNode)
                     return;

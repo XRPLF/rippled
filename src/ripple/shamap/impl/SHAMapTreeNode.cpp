@@ -191,11 +191,7 @@ SHAMapInnerNode::makeFullInner(
 }
 
 std::shared_ptr<SHAMapAbstractNode>
-SHAMapInnerNode::makeCompressedInner(
-    Slice data,
-    std::uint32_t seq,
-    SHAMapHash const& hash,
-    bool hashValid)
+SHAMapInnerNode::makeCompressedInner(Slice data, std::uint32_t seq)
 {
     Serializer s(data.data(), data.size());
 
@@ -219,21 +215,13 @@ SHAMapInnerNode::makeCompressedInner(
             ret->mIsBranch |= (1 << pos);
     }
 
-    if (hashValid)
-        ret->mHash = hash;
-    else
-        ret->updateHash();
+    ret->updateHash();
+
     return ret;
 }
 
 std::shared_ptr<SHAMapAbstractNode>
-SHAMapAbstractNode::makeFromWire(
-    Slice rawNode,
-    std::uint32_t seq,
-    SHAMapHash const& hash,
-    bool hashValid,
-    beast::Journal j,
-    SHAMapNodeID const& id)
+SHAMapAbstractNode::makeFromWire(Slice rawNode)
 {
     if (rawNode.empty())
         return {};
@@ -241,6 +229,11 @@ SHAMapAbstractNode::makeFromWire(
     auto const type = rawNode[rawNode.size() - 1];
 
     rawNode.remove_suffix(1);
+
+    bool const hashValid = false;
+    SHAMapHash const hash;
+
+    std::uint32_t const seq = 0;
 
     if (type == 0)
         return makeTransaction(rawNode, seq, hash, hashValid);
@@ -252,8 +245,7 @@ SHAMapAbstractNode::makeFromWire(
         return SHAMapInnerNode::makeFullInner(rawNode, seq, hash, hashValid);
 
     if (type == 3)
-        return SHAMapInnerNode::makeCompressedInner(
-            rawNode, seq, hash, hashValid);
+        return SHAMapInnerNode::makeCompressedInner(rawNode, seq);
 
     if (type == 4)
         return makeTransactionWithMeta(rawNode, seq, hash, hashValid);
@@ -263,12 +255,7 @@ SHAMapAbstractNode::makeFromWire(
 }
 
 std::shared_ptr<SHAMapAbstractNode>
-SHAMapAbstractNode::makeFromPrefix(
-    Slice rawNode,
-    std::uint32_t seq,
-    SHAMapHash const& hash,
-    bool hashValid,
-    beast::Journal j)
+SHAMapAbstractNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
 {
     if (rawNode.size() < 4)
         Throw<std::runtime_error>("prefix: short node");
@@ -282,6 +269,9 @@ SHAMapAbstractNode::makeFromPrefix(
         (safe_cast<std::uint32_t>(rawNode[3])));
 
     rawNode.remove_prefix(4);
+
+    bool const hashValid = true;
+    std::uint32_t const seq = 0;
 
     if (type == HashPrefix::transactionID)
         return makeTransaction(rawNode, seq, hash, hashValid);

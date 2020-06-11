@@ -176,21 +176,10 @@ public:
     invariants(bool is_root = false) const = 0;
 
     static std::shared_ptr<SHAMapAbstractNode>
-    makeFromPrefix(
-        Slice rawNode,
-        std::uint32_t seq,
-        SHAMapHash const& hash,
-        bool hashValid,
-        beast::Journal j);
+    makeFromPrefix(Slice rawNode, SHAMapHash const& hash);
 
     static std::shared_ptr<SHAMapAbstractNode>
-    makeFromWire(
-        Slice rawNode,
-        std::uint32_t seq,
-        SHAMapHash const& hash,
-        bool hashValid,
-        beast::Journal j,
-        SHAMapNodeID const& id);
+    makeFromWire(Slice rawNode);
 
 private:
     static std::shared_ptr<SHAMapAbstractNode>
@@ -276,11 +265,7 @@ public:
         bool hashValid);
 
     static std::shared_ptr<SHAMapAbstractNode>
-    makeCompressedInner(
-        Slice data,
-        std::uint32_t seq,
-        SHAMapHash const& hash,
-        bool hashValid);
+    makeCompressedInner(Slice data, std::uint32_t seq);
 };
 
 // SHAMapTreeNode represents a leaf, and may eventually be renamed to reflect
@@ -315,10 +300,6 @@ public:
     invariants(bool is_root = false) const override;
 
 public:  // public only to SHAMap
-    // inner node functions
-    bool
-    isInnerNode() const;
-
     // item node function
     bool
     hasItem() const;
@@ -431,12 +412,6 @@ SHAMapInnerNode::setFullBelowGen(std::uint32_t gen)
 }
 
 // SHAMapTreeNode
-
-inline bool
-SHAMapTreeNode::isInnerNode() const
-{
-    return !mItem;
-}
 
 inline bool
 SHAMapTreeNode::hasItem() const

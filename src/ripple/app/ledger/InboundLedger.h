@@ -174,23 +174,13 @@ private:
 
     bool
     takeHeader(std::string const& data);
-    bool
-    takeTxNode(
-        const std::vector<SHAMapNodeID>& IDs,
-        const std::vector<Blob>& data,
-        SHAMapAddNode&);
+
+    void
+    receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode&);
+
     bool
     takeTxRootNode(Slice const& data, SHAMapAddNode&);
 
-    // VFALCO TODO Rename to receiveAccountStateNode
-    //             Don't use acronyms, but if we are going to use them at least
-    //             capitalize them correctly.
-    //
-    bool
-    takeAsNode(
-        const std::vector<SHAMapNodeID>& IDs,
-        const std::vector<Blob>& data,
-        SHAMapAddNode&);
     bool
     takeAsRootNode(Slice const& data, SHAMapAddNode&);
 
