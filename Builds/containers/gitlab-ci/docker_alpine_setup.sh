@@ -5,6 +5,7 @@ set -ex
 echo $(nproc)
 docker login -u rippled \
     -p ${ARTIFACTORY_DEPLOY_KEY_RIPPLED} ${ARTIFACTORY_HUB}
+apk add --update py-pip
 apk add \
     bash util-linux coreutils binutils grep \
     make ninja cmake build-base gcc g++ abuild git \
