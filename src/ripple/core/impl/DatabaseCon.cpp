@@ -48,21 +48,21 @@ setup_DatabaseCon(Config const& c, boost::optional<beast::Journal> j)
             result->reserve(3);
 
             // defaults
-            std::string safety_level = "high";
+            std::string safety_level;
             std::string journal_mode = "wal";
             std::string synchronous = "normal";
             std::string temp_store = "file";
+            bool showRiskWarning = false;
 
-            bool showWarning = false;
             if (set(safety_level, "safety_level", sqlite))
             {
-                if (boost::iequals(safety_level, "low"))
+                showRiskWarning = boost::iequals(safety_level, "low");
+                if (showRiskWarning)
                 {
                     // low safety defaults
                     journal_mode = "memory";
                     synchronous = "off";
                     temp_store = "memory";
-                    showWarning = true;
                 }
                 else if (!boost::iequals(safety_level, "high"))
                 {
@@ -74,11 +74,16 @@ setup_DatabaseCon(Config const& c, boost::optional<beast::Journal> j)
             {
                 // #journal_mode Valid values : delete, truncate, persist,
                 // memory, wal, off
-                if (c.LEDGER_HISTORY < SQLITE_TUNING_CUTOFF)
-                    set(journal_mode, "journal_mode", sqlite);
+                if (set(journal_mode, "journal_mode", sqlite) &&
+                    !safety_level.empty())
+                {
+                    Throw<std::runtime_error>(
+                        "Configuration file may not define both "
+                        "\"safety_level\" and \"journal_mode\"");
+                }
                 bool higherRisk = boost::iequals(journal_mode, "memory") ||
                     boost::iequals(journal_mode, "off");
-                showWarning = showWarning || higherRisk;
+                showRiskWarning = showRiskWarning || higherRisk;
                 if (higherRisk || boost::iequals(journal_mode, "delete") ||
                     boost::iequals(journal_mode, "truncate") ||
                     boost::iequals(journal_mode, "persist") ||
@@ -96,10 +101,15 @@ setup_DatabaseCon(Config const& c, boost::optional<beast::Journal> j)
 
             {
                 //#synchronous Valid values : off, normal, full, extra
-                if (c.LEDGER_HISTORY < SQLITE_TUNING_CUTOFF)
-                    set(synchronous, "synchronous", sqlite);
+                if (set(synchronous, "synchronous", sqlite) &&
+                    !safety_level.empty())
+                {
+                    Throw<std::runtime_error>(
+                        "Configuration file may not define both "
+                        "\"safety_level\" and \"synchronous\"");
+                }
                 bool higherRisk = boost::iequals(synchronous, "off");
-                showWarning = showWarning || higherRisk;
+                showRiskWarning = showRiskWarning || higherRisk;
                 if (higherRisk || boost::iequals(synchronous, "normal") ||
                     boost::iequals(synchronous, "full") ||
                     boost::iequals(synchronous, "extra"))
@@ -116,10 +126,15 @@ setup_DatabaseCon(Config const& c, boost::optional<beast::Journal> j)
 
             {
                 // #temp_store Valid values : default, file, memory
-                if (c.LEDGER_HISTORY < SQLITE_TUNING_CUTOFF)
-                    set(temp_store, "temp_store", sqlite);
+                if (set(temp_store, "temp_store", sqlite) &&
+                    !safety_level.empty())
+                {
+                    Throw<std::runtime_error>(
+                        "Configuration file may not define both "
+                        "\"safety_level\" and \"temp_store\"");
+                }
                 bool higherRisk = boost::iequals(temp_store, "memory");
-                showWarning = showWarning || higherRisk;
+                showRiskWarning = showRiskWarning || higherRisk;
                 if (higherRisk || boost::iequals(temp_store, "default") ||
                     boost::iequals(temp_store, "file"))
                 {
@@ -133,7 +148,7 @@ setup_DatabaseCon(Config const& c, boost::optional<beast::Journal> j)
                 }
             }
 
-            if (showWarning && j && c.LEDGER_HISTORY > SQLITE_TUNING_CUTOFF)
+            if (showRiskWarning && j && c.LEDGER_HISTORY > SQLITE_TUNING_CUTOFF)
             {
                 JLOG(j->warn())
                     << "reducing the data integrity guarantees from the "

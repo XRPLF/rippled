@@ -354,10 +354,7 @@ run(int argc, char** argv)
         "nodetoshard", "Import node store into shards")(
         "replay", "Replay a ledger close.")(
         "start", "Start from a fresh Ledger.")(
-        "vacuum",
-        po::value<std::string>(),
-        "VACUUM the transaction db. Mandatory string argument specifies "
-        "temporary directory path.")(
+        "vacuum", "VACUUM the transaction db.")(
         "valid", "Consider the initial ledger a valid network ledger.")(
         "validateShards", shardsText.c_str());
 
@@ -522,26 +519,26 @@ run(int argc, char** argv)
         using namespace boost::filesystem;
         DatabaseCon::Setup dbSetup = setup_DatabaseCon(*config);
         path dbPath = dbSetup.dataDir / TxDBName;
-        path tmpPath = vm["vacuum"].as<std::string>();
 
         try
         {
             uintmax_t const dbSize = file_size(dbPath);
             assert(dbSize != static_cast<uintmax_t>(-1));
 
-            if (space(tmpPath).available < dbSize)
             {
-                std::cerr << "A valid directory for vacuuming must be "
-                             "specified on a filesystem with at least "
-                             "as much free space as the size of "
-                          << dbPath.string() << ", which is " << dbSize
-                          << " bytes. The filesystem for " << tmpPath.string()
-                          << " only has " << space(tmpPath).available
-                          << " bytes.\n";
-                return -1;
+                auto available = space(dbPath.parent_path()).available;
+                if (available < dbSize)
+                {
+                    std::cerr
+                        << "The database filesystem must have at least as "
+                           "much free space as the size of "
+                        << dbPath.string() << ", which is " << dbSize
+                        << " bytes. Only " << available
+                        << " bytes are available.\n";
+                    return -1;
+                }
             }
 
-            dbSetup.noPragma();
             auto txnDB = std::make_unique<DatabaseCon>(
                 dbSetup, TxDBName, TxDBPragma, TxDBInit);
             auto& session = txnDB->getSession();
@@ -552,9 +549,6 @@ run(int argc, char** argv)
             std::cout << "VACUUM beginning. page_size: " << pageSize
                       << std::endl;
 
-            session << "PRAGMA journal_mode=OFF;";
-            session << "PRAGMA temp_store_directory=\"" << tmpPath.string()
-                    << "\";";
             session << "VACUUM;";
             assert(dbSetup.globalPragma);
             for (auto const& p : *dbSetup.globalPragma)

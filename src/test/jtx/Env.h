@@ -168,11 +168,7 @@ public:
         std::unique_ptr<Logs> logs = nullptr,
         beast::severities::Severity thresh = beast::severities::kError)
         : test(suite_)
-        , bundle_(
-              suite_,
-              std::move(config),
-              logs ? std::move(logs) : std::make_unique<SuiteLogs>(suite_),
-              thresh)
+        , bundle_(suite_, std::move(config), std::move(logs), thresh)
         , journal{bundle_.app->journal("Env")}
     {
         memoize(Account::master);

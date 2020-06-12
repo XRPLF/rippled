@@ -1364,7 +1364,7 @@ public:
                 JLOG(m_journal.fatal())
                     << "Free SQLite space for transaction db is less than "
                        "512MB. To fix this, rippled must be executed with the "
-                       "vacuum <sqlitetmpdir> parameter before restarting. "
+                       "\"--vacuum\" parameter before restarting. "
                        "Note that this activity can take multiple days, "
                        "depending on database size.";
                 signalStop();

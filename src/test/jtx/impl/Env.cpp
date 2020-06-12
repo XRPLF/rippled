@@ -64,8 +64,17 @@ Env::AppBundle::AppBundle(
     : AppBundle()
 {
     using namespace beast::severities;
-    // Use kFatal threshold to reduce noise from STObject.
-    setDebugLogSink(std::make_unique<SuiteJournalSink>("Debug", kFatal, suite));
+    if (logs)
+    {
+        setDebugLogSink(logs->makeSink("Debug", kFatal));
+    }
+    else
+    {
+        logs = std::make_unique<SuiteLogs>(suite);
+        // Use kFatal threshold to reduce noise from STObject.
+        setDebugLogSink(
+            std::make_unique<SuiteJournalSink>("Debug", kFatal, suite));
+    }
     auto timeKeeper_ = std::make_unique<ManualTimeKeeper>();
     timeKeeper = timeKeeper_.get();
     // Hack so we don't have to call Config::setup
