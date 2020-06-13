@@ -251,8 +251,6 @@ public:
                 auto newNode = SHAMapAbstractNode::makeFromWire(
                     makeSlice(node.nodedata()),
                     0,
-                    SHAMapHash{uZero},
-                    false,
                     SHAMapNodeID(id_string.data(), id_string.size()));
 
                 if (!newNode)

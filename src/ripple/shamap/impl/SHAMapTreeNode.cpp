@@ -230,8 +230,6 @@ std::shared_ptr<SHAMapAbstractNode>
 SHAMapAbstractNode::makeFromWire(
     Slice rawNode,
     std::uint32_t seq,
-    SHAMapHash const& hash,
-    bool hashValid,
     SHAMapNodeID const& id)
 {
     if (rawNode.empty())
@@ -240,6 +238,9 @@ SHAMapAbstractNode::makeFromWire(
     auto const type = rawNode[rawNode.size() - 1];
 
     rawNode.remove_suffix(1);
+
+    bool const hashValid = false;
+    SHAMapHash const hash;
 
     if (type == 0)
         return makeTransaction(rawNode, seq, hash, hashValid);

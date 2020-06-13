@@ -186,8 +186,6 @@ public:
     makeFromWire(
         Slice rawNode,
         std::uint32_t seq,
-        SHAMapHash const& hash,
-        bool hashValid,
         SHAMapNodeID const& id);
 
 private:
