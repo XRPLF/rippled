@@ -265,11 +265,7 @@ public:
         bool hashValid);
 
     static std::shared_ptr<SHAMapAbstractNode>
-    makeCompressedInner(
-        Slice data,
-        std::uint32_t seq,
-        SHAMapHash const& hash,
-        bool hashValid);
+    makeCompressedInner(Slice data, std::uint32_t seq);
 };
 
 // SHAMapTreeNode represents a leaf, and may eventually be renamed to reflect
@@ -304,7 +300,6 @@ public:
     invariants(bool is_root = false) const override;
 
 public:  // public only to SHAMap
-
     // item node function
     bool
     hasItem() const;

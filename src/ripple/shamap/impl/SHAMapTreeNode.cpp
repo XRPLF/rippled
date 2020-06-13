@@ -191,11 +191,7 @@ SHAMapInnerNode::makeFullInner(
 }
 
 std::shared_ptr<SHAMapAbstractNode>
-SHAMapInnerNode::makeCompressedInner(
-    Slice data,
-    std::uint32_t seq,
-    SHAMapHash const& hash,
-    bool hashValid)
+SHAMapInnerNode::makeCompressedInner(Slice data, std::uint32_t seq)
 {
     Serializer s(data.data(), data.size());
 
@@ -219,10 +215,8 @@ SHAMapInnerNode::makeCompressedInner(
             ret->mIsBranch |= (1 << pos);
     }
 
-    if (hashValid)
-        ret->mHash = hash;
-    else
-        ret->updateHash();
+    ret->updateHash();
+
     return ret;
 }
 
@@ -251,8 +245,7 @@ SHAMapAbstractNode::makeFromWire(Slice rawNode, SHAMapNodeID const& id)
         return SHAMapInnerNode::makeFullInner(rawNode, seq, hash, hashValid);
 
     if (type == 3)
-        return SHAMapInnerNode::makeCompressedInner(
-            rawNode, seq, hash, hashValid);
+        return SHAMapInnerNode::makeCompressedInner(rawNode, seq);
 
     if (type == 4)
         return makeTransactionWithMeta(rawNode, seq, hash, hashValid);
