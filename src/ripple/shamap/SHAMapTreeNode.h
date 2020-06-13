@@ -185,7 +185,6 @@ public:
     static std::shared_ptr<SHAMapAbstractNode>
     makeFromWire(
         Slice rawNode,
-        std::uint32_t seq,
         SHAMapNodeID const& id);
 
 private:

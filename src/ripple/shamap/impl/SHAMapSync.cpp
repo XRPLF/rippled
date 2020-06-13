@@ -557,7 +557,7 @@ SHAMap::addRootNode(
     }
 
     assert(seq_ >= 1);
-    auto node = SHAMapAbstractNode::makeFromWire(rootNode, 0, {});
+    auto node = SHAMapAbstractNode::makeFromWire(rootNode, {});
     if (!node || !node->isValid() || node->getNodeHash() != hash)
         return SHAMapAddNode::invalid();
 
@@ -600,7 +600,7 @@ SHAMap::addKnownNode(
     }
 
     std::uint32_t generation = f_.fullbelow().getGeneration();
-    auto newNode = SHAMapAbstractNode::makeFromWire(rawNode, 0, node);
+    auto newNode = SHAMapAbstractNode::makeFromWire(rawNode, node);
     SHAMapNodeID iNodeID;
     auto iNode = root_.get();
 

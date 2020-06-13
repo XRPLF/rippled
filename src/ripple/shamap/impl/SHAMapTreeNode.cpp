@@ -229,7 +229,6 @@ SHAMapInnerNode::makeCompressedInner(
 std::shared_ptr<SHAMapAbstractNode>
 SHAMapAbstractNode::makeFromWire(
     Slice rawNode,
-    std::uint32_t seq,
     SHAMapNodeID const& id)
 {
     if (rawNode.empty())
@@ -241,6 +240,8 @@ SHAMapAbstractNode::makeFromWire(
 
     bool const hashValid = false;
     SHAMapHash const hash;
+
+    std::uint32_t const seq = 0;
 
     if (type == 0)
         return makeTransaction(rawNode, seq, hash, hashValid);
