@@ -113,8 +113,9 @@ Message::compress()
     The header is a variable-sized structure that contains information about
     the type of the message and the length and encoding of the payload.
 
-    The first 6 bits determine whether a message is compressed or uncompressed
-    and determine the type of compression:
+    The first bit determines whether a message is compressed or uncompressed;
+    for compressed messages, the next three bits identify the compression
+    algorithm.
 
     All multi-byte values are represented in big endian.
 
@@ -130,9 +131,13 @@ Message::compress()
           and payload size:
             - The first bit is set to 1 to indicate the message is compressed.
             - The next 3 bits indicate the compression algorithm.
-            - The remaining 28 bits represent the payload size.
+            - The next 2 bits are reserved at this time and set to 0.
+            - The remaining 26 bits represent the payload size.
         - The next 16 bits represent the message type.
         - The remaining 32 bits are the uncompressed message size.
+
+    The maximum size of a message at this time is 64 MB. Messages larger than
+    this will be dropped and the recipient may, at its option, sever the link.
 
     @note While nominally a part of the wire protocol, the framing is subject
           to change; future versions of the code may negotiate the use of

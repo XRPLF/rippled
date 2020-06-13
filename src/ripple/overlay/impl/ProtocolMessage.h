@@ -151,6 +151,12 @@ parseMessageHeader(
             return boost::none;
         }
 
+        if (*iter & 0x0C)
+        {
+            ec = make_error_code(boost::system::errc::protocol_error);
+            return boost::none;
+        }
+
         hdr.algorithm = static_cast<compression::Algorithm>(*iter);
 
         if (hdr.algorithm != compression::Algorithm::LZ4)
