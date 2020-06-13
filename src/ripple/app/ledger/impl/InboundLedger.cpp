@@ -1147,12 +1147,14 @@ InboundLedger::processData(
 
         // Verify node IDs and data are complete
         for (auto const& node : packet.nodes())
+        {
             if (!node.has_nodeid() || !node.has_nodedata())
             {
                 JLOG(m_journal.warn()) << "Got bad node";
                 peer->charge(Resource::feeInvalidRequest);
                 return -1;
             }
+        }
 
         SHAMapAddNode san;
         receiveNode(packet, san);
