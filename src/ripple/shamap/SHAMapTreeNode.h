@@ -176,15 +176,10 @@ public:
     invariants(bool is_root = false) const = 0;
 
     static std::shared_ptr<SHAMapAbstractNode>
-    makeFromPrefix(
-        Slice rawNode,
-        std::uint32_t seq,
-        SHAMapHash const& hash);
+    makeFromPrefix(Slice rawNode, SHAMapHash const& hash);
 
     static std::shared_ptr<SHAMapAbstractNode>
-    makeFromWire(
-        Slice rawNode,
-        SHAMapNodeID const& id);
+    makeFromWire(Slice rawNode, SHAMapNodeID const& id);
 
 private:
     static std::shared_ptr<SHAMapAbstractNode>

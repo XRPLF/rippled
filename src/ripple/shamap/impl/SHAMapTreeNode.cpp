@@ -227,9 +227,7 @@ SHAMapInnerNode::makeCompressedInner(
 }
 
 std::shared_ptr<SHAMapAbstractNode>
-SHAMapAbstractNode::makeFromWire(
-    Slice rawNode,
-    SHAMapNodeID const& id)
+SHAMapAbstractNode::makeFromWire(Slice rawNode, SHAMapNodeID const& id)
 {
     if (rawNode.empty())
         return {};
@@ -264,10 +262,7 @@ SHAMapAbstractNode::makeFromWire(
 }
 
 std::shared_ptr<SHAMapAbstractNode>
-SHAMapAbstractNode::makeFromPrefix(
-    Slice rawNode,
-    std::uint32_t seq,
-    SHAMapHash const& hash)
+SHAMapAbstractNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
 {
     if (rawNode.size() < 4)
         Throw<std::runtime_error>("prefix: short node");
@@ -283,6 +278,7 @@ SHAMapAbstractNode::makeFromPrefix(
     rawNode.remove_prefix(4);
 
     bool const hashValid = true;
+    std::uint32_t const seq = 0;
 
     if (type == HashPrefix::transactionID)
         return makeTransaction(rawNode, seq, hash, hashValid);
