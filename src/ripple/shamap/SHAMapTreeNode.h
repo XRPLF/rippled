@@ -304,9 +304,6 @@ public:
     invariants(bool is_root = false) const override;
 
 public:  // public only to SHAMap
-    // inner node functions
-    bool
-    isInnerNode() const;
 
     // item node function
     bool
@@ -420,12 +417,6 @@ SHAMapInnerNode::setFullBelowGen(std::uint32_t gen)
 }
 
 // SHAMapTreeNode
-
-inline bool
-SHAMapTreeNode::isInnerNode() const
-{
-    return !mItem;
-}
 
 inline bool
 SHAMapTreeNode::hasItem() const
