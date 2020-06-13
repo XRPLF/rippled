@@ -65,7 +65,7 @@ static std::uint32_t constexpr XRP_LEDGER_EARLIEST_SEQ{32570};
     @note This value is used by legacy code and will become obsolete
           once the fixAmendmentMajorityCalc amendment activates.
 */
-constexpr std::ratio<205, 256> amendmentSuperMajorityThresholdPre3396;
+constexpr std::ratio<204, 256> amendmentSuperMajorityThresholdPre3396;
 
 constexpr std::ratio<80, 100> amendmentSuperMajorityThresholdPost3396;
 
