@@ -232,7 +232,6 @@ SHAMapAbstractNode::makeFromWire(
     std::uint32_t seq,
     SHAMapHash const& hash,
     bool hashValid,
-    beast::Journal j,
     SHAMapNodeID const& id)
 {
     if (rawNode.empty())
@@ -267,8 +266,7 @@ SHAMapAbstractNode::makeFromPrefix(
     Slice rawNode,
     std::uint32_t seq,
     SHAMapHash const& hash,
-    bool hashValid,
-    beast::Journal j)
+    bool hashValid)
 {
     if (rawNode.size() < 4)
         Throw<std::runtime_error>("prefix: short node");

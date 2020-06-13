@@ -180,8 +180,7 @@ public:
         Slice rawNode,
         std::uint32_t seq,
         SHAMapHash const& hash,
-        bool hashValid,
-        beast::Journal j);
+        bool hashValid);
 
     static std::shared_ptr<SHAMapAbstractNode>
     makeFromWire(
@@ -189,7 +188,6 @@ public:
         std::uint32_t seq,
         SHAMapHash const& hash,
         bool hashValid,
-        beast::Journal j,
         SHAMapNodeID const& id);
 
 private:

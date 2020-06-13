@@ -253,7 +253,6 @@ public:
                     0,
                     SHAMapHash{uZero},
                     false,
-                    app_.journal("SHAMapNodeID"),
                     SHAMapNodeID(id_string.data(), id_string.size()));
 
                 if (!newNode)
