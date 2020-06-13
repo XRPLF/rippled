@@ -152,7 +152,7 @@ SHAMap::fetchNodeFromDB(SHAMapHash const& hash) const
             try
             {
                 node = SHAMapAbstractNode::makeFromPrefix(
-                    makeSlice(obj->getData()), 0, hash, true);
+                    makeSlice(obj->getData()), 0, hash);
                 if (node)
                     canonicalize(hash, node);
             }
@@ -181,7 +181,7 @@ SHAMap::checkFilter(SHAMapHash const& hash, SHAMapSyncFilter* filter) const
         try
         {
             auto node = SHAMapAbstractNode::makeFromPrefix(
-                makeSlice(*nodeData), 0, hash, true);
+                makeSlice(*nodeData), 0, hash);
             if (node)
             {
                 filter->gotNode(
@@ -382,7 +382,7 @@ SHAMap::descendAsync(
                 return nullptr;
 
             ptr = SHAMapAbstractNode::makeFromPrefix(
-                makeSlice(obj->getData()), 0, hash, true);
+                makeSlice(obj->getData()), 0, hash);
             if (ptr && backed_)
                 canonicalize(hash, ptr);
         }

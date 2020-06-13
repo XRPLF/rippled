@@ -267,8 +267,7 @@ std::shared_ptr<SHAMapAbstractNode>
 SHAMapAbstractNode::makeFromPrefix(
     Slice rawNode,
     std::uint32_t seq,
-    SHAMapHash const& hash,
-    bool hashValid)
+    SHAMapHash const& hash)
 {
     if (rawNode.size() < 4)
         Throw<std::runtime_error>("prefix: short node");
@@ -282,6 +281,8 @@ SHAMapAbstractNode::makeFromPrefix(
         (safe_cast<std::uint32_t>(rawNode[3])));
 
     rawNode.remove_prefix(4);
+
+    bool const hashValid = true;
 
     if (type == HashPrefix::transactionID)
         return makeTransaction(rawNode, seq, hash, hashValid);

@@ -179,8 +179,7 @@ public:
     makeFromPrefix(
         Slice rawNode,
         std::uint32_t seq,
-        SHAMapHash const& hash,
-        bool hashValid);
+        SHAMapHash const& hash);
 
     static std::shared_ptr<SHAMapAbstractNode>
     makeFromWire(
