@@ -36,9 +36,15 @@
  * 2) add a uint256 declaration for the feature to the bottom of this file
  * 3) add a uint256 definition for the feature to the corresponding source
  *    file (Feature.cpp)
- * 4) if the feature is going to be supported in the near future, add its
- *    sha512half value and name (matching exactly the featureName here) to
- *    the supportedAmendments in Feature.cpp.
+ * 4) use the uint256 as the parameter to `view.rules.enabled()` to
+ *    control flow into new code that this feature limits.
+ * 5) if the feature development is COMPLETE, and the feature is ready to be
+ *    SUPPORTED, add its name (matching exactly the featureName here) to the
+ *    supportedAmendments in Feature.cpp.
+ * 6) if the feature is not ready to be ENABLED, add its name (matching exactly
+ *    the featureName here) to the downVotedAmendments in Feature.cpp.
+ * In general, any new amendments added to supportedAmendments should also be
+ * added to downVotedAmendments for at least one full release cycle.
  *
  */
 
@@ -136,11 +142,21 @@ public:
 
     uint256 const&
     bitsetIndexToFeature(size_t i) const;
+
+    std::string
+    featureToName(uint256 const& f) const;
 };
 
-/** Amendments that this server supports, but doesn't enable by default */
+/** Amendments that this server supports and will vote for by default.
+   Whether they are enabled depends on the Rules defined in the validated
+   ledger */
 std::vector<std::string> const&
 supportedAmendments();
+
+/** Amendments that this server won't vote for by default. Overrides the default
+   vote behavior of `supportedAmendments()` */
+std::vector<std::string> const&
+downVotedAmendments();
 
 }  // namespace detail
 
@@ -152,6 +168,9 @@ featureToBitsetIndex(uint256 const& f);
 
 uint256
 bitsetIndexToFeature(size_t i);
+
+std::string
+featureToName(uint256 const& f);
 
 class FeatureBitset
     : private std::bitset<detail::FeatureCollections::numFeatures()>

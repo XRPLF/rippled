@@ -27,12 +27,56 @@ namespace ripple {
 class Feature_test : public beast::unit_test::suite
 {
     void
+    testDownVotesSupported()
+    {
+        testcase("internal vetoes are all supported");
+
+        auto const supported = ripple::detail::supportedAmendments();
+        auto const vetoed = ripple::detail::downVotedAmendments();
+
+        for (auto const& veto : vetoed)
+        {
+            BEAST_EXPECTS(
+                std::count(supported.begin(), supported.end(), veto) == 1,
+                veto);
+        }
+    }
+
+    void
+    testFeatureToName()
+    {
+        testcase("featureToName");
+
+        // Test all the supported features. In a perfect world, this would test
+        // FeatureCollections::featureNames, but that's private. Leave it that
+        // way.
+        auto const supported = ripple::detail::supportedAmendments();
+
+        for (auto const& feature : supported)
+        {
+            auto const registered = getRegisteredFeature(feature);
+            if (BEAST_EXPECT(registered))
+                BEAST_EXPECT(featureToName(*registered) == feature);
+        }
+
+        // Test an arbitrary unknown feature
+        uint256 zero{0};
+        BEAST_EXPECT(featureToName(zero) == to_string(zero));
+        BEAST_EXPECT(
+            featureToName(zero) ==
+            "0000000000000000000000000000000000000000000000000000000000000000");
+    }
+
+    void
     testNoParams()
     {
         testcase("No Params, None Enabled");
 
         using namespace test::jtx;
         Env env{*this};
+
+        std::vector<std::string> const& vetoed =
+            ripple::detail::downVotedAmendments();
 
         auto jrr = env.rpc("feature")[jss::result];
         if (!BEAST_EXPECT(jrr.isMember(jss::features)))
@@ -41,13 +85,16 @@ class Feature_test : public beast::unit_test::suite
         {
             if (!BEAST_EXPECT(feature.isMember(jss::name)))
                 return;
-            // default config - so all should be disabled, not vetoed, and
-            // supported
+            // default config - so all should be disabled, and
+            // supported. Some may be vetoed.
+            bool expectVeto =
+                std::count(vetoed.begin(), vetoed.end(), feature[jss::name]) >
+                0;
             BEAST_EXPECTS(
                 !feature[jss::enabled].asBool(),
                 feature[jss::name].asString() + " enabled");
             BEAST_EXPECTS(
-                !feature[jss::vetoed].asBool(),
+                feature[jss::vetoed].asBool() == expectVeto,
                 feature[jss::name].asString() + " vetoed");
             BEAST_EXPECTS(
                 feature[jss::supported].asBool(),
@@ -121,6 +168,9 @@ class Feature_test : public beast::unit_test::suite
         Env env{
             *this, FeatureBitset(featureDepositAuth, featureDepositPreauth)};
 
+        std::vector<std::string> const& vetoed =
+            ripple::detail::downVotedAmendments();
+
         auto jrr = env.rpc("feature")[jss::result];
         if (!BEAST_EXPECT(jrr.isMember(jss::features)))
             return;
@@ -135,11 +185,13 @@ class Feature_test : public beast::unit_test::suite
             bool expectEnabled = env.app().getAmendmentTable().isEnabled(id);
             bool expectSupported =
                 env.app().getAmendmentTable().isSupported(id);
+            bool expectVeto =
+                std::count(vetoed.begin(), vetoed.end(), (*it)[jss::name]) > 0;
             BEAST_EXPECTS(
                 (*it)[jss::enabled].asBool() == expectEnabled,
                 (*it)[jss::name].asString() + " enabled");
             BEAST_EXPECTS(
-                !(*it)[jss::vetoed].asBool(),
+                (*it)[jss::vetoed].asBool() == expectVeto,
                 (*it)[jss::name].asString() + " vetoed");
             BEAST_EXPECTS(
                 (*it)[jss::supported].asBool() == expectSupported,
@@ -198,6 +250,8 @@ class Feature_test : public beast::unit_test::suite
         // There should be at least 5 amendments.  Don't do exact comparison
         // to avoid maintenance as more amendments are added in the future.
         BEAST_EXPECT(majorities.size() >= 5);
+        std::vector<std::string> const& vetoed =
+            ripple::detail::downVotedAmendments();
 
         jrr = env.rpc("feature")[jss::result];
         if (!BEAST_EXPECT(jrr.isMember(jss::features)))
@@ -206,9 +260,16 @@ class Feature_test : public beast::unit_test::suite
         {
             if (!BEAST_EXPECT(feature.isMember(jss::name)))
                 return;
+            bool expectVeto =
+                std::count(vetoed.begin(), vetoed.end(), feature[jss::name]) >
+                0;
             BEAST_EXPECTS(
-                feature.isMember(jss::majority),
+                expectVeto ^ feature.isMember(jss::majority),
                 feature[jss::name].asString() + " majority");
+            BEAST_EXPECTS(
+                feature.isMember(jss::vetoed) &&
+                    feature[jss::vetoed].asBool() == expectVeto,
+                feature[jss::name].asString() + " vetoed");
             BEAST_EXPECTS(
                 feature.isMember(jss::count),
                 feature[jss::name].asString() + " count");
@@ -218,10 +279,10 @@ class Feature_test : public beast::unit_test::suite
             BEAST_EXPECTS(
                 feature.isMember(jss::validations),
                 feature[jss::name].asString() + " validations");
-            BEAST_EXPECT(feature[jss::count] == 1);
+            BEAST_EXPECT(feature[jss::count] == (expectVeto ? 0 : 1));
             BEAST_EXPECT(feature[jss::threshold] == 1);
             BEAST_EXPECT(feature[jss::validations] == 1);
-            BEAST_EXPECT(feature[jss::majority] == 2740);
+            BEAST_EXPECT(expectVeto || feature[jss::majority] == 2740);
         }
     }
 
@@ -273,6 +334,8 @@ public:
     void
     run() override
     {
+        testDownVotesSupported();
+        testFeatureToName();
         testNoParams();
         testSingleFeature();
         testInvalidFeature();
