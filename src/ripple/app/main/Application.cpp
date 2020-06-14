@@ -1342,26 +1342,34 @@ ApplicationImp::setup()
 
     // Configure the amendments the server supports
     {
-        auto const& sa = detail::supportedAmendments();
-        std::vector<std::string> saHashes;
-        saHashes.reserve(sa.size());
-        for (auto const& name : sa)
-        {
-            auto const f = getRegisteredFeature(name);
-            BOOST_ASSERT(f);
-            if (f)
-                saHashes.push_back(to_string(*f) + " " + name);
-        }
-        Section supportedAmendments("Supported Amendments");
-        supportedAmendments.append(saHashes);
+        auto buildAmendmentList =
+            [](Section section, std::vector<std::string> const& amendments) {
+                std::vector<std::string> hashes;
+                hashes.reserve(amendments.size());
+                for (auto const& name : amendments)
+                {
+                    auto const f = getRegisteredFeature(name);
+                    assert(f);
+                    if (f)
+                        hashes.push_back(to_string(*f) + " " + name);
+                }
+                section.append(hashes);
+                return section;
+            };
+        Section const supportedAmendments = buildAmendmentList(
+            Section("Supported Amendments"), detail::supportedAmendments());
 
-        Section enabledAmendments = config_->section(SECTION_AMENDMENTS);
+        Section const downVotedAmendments = buildAmendmentList(
+            config_->section(SECTION_VETO_AMENDMENTS),
+            detail::downVotedAmendments());
+
+        Section const enabledAmendments = config_->section(SECTION_AMENDMENTS);
 
         m_amendmentTable = make_AmendmentTable(
             config().AMENDMENT_MAJORITY_TIME,
             supportedAmendments,
             enabledAmendments,
-            config_->section(SECTION_VETO_AMENDMENTS),
+            downVotedAmendments,
             logs_->journal("Amendments"));
     }
 

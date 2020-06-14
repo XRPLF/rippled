@@ -141,9 +141,12 @@ class TxQ_test : public beast::unit_test::suite
         // fee (1) and amendment (supportedAmendments().size())
         // pseudotransactions. The queue treats the fees on these
         // transactions as though they are ordinary transactions.
-        auto const flagPerLedger =
-            1 + ripple::detail::supportedAmendments().size();
+        auto const flagPerLedger = 1 +
+            ripple::detail::supportedAmendments().size() -
+            ripple::detail::downVotedAmendments().size();
         auto const flagMaxQueue = ledgersInQueue * flagPerLedger;
+        // If this check fails, check that all the entries in
+        // downVotedAmendments are also in supportedAmendments.
         checkMetrics(env, 0, flagMaxQueue, 0, flagPerLedger, 256);
 
         // Pad a couple of txs with normal fees so the median comes
@@ -4173,8 +4176,8 @@ public:
             if (!getMajorityAmendments(*env.closed()).empty())
                 break;
         }
-        auto expectedPerLedger =
-            ripple::detail::supportedAmendments().size() + 1;
+        auto expectedPerLedger = ripple::detail::supportedAmendments().size() -
+            ripple::detail::downVotedAmendments().size() + 1;
         checkMetrics(env, 0, 5 * expectedPerLedger, 0, expectedPerLedger, 256);
 
         // Now wait 2 weeks modulo 256 ledgers for the amendments to be

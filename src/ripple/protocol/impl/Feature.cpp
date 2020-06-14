@@ -74,14 +74,32 @@ detail::FeatureCollections::bitsetIndexToFeature(size_t i) const
     return features[i];
 }
 
+std::string
+detail::FeatureCollections::featureToName(uint256 const& f) const
+{
+    auto const i = featureToIndex.find(f);
+    assert(featureToIndex.size() == numFeatures());
+    return i == featureToIndex.end() ? to_string(f) : featureNames[i->second];
+}
+
 static detail::FeatureCollections const featureCollections;
 
-/** Amendments that this server supports, but doesn't enable by default */
+/** Amendments that this server supports and will vote for by default.
+   Whether they are enabled depends on the Rules defined in the validated
+   ledger */
 std::vector<std::string> const&
 detail::supportedAmendments()
 {
     // Commented out amendments will be supported in a future release (and
-    // uncommented at that time).
+    // uncommented at that time). Including an amendment here indicates
+    // that development of the feature is complete. Any future behavior
+    // changes will require another amendment.
+    //
+    // In general, any new non-fix amendments added to this list should also be
+    // added to downVotedAmendments for at least one full release cycle to
+    // prevent rippled from automatically voting to enable that amendment by
+    // default for some time. Fix amendments should be carefully considered
+    // based on the risk and severity of the thing they are fixing.
     //
     // There are also unconditionally supported amendments in the list.
     // Those are amendments that were enabled some time ago and the
@@ -137,6 +155,38 @@ detail::supportedAmendments()
     return supported;
 }
 
+/** Amendments that this server won't vote for by default. Overrides the default
+   vote behavior of `supportedAmendments()` */
+std::vector<std::string> const&
+detail::downVotedAmendments()
+{
+    // Amendment names included in this list should also be present and
+    // uncommented in supportedAmendments above. This allows a particular
+    // version of rippled to be able to understand the amendment if it gets
+    // enabled, but not vote for the amendment by default. Additionally, some
+    // tests will fail if an entry in this list is not in supportedAmendments.
+    //
+    // Note that this list can be overridden by the "feature" admin RPC command.
+    //
+    // For example, if amendment FOO is first complete and released in 2.1, but
+    // down voted (included in this list) until 2.3 when it is removed from this
+    // list, then when it is finally enabled by receiving votes from the
+    // majority of UNL validators some time after 2.3 is released, versions 2.1
+    // and later will know how to handle the new behavior and will NOT be
+    // amendment blocked.
+    //
+    // Suggested format for entries in the string vector:
+    //  "AmendmentName",   // Added in 2.1, planned to enable in 2.3
+    //
+    // To enable automatically voting for the amendment, simply remove it from
+    // this list. There should never be a need to comment entries out aside from
+    // testing.
+    static std::vector<std::string> const vetoed{
+        "CryptoConditionsSuite",  // Added in 0.60.0, incomplete, do not enable
+    };
+    return vetoed;
+}
+
 //------------------------------------------------------------------------------
 
 boost::optional<uint256>
@@ -155,6 +205,12 @@ uint256
 bitsetIndexToFeature(size_t i)
 {
     return featureCollections.bitsetIndexToFeature(i);
+}
+
+std::string
+featureToName(uint256 const& f)
+{
+    return featureCollections.featureToName(f);
 }
 
 // clang-format off
