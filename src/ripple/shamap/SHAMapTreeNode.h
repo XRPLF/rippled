@@ -179,7 +179,7 @@ public:
     makeFromPrefix(Slice rawNode, SHAMapHash const& hash);
 
     static std::shared_ptr<SHAMapAbstractNode>
-    makeFromWire(Slice rawNode, SHAMapNodeID const& id);
+    makeFromWire(Slice rawNode);
 
 private:
     static std::shared_ptr<SHAMapAbstractNode>

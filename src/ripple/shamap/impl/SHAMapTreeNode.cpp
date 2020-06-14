@@ -221,7 +221,7 @@ SHAMapInnerNode::makeCompressedInner(Slice data, std::uint32_t seq)
 }
 
 std::shared_ptr<SHAMapAbstractNode>
-SHAMapAbstractNode::makeFromWire(Slice rawNode, SHAMapNodeID const& id)
+SHAMapAbstractNode::makeFromWire(Slice rawNode)
 {
     if (rawNode.empty())
         return {};
