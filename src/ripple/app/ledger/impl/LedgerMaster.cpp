@@ -1057,9 +1057,8 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         {
             // To throttle the warning messages, instead of printing a warning
             // every flag ledger, we print every week.
-            static TimeKeeper::time_point lastTime{};
             auto currentTime = app_.timeKeeper().now();
-            if (currentTime - lastTime >= weeks{1})
+            if (currentTime - upgradeWarningPrevTime_ >= weeks{1})
             {
                 auto const vals =
                     app_.getValidations().getTrustedForLedger(parentHash);
@@ -1076,10 +1075,13 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
                     app_.validators().getQuorumKeys().second.size() * 60 / 100;
                 if (higherVersionCount >= threshold)
                 {
-                    lastTime = currentTime;
-                    std::cerr << "Check for upgrade: "
-                                 "A majority of trusted validators are "
-                                 "running a newer version.\n";
+                    upgradeWarningPrevTime_ = currentTime;
+                    auto const upgradeMsg =
+                        "Check for upgrade: "
+                        "A majority of trusted validators are "
+                        "running a newer version.";
+                    std::cerr << upgradeMsg << std::endl;
+                    JLOG(m_journal.error()) << upgradeMsg;
                 }
             }
         }
