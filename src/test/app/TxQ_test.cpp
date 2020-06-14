@@ -136,11 +136,10 @@ class TxQ1_test : public beast::unit_test::suite
         for (auto i = env.current()->seq(); i <= 257; ++i)
             env.close();
         // The ledger after the flag ledger creates all the
-        // fee (1) and amendment (supportedAmendments().size())
+        // fee (1) and amendment (numUpVotedAmendments())
         // pseudotransactions. The queue treats the fees on these
         // transactions as though they are ordinary transactions.
-        auto const flagPerLedger =
-            1 + ripple::detail::supportedAmendments().size();
+        auto const flagPerLedger = 1 + ripple::detail::numUpVotedAmendments();
         auto const flagMaxQueue = ledgersInQueue * flagPerLedger;
         checkMetrics(env, 0, flagMaxQueue, 0, flagPerLedger, 256);
 
@@ -4157,8 +4156,7 @@ public:
             if (!getMajorityAmendments(*env.closed()).empty())
                 break;
         }
-        auto expectedPerLedger =
-            ripple::detail::supportedAmendments().size() + 1;
+        auto expectedPerLedger = ripple::detail::numUpVotedAmendments() + 1;
         checkMetrics(env, 0, 5 * expectedPerLedger, 0, expectedPerLedger, 256);
 
         // Now wait 2 weeks modulo 256 ledgers for the amendments to be
@@ -4213,79 +4211,49 @@ public:
         // These particular amendments don't impact any of the queued
         // transactions, so we won't see any change in the transaction
         // outcomes.  But code coverage is affected.
-        env.close(closeDuration);
-        expectedInQueue -= expectedPerLedger + 2;
-        ++expectedPerLedger;
-        checkMetrics(
-            env,
-            expectedInQueue,
-            5 * expectedPerLedger,
-            expectedPerLedger + 1,
-            expectedPerLedger,
-            256);
+        do
         {
-            auto const expectedPerAccount = expectedInQueue / 6;
-            auto const expectedRemainder = expectedInQueue % 6;
-            BEAST_EXPECT(env.seq(alice) == seqAlice - expectedPerAccount);
-            BEAST_EXPECT(
-                env.seq(bob) ==
-                seqBob - expectedPerAccount - (expectedRemainder > 4 ? 1 : 0));
-            BEAST_EXPECT(
-                env.seq(carol) ==
-                seqCarol - expectedPerAccount -
-                    (expectedRemainder > 3 ? 1 : 0));
-            BEAST_EXPECT(
-                env.seq(daria) ==
-                seqDaria - expectedPerAccount -
-                    (expectedRemainder > 2 ? 1 : 0));
-            BEAST_EXPECT(
-                env.seq(ellie) ==
-                seqEllie - expectedPerAccount -
-                    (expectedRemainder > 1 ? 1 : 0));
-            BEAST_EXPECT(
-                env.seq(fiona) ==
-                seqFiona - expectedPerAccount -
-                    (expectedRemainder > 0 ? 1 : 0));
-        }
-
-        env.close(closeDuration);
-        auto expectedInLedger = expectedInQueue;
-        expectedInQueue =
-            (expectedInQueue > expectedPerLedger + 2
-                 ? expectedInQueue - (expectedPerLedger + 2)
-                 : 0);
-        ++expectedPerLedger;
-        checkMetrics(
-            env,
-            0,
-            5 * expectedPerLedger,
-            expectedInLedger,
-            expectedPerLedger,
-            256);
-        {
-            auto const expectedPerAccount = expectedInQueue / 6;
-            auto const expectedRemainder = expectedInQueue % 6;
-            BEAST_EXPECT(env.seq(alice) == seqAlice - expectedPerAccount);
-            BEAST_EXPECT(
-                env.seq(bob) ==
-                seqBob - expectedPerAccount - (expectedRemainder > 4 ? 1 : 0));
-            BEAST_EXPECT(
-                env.seq(carol) ==
-                seqCarol - expectedPerAccount -
-                    (expectedRemainder > 3 ? 1 : 0));
-            BEAST_EXPECT(
-                env.seq(daria) ==
-                seqDaria - expectedPerAccount -
-                    (expectedRemainder > 2 ? 1 : 0));
-            BEAST_EXPECT(
-                env.seq(ellie) ==
-                seqEllie - expectedPerAccount -
-                    (expectedRemainder > 1 ? 1 : 0));
-            BEAST_EXPECT(
-                env.seq(fiona) ==
-                seqFiona - expectedPerAccount -
-                    (expectedRemainder > 0 ? 1 : 0));
-        }
+            env.close(closeDuration);
+            auto expectedInLedger = expectedInQueue;
+            expectedInQueue =
+                (expectedInQueue > expectedPerLedger + 2
+                     ? expectedInQueue - (expectedPerLedger + 2)
+                     : 0);
+            expectedInLedger -= expectedInQueue;
+            ++expectedPerLedger;
+            checkMetrics(
+                env,
+                expectedInQueue,
+                5 * expectedPerLedger,
+                expectedInLedger,
+                expectedPerLedger,
+                256);
+            {
+                auto const expectedPerAccount = expectedInQueue / 6;
+                auto const expectedRemainder = expectedInQueue % 6;
+                BEAST_EXPECT(env.seq(alice) == seqAlice - expectedPerAccount);
+                BEAST_EXPECT(
+                    env.seq(bob) ==
+                    seqBob - expectedPerAccount -
+                        (expectedRemainder > 4 ? 1 : 0));
+                BEAST_EXPECT(
+                    env.seq(carol) ==
+                    seqCarol - expectedPerAccount -
+                        (expectedRemainder > 3 ? 1 : 0));
+                BEAST_EXPECT(
+                    env.seq(daria) ==
+                    seqDaria - expectedPerAccount -
+                        (expectedRemainder > 2 ? 1 : 0));
+                BEAST_EXPECT(
+                    env.seq(ellie) ==
+                    seqEllie - expectedPerAccount -
+                        (expectedRemainder > 1 ? 1 : 0));
+                BEAST_EXPECT(
+                    env.seq(fiona) ==
+                    seqFiona - expectedPerAccount -
+                        (expectedRemainder > 0 ? 1 : 0));
+            }
+        } while (expectedInQueue > 0);
     }
 
     void

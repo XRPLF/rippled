@@ -22,6 +22,7 @@
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STValidation.h>
 
@@ -36,6 +37,19 @@ namespace ripple {
 class AmendmentTable
 {
 public:
+    struct FeatureInfo
+    {
+        FeatureInfo() = delete;
+        FeatureInfo(std::string const& n, uint256 const& f, DefaultVote v)
+            : name(n), feature(f), vote(v)
+        {
+        }
+
+        std::string const name;
+        uint256 const feature;
+        DefaultVote const vote;
+    };
+
     virtual ~AmendmentTable() = default;
 
     virtual uint256
@@ -168,7 +182,7 @@ std::unique_ptr<AmendmentTable>
 make_AmendmentTable(
     Application& app,
     std::chrono::seconds majorityTime,
-    Section const& supported,
+    std::vector<AmendmentTable::FeatureInfo> const& supported,
     Section const& enabled,
     Section const& vetoed,
     beast::Journal journal);

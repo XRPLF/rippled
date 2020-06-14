@@ -258,8 +258,14 @@ readAmendments(
     std::function<void(
         boost::optional<std::string> amendment_hash,
         boost::optional<std::string> amendment_name,
-        boost::optional<int> vote_to_veto)> const& callback)
+        boost::optional<AmendmentVote> vote)> const& callback)
 {
+    // lambda that converts the internally stored int to an AmendmentVote.
+    auto intToVote = [](boost::optional<int> const& dbVote)
+        -> boost::optional<AmendmentVote> {
+        return safe_cast<AmendmentVote>(dbVote.value_or(1));
+    };
+
     soci::transaction tr(session);
     std::string sql =
         "SELECT AmendmentHash, AmendmentName, Veto FROM FeatureVotes";
@@ -275,7 +281,7 @@ readAmendments(
     st.execute();
     while (st.fetch())
     {
-        callback(amendment_hash, amendment_name, vote_to_veto);
+        callback(amendment_hash, amendment_name, intToVote(vote_to_veto));
     }
 }
 
@@ -284,7 +290,7 @@ voteAmendment(
     soci::session& session,
     uint256 const& amendment,
     std::string const& name,
-    bool vote_to_veto)
+    AmendmentVote vote)
 {
     soci::transaction tr(session);
     std::string sql =
@@ -292,7 +298,7 @@ voteAmendment(
         "('";
     sql += to_string(amendment);
     sql += "', '" + name;
-    sql += "', '" + std::to_string(int{vote_to_veto}) + "');";
+    sql += "', '" + std::to_string(safe_cast<int>(vote)) + "');";
     session << sql;
     tr.commit();
 }

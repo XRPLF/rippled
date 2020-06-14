@@ -17,128 +17,317 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/protocol/digest.h>
 
+#include <ripple/basics/Slice.h>
+#include <ripple/basics/contract.h>
+#include <ripple/protocol/digest.h>
+#include <boost/container_hash/hash.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/key_extractors.hpp>
+#include <boost/multi_index/random_access_index.hpp>
+#include <boost/multi_index_container.hpp>
 #include <cstring>
 
 namespace ripple {
 
+inline std::size_t
+hash_value(ripple::uint256 const& feature)
+{
+    std::size_t seed = 0;
+    using namespace boost;
+    for (auto const& n : feature)
+        hash_combine(seed, n);
+    return seed;
+}
+
+namespace {
+
+enum class Supported : bool { no = false, yes };
+
+// *NOTE*
+//
+// Features, or Amendments as they are called elsewhere, are enabled on the
+// network at some specific time based on Validator voting.  Features are
+// enabled using run-time conditionals based on the state of the amendment.
+// There is value in retaining that conditional code for some time after
+// the amendment is enabled to make it simple to replay old transactions.
+// However, once an Amendment has been enabled for, say, more than two years
+// then retaining that conditional code has less value since it is
+// uncommon to replay such old transactions.
+//
+// Starting in January of 2020 Amendment conditionals from before January
+// 2018 are being removed.  So replaying any ledger from before January
+// 2018 needs to happen on an older version of the server code.  There's
+// a log message in Application.cpp that warns about replaying old ledgers.
+//
+// At some point in the future someone may wish to remove Amendment
+// conditional code for Amendments that were enabled after January 2018.
+// When that happens then the log message in Application.cpp should be
+// updated.
+
+class FeatureCollections
+{
+    struct Feature
+    {
+        std::string name;
+        uint256 feature;
+
+        Feature() = delete;
+        explicit Feature(std::string const& name_, uint256 const& feature_)
+            : name(name_), feature(feature_)
+        {
+        }
+
+        // These structs are used by the `features` multi_index_container to
+        // provide access to the features collection by size_t index, string
+        // name, and uint256 feature identifier
+        struct byIndex
+        {
+        };
+        struct byName
+        {
+        };
+        struct byFeature
+        {
+        };
+    };
+
+    // Intermediate types to help with readability
+    template <class tag, typename Type, Type Feature::*PtrToMember>
+    using feature_hashed_unique = boost::multi_index::hashed_unique<
+        boost::multi_index::tag<tag>,
+        boost::multi_index::member<Feature, Type, PtrToMember>>;
+
+    // Intermediate types to help with readability
+    using feature_indexing = boost::multi_index::indexed_by<
+        boost::multi_index::random_access<
+            boost::multi_index::tag<Feature::byIndex>>,
+        feature_hashed_unique<Feature::byFeature, uint256, &Feature::feature>,
+        feature_hashed_unique<Feature::byName, std::string, &Feature::name>>;
+
+    // This multi_index_container provides access to the features collection by
+    // name, index, and uint256 feature identifier
+    boost::multi_index::multi_index_container<Feature, feature_indexing>
+        features;
+    std::map<std::string, DefaultVote> supported;
+    std::size_t upVotes = 0;
+    std::size_t downVotes = 0;
+    mutable std::atomic<bool> readOnly = false;
+
+    // These helper functions provide access to the features collection by name,
+    // index, and uint256 feature identifier, so the details of
+    // multi_index_container can be hidden
+    Feature const&
+    getByIndex(size_t i) const
+    {
+        if (i >= features.size())
+            LogicError("Invalid FeatureBitset index");
+        const auto& sequence = features.get<Feature::byIndex>();
+        return sequence[i];
+    }
+    size_t
+    getIndex(Feature const& feature) const
+    {
+        const auto& sequence = features.get<Feature::byIndex>();
+        auto const it_to = sequence.iterator_to(feature);
+        return it_to - sequence.begin();
+    }
+    Feature const*
+    getByFeature(uint256 const& feature) const
+    {
+        const auto& feature_index = features.get<Feature::byFeature>();
+        auto const feature_it = feature_index.find(feature);
+        return feature_it == feature_index.end() ? nullptr : &*feature_it;
+    }
+    Feature const*
+    getByName(std::string const& name) const
+    {
+        const auto& name_index = features.get<Feature::byName>();
+        auto const name_it = name_index.find(name);
+        return name_it == name_index.end() ? nullptr : &*name_it;
+    }
+
+public:
+    FeatureCollections();
+
+    std::optional<uint256>
+    getRegisteredFeature(std::string const& name) const;
+
+    uint256
+    registerFeature(
+        std::string const& name,
+        Supported support,
+        DefaultVote vote);
+
+    /** Tell FeatureCollections when registration is complete. */
+    bool
+    registrationIsDone();
+
+    std::size_t
+    featureToBitsetIndex(uint256 const& f) const;
+
+    uint256 const&
+    bitsetIndexToFeature(size_t i) const;
+
+    std::string
+    featureToName(uint256 const& f) const;
+
+    /** Amendments that this server supports.
+    Whether they are enabled depends on the Rules defined in the validated
+    ledger */
+    std::map<std::string, DefaultVote> const&
+    supportedAmendments() const
+    {
+        return supported;
+    }
+
+    /** Amendments that this server WON'T vote for by default. */
+    std::size_t
+    numDownVotedAmendments() const
+    {
+        return downVotes;
+    }
+
+    /** Amendments that this server WILL vote for by default. */
+    std::size_t
+    numUpVotedAmendments() const
+    {
+        return upVotes;
+    }
+};
+
 //------------------------------------------------------------------------------
 
-constexpr char const* const detail::FeatureCollections::featureNames[];
-
-detail::FeatureCollections::FeatureCollections()
+FeatureCollections::FeatureCollections()
 {
-    features.reserve(numFeatures());
-    featureToIndex.reserve(numFeatures());
-    nameToFeature.reserve(numFeatures());
-
-    for (std::size_t i = 0; i < numFeatures(); ++i)
-    {
-        auto const name = featureNames[i];
-        sha512_half_hasher h;
-        h(name, std::strlen(name));
-        auto const f = static_cast<uint256>(h);
-
-        features.push_back(f);
-        featureToIndex[f] = i;
-        nameToFeature[name] = f;
-    }
+    features.reserve(ripple::detail::numFeatures);
 }
 
 std::optional<uint256>
-detail::FeatureCollections::getRegisteredFeature(std::string const& name) const
+FeatureCollections::getRegisteredFeature(std::string const& name) const
 {
-    auto const i = nameToFeature.find(name);
-    if (i == nameToFeature.end())
-        return std::nullopt;
-    return i->second;
+    assert(readOnly);
+    Feature const* feature = getByName(name);
+    if (feature)
+        return feature->feature;
+    return std::nullopt;
+}
+
+void
+check(bool condition, const char* logicErrorMessage)
+{
+    if (!condition)
+        LogicError(logicErrorMessage);
+}
+
+uint256
+FeatureCollections::registerFeature(
+    std::string const& name,
+    Supported support,
+    DefaultVote vote)
+{
+    check(!readOnly, "Attempting to register a feature after startup.");
+    check(
+        support == Supported::yes || vote == DefaultVote::no,
+        "Invalid feature parameters. Must be supported to be up-voted.");
+    Feature const* i = getByName(name);
+    if (!i)
+    {
+        // If this check fails, and you just added a feature, increase the
+        // numFeatures value in Feature.h
+        check(
+            features.size() < detail::numFeatures,
+            "More features defined than allocated. Adjust numFeatures in "
+            "Feature.h.");
+
+        auto const f = sha512Half(Slice(name.data(), name.size()));
+
+        features.emplace_back(name, f);
+
+        if (support == Supported::yes)
+        {
+            supported.emplace(name, vote);
+
+            if (vote == DefaultVote::yes)
+                ++upVotes;
+            else
+                ++downVotes;
+        }
+        check(
+            upVotes + downVotes == supported.size(),
+            "Feature counting logic broke");
+        check(
+            supported.size() <= features.size(),
+            "More supported features than defined features");
+        return f;
+    }
+    else
+        // Each feature should only be registered once
+        LogicError("Duplicate feature registration");
+}
+
+/** Tell FeatureCollections when registration is complete. */
+bool
+FeatureCollections::registrationIsDone()
+{
+    readOnly = true;
+    return true;
 }
 
 size_t
-detail::FeatureCollections::featureToBitsetIndex(uint256 const& f) const
+FeatureCollections::featureToBitsetIndex(uint256 const& f) const
 {
-    auto const i = featureToIndex.find(f);
-    if (i == featureToIndex.end())
+    assert(readOnly);
+
+    Feature const* feature = getByFeature(f);
+    if (!feature)
         LogicError("Invalid Feature ID");
-    return i->second;
+
+    return getIndex(*feature);
 }
 
 uint256 const&
-detail::FeatureCollections::bitsetIndexToFeature(size_t i) const
+FeatureCollections::bitsetIndexToFeature(size_t i) const
 {
-    if (i >= features.size())
-        LogicError("Invalid FeatureBitset index");
-    return features[i];
+    assert(readOnly);
+    Feature const& feature = getByIndex(i);
+    return feature.feature;
 }
 
-static detail::FeatureCollections const featureCollections;
+std::string
+FeatureCollections::featureToName(uint256 const& f) const
+{
+    assert(readOnly);
+    Feature const* feature = getByFeature(f);
+    return feature ? feature->name : to_string(f);
+}
 
-/** Amendments that this server supports, but doesn't enable by default */
-std::vector<std::string> const&
+static FeatureCollections featureCollections;
+
+}  // namespace
+
+/** Amendments that this server supports.
+   Whether they are enabled depends on the Rules defined in the validated
+   ledger */
+std::map<std::string, DefaultVote> const&
 detail::supportedAmendments()
 {
-    // Commented out amendments will be supported in a future release (and
-    // uncommented at that time).
-    //
-    // There are also unconditionally supported amendments in the list.
-    // Those are amendments that were enabled some time ago and the
-    // amendment conditional code has been removed.
-    //
-    // ** WARNING **
-    // Unconditionally supported amendments need to remain in the list.
-    // Removing them will cause servers to become amendment blocked.
-    static std::vector<std::string> const supported{
-        "MultiSign",      // Unconditionally supported.
-        "TrustSetAuth",   // Unconditionally supported.
-        "FeeEscalation",  // Unconditionally supported.
-                          //        "OwnerPaysFee",
-        "PayChan",
-        "Flow",
-        "CryptoConditions",
-        "TickSize",
-        "fix1368",
-        "Escrow",
-        "CryptoConditionsSuite",
-        "fix1373",
-        "EnforceInvariants",
-        "FlowCross",
-        "SortedDirectories",
-        "fix1201",
-        "fix1512",
-        "fix1513",
-        "fix1523",
-        "fix1528",
-        "DepositAuth",
-        "Checks",
-        "fix1571",
-        "fix1543",
-        "fix1623",
-        "DepositPreauth",
-        // Use liquidity from strands that consume max offers, but mark as dry
-        "fix1515",
-        "fix1578",
-        "MultiSignReserve",
-        "fixTakerDryOfferRemoval",
-        "fixMasterKeyAsRegularKey",
-        "fixCheckThreading",
-        "fixPayChanRecipientOwnerDir",
-        "DeletableAccounts",
-        "fixQualityUpperBound",
-        "RequireFullyCanonicalSig",
-        "fix1781",
-        "HardenedValidations",
-        "fixAmendmentMajorityCalc",
-        "NegativeUNL",
-        "TicketBatch",
-        "FlowSortStrands",
-        "fixSTAmountCanonicalize",
-        "fixRmSmallIncreasedQOffers",
-        "CheckCashMakesTrustLine",
-    };
-    return supported;
+    return featureCollections.supportedAmendments();
+}
+
+/** Amendments that this server won't vote for by default. */
+std::size_t
+detail::numDownVotedAmendments()
+{
+    return featureCollections.numDownVotedAmendments();
+}
+
+/** Amendments that this server will vote for by default. */
+std::size_t
+detail::numUpVotedAmendments()
+{
+    return featureCollections.numUpVotedAmendments();
 }
 
 //------------------------------------------------------------------------------
@@ -147,6 +336,27 @@ std::optional<uint256>
 getRegisteredFeature(std::string const& name)
 {
     return featureCollections.getRegisteredFeature(name);
+}
+
+uint256
+registerFeature(std::string const& name, Supported support, DefaultVote vote)
+{
+    return featureCollections.registerFeature(name, support, vote);
+}
+
+// Retired features are in the ledger and have no code controlled by the
+// feature. They need to be supported, but do not need to be voted on.
+uint256
+retireFeature(std::string const& name)
+{
+    return registerFeature(name, Supported::yes, DefaultVote::no);
+}
+
+/** Tell FeatureCollections when registration is complete. */
+bool
+registrationIsDone()
+{
+    return featureCollections.registrationIsDone();
 }
 
 size_t
@@ -161,57 +371,109 @@ bitsetIndexToFeature(size_t i)
     return featureCollections.bitsetIndexToFeature(i);
 }
 
+std::string
+featureToName(uint256 const& f)
+{
+    return featureCollections.featureToName(f);
+}
+
+#pragma push_macro("REGISTER_FEATURE")
+#undef REGISTER_FEATURE
+
+/**
+Takes the name of a feature, whether it's supported, and the default vote. Will
+register the feature, and create a variable whose name is "feature" plus the
+feature name.
+*/
+#define REGISTER_FEATURE(fName, supported, defaultvote) \
+    uint256 const feature##fName =                      \
+        registerFeature(#fName, supported, defaultvote)
+
+#pragma push_macro("REGISTER_FIX")
+#undef REGISTER_FIX
+
+/**
+Takes the name of a feature, whether it's supported, and the default vote. Will
+register the feature, and create a variable whose name is the unmodified feature
+name.
+*/
+#define REGISTER_FIX(fName, supported, defaultvote) \
+    uint256 const fName = registerFeature(#fName, supported, defaultvote)
+
 // clang-format off
 
-uint256 const
-    featureOwnerPaysFee             = *getRegisteredFeature("OwnerPaysFee"),
-    featureFlow                     = *getRegisteredFeature("Flow"),
-    featureFlowCross                = *getRegisteredFeature("FlowCross"),
-    featureCryptoConditionsSuite    = *getRegisteredFeature("CryptoConditionsSuite"),
-    fix1513                         = *getRegisteredFeature("fix1513"),
-    featureDepositAuth              = *getRegisteredFeature("DepositAuth"),
-    featureChecks                   = *getRegisteredFeature("Checks"),
-    fix1571                         = *getRegisteredFeature("fix1571"),
-    fix1543                         = *getRegisteredFeature("fix1543"),
-    fix1623                         = *getRegisteredFeature("fix1623"),
-    featureDepositPreauth           = *getRegisteredFeature("DepositPreauth"),
-    fix1515                         = *getRegisteredFeature("fix1515"),
-    fix1578                         = *getRegisteredFeature("fix1578"),
-    featureMultiSignReserve         = *getRegisteredFeature("MultiSignReserve"),
-    fixTakerDryOfferRemoval         = *getRegisteredFeature("fixTakerDryOfferRemoval"),
-    fixMasterKeyAsRegularKey        = *getRegisteredFeature("fixMasterKeyAsRegularKey"),
-    fixCheckThreading               = *getRegisteredFeature("fixCheckThreading"),
-    fixPayChanRecipientOwnerDir     = *getRegisteredFeature("fixPayChanRecipientOwnerDir"),
-    featureDeletableAccounts        = *getRegisteredFeature("DeletableAccounts"),
-    fixQualityUpperBound            = *getRegisteredFeature("fixQualityUpperBound"),
-    featureRequireFullyCanonicalSig = *getRegisteredFeature("RequireFullyCanonicalSig"),
-    fix1781                         = *getRegisteredFeature("fix1781"),
-    featureHardenedValidations      = *getRegisteredFeature("HardenedValidations"),
-    fixAmendmentMajorityCalc        = *getRegisteredFeature("fixAmendmentMajorityCalc"),
-    featureNegativeUNL              = *getRegisteredFeature("NegativeUNL"),
-    featureTicketBatch              = *getRegisteredFeature("TicketBatch"),
-    featureFlowSortStrands          = *getRegisteredFeature("FlowSortStrands"),
-    fixSTAmountCanonicalize         = *getRegisteredFeature("fixSTAmountCanonicalize"),
-    fixRmSmallIncreasedQOffers      = *getRegisteredFeature("fixRmSmallIncreasedQOffers"),
-    featureCheckCashMakesTrustLine  = *getRegisteredFeature("CheckCashMakesTrustLine");
+// All known amendments must be registered either here or below with the
+// "retired" amendments
+REGISTER_FEATURE(OwnerPaysFee,                  Supported::no,  DefaultVote::no);
+REGISTER_FEATURE(Flow,                          Supported::yes, DefaultVote::yes);
+REGISTER_FEATURE(FlowCross,                     Supported::yes, DefaultVote::yes);
+REGISTER_FEATURE(CryptoConditionsSuite,         Supported::yes, DefaultVote::no);
+REGISTER_FIX    (fix1513,                       Supported::yes, DefaultVote::yes);
+REGISTER_FEATURE(DepositAuth,                   Supported::yes, DefaultVote::yes);
+REGISTER_FEATURE(Checks,                        Supported::yes, DefaultVote::yes);
+REGISTER_FIX    (fix1571,                       Supported::yes, DefaultVote::yes);
+REGISTER_FIX    (fix1543,                       Supported::yes, DefaultVote::yes);
+REGISTER_FIX    (fix1623,                       Supported::yes, DefaultVote::yes);
+REGISTER_FEATURE(DepositPreauth,                Supported::yes, DefaultVote::yes);
+// Use liquidity from strands that consume max offers, but mark as dry
+REGISTER_FIX    (fix1515,                       Supported::yes, DefaultVote::yes);
+REGISTER_FIX    (fix1578,                       Supported::yes, DefaultVote::yes);
+REGISTER_FEATURE(MultiSignReserve,              Supported::yes, DefaultVote::yes);
+REGISTER_FIX    (fixTakerDryOfferRemoval,       Supported::yes, DefaultVote::yes);
+REGISTER_FIX    (fixMasterKeyAsRegularKey,      Supported::yes, DefaultVote::yes);
+REGISTER_FIX    (fixCheckThreading,             Supported::yes, DefaultVote::yes);
+REGISTER_FIX    (fixPayChanRecipientOwnerDir,   Supported::yes, DefaultVote::yes);
+REGISTER_FEATURE(DeletableAccounts,             Supported::yes, DefaultVote::yes);
+// fixQualityUpperBound should be activated before FlowCross
+REGISTER_FIX    (fixQualityUpperBound,          Supported::yes, DefaultVote::yes);
+REGISTER_FEATURE(RequireFullyCanonicalSig,      Supported::yes, DefaultVote::yes);
+// fix1781: XRPEndpointSteps should be included in the circular payment check
+REGISTER_FIX    (fix1781,                       Supported::yes, DefaultVote::yes);
+REGISTER_FEATURE(HardenedValidations,           Supported::yes, DefaultVote::yes);
+REGISTER_FIX    (fixAmendmentMajorityCalc,      Supported::yes, DefaultVote::yes);
+REGISTER_FEATURE(NegativeUNL,                   Supported::yes, DefaultVote::no);
+REGISTER_FEATURE(TicketBatch,                   Supported::yes, DefaultVote::yes);
+REGISTER_FEATURE(FlowSortStrands,               Supported::yes, DefaultVote::yes);
+REGISTER_FIX    (fixSTAmountCanonicalize,       Supported::yes, DefaultVote::yes);
+REGISTER_FIX    (fixRmSmallIncreasedQOffers,    Supported::yes, DefaultVote::yes);
+REGISTER_FEATURE(CheckCashMakesTrustLine,       Supported::yes, DefaultVote::no);
 
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.
+// All known amendments and amendments that may appear in a validated
+// ledger must be registered either here or above with the "active" amendments
 [[deprecated("The referenced amendment has been retired"), maybe_unused]]
 uint256 const
-    retiredPayChan           = *getRegisteredFeature("PayChan"),
-    retiredCryptoConditions  = *getRegisteredFeature("CryptoConditions"),
-    retiredTickSize          = *getRegisteredFeature("TickSize"),
-    retiredFix1368           = *getRegisteredFeature("fix1368"),
-    retiredEscrow            = *getRegisteredFeature("Escrow"),
-    retiredFix1373           = *getRegisteredFeature("fix1373"),
-    retiredEnforceInvariants = *getRegisteredFeature("EnforceInvariants"),
-    retiredSortedDirectories = *getRegisteredFeature("SortedDirectories"),
-    retiredFix1201           = *getRegisteredFeature("fix1201"),
-    retiredFix1512           = *getRegisteredFeature("fix1512"),
-    retiredFix1523           = *getRegisteredFeature("fix1523"),
-    retiredFix1528           = *getRegisteredFeature("fix1528");
+    retiredMultiSign         = retireFeature("MultiSign"),
+    retiredTrustSetAuth      = retireFeature("TrustSetAuth"),
+    retiredFeeEscalation     = retireFeature("FeeEscalation"),
+    retiredPayChan           = retireFeature("PayChan"),
+    retiredCryptoConditions  = retireFeature("CryptoConditions"),
+    retiredTickSize          = retireFeature("TickSize"),
+    retiredFix1368           = retireFeature("fix1368"),
+    retiredEscrow            = retireFeature("Escrow"),
+    retiredFix1373           = retireFeature("fix1373"),
+    retiredEnforceInvariants = retireFeature("EnforceInvariants"),
+    retiredSortedDirectories = retireFeature("SortedDirectories"),
+    retiredFix1201           = retireFeature("fix1201"),
+    retiredFix1512           = retireFeature("fix1512"),
+    retiredFix1523           = retireFeature("fix1523"),
+    retiredFix1528           = retireFeature("fix1528");
 
 // clang-format on
+
+#undef REGISTER_FIX
+#pragma pop_macro("REGISTER_FIX")
+
+#undef REGISTER_FEATURE
+#pragma pop_macro("REGISTER_FEATURE")
+
+// All of the features should now be registered, since variables in a cpp file
+// are initialized from top to bottom.
+//
+// Use initialization of one final static variable to set
+// featureCollections::readOnly.
+[[maybe_unused]] static const bool readOnlySet =
+    featureCollections.registrationIsDone();
 
 }  // namespace ripple

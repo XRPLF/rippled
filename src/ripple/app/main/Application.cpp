@@ -1250,27 +1250,29 @@ ApplicationImp::setup()
 
     // Configure the amendments the server supports
     {
-        auto const& sa = detail::supportedAmendments();
-        std::vector<std::string> saHashes;
-        saHashes.reserve(sa.size());
-        for (auto const& name : sa)
-        {
-            auto const f = getRegisteredFeature(name);
-            BOOST_ASSERT(f);
-            if (f)
-                saHashes.push_back(to_string(*f) + " " + name);
-        }
-        Section supportedAmendments("Supported Amendments");
-        supportedAmendments.append(saHashes);
+        auto const supported = []() {
+            auto const& amendments = detail::supportedAmendments();
+            std::vector<AmendmentTable::FeatureInfo> supported;
+            supported.reserve(amendments.size());
+            for (auto const& [a, vote] : amendments)
+            {
+                auto const f = ripple::getRegisteredFeature(a);
+                assert(f);
+                if (f)
+                    supported.emplace_back(a, *f, vote);
+            }
+            return supported;
+        }();
+        Section const& downVoted = config_->section(SECTION_VETO_AMENDMENTS);
 
-        Section enabledAmendments = config_->section(SECTION_AMENDMENTS);
+        Section const& upVoted = config_->section(SECTION_AMENDMENTS);
 
         m_amendmentTable = make_AmendmentTable(
             *this,
             config().AMENDMENT_MAJORITY_TIME,
-            supportedAmendments,
-            enabledAmendments,
-            config_->section(SECTION_VETO_AMENDMENTS),
+            supported,
+            upVoted,
+            downVoted,
             logs_->journal("Amendments"));
     }
 
