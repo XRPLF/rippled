@@ -812,6 +812,7 @@ public:
 
         auto const missingSomeFeatures =
             supported_amendments() - featureMultiSignReserve - featureFlow;
+        BEAST_EXPECT(missingSomeFeatures.count() == (supported.count() - 2));
         {
             // a Env supported_features_except is missing *only* those features
             Env env{*this, missingSomeFeatures};

@@ -62,6 +62,8 @@ doFeature(RPC::JsonContext& context)
 
     auto feature = table.find(context.params[jss::feature].asString());
 
+    // If the feature is not found by name, try to parse the `feature` param as
+    // a feature ID. If that fails, return an error.
     if (!feature && !feature.parseHex(context.params[jss::feature].asString()))
         return rpcError(rpcBAD_FEATURE);
 

@@ -132,11 +132,15 @@ deletePeerReservation(soci::session& session, PublicKey const& nodeId);
 bool
 createFeatureVotes(soci::session& session);
 
+// For historical reasons the up-vote and down-vote integer representations
+// are unintuitive.
+enum class AmendmentVote : int { up = 0, down = 1 };
+
 /**
  * @brief readAmendments Read all amendments from FeatureVotes table.
  * @param session Session with walletDB database.
  * @param callback Callback called for each amendment passing its hash, name
- *        and teh flag if it should be vetoed as callback parameters
+ *        and the flag if it should be vetoed as callback parameters
  */
 void
 readAmendments(
@@ -144,21 +148,21 @@ readAmendments(
     std::function<void(
         boost::optional<std::string> amendment_hash,
         boost::optional<std::string> amendment_name,
-        boost::optional<int> vote_to_veto)> const& callback);
+        boost::optional<AmendmentVote> vote)> const& callback);
 
 /**
  * @brief voteAmendment Set veto value for particular amendment.
  * @param session Session with walletDB database.
  * @param amendment Hash of amendment.
  * @param name Name of amendment.
- * @param vote_to_veto Trus if this amendment should be vetoed.
+ * @param vote Whether to vote in favor of this amendment.
  */
 void
 voteAmendment(
     soci::session& session,
     uint256 const& amendment,
     std::string const& name,
-    bool vote_to_veto);
+    AmendmentVote vote);
 
 /* State DB */
 
