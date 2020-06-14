@@ -124,7 +124,7 @@ public:
             }
         }
 
-        mThreshold = rules_.enabled(fixAmendmentMajorityCalc)
+        mThreshold = !rules_.enabled(fixAmendmentMajorityCalc)
             ? std::max(
                   1L,
                   (mTrustedValidations *
