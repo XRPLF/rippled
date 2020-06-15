@@ -148,7 +148,10 @@ public:
         // Before this fix, it was possible for an amendment to activate with a
         // percentage slightly less than 80% because we compared for "greater
         // than or equal to" instead of strictly "greater than".
-        if (!rules_.enabled(fixAmendmentMajorityCalc))
+        // One validator is an exception, otherwise it is not possible
+        // to gain majority.
+        if (!rules_.enabled(fixAmendmentMajorityCalc) ||
+            mTrustedValidations == 1)
             return it->second >= mThreshold;
 
         return it->second > mThreshold;
