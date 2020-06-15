@@ -147,10 +147,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
         }
 
-        // Conditions other than PrefixSha256 require the
-        // "CryptoConditionsSuite" amendment:
-        if (condition->type != Type::preimageSha256 &&
-            !ctx.rules.enabled(featureCryptoConditionsSuite))
+        if (condition->type != Type::preimageSha256)
             return temDISABLED;
     }
 
