@@ -102,7 +102,7 @@ detail::supportedAmendments()
         "TickSize",
         "fix1368",
         "Escrow",
-        "CryptoConditionsSuite",
+        // "CryptoConditionsSuite", NO NOT REUSE
         "fix1373",
         "EnforceInvariants",
         "FlowCross",
@@ -162,7 +162,6 @@ uint256 const
     featureFlow                     = *getRegisteredFeature("Flow"),
     featureCompareTakerFlowCross    = *getRegisteredFeature("CompareTakerFlowCross"),
     featureFlowCross                = *getRegisteredFeature("FlowCross"),
-    featureCryptoConditionsSuite    = *getRegisteredFeature("CryptoConditionsSuite"),
     fix1513                         = *getRegisteredFeature("fix1513"),
     featureDepositAuth              = *getRegisteredFeature("DepositAuth"),
     featureChecks                   = *getRegisteredFeature("Checks"),
