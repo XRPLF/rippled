@@ -220,7 +220,7 @@ private:
      *  @return true if any deletable rows were found (though not
      *      necessarily deleted.
      */
-    bool
+    void
     clearSql(
         DatabaseCon& database,
         LedgerIndex lastRotated,

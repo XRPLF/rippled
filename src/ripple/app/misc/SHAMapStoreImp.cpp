@@ -380,7 +380,7 @@ SHAMapStoreImp::run()
                 default:;
             }
 
-            JLOG(journal_.trace()) << "copying ledger " << validatedSeq;
+            JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
             std::uint64_t nodeCount = 0;
             validatedLedger->stateMap().snapShot(false)->visitNodes(std::bind(
                 &SHAMapStoreImp::copyNode,
@@ -401,7 +401,7 @@ SHAMapStoreImp::run()
             JLOG(journal_.debug()) << "copied ledger " << validatedSeq
                                    << " nodecount " << nodeCount;
 
-            JLOG(journal_.trace()) << "freshening caches";
+            JLOG(journal_.debug()) << "freshening caches";
             freshenCaches();
             switch (health())
             {
@@ -566,7 +566,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     return backend;
 }
 
-bool
+void
 SHAMapStoreImp::clearSql(
     DatabaseCon& database,
     LedgerIndex lastRotated,
@@ -580,26 +580,23 @@ SHAMapStoreImp::clearSql(
         boost::optional<std::uint64_t> m;
         JLOG(journal_.trace())
             << "Begin: Look up lowest value of: " << minQuery;
-        if (auto db = database.checkoutDb())
-            *db << minQuery, soci::into(m);
-        else
         {
-            assert(false);
-            return false;
+            auto db = database.checkoutDb();
+            *db << minQuery, soci::into(m);
         }
         JLOG(journal_.trace()) << "End: Look up lowest value of: " << minQuery;
         if (!m)
-            return false;
+            return;
         min = *m;
     }
 
     if (min > lastRotated || health() != Health::ok)
-        return false;
+        return;
     if (min == lastRotated)
     {
         // Micro-optimization mainly to clarify logs
         JLOG(journal_.trace()) << "Nothing to delete from " << deleteQuery;
-        return true;
+        return;
     }
 
     boost::format formattedDeleteQuery(deleteQuery);
@@ -612,27 +609,22 @@ SHAMapStoreImp::clearSql(
         JLOG(journal_.trace()) << "Begin: Delete up to " << deleteBatch_
                                << " rows with LedgerSeq < " << min
                                << " using query: " << deleteQuery;
-        if (auto db = database.checkoutDb())
         {
+            auto db = database.checkoutDb();
             *db << boost::str(formattedDeleteQuery % min);
-        }
-        else
-        {
-            assert(false);
-            return false;
         }
         JLOG(journal_.trace())
             << "End: Delete up to " << deleteBatch_ << " rows with LedgerSeq < "
             << min << " using query: " << deleteQuery;
         if (health())
-            return true;
+            return;
         if (min < lastRotated)
             std::this_thread::sleep_for(backOff_);
         if (health())
-            return true;
+            return;
     }
     JLOG(journal_.debug()) << "finished: " << deleteQuery;
-    return true;
+    return;
 }
 
 void
