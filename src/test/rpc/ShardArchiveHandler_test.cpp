@@ -62,7 +62,7 @@ public:
         auto c = jtx::envconfig();
         auto& section = c->section(ConfigSection::shardDatabase());
         section.set("path", tempDir.path());
-        section.set("max_size_gb", "100");
+        section.set("max_historical_shards", "20");
         c->setupControl(true, true, true);
 
         jtx::Env env(*this, std::move(c));
@@ -111,7 +111,7 @@ public:
         auto c = jtx::envconfig();
         auto& section = c->section(ConfigSection::shardDatabase());
         section.set("path", tempDir.path());
-        section.set("max_size_gb", "100");
+        section.set("max_historical_shards", "20");
         c->setupControl(true, true, true);
 
         jtx::Env env(*this, std::move(c));
@@ -165,7 +165,7 @@ public:
         auto c = jtx::envconfig();
         auto& section = c->section(ConfigSection::shardDatabase());
         section.set("path", tempDir.path());
-        section.set("max_size_gb", "100");
+        section.set("max_historical_shards", "20");
         section.set("ledgers_per_shard", "256");
         section.set("earliest_seq", "257");
         auto& sectionNode = c->section(ConfigSection::nodeDatabase());
@@ -263,7 +263,7 @@ public:
             auto c = jtx::envconfig();
             auto& section = c->section(ConfigSection::shardDatabase());
             section.set("path", tempDir.path());
-            section.set("max_size_gb", "100");
+            section.set("max_historical_shards", "20");
             section.set("ledgers_per_shard", "256");
             section.set("earliest_seq", "257");
             auto& sectionNode = c->section(ConfigSection::nodeDatabase());
@@ -360,7 +360,7 @@ public:
         auto c = jtx::envconfig();
         auto& section = c->section(ConfigSection::shardDatabase());
         section.set("path", tempDir.path());
-        section.set("max_size_gb", "100");
+        section.set("max_historical_shards", "20");
         section.set("ledgers_per_shard", "256");
         section.set("shard_verification_retry_interval", "1");
         section.set("shard_verification_max_attempts", "10000");

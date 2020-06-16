@@ -22,7 +22,6 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/Manager.h>
-#include <ripple/nodestore/impl/DatabaseShardImp.h>
 #include <ripple/nodestore/impl/Shard.h>
 #include <ripple/protocol/digest.h>
 
@@ -39,6 +38,16 @@ Shard::Shard(
     DatabaseShard const& db,
     std::uint32_t index,
     beast::Journal j)
+    : Shard(app, db, index, "", j)
+{
+}
+
+Shard::Shard(
+    Application& app,
+    DatabaseShard const& db,
+    std::uint32_t index,
+    boost::filesystem::path const& dir,
+    beast::Journal j)
     : app_(app)
     , index_(index)
     , firstSeq_(db.firstLedgerSeq(index))
@@ -46,7 +55,7 @@ Shard::Shard(
     , maxLedgers_(
           index == db.earliestShardIndex() ? lastSeq_ - firstSeq_ + 1
                                            : db.ledgersPerShard())
-    , dir_(db.getRootDir() / std::to_string(index_))
+    , dir_((dir.empty() ? db.getRootDir() : dir) / std::to_string(index_))
     , j_(j)
 {
     if (index_ < db.earliestShardIndex())
@@ -225,6 +234,15 @@ Shard::open(Scheduler& scheduler, nudb::context& ctx)
 
     setFileStats(lock);
     return true;
+}
+
+void
+Shard::closeAll()
+{
+    backend_.reset();
+    lgrSQLiteDB_.reset();
+    txSQLiteDB_.reset();
+    acquireInfo_.reset();
 }
 
 boost::optional<std::uint32_t>

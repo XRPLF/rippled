@@ -177,7 +177,7 @@ The `download_path` field of the `shard_db` entry is used to determine where to 
 type=NuDB
 path=/var/lib/rippled/db/shards/nudb
 download_path=/var/lib/rippled/db/shards/
-max_size_gb=50
+max_historical_shards=50
 ```
 
 ##### Resuming Partial Downloads
