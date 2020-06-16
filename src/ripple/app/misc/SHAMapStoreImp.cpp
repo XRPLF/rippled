@@ -648,9 +648,6 @@ SHAMapStoreImp::freshenCaches()
 void
 SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
 {
-    if (health())
-        return;
-
     // Do not allow ledgers to be acquired from the network
     // that are about to be deleted.
     minimumOnline_ = lastRotated + 1;
