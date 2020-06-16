@@ -102,7 +102,7 @@ detail::supportedAmendments()
         "TickSize",
         "fix1368",
         "Escrow",
-        // "CryptoConditionsSuite", NO NOT REUSE
+        // "CryptoConditionsSuite", DO NOT REUSE
         "fix1373",
         "EnforceInvariants",
         "FlowCross",
