@@ -193,6 +193,11 @@ private:
         State state{State::none};
     };
 
+    enum class PathDesignation : uint8_t {
+        none,       // No path specified
+        historical  // Needs a historical path
+    };
+
     Application& app_;
     Stoppable& parent_;
     mutable std::mutex mutex_;
@@ -222,8 +227,11 @@ private:
     // The name associated with the backend used with the shard store
     std::string backendName_;
 
-    // Maximum storage space the shard store can utilize (in bytes)
-    std::uint64_t maxFileSz_;
+    // Maximum number of historical shards to store.
+    std::uint32_t maxHistoricalShards_{0};
+
+    // Contains historical shard paths
+    std::vector<boost::filesystem::path> historicalPaths_;
 
     // Storage space utilized by the shard store (in bytes)
     std::uint64_t fileSz_{0};
@@ -241,6 +249,16 @@ private:
 
     // File name used to mark shards being imported from node store
     static constexpr auto importMarker_ = "import";
+
+    // latestShardIndex_ and secondLatestShardIndex hold the indexes
+    // of the shards most recently confirmed by the network. These
+    // values are not updated in real time and are modified only
+    // when adding shards to the database, in order to determine where
+    // pending shards will be stored on the filesystem. A value of
+    // boost::none indicates that the corresponding shard is not held
+    // by the database.
+    boost::optional<std::uint32_t> latestShardIndex_;
+    boost::optional<std::uint32_t> secondLatestShardIndex_;
 
     // Initialize settings from the configuration file
     // Lock must be held
@@ -286,9 +304,17 @@ private:
     std::pair<std::shared_ptr<PCache>, std::shared_ptr<NCache>>
     getCache(std::uint32_t seq);
 
-    // Returns available storage space
-    std::uint64_t
-    available() const;
+    // Returns true if the filesystem has enough storage
+    // available to hold the specified number of shards.
+    // The value of pathDesignation determines whether
+    // the shard(s) in question are historical and thus
+    // meant to be stored at a path designated for historical
+    // shards.
+    bool
+    sufficientStorage(
+        std::uint32_t numShards,
+        PathDesignation pathDesignation,
+        std::lock_guard<std::mutex> const&) const;
 
     bool
     storeLedgerInShard(
@@ -296,7 +322,39 @@ private:
         std::shared_ptr<Ledger const> const& ledger);
 
     void
-    removeFailedShard(std::shared_ptr<Shard> shard);
+    removeFailedShard(std::shared_ptr<Shard>& shard);
+
+    // Returns the index that represents the logical
+    // partition between historical and recent shards
+    std::uint32_t
+    shardBoundaryIndex(std::lock_guard<std::mutex> const&) const;
+
+    std::uint32_t
+    numHistoricalShards(std::lock_guard<std::mutex> const& lock) const;
+
+    // Shifts the recent and second most recent (by index)
+    // shards as new shards become available on the network.
+    // Older shards are moved to a historical shard path.
+    void
+    relocateOutdatedShards(std::lock_guard<std::mutex> const& lock);
+
+    // Checks whether the shard can be stored. If
+    // the new shard can't be stored, returns
+    // boost::none. Otherwise returns an enum
+    // indicating whether the new shard should be
+    // placed in a separate directory for historical
+    // shards.
+    boost::optional<PathDesignation>
+    prepareForNewShard(
+        std::uint32_t shardIndex,
+        std::uint32_t numHistoricalShards,
+        std::lock_guard<std::mutex> const& lock);
+
+    boost::filesystem::path
+    chooseHistoricalPath(std::lock_guard<std::mutex> const&) const;
+
+    bool
+    checkHistoricalPaths() const;
 };
 
 }  // namespace NodeStore

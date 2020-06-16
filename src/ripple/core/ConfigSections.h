@@ -48,6 +48,7 @@ struct ConfigSection
 
 // VFALCO TODO Rename and replace these macros with variables.
 #define SECTION_AMENDMENTS "amendments"
+#define SECTION_AMENDMENT_MAJORITY_TIME "amendment_majority_time"
 #define SECTION_CLUSTER_NODES "cluster_nodes"
 #define SECTION_COMPRESSION "compression"
 #define SECTION_DEBUG_LOGFILE "debug_logfile"
@@ -56,11 +57,11 @@ struct ConfigSection
 #define SECTION_FEE_ACCOUNT_RESERVE "fee_account_reserve"
 #define SECTION_FEE_OWNER_RESERVE "fee_owner_reserve"
 #define SECTION_FETCH_DEPTH "fetch_depth"
-#define SECTION_LEDGER_HISTORY "ledger_history"
+#define SECTION_HISTORICAL_SHARD_PATHS "historical_shard_paths"
 #define SECTION_INSIGHT "insight"
 #define SECTION_IPS "ips"
 #define SECTION_IPS_FIXED "ips_fixed"
-#define SECTION_AMENDMENT_MAJORITY_TIME "amendment_majority_time"
+#define SECTION_LEDGER_HISTORY "ledger_history"
 #define SECTION_NETWORK_QUORUM "network_quorum"
 #define SECTION_NODE_SEED "node_seed"
 #define SECTION_NODE_SIZE "node_size"

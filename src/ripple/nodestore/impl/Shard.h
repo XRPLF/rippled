@@ -55,12 +55,22 @@ public:
         Application& app,
         DatabaseShard const& db,
         std::uint32_t index,
+        boost::filesystem::path const& dir,
+        beast::Journal j);
+
+    Shard(
+        Application& app,
+        DatabaseShard const& db,
+        std::uint32_t index,
         beast::Journal j);
 
     ~Shard();
 
     bool
     open(Scheduler& scheduler, nudb::context& ctx);
+
+    void
+    closeAll();
 
     boost::optional<std::uint32_t>
     prepare();

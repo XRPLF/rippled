@@ -23,11 +23,10 @@
 #include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/nodestore/DummyScheduler.h>
-#include <ripple/nodestore/Manager.h>
 #include <ripple/nodestore/impl/DecodedBlob.h>
-#include <ripple/nodestore/impl/EncodedBlob.h>
 #include <ripple/nodestore/impl/Shard.h>
 #include <chrono>
+#include <numeric>
 #include <test/jtx.h>
 #include <test/nodestore/TestBase.h>
 
@@ -39,6 +38,7 @@ namespace NodeStore {
 class DatabaseShard_test : public TestBase
 {
     static constexpr std::uint32_t maxSizeGb = 10;
+    static constexpr std::uint32_t maxHistoricalShards = 100;
     static constexpr std::uint32_t ledgersPerShard = 256;
     static constexpr std::uint32_t earliestSeq = ledgersPerShard + 1;
     static constexpr std::uint32_t dataSizeMax = 4;
@@ -61,7 +61,7 @@ class DatabaseShard_test : public TestBase
          * ledger */
         std::vector<int> nAccounts_;
         /* payAccounts_[i][j] = {from, to} is the pair which consists of two
-         * number of acoounts: source and destinations, which participate in
+         * number of accounts: source and destinations, which participate in
          * j-th payment on i-th ledger */
         std::vector<std::vector<std::pair<int, int>>> payAccounts_;
         /* xrpAmount_[i] is the amount for all payments on i-th ledger */
@@ -147,26 +147,31 @@ class DatabaseShard_test : public TestBase
         }
 
         bool
-        makeLedgers(test::jtx::Env& env_)
+        makeLedgers(test::jtx::Env& env_, std::uint32_t startIndex = 0)
         {
-            for (std::uint32_t i = 3; i <= ledgersPerShard; ++i)
+            if (startIndex == 0)
             {
-                if (!env_.close())
-                    return false;
-                std::shared_ptr<const Ledger> ledger =
-                    env_.app().getLedgerMaster().getClosedLedger();
-                if (ledger->info().seq != i)
-                    return false;
+                for (std::uint32_t i = 3; i <= ledgersPerShard; ++i)
+                {
+                    if (!env_.close())
+                        return false;
+                    std::shared_ptr<const Ledger> ledger =
+                        env_.app().getLedgerMaster().getClosedLedger();
+                    if (ledger->info().seq != i)
+                        return false;
+                }
             }
 
             for (std::uint32_t i = 0; i < ledgersPerShard * nShards_; ++i)
             {
+                auto const index = i + (startIndex * ledgersPerShard);
+
                 makeLedgerData(env_, i);
                 if (!env_.close())
                     return false;
                 std::shared_ptr<const Ledger> ledger =
                     env_.app().getLedgerMaster().getClosedLedger();
-                if (ledger->info().seq != i + ledgersPerShard + 1)
+                if (ledger->info().seq != index + ledgersPerShard + 1)
                     return false;
                 ledgers_.push_back(ledger);
             }
@@ -446,8 +451,8 @@ class DatabaseShard_test : public TestBase
             cfg->overwrite(ConfigSection::shardDatabase(), "path", shardDir);
             cfg->overwrite(
                 ConfigSection::shardDatabase(),
-                "max_size_gb",
-                std::to_string(maxSizeGb));
+                "max_historical_shards",
+                std::to_string(maxHistoricalShards));
             cfg->overwrite(
                 ConfigSection::shardDatabase(),
                 "ledgers_per_shard",
@@ -495,7 +500,11 @@ class DatabaseShard_test : public TestBase
     }
 
     std::optional<int>
-    createShard(TestData& data, DatabaseShard& db, int maxShardNumber)
+    createShard(
+        TestData& data,
+        DatabaseShard& db,
+        int maxShardNumber = 1,
+        int ledgerOffset = 0)
     {
         int shardNumber = -1;
 
@@ -505,7 +514,8 @@ class DatabaseShard_test : public TestBase
             if (!BEAST_EXPECT(ind != boost::none))
                 return {};
             shardNumber = db.seqToShardIndex(*ind);
-            int arrInd = *ind - ledgersPerShard - 1;
+            int arrInd =
+                *ind - (ledgersPerShard * ledgerOffset) - ledgersPerShard - 1;
             BEAST_EXPECT(
                 arrInd >= 0 && arrInd < maxShardNumber * ledgersPerShard);
             BEAST_EXPECT(saveLedger(db, *data.ledgers_[arrInd]));
@@ -979,6 +989,317 @@ class DatabaseShard_test : public TestBase
     }
 
     void
+    testImportWithHistoricalPaths(
+        std::string const& backendType,
+        std::uint64_t const seedValue)
+    {
+        using namespace test::jtx;
+
+        // Test importing with multiple historical
+        // paths
+        {
+            beast::temp_dir shardDir;
+            std::array<beast::temp_dir, 4> historicalDirs;
+            std::array<boost::filesystem::path, 4> historicalPaths;
+
+            std::transform(
+                historicalDirs.begin(),
+                historicalDirs.end(),
+                historicalPaths.begin(),
+                [](const beast::temp_dir& dir) { return dir.path(); });
+
+            beast::temp_dir nodeDir;
+            auto c = testConfig(
+                "importWithHistoricalPaths",
+                backendType,
+                shardDir.path(),
+                nodeDir.path());
+
+            auto& historyPaths = c->section(SECTION_HISTORICAL_SHARD_PATHS);
+            historyPaths.append(
+                {historicalPaths[0].string(),
+                 historicalPaths[1].string(),
+                 historicalPaths[2].string(),
+                 historicalPaths[3].string()});
+
+            Env env{*this, std::move(c)};
+            DatabaseShard* db = env.app().getShardStore();
+            Database& ndb = env.app().getNodeStore();
+            BEAST_EXPECT(db);
+
+            auto const ledgerCount = 4;
+
+            TestData data(seedValue, 4, ledgerCount);
+            if (!BEAST_EXPECT(data.makeLedgers(env)))
+                return;
+
+            for (std::uint32_t i = 0; i < ledgerCount * ledgersPerShard; ++i)
+                BEAST_EXPECT(saveLedger(ndb, *data.ledgers_[i]));
+
+            BEAST_EXPECT(db->getCompleteShards() == bitmask2Rangeset(0));
+
+            db->import(ndb);
+            for (std::uint32_t i = 1; i <= ledgerCount; ++i)
+                waitShard(*db, i);
+
+            BEAST_EXPECT(db->getCompleteShards() == bitmask2Rangeset(0b11110));
+
+            auto const mainPathCount = std::distance(
+                boost::filesystem::directory_iterator(shardDir.path()),
+                boost::filesystem::directory_iterator());
+
+            // Only the two most recent shards
+            // should be stored at the main path
+            BEAST_EXPECT(mainPathCount == 2);
+
+            auto const historicalPathCount = std::accumulate(
+                historicalPaths.begin(),
+                historicalPaths.end(),
+                0,
+                [](int const sum, boost::filesystem::path const& path) {
+                    return sum +
+                        std::distance(
+                               boost::filesystem::directory_iterator(path),
+                               boost::filesystem::directory_iterator());
+                });
+
+            // All historical shards should be stored
+            // at historical paths
+            BEAST_EXPECT(historicalPathCount == ledgerCount - 2);
+        }
+
+        // Test importing with a single historical
+        // path
+        {
+            beast::temp_dir shardDir;
+            beast::temp_dir historicalDir;
+            beast::temp_dir nodeDir;
+
+            auto c = testConfig(
+                "importWithSingleHistoricalPath",
+                backendType,
+                shardDir.path(),
+                nodeDir.path());
+
+            auto& historyPaths = c->section(SECTION_HISTORICAL_SHARD_PATHS);
+            historyPaths.append({historicalDir.path()});
+
+            Env env{*this, std::move(c)};
+            DatabaseShard* db = env.app().getShardStore();
+            Database& ndb = env.app().getNodeStore();
+            BEAST_EXPECT(db);
+
+            auto const ledgerCount = 4;
+
+            TestData data(seedValue * 2, 4, ledgerCount);
+            if (!BEAST_EXPECT(data.makeLedgers(env)))
+                return;
+
+            for (std::uint32_t i = 0; i < ledgerCount * ledgersPerShard; ++i)
+                BEAST_EXPECT(saveLedger(ndb, *data.ledgers_[i]));
+
+            BEAST_EXPECT(db->getCompleteShards() == bitmask2Rangeset(0));
+
+            db->import(ndb);
+            for (std::uint32_t i = 1; i <= ledgerCount; ++i)
+                waitShard(*db, i);
+
+            BEAST_EXPECT(db->getCompleteShards() == bitmask2Rangeset(0b11110));
+
+            auto const mainPathCount = std::distance(
+                boost::filesystem::directory_iterator(shardDir.path()),
+                boost::filesystem::directory_iterator());
+
+            // Only the two most recent shards
+            // should be stored at the main path
+            BEAST_EXPECT(mainPathCount == 2);
+
+            auto const historicalPathCount = std::distance(
+                boost::filesystem::directory_iterator(historicalDir.path()),
+                boost::filesystem::directory_iterator());
+
+            // All historical shards should be stored
+            // at historical paths
+            BEAST_EXPECT(historicalPathCount == ledgerCount - 2);
+        }
+    }
+
+    void
+    testPrepareWithHistoricalPaths(
+        std::string const& backendType,
+        std::uint64_t const seedValue)
+    {
+        using namespace test::jtx;
+
+        // Test importing with multiple historical
+        // paths
+        {
+            beast::temp_dir shardDir;
+            std::array<beast::temp_dir, 4> historicalDirs;
+            std::array<boost::filesystem::path, 4> historicalPaths;
+
+            std::transform(
+                historicalDirs.begin(),
+                historicalDirs.end(),
+                historicalPaths.begin(),
+                [](const beast::temp_dir& dir) { return dir.path(); });
+
+            beast::temp_dir nodeDir;
+            auto c = testConfig(
+                "prepareWithHistoricalPaths", backendType, shardDir.path());
+
+            auto& historyPaths = c->section(SECTION_HISTORICAL_SHARD_PATHS);
+            historyPaths.append(
+                {historicalPaths[0].string(),
+                 historicalPaths[1].string(),
+                 historicalPaths[2].string(),
+                 historicalPaths[3].string()});
+
+            Env env{*this, std::move(c)};
+            DatabaseShard* db = env.app().getShardStore();
+            BEAST_EXPECT(db);
+
+            auto const ledgerCount = 4;
+
+            TestData data(seedValue, 4, ledgerCount);
+            if (!BEAST_EXPECT(data.makeLedgers(env)))
+                return;
+
+            BEAST_EXPECT(db->getCompleteShards() == "");
+            std::uint64_t bitMask = 0;
+
+            // Add ten shards to the Shard Database
+            for (std::uint32_t i = 0; i < ledgerCount; ++i)
+            {
+                auto n = createShard(data, *db, ledgerCount);
+                if (!BEAST_EXPECT(n && *n >= 1 && *n <= ledgerCount))
+                    return;
+                bitMask |= 1ll << *n;
+                BEAST_EXPECT(
+                    db->getCompleteShards() == bitmask2Rangeset(bitMask));
+            }
+
+            auto mainPathCount = std::distance(
+                boost::filesystem::directory_iterator(shardDir.path()),
+                boost::filesystem::directory_iterator());
+
+            // Only the two most recent shards
+            // should be stored at the main path
+            BEAST_EXPECT(mainPathCount == 2);
+
+            // Confirm recent shard locations
+            std::set<boost::filesystem::path> mainPathShards{
+                shardDir.path() / boost::filesystem::path("3"),
+                shardDir.path() / boost::filesystem::path("4")};
+            std::set<boost::filesystem::path> actual(
+                boost::filesystem::directory_iterator(shardDir.path()),
+                boost::filesystem::directory_iterator());
+
+            BEAST_EXPECT(mainPathShards == actual);
+
+            const auto generateHistoricalStems = [&historicalPaths, &actual] {
+                for (auto const& path : historicalPaths)
+                {
+                    for (auto const& shard :
+                         boost::filesystem::directory_iterator(path))
+                    {
+                        actual.insert(boost::filesystem::path(shard).stem());
+                    }
+                }
+            };
+
+            // Confirm historical shard locations
+            std::set<boost::filesystem::path> historicalPathShards;
+            std::generate_n(
+                std::inserter(
+                    historicalPathShards, historicalPathShards.begin()),
+                2,
+                [n = 1]() mutable { return std::to_string(n++); });
+            actual.clear();
+            generateHistoricalStems();
+
+            BEAST_EXPECT(historicalPathShards == actual);
+
+            auto historicalPathCount = std::accumulate(
+                historicalPaths.begin(),
+                historicalPaths.end(),
+                0,
+                [](int const sum, boost::filesystem::path const& path) {
+                    return sum +
+                        std::distance(
+                               boost::filesystem::directory_iterator(path),
+                               boost::filesystem::directory_iterator());
+                });
+
+            // All historical shards should be stored
+            // at historical paths
+            BEAST_EXPECT(historicalPathCount == ledgerCount - 2);
+
+            data = TestData(seedValue * 2, 4, ledgerCount);
+            if (!BEAST_EXPECT(data.makeLedgers(env, ledgerCount)))
+                return;
+
+            // Add ten more shards to the Shard Database
+            // to exercise recent shard rotation
+            for (std::uint32_t i = 0; i < ledgerCount; ++i)
+            {
+                auto n = createShard(data, *db, ledgerCount * 2, ledgerCount);
+                if (!BEAST_EXPECT(
+                        n && *n >= 1 + ledgerCount && *n <= ledgerCount * 2))
+                    return;
+                bitMask |= 1ll << *n;
+                BEAST_EXPECT(
+                    db->getCompleteShards() == bitmask2Rangeset(bitMask));
+            }
+
+            mainPathCount = std::distance(
+                boost::filesystem::directory_iterator(shardDir.path()),
+                boost::filesystem::directory_iterator());
+
+            // Only the two most recent shards
+            // should be stored at the main path
+            BEAST_EXPECT(mainPathCount == 2);
+
+            // Confirm recent shard locations
+            mainPathShards = {
+                shardDir.path() / boost::filesystem::path("7"),
+                shardDir.path() / boost::filesystem::path("8")};
+            actual = {
+                boost::filesystem::directory_iterator(shardDir.path()),
+                boost::filesystem::directory_iterator()};
+
+            BEAST_EXPECT(mainPathShards == actual);
+
+            // Confirm historical shard locations
+            historicalPathShards.clear();
+            std::generate_n(
+                std::inserter(
+                    historicalPathShards, historicalPathShards.begin()),
+                6,
+                [n = 1]() mutable { return std::to_string(n++); });
+            actual.clear();
+            generateHistoricalStems();
+
+            BEAST_EXPECT(historicalPathShards == actual);
+
+            historicalPathCount = std::accumulate(
+                historicalPaths.begin(),
+                historicalPaths.end(),
+                0,
+                [](int const sum, boost::filesystem::path const& path) {
+                    return sum +
+                        std::distance(
+                               boost::filesystem::directory_iterator(path),
+                               boost::filesystem::directory_iterator());
+                });
+
+            // All historical shards should be stored
+            // at historical paths
+            BEAST_EXPECT(historicalPathCount == (ledgerCount * 2) - 2);
+        }
+    }
+
+    void
     testAll(std::string const& backendType)
     {
         std::uint64_t const seedValue = 51;
@@ -991,6 +1312,8 @@ class DatabaseShard_test : public TestBase
         testCorruptedDatabase(backendType, seedValue + 40);
         testIllegalFinalKey(backendType, seedValue + 50);
         testImport(backendType, seedValue + 60);
+        testImportWithHistoricalPaths(backendType, seedValue + 80);
+        testPrepareWithHistoricalPaths(backendType, seedValue + 90);
     }
 
 public:
