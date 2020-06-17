@@ -25,6 +25,7 @@
 #include <ripple/basics/base64.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/overlay/Overlay.h>
+#include <ripple/protocol/STValidation.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/protocol/messages.h>
 #include <boost/regex.hpp>
