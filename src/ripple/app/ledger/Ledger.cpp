@@ -283,11 +283,6 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
         info_.closeTime =
             prevLedger.info_.closeTime + info_.closeTimeResolution;
     }
-
-    if (prevLedger.rules().enabled(featureNegativeUNL))
-    {
-        updateNegativeUNL();
-    }
 }
 
 Ledger::Ledger(LedgerInfo const& info, Config const& config, Family& family)
@@ -663,9 +658,6 @@ Ledger::negativeUnlToReEnable() const
 void
 Ledger::updateNegativeUNL()
 {
-    if (!isFlagLedger(info_.seq))
-        return;
-
     auto sle = peek(keylet::negativeUNL());
     if (!sle)
         return;
@@ -851,9 +843,20 @@ Ledger::updateSkipList()
 }
 
 bool
+Ledger::isFlagLedger() const
+{
+    return info_.seq % FLAG_LEDGER_INTERVAL == 0;
+}
+bool
+Ledger::isVotingLedger() const
+{
+    return (info_.seq + 1) % FLAG_LEDGER_INTERVAL == 0;
+}
+
+bool
 isFlagLedger(LedgerIndex seq)
 {
-    return seq % FLAG_LEDGER == 0;
+    return seq % FLAG_LEDGER_INTERVAL == 0;
 }
 
 static bool

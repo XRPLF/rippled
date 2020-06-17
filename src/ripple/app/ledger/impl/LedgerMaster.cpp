@@ -315,9 +315,8 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
 
     if (!standalone_)
     {
-        auto validations = negativeUNLFilter(
-            app_.getValidations().getTrustedForLedger(l->info().hash),
-            app_.validators().getNegativeUnlNodeIDs());
+        auto validations = app_.validators().negativeUNLFilter(
+            app_.getValidations().getTrustedForLedger(l->info().hash));
         times.reserve(validations.size());
         for (auto const& val : validations)
             times.push_back(val->getSignTime());
@@ -361,7 +360,7 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
                                        "activated: server blocked.";
             app_.getOPs().setAmendmentBlocked();
         }
-        else if (!app_.getOPs().isAmendmentWarned() || isFlagLedger(l->seq()))
+        else if (!app_.getOPs().isAmendmentWarned() || l->isFlagLedger())
         {
             // Amendments can lose majority, so re-check periodically (every
             // flag ledger), and clear the flag if appropriate. If an unknown
@@ -943,9 +942,8 @@ LedgerMaster::checkAccept(uint256 const& hash, std::uint32_t seq)
         if (seq < mValidLedgerSeq)
             return;
 
-        auto validations = negativeUNLFilter(
-            app_.getValidations().getTrustedForLedger(hash),
-            app_.validators().getNegativeUnlNodeIDs());
+        auto validations = app_.validators().negativeUNLFilter(
+            app_.getValidations().getTrustedForLedger(hash));
         valCount = validations.size();
         if (valCount >= app_.validators().quorum())
         {
@@ -1010,9 +1008,8 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         return;
 
     auto const minVal = getNeededValidations();
-    auto validations = negativeUNLFilter(
-        app_.getValidations().getTrustedForLedger(ledger->info().hash),
-        app_.validators().getNegativeUnlNodeIDs());
+    auto validations = app_.validators().negativeUNLFilter(
+        app_.getValidations().getTrustedForLedger(ledger->info().hash));
     auto const tvc = validations.size();
     if (tvc < minVal)  // nothing we can do
     {
@@ -1163,9 +1160,8 @@ LedgerMaster::consensusBuilt(
     // This ledger cannot be the new fully-validated ledger, but
     // maybe we saved up validations for some other ledger that can be
 
-    auto validations = negativeUNLFilter(
-        app_.getValidations().currentTrusted(),
-        app_.validators().getNegativeUnlNodeIDs());
+    auto validations = app_.validators().negativeUNLFilter(
+        app_.getValidations().currentTrusted());
 
     // Track validation counts with sequence numbers
     class valSeq

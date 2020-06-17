@@ -133,10 +133,13 @@ class RCLConsensus
         /** Called before kicking off a new consensus round.
 
             @param prevLedger Ledger that will be prior ledger for next round
+            @param nowTrusted the new validators
             @return Whether we enter the round proposing
         */
         bool
-        preStartRound(RCLCxLedger const& prevLedger);
+        preStartRound(
+            RCLCxLedger const& prevLedger,
+            hash_set<NodeID> const& nowTrusted);
 
         bool
         haveValidated() const;
@@ -175,15 +178,6 @@ class RCLConsensus
         {
             return parms_;
         }
-
-        /**
-         * to inform NegativeUNLVote that new validators are added
-         *
-         * @param seq the current LedgerIndex
-         * @param nowTrusted the new validators
-         */
-        void
-        newValidators(LedgerIndex seq, hash_set<NodeID> const& nowTrusted);
 
     private:
         //---------------------------------------------------------------------
@@ -482,8 +476,9 @@ public:
     Json::Value
     getJson(bool full) const;
 
-    //! @see Consensus::startRound
-    //! Except nowTrusted is for informing NegativeUNLVote of new validators.
+    /** Adjust the set of trusted validators and kick-off the next round of
+       consensus. For more details, @see Consensus::startRound
+     */
     void
     startRound(
         NetClock::time_point const& now,

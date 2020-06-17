@@ -323,15 +323,13 @@ RCLConsensus::Adaptor::onClose(
     // Add pseudo-transactions to the set
     if (app_.config().standalone() || (proposing && !wrongLCL))
     {
-        auto seq = prevLedger->info().seq + 1;
-        if (isFlagLedger(seq - 1))
+        if (prevLedger->isFlagLedger())
         {
             // previous ledger was flag ledger, add fee and amendment
             // pseudo-transactions
-            auto validations = negativeUNLFilter(
+            auto validations = app_.validators().negativeUNLFilter(
                 app_.getValidations().getTrustedForLedger(
-                    prevLedger->info().parentHash),
-                app_.validators().getNegativeUnlNodeIDs());
+                    prevLedger->info().parentHash));
             if (validations.size() >= app_.validators().quorum())
             {
                 feeVote_->doVoting(prevLedger, validations, initialSet);
@@ -340,10 +338,12 @@ RCLConsensus::Adaptor::onClose(
             }
         }
         else if (
-            isFlagLedger(seq) &&
+            prevLedger->isVotingLedger() &&
             prevLedger->rules().enabled(featureNegativeUNL))
         {
-            // flag ledger now, add negative UNL pseudo-transactions
+            // previous ledger was a voting ledger,
+            // so the current consensus session is for a flag ledger,
+            // add negative UNL pseudo-transactions
             nUnlVote_.doVoting(
                 prevLedger,
                 app_.validators().getTrustedMasterKeys(),
@@ -813,7 +813,7 @@ RCLConsensus::Adaptor::validate(
                 v.setFieldU64(sfCookie, valCookie_);
 
                 // Report our server version every flag ledger:
-                if (isFlagLedger(ledger.seq() + 1))
+                if (ledger.ledger_->isVotingLedger())
                     v.setFieldU64(
                         sfServerVersion, BuildInfo::getEncodedVersion());
             }
@@ -828,7 +828,7 @@ RCLConsensus::Adaptor::validate(
 
             // If the next ledger is a flag ledger, suggest fee changes and
             // new features:
-            if (isFlagLedger(ledger.seq() + 1))
+            if (ledger.ledger_->isVotingLedger())
             {
                 // Fees:
                 feeVote_->doValidation(ledger.ledger_->fees(), v);
@@ -942,7 +942,9 @@ RCLConsensus::peerProposal(
 }
 
 bool
-RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr)
+RCLConsensus::Adaptor::preStartRound(
+    RCLCxLedger const& prevLgr,
+    hash_set<NodeID> const& nowTrusted)
 {
     // We have a key, we do not want out of sync validations after a restart
     // and are not amendment blocked.
@@ -980,6 +982,11 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr)
 
     // Notify inbound ledgers that we are starting a new round
     inboundTransactions_.newRound(prevLgr.seq());
+
+    // Notify NegativeUNLVote that new validators are added
+    if (prevLgr.ledger_->rules().enabled(featureNegativeUNL) &&
+        !nowTrusted.empty())
+        nUnlVote_.newValidators(prevLgr.seq() + 1, nowTrusted);
 
     // propose only if we're in sync with the network (and validating)
     return validating_ && synced;
@@ -1025,15 +1032,6 @@ RCLConsensus::Adaptor::updateOperatingMode(std::size_t const positions) const
 }
 
 void
-RCLConsensus::Adaptor::newValidators(
-    LedgerIndex seq,
-    hash_set<NodeID> const& nowTrusted)
-{
-    if (!nowTrusted.empty())
-        nUnlVote_.newValidators(seq, nowTrusted);
-}
-
-void
 RCLConsensus::startRound(
     NetClock::time_point const& now,
     RCLCxLedger::ID const& prevLgrId,
@@ -1042,9 +1040,11 @@ RCLConsensus::startRound(
     hash_set<NodeID> const& nowTrusted)
 {
     std::lock_guard _{mutex_};
-    if (prevLgr.ledger_->rules().enabled(featureNegativeUNL))
-        adaptor_.newValidators(prevLgr.seq() + 1, nowTrusted);
     consensus_.startRound(
-        now, prevLgrId, prevLgr, nowUntrusted, adaptor_.preStartRound(prevLgr));
+        now,
+        prevLgrId,
+        prevLgr,
+        nowUntrusted,
+        adaptor_.preStartRound(prevLgr, nowTrusted));
 }
 }  // namespace ripple

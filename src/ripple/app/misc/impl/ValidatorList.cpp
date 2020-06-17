@@ -747,10 +747,10 @@ ValidatorList::getJson() const
     });
 
     // Negative UNL
-    if (!negUnl_.empty())
+    if (!negativeUnl_.empty())
     {
         Json::Value& jNegativeUNL = (res[jss::NegativeUNL] = Json::arrayValue);
-        for (auto const& k : negUnl_)
+        for (auto const& k : negativeUnl_)
         {
             jNegativeUNL.append(toBase58(TokenType::NodePublic, k));
         }
@@ -871,6 +871,10 @@ ValidatorList::calculateQuorum(
     // Oi,j > nj/2 + ni − qi + ti,j
     // ni - pi > (ni - pi + pj)/2 + ni − .8*ni + .2*ni
     // pi + pj < .2*ni
+    //
+    // Note that the negative UNL protocol introduced the AbsoluteMinimumQuorum
+    // which is 60% of the original UNL size. The effective quorum should
+    // not be lower than it.
     auto quorum = static_cast<std::size_t>(std::max(
         std::ceil(effectiveUnlSize * 0.8f), std::ceil(unlSize * 0.6f)));
 
@@ -939,17 +943,21 @@ ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
     auto unlSize = trustedMasterKeys_.size();
     auto effectiveUnlSize = unlSize;
     auto seenSize = seenValidators.size();
-    if (!negUnl_.empty())
+    if (!negativeUnl_.empty())
     {
         for (auto const& k : trustedMasterKeys_)
         {
-            if (negUnl_.find(k) != negUnl_.end())
+            if (negativeUnl_.count(k))
                 --effectiveUnlSize;
         }
-
+        hash_set<NodeID> negUnlNodeIDs;
+        for (auto const& k : negativeUnl_)
+        {
+            negUnlNodeIDs.emplace(calcNodeID(k));
+        }
         for (auto const& nid : seenValidators)
         {
-            if (negUnlNodeIDs_.find(nid) != negUnlNodeIDs_.end())
+            if (negUnlNodeIDs.count(nid))
                 --seenSize;
         }
     }
@@ -971,36 +979,56 @@ ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
 }
 
 hash_set<PublicKey>
-ValidatorList::getTrustedMasterKeys()
+ValidatorList::getTrustedMasterKeys() const
 {
     std::shared_lock lock{mutex_};
     return trustedMasterKeys_;
 }
 
-hash_set<NodeID>
-ValidatorList::getNegativeUnlNodeIDs()
-{
-    std::shared_lock lock{mutex_};
-    return negUnlNodeIDs_;
-}
-
 hash_set<PublicKey>
-ValidatorList::getNegativeUnl()
+ValidatorList::getNegativeUnl() const
 {
     std::shared_lock lock{mutex_};
-    return negUnl_;
+    return negativeUnl_;
 }
 
 void
-ValidatorList::setNegativeUnl(hash_set<PublicKey> const& nUnl)
+ValidatorList::setNegativeUnl(hash_set<PublicKey> const& negUnl)
 {
     std::lock_guard lock{mutex_};
-    negUnl_ = nUnl;
-    negUnlNodeIDs_.clear();
-    for (auto const& k : negUnl_)
+    negativeUnl_ = negUnl;
+}
+
+std::vector<std::shared_ptr<STValidation>>
+ValidatorList::negativeUNLFilter(
+    std::vector<std::shared_ptr<STValidation>>&& validations) const
+{
+    // Remove validations that are from validators on the negative UNL.
+    auto ret = std::move(validations);
+
+    std::shared_lock lock{mutex_};
+    if (!negativeUnl_.empty())
     {
-        negUnlNodeIDs_.insert(calcNodeID(k));
+        ret.erase(
+            std::remove_if(
+                ret.begin(),
+                ret.end(),
+                [&](auto const& v) -> bool {
+                    if (auto const masterKey =
+                            getTrustedKey(v->getSignerPublic());
+                        masterKey)
+                    {
+                        return negativeUnl_.count(*masterKey);
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }),
+            ret.end());
     }
+
+    return ret;
 }
 
 }  // namespace ripple

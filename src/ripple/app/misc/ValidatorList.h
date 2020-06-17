@@ -38,6 +38,7 @@ namespace ripple {
 // predeclaration
 class Overlay;
 class HashRouter;
+class STValidation;
 
 enum class ListDisposition {
     /// List is valid
@@ -158,6 +159,9 @@ class ValidatorList
     hash_set<PublicKey> trustedSigningKeys_;
 
     PublicKey localPubKey_;
+
+    // The master public keys of the current negative UNL
+    hash_set<PublicKey> negativeUnl_;
 
     // Currently supported version of publisher list format
     static constexpr std::uint32_t requiredListVersion = 1;
@@ -510,28 +514,31 @@ public:
      * @return the public keys
      */
     hash_set<PublicKey>
-    getTrustedMasterKeys();
-
-    /**
-     * get the NodeIDs of Negative UNL validators
-     * @return the NodeIDs
-     */
-    hash_set<NodeID>
-    getNegativeUnlNodeIDs();
+    getTrustedMasterKeys() const;
 
     /**
      * get the master public keys of Negative UNL validators
-     * @return the public keys
+     * @return the master public keys
      */
     hash_set<PublicKey>
-    getNegativeUnl();
+    getNegativeUnl() const;
 
     /**
      * set the Negative UNL with validators' master public keys
-     * @param nUnl the public keys
+     * @param negUnl the public keys
      */
     void
-    setNegativeUnl(hash_set<PublicKey> const& nUnl);
+    setNegativeUnl(hash_set<PublicKey> const& negUnl);
+
+    /**
+     * Remove validations that are from validators on the negative UNL.
+     *
+     * @param validations  the validations to filter
+     * @return a filtered copy of the validations
+     */
+    std::vector<std::shared_ptr<STValidation>>
+    negativeUNLFilter(
+        std::vector<std::shared_ptr<STValidation>>&& validations) const;
 
 private:
     /** Get the filename used for caching UNLs
@@ -543,9 +550,6 @@ private:
      */
     void
     CacheValidatorFile(PublicKey const& pubKey, PublisherList const& publisher);
-
-    hash_set<PublicKey> negUnl_;
-    hash_set<NodeID> negUnlNodeIDs_;
 
     /** Check response for trusted valid published list
 

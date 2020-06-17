@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2020 Ripple Labs Inc.
+    Copyright (c) 2020 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_MISC_NEGATIVEUNLVOTE_H_INCLUDED
 #define RIPPLE_APP_MISC_NEGATIVEUNLVOTE_H_INCLUDED
 
+#include <ripple/app/ledger/Ledger.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/PublicKey.h>
@@ -29,7 +30,6 @@
 
 namespace ripple {
 
-class Ledger;
 template <class Adaptor>
 class Validations;
 class RCLValidationsAdaptor;
@@ -52,26 +52,38 @@ public:
      * An unreliable validator is a candidate to be disabled by the NegativeUNL
      * protocol.
      */
-    static constexpr size_t negativeUnlLowWaterMark = 256 * 0.5;
+    static constexpr size_t negativeUnlLowWaterMark =
+        FLAG_LEDGER_INTERVAL * 50 / 100;
     /**
      * An unreliable validator must have more than negativeUnlHighWaterMark
      * validations in the last flag ledger period to be re-enabled.
      */
-    static constexpr size_t negativeUnlHighWaterMark = 256 * 0.8;
+    static constexpr size_t negativeUnlHighWaterMark =
+        FLAG_LEDGER_INTERVAL * 80 / 100;
     /**
      * The minimum number of validations of the local node for it to
      * participate in the voting.
      */
-    static constexpr size_t negativeUnlMinLocalValsToVote = 256 * 0.9;
+    static constexpr size_t negativeUnlMinLocalValsToVote =
+        FLAG_LEDGER_INTERVAL * 90 / 100;
     /**
      * We don't want to disable new validators immediately after adding them.
      * So we skip voting for disabling them for 2 flag ledgers.
      */
-    static constexpr size_t newValidatorDisableSkip = 256 * 2;
+    static constexpr size_t newValidatorDisableSkip = FLAG_LEDGER_INTERVAL * 2;
     /**
      * We only want to put 25% of the UNL on the NegativeUNL.
      */
     static constexpr float negativeUnlMaxListed = 0.25;
+
+    /**
+     * A flag indicating whether a UNLModify Tx is to disable or to re-enable
+     * a validator.
+     */
+    enum NegativeUNLModify {
+        ToDisable,  // UNLModify Tx is to disable a validator
+        ToReEnable  // UNLModify Tx is to re-enable a validator
+    };
 
     /**
      * Constructor
@@ -118,18 +130,27 @@ private:
     hash_map<NodeID, LedgerIndex> newValidators_;
 
     /**
+     * UNLModify Tx candidates
+     */
+    struct Candidates
+    {
+        std::vector<NodeID> toDisableCandidates;
+        std::vector<NodeID> toReEnableCandidates;
+    };
+
+    /**
      * Add a ttUNL_MODIFY Tx to the transaction set.
      *
      * @param seq the LedgerIndex when adding the Tx
      * @param vp the master public key of the validator
-     * @param disabling disabling or re-enabling the validator
+     * @param modify disabling or re-enabling the validator
      * @param initialSet the transaction set
      */
     void
     addTx(
         LedgerIndex seq,
         PublicKey const& vp,
-        bool disabling,
+        NegativeUNLModify modify,
         std::shared_ptr<SHAMap> const& initialSet);
 
     /**
@@ -137,14 +158,12 @@ private:
      *
      * @param randomPadData the data used for picking a candidate.
      *        @note Nodes must use the same randomPadData for picking the same
-     *        candidate. The hash of the parent ledger is a good choice.
+     *        candidate. The hash of the parent ledger is used.
      * @param candidates the vector of candidates
      * @return the picked candidate
      */
     NodeID
-    pickOneCandidate(
-        uint256 const& randomPadData,
-        std::vector<NodeID> const& candidates);
+    choose(uint256 const& randomPadData, std::vector<NodeID> const& candidates);
 
     /**
      * Build a reliability measurement score table of validators' validation
@@ -175,7 +194,7 @@ private:
      * @param scoreTable the score table
      * @return the candidates to disable and the candidates to re-enable
      */
-    std::pair<std::vector<NodeID> const, std::vector<NodeID> const>
+    Candidates const
     findAllCandidates(
         hash_set<NodeID> const& unl,
         hash_set<NodeID> const& negUnl,

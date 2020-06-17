@@ -353,6 +353,22 @@ public:
     boost::optional<PublicKey>
     negativeUnlToReEnable() const;
 
+    /**
+     * update the Negative UNL ledger component.
+     * @note must be called at and only at flag ledgers
+     *       must be called before applying UNLModify Tx
+     */
+    void
+    updateNegativeUNL();
+
+    /** Returns true if the ledger is a flag ledger */
+    bool
+    isFlagLedger() const;
+
+    /** Returns true if the ledger directly precedes a flag ledger */
+    bool
+    isVotingLedger() const;
+
 private:
     class sles_iter_impl;
     class txs_iter_impl;
@@ -362,12 +378,6 @@ private:
 
     std::shared_ptr<SLE>
     peek(Keylet const& k) const;
-
-    /**
-     * update the Negative UNL ledger component, only at flag ledgers
-     */
-    void
-    updateNegativeUNL();
 
     bool mImmutable;
 
@@ -385,7 +395,8 @@ private:
 /** A ledger wrapped in a CachedView. */
 using CachedLedger = CachedView<Ledger>;
 
-std::uint32_t constexpr FLAG_LEDGER = 256;
+std::uint32_t constexpr FLAG_LEDGER_INTERVAL = 256;
+/** Returns true if the given ledgerIndex is a flag ledgerIndex */
 bool
 isFlagLedger(LedgerIndex seq);
 

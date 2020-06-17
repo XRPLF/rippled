@@ -276,7 +276,8 @@ Change::applyUNLModify()
         return tefFAILURE;
     }
 
-    JLOG(j_.info()) << "N-UNL: applyUNLModify, disabling=" << disabling
+    JLOG(j_.info()) << "N-UNL: applyUNLModify, "
+                    << (disabling ? "ToDisable" : "ToReEnable")
                     << " seq=" << seq
                     << " validator data:" << strHex(validator);
 

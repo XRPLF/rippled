@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2020 Ripple Labs Inc.
+    Copyright (c) 2020 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -264,6 +264,8 @@ class NegativeUNL_test : public beast::unit_test::suite
                 l = std::make_shared<Ledger>(
                     *l, env.app().timeKeeper().closeTime());
             }
+            BEAST_EXPECT(l->isFlagLedger());
+            l->updateNegativeUNL();
 
             auto txDisable_0 = createTx(true, l->seq(), publicKeys[0]);
             auto txDisable_1 = createTx(true, l->seq(), publicKeys[1]);
@@ -298,6 +300,8 @@ class NegativeUNL_test : public beast::unit_test::suite
                 l = std::make_shared<Ledger>(
                     *l, env.app().timeKeeper().closeTime());
             }
+            BEAST_EXPECT(l->isFlagLedger());
+            l->updateNegativeUNL();
 
             //(4) next flag ledger
             // test if the ledger updated correctly
@@ -349,6 +353,8 @@ class NegativeUNL_test : public beast::unit_test::suite
                 l = std::make_shared<Ledger>(
                     *l, env.app().timeKeeper().closeTime());
             }
+            BEAST_EXPECT(l->isFlagLedger());
+            l->updateNegativeUNL();
 
             //(6) next flag ledger
             // test if the ledger updated correctly
@@ -390,6 +396,8 @@ class NegativeUNL_test : public beast::unit_test::suite
                 l = std::make_shared<Ledger>(
                     *l, env.app().timeKeeper().closeTime());
             }
+            BEAST_EXPECT(l->isFlagLedger());
+            l->updateNegativeUNL();
 
             //(8) next flag ledger
             // test if the ledger updated correctly
@@ -438,6 +446,8 @@ class NegativeUNL_test : public beast::unit_test::suite
                 l = std::make_shared<Ledger>(
                     *l, env.app().timeKeeper().closeTime());
             }
+            BEAST_EXPECT(l->isFlagLedger());
+            l->updateNegativeUNL();
 
             //(10) next flag ledger
             // test if the ledger updated correctly
@@ -479,6 +489,8 @@ class NegativeUNL_test : public beast::unit_test::suite
                 l = std::make_shared<Ledger>(
                     *l, env.app().timeKeeper().closeTime());
             }
+            BEAST_EXPECT(l->isFlagLedger());
+            l->updateNegativeUNL();
 
             //(12) next flag ledger
             BEAST_EXPECT(negUnlSizeTest(l, 0, false, false));
@@ -492,6 +504,8 @@ class NegativeUNL_test : public beast::unit_test::suite
                 l = std::make_shared<Ledger>(
                     *l, env.app().timeKeeper().closeTime());
             }
+            BEAST_EXPECT(l->isFlagLedger());
+            l->updateNegativeUNL();
 
             //(14) next flag ledger
             BEAST_EXPECT(negUnlSizeTest(l, 0, false, false));
@@ -615,8 +629,9 @@ struct NetworkHistory
                 *l, env.app().timeKeeper().closeTime());
             history.push_back(l);
 
-            if (isFlagLedger(l->seq()))
+            if (l->isFlagLedger())
             {
+                l->updateNegativeUNL();
                 OpenView accum(&*l);
                 if (l->negativeUnl().size() < param.negUNLSize)
                 {
@@ -768,9 +783,9 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
         PublicKey toReEnableKey;
         LedgerIndex seq(1234);
         BEAST_EXPECT(countTx(txSet) == 0);
-        vote.addTx(seq, toDisableKey, true, txSet);
+        vote.addTx(seq, toDisableKey, NegativeUNLVote::ToDisable, txSet);
         BEAST_EXPECT(countTx(txSet) == 1);
-        vote.addTx(seq, toReEnableKey, false, txSet);
+        vote.addTx(seq, toReEnableKey, NegativeUNLVote::ToReEnable, txSet);
         BEAST_EXPECT(countTx(txSet) == 2);
         // content of a tx is implicitly tested after applied to a ledger
         // in later test cases
@@ -791,14 +806,14 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
         NodeID n_2(2);
         NodeID n_3(3);
         std::vector<NodeID> candidates({n_1});
-        BEAST_EXPECT(vote.pickOneCandidate(pad_0, candidates) == n_1);
-        BEAST_EXPECT(vote.pickOneCandidate(pad_f, candidates) == n_1);
+        BEAST_EXPECT(vote.choose(pad_0, candidates) == n_1);
+        BEAST_EXPECT(vote.choose(pad_f, candidates) == n_1);
         candidates.emplace_back(2);
-        BEAST_EXPECT(vote.pickOneCandidate(pad_0, candidates) == n_1);
-        BEAST_EXPECT(vote.pickOneCandidate(pad_f, candidates) == n_2);
+        BEAST_EXPECT(vote.choose(pad_0, candidates) == n_1);
+        BEAST_EXPECT(vote.choose(pad_f, candidates) == n_2);
         candidates.emplace_back(3);
-        BEAST_EXPECT(vote.pickOneCandidate(pad_0, candidates) == n_1);
-        BEAST_EXPECT(vote.pickOneCandidate(pad_f, candidates) == n_3);
+        BEAST_EXPECT(vote.choose(pad_0, candidates) == n_1);
+        BEAST_EXPECT(vote.choose(pad_f, candidates) == n_3);
     }
 
     void
@@ -1801,27 +1816,59 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::suite
     testFilterValidations()
     {
         testcase("Filter Validations");
+        jtx::Env env(*this);
+        auto l = std::make_shared<Ledger>(
+            create_genesis,
+            env.app().config(),
+            std::vector<uint256>{},
+            env.app().family());
 
-        NetworkHistory history = {*this, {28, 7, false, false, {}}};
-        BEAST_EXPECT(history.goodHistory);
-        if (history.goodHistory)
-        {
-            history.walkHistoryAndAddValidations(
-                [&](std::shared_ptr<Ledger const> const& l,
-                    std::size_t idx) -> bool {
-                    return l->seq() == history.lastLedger()->seq();
+        auto createSTVal = [&](std::pair<PublicKey, SecretKey> const& keys) {
+            return std::make_shared<STValidation>(
+                env.app().timeKeeper().now(),
+                keys.first,
+                keys.second,
+                calcNodeID(keys.first),
+                [&](STValidation& v) {
+                    v.setFieldH256(sfLedgerHash, l->info().hash);
+                    v.setFieldU32(sfLedgerSequence, l->seq());
+                    v.setFlag(vfFullValidation);
                 });
+        };
 
-            auto l = history.lastLedger();
-            auto nUnlKeys = l->negativeUnl();
-            auto vals = history.validations.getTrustedForLedger(l->info().hash);
-            BEAST_EXPECT(vals.size() == 28);
-            hash_set<NodeID> negUnl;
-            for (auto& k : nUnlKeys)
-                negUnl.insert(calcNodeID(k));
-            vals = negativeUNLFilter(vals, negUnl);
-            BEAST_EXPECT(vals.size() == 28 - 7);
+        // create keys and validations
+        std::uint32_t numNodes = 10;
+        std::uint32_t negUnlSize = 3;
+        std::vector<std::string> cfgKeys;
+        hash_set<NodeID> activeValidators;
+        hash_set<PublicKey> nUnlKeys;
+        std::vector<std::shared_ptr<STValidation>> vals;
+        for (int i = 0; i < numNodes; ++i)
+        {
+            auto keyPair = randomKeyPair(KeyType::secp256k1);
+            vals.emplace_back(createSTVal(keyPair));
+            cfgKeys.push_back(toBase58(TokenType::NodePublic, keyPair.first));
+            activeValidators.emplace(calcNodeID(keyPair.first));
+            if (i < negUnlSize)
+            {
+                nUnlKeys.insert(keyPair.first);
+            }
         }
+
+        // setup the ValidatorList
+        auto& validators = env.app().validators();
+        auto& local = *nUnlKeys.begin();
+        std::vector<std::string> cfgPublishers;
+        validators.load(local, cfgKeys, cfgPublishers);
+        validators.updateTrusted(activeValidators);
+        BEAST_EXPECT(validators.getTrustedMasterKeys().size() == numNodes);
+        validators.setNegativeUnl(nUnlKeys);
+        BEAST_EXPECT(validators.getNegativeUnl().size() == negUnlSize);
+
+        // test the filter
+        BEAST_EXPECT(vals.size() == numNodes);
+        vals = validators.negativeUNLFilter(std::move(vals));
+        BEAST_EXPECT(vals.size() == numNodes - negUnlSize);
     }
 
     void

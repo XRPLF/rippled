@@ -219,27 +219,4 @@ handleNewValidation(
     }
 }
 
-std::vector<std::shared_ptr<STValidation>>
-negativeUNLFilter(
-    std::vector<std::shared_ptr<STValidation>> const& validations,
-    hash_set<NodeID> const& negUnl)
-{
-    /* Remove validations that are from validators on the negative UNL. */
-    auto ret = validations;
-
-    if (!negUnl.empty())
-    {
-        ret.erase(
-            std::remove_if(
-                ret.begin(),
-                ret.end(),
-                [&negUnl](auto const& v) {
-                    return negUnl.find(v->getNodeID()) != negUnl.end();
-                }),
-            ret.end());
-    }
-
-    return ret;
-}
-
 }  // namespace ripple
