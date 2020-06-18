@@ -238,7 +238,7 @@ enum TECcodes : TERUnderlyingType {
     // DO NOT CHANGE THESE NUMBERS: They appear in ledger meta data.
     tecCLAIM = 100,
     tecPATH_PARTIAL = 101,
-    tecUNFUNDED_ADD = 102,
+    tecUNFUNDED_ADD = 102, // Unused legacy code
     tecUNFUNDED_OFFER = 103,
     tecUNFUNDED_PAYMENT = 104,
     tecFAILED_PROCESSING = 105,
@@ -250,7 +250,7 @@ enum TECcodes : TERUnderlyingType {
     tecNO_LINE_INSUF_RESERVE = 126,
     tecNO_LINE_REDUNDANT = 127,
     tecPATH_DRY = 128,
-    tecUNFUNDED = 129,  // Deprecated, old ambiguous unfunded.
+    tecUNFUNDED = 129,
     tecNO_ALTERNATIVE_KEY = 130,
     tecNO_REGULAR_KEY = 131,
     tecOWNERS = 132,
