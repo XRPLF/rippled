@@ -1027,8 +1027,7 @@ r.ripple.com 51235
         };
 
         std::vector<ConfigUnit> units = {
-            {"seconds", 1, 15 * 60 - 1, false},
-            {"seconds", 1, 15 * 60, true},
+            {"seconds", 1, 15 * 60, false},
             {"minutes", 60, 14, false},
             {"minutes", 60, 15, true},
             {"hours", 3600, 10, true},

@@ -127,14 +127,16 @@ public:
         mThreshold = !rules_.enabled(fixAmendmentMajorityCalc)
             ? std::max(
                   1L,
-                  (mTrustedValidations *
-                   amendmentSuperMajorityThresholdPre3396.num) /
-                      amendmentSuperMajorityThresholdPre3396.den)
+                  static_cast<long>(
+                      (mTrustedValidations *
+                       amendmentSuperMajorityThresholdPre3396.num) /
+                      amendmentSuperMajorityThresholdPre3396.den))
             : std::max(
                   1L,
-                  (mTrustedValidations *
-                   amendmentSuperMajorityThresholdPost3396.num) /
-                      amendmentSuperMajorityThresholdPost3396.den);
+                  static_cast<long>(
+                      (mTrustedValidations *
+                       amendmentSuperMajorityThresholdPost3396.num) /
+                      amendmentSuperMajorityThresholdPost3396.den));
     }
 
     bool
@@ -641,10 +643,7 @@ AmendmentTableImpl::injectJson(
         v[jss::validations] = votesTotal;
 
         if (votesNeeded)
-        {
-            v[jss::vote] = votesFor * 256 / votesNeeded;
             v[jss::threshold] = votesNeeded;
-        }
     }
 }
 
