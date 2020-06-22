@@ -152,9 +152,9 @@ transResults()
         MAKE_ERROR(temCANNOT_PREAUTH_SELF,    "Malformed: An account may not preauthorize itself."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
-        MAKE_ERROR(terFUNDS_SPENT,            "Can't set password, password set funds already spent."),
+        MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),
         MAKE_ERROR(terINSUF_FEE_B,            "Account balance can't pay fee."),
-        MAKE_ERROR(terLAST,                   "Process last."),
+        MAKE_ERROR(terLAST,                   "DEPRECATED."),
         MAKE_ERROR(terNO_RIPPLE,              "Path does not permit rippling."),
         MAKE_ERROR(terNO_ACCOUNT,             "The source account does not exist."),
         MAKE_ERROR(terNO_AUTH,                "Not authorized to hold IOUs."),
