@@ -336,6 +336,10 @@ populateProtoResponse(
         {
             status = {grpc::StatusCode::NOT_FOUND, error.message()};
         }
+        else if (error.toErrorCode() == rpcNOT_SYNCED)
+        {
+            status = {grpc::StatusCode::FAILED_PRECONDITION, error.message()};
+        }
         else
         {
             status = {grpc::StatusCode::INVALID_ARGUMENT, error.message()};
