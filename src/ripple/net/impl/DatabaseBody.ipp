@@ -50,7 +50,7 @@ DatabaseBody::value_type::open(
 
     auto setup = setup_DatabaseCon(config);
     setup.dataDir = path.parent_path();
-    setup.noPragma();
+    setup.useGlobalPragma = false;
 
     // Downloader ignores the "CommonPragma"
     conn_ = std::make_unique<DatabaseCon>(

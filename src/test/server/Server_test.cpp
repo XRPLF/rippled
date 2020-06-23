@@ -391,7 +391,7 @@ public:
                     (*cfg).deprecatedClearSection("port_rpc");
                     return cfg;
                 }),
-                std::make_unique<CaptureLogs>(messages)};
+                std::make_unique<CaptureLogs>(&messages)};
         });
         BEAST_EXPECT(
             messages.find("Missing 'ip' in [port_rpc]") != std::string::npos);
@@ -404,7 +404,7 @@ public:
                     (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
                     return cfg;
                 }),
-                std::make_unique<CaptureLogs>(messages)};
+                std::make_unique<CaptureLogs>(&messages)};
         });
         BEAST_EXPECT(
             messages.find("Missing 'port' in [port_rpc]") != std::string::npos);
@@ -418,7 +418,7 @@ public:
                     (*cfg)["port_rpc"].set("port", "0");
                     return cfg;
                 }),
-                std::make_unique<CaptureLogs>(messages)};
+                std::make_unique<CaptureLogs>(&messages)};
         });
         BEAST_EXPECT(
             messages.find("Invalid value '0' for key 'port' in [port_rpc]") !=
@@ -434,7 +434,7 @@ public:
                     (*cfg)["port_rpc"].set("protocol", "");
                     return cfg;
                 }),
-                std::make_unique<CaptureLogs>(messages)};
+                std::make_unique<CaptureLogs>(&messages)};
         });
         BEAST_EXPECT(
             messages.find("Missing 'protocol' in [port_rpc]") !=
@@ -469,7 +469,7 @@ public:
                         (*cfg)["port_ws"].set("admin", getEnvLocalhostAddr());
                         return cfg;
                     }),
-                    std::make_unique<CaptureLogs>(messages)};
+                    std::make_unique<CaptureLogs>(&messages)};
             });
         BEAST_EXPECT(
             messages.find("Required section [server] is missing") !=
@@ -495,7 +495,7 @@ public:
                            (*cfg)["server"].append("port_ws");
                            return cfg;
                        }),
-                       std::make_unique<CaptureLogs>(messages)};
+                       std::make_unique<CaptureLogs>(&messages)};
                });
         BEAST_EXPECT(
             messages.find("Missing section: [port_peer]") != std::string::npos);

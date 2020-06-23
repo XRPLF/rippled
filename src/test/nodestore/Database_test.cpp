@@ -84,7 +84,8 @@ public:
                 return Env(
                     *this,
                     std::move(p),
-                    std::make_unique<CheckMessageLogs>(integrityWarning, found),
+                    std::make_unique<CheckMessageLogs>(
+                        integrityWarning, &found),
                     beast::severities::kWarning);
             }();
 
@@ -116,7 +117,8 @@ public:
                 return Env(
                     *this,
                     std::move(p),
-                    std::make_unique<CheckMessageLogs>(integrityWarning, found),
+                    std::make_unique<CheckMessageLogs>(
+                        integrityWarning, &found),
                     beast::severities::kWarning);
             }();
 
@@ -149,7 +151,8 @@ public:
                 return Env(
                     *this,
                     std::move(p),
-                    std::make_unique<CheckMessageLogs>(integrityWarning, found),
+                    std::make_unique<CheckMessageLogs>(
+                        integrityWarning, &found),
                     beast::severities::kWarning);
             }();
 
@@ -185,7 +188,8 @@ public:
                 return Env(
                     *this,
                     std::move(p),
-                    std::make_unique<CheckMessageLogs>(integrityWarning, found),
+                    std::make_unique<CheckMessageLogs>(
+                        integrityWarning, &found),
                     beast::severities::kWarning);
             }();
 
@@ -226,7 +230,7 @@ public:
                 Env env(
                     *this,
                     std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, found),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
                     beast::severities::kWarning);
                 fail();
             }
@@ -255,7 +259,7 @@ public:
                 Env env(
                     *this,
                     std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, found),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
                     beast::severities::kWarning);
                 fail();
             }
@@ -284,7 +288,7 @@ public:
                 Env env(
                     *this,
                     std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, found),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
                     beast::severities::kWarning);
                 fail();
             }
@@ -313,7 +317,7 @@ public:
                 Env env(
                     *this,
                     std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, found),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
                     beast::severities::kWarning);
                 fail();
             }
@@ -341,7 +345,7 @@ public:
                 Env env(
                     *this,
                     std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, found),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
                     beast::severities::kWarning);
                 fail();
             }
@@ -369,7 +373,7 @@ public:
                 Env env(
                     *this,
                     std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, found),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
                     beast::severities::kWarning);
                 fail();
             }
@@ -397,7 +401,7 @@ public:
                 Env env(
                     *this,
                     std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, found),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
                     beast::severities::kWarning);
                 fail();
             }
@@ -425,7 +429,7 @@ public:
                 Env env(
                     *this,
                     std::move(p),
-                    std::make_unique<CheckMessageLogs>(expected, found),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
                     beast::severities::kWarning);
                 fail();
             }

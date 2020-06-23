@@ -195,8 +195,8 @@ SHAMapStoreImp::SHAMapStoreImp(
         }
         if (get_if_exists(section, "age_threshold_seconds", temp))
             ageThreshold_ = std::chrono::seconds{temp};
-        if (get_if_exists(section, "recovery_buffer_seconds", temp))
-            recoveryBuffer_.emplace(std::chrono::seconds{temp});
+        if (get_if_exists(section, "recovery_wait_seconds", temp))
+            recoveryWaitTime_.emplace(std::chrono::seconds{temp});
 
         get_if_exists(section, "advisory_delete", advisoryDelete_);
 
@@ -624,7 +624,6 @@ SHAMapStoreImp::clearSql(
             return;
     }
     JLOG(journal_.debug()) << "finished: " << deleteQuery;
-    return;
 }
 
 void
@@ -700,15 +699,15 @@ SHAMapStoreImp::health()
     {
         auto age = ledgerMaster_->getValidatedLedgerAge();
         OperatingMode mode = netOPs_->getOperatingMode();
-        if (recoveryBuffer_ && mode == OperatingMode::SYNCING &&
+        if (recoveryWaitTime_ && mode == OperatingMode::SYNCING &&
             age < ageThreshold_)
         {
             JLOG(journal_.warn())
-                << "Waiting " << recoveryBuffer_->count()
+                << "Waiting " << recoveryWaitTime_->count()
                 << "s for node to get back into sync with network. state: "
                 << app_.getOPs().strOperatingMode(mode, false) << ". age "
                 << age.count() << 's';
-            std::this_thread::sleep_for(*recoveryBuffer_);
+            std::this_thread::sleep_for(*recoveryWaitTime_);
 
             age = ledgerMaster_->getValidatedLedgerAge();
             mode = netOPs_->getOperatingMode();

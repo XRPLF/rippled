@@ -31,7 +31,7 @@ namespace test {
 class CaptureLogs : public Logs
 {
     std::stringstream strm_;
-    std::string& result_;
+    std::string* pResult_;
 
     /**
      * @brief sink for writing all log messages to a stringstream
@@ -57,14 +57,14 @@ class CaptureLogs : public Logs
     };
 
 public:
-    explicit CaptureLogs(std::string& result)
-        : Logs(beast::severities::kInfo), result_(result)
+    explicit CaptureLogs(std::string* pResult)
+        : Logs(beast::severities::kInfo), pResult_(pResult)
     {
     }
 
     ~CaptureLogs() override
     {
-        result_ = strm_.str();
+        *pResult_ = strm_.str();
     }
 
     std::unique_ptr<beast::Journal::Sink>

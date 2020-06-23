@@ -517,7 +517,7 @@ run(int argc, char** argv)
         }
 
         using namespace boost::filesystem;
-        DatabaseCon::Setup dbSetup = setup_DatabaseCon(*config);
+        DatabaseCon::Setup const dbSetup = setup_DatabaseCon(*config);
         path dbPath = dbSetup.dataDir / TxDBName;
 
         try
@@ -525,18 +525,15 @@ run(int argc, char** argv)
             uintmax_t const dbSize = file_size(dbPath);
             assert(dbSize != static_cast<uintmax_t>(-1));
 
+            if (auto available = space(dbPath.parent_path()).available;
+                available < dbSize)
             {
-                auto available = space(dbPath.parent_path()).available;
-                if (available < dbSize)
-                {
-                    std::cerr
-                        << "The database filesystem must have at least as "
-                           "much free space as the size of "
-                        << dbPath.string() << ", which is " << dbSize
-                        << " bytes. Only " << available
-                        << " bytes are available.\n";
-                    return -1;
-                }
+                std::cerr << "The database filesystem must have at least as "
+                             "much free space as the size of "
+                          << dbPath.string() << ", which is " << dbSize
+                          << " bytes. Only " << available
+                          << " bytes are available.\n";
+                return -1;
             }
 
             auto txnDB = std::make_unique<DatabaseCon>(
@@ -544,6 +541,10 @@ run(int argc, char** argv)
             auto& session = txnDB->getSession();
             std::uint32_t pageSize;
 
+            // Only the most trivial databases will fit in memory on typical
+            // (recommended) software. Force temp files to be written to disk
+            // regardless of the config settings.
+            session << boost::format(CommonDBPragmaTemp) % "file";
             session << "PRAGMA page_size;", soci::into(pageSize);
 
             std::cout << "VACUUM beginning. page_size: " << pageSize

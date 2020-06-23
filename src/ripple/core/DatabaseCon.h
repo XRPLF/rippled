@@ -90,22 +90,19 @@ public:
         Config::StartUpType startUp = Config::NORMAL;
         bool standAlone = false;
         boost::filesystem::path dataDir;
-        // If unseated, then the `globalPragma` are not used,
-        // otherwise should point to `globalPragma`
-        std::shared_ptr<std::vector<std::string> const> commonPragma;
-        void
-        noPragma()
+        // Indicates whether or not to return the `globalPragma`
+        // from commonPragma()
+        bool useGlobalPragma = false;
+
+        std::vector<std::string> const*
+        commonPragma() const
         {
-            commonPragma.reset();
-        }
-        void
-        usePragma()
-        {
-            assert(globalPragma);
-            commonPragma = globalPragma;
+            assert(!useGlobalPragma || globalPragma);
+            return useGlobalPragma && globalPragma ? globalPragma.get()
+                                                   : nullptr;
         }
 
-        static std::shared_ptr<std::vector<std::string> const> globalPragma;
+        static std::unique_ptr<std::vector<std::string> const> globalPragma;
     };
 
     template <std::size_t N, std::size_t M>
@@ -114,16 +111,18 @@ public:
         std::string const& DBName,
         std::array<char const*, N> const& pragma,
         std::array<char const*, M> const& initSQL)
-    {
         // Use temporary files or regular DB files?
-        auto const useTempFiles = setup.standAlone &&
-            setup.startUp != Config::LOAD &&
-            setup.startUp != Config::LOAD_FILE &&
-            setup.startUp != Config::REPLAY;
-        boost::filesystem::path pPath =
-            useTempFiles ? "" : (setup.dataDir / DBName);
-
-        init(pPath, setup.commonPragma, pragma, initSQL);
+        : DatabaseCon(
+              {},
+              setup.standAlone && setup.startUp != Config::LOAD &&
+                      setup.startUp != Config::LOAD_FILE &&
+                      setup.startUp != Config::REPLAY
+                  ? ""
+                  : (setup.dataDir / DBName),
+              setup.commonPragma(),
+              pragma,
+              initSQL)
+    {
     }
 
     template <std::size_t N, std::size_t M>
@@ -132,8 +131,8 @@ public:
         std::string const& DBName,
         std::array<char const*, N> const& pragma,
         std::array<char const*, M> const& initSQL)
+        : DatabaseCon({}, dataDir / DBName, {}, pragma, initSQL)
     {
-        init((dataDir / DBName), {}, pragma, initSQL);
     }
 
     soci::session&
@@ -152,11 +151,15 @@ public:
     setupCheckpointing(JobQueue*, Logs&);
 
 private:
+    class Base
+    {
+    };
+
     template <std::size_t N, std::size_t M>
-    void
-    init(
+    DatabaseCon(
+        Base,
         boost::filesystem::path const& pPath,
-        std::shared_ptr<std::vector<std::string> const> const& commonPragma,
+        std::vector<std::string> const* commonPragma,
         std::array<char const*, N> const& pragma,
         std::array<char const*, M> const& initSQL)
     {

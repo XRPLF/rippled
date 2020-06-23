@@ -56,13 +56,13 @@ setup_DatabaseCon(Config const& c, boost::optional<beast::Journal> j)
 
             if (set(safety_level, "safety_level", sqlite))
             {
-                showRiskWarning = boost::iequals(safety_level, "low");
-                if (showRiskWarning)
+                if (boost::iequals(safety_level, "low"))
                 {
                     // low safety defaults
                     journal_mode = "memory";
                     synchronous = "off";
                     temp_store = "memory";
+                    showRiskWarning = true;
                 }
                 else if (!boost::iequals(safety_level, "high"))
                 {
@@ -160,12 +160,12 @@ setup_DatabaseCon(Config const& c, boost::optional<beast::Journal> j)
             return result;
         }();
     }
-    setup.commonPragma = setup.globalPragma;
+    setup.useGlobalPragma = true;
 
     return setup;
 }
 
-std::shared_ptr<std::vector<std::string> const>
+std::unique_ptr<std::vector<std::string> const>
     DatabaseCon::Setup::globalPragma;
 
 void

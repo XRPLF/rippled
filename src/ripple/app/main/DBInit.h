@@ -71,21 +71,13 @@ inline constexpr std::array<char const*, 5> LgrDBInit{
 // Transaction database holds transactions and public keys
 inline constexpr auto TxDBName{"transaction.db"};
 
-inline constexpr
-#if (ULONG_MAX > UINT_MAX) && !defined(NO_SQLITE_MMAP)
-    std::array<char const*, 4>
-        TxDBPragma
+inline constexpr std::array TxDBPragma
 {
-    {
-#else
-    std::array<char const*, 3> TxDBPragma {{
-#endif
-        "PRAGMA page_size=4096;", "PRAGMA journal_size_limit=1582080;",
-            "PRAGMA max_page_count=2147483646;",
+    "PRAGMA page_size=4096;", "PRAGMA journal_size_limit=1582080;",
+        "PRAGMA max_page_count=2147483646;",
 #if (ULONG_MAX > UINT_MAX) && !defined(NO_SQLITE_MMAP)
-            "PRAGMA mmap_size=17179869184;"
+        "PRAGMA mmap_size=17179869184;"
 #endif
-    }
 };
 
 inline constexpr std::array<char const*, 8> TxDBInit{

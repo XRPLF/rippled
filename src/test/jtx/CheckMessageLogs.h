@@ -27,7 +27,7 @@ namespace test {
 class CheckMessageLogs : public Logs
 {
     std::string msg_;
-    bool& found_;
+    bool* pFound_;
 
     class CheckMessageSink : public beast::Journal::Sink
     {
@@ -46,7 +46,7 @@ class CheckMessageLogs : public Logs
             override
         {
             if (text.find(owner_.msg_) != std::string::npos)
-                owner_.found_ = true;
+                *owner_.pFound_ = true;
         }
     };
 
@@ -54,10 +54,11 @@ public:
     /** Constructor
 
         @param msg The message string to search for
-        @param found The variable to set to true if the message is found
+        @param pFound Pointer to the variable to set to true if the message is
+       found
     */
-    CheckMessageLogs(std::string msg, bool& found)
-        : Logs{beast::severities::kDebug}, msg_{std::move(msg)}, found_{found}
+    CheckMessageLogs(std::string msg, bool* pFound)
+        : Logs{beast::severities::kDebug}, msg_{std::move(msg)}, pFound_{pFound}
     {
     }
 

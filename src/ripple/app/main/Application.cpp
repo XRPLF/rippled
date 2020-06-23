@@ -1072,7 +1072,7 @@ public:
             mLedgerDB->setupCheckpointing(m_jobQueue.get(), logs());
 
             // wallet database
-            setup.noPragma();
+            setup.useGlobalPragma = false;
             mWalletDB = std::make_unique<DatabaseCon>(
                 setup,
                 WalletDBName,
