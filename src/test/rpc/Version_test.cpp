@@ -43,7 +43,7 @@ class Version_test : public beast::unit_test::suite
             "json",
             "version",
             "{\"api_version\": " +
-                std::to_string(RPC::ApiMaximumSupportedVersion) +
+                std::to_string(RPC::apiMaximumSupportedVersion) +
                 "}")[jss::result];
         BEAST_EXPECT(isCorrectReply(jrr));
 
@@ -59,29 +59,32 @@ class Version_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto get_error_what = [](Json::Value const& re) -> std::string {
+        auto badVersion = [](Json::Value const& re) -> bool {
             if (re.isMember("error_what"))
                 if (re["error_what"].isString())
-                    return re["error_what"].asString();
-            return {};
+                {
+                    return re["error_what"].asString().find(
+                               jss::invalid_API_version.c_str()) == 0;
+                }
+            return false;
         };
 
         auto re = env.rpc(
             "json",
             "version",
             "{\"api_version\": " +
-                std::to_string(RPC::ApiMinimumSupportedVersion - 1) + "}");
-        BEAST_EXPECT(get_error_what(re).find(jss::invalid_API_version.c_str()));
+                std::to_string(RPC::apiMinimumSupportedVersion - 1) + "}");
+        BEAST_EXPECT(badVersion(re));
 
         re = env.rpc(
             "json",
             "version",
             "{\"api_version\": " +
-                std::to_string(RPC::ApiMaximumSupportedVersion + 1) + "}");
-        BEAST_EXPECT(get_error_what(re).find(jss::invalid_API_version.c_str()));
+                std::to_string(RPC::apiMaximumSupportedVersion + 1) + "}");
+        BEAST_EXPECT(badVersion(re));
 
         re = env.rpc("json", "version", "{\"api_version\": \"a\"}");
-        BEAST_EXPECT(get_error_what(re).find(jss::invalid_API_version.c_str()));
+        BEAST_EXPECT(badVersion(re));
     }
 
     void
@@ -90,44 +93,56 @@ class Version_test : public beast::unit_test::suite
         testcase("test getAPIVersionNumber function");
 
         unsigned int versionIfUnspecified =
-            RPC::APIVersionIfUnspecified < RPC::ApiMinimumSupportedVersion
-            ? RPC::APIInvalidVersion
-            : RPC::APIVersionIfUnspecified;
+            RPC::apiVersionIfUnspecified < RPC::apiMinimumSupportedVersion
+            ? RPC::apiInvalidVersion
+            : RPC::apiVersionIfUnspecified;
 
         Json::Value j_array = Json::Value(Json::arrayValue);
         Json::Value j_null = Json::Value(Json::nullValue);
-        BEAST_EXPECT(RPC::getAPIVersionNumber(j_array) == versionIfUnspecified);
-        BEAST_EXPECT(RPC::getAPIVersionNumber(j_null) == versionIfUnspecified);
+        BEAST_EXPECT(
+            RPC::getAPIVersionNumber(j_array, false) == versionIfUnspecified);
+        BEAST_EXPECT(
+            RPC::getAPIVersionNumber(j_null, false) == versionIfUnspecified);
 
         Json::Value j_object = Json::Value(Json::objectValue);
         BEAST_EXPECT(
-            RPC::getAPIVersionNumber(j_object) == versionIfUnspecified);
-        j_object[jss::api_version] = RPC::APIVersionIfUnspecified;
+            RPC::getAPIVersionNumber(j_object, false) == versionIfUnspecified);
+        j_object[jss::api_version] = RPC::apiVersionIfUnspecified;
         BEAST_EXPECT(
-            RPC::getAPIVersionNumber(j_object) == versionIfUnspecified);
+            RPC::getAPIVersionNumber(j_object, false) == versionIfUnspecified);
 
-        j_object[jss::api_version] = RPC::ApiMinimumSupportedVersion;
+        j_object[jss::api_version] = RPC::apiMinimumSupportedVersion;
         BEAST_EXPECT(
-            RPC::getAPIVersionNumber(j_object) ==
-            RPC::ApiMinimumSupportedVersion);
-        j_object[jss::api_version] = RPC::ApiMaximumSupportedVersion;
+            RPC::getAPIVersionNumber(j_object, false) ==
+            RPC::apiMinimumSupportedVersion);
+        j_object[jss::api_version] = RPC::apiMaximumSupportedVersion;
         BEAST_EXPECT(
-            RPC::getAPIVersionNumber(j_object) ==
-            RPC::ApiMaximumSupportedVersion);
+            RPC::getAPIVersionNumber(j_object, false) ==
+            RPC::apiMaximumSupportedVersion);
 
-        j_object[jss::api_version] = RPC::ApiMinimumSupportedVersion - 1;
+        j_object[jss::api_version] = RPC::apiMinimumSupportedVersion - 1;
         BEAST_EXPECT(
-            RPC::getAPIVersionNumber(j_object) == RPC::APIInvalidVersion);
-        j_object[jss::api_version] = RPC::ApiMaximumSupportedVersion + 1;
+            RPC::getAPIVersionNumber(j_object, false) ==
+            RPC::apiInvalidVersion);
+        j_object[jss::api_version] = RPC::apiMaximumSupportedVersion + 1;
         BEAST_EXPECT(
-            RPC::getAPIVersionNumber(j_object) == RPC::APIInvalidVersion);
+            RPC::getAPIVersionNumber(j_object, false) ==
+            RPC::apiInvalidVersion);
+        j_object[jss::api_version] = RPC::apiBetaVersion;
+        BEAST_EXPECT(
+            RPC::getAPIVersionNumber(j_object, true) == RPC::apiBetaVersion);
+        j_object[jss::api_version] = RPC::apiBetaVersion + 1;
+        BEAST_EXPECT(
+            RPC::getAPIVersionNumber(j_object, true) == RPC::apiInvalidVersion);
 
-        j_object[jss::api_version] = RPC::APIInvalidVersion;
+        j_object[jss::api_version] = RPC::apiInvalidVersion;
         BEAST_EXPECT(
-            RPC::getAPIVersionNumber(j_object) == RPC::APIInvalidVersion);
+            RPC::getAPIVersionNumber(j_object, false) ==
+            RPC::apiInvalidVersion);
         j_object[jss::api_version] = "a";
         BEAST_EXPECT(
-            RPC::getAPIVersionNumber(j_object) == RPC::APIInvalidVersion);
+            RPC::getAPIVersionNumber(j_object, false) ==
+            RPC::apiInvalidVersion);
     }
 
     void
@@ -151,7 +166,7 @@ class Version_test : public beast::unit_test::suite
             "\"method\": \"version\", "
             "\"params\": { "
             "\"api_version\": " +
-            std::to_string(RPC::ApiMaximumSupportedVersion) + "}}";
+            std::to_string(RPC::apiMaximumSupportedVersion) + "}}";
         auto re = env.rpc(
             "json2", '[' + without_api_verion + ", " + with_api_verion + ']');
 
@@ -188,7 +203,7 @@ class Version_test : public beast::unit_test::suite
             "\"method\": \"version\", "
             "\"params\": { "
             "\"api_version\": " +
-            std::to_string(RPC::ApiMaximumSupportedVersion + 1) + "}}";
+            std::to_string(RPC::apiMaximumSupportedVersion + 1) + "}}";
         auto re = env.rpc(
             "json2",
             '[' + without_api_verion + ", " + with_wrong_api_verion + ']');
@@ -203,6 +218,57 @@ class Version_test : public beast::unit_test::suite
         BEAST_EXPECT(re[1u].isMember(jss::error));
     }
 
+    void
+    testConfig()
+    {
+        testcase("config test");
+        {
+            Config c;
+            BEAST_EXPECT(c.BETA_RPC_API == false);
+        }
+
+        {
+            Config c;
+            c.loadFromString("\n[beta_rpc_api]\n1\n");
+            BEAST_EXPECT(c.BETA_RPC_API == true);
+        }
+
+        {
+            Config c;
+            c.loadFromString("\n[beta_rpc_api]\n0\n");
+            BEAST_EXPECT(c.BETA_RPC_API == false);
+        }
+    }
+
+    void
+    testVersionRPCV2()
+    {
+        testcase("test version RPC with api_version >= 2");
+
+        using namespace test::jtx;
+        Env env{*this, envconfig([](std::unique_ptr<Config> c) {
+                    c->loadFromString("\n[beta_rpc_api]\n1\n");
+                    return c;
+                })};
+        if (!BEAST_EXPECT(env.app().config().BETA_RPC_API == true))
+            return;
+
+        auto jrr = env.rpc(
+            "json",
+            "version",
+            "{\"api_version\": " + std::to_string(RPC::apiBetaVersion) +
+                "}")[jss::result];
+
+        if (!BEAST_EXPECT(jrr.isMember(jss::version)))
+            return;
+        if (!BEAST_EXPECT(jrr[jss::version].isMember(jss::first)) &&
+            jrr[jss::version].isMember(jss::last))
+            return;
+        BEAST_EXPECT(
+            jrr[jss::version][jss::first] == RPC::apiMinimumSupportedVersion);
+        BEAST_EXPECT(jrr[jss::version][jss::last] == RPC::apiBetaVersion);
+    }
+
 public:
     void
     run() override
@@ -212,6 +278,8 @@ public:
         testGetAPIVersionNumber();
         testBatch();
         testBatchFail();
+        testConfig();
+        testVersionRPCV2();
     }
 };
 

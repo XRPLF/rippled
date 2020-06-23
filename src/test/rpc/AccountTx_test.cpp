@@ -176,7 +176,7 @@ class AccountTx_test : public beast::unit_test::suite
             p[jss::ledger_index_max] = 1;
             BEAST_EXPECT(isErr(
                 env.rpc("json", "account_tx", to_string(p)),
-                (RPC::ApiMaximumSupportedVersion == 1 ? rpcLGR_IDXS_INVALID
+                (RPC::apiMaximumSupportedVersion == 1 ? rpcLGR_IDXS_INVALID
                                                       : rpcINVALID_LGR_RANGE)));
         }
 
@@ -192,7 +192,7 @@ class AccountTx_test : public beast::unit_test::suite
             p[jss::ledger_index_min] = env.current()->info().seq;
             BEAST_EXPECT(isErr(
                 env.rpc("json", "account_tx", to_string(p)),
-                (RPC::ApiMaximumSupportedVersion == 1 ? rpcLGR_IDXS_INVALID
+                (RPC::apiMaximumSupportedVersion == 1 ? rpcLGR_IDXS_INVALID
                                                       : rpcINVALID_LGR_RANGE)));
         }
 

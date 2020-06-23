@@ -35,7 +35,7 @@ Status
 doCommand(RPC::JsonContext&, Json::Value&);
 
 Role
-roleRequired(unsigned int version, std::string const& method);
+roleRequired(unsigned int version, bool betaEnabled, std::string const& method);
 
 }  // namespace RPC
 }  // namespace ripple

@@ -98,6 +98,7 @@ struct ConfigSection
 #define SECTION_VETO_AMENDMENTS "veto_amendments"
 #define SECTION_WORKERS "workers"
 #define SECTION_LEDGER_REPLAY "ledger_replay"
+#define SECTION_BETA_RPC_API "beta_rpc_api"
 
 }  // namespace ripple
 

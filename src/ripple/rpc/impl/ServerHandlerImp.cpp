@@ -397,8 +397,9 @@ ServerHandlerImp::processSession(
     Resource::Charge loadType = Resource::feeReferenceRPC;
     try
     {
-        auto apiVersion = RPC::getAPIVersionNumber(jv);
-        if (apiVersion == RPC::APIInvalidVersion ||
+        auto apiVersion =
+            RPC::getAPIVersionNumber(jv, app_.config().BETA_RPC_API);
+        if (apiVersion == RPC::apiInvalidVersion ||
             (!jv.isMember(jss::command) && !jv.isMember(jss::method)) ||
             (jv.isMember(jss::command) && !jv[jss::command].isString()) ||
             (jv.isMember(jss::method) && !jv[jss::method].isString()) ||
@@ -407,7 +408,7 @@ ServerHandlerImp::processSession(
         {
             jr[jss::type] = jss::response;
             jr[jss::status] = jss::error;
-            jr[jss::error] = apiVersion == RPC::APIInvalidVersion
+            jr[jss::error] = apiVersion == RPC::apiInvalidVersion
                 ? jss::invalid_API_version
                 : jss::missingCommand;
             jr[jss::request] = jv;
@@ -426,6 +427,7 @@ ServerHandlerImp::processSession(
 
         auto required = RPC::roleRequired(
             apiVersion,
+            app_.config().BETA_RPC_API,
             jv.isMember(jss::command) ? jv[jss::command].asString()
                                       : jv[jss::method].asString());
         auto role = requestRole(
@@ -617,22 +619,24 @@ ServerHandlerImp::processRequest(
             continue;
         }
 
-        auto apiVersion = RPC::APIVersionIfUnspecified;
+        auto apiVersion = RPC::apiVersionIfUnspecified;
         if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 &&
             jsonRPC[jss::params][0u].isObject())
         {
-            apiVersion =
-                RPC::getAPIVersionNumber(jsonRPC[jss::params][Json::UInt(0)]);
+            apiVersion = RPC::getAPIVersionNumber(
+                jsonRPC[jss::params][Json::UInt(0)],
+                app_.config().BETA_RPC_API);
         }
 
-        if (apiVersion == RPC::APIVersionIfUnspecified && batch)
+        if (apiVersion == RPC::apiVersionIfUnspecified && batch)
         {
             // for batch request, api_version may be at a different level
-            apiVersion = RPC::getAPIVersionNumber(jsonRPC);
+            apiVersion =
+                RPC::getAPIVersionNumber(jsonRPC, app_.config().BETA_RPC_API);
         }
 
-        if (apiVersion == RPC::APIInvalidVersion)
+        if (apiVersion == RPC::apiInvalidVersion)
         {
             if (!batch)
             {
@@ -651,8 +655,10 @@ ServerHandlerImp::processRequest(
         auto role = Role::FORBID;
         auto required = Role::FORBID;
         if (jsonRPC.isMember(jss::method) && jsonRPC[jss::method].isString())
-            required =
-                RPC::roleRequired(apiVersion, jsonRPC[jss::method].asString());
+            required = RPC::roleRequired(
+                apiVersion,
+                app_.config().BETA_RPC_API,
+                jsonRPC[jss::method].asString());
 
         if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 &&
