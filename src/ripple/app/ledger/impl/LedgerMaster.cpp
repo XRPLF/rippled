@@ -34,6 +34,7 @@
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/MathUtilities.h>
 #include <ripple/basics/TaggedCache.h>
 #include <ripple/basics/UptimeClock.h>
 #include <ripple/basics/contract.h>
@@ -44,7 +45,6 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/Peer.h>
 #include <ripple/protocol/BuildInfo.h>
-#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/resource/Fees.h>
@@ -1050,40 +1050,53 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         // (flag - 1) ledger. We wait for one ledger time before checking the
         // version information to accumulate more validation messages.
 
-        auto const& parentHash = ledger->info().parentHash;
-        auto const parentLedger = getLedgerByHash(parentHash);
-        if (parentLedger &&
-            parentLedger->rules().enabled(featureHardenedValidations))
+        auto currentTime = app_.timeKeeper().now();
+        bool needPrint = false;
+
+        // The variable upgradeWarningPrevTime_ will be set when and only when
+        // the warning is printed.
+        if (upgradeWarningPrevTime_ == TimeKeeper::time_point())
         {
-            // To throttle the warning messages, instead of printing a warning
-            // every flag ledger, we print every week.
-            auto currentTime = app_.timeKeeper().now();
-            if (currentTime - upgradeWarningPrevTime_ >= weeks{1})
+            // Have not printed the warning before, check if need to print.
+            auto const vals = app_.getValidations().getTrustedForLedger(
+                ledger->info().parentHash);
+            auto higherVersionCount = std::count_if(
+                vals.begin(), vals.end(), [](auto const& v) -> bool {
+                    if (v->isFieldPresent(sfServerVersion))
+                        return BuildInfo::isNewerVersion(
+                            v->getFieldU64(sfServerVersion));
+                    else
+                        return false;
+                });
+            // We set the threshold of majority to be 60% of the UNL
+            constexpr std::size_t cutoffPercent = 60;
+            if (calculatePercent(
+                    higherVersionCount,
+                    app_.validators().getQuorumKeys().second.size()) >=
+                cutoffPercent)
             {
-                auto const vals =
-                    app_.getValidations().getTrustedForLedger(parentHash);
-                auto higherVersionCount = std::count_if(
-                    vals.begin(), vals.end(), [](auto const& v) -> bool {
-                        if (v->isFieldPresent(sfServerVersion))
-                            return BuildInfo::isNewerVersion(
-                                v->getFieldU64(sfServerVersion));
-                        else
-                            return false;
-                    });
-                // We set the threshold of majority to be 60% of the UNL
-                auto const threshold =
-                    app_.validators().getQuorumKeys().second.size() * 60 / 100;
-                if (higherVersionCount >= threshold)
-                {
-                    upgradeWarningPrevTime_ = currentTime;
-                    auto const upgradeMsg =
-                        "Check for upgrade: "
-                        "A majority of trusted validators are "
-                        "running a newer version.";
-                    std::cerr << upgradeMsg << std::endl;
-                    JLOG(m_journal.error()) << upgradeMsg;
-                }
+                needPrint = true;
             }
+        }
+        // To throttle the warning messages, instead of printing a warning
+        // every flag ledger, we print every week.
+        else if (currentTime - upgradeWarningPrevTime_ >= weeks{1})
+        {
+            // Printed the warning before, and assuming most validators
+            // do not downgrade, we keep printing the warning
+            // until the local server is restarted.
+            needPrint = true;
+        }
+
+        if (needPrint)
+        {
+            upgradeWarningPrevTime_ = currentTime;
+            auto const upgradeMsg =
+                "Check for upgrade: "
+                "A majority of trusted validators are "
+                "running a newer version.";
+            std::cerr << upgradeMsg << std::endl;
+            JLOG(m_journal.error()) << upgradeMsg;
         }
     }
 }
