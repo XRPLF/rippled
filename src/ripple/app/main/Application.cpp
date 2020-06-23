@@ -1515,7 +1515,7 @@ ApplicationImp::setup()
              Role::ADMIN,
              {},
              {},
-             RPC::ApiMaximumSupportedVersion},
+             RPC::apiMaximumSupportedVersion},
             jvCommand};
 
         Json::Value jvResult;

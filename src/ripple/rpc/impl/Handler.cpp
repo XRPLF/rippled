@@ -166,23 +166,16 @@ private:
     template <std::size_t N>
     explicit HandlerTable(const Handler (&entries)[N])
     {
-        for (auto v = RPC::ApiMinimumSupportedVersion;
-             v <= RPC::ApiMaximumSupportedVersion;
-             ++v)
+        for (std::size_t i = 0; i < N; ++i)
         {
-            for (std::size_t i = 0; i < N; ++i)
-            {
-                auto& innerTable = table_[versionToIndex(v)];
-                auto const& entry = entries[i];
-                assert(innerTable.find(entry.name_) == innerTable.end());
-                innerTable[entry.name_] = entry;
-            }
-
-            // This is where the new-style handlers are added.
-            // This is also where different versions of handlers are added.
-            addHandler<LedgerHandler>(v);
-            addHandler<VersionHandler>(v);
+            auto const& entry = entries[i];
+            assert(table_.find(entry.name_) == table_.end());
+            table_[entry.name_] = entry;
         }
+
+        // This is where the new-style handlers are added.
+        addHandler<LedgerHandler>();
+        addHandler<VersionHandler>();
     }
 
 public:
@@ -194,43 +187,34 @@ public:
     }
 
     Handler const*
-    getHandler(unsigned version, std::string name) const
+    getHandler(unsigned version, bool betaEnabled, std::string name) const
     {
-        if (version > RPC::ApiMaximumSupportedVersion ||
-            version < RPC::ApiMinimumSupportedVersion)
+        if (version < RPC::apiMinimumSupportedVersion ||
+            version > (betaEnabled ? RPC::apiBetaVersion
+                                   : RPC::apiMaximumSupportedVersion))
             return nullptr;
-        auto& innerTable = table_[versionToIndex(version)];
-        auto i = innerTable.find(name);
-        return i == innerTable.end() ? nullptr : &i->second;
+        auto i = table_.find(name);
+        return i == table_.end() ? nullptr : &i->second;
     }
 
     std::vector<char const*>
     getHandlerNames() const
     {
-        std::unordered_set<char const*> name_set;
-        for (int index = 0; index < table_.size(); ++index)
-        {
-            for (auto const& h : table_[index])
-            {
-                name_set.insert(h.second.name_);
-            }
-        }
-        return std::vector<char const*>(name_set.begin(), name_set.end());
+        std::vector<char const*> ret;
+        ret.reserve(table_.size());
+        for (auto const& i : table_)
+            ret.push_back(i.second.name_);
+        return ret;
     }
 
 private:
-    std::array<std::map<std::string, Handler>, APINumberVersionSupported>
-        table_;
+    std::map<std::string, Handler> table_;
 
     template <class HandlerImpl>
     void
-    addHandler(unsigned version)
+    addHandler()
     {
-        assert(
-            version >= RPC::ApiMinimumSupportedVersion &&
-            version <= RPC::ApiMaximumSupportedVersion);
-        auto& innerTable = table_[versionToIndex(version)];
-        assert(innerTable.find(HandlerImpl::name()) == innerTable.end());
+        assert(table_.find(HandlerImpl::name()) == table_.end());
 
         Handler h;
         h.name_ = HandlerImpl::name();
@@ -238,22 +222,16 @@ private:
         h.role_ = HandlerImpl::role();
         h.condition_ = HandlerImpl::condition();
 
-        innerTable[HandlerImpl::name()] = h;
-    }
-
-    inline unsigned
-    versionToIndex(unsigned version) const
-    {
-        return version - RPC::ApiMinimumSupportedVersion;
+        table_[HandlerImpl::name()] = h;
     }
 };
 
 }  // namespace
 
 Handler const*
-getHandler(unsigned version, std::string const& name)
+getHandler(unsigned version, bool betaEnabled, std::string const& name)
 {
-    return HandlerTable::instance().getHandler(version, name);
+    return HandlerTable::instance().getHandler(version, betaEnabled, name);
 }
 
 std::vector<char const*>

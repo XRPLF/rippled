@@ -315,8 +315,8 @@ private:
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
-                // The command line always follows ApiMaximumSupportedVersion
-                if (RPC::ApiMaximumSupportedVersion == 1)
+                // The command line always follows apiMaximumSupportedVersion
+                if (RPC::apiMaximumSupportedVersion == 1)
                     return rpcError(rpcLGR_IDXS_INVALID);
                 return rpcError(rpcNOT_SYNCED);
             }
@@ -388,8 +388,8 @@ private:
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
-                // The command line always follows ApiMaximumSupportedVersion
-                if (RPC::ApiMaximumSupportedVersion == 1)
+                // The command line always follows apiMaximumSupportedVersion
+                if (RPC::apiMaximumSupportedVersion == 1)
                     return rpcError(rpcLGR_IDXS_INVALID);
                 return rpcError(rpcNOT_SYNCED);
             }
@@ -1401,7 +1401,8 @@ struct RPCCallImp
 
             // Parse reply
             JLOG(j.debug()) << "RPC reply: " << strData << std::endl;
-            if (strData.find("Unable to parse request") == 0)
+            if (strData.find("Unable to parse request") == 0 ||
+                strData.find(jss::invalid_API_version.c_str()) == 0)
                 Throw<RequestNotParseable>(strData);
             Json::Reader reader;
             Json::Value jvReply;
@@ -1472,7 +1473,7 @@ rpcCmdLineToJson(
         if (jr.isObject() && !jr.isMember(jss::error) &&
             !jr.isMember(jss::api_version))
         {
-            jr[jss::api_version] = RPC::ApiMaximumSupportedVersion;
+            jr[jss::api_version] = RPC::apiMaximumSupportedVersion;
         }
     };
 

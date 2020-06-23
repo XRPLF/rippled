@@ -156,7 +156,8 @@ fillHandler(JsonContext& context, Handler const*& result)
 
     JLOG(context.j.trace()) << "COMMAND:" << strCommand;
     JLOG(context.j.trace()) << "REQUEST:" << context.params;
-    auto handler = getHandler(context.apiVersion, strCommand);
+    auto handler = getHandler(
+        context.apiVersion, context.app.config().BETA_RPC_API, strCommand);
 
     if (!handler)
         return rpcUNKNOWN_COMMAND;
@@ -289,9 +290,9 @@ doCommand(RPC::JsonContext& context, Json::Value& result)
 }
 
 Role
-roleRequired(unsigned int version, std::string const& method)
+roleRequired(unsigned int version, bool betaEnabled, std::string const& method)
 {
-    auto handler = RPC::getHandler(version, method);
+    auto handler = RPC::getHandler(version, betaEnabled, method);
 
     if (!handler)
         return Role::FORBID;

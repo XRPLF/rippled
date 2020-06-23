@@ -226,7 +226,7 @@ public:
              Role::USER,
              {},
              {},
-             RPC::APIVersionIfUnspecified},
+             RPC::apiVersionIfUnspecified},
             {},
             {}};
 
@@ -334,7 +334,7 @@ public:
              Role::USER,
              {},
              {},
-             RPC::APIVersionIfUnspecified},
+             RPC::apiVersionIfUnspecified},
             {},
             {}};
         Json::Value result;

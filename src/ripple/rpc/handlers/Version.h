@@ -28,7 +28,8 @@ namespace RPC {
 class VersionHandler
 {
 public:
-    explicit VersionHandler(JsonContext&)
+    explicit VersionHandler(JsonContext& c)
+        : apiVersion_(c.apiVersion), betaEnabled_(c.app.config().BETA_RPC_API)
     {
     }
 
@@ -42,7 +43,7 @@ public:
     void
     writeResult(Object& obj)
     {
-        setVersion(obj);
+        setVersion(obj, apiVersion_, betaEnabled_);
     }
 
     static char const*
@@ -62,6 +63,10 @@ public:
     {
         return NO_CONDITION;
     }
+
+private:
+    unsigned int apiVersion_;
+    bool betaEnabled_;
 };
 
 }  // namespace RPC
