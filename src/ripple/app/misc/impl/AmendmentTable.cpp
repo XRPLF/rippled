@@ -133,13 +133,13 @@ public:
                   1L,
                   static_cast<long>(
                       (trustedValidations_ *
-                      preFixAmendmentMajorityCalcThreshold.num) /
+                       preFixAmendmentMajorityCalcThreshold.num) /
                       preFixAmendmentMajorityCalcThreshold.den))
             : std::max(
                   1L,
                   static_cast<long>(
                       (trustedValidations_ *
-                      postFixAmendmentMajorityCalcThreshold.num) /
+                       postFixAmendmentMajorityCalcThreshold.num) /
                       postFixAmendmentMajorityCalcThreshold.den));
     }
 
