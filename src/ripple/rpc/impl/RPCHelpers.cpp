@@ -886,13 +886,14 @@ beast::SemanticVersion const goodVersion("1.0.0");
 beast::SemanticVersion const lastVersion("1.0.0");
 
 unsigned int
-getAPIVersionNumber(Json::Value const& jv)
+getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
 {
-    static Json::Value const minVersion(RPC::ApiMinimumSupportedVersion);
-    static Json::Value const maxVersion(RPC::ApiMaximumSupportedVersion);
-    static Json::Value const invalidVersion(RPC::APIInvalidVersion);
+    static Json::Value const minVersion(RPC::apiMinimumSupportedVersion);
+    static Json::Value const invalidVersion(RPC::apiInvalidVersion);
 
-    Json::Value requestedVersion(RPC::APIVersionIfUnspecified);
+    Json::Value const maxVersion(
+        betaEnabled ? RPC::apiBetaVersion : RPC::apiMaximumSupportedVersion);
+    Json::Value requestedVersion(RPC::apiVersionIfUnspecified);
     if (jv.isObject())
     {
         requestedVersion = jv.get(jss::api_version, requestedVersion);

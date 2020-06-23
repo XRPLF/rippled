@@ -54,7 +54,8 @@ shouldForwardToP2p(RPC::JsonContext& context)
 
     JLOG(context.j.trace()) << "COMMAND:" << strCommand;
     JLOG(context.j.trace()) << "REQUEST:" << params;
-    auto handler = RPC::getHandler(context.apiVersion, strCommand);
+    auto handler = RPC::getHandler(
+        context.apiVersion, context.app.config().BETA_RPC_API, strCommand);
     if (!handler)
     {
         JLOG(context.j.error())

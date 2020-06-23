@@ -226,6 +226,9 @@ public:
     // How long can a peer remain in the "diverged" state
     std::chrono::seconds MAX_DIVERGED_TIME{300};
 
+    // Enable the beta API version
+    bool BETA_RPC_API = false;
+
 public:
     Config() : j_{beast::Journal::getNullSink()}
     {

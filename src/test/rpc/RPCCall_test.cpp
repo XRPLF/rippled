@@ -1437,7 +1437,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
         __LINE__,
         {"account_tx", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "580", "579"},
         RPCCallTestData::no_exception,
-        RPC::ApiMaximumSupportedVersion == 1 ?
+        RPC::apiMaximumSupportedVersion == 1 ?
                                              R"({
     "method" : "account_tx",
     "params" : [
@@ -5948,7 +5948,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
         __LINE__,
         {"tx_account", "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "580", "579"},
         RPCCallTestData::no_exception,
-        RPC::ApiMaximumSupportedVersion == 1 ?
+        RPC::apiMaximumSupportedVersion == 1 ?
                                              R"({
     "method" : "tx_account",
     "params" : [
@@ -6441,7 +6441,7 @@ std::string
 updateAPIVersionString(const char* const req)
 {
     static std::string version_str =
-        std::to_string(RPC::ApiMaximumSupportedVersion);
+        std::to_string(RPC::apiMaximumSupportedVersion);
     static auto place_holder = "%MAX_API_VER%";
     std::string jr(req);
     boost::replace_all(jr, place_holder, version_str);

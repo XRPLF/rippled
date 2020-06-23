@@ -388,7 +388,7 @@ transactionPreProcessImpl(
         validatedLedgerAge,
         app.config(),
         app.getFeeTrack(),
-        getAPIVersionNumber(params));
+        getAPIVersionNumber(params, app.config().BETA_RPC_API));
 
     if (RPC::contains_error(txJsonResult))
         return std::move(txJsonResult);
@@ -1066,7 +1066,7 @@ transactionSubmitMultiSigned(
         validatedLedgerAge,
         app.config(),
         app.getFeeTrack(),
-        getAPIVersionNumber(jvRequest));
+        getAPIVersionNumber(jvRequest, app.config().BETA_RPC_API));
 
     if (RPC::contains_error(txJsonResult))
         return std::move(txJsonResult);
