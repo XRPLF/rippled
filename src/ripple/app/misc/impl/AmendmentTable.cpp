@@ -93,12 +93,16 @@ struct AmendmentState
 };
 
 /** The status of all amendments requested in a given window. */
-struct AmendmentSet
+class AmendmentSet
 {
 private:
     // How many yes votes each amendment received
     hash_map<uint256, int> votes_;
     Rules const& rules_;
+    // number of trusted validations
+    int trustedValidations_ = 0;
+    // number of votes needed
+    int threshold_ = 0;
 
 public:
     AmendmentSet(
@@ -120,23 +124,23 @@ public:
                         [&](auto const& amendment) { ++votes_[amendment]; });
                 }
 
-                ++mTrustedValidations;
+                ++trustedValidations_;
             }
         }
 
-        mThreshold = !rules_.enabled(fixAmendmentMajorityCalc)
+        threshold_ = !rules_.enabled(fixAmendmentMajorityCalc)
             ? std::max(
                   1L,
                   static_cast<long>(
-                      (mTrustedValidations *
-                       amendmentSuperMajorityThresholdPre3396.num) /
-                      amendmentSuperMajorityThresholdPre3396.den))
+                          (trustedValidations_ *
+                           preFixAmendmentMajorityCalcThreshold.num) /
+                          preFixAmendmentMajorityCalcThreshold.den))
             : std::max(
                   1L,
                   static_cast<long>(
-                      (mTrustedValidations *
-                       amendmentSuperMajorityThresholdPost3396.num) /
-                      amendmentSuperMajorityThresholdPost3396.den));
+                          (trustedValidations_ *
+                           postFixAmendmentMajorityCalcThreshold.num) /
+                          postFixAmendmentMajorityCalcThreshold.den));
     }
 
     bool
@@ -153,17 +157,11 @@ public:
         // One validator is an exception, otherwise it is not possible
         // to gain majority.
         if (!rules_.enabled(fixAmendmentMajorityCalc) ||
-            mTrustedValidations == 1)
-            return it->second >= mThreshold;
+            trustedValidations_ == 1)
+            return it->second >= threshold_;
 
-        return it->second > mThreshold;
+        return it->second > threshold_;
     }
-
-    // number of trusted validations
-    int mTrustedValidations = 0;
-
-    // number of votes needed
-    int mThreshold = 0;
 
     int
     votes(uint256 const& amendment) const
@@ -174,6 +172,18 @@ public:
             return 0;
 
         return it->second;
+    }
+
+    int
+    trustedValidations() const
+    {
+        return trustedValidations_;
+    }
+
+    int
+    threshold() const
+    {
+        return threshold_;
     }
 };
 
@@ -514,9 +524,9 @@ AmendmentTableImpl::doVoting(
 
     auto vote = std::make_unique<AmendmentSet>(rules, valSet);
 
-    JLOG(j_.debug()) << "Received " << vote->mTrustedValidations
+    JLOG(j_.debug()) << "Received " << vote->trustedValidations()
                      << " trusted validations, threshold is: "
-                     << vote->mThreshold;
+                     << vote->threshold();
 
     // Map of amendments to the action to be taken for each one. The action is
     // the value of the flags in the pseudo-transaction
@@ -635,8 +645,8 @@ AmendmentTableImpl::injectJson(
 
     if (!fs.enabled && lastVote_)
     {
-        auto const votesTotal = lastVote_->mTrustedValidations;
-        auto const votesNeeded = lastVote_->mThreshold;
+        auto const votesTotal = lastVote_->trustedValidations();
+        auto const votesNeeded = lastVote_->threshold();
         auto const votesFor = lastVote_->votes(id);
 
         v[jss::count] = votesFor;
