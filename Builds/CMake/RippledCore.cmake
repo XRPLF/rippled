@@ -984,5 +984,7 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
     # these two seem to produce conflicts in beast teardown template methods
     src/test/rpc/ValidatorRPC_test.cpp
     src/test/rpc/ShardArchiveHandler_test.cpp
+    # This file is so big it makes the Windows linker run out of memory
+    src/test/server/ServerStatus_test.cpp
     PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE)
 endif ()
