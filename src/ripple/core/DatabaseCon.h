@@ -113,7 +113,6 @@ public:
         std::array<char const*, M> const& initSQL)
         // Use temporary files or regular DB files?
         : DatabaseCon(
-              {},
               setup.standAlone && setup.startUp != Config::LOAD &&
                       setup.startUp != Config::LOAD_FILE &&
                       setup.startUp != Config::REPLAY
@@ -131,7 +130,7 @@ public:
         std::string const& DBName,
         std::array<char const*, N> const& pragma,
         std::array<char const*, M> const& initSQL)
-        : DatabaseCon({}, dataDir / DBName, {}, pragma, initSQL)
+        : DatabaseCon(dataDir / DBName, nullptr, pragma, initSQL)
     {
     }
 
@@ -151,13 +150,8 @@ public:
     setupCheckpointing(JobQueue*, Logs&);
 
 private:
-    class Base
-    {
-    };
-
     template <std::size_t N, std::size_t M>
     DatabaseCon(
-        Base,
         boost::filesystem::path const& pPath,
         std::vector<std::string> const* commonPragma,
         std::array<char const*, N> const& pragma,
