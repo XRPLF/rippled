@@ -21,6 +21,7 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
 
 namespace ripple {
@@ -297,10 +298,19 @@ public:
         // date check to trigger
         env.timeKeeper().adjustCloseTime(weeks{3});
         result = env.rpc("ledger_request", "1")[jss::result];
-        BEAST_EXPECT(result[jss::error] == "notSynced");
         BEAST_EXPECT(result[jss::status] == "error");
-        BEAST_EXPECT(
-            result[jss::error_message] == "Not synced to the network.");
+        if (RPC::ApiMaximumSupportedVersion == 1)
+        {
+            BEAST_EXPECT(result[jss::error] == "noCurrent");
+            BEAST_EXPECT(
+                result[jss::error_message] == "Current ledger is unavailable.");
+        }
+        else
+        {
+            BEAST_EXPECT(result[jss::error] == "notSynced");
+            BEAST_EXPECT(
+                result[jss::error_message] == "Not synced to the network.");
+        }
     }
 
     void

@@ -314,8 +314,9 @@ private:
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
-                // This is an api_version 2 response
-                // because it is a command line request
+                // The command line always follows ApiMaximumSupportedVersion
+                if (RPC::ApiMaximumSupportedVersion == 1)
+                    return rpcError(rpcLGR_IDXS_INVALID);
                 return rpcError(rpcNOT_SYNCED);
             }
 
@@ -386,8 +387,9 @@ private:
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
-                // This is an api_version 2 response
-                // because it is a command line request
+                // The command line always follows ApiMaximumSupportedVersion
+                if (RPC::ApiMaximumSupportedVersion == 1)
+                    return rpcError(rpcLGR_IDXS_INVALID);
                 return rpcError(rpcNOT_SYNCED);
             }
 

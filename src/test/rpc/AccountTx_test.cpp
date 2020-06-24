@@ -20,6 +20,7 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
 
 #include <boost/container/flat_set.hpp>
@@ -175,7 +176,8 @@ class AccountTx_test : public beast::unit_test::suite
             p[jss::ledger_index_max] = 1;
             BEAST_EXPECT(isErr(
                 env.rpc("json", "account_tx", to_string(p)),
-                rpcINVALID_LGR_RANGE));
+                (RPC::ApiMaximumSupportedVersion == 1 ? rpcLGR_IDXS_INVALID
+                                                      : rpcINVALID_LGR_RANGE)));
         }
 
         // Ledger index min only
@@ -190,7 +192,8 @@ class AccountTx_test : public beast::unit_test::suite
             p[jss::ledger_index_min] = env.current()->info().seq;
             BEAST_EXPECT(isErr(
                 env.rpc("json", "account_tx", to_string(p)),
-                rpcINVALID_LGR_RANGE));
+                (RPC::ApiMaximumSupportedVersion == 1 ? rpcLGR_IDXS_INVALID
+                                                      : rpcINVALID_LGR_RANGE)));
         }
 
         // Ledger index max only
