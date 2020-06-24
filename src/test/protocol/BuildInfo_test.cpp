@@ -64,12 +64,22 @@ public:
 
         // the last two bytes are zeros
         BEAST_EXPECT((encodedVersion & 0x0000'0000'0000'FFFFLLU) == 0);
+
+        // Test some version strings with wrong formats:
+        // no rc/beta number
+        encodedVersion = BuildInfo::encodeSoftwareVersion("1.2.3-b");
+        BEAST_EXPECT((encodedVersion & 0x0000'0000'00FF'0000LLU) == 0);
+        // rc/beta number out of range
+        encodedVersion = BuildInfo::encodeSoftwareVersion("1.2.3-b64");
+        BEAST_EXPECT((encodedVersion & 0x0000'0000'00FF'0000LLU) == 0);
     }
 
     void
     testIsNewerVersion()
     {
         testcase("IsNewerVersion");
+        auto vFF = 0xFFFF'FFFF'FFFF'FFFFLLU;
+        BEAST_EXPECT(!BuildInfo::isNewerVersion(vFF));
 
         auto v159 = BuildInfo::encodeSoftwareVersion("1.5.9");
         BEAST_EXPECT(!BuildInfo::isNewerVersion(v159));
