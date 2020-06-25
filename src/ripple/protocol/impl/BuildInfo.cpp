@@ -155,10 +155,16 @@ getEncodedVersion()
 }
 
 bool
+isRippledVersion(std::uint64_t version)
+{
+    return (version & implementationVersionIdentifierMask) ==
+        implementationVersionIdentifier;
+}
+
+bool
 isNewerVersion(std::uint64_t version)
 {
-    if ((version & implementationVersionIdentifierMask) ==
-        implementationVersionIdentifier)
+    if (isRippledVersion(version))
         return version > getEncodedVersion();
     return false;
 }

@@ -43,7 +43,7 @@ getVersionString();
 std::string const&
 getFullVersionString();
 
-/** Encode the server software version in a 64-bit integer.
+/** Encode an arbitrary server software version in a 64-bit integer.
 
     The general format is:
 
@@ -71,14 +71,22 @@ getFullVersionString();
 std::uint64_t
 encodeSoftwareVersion(char const* const versionStr);
 
-/** Returns the server version packed in a 64-bit integer. */
+/** Returns this server's version packed in a 64-bit integer. */
 std::uint64_t
 getEncodedVersion();
+
+/** Check if the encoded software version is a rippled software version.
+
+    @param version another node's encoded software version
+    @return true if the version is a rippled software version, false otherwise
+*/
+bool
+isRippledVersion(std::uint64_t version);
 
 /** Check if the version is newer than the local node's rippled software
     version.
 
-    @param version another rippled node's encoded software version
+    @param version another node's encoded software version
     @return true if the version is newer than the local node's rippled software
         version, false otherwise.
 

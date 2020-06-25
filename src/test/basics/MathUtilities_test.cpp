@@ -26,7 +26,7 @@ class MathUtilities_test : public beast::unit_test::suite
 {
 public:
     void
-    testPercentage()
+    run() override
     {
         testcase("calculate percentage");
         BEAST_EXPECT(calculatePercent(0, 100) == 0);
@@ -37,12 +37,14 @@ public:
         BEAST_EXPECT(calculatePercent(6, 14) == 43);
         BEAST_EXPECT(calculatePercent(29, 33) == 88);
         BEAST_EXPECT(calculatePercent(1, 64) == 2);
-    }
+        BEAST_EXPECT(calculatePercent(0, 100'000'000) == 0);
+        BEAST_EXPECT(calculatePercent(1, 100'000'000) == 1);
+        BEAST_EXPECT(calculatePercent(50'000'000, 100'000'000) == 50);
+        BEAST_EXPECT(calculatePercent(50'000'001, 100'000'000) == 51);
+        BEAST_EXPECT(calculatePercent(99'999'999, 100'000'000) == 100);
 
-    void
-    run() override
-    {
-        testPercentage();
+        constexpr std::size_t p = calculatePercent(1, 2);
+        BEAST_EXPECT(p == 50);
     }
 };
 

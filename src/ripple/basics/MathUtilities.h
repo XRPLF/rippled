@@ -20,6 +20,8 @@
 #ifndef RIPPLE_BASICS_MATHUTILITIES_H_INCLUDED
 #define RIPPLE_BASICS_MATHUTILITIES_H_INCLUDED
 
+#include <algorithm>
+#include <assert.h>
 #include <cstddef>
 
 namespace ripple {
@@ -38,9 +40,12 @@ namespace ripple {
  *
  * @note total cannot be zero.
  * */
-std::size_t
-calculatePercent(std::size_t count, std::size_t total);
-
+constexpr std::size_t
+calculatePercent(std::size_t count, std::size_t total)
+{
+    assert(total != 0);
+    return ((std::min(count, total) * 100) + total - 1) / total;
+}
 }  // namespace ripple
 
 #endif

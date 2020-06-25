@@ -72,6 +72,20 @@ public:
         // rc/beta number out of range
         encodedVersion = BuildInfo::encodeSoftwareVersion("1.2.3-b64");
         BEAST_EXPECT((encodedVersion & 0x0000'0000'00FF'0000LLU) == 0);
+
+        // Check that the rc/beta number of a release is 0:
+        encodedVersion = BuildInfo::encodeSoftwareVersion("1.2.6");
+        BEAST_EXPECT((encodedVersion & 0x0000'0000'003F'0000LLU) == 0);
+    }
+
+    void
+    testIsRippledVersion()
+    {
+        testcase("IsRippledVersion");
+        auto vFF = 0xFFFF'FFFF'FFFF'FFFFLLU;
+        BEAST_EXPECT(!BuildInfo::isRippledVersion(vFF));
+        auto vRippled = 0x183B'0000'0000'0000LLU;
+        BEAST_EXPECT(BuildInfo::isRippledVersion(vRippled));
     }
 
     void
@@ -95,6 +109,7 @@ public:
     run() override
     {
         testEncodeSoftwareVersion();
+        testIsRippledVersion();
         testIsNewerVersion();
     }
 };

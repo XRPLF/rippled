@@ -49,7 +49,6 @@ target_sources (xrpl_core PRIVATE
   src/ripple/basics/impl/FileUtilities.cpp
   src/ripple/basics/impl/IOUAmount.cpp
   src/ripple/basics/impl/Log.cpp
-  src/ripple/basics/impl/MathUtilities.cpp
   src/ripple/basics/impl/strHex.cpp
   src/ripple/basics/impl/StringUtilities.cpp
   #[===============================[

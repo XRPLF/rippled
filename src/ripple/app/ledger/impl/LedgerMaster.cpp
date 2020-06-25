@@ -1060,23 +1060,30 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
             // Have not printed the warning before, check if need to print.
             auto const vals = app_.getValidations().getTrustedForLedger(
                 ledger->info().parentHash);
-            auto higherVersionCount = std::count_if(
-                vals.begin(), vals.end(), [](auto const& v) -> bool {
-                    if (v->isFieldPresent(sfServerVersion))
-                        return BuildInfo::isNewerVersion(
-                            v->getFieldU64(sfServerVersion));
-                    else
-                        return false;
-                });
-            // We set the threshold of majority to be 60% of the UNL
-            constexpr std::size_t cutoffPercent = 60;
-            if (calculatePercent(
-                    higherVersionCount,
-                    app_.validators().getQuorumKeys().second.size()) >=
-                cutoffPercent)
+            std::size_t higherVersionCount = 0;
+            std::size_t rippledCount = 0;
+            for (auto const& v : vals)
             {
-                needPrint = true;
+                if (v->isFieldPresent(sfServerVersion))
+                {
+                    auto version = v->getFieldU64(sfServerVersion);
+                    higherVersionCount +=
+                        BuildInfo::isNewerVersion(version) ? 1 : 0;
+                    rippledCount +=
+                        BuildInfo::isRippledVersion(version) ? 1 : 0;
+                }
             }
+            // We report only if (1) we have accumulated validation messages
+            // from 90% validators from the UNL, and (2) 60% of validators
+            // running the rippled implementation have higher version numbers.
+            constexpr std::size_t reportingPercent = 90;
+            constexpr std::size_t cutoffPercent = 60;
+            needPrint = calculatePercent(
+                            vals.size(),
+                            app_.validators().getQuorumKeys().second.size()) >=
+                    reportingPercent &&
+                calculatePercent(higherVersionCount, rippledCount) >=
+                    cutoffPercent;
         }
         // To throttle the warning messages, instead of printing a warning
         // every flag ledger, we print every week.
