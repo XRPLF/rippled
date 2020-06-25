@@ -392,13 +392,13 @@ struct Flow_test : public beast::unit_test::suite
             env(pay(gw, bob, EUR(50)));
 
             env(offer(bob, BTC(50), USD(50)));
-            env(offer(bob, BTC(60), EUR(50)));
+            env(offer(bob, BTC(40), EUR(50)));
             env(offer(bob, EUR(50), USD(50)));
 
             // unfund offer
             env(pay(bob, gw, EUR(50)));
             BEAST_EXPECT(isOffer(env, bob, BTC(50), USD(50)));
-            BEAST_EXPECT(isOffer(env, bob, BTC(60), EUR(50)));
+            BEAST_EXPECT(isOffer(env, bob, BTC(40), EUR(50)));
             BEAST_EXPECT(isOffer(env, bob, EUR(50), USD(50)));
 
             env(pay(alice, carol, USD(50)),
@@ -414,7 +414,7 @@ struct Flow_test : public beast::unit_test::suite
             // used in the payment
             BEAST_EXPECT(!isOffer(env, bob, BTC(50), USD(50)));
             // found unfunded
-            BEAST_EXPECT(!isOffer(env, bob, BTC(60), EUR(50)));
+            BEAST_EXPECT(!isOffer(env, bob, BTC(40), EUR(50)));
             // unfunded, but should not yet be found unfunded
             BEAST_EXPECT(isOffer(env, bob, EUR(50), USD(50)));
         }
@@ -435,17 +435,20 @@ struct Flow_test : public beast::unit_test::suite
             env.trust(EUR(1000), alice, bob, carol);
 
             env(pay(gw, alice, BTC(60)));
-            env(pay(gw, bob, USD(50)));
+            env(pay(gw, bob, USD(60)));
             env(pay(gw, bob, EUR(50)));
+            env(pay(gw, carol, EUR(1)));
 
             env(offer(bob, BTC(50), USD(50)));
             env(offer(bob, BTC(60), EUR(50)));
+            env(offer(carol, BTC(1000), EUR(1)));
             env(offer(bob, EUR(50), USD(50)));
 
             // unfund offer
             env(pay(bob, gw, EUR(50)));
             BEAST_EXPECT(isOffer(env, bob, BTC(50), USD(50)));
             BEAST_EXPECT(isOffer(env, bob, BTC(60), EUR(50)));
+            BEAST_EXPECT(isOffer(env, carol, BTC(1000), EUR(1)));
 
             auto flowJournal = env.app().logs().journal("Flow");
             auto const flowResult = [&] {
@@ -499,6 +502,7 @@ struct Flow_test : public beast::unit_test::suite
 
             // used in payment, but since payment failed should be untouched
             BEAST_EXPECT(isOffer(env, bob, BTC(50), USD(50)));
+            BEAST_EXPECT(isOffer(env, carol, BTC(1000), EUR(1)));
             // found unfunded
             BEAST_EXPECT(!isOffer(env, bob, BTC(60), EUR(50)));
         }
