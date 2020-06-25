@@ -311,6 +311,11 @@ public:
         // second test the strand does not have the best quality (the
         // implementation has to handle this case correct and not mark the
         // strand dry until the liquidity is actually used)
+
+        // The implementation allows any single step to consume at most 1000
+        // offers. With the `FlowSortStrands` feature enabled, if the total
+        // number of offers consumed by all the steps combined exceeds 1500, the
+        // payment stops.
         {
             Env env(*this, features);
 
@@ -324,7 +329,7 @@ public:
             // Notice the strand with the 800 unfunded offers has the initial
             // best quality
             n_offers(env, 2000, alice, EUR(2), XRP(1));
-            n_offers(env, 300, alice, XRP(1), USD(4));
+            n_offers(env, 100, alice, XRP(1), USD(4));
             n_offers(
                 env, 801, carol, XRP(1), USD(3));  // only one offer is funded
             n_offers(env, 1000, alice, XRP(1), USD(3));
@@ -334,7 +339,10 @@ public:
             // Bob offers to buy 2000 USD for 2000 EUR; He starts with 2000 EUR
             //  1. The best quality is the autobridged offers that take 2 EUR
             //  and give 4 USD.
-            //     Bob spends 600 EUR and receives 1200 USD.
+            //     Bob spends 200 EUR and receives 400 USD.
+            //     100 EUR->XRP offers consumed.
+            //     100 XRP->USD offers consumed.
+            //     200 total offers consumed.
             //
             //  2. The best quality is the autobridged offers that take 2 EUR
             //  and give 3 USD.
@@ -345,19 +353,27 @@ public:
             //        A book step is allowed to consume a maxium of 1000 offers
             //        at a given quality, and that limit is now reached.
             //     d. Now the strand is dry, even though there are still funded
-            //     XRP(1) to USD(3) offers available. Bob has spent 400 EUR and
-            //     received 600 USD in this step. (200 funded offers consumed
-            //     800 unfunded offers)
+            //     XRP(1) to USD(3) offers available.
+            //        Bob has spent 400 EUR and received 600 USD in this step.
+            //        200 EUR->XRP offers consumed
+            //        800 unfunded XRP->USD offers consumed
+            //        200 funded XRP->USD offers consumed (1 carol, 199 alice)
+            //        1400 total offers consumed so far (100 left before the
+            //        limit)
             //  3. The best is the non-autobridged offers that takes 500 EUR and
             //  gives 500 USD.
-            //     Bob has 2000 EUR, and has spent 600+400=1000 EUR. He has 1000
-            //     left. Bob spent 500 EUR and receives 500 USD.
-            // In total: Bob spent EUR(600 + 400 + 500) = EUR(1500). He started
-            // with 2000 so has 500 remaining
-            //           Bob received USD(1200 + 600 + 500) = USD(2300).
-            //           Alice spent 300*4 + 199*3 + 500 = 2297 USD. She started
-            //           with 4000 so has 1703 USD remaining. Alice received
-            //           600 + 400 + 500 = 1500 EUR
+            //     Bob started with 2000 EUR
+            //     Bob spent 500 EUR (100+400)
+            //     Bob has 1500 EUR left
+            //     In this step:
+            //     Bob spents 500 EUR and receives 500 USD.
+            // In total:
+            //           Bob spent 1100 EUR (200 + 400 + 500)
+            //           Bob has 900 EUR remaining (2000 - 1100)
+            //           Bob received 1500 USD (400 + 600 + 500)
+            //           Alice spent 1497 USD (100*4 + 199*3 + 500)
+            //           Alice has 2503 remaining (4000 - 1497)
+            //           Alice received 1100 EUR (200 + 400 + 500)
             env.trust(EUR(10000), bob);
             env.close();
             env(pay(gw, bob, EUR(2000)));
@@ -365,15 +381,15 @@ public:
             env(offer(bob, USD(4000), EUR(4000)));
             env.close();
 
-            env.require(balance(bob, USD(2300)));
-            env.require(balance(bob, EUR(500)));
+            env.require(balance(bob, USD(1500)));
+            env.require(balance(bob, EUR(900)));
             env.require(offers(bob, 1));
             env.require(owners(bob, 3));
 
-            env.require(balance(alice, USD(1703)));
-            env.require(balance(alice, EUR(1500)));
+            env.require(balance(alice, USD(2503)));
+            env.require(balance(alice, EUR(1100)));
             auto const numAOffers =
-                2000 + 300 + 1000 + 1 - (2 * 300 + 2 * 199 + 1 + 1);
+                2000 + 100 + 1000 + 1 - (2 * 100 + 2 * 199 + 1 + 1);
             env.require(offers(alice, numAOffers));
             env.require(owners(alice, numAOffers + 2));
 
@@ -393,7 +409,7 @@ public:
             // initial best quality
             n_offers(env, 1, alice, EUR(1), USD(10));
             n_offers(env, 2000, alice, EUR(2), XRP(1));
-            n_offers(env, 300, alice, XRP(1), USD(4));
+            n_offers(env, 100, alice, XRP(1), USD(4));
             n_offers(
                 env, 801, carol, XRP(1), USD(3));  // only one offer is funded
             n_offers(env, 1000, alice, XRP(1), USD(3));
@@ -407,7 +423,7 @@ public:
             //
             //  2. The best quality is the autobridged offers that takes 2 EUR
             //  and gives 4 USD.
-            //     Bob spends 600 EUR and receives 1200 USD.
+            //     Bob spends 200 EUR and receives 400 USD.
             //
             //  3. The best quality is the autobridged offers that takes 2 EUR
             //  and gives 3 USD.
@@ -423,14 +439,14 @@ public:
             //     800 unfunded offers)
             //  4. The best is the non-autobridged offers that takes 499 EUR and
             //  gives 499 USD.
-            //     Bob has 2000 EUR, and has spent 1+600+400=1001 EUR. He has
-            //     999 left. Bob spent 499 EUR and receives 499 USD.
-            // In total: Bob spent EUR(1 + 600 + 400 + 499) = EUR(1500). He
-            // started with 2000 so has 500 remaining
-            //           Bob received USD(10 + 1200 + 600 + 499) = USD(2309).
-            //           Alice spent 10 + 300*4 + 199*3 + 499 = 2306 USD. She
-            //           started with 4000 so has 1704 USD remaining. Alice
-            //           received 600 + 400 + 500 = 1500 EUR
+            //     Bob has 2000 EUR, and has spent 1+200+400=601 EUR. He has
+            //     1399 left. Bob spent 499 EUR and receives 499 USD.
+            // In total: Bob spent EUR(1 + 200 + 400 + 499) = EUR(1100). He
+            // started with 2000 so has 900 remaining
+            //           Bob received USD(10 + 400 + 600 + 499) = USD(1509).
+            //           Alice spent 10 + 100*4 + 199*3 + 499 = 1506 USD. She
+            //           started with 4000 so has 2494 USD remaining. Alice
+            //           received 200 + 400 + 500 = 1100 EUR
             env.trust(EUR(10000), bob);
             env.close();
             env(pay(gw, bob, EUR(2000)));
@@ -438,15 +454,15 @@ public:
             env(offer(bob, USD(4000), EUR(4000)));
             env.close();
 
-            env.require(balance(bob, USD(2309)));
-            env.require(balance(bob, EUR(500)));
+            env.require(balance(bob, USD(1509)));
+            env.require(balance(bob, EUR(900)));
             env.require(offers(bob, 1));
             env.require(owners(bob, 3));
 
-            env.require(balance(alice, USD(1694)));
-            env.require(balance(alice, EUR(1500)));
+            env.require(balance(alice, USD(2494)));
+            env.require(balance(alice, EUR(1100)));
             auto const numAOffers =
-                1 + 2000 + 300 + 1000 + 1 - (1 + 2 * 300 + 2 * 199 + 1 + 1);
+                1 + 2000 + 100 + 1000 + 1 - (1 + 2 * 100 + 2 * 199 + 1 + 1);
             env.require(offers(alice, numAOffers));
             env.require(owners(alice, numAOffers + 2));
 
@@ -506,6 +522,17 @@ public:
         // up a book with many offers. At each quality keep the number of offers
         // below the limit. However, if all the offers are consumed it would
         // create a tecOVERSIZE error.
+
+        // The featureFlowSortStrands introduces a way of tracking the total
+        // number of consumed offers; with this feature the transaction no
+        // longer fails with a tecOVERSIZE error.
+        // The implementation allows any single step to consume at most 1000
+        // offers. With the `FlowSortStrands` feature enabled, if the total
+        // number of offers consumed by all the steps combined exceeds 1500, the
+        // payment stops. Since the first set of offers consumes 998 offers, the
+        // second set will consume 998, which is not over the limit and the
+        // payment stops. So 2*998, or 1996 is the expected value when
+        // `FlowSortStrands` is enabled.
         n_offers(env, 998, alice, XRP(1.00), USD(1));
         n_offers(env, 998, alice, XRP(0.99), USD(1));
         n_offers(env, 998, alice, XRP(0.98), USD(1));
@@ -514,11 +541,26 @@ public:
         n_offers(env, 998, alice, XRP(0.95), USD(1));
 
         bool const withFlowCross = features[featureFlowCross];
-        env(offer(bob, USD(8000), XRP(8000)),
-            ter(withFlowCross ? TER{tecOVERSIZE} : tesSUCCESS));
+        bool const withSortStrands = features[featureFlowSortStrands];
+
+        auto const expectedTER = [&]() -> TER {
+            if (withFlowCross && !withSortStrands)
+                return TER{tecOVERSIZE};
+            return tesSUCCESS;
+        }();
+
+        env(offer(bob, USD(8000), XRP(8000)), ter(expectedTER));
         env.close();
 
-        env.require(balance(bob, USD(withFlowCross ? 0 : 850)));
+        auto const expectedUSD = [&] {
+            if (!withFlowCross)
+                return USD(850);
+            if (!withSortStrands)
+                return USD(0);
+            return USD(1996);
+        }();
+
+        env.require(balance(bob, expectedUSD));
     }
 
     void
@@ -533,8 +575,9 @@ public:
         };
         using namespace jtx;
         auto const sa = supported_amendments();
-        testAll(sa - featureFlowCross);
         testAll(sa);
+        testAll(sa - featureFlowSortStrands);
+        testAll(sa - featureFlowCross - featureFlowSortStrands);
     }
 };
 

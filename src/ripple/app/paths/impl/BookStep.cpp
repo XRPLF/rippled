@@ -52,6 +52,14 @@ protected:
     bool const ownerPaysTransferFee_;
     // Mark as inactive (dry) if too many offers are consumed
     bool inactive_ = false;
+    /** Number of offers consumed or partially consumed the last time
+        the step ran, including expired and unfunded offers.
+
+        N.B. This this not the total number offers consumed by this step for the
+        entire payment, it is only the number the last time it ran. Offers may
+        be partially consumed multiple times during a payment.
+    */
+    std::uint32_t offersUsed_ = 0;
     beast::Journal const j_;
 
     struct Cache
@@ -124,6 +132,9 @@ public:
     std::pair<boost::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir)
         const override;
+
+    std::uint32_t
+    offersUsed() const override;
 
     std::pair<TIn, TOut>
     revImp(
@@ -480,6 +491,13 @@ BookStep<TIn, TOut, TDerived>::qualityUpperBound(
     return {q, dir};
 }
 
+template <class TIn, class TOut, class TDerived>
+std::uint32_t
+BookStep<TIn, TOut, TDerived>::offersUsed() const
+{
+    return offersUsed_;
+}
+
 // Adjust the offer amount and step amount subject to the given input limit
 template <class TIn, class TOut>
 static void
@@ -779,6 +797,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
         auto const r = forEachOffer(sb, afView, prevStepDebtDir, eachOffer);
         boost::container::flat_set<uint256> toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
+        offersUsed_ = offersConsumed;
         SetUnion(ofrsToRm, toRm);
 
         if (offersConsumed >= maxOffersToConsume_)
@@ -948,6 +967,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
         auto const r = forEachOffer(sb, afView, prevStepDebtDir, eachOffer);
         boost::container::flat_set<uint256> toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
+        offersUsed_ = offersConsumed;
         SetUnion(ofrsToRm, toRm);
 
         if (offersConsumed >= maxOffersToConsume_)
