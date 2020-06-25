@@ -46,6 +46,23 @@ calculatePercent(std::size_t count, std::size_t total)
     assert(total != 0);
     return ((std::min(count, total) * 100) + total - 1) / total;
 }
+
+// unit tests
+static_assert(calculatePercent(1, 2) == 50);
+static_assert(calculatePercent(0, 100) == 0);
+static_assert(calculatePercent(100, 100) == 100);
+static_assert(calculatePercent(200, 100) == 100);
+static_assert(calculatePercent(1, 100) == 1);
+static_assert(calculatePercent(1, 99) == 2);
+static_assert(calculatePercent(6, 14) == 43);
+static_assert(calculatePercent(29, 33) == 88);
+static_assert(calculatePercent(1, 64) == 2);
+static_assert(calculatePercent(0, 100'000'000) == 0);
+static_assert(calculatePercent(1, 100'000'000) == 1);
+static_assert(calculatePercent(50'000'000, 100'000'000) == 50);
+static_assert(calculatePercent(50'000'001, 100'000'000) == 51);
+static_assert(calculatePercent(99'999'999, 100'000'000) == 100);
+
 }  // namespace ripple
 
 #endif
