@@ -29,6 +29,7 @@
 #include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/XRPAmount.h>
+#include <ripple/protocol/Feature.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -48,6 +49,9 @@ struct StrandResult
     TOutAmt out = beast::zero;                     ///< Currency amount out
     boost::optional<PaymentSandbox> sandbox;       ///< Resulting Sandbox state
     boost::container::flat_set<uint256> ofrsToRm;  ///< Offers to remove
+    // Num offers consumed or partially consumed (includes expired and unfunded
+    // offers)
+    std::uint32_t ofrsUsed = 0;
     // strand can be inactive if there is no more liquidity or too many offers
     // have been consumed
     bool inactive = false;  ///< Strand should not considered as a further
@@ -57,6 +61,7 @@ struct StrandResult
     StrandResult() = default;
 
     StrandResult(
+        Strand const& strand,
         TInAmt const& in_,
         TOutAmt const& out_,
         PaymentSandbox&& sandbox_,
@@ -67,12 +72,17 @@ struct StrandResult
         , out(out_)
         , sandbox(std::move(sandbox_))
         , ofrsToRm(std::move(ofrsToRm_))
+        , ofrsUsed(offersUsed(strand))
         , inactive(inactive_)
     {
     }
 
-    explicit StrandResult(boost::container::flat_set<uint256> ofrsToRm_)
-        : success(false), ofrsToRm(std::move(ofrsToRm_))
+    StrandResult(
+        Strand const& strand,
+        boost::container::flat_set<uint256> ofrsToRm_)
+        : success(false)
+        , ofrsToRm(std::move(ofrsToRm_))
+        , ofrsUsed(offersUsed(strand))
     {
     }
 };
@@ -108,7 +118,7 @@ flow(
 
     if (isDirectXrpToXrp<TInAmt, TOutAmt>(strand))
     {
-        return Result{std::move(ofrsToRm)};
+        return Result{strand, std::move(ofrsToRm)};
     }
 
     try
@@ -130,7 +140,7 @@ flow(
                 if (strand[i]->isZero(r.second))
                 {
                     JLOG(j.trace()) << "Strand found dry in rev";
-                    return Result{std::move(ofrsToRm)};
+                    return Result{strand, std::move(ofrsToRm)};
                 }
 
                 if (i == 0 && maxIn && *maxIn < get<TInAmt>(r.first))
@@ -148,7 +158,7 @@ flow(
                     if (strand[i]->isZero(r.second))
                     {
                         JLOG(j.trace()) << "First step found dry";
-                        return Result{std::move(ofrsToRm)};
+                        return Result{strand, std::move(ofrsToRm)};
                     }
                     if (get<TInAmt>(r.first) != *maxIn)
                     {
@@ -160,7 +170,7 @@ flow(
                             << to_string(get<TInAmt>(r.first))
                             << " maxIn: " << to_string(*maxIn);
                         assert(0);
-                        return Result{std::move(ofrsToRm)};
+                        return Result{strand, std::move(ofrsToRm)};
                     }
                 }
                 else if (!strand[i]->equalOut(r.second, stepOut))
@@ -181,7 +191,7 @@ flow(
                         // A tiny input amount can cause this step to output
                         // zero. I.e. 10^-80 IOU into an IOU -> XRP offer.
                         JLOG(j.trace()) << "Limiting step found dry";
-                        return Result{std::move(ofrsToRm)};
+                        return Result{strand, std::move(ofrsToRm)};
                     }
                     if (!strand[i]->equalOut(r.second, stepOut))
                     {
@@ -196,7 +206,7 @@ flow(
                         JLOG(j.fatal()) << "Re-executed limiting step failed";
 #endif
                         assert(0);
-                        return Result{std::move(ofrsToRm)};
+                        return Result{strand, std::move(ofrsToRm)};
                     }
                 }
 
@@ -215,7 +225,7 @@ flow(
                     // A tiny input amount can cause this step to output zero.
                     // I.e. 10^-80 IOU into an IOU -> XRP offer.
                     JLOG(j.trace()) << "Non-limiting step found dry";
-                    return Result{std::move(ofrsToRm)};
+                    return Result{strand, std::move(ofrsToRm)};
                 }
                 if (!strand[i]->equalIn(r.first, stepIn))
                 {
@@ -230,7 +240,7 @@ flow(
                     JLOG(j.fatal()) << "Re-executed forward pass failed";
 #endif
                     assert(0);
-                    return Result{std::move(ofrsToRm)};
+                    return Result{strand, std::move(ofrsToRm)};
                 }
                 stepIn = r.second;
             }
@@ -267,6 +277,7 @@ flow(
             [](std::unique_ptr<Step> const& step) { return step->inactive(); });
 
         return Result(
+            strand,
             get<TInAmt>(strandIn),
             get<TOutAmt>(strandOut),
             std::move(*sb),
@@ -275,7 +286,7 @@ flow(
     }
     catch (FlowException const&)
     {
-        return Result{std::move(ofrsToRm)};
+        return Result{strand, std::move(ofrsToRm)};
     }
 }
 
@@ -366,11 +377,70 @@ public:
     // Start a new iteration in the search for liquidity
     // Set the current strands to the strands in `next_`
     void
-    activateNext()
+    activateNext(
+        ReadView const& v,
+        boost::optional<Quality> const& limitQuality)
     {
-        // Swap, don't move, so we keep the reserve in next_
+        // add the strands in `next_` to `cur_`, sorted by theoretical quality.
+        // Best quality first.
         cur_.clear();
+        if (v.rules().enabled(featureFlowSortStrands) && !next_.empty())
+        {
+            std::vector<std::pair<Quality, Strand const*>> strandQuals;
+            strandQuals.reserve(next_.size());
+            if (next_.size() > 1)  // no need to sort one strand
+            {
+                for (Strand const* strand : next_)
+                {
+                    if (!strand)
+                    {
+                        // should not happen
+                        continue;
+                    }
+                    if (auto const qual = qualityUpperBound(v, *strand))
+                    {
+                        if (limitQuality && *qual < *limitQuality)
+                        {
+                            // If a strand's quality is ever over limitQuality
+                            // it is no longer part of the candidate set. Note
+                            // that when transfer fees are charged, and an
+                            // account goes from redeeming to issuing then
+                            // strand quality _can_ increase; However, this is
+                            // an unusual corner case.
+                            continue;
+                        }
+                        strandQuals.push_back({*qual, strand});
+                    }
+                }
+                // must stable sort for deterministic order across different c++
+                // standard library implementations
+                std::stable_sort(
+                    strandQuals.begin(),
+                    strandQuals.end(),
+                    [](auto const& lhs, auto const& rhs) {
+                        // higher qualities first
+                        return std::get<Quality>(lhs) > std::get<Quality>(rhs);
+                    });
+                next_.clear();
+                next_.reserve(strandQuals.size());
+                for (auto const& sq : strandQuals)
+                {
+                    next_.push_back(std::get<Strand const*>(sq));
+                }
+            }
+        }
         std::swap(cur_, next_);
+    }
+
+    Strand const*
+    get(size_t i) const
+    {
+        if (i >= cur_.size())
+        {
+            assert(0);
+            return nullptr;
+        }
+        return cur_[i];
     }
 
     void
@@ -379,28 +449,13 @@ public:
         next_.push_back(s);
     }
 
-    auto
-    begin()
+    // Push the strands from index i to the end of cur_ to next_
+    void
+    pushRemainingCurToNext(size_t i)
     {
-        return cur_.begin();
-    }
-
-    auto
-    end()
-    {
-        return cur_.end();
-    }
-
-    auto
-    begin() const
-    {
-        return cur_.begin();
-    }
-
-    auto
-    end() const
-    {
-        return cur_.end();
+        if (i >= cur_.size())
+            return;
+        next_.insert(next_.end(), std::next(cur_.begin(), i), cur_.end());
     }
 
     auto
@@ -422,7 +477,7 @@ public:
 /**
    Request `out` amount from a collection of strands
 
-   Attempt to fullfill the payment by using liquidity from the strands in order
+   Attempt to fulfill the payment by using liquidity from the strands in order
    from least expensive to most expensive
 
    @param baseView Trust lines and balances
@@ -478,6 +533,8 @@ flow(
 
     std::size_t const maxTries = 1000;
     std::size_t curTry = 0;
+    std::uint32_t maxOffersToConsider = 1500;
+    std::uint32_t offersConsidered = 0;
 
     // There is a bug in gcc that incorrectly warns about using uninitialized
     // values if `remainingIn` is initialized through a copy constructor. We can
@@ -526,7 +583,7 @@ flow(
             return {telFAILED_PROCESSING, std::move(ofrsToRmOnFail)};
         }
 
-        activeStrands.activateNext();
+        activeStrands.activateNext(sb, limitQuality);
 
         boost::container::flat_set<uint256> ofrsToRm;
         boost::optional<BestStrand> best;
@@ -537,8 +594,16 @@ flow(
         // offers Constructed as `false,0` to workaround a gcc warning about
         // uninitialized variables
         boost::optional<std::size_t> markInactiveOnUse{false, 0};
-        for (auto strand : activeStrands)
+        for (size_t strandIndex = 0, sie = activeStrands.size();
+             strandIndex != sie;
+             ++strandIndex)
         {
+            Strand const* strand = activeStrands.get(strandIndex);
+            if (!strand)
+            {
+                // should not happen
+                continue;
+            }
             if (offerCrossing && limitQuality)
             {
                 auto const strandQ = qualityUpperBound(sb, *strand);
@@ -550,6 +615,8 @@ flow(
 
             // rm bad offers even if the strand fails
             SetUnion(ofrsToRm, f.ofrsToRm);
+
+            offersConsidered += f.ofrsUsed;
 
             if (!f.success || f.out == beast::zero)
                 continue;
@@ -576,26 +643,46 @@ flow(
                 continue;
             }
 
+            if (baseView.rules().enabled(featureFlowSortStrands))
+            {
+                assert(!best);
+                if (!f.inactive)
+                    activeStrands.push(strand);
+                best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
+                activeStrands.pushRemainingCurToNext(strandIndex + 1);
+                break;
+            }
+
             activeStrands.push(strand);
 
             if (!best || best->quality < q ||
                 (best->quality == q && best->out < f.out))
             {
                 // If this strand is inactive (because it consumed too many
-                // offers) and ends up having the best quality, remove it from
-                // the activeStrands. If it doesn't end up having the best
-                // quality, keep it active.
+                // offers) and ends up having the best quality, remove it
+                // from the activeStrands. If it doesn't end up having the
+                // best quality, keep it active.
 
                 if (f.inactive)
+                {
+                    // This should be `nextSize`, not `size`. This issue is
+                    // fixed in featureFlowSortStrands.
                     markInactiveOnUse = activeStrands.size() - 1;
+                }
                 else
+                {
                     markInactiveOnUse.reset();
+                }
 
                 best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
             }
         }
 
-        bool const shouldBreak = !best;
+        bool const shouldBreak = [&] {
+            if (baseView.rules().enabled(featureFlowSortStrands))
+                return !best || offersConsidered >= maxOffersToConsider;
+            return !best;
+        }();
 
         if (best)
         {
