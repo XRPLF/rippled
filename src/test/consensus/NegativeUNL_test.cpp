@@ -234,7 +234,7 @@ class NegativeUNL_test : public beast::unit_test::suite
             create_genesis,
             env.app().config(),
             std::vector<uint256>{},
-            env.app().family());
+            env.app().getNodeFamily());
         BEAST_EXPECT(l->rules().enabled(featureNegativeUNL));
 
         // Record the public keys and ledger sequences of expected negative UNL
@@ -533,7 +533,7 @@ class NegativeUNLNoAmendment_test : public beast::unit_test::suite
             create_genesis,
             env.app().config(),
             std::vector<uint256>{},
-            env.app().family());
+            env.app().getNodeFamily());
         BEAST_EXPECT(!l->rules().enabled(featureNegativeUNL));
 
         // generate more ledgers
@@ -617,7 +617,7 @@ struct NetworkHistory
             create_genesis,
             env.app().config(),
             std::vector<uint256>{fake_amemdment++},
-            env.app().family());
+            env.app().getNodeFamily());
         history.push_back(l);
 
         // When putting validators into the negative UNL, we start with
@@ -756,7 +756,7 @@ voteAndCheck(
     NegativeUNLVote vote(myId, history.env.journal);
     pre(vote);
     auto txSet = std::make_shared<SHAMap>(
-        SHAMapType::TRANSACTION, history.env.app().family());
+        SHAMapType::TRANSACTION, history.env.app().getNodeFamily());
     vote.doVoting(
         history.lastLedger(), history.UNLKeySet, history.validations, txSet);
     return countTx(txSet) == expect;
@@ -778,7 +778,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
 
         // one add, one remove
         auto txSet = std::make_shared<SHAMap>(
-            SHAMapType::TRANSACTION, env.app().family());
+            SHAMapType::TRANSACTION, env.app().getNodeFamily());
         PublicKey toDisableKey;
         PublicKey toReEnableKey;
         LedgerIndex seq(1234);
@@ -1821,7 +1821,7 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::suite
             create_genesis,
             env.app().config(),
             std::vector<uint256>{},
-            env.app().family());
+            env.app().getNodeFamily());
 
         auto createSTVal = [&](std::pair<PublicKey, SecretKey> const& keys) {
             return std::make_shared<STValidation>(
