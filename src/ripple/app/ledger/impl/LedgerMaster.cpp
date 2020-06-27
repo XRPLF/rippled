@@ -1076,14 +1076,18 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
             // We report only if (1) we have accumulated validation messages
             // from 90% validators from the UNL, and (2) 60% of validators
             // running the rippled implementation have higher version numbers.
-            constexpr std::size_t reportingPercent = 90;
-            constexpr std::size_t cutoffPercent = 60;
-            needPrint = calculatePercent(
-                            vals.size(),
-                            app_.validators().getQuorumKeys().second.size()) >=
-                    reportingPercent &&
-                calculatePercent(higherVersionCount, rippledCount) >=
-                    cutoffPercent;
+            if (higherVersionCount > 0)
+            {
+                constexpr std::size_t reportingPercent = 90;
+                constexpr std::size_t cutoffPercent = 60;
+                auto const unlSize{
+                    app_.validators().getQuorumKeys().second.size()};
+                needPrint = unlSize > 0 &&
+                    calculatePercent(vals.size(), unlSize) >=
+                        reportingPercent &&
+                    calculatePercent(higherVersionCount, rippledCount) >=
+                        cutoffPercent;
+            }
         }
         // To throttle the warning messages, instead of printing a warning
         // every flag ledger, we print every week.
