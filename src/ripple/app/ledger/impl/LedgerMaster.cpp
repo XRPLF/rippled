@@ -1074,9 +1074,10 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
                 }
             }
             // We report only if (1) we have accumulated validation messages
-            // from 90% validators from the UNL, and (2) 60% of validators
-            // running the rippled implementation have higher version numbers.
-            if (higherVersionCount > 0)
+            // from 90% validators from the UNL, (2) 60% of validators
+            // running the rippled implementation have higher version numbers,
+            // and (3) the calculation won't cause divide-by-zero.
+            if (higherVersionCount > 0 && rippledCount > 0)
             {
                 constexpr std::size_t reportingPercent = 90;
                 constexpr std::size_t cutoffPercent = 60;
