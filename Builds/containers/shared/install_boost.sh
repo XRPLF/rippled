@@ -19,12 +19,15 @@ fi
 #fetch/unpack:
 fn=$(basename -- "$BOOST_URL")
 ext="${fn##*.}"
-wget --quiet $BOOST_URL -O /tmp/boost.tar.${ext}
+#todo - TravisCI is unable to check the cert, this is a workaround
+#delete --no-check-certificate once TravisCI fixes their issue
+wget --no-check-certificate $BOOST_URL -O /tmp/boost.tar.${ext}
 cd $(dirname $BOOST_ROOT)
 rm -fr ${BOOST_ROOT}
 mkdir ${BOOST_ROOT}
 tar xf /tmp/boost.tar.${ext} -C ${BOOST_ROOT} --strip-components 1
 cd $BOOST_ROOT
+
 
 BLDARGS=()
 if [[ ${BOOST_BUILD_ALL:-false} == "true" ]]; then
