@@ -21,6 +21,7 @@ if(sqlite3)
 else()
   ExternalProject_Add (sqlite3
     PREFIX ${nih_cache_path}
+    TLS_VERIFY OFF
     # sqlite doesn't use git, but it provides versioned tarballs
     URL https://www.sqlite.org/2018/sqlite-amalgamation-3260000.zip
     # ^^^ version is apparent in the URL:  3260000 => 3.26.0
