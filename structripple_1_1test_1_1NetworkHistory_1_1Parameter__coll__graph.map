@@ -1,0 +1,5 @@
+<map id="ripple::test::NetworkHistory::Parameter" name="ripple::test::NetworkHistory::Parameter">
+<area shape="rect" id="node1" title="Only reasonable parameters can be honored, e.g cannot hasToReEnable when nUNLSize == 0." alt="" coords="30,109,233,151"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,32"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="132,5,283,32"/>
+</map>

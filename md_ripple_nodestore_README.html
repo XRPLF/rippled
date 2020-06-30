@@ -65,7 +65,7 @@ $(function() {
 <div class="title">NodeStore </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md149"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md181"></a>
 Introduction</h1>
 <p>A <code>NodeObject</code> is a simple object that the Ledger uses to store entries. It is comprised of a type, a hash and a blob. It can be uniquely identified by the hash, which is a 256 bit hash of the blob. The blob is a variable length block of serialized data. The type identifies what the blob contains. The fields are as follows:</p>
 <ul>
@@ -104,7 +104,7 @@ Introduction</h1>
 </table>
 <hr  />
 <p> The <code>NodeStore</code> provides an interface that stores, in a persistent database, a collection of NodeObjects that rippled uses as its primary representation of ledger entries. All ledger entries are stored as NodeObjects and as such, need to be persisted between launches. If a NodeObject is accessed and is not in memory, it will be retrieved from the database.</p>
-<h1><a class="anchor" id="autotoc_md150"></a>
+<h1><a class="anchor" id="autotoc_md182"></a>
 Backend</h1>
 <p>The <code>NodeStore</code> implementation provides the <code>Backend</code> abstract interface, which lets different key/value databases to be chosen at run-time. This allows experimentation with different engines. Improvements in the performance of the NodeStore are a constant area of research. The database can be specified in the configuration file [node_db] section as follows.</p>
 <p>One or more lines of key / value pairs</p>

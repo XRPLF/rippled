@@ -69,10 +69,10 @@ $(function() {
 <p>The <code>NodeStore.Timing</code> test is used to execute a set of read/write workloads to compare current available nodestore backends. It can be executed with:</p>
 <div class="fragment"><div class="line">$rippled --unittest=NodeStoreTiming </div>
 </div><!-- fragment --><p>It is also possible to use alternate DB config params by passing config strings as <code>--unittest-arg</code>.</p>
-<h2><a class="anchor" id="autotoc_md146"></a>
+<h2><a class="anchor" id="autotoc_md174"></a>
 Addendum</h2>
 <p>The discussion below refers to a <code>RocksDBQuick</code> backend that has since been removed from the code as it was not working and not maintained. That backend primarily used one of the several rocks <code>Optimize*</code> methods to setup the majority of the DB options/params, whereas the primary RocksDB backend exposes many of the available config options directly. The code for RocksDBQuick can be found in versions of this repo 1.2 and earlier if you need to refer back to it. The conclusions below date from about 2014 and may need revisiting based on newer versions of RocksDB (TBD).</p>
-<h2><a class="anchor" id="autotoc_md147"></a>
+<h2><a class="anchor" id="autotoc_md175"></a>
 Discussion</h2>
 <p>RocksDBQuickFactory is intended to provide a testbed for comparing potential rocksdb performance with the existing recommended configuration in rippled.cfg. Through various executions and profiling some conclusions are presented below.</p>
 <ul>

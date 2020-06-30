@@ -92,50 +92,57 @@ $(function() {
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_PROTOCOL_SYSTEMPARAMETERS_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/XRPAmount.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a>&gt;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/string.html">string</a>&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="comment">// Various protocol and system specific constant globals.</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="comment">/* The name of the system. */</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keyword">static</span> <span class="keyword">inline</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp;</div>
-<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="namespaceripple.html#aca32bc5eec87c90ce71880dbba08b93e">   33</a></span>&#160;<a class="code" href="namespaceripple.html#aca32bc5eec87c90ce71880dbba08b93e">systemName</a>()</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;{</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> name = <span class="stringliteral">&quot;ripple&quot;</span>;</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keywordflow">return</span> name;</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;}</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno"><a class="line" href="namespaceripple.html#a55a2a537e79363b71783d5f6eaca5abf">   42</a></span>&#160;constexpr <a class="code" href="classripple_1_1XRPAmount.html">XRPAmount</a> <a class="code" href="namespaceripple.html#a55a2a537e79363b71783d5f6eaca5abf">INITIAL_XRP</a>{100<span class="stringliteral">&#39;000&#39;</span>000<span class="stringliteral">&#39;000 * DROPS_PER_XRP};</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="stringliteral">inline bool</span></div>
-<div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="namespaceripple.html#a2ad36218df31bca30cc7212166c77432">   46</a></span>&#160;<span class="stringliteral">isLegalAmount(XRPAmount const&amp; amount)</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="stringliteral">{</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="stringliteral">    return amount &lt;= INITIAL_XRP;</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="stringliteral">}</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="stringliteral">/* The currency code for the native currency. */</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="stringliteral">static inline std::string const&amp;</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno"><a class="line" href="namespaceripple.html#a17931969e24fe7e94e61d6e50f7f5cb7">   53</a></span>&#160;<span class="stringliteral">systemCurrencyCode()</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="stringliteral">{</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="stringliteral">    static std::string const code = &quot;XRP&quot;;</span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="stringliteral">    return code;</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="stringliteral">}</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00060"></a><span class="lineno"><a class="line" href="namespaceripple.html#a2c550f167665d94744b297523ff07de2">   60</a></span>&#160;<span class="stringliteral">static std::uint32_t constexpr XRP_LEDGER_EARLIEST_SEQ{32570};</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="stringliteral">}  // namespace ripple</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="stringliteral">inline std::uint16_t constexpr DEFAULT_PEER_PORT{2459};</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="stringliteral">#endif</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/chrono.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a>&gt;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/string.html">string</a>&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="comment">// Various protocol and system specific constant globals.</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="comment">/* The name of the system. */</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="keyword">static</span> <span class="keyword">inline</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="namespaceripple.html#aca32bc5eec87c90ce71880dbba08b93e">   34</a></span>&#160;<a class="code" href="namespaceripple.html#aca32bc5eec87c90ce71880dbba08b93e">systemName</a>()</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;{</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> name = <span class="stringliteral">&quot;ripple&quot;</span>;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keywordflow">return</span> name;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;}</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
+<div class="line"><a name="l00043"></a><span class="lineno"><a class="line" href="namespaceripple.html#a55a2a537e79363b71783d5f6eaca5abf">   43</a></span>&#160;constexpr <a class="code" href="classripple_1_1XRPAmount.html">XRPAmount</a> <a class="code" href="namespaceripple.html#a55a2a537e79363b71783d5f6eaca5abf">INITIAL_XRP</a>{100<span class="stringliteral">&#39;000&#39;</span>000<span class="stringliteral">&#39;000 * DROPS_PER_XRP};</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="stringliteral">inline bool</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="namespaceripple.html#a2ad36218df31bca30cc7212166c77432">   47</a></span>&#160;<span class="stringliteral">isLegalAmount(XRPAmount const&amp; amount)</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="stringliteral">{</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="stringliteral">    return amount &lt;= INITIAL_XRP;</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="stringliteral">}</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="stringliteral">/* The currency code for the native currency. */</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="stringliteral">static inline std::string const&amp;</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno"><a class="line" href="namespaceripple.html#a17931969e24fe7e94e61d6e50f7f5cb7">   54</a></span>&#160;<span class="stringliteral">systemCurrencyCode()</span></div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="stringliteral">{</span></div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="stringliteral">    static std::string const code = &quot;XRP&quot;;</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="stringliteral">    return code;</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="stringliteral">}</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00061"></a><span class="lineno"><a class="line" href="namespaceripple.html#a2c550f167665d94744b297523ff07de2">   61</a></span>&#160;<span class="stringliteral">static std::uint32_t constexpr XRP_LEDGER_EARLIEST_SEQ{32570};</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00068"></a><span class="lineno"><a class="line" href="namespaceripple.html#a9486d45c2b21072ec54bea71d492d1af">   68</a></span>&#160;<span class="stringliteral">constexpr std::ratio&lt;204, 256&gt; preFixAmendmentMajorityCalcThreshold;</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00070"></a><span class="lineno"><a class="line" href="namespaceripple.html#a7efda97c0ca3525b31f602de3243fae7">   70</a></span>&#160;<span class="stringliteral">constexpr std::ratio&lt;80, 100&gt; postFixAmendmentMajorityCalcThreshold;</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00073"></a><span class="lineno"><a class="line" href="namespaceripple.html#a6d89c3108d7faf0305d9768538ef65b9">   73</a></span>&#160;<span class="stringliteral">constexpr std::chrono::seconds const defaultAmendmentMajorityTime = weeks{2};</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="stringliteral">}  // namespace ripple</span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="stringliteral">inline std::uint16_t constexpr DEFAULT_PEER_PORT{2459};</span></div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="stringliteral">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_html_a55a2a537e79363b71783d5f6eaca5abf"><div class="ttname"><a href="namespaceripple.html#a55a2a537e79363b71783d5f6eaca5abf">ripple::INITIAL_XRP</a></div><div class="ttdeci">constexpr XRPAmount INITIAL_XRP</div><div class="ttdoc">Configure the native currency.</div><div class="ttdef"><b>Definition:</b> <a href="SystemParameters_8h_source.html#l00042">SystemParameters.h:42</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a55a2a537e79363b71783d5f6eaca5abf"><div class="ttname"><a href="namespaceripple.html#a55a2a537e79363b71783d5f6eaca5abf">ripple::INITIAL_XRP</a></div><div class="ttdeci">constexpr XRPAmount INITIAL_XRP</div><div class="ttdoc">Configure the native currency.</div><div class="ttdef"><b>Definition:</b> <a href="SystemParameters_8h_source.html#l00043">SystemParameters.h:43</a></div></div>
 <div class="ttc" id="acstdint_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="anamespaceripple_html_aca32bc5eec87c90ce71880dbba08b93e"><div class="ttname"><a href="namespaceripple.html#aca32bc5eec87c90ce71880dbba08b93e">ripple::systemName</a></div><div class="ttdeci">static std::string const  &amp; systemName()</div><div class="ttdef"><b>Definition:</b> <a href="SystemParameters_8h_source.html#l00033">SystemParameters.h:33</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aca32bc5eec87c90ce71880dbba08b93e"><div class="ttname"><a href="namespaceripple.html#aca32bc5eec87c90ce71880dbba08b93e">ripple::systemName</a></div><div class="ttdeci">static std::string const  &amp; systemName()</div><div class="ttdef"><b>Definition:</b> <a href="SystemParameters_8h_source.html#l00034">SystemParameters.h:34</a></div></div>
 <div class="ttc" id="aclassripple_1_1XRPAmount_html"><div class="ttname"><a href="classripple_1_1XRPAmount.html">ripple::XRPAmount</a></div><div class="ttdef"><b>Definition:</b> <a href="XRPAmount_8h_source.html#l00046">XRPAmount.h:46</a></div></div>
 <div class="ttc" id="astring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/string.html">string</a></div></div>
 <!-- start footer part -->

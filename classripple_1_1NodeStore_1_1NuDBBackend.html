@@ -88,14 +88,14 @@ Collaboration diagram for ripple::NodeStore::NuDBBackend:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1NodeStore_1_1NuDBBackend__coll__graph.png" border="0" usemap="#ripple_1_1NodeStore_1_1NuDBBackend_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1NodeStore_1_1NuDBBackend_coll__map" id="ripple_1_1NodeStore_1_1NuDBBackend_coll__map">
-<area shape="rect" title=" " alt="" coords="535,152,677,193"/>
+<area shape="rect" title=" " alt="" coords="579,161,721,203"/>
 <area shape="rect" href="classripple_1_1NodeStore_1_1Backend.html" title="A backend used for the NodeStore." alt="" coords="257,5,400,47"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="252,71,405,98"/>
-<area shape="rect" href="classripple_1_1NodeStore_1_1Scheduler.html" title="Scheduling for asynchronous backend activity." alt="" coords="257,123,400,164"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="285,189,372,215"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="285,239,373,266"/>
-<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="273,290,384,317"/>
-<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,290,152,317"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="277,133,380,159"/>
+<area shape="rect" href="classripple_1_1NodeStore_1_1Scheduler.html" title="Scheduling for asynchronous backend activity." alt="" coords="257,184,400,225"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="285,250,372,277"/>
+<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="273,301,384,327"/>
+<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,301,152,327"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -110,6 +110,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a973bd1539e909dcc515980e7b6f61f3d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a973bd1539e909dcc515980e7b6f61f3d">getName</a> () override</td></tr>
 <tr class="memdesc:a973bd1539e909dcc515980e7b6f61f3d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the human-readable name of this backend.  <a href="classripple_1_1NodeStore_1_1NuDBBackend.html#a973bd1539e909dcc515980e7b6f61f3d">More...</a><br /></td></tr>
 <tr class="separator:a973bd1539e909dcc515980e7b6f61f3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7d01b1f99aa2db2111fb6a2a75007a0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#ae7d01b1f99aa2db2111fb6a2a75007a0">open</a> (bool createIfMissing, boost::optional&lt; uint64_t &gt; appType, boost::optional&lt; uint64_t &gt; uid, boost::optional&lt; uint64_t &gt; salt) override</td></tr>
+<tr class="memdesc:ae7d01b1f99aa2db2111fb6a2a75007a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Open the backend.  <a href="classripple_1_1NodeStore_1_1NuDBBackend.html#ae7d01b1f99aa2db2111fb6a2a75007a0">More...</a><br /></td></tr>
+<tr class="separator:ae7d01b1f99aa2db2111fb6a2a75007a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2160cbce008b1fd13e1797d81d989128"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a2160cbce008b1fd13e1797d81d989128">open</a> (bool createIfMissing) override</td></tr>
 <tr class="memdesc:a2160cbce008b1fd13e1797d81d989128"><td class="mdescLeft">&#160;</td><td class="mdescRight">Open the backend.  <a href="classripple_1_1NodeStore_1_1NuDBBackend.html#a2160cbce008b1fd13e1797d81d989128">More...</a><br /></td></tr>
 <tr class="separator:a2160cbce008b1fd13e1797d81d989128"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -169,8 +172,12 @@ Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:adc4e6fbf3a6ea019794339b779878a2f"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#adc4e6fbf3a6ea019794339b779878a2f">currentType</a> = 1</td></tr>
-<tr class="separator:adc4e6fbf3a6ea019794339b779878a2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a99fff9537e830abd48420803947a8276"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a99fff9537e830abd48420803947a8276">currentType</a> = 1</td></tr>
+<tr class="separator:a99fff9537e830abd48420803947a8276"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a80327260f0dbe62c801723f147a52ad9"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a80327260f0dbe62c801723f147a52ad9">deterministicType</a> = 0x5348524400000000ull</td></tr>
+<tr class="separator:a80327260f0dbe62c801723f147a52ad9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a95c6eb45222d14b3367d617f39c4c4c1"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a95c6eb45222d14b3367d617f39c4c4c1">deterministicMask</a> = 0xFFFFFFFF00000000ull</td></tr>
+<tr class="separator:a95c6eb45222d14b3367d617f39c4c4c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -214,7 +221,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00050">50</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00053">53</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -262,7 +269,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00066">66</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00069">69</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -289,7 +296,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00084">84</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00087">87</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -322,12 +329,76 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a206d540c4b8359c598f2309c5ee194bd">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00090">90</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00093">93</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ae7d01b1f99aa2db2111fb6a2a75007a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae7d01b1f99aa2db2111fb6a2a75007a0">&#9670;&nbsp;</a></span>open() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::NodeStore::NuDBBackend::open </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>createIfMissing</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">boost::optional&lt; uint64_t &gt;&#160;</td>
+          <td class="paramname"><em>appType</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">boost::optional&lt; uint64_t &gt;&#160;</td>
+          <td class="paramname"><em>uid</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">boost::optional&lt; uint64_t &gt;&#160;</td>
+          <td class="paramname"><em>salt</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Open the backend. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">createIfMissing</td><td>Create the database files if necessary. </td></tr>
+    <tr><td class="paramname">appType</td><td>Deterministic appType used to create a backend. </td></tr>
+    <tr><td class="paramname">uid</td><td>Deterministic uid used to create a backend. </td></tr>
+    <tr><td class="paramname">salt</td><td>Deterministic salt used to create a backend. This allows the caller to catch exceptions. </td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Old value currentType is accepted for appnum in traditional databases, new value is used for deterministic shard databases. New 64-bit value is constructed from fixed and random parts. Fixed part is bounded by bitmask deterministicMask, and the value of fixed part is deterministicType. Random part depends on the contents of the shard and may be any. The contents of appnum field should match either old or new rule.</p>
+
+<p>Reimplemented from <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#aefaa46fcfff1898c6f46a4a87133cfec">ripple::NodeStore::Backend</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00099">99</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
 <a id="a2160cbce008b1fd13e1797d81d989128"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2160cbce008b1fd13e1797d81d989128">&#9670;&nbsp;</a></span>open()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2160cbce008b1fd13e1797d81d989128">&#9670;&nbsp;</a></span>open() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -360,7 +431,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a586356a9f6050201be9d184bc3fd2c83">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00096">96</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00155">155</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -392,7 +463,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a6b13f9a9bbf0bf6470648f4910a92dd0">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00136">136</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00161">161</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -443,7 +514,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a7d3224e43e89dc098962b986d70e9833">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00152">152</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00177">177</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -474,7 +545,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a26ec003b54dcceb03af5de57ddb5e545">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00180">180</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00205">205</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -516,7 +587,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ae5c85e156a44b8b13040ecafab65976a">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00186">186</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00211">211</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -536,7 +607,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00193">193</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00218">218</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -575,7 +646,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a8862f8d96713c985c3169e57cbb260c2">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00206">206</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00231">231</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -608,7 +679,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#acb1f22b4101841e695477646c95376a7">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00218">218</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00243">243</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -642,7 +713,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a70721d2adc758a808d2536eee864df52">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00231">231</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00256">256</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -673,7 +744,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ac4d7008b7a616ce05568da3e96a204ec">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00268">268</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00293">293</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -704,7 +775,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a898be5251e9216eb21938e3083c2d1ef">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00274">274</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00299">299</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -735,7 +806,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ad2c3057545b73aee8e671f127b0ae084">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00280">280</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00305">305</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -766,7 +837,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a915130d326c2e63209accb8af09cf8b4">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00299">299</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00324">324</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -795,13 +866,13 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns true if the backend uses permanent storage. </p>
 
-<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00129">129</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00148">148</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="adc4e6fbf3a6ea019794339b779878a2f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adc4e6fbf3a6ea019794339b779878a2f">&#9670;&nbsp;</a></span>currentType</h2>
+<a id="a99fff9537e830abd48420803947a8276"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a99fff9537e830abd48420803947a8276">&#9670;&nbsp;</a></span>currentType</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -810,7 +881,7 @@ Static Public Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::NodeStore::NuDBBackend::currentType = 1</td>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> ripple::NodeStore::NuDBBackend::currentType = 1</td>
         </tr>
       </table>
   </td>
@@ -821,6 +892,54 @@ Static Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00041">41</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a80327260f0dbe62c801723f147a52ad9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a80327260f0dbe62c801723f147a52ad9">&#9670;&nbsp;</a></span>deterministicType</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> ripple::NodeStore::NuDBBackend::deterministicType = 0x5348524400000000ull</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00042">42</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a95c6eb45222d14b3367d617f39c4c4c1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a95c6eb45222d14b3367d617f39c4c4c1">&#9670;&nbsp;</a></span>deterministicMask</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> ripple::NodeStore::NuDBBackend::deterministicMask = 0xFFFFFFFF00000000ull</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00044">44</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -836,7 +955,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00043">43</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00046">46</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -852,7 +971,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00044">44</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00047">47</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -868,7 +987,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00045">45</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00048">48</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -884,7 +1003,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00046">46</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00049">49</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -900,7 +1019,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00047">47</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00050">50</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -916,7 +1035,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00048">48</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00051">51</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>

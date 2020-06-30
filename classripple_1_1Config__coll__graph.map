@@ -1,5 +1,5 @@
 <map id="ripple::Config" name="ripple::Config">
-<area shape="rect" id="node1" title=" " alt="" coords="1687,508,1795,535"/>
+<area shape="rect" id="node1" title=" " alt="" coords="1711,508,1819,535"/>
 <area shape="rect" id="node2" href="$classripple_1_1BasicConfig.html" title="Holds unparsed configuration information." alt="" coords="1303,256,1446,283"/>
 <area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="901,217,1063,273"/>
 <area shape="rect" id="node4" href="$classripple_1_1Section.html" title="Holds a collection of configuration values." alt="" coords="568,233,683,260"/>

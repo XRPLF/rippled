@@ -1,17 +1,17 @@
 <map id="ripple::test::DatabaseDownloader_test::Downloader" name="ripple::test::DatabaseDownloader_test::Downloader">
-<area shape="rect" id="node1" title=" " alt="" coords="2607,1443,2847,1485"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="2344,1353,2529,1394"/>
-<area shape="rect" id="node3" href="$classripple_1_1DatabaseDownloader.html" title=" " alt="" coords="2067,1328,2273,1355"/>
-<area shape="rect" id="node4" href="$classripple_1_1SSLHTTPDownloader.html" title="Provides an asynchronous HTTPS file downloader." alt="" coords="1711,1299,1913,1325"/>
+<area shape="rect" id="node1" title=" " alt="" coords="2631,1443,2871,1485"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="2368,1353,2553,1394"/>
+<area shape="rect" id="node3" href="$classripple_1_1DatabaseDownloader.html" title=" " alt="" coords="2091,1328,2297,1355"/>
+<area shape="rect" id="node4" href="$classripple_1_1SSLHTTPDownloader.html" title="Provides an asynchronous HTTPS file downloader." alt="" coords="1735,1299,1937,1325"/>
 <area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="1310,1349,1463,1376"/>
 <area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="1301,1400,1472,1427"/>
 <area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="1341,1185,1433,1212"/>
 <area shape="rect" id="node8" href="$classripple_1_1HTTPClientSSLContext.html" title=" " alt="" coords="1280,1299,1493,1325"/>
 <area shape="rect" id="node9" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="927,1299,1037,1325"/>
-<area shape="rect" id="node12" href="$classripple_1_1Config.html" title=" " alt="" coords="1758,611,1866,637"/>
+<area shape="rect" id="node12" href="$classripple_1_1Config.html" title=" " alt="" coords="1782,611,1890,637"/>
 <area shape="rect" id="node10" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="552,1352,699,1379"/>
 <area shape="rect" id="node39" href="$classripple_1_1test_1_1StreamSink.html" title=" " alt="" coords="895,1485,1069,1512"/>
-<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="1765,1349,1859,1376"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="1789,1349,1883,1376"/>
 <area shape="rect" id="node13" href="$classripple_1_1BasicConfig.html" title="Holds unparsed configuration information." alt="" coords="1315,539,1458,565"/>
 <area shape="rect" id="node14" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="901,500,1063,556"/>
 <area shape="rect" id="node15" href="$classripple_1_1Section.html" title="Holds a collection of configuration values." alt="" coords="568,516,683,543"/>

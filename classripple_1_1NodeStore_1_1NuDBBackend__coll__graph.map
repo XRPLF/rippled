@@ -1,10 +1,10 @@
 <map id="ripple::NodeStore::NuDBBackend" name="ripple::NodeStore::NuDBBackend">
-<area shape="rect" id="node1" title=" " alt="" coords="535,152,677,193"/>
+<area shape="rect" id="node1" title=" " alt="" coords="579,161,721,203"/>
 <area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1Backend.html" title="A backend used for the NodeStore." alt="" coords="257,5,400,47"/>
 <area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="252,71,405,98"/>
-<area shape="rect" id="node4" href="$classripple_1_1NodeStore_1_1Scheduler.html" title="Scheduling for asynchronous backend activity." alt="" coords="257,123,400,164"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="285,189,372,215"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="285,239,373,266"/>
-<area shape="rect" id="node7" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="273,290,384,317"/>
-<area shape="rect" id="node8" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,290,152,317"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="277,133,380,159"/>
+<area shape="rect" id="node5" href="$classripple_1_1NodeStore_1_1Scheduler.html" title="Scheduling for asynchronous backend activity." alt="" coords="257,184,400,225"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="285,250,372,277"/>
+<area shape="rect" id="node7" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="273,301,384,327"/>
+<area shape="rect" id="node8" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,301,152,327"/>
 </map>

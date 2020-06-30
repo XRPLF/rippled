@@ -164,16 +164,20 @@ $(function() {
 : <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard__test.html#a18cae7f8da4e0521e984663e728e455c">ripple::NodeStore::DatabaseShard_test</a>
 </li>
 <li>db()
-: <a class="el" href="classripple_1_1detail_1_1AppFamily.html#a5c06c564f375dd4c775ecdcc0f945115">ripple::detail::AppFamily</a>
-, <a class="el" href="classripple_1_1Family.html#a2618f6f7bd3709acf853db111c814df2">ripple::Family</a>
-, <a class="el" href="classripple_1_1tests_1_1TestFamily.html#a5ec329266f9d06b978c6664a13b3ef96">ripple::tests::TestFamily</a>
+: <a class="el" href="classripple_1_1Family.html#a2618f6f7bd3709acf853db111c814df2">ripple::Family</a>
+, <a class="el" href="classripple_1_1NodeFamily.html#afbe4e51b92399e1665f4c16521d0db13">ripple::NodeFamily</a>
+, <a class="el" href="classripple_1_1ShardFamily.html#afb6dbe81c9305123f553ea4479c9f3fc">ripple::ShardFamily</a>
+, <a class="el" href="classripple_1_1tests_1_1TestNodeFamily.html#af27470cb06f50985c1f8b63d77f9ff7a">ripple::tests::TestNodeFamily</a>
 </li>
 <li>db_
 : <a class="el" href="classripple_1_1AccountStateSF.html#a618515a74a2be0ac02fc5833cf0202a0">ripple::AccountStateSF</a>
-, <a class="el" href="classripple_1_1detail_1_1AppFamily.html#a51ee377f41a3df6e11478cf3beb3c210">ripple::detail::AppFamily</a>
+, <a class="el" href="classripple_1_1NodeFamily.html#a5e578f49adb5af7260bd9ebe35e90f33">ripple::NodeFamily</a>
+, <a class="el" href="classripple_1_1NodeStore_1_1DeterministicShard.html#a8fd4a002930a8a88f017b1eae1db4a6e">ripple::NodeStore::DeterministicShard</a>
 , <a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#af8168c72040c7f20f427b44f9794944f">ripple::NodeStore::MemoryBackend</a>
 , <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a93307b4032398645d984ecc1f90bd1e7">ripple::NodeStore::NuDBBackend</a>
-, <a class="el" href="classripple_1_1tests_1_1TestFamily.html#ab48a66912b61c577bd2cce14fbba6b43">ripple::tests::TestFamily</a>
+, <a class="el" href="classripple_1_1NodeStore_1_1Shard.html#a93b080c83491bf15eaf5802837f0d744">ripple::NodeStore::Shard</a>
+, <a class="el" href="classripple_1_1ShardFamily.html#a05a44cde17b38e74a5c850336186d142">ripple::ShardFamily</a>
+, <a class="el" href="classripple_1_1tests_1_1TestNodeFamily.html#a12f5d73bb2f976932b27c91dc7076983">ripple::tests::TestNodeFamily</a>
 , <a class="el" href="classripple_1_1TransactionStateSF.html#a8943aa5bbf6ef194568367f0422b02e3">ripple::TransactionStateSF</a>
 </li>
 <li>dbName_
@@ -466,6 +470,15 @@ $(function() {
 <li>determineOperation()
 : <a class="el" href="classripple_1_1SetSignerList.html#ac5119c5a67ca4606e3e072e4dddde530">ripple::SetSignerList</a>
 </li>
+<li>deterministicMask
+: <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a95c6eb45222d14b3367d617f39c4c4c1">ripple::NodeStore::NuDBBackend</a>
+</li>
+<li>DeterministicShard()
+: <a class="el" href="classripple_1_1NodeStore_1_1DeterministicShard.html#a496c2199b0cb8a946be05c2e63123692">ripple::NodeStore::DeterministicShard</a>
+</li>
+<li>deterministicType
+: <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a80327260f0dbe62c801723f147a52ad9">ripple::NodeStore::NuDBBackend</a>
+</li>
 <li>dh()
 : <a class="el" href="classripple_1_1test_1_1TrustedPublisherServer.html#ad6e26be5d0aad7fdd7b71ddf2b6efb09">ripple::test::TrustedPublisherServer</a>
 </li>
@@ -493,6 +506,7 @@ $(function() {
 : <a class="el" href="classripple_1_1detail_1_1CachedViewImpl.html#a819e64d9e4b739b67502f77c1d7100b3">ripple::detail::CachedViewImpl</a>
 , <a class="el" href="classripple_1_1DigestAwareReadView.html#a53ace1e8c4dc9d45e56d02f4fc385c3f">ripple::DigestAwareReadView</a>
 , <a class="el" href="classripple_1_1Ledger.html#a68cfe4a8abf683e2d6909f0d96013d8f">ripple::Ledger</a>
+, <a class="el" href="classripple_1_1NodeStore_1_1DeterministicShard.html#a6bac1a6bcf45aea9c218996a229b5fb7">ripple::NodeStore::DeterministicShard</a>
 </li>
 <li>digest_
 : <a class="el" href="classripple_1_1Rules_1_1Impl.html#a2ed9e234c3379c1c4fb738c8013056d0">ripple::Rules::Impl</a>
@@ -838,7 +852,7 @@ $(function() {
 : <a class="el" href="classripple_1_1test_1_1ServerStatus__test.html#a5135bb5e305a6525bc8bac40035c494f">ripple::test::ServerStatus_test</a>
 </li>
 <li>doRound()
-: <a class="el" href="classripple_1_1AmendmentTable__test.html#ab7bc1653c034aa3a5fa820f9d090a8e9">ripple::AmendmentTable_test</a>
+: <a class="el" href="classripple_1_1AmendmentTable__test.html#abff9b58f2791ab1ea642cdc43e108231">ripple::AmendmentTable_test</a>
 </li>
 <li>doRPC()
 : <a class="el" href="classripple_1_1TxQ.html#a2b317467ac5be2a28c278cc60190261b">ripple::TxQ</a>
@@ -864,7 +878,7 @@ $(function() {
 : <a class="el" href="classripple_1_1NodeStoreScheduler.html#a1205e3496daf620da17f4e328b5d891e">ripple::NodeStoreScheduler</a>
 </li>
 <li>doTest()
-: <a class="el" href="classripple_1_1test_1_1compression__test.html#a9fb6b74e12840536a8bbfbaccdde3f4d">ripple::test::compression_test</a>
+: <a class="el" href="classripple_1_1test_1_1compression__test.html#a41559f2bc22d60f420321146922a2b2b">ripple::test::compression_test</a>
 </li>
 <li>doTransactionAsync()
 : <a class="el" href="classripple_1_1NetworkOPsImp.html#a5d23290b36936e1ecb867a23cf2ce902">ripple::NetworkOPsImp</a>
@@ -876,7 +890,7 @@ $(function() {
 : <a class="el" href="classripple_1_1PathRequest.html#a1c768c91db09df17dc03cf9c34f780ef">ripple::PathRequest</a>
 </li>
 <li>doValidatedLedger()
-: <a class="el" href="classripple_1_1AmendmentTable.html#a48f050b47af8f00cafd237e2cddb2929">ripple::AmendmentTable</a>
+: <a class="el" href="classripple_1_1AmendmentTable.html#ac721ac20262609226483f1436b0df02f">ripple::AmendmentTable</a>
 , <a class="el" href="classripple_1_1AmendmentTableImpl.html#a5a1de10b5b7e51cc4f20f2636503c2e6">ripple::AmendmentTableImpl</a>
 </li>
 <li>doValidation()
@@ -886,13 +900,14 @@ $(function() {
 , <a class="el" href="classripple_1_1FeeVoteImpl.html#a87db6cbe91285e207fc9c752ed33bb78">ripple::FeeVoteImpl</a>
 </li>
 <li>doVoting()
-: <a class="el" href="classripple_1_1AmendmentTable.html#ae4402ab8248766bc7556bdbb93225943">ripple::AmendmentTable</a>
-, <a class="el" href="classripple_1_1AmendmentTableImpl.html#a41864d1f10a3572d5f5a3cb203beb546">ripple::AmendmentTableImpl</a>
+: <a class="el" href="classripple_1_1AmendmentTable.html#ab69ef448949faf9d80e80760d6574381">ripple::AmendmentTable</a>
+, <a class="el" href="classripple_1_1AmendmentTableImpl.html#a4eac7bf3be538741f7fa066c18b04fae">ripple::AmendmentTableImpl</a>
 , <a class="el" href="classripple_1_1FeeVote.html#a0891027717d974092b4a708b3cb03acc">ripple::FeeVote</a>
 , <a class="el" href="classripple_1_1FeeVoteImpl.html#ad264dda6949150323ec3360ef094ecc5">ripple::FeeVoteImpl</a>
+, <a class="el" href="classripple_1_1NegativeUNLVote.html#ac58c464cefde1519ac23d1b51aa28833">ripple::NegativeUNLVote</a>
 </li>
 <li>downcast()
-: <a class="el" href="classripple_1_1STBase.html#a61b521e7125b47bab19a29c5ac5c836d">ripple::STBase</a>
+: <a class="el" href="classripple_1_1STBase.html#a5e2b3d13d27e01946bbee9e50ec8833d">ripple::STBase</a>
 </li>
 <li>download()
 : <a class="el" href="classripple_1_1SSLHTTPDownloader.html#af7b8454d335a0f18df271ca8b18f4aa0">ripple::SSLHTTPDownloader</a>
@@ -927,7 +942,7 @@ $(function() {
 , <a class="el" href="classripple_1_1XRPNotCreated.html#a5666e79cabd15392100c936835f3a263">ripple::XRPNotCreated</a>
 </li>
 <li>dropsAs()
-: <a class="el" href="classripple_1_1XRPAmount.html#a5b66cfca6453b8dba59712100a037f61">ripple::XRPAmount</a>
+: <a class="el" href="classripple_1_1XRPAmount.html#ab5f3375217f59e485109e6a560576941">ripple::XRPAmount</a>
 </li>
 <li>dropsDestroyed()
 : <a class="el" href="classripple_1_1detail_1_1ApplyStateTable.html#a2a8fe3fbf07c6803b1058191b84dba58">ripple::detail::ApplyStateTable</a>

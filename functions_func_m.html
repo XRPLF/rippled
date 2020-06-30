@@ -67,9 +67,6 @@ $(function() {
 <li>mac_facade()
 : <a class="el" href="classbeast_1_1detail_1_1mac__facade.html#a35a2f79b1f4e3a3652e049357fed9e82">beast::detail::mac_facade&lt; Context, Secure &gt;</a>
 </li>
-<li>make()
-: <a class="el" href="classripple_1_1SHAMapAbstractNode.html#ab303977d6b32547eb9cb12bb203b62fe">ripple::SHAMapAbstractNode</a>
-</li>
 <li>make_Backend()
 : <a class="el" href="classripple_1_1NodeStore_1_1Manager.html#a5008bfc75ce6dbf0bee4cc5de5fe51a9">ripple::NodeStore::Manager</a>
 , <a class="el" href="classripple_1_1NodeStore_1_1ManagerImp.html#ab97d1fb7cf772b20aa2acb37adbfb626">ripple::NodeStore::ManagerImp</a>
@@ -120,6 +117,9 @@ $(function() {
 <li>make_random_item()
 : <a class="el" href="classripple_1_1tests_1_1FetchPack__test.html#a389246300ce1d915c47c23e4f5b1c327">ripple::tests::FetchPack_test</a>
 </li>
+<li>makeAccountState()
+: <a class="el" href="classripple_1_1SHAMapAbstractNode.html#a4774d63ae48621eb60f20cf3cb2cca7c">ripple::SHAMapAbstractNode</a>
+</li>
 <li>makeAdminRequest()
 : <a class="el" href="classripple_1_1test_1_1ServerStatus__test.html#ad56eba6f9175766256c9e981a667453d">ripple::test::ServerStatus_test</a>
 </li>
@@ -131,6 +131,9 @@ $(function() {
 </li>
 <li>makeBookListeners()
 : <a class="el" href="classripple_1_1OrderBookDB.html#a38074418513ff8451b5955caa08943b0">ripple::OrderBookDB</a>
+</li>
+<li>makeCompressedInner()
+: <a class="el" href="classripple_1_1SHAMapInnerNode.html#a9efec4c7630be19cbe06cdadbd9e082a">ripple::SHAMapInnerNode</a>
 </li>
 <li>makeConfig()
 : <a class="el" href="classripple_1_1test_1_1ServerStatus__test.html#a4f9f25f65bcf6b64a4b90943f8fb487f">ripple::test::ServerStatus_test</a>
@@ -150,6 +153,15 @@ $(function() {
 </li>
 <li>makeFieldPresent()
 : <a class="el" href="classripple_1_1STObject.html#a6b5bb43ef723075465e909e54c9d6622">ripple::STObject</a>
+</li>
+<li>makeFromPrefix()
+: <a class="el" href="classripple_1_1SHAMapAbstractNode.html#a09b930438f02ca9b5279cbfd78f5b037">ripple::SHAMapAbstractNode</a>
+</li>
+<li>makeFromWire()
+: <a class="el" href="classripple_1_1SHAMapAbstractNode.html#a1ff32f1526fc282631db5877441ed798">ripple::SHAMapAbstractNode</a>
+</li>
+<li>makeFullInner()
+: <a class="el" href="classripple_1_1SHAMapInnerNode.html#a2b6c4bfbe8c3365eabe572cdcbb0a89a">ripple::SHAMapInnerNode</a>
 </li>
 <li>MakeGenesis()
 : <a class="el" href="structripple_1_1RCLValidatedLedger_1_1MakeGenesis.html#af4134e2bbfbb838e689e846bae998a60">ripple::RCLValidatedLedger::MakeGenesis</a>
@@ -244,12 +256,18 @@ $(function() {
 </li>
 <li>makeSink()
 : <a class="el" href="classripple_1_1Logs.html#a8897167a7f84a1caabfe34539363a904">ripple::Logs</a>
+, <a class="el" href="classripple_1_1test_1_1CaptureLogs.html#a518b3324912ad1e2f853a2694ff68bf6">ripple::test::CaptureLogs</a>
+, <a class="el" href="classripple_1_1test_1_1CheckMessageLogs.html#affbd39d85ee291ad563d021b3ee7ae0a">ripple::test::CheckMessageLogs</a>
 , <a class="el" href="classripple_1_1test_1_1jtx_1_1SuiteLogs.html#a408644424065b352ab568b2bcaf1f868">ripple::test::jtx::SuiteLogs</a>
-, <a class="el" href="classripple_1_1test_1_1LedgerHistory__test_1_1CheckMessageLogs.html#a0a52154ec8474217ff57ce711ea643f6">ripple::test::LedgerHistory_test::CheckMessageLogs</a>
-, <a class="el" href="classripple_1_1test_1_1Server__test_1_1CaptureLogs.html#ac277a7fc619a6ec21cc7c5560fae1d13">ripple::test::Server_test::CaptureLogs</a>
 </li>
 <li>makeTable()
 : <a class="el" href="classripple_1_1AmendmentTable__test.html#afda130f379a2d4a8e77e1c4423770c18">ripple::AmendmentTable_test</a>
+</li>
+<li>makeTransaction()
+: <a class="el" href="classripple_1_1SHAMapAbstractNode.html#acc24498d7f31afcf983f2b1584231239">ripple::SHAMapAbstractNode</a>
+</li>
+<li>makeTransactionWithMeta()
+: <a class="el" href="classripple_1_1SHAMapAbstractNode.html#acbfc9766fe96d2cc300ff5ab29b033be">ripple::SHAMapAbstractNode</a>
 </li>
 <li>makeValidatorConfig()
 : <a class="el" href="classripple_1_1test_1_1ServerInfo__test.html#ad9cc2a3fe55b6fb587e450611209927d">ripple::test::ServerInfo_test</a>
@@ -322,13 +340,14 @@ $(function() {
 <li>max()
 : <a class="el" href="classbeast_1_1detail_1_1xor__shift__engine.html#a5cd1d97ec94e64d46d6349938bc47518">beast::detail::xor_shift_engine&lt; class &gt;</a>
 , <a class="el" href="classripple_1_1csprng__engine.html#aef86b5d2308d9e403ae27d4c2e049f3b">ripple::csprng_engine</a>
+, <a class="el" href="structripple_1_1NodeStore_1_1uniformIntDistribution.html#a749c9540bdd0f556e9057c07badbb269">ripple::NodeStore::uniformIntDistribution&lt; IntType &gt;</a>
 </li>
 <li>max_bucket_count()
 : <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html#af4b01d8e1e61a68ac7802b4c1c8243c0">beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::Buckets</a>
 , <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a3e60a324574d96e2daa06d767af6e223">beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;</a>
 </li>
 <li>max_load_factor()
-: <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html#a2cb5acaefd9b3b2fd14ade848646511d">beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::Buckets</a>
+: <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1Buckets.html#aec5dfa0efe396e9d4c91f619febd4909">beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::Buckets</a>
 , <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container.html#a46d93594a308cfd144eca3a26ecbf9ab">beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;</a>
 </li>
 <li>max_size()
@@ -364,7 +383,7 @@ $(function() {
 : <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a5a00a6620ad164b279396218c731422b">ripple::TxQ::MaybeTx</a>
 </li>
 <li>member()
-: <a class="el" href="classbeast_1_1detail_1_1empty__base__optimization.html#aa636f02427e497edd17d7b016c00291a">beast::detail::empty_base_optimization&lt; T, UniqueID, isDerived &gt;</a>
+: <a class="el" href="classbeast_1_1detail_1_1empty__base__optimization.html#a1557e6d2e7e324706178e115b154f94a">beast::detail::empty_base_optimization&lt; T, UniqueID, isDerived &gt;</a>
 , <a class="el" href="classbeast_1_1detail_1_1empty__base__optimization_3_01T_00_01UniqueID_00_01false_01_4.html#a5a6193c02e481c64ab5460df89158dda">beast::detail::empty_base_optimization&lt; T, UniqueID, false &gt;</a>
 , <a class="el" href="classripple_1_1Cluster.html#a0c718ec2f55e267d3b4f484fcac27717">ripple::Cluster</a>
 </li>
@@ -428,15 +447,16 @@ $(function() {
 : <a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html#aaf5c4be94a4eb0b7e2a3eea9bcec3a51">ripple::test::jtx::Env</a>
 </li>
 <li>Meter()
-: <a class="el" href="classbeast_1_1insight_1_1Meter.html#a3b28aae0d54481cc432ce6fa9f158c4b">beast::insight::Meter</a>
+: <a class="el" href="classbeast_1_1insight_1_1Meter.html#a1c722eaae1865f01bfe1f0e0cbe42a4a">beast::insight::Meter</a>
 </li>
 <li>Metrics()
-: <a class="el" href="classripple_1_1PeerImp_1_1Metrics.html#ae39d568c6278b1f880fea0b628f4743c">ripple::PeerImp::Metrics</a>
+: <a class="el" href="classripple_1_1PeerImp_1_1Metrics.html#a351bf2d8fe62a49d71828f9c68056b5b">ripple::PeerImp::Metrics</a>
 , <a class="el" href="structripple_1_1TxQ_1_1Metrics.html#a5f8431c7f8f88f9455e5dce38defa925">ripple::TxQ::Metrics</a>
 </li>
 <li>min()
 : <a class="el" href="classbeast_1_1detail_1_1xor__shift__engine.html#ae8de99003fe4e87a9443dd6590e04fb2">beast::detail::xor_shift_engine&lt; class &gt;</a>
 , <a class="el" href="classripple_1_1csprng__engine.html#a19d88390808ec5d20e22ce54b8282be2">ripple::csprng_engine</a>
+, <a class="el" href="structripple_1_1NodeStore_1_1uniformIntDistribution.html#a04a8b1519d0c2fa2bdf4884723410770">ripple::NodeStore::uniformIntDistribution&lt; IntType &gt;</a>
 </li>
 <li>minimumFee()
 : <a class="el" href="classripple_1_1Transactor.html#a22d95e5b46d8a2c7cdcc67229476e27b">ripple::Transactor</a>
@@ -457,13 +477,14 @@ $(function() {
 <li>missing_backend()
 : <a class="el" href="classripple_1_1NodeStore_1_1ManagerImp.html#ad406709fa9da290e48fb88ef1c7b1536">ripple::NodeStore::ManagerImp</a>
 </li>
-<li>missing_node()
-: <a class="el" href="classripple_1_1detail_1_1AppFamily.html#a6d98980b98f348cbbf446fb533721f69">ripple::detail::AppFamily</a>
-, <a class="el" href="classripple_1_1Family.html#af5a7525e6995bd07aba4c3c4c41c4f54">ripple::Family</a>
-, <a class="el" href="classripple_1_1tests_1_1TestFamily.html#af55f8e725608d428ceb2eabf7d5bdfea">ripple::tests::TestFamily</a>
+<li>missingNode()
+: <a class="el" href="classripple_1_1Family.html#a195ad5c61d5ef6a5b269232ecea7ca55">ripple::Family</a>
+, <a class="el" href="classripple_1_1NodeFamily.html#ae28638a42e0a37921b85da75d6d73ba3">ripple::NodeFamily</a>
+, <a class="el" href="classripple_1_1ShardFamily.html#ab37342166bcf5823ea87e1b7bb6f54b3">ripple::ShardFamily</a>
+, <a class="el" href="classripple_1_1tests_1_1TestNodeFamily.html#a245a544cb00a81ee4378703d696294f2">ripple::tests::TestNodeFamily</a>
 </li>
 <li>MissingNodes()
-: <a class="el" href="structripple_1_1SHAMap_1_1MissingNodes.html#a832dcc91d7ffd8b7ab48ec0f3b801c09">ripple::SHAMap::MissingNodes</a>
+: <a class="el" href="structripple_1_1SHAMap_1_1MissingNodes.html#a3ec85f310a1155ddcca197414136b4a0">ripple::SHAMap::MissingNodes</a>
 </li>
 <li>missingSite()
 : <a class="el" href="classripple_1_1ValidatorSite.html#aae5e48f0c7cf0614f7987d943499a2e1">ripple::ValidatorSite</a>
@@ -522,7 +543,7 @@ $(function() {
 : <a class="el" href="classripple_1_1test_1_1detail_1_1multi__runner__base.html#a9d6239c32e1e0eb4e014bd2a613e1aa9">ripple::test::detail::multi_runner_base&lt; IsParent &gt;</a>
 </li>
 <li>multi_runner_child()
-: <a class="el" href="classripple_1_1test_1_1multi__runner__child.html#abbb1e987a2f4dd89c2bb9b9b3b5a573c">ripple::test::multi_runner_child</a>
+: <a class="el" href="classripple_1_1test_1_1multi__runner__child.html#a053d5e34099f6672d0c7c4858177428c">ripple::test::multi_runner_child</a>
 </li>
 <li>multi_runner_parent()
 : <a class="el" href="classripple_1_1test_1_1multi__runner__parent.html#aa83723ce2ca67d5b90ed19cd1d498deb">ripple::test::multi_runner_parent</a>

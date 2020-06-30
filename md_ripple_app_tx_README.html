@@ -65,28 +65,28 @@ $(function() {
 <div class="title">Transactors </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md101"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md129"></a>
 Introduction</h1>
 <p>Each separate kind of transaction is handled by it's own Transactor. The Transactor base class provides functionality that is common to all derived Transactors. The Transactor base class also gives derived classes the ability to replace portions of the default implementation.</p>
-<h1><a class="anchor" id="autotoc_md102"></a>
+<h1><a class="anchor" id="autotoc_md130"></a>
 Details on Specific Transactors</h1>
-<h2><a class="anchor" id="autotoc_md103"></a>
+<h2><a class="anchor" id="autotoc_md131"></a>
 AddWallet</h2>
-<h2><a class="anchor" id="autotoc_md104"></a>
+<h2><a class="anchor" id="autotoc_md132"></a>
 Change</h2>
-<h2><a class="anchor" id="autotoc_md105"></a>
+<h2><a class="anchor" id="autotoc_md133"></a>
 Offers</h2>
-<h3><a class="anchor" id="autotoc_md106"></a>
+<h3><a class="anchor" id="autotoc_md134"></a>
 CreateOffer</h3>
-<h3><a class="anchor" id="autotoc_md107"></a>
+<h3><a class="anchor" id="autotoc_md135"></a>
 CancelOffer</h3>
-<h2><a class="anchor" id="autotoc_md108"></a>
+<h2><a class="anchor" id="autotoc_md136"></a>
 Payment</h2>
-<h2><a class="anchor" id="autotoc_md109"></a>
+<h2><a class="anchor" id="autotoc_md137"></a>
 SetAccount</h2>
-<h2><a class="anchor" id="autotoc_md110"></a>
+<h2><a class="anchor" id="autotoc_md138"></a>
 SetRegularKey</h2>
-<h2><a class="anchor" id="autotoc_md111"></a>
+<h2><a class="anchor" id="autotoc_md139"></a>
 SetSignerList</h2>
 <p>In order to enhance the flexibility of Ripple and provide support for enhanced security of accounts, native support for "multi-signature" or "multi-sign" accounts is required.</p>
 <p>Transactions on an account which is designated as multi-sign can be authorized either by using the master or regular keys (unless those are disabled) or by being signed by a certain number (a quorum) of pre-authorized accounts.</p>
@@ -96,24 +96,24 @@ SetSignerList</h2>
 <li>Each authorized account has a weight. The sum of the weights of the signers is used to determine whether a given set of signatures is sufficient for a quorum.</li>
 <li>The quorum threshold indicates the minimum required weight that the sum of the weights of all signatures must have before a transaction can be authorized.</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md112"></a>
+<h3><a class="anchor" id="autotoc_md140"></a>
 Verification of Multiple Signatures During TX Processing</h3>
 <p>The current approach to adding multi-signature support is to require that a transaction is to be signed outside the Ripple network and only submitted after the quorum has been reached.</p>
 <p>This reduces the implementation footprint and the load imposed on the network, and mirrors the way transaction signing is currently handled. It will require some messaging mechanism outside the Ripple network to disseminate the proposed transaction to the authorized signers and to allow them to apply signatures.</p>
 <p>Supporting in-ledger voting should be considered, but it has both advantages and disadvantages.</p>
 <p>One of the advantages is increased transparency - transactions are visible as are the "votes" (the authorized accounts signing the transaction) on the ledger. However, transactions may also languish for a long time in the ledger, never reaching a quorum and consuming network resources.</p>
-<h3><a class="anchor" id="autotoc_md113"></a>
+<h3><a class="anchor" id="autotoc_md141"></a>
 Signature Format</h3>
 <p>We should not develop a new format for multi-sign signatures. Instead every signer should extract and sign the transaction as they normally would if this were a regular transaction. The resulting signature will be stored as a triple of { signing-account, signer-public-key, signature } in an array of signatures associated with this transaction.</p>
 <p>The advantage of this is that we can reuse the existing signing and verification code, and leverage the work that will go towards implementing support for the Ed25519 elliptic curve.</p>
-<h3><a class="anchor" id="autotoc_md114"></a>
+<h3><a class="anchor" id="autotoc_md142"></a>
 Fees</h3>
 <p>Multi-signature transactions impose a heavier load on the network and should claim higher fees.</p>
 <p>The fee structure is not yet decided, but an escalating fee structure is laid out and discussed on the <a href="https://ripple.com/wiki/Multisign">wiki</a>. This might need to be revisited and designed in light of discussions about changing how fees are handled.</p>
-<h3><a class="anchor" id="autotoc_md115"></a>
+<h3><a class="anchor" id="autotoc_md143"></a>
 Proposed Transaction Cancellation</h3>
 <p>A transaction that has been proposed against a multi-sign account using a ticket can be positively canceled if a quorum of authorized signers sign and issue a transaction that consumes that ticket.</p>
-<h3><a class="anchor" id="autotoc_md116"></a>
+<h3><a class="anchor" id="autotoc_md144"></a>
 Implementation</h3>
 <p>Any account can have one SignerList attached to it. A SignerList contains the following elements:</p>
 <ul>
@@ -161,20 +161,20 @@ Implementation</h3>
     "Account": "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerQuorum": 0
 }
-</pre><h2><a class="anchor" id="autotoc_md117"></a>
+</pre><h2><a class="anchor" id="autotoc_md145"></a>
 SetTrust</h2>
-<h2><a class="anchor" id="autotoc_md118"></a>
+<h2><a class="anchor" id="autotoc_md146"></a>
 Tickets</h2>
 <p>Currently transactions on the Ripple network require the use of sequence numbers and sequence numbers must monotonically increase. Since the sequence number is part of the transaction, it is "covered" by the signature that authorizes the transaction, which means that the sequence number would have to be decided at the time of transaction issuance. This would mean that multi-signature transactions could only be processed in strict "first-in,
 first-out" order which is not practical.</p>
 <p>Tickets can be used in lieu of sequence number. A ticket is a special token which, through a transaction, can be issued by any account and can be configured with an optional expiry date and an optional associated account.</p>
-<h3><a class="anchor" id="autotoc_md119"></a>
+<h3><a class="anchor" id="autotoc_md147"></a>
 Specifics</h3>
 <p>The expiry date can be used to constrain the validity of the ticket. If specified, the ticket will be considered invalid and unusable if the closing time of the last <em>validated</em> ledger is greater than or equal to the expiration time of the ticket.</p>
 <p>The associated account can be used to specify an account, other than the issuing account, that is allowed to "consume" the ticket. Consuming a ticket means to use the ticket in a transaction that is accepted by the network and makes its way into a validated ledger. If not present, the ticket can only be consumed by the issuing account.</p>
 <p><em>Corner Case:</em> It is possible that two or more transactions reference the same ticket and that both go into the same consensus set. During final application of transactions from the consensus set at most one of these transactions may succeed; others must fail with the indication that the ticket has been consumed.</p>
 <p><em>Reserve:</em> While a ticket is outstanding, it should count against the reserve of the <em>issuer</em>.</p>
-<p><a class="anchor" id="autotoc_md120"></a></p><h5>Issuance</h5>
+<p><a class="anchor" id="autotoc_md148"></a></p><h5>Issuance</h5>
 <p>We should decide whether, in the case of multi-signature accounts, any single authorized signer can issue a ticket on the multi-signature accounts' behalf. This approach has both advantages and disadvantages.</p>
 <p>Advantages include:</p>
 <ul>
@@ -188,9 +188,9 @@ Specifics</h3>
 <li>Special-case logic for authorizing tickets on multi-sign accounts.</li>
 </ul>
 <p>I believe that the disadvantages outweigh the advantages, but debate is welcome.</p>
-<h3><a class="anchor" id="autotoc_md121"></a>
+<h3><a class="anchor" id="autotoc_md149"></a>
 CreateTicket</h3>
-<h3><a class="anchor" id="autotoc_md122"></a>
+<h3><a class="anchor" id="autotoc_md150"></a>
 CancelTicket</h3>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->

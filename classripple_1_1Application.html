@@ -138,10 +138,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aeb96811d5ac7f90cf0736a5874aa55e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3bac0654cf455d226f5c658e6b532d0f"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1CollectorManager.html">CollectorManager</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a3bac0654cf455d226f5c658e6b532d0f">getCollectorManager</a> ()=0</td></tr>
 <tr class="separator:a3bac0654cf455d226f5c658e6b532d0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae7071a6903e27baf9d543b9964b83e39"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1Family.html">Family</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#ae7071a6903e27baf9d543b9964b83e39">family</a> ()=0</td></tr>
-<tr class="separator:ae7071a6903e27baf9d543b9964b83e39"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4ce54999168a8582d53ef1308e1c72ca"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1Family.html">Family</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a4ce54999168a8582d53ef1308e1c72ca">shardFamily</a> ()=0</td></tr>
-<tr class="separator:a4ce54999168a8582d53ef1308e1c72ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26ccdf06f25ceadec7894dd5f8da7eab"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1Family.html">Family</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a26ccdf06f25ceadec7894dd5f8da7eab">getNodeFamily</a> ()=0</td></tr>
+<tr class="separator:a26ccdf06f25ceadec7894dd5f8da7eab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7019a7ed92a7a68f92f0d20fb46de0cc"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1Family.html">Family</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a7019a7ed92a7a68f92f0d20fb46de0cc">getShardFamily</a> ()=0</td></tr>
+<tr class="separator:a7019a7ed92a7a68f92f0d20fb46de0cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a280004d4cce56d8f1ec4664950aa58d4"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1TimeKeeper.html">TimeKeeper</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a280004d4cce56d8f1ec4664950aa58d4">timeKeeper</a> ()=0</td></tr>
 <tr class="separator:a280004d4cce56d8f1ec4664950aa58d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a860be08979e27d8c6f37f722f996ba6c"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1JobQueue.html">JobQueue</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a860be08979e27d8c6f37f722f996ba6c">getJobQueue</a> ()=0</td></tr>
@@ -330,7 +330,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02387">2387</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02209">2209</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -686,8 +686,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="ae7071a6903e27baf9d543b9964b83e39"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae7071a6903e27baf9d543b9964b83e39">&#9670;&nbsp;</a></span>family()</h2>
+<a id="a26ccdf06f25ceadec7894dd5f8da7eab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a26ccdf06f25ceadec7894dd5f8da7eab">&#9670;&nbsp;</a></span>getNodeFamily()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -696,7 +696,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="el" href="classripple_1_1Family.html">Family</a>&amp; ripple::Application::family </td>
+          <td class="memname">virtual <a class="el" href="classripple_1_1Family.html">Family</a>&amp; ripple::Application::getNodeFamily </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -709,12 +709,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1ApplicationImp.html#aba3d1a6dcd750fb57497dca3097e265b">ripple::ApplicationImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1ApplicationImp.html#a20eeeaedb22fca4eafc2140ad10bcbf4">ripple::ApplicationImp</a>.</p>
 
 </div>
 </div>
-<a id="a4ce54999168a8582d53ef1308e1c72ca"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4ce54999168a8582d53ef1308e1c72ca">&#9670;&nbsp;</a></span>shardFamily()</h2>
+<a id="a7019a7ed92a7a68f92f0d20fb46de0cc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7019a7ed92a7a68f92f0d20fb46de0cc">&#9670;&nbsp;</a></span>getShardFamily()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -723,7 +723,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="el" href="classripple_1_1Family.html">Family</a>* ripple::Application::shardFamily </td>
+          <td class="memname">virtual <a class="el" href="classripple_1_1Family.html">Family</a>* ripple::Application::getShardFamily </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -736,7 +736,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1ApplicationImp.html#ad4644d6b370c473e9ecba706ca73253d">ripple::ApplicationImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1ApplicationImp.html#a22fc20f137d73a8d64c2793adb61873c">ripple::ApplicationImp</a>.</p>
 
 </div>
 </div>

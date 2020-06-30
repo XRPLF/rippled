@@ -70,9 +70,9 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
+<a href="#pri-static-methods">Static Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="#pri-static-attribs">Static Private Attributes</a> &#124;
-<a href="#friends">Friends</a> &#124;
 <a href="classripple_1_1SHAMapInnerNode-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">ripple::SHAMapInnerNode Class Reference</div>  </div>
@@ -177,8 +177,14 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:ab303977d6b32547eb9cb12bb203b62fe"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapAbstractNode.html#ab303977d6b32547eb9cb12bb203b62fe">make</a> (<a class="el" href="classripple_1_1Slice.html">Slice</a> const &amp;rawNode, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq, <a class="el" href="namespaceripple.html#ac8683dfc227ea8c196fc4e4f2080e36d">SHANodeFormat</a> format, <a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;hash, bool hashValid, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> const &amp;id=<a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a>{})</td></tr>
-<tr class="separator:ab303977d6b32547eb9cb12bb203b62fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b6c4bfbe8c3365eabe572cdcbb0a89a"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapInnerNode.html#a2b6c4bfbe8c3365eabe572cdcbb0a89a">makeFullInner</a> (<a class="el" href="classripple_1_1Slice.html">Slice</a> data, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq, <a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;hash, bool hashValid)</td></tr>
+<tr class="separator:a2b6c4bfbe8c3365eabe572cdcbb0a89a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9efec4c7630be19cbe06cdadbd9e082a"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapInnerNode.html#a9efec4c7630be19cbe06cdadbd9e082a">makeCompressedInner</a> (<a class="el" href="classripple_1_1Slice.html">Slice</a> data, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq)</td></tr>
+<tr class="separator:a9efec4c7630be19cbe06cdadbd9e082a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a09b930438f02ca9b5279cbfd78f5b037"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapAbstractNode.html#a09b930438f02ca9b5279cbfd78f5b037">makeFromPrefix</a> (<a class="el" href="classripple_1_1Slice.html">Slice</a> rawNode, <a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;hash)</td></tr>
+<tr class="separator:a09b930438f02ca9b5279cbfd78f5b037"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1ff32f1526fc282631db5877441ed798"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapAbstractNode.html#a1ff32f1526fc282631db5877441ed798">makeFromWire</a> (<a class="el" href="classripple_1_1Slice.html">Slice</a> rawNode)</td></tr>
+<tr class="separator:a1ff32f1526fc282631db5877441ed798"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -188,6 +194,15 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:ab06fd22b6fadd92aedeb8a9f3bef273a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4a3f326fdcbc05976d4fa56cc03d33e0"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapAbstractNode.html#a4a3f326fdcbc05976d4fa56cc03d33e0">mSeq</a></td></tr>
 <tr class="separator:a4a3f326fdcbc05976d4fa56cc03d33e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
+Static Private Member Functions</h2></td></tr>
+<tr class="memitem:acc24498d7f31afcf983f2b1584231239"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapAbstractNode.html#acc24498d7f31afcf983f2b1584231239">makeTransaction</a> (<a class="el" href="classripple_1_1Slice.html">Slice</a> data, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq, <a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;hash, bool hashValid)</td></tr>
+<tr class="separator:acc24498d7f31afcf983f2b1584231239"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4774d63ae48621eb60f20cf3cb2cca7c"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapAbstractNode.html#a4774d63ae48621eb60f20cf3cb2cca7c">makeAccountState</a> (<a class="el" href="classripple_1_1Slice.html">Slice</a> data, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq, <a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;hash, bool hashValid)</td></tr>
+<tr class="separator:a4774d63ae48621eb60f20cf3cb2cca7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acbfc9766fe96d2cc300ff5ab29b033be"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapAbstractNode.html#acbfc9766fe96d2cc300ff5ab29b033be">makeTransactionWithMeta</a> (<a class="el" href="classripple_1_1Slice.html">Slice</a> data, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq, <a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;hash, bool hashValid)</td></tr>
+<tr class="separator:acbfc9766fe96d2cc300ff5ab29b033be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -204,15 +219,10 @@ Private Attributes</h2></td></tr>
 Static Private Attributes</h2></td></tr>
 <tr class="memitem:ade4fdfad9804690e890a095c9e0cc089"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapInnerNode.html#ade4fdfad9804690e890a095c9e0cc089">childLock</a></td></tr>
 <tr class="separator:ade4fdfad9804690e890a095c9e0cc089"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
-Friends</h2></td></tr>
-<tr class="memitem:a4e00bf0adf51fb3de9d62162f74efc91"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1SHAMapInnerNode.html#a4e00bf0adf51fb3de9d62162f74efc91">SHAMapAbstractNode::make</a> (<a class="el" href="classripple_1_1Slice.html">Slice</a> const &amp;rawNode, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq, <a class="el" href="namespaceripple.html#ac8683dfc227ea8c196fc4e4f2080e36d">SHANodeFormat</a> format, <a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;hash, bool hashValid, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> const &amp;id)</td></tr>
-<tr class="separator:a4e00bf0adf51fb3de9d62162f74efc91"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00189">189</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00207">207</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 </div><h2 class="groupheader">Member Enumeration Documentation</h2>
 <a id="a6cdeae87f96a46b976f2e70e985d4b0f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6cdeae87f96a46b976f2e70e985d4b0f">&#9670;&nbsp;</a></span>TNType</h2>
@@ -262,7 +272,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00370">370</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00384">384</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>
@@ -312,7 +322,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00474">474</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00473">473</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
 
 </div>
 </div>
@@ -332,7 +342,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00376">376</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00390">390</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>
@@ -351,7 +361,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00480">480</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00479">479</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
 
 </div>
 </div>
@@ -371,7 +381,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00382">382</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00396">396</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>
@@ -401,7 +411,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00544">544</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00543">543</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
 
 </div>
 </div>
@@ -431,7 +441,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00563">563</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00562">562</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
 
 </div>
 </div>
@@ -451,7 +461,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00577">577</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00576">576</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
 
 </div>
 </div>
@@ -471,7 +481,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00587">587</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00586">586</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
 
 </div>
 </div>
@@ -509,7 +519,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00597">597</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00596">596</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
 
 </div>
 </div>
@@ -529,7 +539,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00389">389</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00403">403</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>
@@ -549,7 +559,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00395">395</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00409">409</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>
@@ -578,7 +588,7 @@ Friends</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1SHAMapAbstractNode.html#ac47161ee86963446808588137d0b1472">ripple::SHAMapAbstractNode</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00296">296</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00295">295</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
 
 </div>
 </div>
@@ -597,7 +607,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00315">315</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00314">314</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
 
 </div>
 </div>
@@ -637,7 +647,7 @@ Friends</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1SHAMapAbstractNode.html#a979678a54d6b342496c0fcc0680f6a49">ripple::SHAMapAbstractNode</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00355">355</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00354">354</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
 
 </div>
 </div>
@@ -667,7 +677,7 @@ Friends</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1SHAMapAbstractNode.html#a8159df4fd7a8af32f5ae7343273d9a00">ripple::SHAMapAbstractNode</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00504">504</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00503">503</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
 
 </div>
 </div>
@@ -696,7 +706,7 @@ Friends</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1SHAMapAbstractNode.html#a8b384d5537ba8e9102a107beda5b2dfe">ripple::SHAMapAbstractNode</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00621">621</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00620">620</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
 
 </div>
 </div>
@@ -726,7 +736,95 @@ Friends</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1SHAMapAbstractNode.html#a561ac9070543a07093078738aa758089">ripple::SHAMapAbstractNode</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00635">635</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00634">634</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a2b6c4bfbe8c3365eabe572cdcbb0a89a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b6c4bfbe8c3365eabe572cdcbb0a89a">&#9670;&nbsp;</a></span>makeFullInner()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a> &gt; ripple::SHAMapInnerNode::makeFullInner </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Slice.html">Slice</a>&#160;</td>
+          <td class="paramname"><em>data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
+          <td class="paramname"><em>seq</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;&#160;</td>
+          <td class="paramname"><em>hash</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>hashValid</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00165">165</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a9efec4c7630be19cbe06cdadbd9e082a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9efec4c7630be19cbe06cdadbd9e082a">&#9670;&nbsp;</a></span>makeCompressedInner()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a> &gt; ripple::SHAMapInnerNode::makeCompressedInner </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Slice.html">Slice</a>&#160;</td>
+          <td class="paramname"><em>data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
+          <td class="paramname"><em>seq</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00194">194</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
 
 </div>
 </div>
@@ -753,7 +851,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00319">319</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00333">333</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>
@@ -781,7 +879,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00325">325</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00339">339</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>
@@ -808,7 +906,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00331">331</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00345">345</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>
@@ -835,7 +933,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00337">337</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00351">351</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>
@@ -862,7 +960,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00343">343</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00357">357</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>
@@ -889,7 +987,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00350">350</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00364">364</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>
@@ -916,7 +1014,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00356">356</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00370">370</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>
@@ -944,12 +1042,12 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00362">362</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00376">376</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>
-<a id="ab303977d6b32547eb9cb12bb203b62fe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab303977d6b32547eb9cb12bb203b62fe">&#9670;&nbsp;</a></span>make()</h2>
+<a id="a09b930438f02ca9b5279cbfd78f5b037"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a09b930438f02ca9b5279cbfd78f5b037">&#9670;&nbsp;</a></span>makeFromPrefix()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -958,46 +1056,16 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a> &gt; ripple::SHAMapAbstractNode::make </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a> &gt; ripple::SHAMapAbstractNode::makeFromPrefix </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Slice.html">Slice</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Slice.html">Slice</a>&#160;</td>
           <td class="paramname"><em>rawNode</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
-          <td class="paramname"><em>seq</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#ac8683dfc227ea8c196fc4e4f2080e36d">SHANodeFormat</a>&#160;</td>
-          <td class="paramname"><em>format</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
           <td class="paramtype"><a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;&#160;</td>
-          <td class="paramname"><em>hash</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>hashValid</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
-          <td class="paramname"><em>j</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> const &amp;&#160;</td>
-          <td class="paramname"><em>id</em> = <code><a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a>{}</code>&#160;</td>
+          <td class="paramname"><em>hash</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1012,13 +1080,12 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00079">79</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00258">258</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
 
 </div>
 </div>
-<h2 class="groupheader">Friends And Related Function Documentation</h2>
-<a id="a4e00bf0adf51fb3de9d62162f74efc91"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4e00bf0adf51fb3de9d62162f74efc91">&#9670;&nbsp;</a></span>SHAMapAbstractNode::make</h2>
+<a id="a1ff32f1526fc282631db5877441ed798"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ff32f1526fc282631db5877441ed798">&#9670;&nbsp;</a></span>makeFromWire()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1027,22 +1094,44 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a>&gt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html#ab303977d6b32547eb9cb12bb203b62fe">SHAMapAbstractNode::make</a> </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a> &gt; ripple::SHAMapAbstractNode::makeFromWire </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Slice.html">Slice</a> const &amp;&#160;</td>
-          <td class="paramname"><em>rawNode</em>, </td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Slice.html">Slice</a>&#160;</td>
+          <td class="paramname"><em>rawNode</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00224">224</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+
+</div>
+</div>
+<a id="acc24498d7f31afcf983f2b1584231239"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acc24498d7f31afcf983f2b1584231239">&#9670;&nbsp;</a></span>makeTransaction()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a> &gt; ripple::SHAMapAbstractNode::makeTransaction </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Slice.html">Slice</a>&#160;</td>
+          <td class="paramname"><em>data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
           <td class="paramname"><em>seq</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#ac8683dfc227ea8c196fc4e4f2080e36d">SHANodeFormat</a>&#160;</td>
-          <td class="paramname"><em>format</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1054,19 +1143,7 @@ Friends</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>hashValid</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
-          <td class="paramname"><em>j</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> const &amp;&#160;</td>
-          <td class="paramname"><em>id</em>&#160;</td>
+          <td class="paramname"><em>hashValid</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1076,10 +1153,112 @@ Friends</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00079">79</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a4774d63ae48621eb60f20cf3cb2cca7c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4774d63ae48621eb60f20cf3cb2cca7c">&#9670;&nbsp;</a></span>makeAccountState()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a> &gt; ripple::SHAMapAbstractNode::makeAccountState </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Slice.html">Slice</a>&#160;</td>
+          <td class="paramname"><em>data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
+          <td class="paramname"><em>seq</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;&#160;</td>
+          <td class="paramname"><em>hash</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>hashValid</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00131">131</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
+
+</div>
+</div>
+<a id="acbfc9766fe96d2cc300ff5ab29b033be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acbfc9766fe96d2cc300ff5ab29b033be">&#9670;&nbsp;</a></span>makeTransactionWithMeta()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapAbstractNode.html">SHAMapAbstractNode</a> &gt; ripple::SHAMapAbstractNode::makeTransactionWithMeta </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Slice.html">Slice</a>&#160;</td>
+          <td class="paramname"><em>data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
+          <td class="paramname"><em>seq</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapHash.html">SHAMapHash</a> const &amp;&#160;</td>
+          <td class="paramname"><em>hash</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>hashValid</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8cpp_source.html#l00100">100</a> of file <a class="el" href="SHAMapTreeNode_8cpp_source.html">SHAMapTreeNode.cpp</a>.</p>
 
 </div>
 </div>
@@ -1104,7 +1283,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00191">191</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00209">209</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>
@@ -1128,7 +1307,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00192">192</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00210">210</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>
@@ -1152,7 +1331,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00193">193</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00211">211</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>
@@ -1176,7 +1355,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00194">194</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00212">212</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>
@@ -1200,7 +1379,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00196">196</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapTreeNode_8h_source.html#l00214">214</a> of file <a class="el" href="SHAMapTreeNode_8h_source.html">SHAMapTreeNode.h</a>.</p>
 
 </div>
 </div>

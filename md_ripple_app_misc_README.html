@@ -68,7 +68,7 @@ $(function() {
 <div class="textblock"><p>The Ripple payment protocol enforces a fee schedule expressed in units of the native currency, XRP. Fees for transactions are paid directly from the account owner. There are also reserve requirements for each item that occupies storage in the ledger. The reserve fee schedule contains both a per-account reserve, and a per-owned-item reserve. The items an account may own include active offers, trust lines, and tickets.</p>
 <p>Validators may vote to increase fees if they feel that the network is charging too little. They may also vote to decrease fees if the fees are too costly relative to the value the network provides. One common case where a validator may want to change fees is when the value of the native currency XRP fluctuates relative to other currencies.</p>
 <p>The fee voting mechanism takes place every 256 ledgers ("voting ledgers"). In a voting ledger, each validator takes a position on what they think the fees should be. The consensus process converges on the majority position, and in subsequent ledgers a new fee schedule is enacted.</p>
-<h1><a class="anchor" id="autotoc_md89"></a>
+<h1><a class="anchor" id="autotoc_md117"></a>
 Consensus</h1>
 <p>The Ripple consensus algorithm allows distributed participants to arrive at the same answer for yes/no questions. The canonical case for consensus is whether or not a particular transaction is included in the ledger. Fees present a more difficult challenge, since the decision on the new fee is not a yes or no question.</p>
 <p>To convert validators' positions on fees into a yes or no question that can be converged in the consensus process, the following algorithm is used:</p>
@@ -79,11 +79,11 @@ Consensus</h1>
 <li>The consensus process is applied to these fee-setting transactions as normal. Each transaction is either included in the ledger or not. In most cases, one fee setting transaction will make it in while the others are rejected. In some rare cases more than one fee setting transaction will make it in. The last one to be applied will take effect. This is harmless since a majority of validators still agreed on it.</li>
 <li>After the voting ledger has been validated, future pseudo transactions before the next voting ledger are rejected as fee setting transactions may only appear in voting ledgers.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md90"></a>
+<h1><a class="anchor" id="autotoc_md118"></a>
 Configuration</h1>
 <p>A validating instance of rippled uses information in the configuration file to determine how it wants to vote on the fee schedule. It is the responsibility of the administrator to set these values.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md92"></a>
+<h1><a class="anchor" id="autotoc_md120"></a>
 Amendment</h1>
 <p>An Amendment is a new or proposed change to a ledger rule. Ledger rules affect transaction processing and consensus; peers must use the same set of rules for consensus to succeed, otherwise different instances of rippled will get different results. Amendments can be almost anything but they must be accepted by a network majority through a consensus process before they are utilized. An Amendment must receive at least an 80% approval rate from validating nodes for a period of two weeks before being accepted. The following example outlines the process of an Amendment from its conception to approval and usage.</p>
 <ul>
@@ -99,7 +99,7 @@ Amendment</h1>
 <p>If an amendment holds majority status for two weeks, validators will introduce a pseudo-transaction to enable the amendment.</p>
 <p>All amendments are assumed to be critical and irreversible. Thus there is no mechanism to disable or revoke an amendment, nor is there a way for a server to operate while an amendment it does not understand is enabled.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md94"></a>
+<h1><a class="anchor" id="autotoc_md122"></a>
 SHAMapStore: Online Delete</h1>
 <p>Optional online deletion happens through the SHAMapStore. Records are deleted from disk based on ledger sequence number. These records reside in the key-value database as well as in the SQLite ledger and transaction databases. Without online deletion storage usage grows without bounds. It can only be pruned by stopping, manually deleting data, and restarting the server. Online deletion requires less operator intervention to manage the server.</p>
 <p>The main mechanism to delete data from the key-value database is to keep two databases open at all times. One database has all writes directed to it. The other database has recent archival data from just prior to that from the current writable database. Upon rotation, the archival database is deleted. The writable database becomes archival, and a brand new database becomes writable. To ensure that no necessary data for transaction processing is lost, a variety of steps occur, including copying the contents of an entire ledger's account state map, clearing caches, and copying the contents of (freshening) other caches.</p>

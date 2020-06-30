@@ -1,5 +1,0 @@
-<map id="ripple::test::Server_test::CaptureSink" name="ripple::test::Server_test::CaptureSink">
-<area shape="rect" id="node1" title="sink for writing all log messages to a stringstream" alt="" coords="89,95,231,136"/>
-<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,5,152,32"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_stringstream.html" title="STL class." alt="" coords="176,5,309,32"/>
-</map>

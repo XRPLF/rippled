@@ -1,0 +1,13 @@
+<map id="ripple::AmendmentSet" name="ripple::AmendmentSet">
+<area shape="rect" id="node1" title="The status of all amendments requested in a given window." alt="" coords="1783,45,1951,72"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="943,5,1095,61"/>
+<area shape="rect" id="node3" href="$classripple_1_1base__uint.html" title=" " alt="" coords="487,78,628,119"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_set.html" title=" " alt="" coords="712,71,919,127"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_set.html" title=" " alt="" coords="741,151,890,207"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,47,389,89"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,55,108,81"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,115,349,141"/>
+<area shape="rect" id="node7" href="$classripple_1_1Rules.html" title="Rules controlling protocol behavior." alt="" coords="1588,75,1691,101"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="1328,82,1499,123"/>
+<area shape="rect" id="node9" href="$classripple_1_1Rules_1_1Impl.html" title=" " alt="" coords="1119,89,1257,116"/>
+</map>

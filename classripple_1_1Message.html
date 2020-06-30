@@ -123,9 +123,9 @@ Private Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:ad48f5defd186158ffdba5bb3e366545a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#ad48f5defd186158ffdba5bb3e366545a">setHeader</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> *in, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> payloadBytes, int type, <a class="el" href="namespaceripple_1_1compression.html#ac4e4ca1236f472d7e218c3f69cd8605b">Algorithm</a> comprAlgorithm, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uncompressedBytes)</td></tr>
-<tr class="memdesc:ad48f5defd186158ffdba5bb3e366545a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the payload header.  <a href="classripple_1_1Message.html#ad48f5defd186158ffdba5bb3e366545a">More...</a><br /></td></tr>
-<tr class="separator:ad48f5defd186158ffdba5bb3e366545a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a53f6b565ba4f354eeb13f01dbd041848"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#a53f6b565ba4f354eeb13f01dbd041848">setHeader</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> *in, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> payloadBytes, int type, <a class="el" href="namespaceripple_1_1compression.html#ac4e4ca1236f472d7e218c3f69cd8605b">Algorithm</a> compression, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uncompressedBytes)</td></tr>
+<tr class="memdesc:a53f6b565ba4f354eeb13f01dbd041848"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the payload header.  <a href="classripple_1_1Message.html#a53f6b565ba4f354eeb13f01dbd041848">More...</a><br /></td></tr>
+<tr class="separator:a53f6b565ba4f354eeb13f01dbd041848"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad34a23eec4049e1e4206ad6dbb4e3c8d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#ad34a23eec4049e1e4206ad6dbb4e3c8d">compress</a> ()</td></tr>
 <tr class="memdesc:ad34a23eec4049e1e4206ad6dbb4e3c8d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Try to compress the payload.  <a href="classripple_1_1Message.html#ad34a23eec4049e1e4206ad6dbb4e3c8d">More...</a><br /></td></tr>
 <tr class="separator:ad34a23eec4049e1e4206ad6dbb4e3c8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -262,7 +262,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Payload buffer </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00153">153</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00177">177</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
 
 </div>
 </div>
@@ -287,8 +287,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="ad48f5defd186158ffdba5bb3e366545a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad48f5defd186158ffdba5bb3e366545a">&#9670;&nbsp;</a></span>setHeader()</h2>
+<a id="a53f6b565ba4f354eeb13f01dbd041848"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a53f6b565ba4f354eeb13f01dbd041848">&#9670;&nbsp;</a></span>setHeader()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -318,7 +318,7 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="namespaceripple_1_1compression.html#ac4e4ca1236f472d7e218c3f69cd8605b">Algorithm</a>&#160;</td>
-          <td class="paramname"><em>comprAlgorithm</em>, </td>
+          <td class="paramname"><em>compression</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -340,20 +340,35 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Set the payload header. </p>
-<p>Set payload header Uncompressed message header 47-42 Set to 0 41-16 Payload size 15-0 <a class="el" href="classripple_1_1Message.html">Message</a> Type Compressed message header 79 Set to 0, indicates the message is compressed 78-76 Compression algorithm, value 1-7.</p>
+<p>Set payload header.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">in</td><td>Pointer to the payload </td></tr>
     <tr><td class="paramname">payloadBytes</td><td>Size of the payload excluding the header size </td></tr>
     <tr><td class="paramname">type</td><td>Protocol message type </td></tr>
-    <tr><td class="paramname">comprAlgorithm</td><td>Compression algorithm used in compression, currently LZ4 only. If None then the message is uncompressed. </td></tr>
+    <tr><td class="paramname">compression</td><td>Compression algorithm used in compression, currently LZ4 only. If None then the message is uncompressed. </td></tr>
     <tr><td class="paramname">uncompressedBytes</td><td>Size of the uncompressed message</td></tr>
   </table>
   </dd>
 </dl>
-<p>Set to 1 to indicate LZ4 compression 75-74 Set to 0 73-48 Payload size 47-32 <a class="el" href="classripple_1_1Message.html">Message</a> Type 31-0 Uncompressed message size </p>
+<p>The header is a variable-sized structure that contains information about the type of the message and the length and encoding of the payload.</p>
+<p>The first bit determines whether a message is compressed or uncompressed; for compressed messages, the next three bits identify the compression algorithm.</p>
+<p>All multi-byte values are represented in big endian.</p>
+<p>For uncompressed messages (6 bytes), numbering bits from left to right: </p><pre class="fragment">- The first 6 bits are set to 0.
+- The next 26 bits represent the payload size.
+- The remaining 16 bits represent the message type.
+</pre><p>For compressed messages (10 bytes), numbering bits from left to right: </p><pre class="fragment">- The first 32 bits, together, represent the compression algorithm
+  and payload size:
+    - The first bit is set to 1 to indicate the message is compressed.
+    - The next 3 bits indicate the compression algorithm.
+    - The next 2 bits are reserved at this time and set to 0.
+    - The remaining 26 bits represent the payload size.
+- The next 16 bits represent the message type.
+- The remaining 32 bits are the uncompressed message size.
+</pre><p>The maximum size of a message at this time is 64 MB. Messages larger than this will be dropped and the recipient may, at its option, sever the link.</p>
+<dl class="section note"><dt>Note</dt><dd>While nominally a part of the wire protocol, the framing is subject to change; future versions of the code may negotiate the use of substantially different framing. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00123">123</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00147">147</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
 
 </div>
 </div>
@@ -420,7 +435,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Message.html">Message</a> type </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00167">167</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00191">191</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
 
 </div>
 </div>

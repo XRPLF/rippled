@@ -1,4 +1,0 @@
-<map id="ripple::test::Server_test::CaptureSink" name="ripple::test::Server_test::CaptureSink">
-<area shape="rect" id="node1" title="sink for writing all log messages to a stringstream" alt="" coords="7,80,150,121"/>
-<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,5,152,32"/>
-</map>

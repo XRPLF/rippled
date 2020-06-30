@@ -289,91 +289,90 @@ $(function() {
 <div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;            BEAST_EXPECTS(</div>
 <div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;                feature.isMember(jss::validations),</div>
 <div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;                feature[jss::name].asString() + <span class="stringliteral">&quot; validations&quot;</span>);</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;            BEAST_EXPECTS(</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;                feature.isMember(jss::vote),</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;                feature[jss::name].asString() + <span class="stringliteral">&quot; vote&quot;</span>);</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;            BEAST_EXPECT(feature[jss::vote] == 256);</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;            BEAST_EXPECT(feature[jss::majority] == 2740);</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;        }</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    }</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160; </div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00230"></a><span class="lineno"><a class="line" href="classripple_1_1Feature__test.html#ace6fc51a6c17a8aa01ead3e0db1b5b25">  230</a></span>&#160;    <a class="code" href="classripple_1_1Feature__test.html#ace6fc51a6c17a8aa01ead3e0db1b5b25">testVeto</a>()</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    {</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;        testcase(<span class="stringliteral">&quot;Veto&quot;</span>);</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160; </div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;        Env env{*<span class="keyword">this</span>, <a class="code" href="classripple_1_1FeatureBitset.html">FeatureBitset</a>(<a class="code" href="namespaceripple.html#a20fc4ac346fe042a5585c2107b0ca91b">featureMultiSignReserve</a>)};</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160; </div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        <span class="keyword">auto</span> jrr = env.rpc(<span class="stringliteral">&quot;feature&quot;</span>, <span class="stringliteral">&quot;MultiSignReserve&quot;</span>)[jss::result];</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECTS(jrr[jss::status] == jss::success, <span class="stringliteral">&quot;status&quot;</span>))</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;        jrr.removeMember(jss::status);</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(jrr.size() == 1))</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;        <span class="keyword">auto</span> feature = *(jrr.begin());</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;        BEAST_EXPECTS(feature[jss::name] == <span class="stringliteral">&quot;MultiSignReserve&quot;</span>, <span class="stringliteral">&quot;name&quot;</span>);</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;        BEAST_EXPECTS(!feature[jss::vetoed].asBool(), <span class="stringliteral">&quot;vetoed&quot;</span>);</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160; </div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;feature&quot;</span>, <span class="stringliteral">&quot;MultiSignReserve&quot;</span>, <span class="stringliteral">&quot;reject&quot;</span>)[jss::result];</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECTS(jrr[jss::status] == jss::success, <span class="stringliteral">&quot;status&quot;</span>))</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        jrr.removeMember(jss::status);</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(jrr.size() == 1))</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;        feature = *(jrr.begin());</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        BEAST_EXPECTS(feature[jss::name] == <span class="stringliteral">&quot;MultiSignReserve&quot;</span>, <span class="stringliteral">&quot;name&quot;</span>);</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;        BEAST_EXPECTS(feature[jss::vetoed].asBool(), <span class="stringliteral">&quot;vetoed&quot;</span>);</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160; </div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;feature&quot;</span>, <span class="stringliteral">&quot;MultiSignReserve&quot;</span>, <span class="stringliteral">&quot;accept&quot;</span>)[jss::result];</div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECTS(jrr[jss::status] == jss::success, <span class="stringliteral">&quot;status&quot;</span>))</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;        jrr.removeMember(jss::status);</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(jrr.size() == 1))</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;            <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;        feature = *(jrr.begin());</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;        BEAST_EXPECTS(feature[jss::name] == <span class="stringliteral">&quot;MultiSignReserve&quot;</span>, <span class="stringliteral">&quot;name&quot;</span>);</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;        BEAST_EXPECTS(!feature[jss::vetoed].asBool(), <span class="stringliteral">&quot;vetoed&quot;</span>);</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160; </div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;        <span class="comment">// anything other than accept or reject is an error</span></div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;feature&quot;</span>, <span class="stringliteral">&quot;MultiSignReserve&quot;</span>, <span class="stringliteral">&quot;maybe&quot;</span>);</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;        BEAST_EXPECT(jrr[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;        BEAST_EXPECT(jrr[jss::error_message] == <span class="stringliteral">&quot;Invalid parameters.&quot;</span>);</div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    }</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160; </div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00275"></a><span class="lineno"><a class="line" href="classripple_1_1Feature__test.html#aef5ad0913752092b9e510ed66c994d0d">  275</a></span>&#160;    <a class="code" href="classripple_1_1Feature__test.html#aef5ad0913752092b9e510ed66c994d0d">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;        <a class="code" href="classripple_1_1Feature__test.html#a747c62200510dba0247e3753660cd483">testNoParams</a>();</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;        <a class="code" href="classripple_1_1Feature__test.html#adb528273f142e373f46fc1ff425adcb6">testSingleFeature</a>();</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;        <a class="code" href="classripple_1_1Feature__test.html#a3848b0f9787023de03f21b616c7b5107">testInvalidFeature</a>();</div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;        <a class="code" href="classripple_1_1Feature__test.html#a919d181d3bacbea70f034c882249f7a9">testNonAdmin</a>();</div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;        <a class="code" href="classripple_1_1Feature__test.html#a96c471cd11f8d88aad197378eb6f41ad">testSomeEnabled</a>();</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;        <a class="code" href="classripple_1_1Feature__test.html#aeeed6d653837e07c00c8d9c6de5a10dc">testWithMajorities</a>();</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;        <a class="code" href="classripple_1_1Feature__test.html#ace6fc51a6c17a8aa01ead3e0db1b5b25">testVeto</a>();</div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    }</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;};</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160; </div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(Feature, rpc, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160; </div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;            BEAST_EXPECT(feature[jss::count] == 1);</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;            BEAST_EXPECT(feature[jss::threshold] == 1);</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;            BEAST_EXPECT(feature[jss::validations] == 1);</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;            BEAST_EXPECT(feature[jss::majority] == 2740);</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;        }</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;    }</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160; </div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00229"></a><span class="lineno"><a class="line" href="classripple_1_1Feature__test.html#ace6fc51a6c17a8aa01ead3e0db1b5b25">  229</a></span>&#160;    <a class="code" href="classripple_1_1Feature__test.html#ace6fc51a6c17a8aa01ead3e0db1b5b25">testVeto</a>()</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;    {</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;        testcase(<span class="stringliteral">&quot;Veto&quot;</span>);</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160; </div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;        Env env{*<span class="keyword">this</span>, <a class="code" href="classripple_1_1FeatureBitset.html">FeatureBitset</a>(<a class="code" href="namespaceripple.html#a20fc4ac346fe042a5585c2107b0ca91b">featureMultiSignReserve</a>)};</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160; </div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;        <span class="keyword">auto</span> jrr = env.rpc(<span class="stringliteral">&quot;feature&quot;</span>, <span class="stringliteral">&quot;MultiSignReserve&quot;</span>)[jss::result];</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECTS(jrr[jss::status] == jss::success, <span class="stringliteral">&quot;status&quot;</span>))</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;        jrr.removeMember(jss::status);</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(jrr.size() == 1))</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;        <span class="keyword">auto</span> feature = *(jrr.begin());</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;        BEAST_EXPECTS(feature[jss::name] == <span class="stringliteral">&quot;MultiSignReserve&quot;</span>, <span class="stringliteral">&quot;name&quot;</span>);</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;        BEAST_EXPECTS(!feature[jss::vetoed].asBool(), <span class="stringliteral">&quot;vetoed&quot;</span>);</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160; </div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;feature&quot;</span>, <span class="stringliteral">&quot;MultiSignReserve&quot;</span>, <span class="stringliteral">&quot;reject&quot;</span>)[jss::result];</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECTS(jrr[jss::status] == jss::success, <span class="stringliteral">&quot;status&quot;</span>))</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;        jrr.removeMember(jss::status);</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(jrr.size() == 1))</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        feature = *(jrr.begin());</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;        BEAST_EXPECTS(feature[jss::name] == <span class="stringliteral">&quot;MultiSignReserve&quot;</span>, <span class="stringliteral">&quot;name&quot;</span>);</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        BEAST_EXPECTS(feature[jss::vetoed].asBool(), <span class="stringliteral">&quot;vetoed&quot;</span>);</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160; </div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;feature&quot;</span>, <span class="stringliteral">&quot;MultiSignReserve&quot;</span>, <span class="stringliteral">&quot;accept&quot;</span>)[jss::result];</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECTS(jrr[jss::status] == jss::success, <span class="stringliteral">&quot;status&quot;</span>))</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;        jrr.removeMember(jss::status);</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;        <span class="keywordflow">if</span> (!BEAST_EXPECT(jrr.size() == 1))</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;        feature = *(jrr.begin());</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;        BEAST_EXPECTS(feature[jss::name] == <span class="stringliteral">&quot;MultiSignReserve&quot;</span>, <span class="stringliteral">&quot;name&quot;</span>);</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;        BEAST_EXPECTS(!feature[jss::vetoed].asBool(), <span class="stringliteral">&quot;vetoed&quot;</span>);</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160; </div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;        <span class="comment">// anything other than accept or reject is an error</span></div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;        jrr = env.rpc(<span class="stringliteral">&quot;feature&quot;</span>, <span class="stringliteral">&quot;MultiSignReserve&quot;</span>, <span class="stringliteral">&quot;maybe&quot;</span>);</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;        BEAST_EXPECT(jrr[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;        BEAST_EXPECT(jrr[jss::error_message] == <span class="stringliteral">&quot;Invalid parameters.&quot;</span>);</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;    }</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160; </div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00274"></a><span class="lineno"><a class="line" href="classripple_1_1Feature__test.html#aef5ad0913752092b9e510ed66c994d0d">  274</a></span>&#160;    <a class="code" href="classripple_1_1Feature__test.html#aef5ad0913752092b9e510ed66c994d0d">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;        <a class="code" href="classripple_1_1Feature__test.html#a747c62200510dba0247e3753660cd483">testNoParams</a>();</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;        <a class="code" href="classripple_1_1Feature__test.html#adb528273f142e373f46fc1ff425adcb6">testSingleFeature</a>();</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;        <a class="code" href="classripple_1_1Feature__test.html#a3848b0f9787023de03f21b616c7b5107">testInvalidFeature</a>();</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;        <a class="code" href="classripple_1_1Feature__test.html#a919d181d3bacbea70f034c882249f7a9">testNonAdmin</a>();</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;        <a class="code" href="classripple_1_1Feature__test.html#a96c471cd11f8d88aad197378eb6f41ad">testSomeEnabled</a>();</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;        <a class="code" href="classripple_1_1Feature__test.html#aeeed6d653837e07c00c8d9c6de5a10dc">testWithMajorities</a>();</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;        <a class="code" href="classripple_1_1Feature__test.html#ace6fc51a6c17a8aa01ead3e0db1b5b25">testVeto</a>();</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    }</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;};</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160; </div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(Feature, rpc, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160; </div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_html_ab6b00b336996c0b0a3fe2e8a8d5fa76a"><div class="ttname"><a href="namespaceripple.html#ab6b00b336996c0b0a3fe2e8a8d5fa76a">ripple::getMajorityAmendments</a></div><div class="ttdeci">majorityAmendments_t getMajorityAmendments(ReadView const &amp;view)</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00550">View.cpp:550</a></div></div>
 <div class="ttc" id="aclassripple_1_1Feature__test_html_adb528273f142e373f46fc1ff425adcb6"><div class="ttname"><a href="classripple_1_1Feature__test.html#adb528273f142e373f46fc1ff425adcb6">ripple::Feature_test::testSingleFeature</a></div><div class="ttdeci">void testSingleFeature()</div><div class="ttdef"><b>Definition:</b> <a href="Feature__test_8cpp_source.html#l00059">Feature_test.cpp:59</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a2701412a11b118c19256a4c901db2938"><div class="ttname"><a href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">ripple::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(AccountTxPaging, app, ripple)</div></div>
-<div class="ttc" id="aclassripple_1_1Feature__test_html_ace6fc51a6c17a8aa01ead3e0db1b5b25"><div class="ttname"><a href="classripple_1_1Feature__test.html#ace6fc51a6c17a8aa01ead3e0db1b5b25">ripple::Feature_test::testVeto</a></div><div class="ttdeci">void testVeto()</div><div class="ttdef"><b>Definition:</b> <a href="Feature__test_8cpp_source.html#l00230">Feature_test.cpp:230</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a2af7805d6ffc69b2227309433bccc833"><div class="ttname"><a href="namespaceripple.html#a2af7805d6ffc69b2227309433bccc833">ripple::featureDepositPreauth</a></div><div class="ttdeci">const uint256 featureDepositPreauth</div><div class="ttdef"><b>Definition:</b> <a href="Feature_8cpp_source.html#l00172">Feature.cpp:172</a></div></div>
-<div class="ttc" id="aclassripple_1_1Feature__test_html_aef5ad0913752092b9e510ed66c994d0d"><div class="ttname"><a href="classripple_1_1Feature__test.html#aef5ad0913752092b9e510ed66c994d0d">ripple::Feature_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="Feature__test_8cpp_source.html#l00275">Feature_test.cpp:275</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a549e32c7ae17a01dcd562df1a9679853"><div class="ttname"><a href="namespaceripple.html#a549e32c7ae17a01dcd562df1a9679853">ripple::featureDepositAuth</a></div><div class="ttdeci">const uint256 featureDepositAuth</div><div class="ttdef"><b>Definition:</b> <a href="Feature_8cpp_source.html#l00167">Feature.cpp:167</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a20fc4ac346fe042a5585c2107b0ca91b"><div class="ttname"><a href="namespaceripple.html#a20fc4ac346fe042a5585c2107b0ca91b">ripple::featureMultiSignReserve</a></div><div class="ttdeci">const uint256 featureMultiSignReserve</div><div class="ttdef"><b>Definition:</b> <a href="Feature_8cpp_source.html#l00175">Feature.cpp:175</a></div></div>
+<div class="ttc" id="aclassripple_1_1Feature__test_html_ace6fc51a6c17a8aa01ead3e0db1b5b25"><div class="ttname"><a href="classripple_1_1Feature__test.html#ace6fc51a6c17a8aa01ead3e0db1b5b25">ripple::Feature_test::testVeto</a></div><div class="ttdeci">void testVeto()</div><div class="ttdef"><b>Definition:</b> <a href="Feature__test_8cpp_source.html#l00229">Feature_test.cpp:229</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a2af7805d6ffc69b2227309433bccc833"><div class="ttname"><a href="namespaceripple.html#a2af7805d6ffc69b2227309433bccc833">ripple::featureDepositPreauth</a></div><div class="ttdeci">const uint256 featureDepositPreauth</div><div class="ttdef"><b>Definition:</b> <a href="Feature_8cpp_source.html#l00174">Feature.cpp:174</a></div></div>
+<div class="ttc" id="aclassripple_1_1Feature__test_html_aef5ad0913752092b9e510ed66c994d0d"><div class="ttname"><a href="classripple_1_1Feature__test.html#aef5ad0913752092b9e510ed66c994d0d">ripple::Feature_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="Feature__test_8cpp_source.html#l00274">Feature_test.cpp:274</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a549e32c7ae17a01dcd562df1a9679853"><div class="ttname"><a href="namespaceripple.html#a549e32c7ae17a01dcd562df1a9679853">ripple::featureDepositAuth</a></div><div class="ttdeci">const uint256 featureDepositAuth</div><div class="ttdef"><b>Definition:</b> <a href="Feature_8cpp_source.html#l00169">Feature.cpp:169</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a20fc4ac346fe042a5585c2107b0ca91b"><div class="ttname"><a href="namespaceripple.html#a20fc4ac346fe042a5585c2107b0ca91b">ripple::featureMultiSignReserve</a></div><div class="ttdeci">const uint256 featureMultiSignReserve</div><div class="ttdef"><b>Definition:</b> <a href="Feature_8cpp_source.html#l00177">Feature.cpp:177</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 256 &gt;</a></div></div>
 <div class="ttc" id="aclassripple_1_1Feature__test_html_a96c471cd11f8d88aad197378eb6f41ad"><div class="ttname"><a href="classripple_1_1Feature__test.html#a96c471cd11f8d88aad197378eb6f41ad">ripple::Feature_test::testSomeEnabled</a></div><div class="ttdeci">void testSomeEnabled()</div><div class="ttdef"><b>Definition:</b> <a href="Feature__test_8cpp_source.html#l00116">Feature_test.cpp:116</a></div></div>
 <div class="ttc" id="aclassripple_1_1Feature__test_html"><div class="ttname"><a href="classripple_1_1Feature__test.html">ripple::Feature_test</a></div><div class="ttdef"><b>Definition:</b> <a href="Feature__test_8cpp_source.html#l00027">Feature_test.cpp:27</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html_ad801ed550425382affd197d3dae89e7d"><div class="ttname"><a href="classripple_1_1base__uint.html#ad801ed550425382affd197d3dae89e7d">ripple::base_uint::SetHexExact</a></div><div class="ttdeci">bool SetHexExact(const char *psz)</div><div class="ttdoc">Parse a hex string into a base_uint The string must contain exactly bytes * 2 hex characters and must...</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00370">base_uint.h:370</a></div></div>
 <div class="ttc" id="aclassripple_1_1Feature__test_html_aeeed6d653837e07c00c8d9c6de5a10dc"><div class="ttname"><a href="classripple_1_1Feature__test.html#aeeed6d653837e07c00c8d9c6de5a10dc">ripple::Feature_test::testWithMajorities</a></div><div class="ttdeci">void testWithMajorities()</div><div class="ttdef"><b>Definition:</b> <a href="Feature__test_8cpp_source.html#l00151">Feature_test.cpp:151</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1FeatureBitset_html"><div class="ttname"><a href="classripple_1_1FeatureBitset.html">ripple::FeatureBitset</a></div><div class="ttdef"><b>Definition:</b> <a href="Feature_8h_source.html#l00154">Feature.h:154</a></div></div>
+<div class="ttc" id="aclassripple_1_1FeatureBitset_html"><div class="ttname"><a href="classripple_1_1FeatureBitset.html">ripple::FeatureBitset</a></div><div class="ttdef"><b>Definition:</b> <a href="Feature_8h_source.html#l00155">Feature.h:155</a></div></div>
 <div class="ttc" id="aclassripple_1_1Feature__test_html_a747c62200510dba0247e3753660cd483"><div class="ttname"><a href="classripple_1_1Feature__test.html#a747c62200510dba0247e3753660cd483">ripple::Feature_test::testNoParams</a></div><div class="ttdeci">void testNoParams()</div><div class="ttdef"><b>Definition:</b> <a href="Feature__test_8cpp_source.html#l00030">Feature_test.cpp:30</a></div></div>
 <div class="ttc" id="aclassripple_1_1Feature__test_html_a919d181d3bacbea70f034c882249f7a9"><div class="ttname"><a href="classripple_1_1Feature__test.html#a919d181d3bacbea70f034c882249f7a9">ripple::Feature_test::testNonAdmin</a></div><div class="ttdeci">void testNonAdmin()</div><div class="ttdef"><b>Definition:</b> <a href="Feature__test_8cpp_source.html#l00097">Feature_test.cpp:97</a></div></div>
 <div class="ttc" id="aclassripple_1_1Feature__test_html_a3848b0f9787023de03f21b616c7b5107"><div class="ttname"><a href="classripple_1_1Feature__test.html#a3848b0f9787023de03f21b616c7b5107">ripple::Feature_test::testInvalidFeature</a></div><div class="ttdeci">void testInvalidFeature()</div><div class="ttdef"><b>Definition:</b> <a href="Feature__test_8cpp_source.html#l00084">Feature_test.cpp:84</a></div></div>

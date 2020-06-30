@@ -1,52 +1,52 @@
 <map id="ripple::RCLConsensus::Adaptor" name="ripple::RCLConsensus::Adaptor">
-<area shape="rect" id="node1" title=" " alt="" coords="2213,1132,2375,1173"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="1027,311,1181,338"/>
-<area shape="rect" id="node27" href="$classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping." alt="" coords="1404,444,1536,471"/>
-<area shape="rect" id="node30" href="$classripple_1_1RootStoppable.html" title=" " alt="" coords="1824,492,1985,519"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="1819,65,1990,106"/>
-<area shape="rect" id="node4" href="$classripple_1_1FeeVote.html" title="Manager to process fee votes." alt="" coords="1411,62,1529,88"/>
-<area shape="rect" id="node5" href="$classripple_1_1Application.html" title=" " alt="" coords="1034,779,1174,806"/>
-<area shape="rect" id="node26" href="$classripple_1_1LedgerMaster.html" title=" " alt="" coords="1827,1190,1982,1216"/>
-<area shape="rect" id="node45" href="$classripple_1_1LedgerHistory.html" title="Retains historical ledgers." alt="" coords="1391,1251,1549,1278"/>
-<area shape="rect" id="node6" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="616,501,784,542"/>
-<area shape="rect" id="node11" href="$classbeast_1_1PropertyStream_1_1Item.html" title=" " alt="" coords="1020,456,1188,497"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title="STL class." alt="" coords="205,1706,364,1732"/>
-<area shape="rect" id="node40" href="$classripple_1_1TaggedCache.html" title=" " alt="" coords="1393,1835,1547,1891"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="241,508,328,535"/>
-<area shape="rect" id="node9" href="$classbeast_1_1List.html" title=" " alt="" coords="192,353,377,394"/>
-<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,360,93,387"/>
-<area shape="rect" id="node15" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="401,23,592,50"/>
-<area shape="rect" id="node16" href="$classripple_1_1base__uint.html" title=" " alt="" coords="1834,1718,1975,1760"/>
-<area shape="rect" id="node21" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="1839,135,1970,162"/>
-<area shape="rect" id="node49" href="$structripple_1_1ConsensusParms.html" title="Consensus algorithm parameters." alt="" coords="1816,2175,1993,2202"/>
-<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="1053,1868,1155,1895"/>
-<area shape="rect" id="node13" href="$classripple_1_1SecretKey.html" title="A secret key." alt="" coords="1839,186,1971,212"/>
-<area shape="rect" id="node14" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="1423,168,1517,195"/>
-<area shape="rect" id="node17" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="1386,1668,1554,1709"/>
-<area shape="rect" id="node18" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="1053,1532,1155,1559"/>
-<area shape="rect" id="node37" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="1367,1554,1573,1580"/>
-<area shape="rect" id="node19" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="1813,2010,1996,2052"/>
-<area shape="rect" id="node20" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="1378,2066,1562,2092"/>
-<area shape="rect" id="node22" href="$classripple_1_1InboundTransactions.html" title="Manages the acquisition and lifetime of transaction sets." alt="" coords="1805,1088,2005,1115"/>
-<area shape="rect" id="node23" href="$classripple_1_1LocalTxs.html" title=" " alt="" coords="1843,1139,1967,1166"/>
-<area shape="rect" id="node24" href="$classripple_1_1RCLCensorshipDetector.html" title=" " alt="" coords="1795,236,2014,292"/>
-<area shape="rect" id="node25" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="1383,228,1557,255"/>
-<area shape="rect" id="node31" href="$structripple_1_1Stoppable_1_1Child.html" title=" " alt="" coords="1835,385,1975,426"/>
-<area shape="rect" id="node28" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="1019,587,1189,614"/>
-<area shape="rect" id="node29" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="1058,638,1150,664"/>
-<area shape="rect" id="node35" href="$classripple_1_1LedgerHolder.html" title="Hold a ledger in a thread&#45;safe way." alt="" coords="1393,652,1547,679"/>
-<area shape="rect" id="node32" href="$classbeast_1_1LockFreeStack.html" title=" " alt="" coords="1025,521,1183,562"/>
-<area shape="rect" id="node33" href="$classripple_1_1AbstractFetchPackContainer.html" title="An interface facilitating retrieval of fetch packs without an application or ledgermaster object." alt="" coords="1377,817,1563,858"/>
-<area shape="rect" id="node34" href="$structripple_1_1LedgerMaster_1_1Stats.html" title=" " alt="" coords="1393,882,1547,924"/>
-<area shape="rect" id="node36" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="1019,709,1189,750"/>
-<area shape="rect" id="node38" href="$classripple_1_1CanonicalTXSet.html" title="Holds transactions which were deferred to the next pass of consensus." alt="" coords="1385,1302,1555,1328"/>
-<area shape="rect" id="node39" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic_flag.html" title=" " alt="" coords="1407,1352,1533,1379"/>
-<area shape="rect" id="node41" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1049,1631,1159,1658"/>
-<area shape="rect" id="node42" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="627,1631,773,1658"/>
-<area shape="rect" id="node43" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="1378,948,1562,989"/>
-<area shape="rect" id="node44" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="1385,1013,1555,1054"/>
-<area shape="rect" id="node46" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="1375,1078,1565,1120"/>
-<area shape="rect" id="node47" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="1819,1836,1991,1877"/>
-<area shape="rect" id="node48" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="1789,1902,2020,1928"/>
-<area shape="rect" id="node50" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="1393,2223,1547,2250"/>
+<area shape="rect" id="node1" title=" " alt="" coords="2251,785,2412,826"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="1047,627,1201,653"/>
+<area shape="rect" id="node27" href="$classripple_1_1Stoppable.html" title="Provides an interface for starting and stopping." alt="" coords="1421,755,1553,781"/>
+<area shape="rect" id="node30" href="$classripple_1_1RootStoppable.html" title=" " alt="" coords="1861,716,2023,743"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="1857,61,2027,102"/>
+<area shape="rect" id="node4" href="$classripple_1_1FeeVote.html" title="Manager to process fee votes." alt="" coords="1427,57,1546,84"/>
+<area shape="rect" id="node5" href="$classripple_1_1Application.html" title=" " alt="" coords="1054,1104,1194,1131"/>
+<area shape="rect" id="node26" href="$classripple_1_1LedgerMaster.html" title=" " alt="" coords="1865,1275,2019,1301"/>
+<area shape="rect" id="node44" href="$classripple_1_1LedgerHistory.html" title="Retains historical ledgers." alt="" coords="1407,1216,1566,1243"/>
+<area shape="rect" id="node6" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="616,1131,784,1173"/>
+<area shape="rect" id="node11" href="$classbeast_1_1PropertyStream_1_1Item.html" title=" " alt="" coords="1040,1166,1208,1207"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title="STL class." alt="" coords="205,1381,364,1408"/>
+<area shape="rect" id="node39" href="$classripple_1_1TaggedCache.html" title=" " alt="" coords="1410,1836,1563,1892"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="241,1139,328,1165"/>
+<area shape="rect" id="node9" href="$classbeast_1_1List.html" title=" " alt="" coords="192,950,377,991"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,331,93,357"/>
+<area shape="rect" id="node15" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="401,61,592,88"/>
+<area shape="rect" id="node16" href="$classripple_1_1base__uint.html" title=" " alt="" coords="1053,2186,1195,2227"/>
+<area shape="rect" id="node21" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="1877,184,2007,211"/>
+<area shape="rect" id="node50" href="$structripple_1_1ConsensusParms.html" title="Consensus algorithm parameters." alt="" coords="1853,409,2031,436"/>
+<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="1073,2039,1175,2065"/>
+<area shape="rect" id="node13" href="$classripple_1_1SecretKey.html" title="A secret key." alt="" coords="1876,131,2008,157"/>
+<area shape="rect" id="node14" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="1439,108,1534,135"/>
+<area shape="rect" id="node46" href="$classripple_1_1NegativeUNLVote.html" title="Manager to create NegativeUNL votes." alt="" coords="1851,2193,2033,2220"/>
+<area shape="rect" id="node47" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="1411,2256,1563,2312"/>
+<area shape="rect" id="node17" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="616,2054,784,2095"/>
+<area shape="rect" id="node18" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="233,1921,336,1948"/>
+<area shape="rect" id="node36" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="808,1779,1015,1805"/>
+<area shape="rect" id="node19" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="1851,499,2033,541"/>
+<area shape="rect" id="node20" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="1395,403,1579,429"/>
+<area shape="rect" id="node22" href="$classripple_1_1InboundTransactions.html" title="Manages the acquisition and lifetime of transaction sets." alt="" coords="1842,767,2042,793"/>
+<area shape="rect" id="node23" href="$classripple_1_1LocalTxs.html" title=" " alt="" coords="1880,817,2004,844"/>
+<area shape="rect" id="node24" href="$classripple_1_1RCLCensorshipDetector.html" title=" " alt="" coords="1833,281,2051,337"/>
+<area shape="rect" id="node25" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="1399,219,1574,245"/>
+<area shape="rect" id="node28" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="1039,712,1209,739"/>
+<area shape="rect" id="node29" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="1078,921,1170,948"/>
+<area shape="rect" id="node34" href="$classripple_1_1LedgerHolder.html" title="Hold a ledger in a thread&#45;safe way." alt="" coords="1409,985,1564,1012"/>
+<area shape="rect" id="node31" href="$classripple_1_1AbstractFetchPackContainer.html" title="An interface facilitating retrieval of fetch packs without an application or ledgermaster object." alt="" coords="1394,1333,1579,1374"/>
+<area shape="rect" id="node32" href="$structripple_1_1LedgerMaster_1_1Stats.html" title=" " alt="" coords="1409,1398,1564,1439"/>
+<area shape="rect" id="node33" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="1409,485,1564,512"/>
+<area shape="rect" id="node35" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="1039,1467,1209,1509"/>
+<area shape="rect" id="node37" href="$classripple_1_1CanonicalTXSet.html" title="Holds transactions which were deferred to the next pass of consensus." alt="" coords="1402,1571,1571,1597"/>
+<area shape="rect" id="node38" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic_flag.html" title=" " alt="" coords="1423,1621,1550,1648"/>
+<area shape="rect" id="node40" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1069,1936,1179,1963"/>
+<area shape="rect" id="node41" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="627,1936,773,1963"/>
+<area shape="rect" id="node42" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="1395,919,1579,961"/>
+<area shape="rect" id="node43" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="1401,1037,1572,1078"/>
+<area shape="rect" id="node45" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="1392,1267,1581,1309"/>
+<area shape="rect" id="node48" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="1856,2026,2028,2067"/>
+<area shape="rect" id="node49" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="1827,2092,2057,2119"/>
 </map>

@@ -276,8 +276,8 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:a5108a46d0fc5c949956d9616d14a5f57"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a5108a46d0fc5c949956d9616d14a5f57">addPeers</a> ()</td></tr>
 <tr class="memdesc:a5108a46d0fc5c949956d9616d14a5f57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add more peers to the set, if possible.  <a href="classripple_1_1InboundLedger.html#a5108a46d0fc5c949956d9616d14a5f57">More...</a><br /></td></tr>
 <tr class="separator:a5108a46d0fc5c949956d9616d14a5f57"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae3f38b02bc1728722709dd35ac8de8b7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#ae3f38b02bc1728722709dd35ac8de8b7">tryDB</a> (<a class="el" href="classripple_1_1Family.html">Family</a> &amp;f)</td></tr>
-<tr class="separator:ae3f38b02bc1728722709dd35ac8de8b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab32aa3e9b48fe810668c4d09fde2d369"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#ab32aa3e9b48fe810668c4d09fde2d369">tryDB</a> (<a class="el" href="classripple_1_1NodeStore_1_1Database.html">NodeStore::Database</a> &amp;srcDB)</td></tr>
+<tr class="separator:ab32aa3e9b48fe810668c4d09fde2d369"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a61ad111ca63d997473cb3e50f49de9eb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a61ad111ca63d997473cb3e50f49de9eb">done</a> ()</td></tr>
 <tr class="separator:a61ad111ca63d997473cb3e50f49de9eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb06c0dd36a6e78848ce2bb0ff9258e7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#abb06c0dd36a6e78848ce2bb0ff9258e7">onTimer</a> (bool progress, <a class="el" href="classripple_1_1PeerSet.html#a90a3672f3016e5d1c6128061879ec41e">ScopedLockType</a> &amp;peerSetLock) override</td></tr>
@@ -300,15 +300,12 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:a4e0aeebcfdf9b62947ba9b7388749257"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a4e0aeebcfdf9b62947ba9b7388749257">takeHeader</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;data)</td></tr>
 <tr class="memdesc:a4e0aeebcfdf9b62947ba9b7388749257"><td class="mdescLeft">&#160;</td><td class="mdescRight">Take ledger header data Call with a lock.  <a href="classripple_1_1InboundLedger.html#a4e0aeebcfdf9b62947ba9b7388749257">More...</a><br /></td></tr>
 <tr class="separator:a4e0aeebcfdf9b62947ba9b7388749257"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a820a862b6e7c363c554982f62bca8232"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a820a862b6e7c363c554982f62bca8232">takeTxNode</a> (const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> &gt; &amp;IDs, const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt; &amp;data, <a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a> &amp;)</td></tr>
-<tr class="memdesc:a820a862b6e7c363c554982f62bca8232"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process TX data received from a peer Call with a lock.  <a href="classripple_1_1InboundLedger.html#a820a862b6e7c363c554982f62bca8232">More...</a><br /></td></tr>
-<tr class="separator:a820a862b6e7c363c554982f62bca8232"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a427de2950231fea5dbc847c67fdcb64a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a427de2950231fea5dbc847c67fdcb64a">receiveNode</a> (protocol::TMLedgerData &amp;packet, <a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a> &amp;)</td></tr>
+<tr class="memdesc:a427de2950231fea5dbc847c67fdcb64a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process node data received from a peer Call with a lock.  <a href="classripple_1_1InboundLedger.html#a427de2950231fea5dbc847c67fdcb64a">More...</a><br /></td></tr>
+<tr class="separator:a427de2950231fea5dbc847c67fdcb64a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae0732eada133ab96152376c95a30fefa"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#ae0732eada133ab96152376c95a30fefa">takeTxRootNode</a> (<a class="el" href="classripple_1_1Slice.html">Slice</a> const &amp;data, <a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a> &amp;)</td></tr>
 <tr class="memdesc:ae0732eada133ab96152376c95a30fefa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process AS root node received from a peer Call with a lock.  <a href="classripple_1_1InboundLedger.html#ae0732eada133ab96152376c95a30fefa">More...</a><br /></td></tr>
 <tr class="separator:ae0732eada133ab96152376c95a30fefa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4de986de4de54900724d42748cb96bf0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#a4de986de4de54900724d42748cb96bf0">takeAsNode</a> (const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> &gt; &amp;IDs, const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt; &amp;data, <a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a> &amp;)</td></tr>
-<tr class="memdesc:a4de986de4de54900724d42748cb96bf0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process AS data received from a peer Call with a lock.  <a href="classripple_1_1InboundLedger.html#a4de986de4de54900724d42748cb96bf0">More...</a><br /></td></tr>
-<tr class="separator:a4de986de4de54900724d42748cb96bf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acfbf0c63573f009a2c9f81cfa0bafa6e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html#acfbf0c63573f009a2c9f81cfa0bafa6e">takeAsRootNode</a> (<a class="el" href="classripple_1_1Slice.html">Slice</a> const &amp;data, <a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a> &amp;)</td></tr>
 <tr class="memdesc:acfbf0c63573f009a2c9f81cfa0bafa6e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process AS root node received from a peer Call with a lock.  <a href="classripple_1_1InboundLedger.html#acfbf0c63573f009a2c9f81cfa0bafa6e">More...</a><br /></td></tr>
 <tr class="separator:acfbf0c63573f009a2c9f81cfa0bafa6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -560,7 +557,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00214">214</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00218">218</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -608,7 +605,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00181">181</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00185">185</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -707,7 +704,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00194">194</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00198">198</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -759,7 +756,7 @@ Private Attributes</h2></td></tr>
 
 <p>Stash a TMLedgerData received from a peer for later processing Returns 'true' if we need to dispatch. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01115">1115</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01079">1079</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -781,7 +778,7 @@ Private Attributes</h2></td></tr>
 
 <p>Return a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01292">1292</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01254">1254</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -802,7 +799,7 @@ Private Attributes</h2></td></tr>
 
 <p>Process pending TMLedgerData Query the 'best' peer. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01249">1249</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01211">1211</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -878,7 +875,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00790">790</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00815">815</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -918,7 +915,7 @@ Private Attributes</h2></td></tr>
 
 <p>Request more nodes, perhaps from a specific peer. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00515">515</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00538">538</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -945,7 +942,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01075">1075</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01039">1039</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -974,12 +971,12 @@ Private Attributes</h2></td></tr>
 
 <p>Add more peers to the set, if possible. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00450">450</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00473">473</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ae3f38b02bc1728722709dd35ac8de8b7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae3f38b02bc1728722709dd35ac8de8b7">&#9670;&nbsp;</a></span>tryDB()</h2>
+<a id="ab32aa3e9b48fe810668c4d09fde2d369"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab32aa3e9b48fe810668c4d09fde2d369">&#9670;&nbsp;</a></span>tryDB()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -990,8 +987,8 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="memname">void ripple::InboundLedger::tryDB </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Family.html">Family</a> &amp;&#160;</td>
-          <td class="paramname"><em>f</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1NodeStore_1_1Database.html">NodeStore::Database</a> &amp;&#160;</td>
+          <td class="paramname"><em>srcDB</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -1002,7 +999,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00296">296</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00300">300</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1029,7 +1026,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00464">464</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00487">487</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1071,7 +1068,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1PeerSet.html#ac0416d2dcd2e5eb8801f55b03f4875e1">ripple::PeerSet</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00399">399</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00422">422</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1102,7 +1099,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1PeerSet.html#a46bc82ece5fd76d43a6206fa7714d13b">ripple::PeerSet</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00165">165</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00169">169</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1134,7 +1131,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1PeerSet.html#a9ce55399eb28bc79e4397b7455af8aec">ripple::PeerSet</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00158">158</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00159">159</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -1161,7 +1158,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00157">157</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00161">161</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1192,7 +1189,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1PeerSet.html#af1c64f5cd21f67f9e232c42195aed820">ripple::PeerSet</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00458">458</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00481">481</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1232,7 +1229,7 @@ Private Attributes</h2></td></tr>
 
 <p>Process one TMLedgerData Returns the number of useful nodes. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01142">1142</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01106">1106</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1262,12 +1259,12 @@ Private Attributes</h2></td></tr>
 
 <p>Take ledger header data Call with a lock. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00836">836</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00861">861</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a820a862b6e7c363c554982f62bca8232"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a820a862b6e7c363c554982f62bca8232">&#9670;&nbsp;</a></span>takeTxNode()</h2>
+<a id="a427de2950231fea5dbc847c67fdcb64a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a427de2950231fea5dbc847c67fdcb64a">&#9670;&nbsp;</a></span>receiveNode()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1276,16 +1273,10 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool ripple::InboundLedger::takeTxNode </td>
+          <td class="memname">void ripple::InboundLedger::receiveNode </td>
           <td>(</td>
-          <td class="paramtype">const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> &gt; &amp;&#160;</td>
-          <td class="paramname"><em>IDs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt; &amp;&#160;</td>
-          <td class="paramname"><em>data</em>, </td>
+          <td class="paramtype">protocol::TMLedgerData &amp;&#160;</td>
+          <td class="paramname"><em>packet</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1306,9 +1297,9 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Process TX data received from a peer Call with a lock. </p>
+<p>Process node data received from a peer Call with a lock. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00883">883</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00909">909</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1348,53 +1339,7 @@ Private Attributes</h2></td></tr>
 
 <p>Process AS root node received from a peer Call with a lock. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01053">1053</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a4de986de4de54900724d42748cb96bf0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4de986de4de54900724d42748cb96bf0">&#9670;&nbsp;</a></span>takeAsNode()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::InboundLedger::takeAsNode </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1SHAMapNodeID.html">SHAMapNodeID</a> &gt; &amp;&#160;</td>
-          <td class="paramname"><em>IDs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#ab1f2184bb5938b5508798cd47a561a21">Blob</a> &gt; &amp;&#160;</td>
-          <td class="paramname"><em>data</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1SHAMapAddNode.html">SHAMapAddNode</a> &amp;&#160;</td>
-          <td class="paramname"><em>san</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Process AS data received from a peer Call with a lock. </p>
-
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00948">948</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01017">1017</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1434,7 +1379,7 @@ Private Attributes</h2></td></tr>
 
 <p>Process AS root node received from a peer Call with a lock. </p>
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l01028">1028</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00992">992</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1472,7 +1417,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00235">235</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00239">239</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1510,7 +1455,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00251">251</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8cpp_source.html#l00255">255</a> of file <a class="el" href="InboundLedger_8cpp_source.html">InboundLedger.cpp</a>.</p>
 
 </div>
 </div>
@@ -1724,7 +1669,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00203">203</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00194">194</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -1748,7 +1693,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00204">204</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00195">195</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -1772,7 +1717,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00206">206</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00197">197</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -1796,7 +1741,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00207">207</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00198">198</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -1820,7 +1765,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00208">208</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00199">199</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -1844,7 +1789,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00209">209</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00200">200</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -1868,7 +1813,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00210">210</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00201">201</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -1892,7 +1837,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00211">211</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00202">202</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -1916,7 +1861,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00212">212</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00203">203</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -1940,7 +1885,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00213">213</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00204">204</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -1964,7 +1909,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00215">215</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00206">206</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -1988,7 +1933,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00217">217</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00208">208</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -2012,7 +1957,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00220">220</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00211">211</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -2036,7 +1981,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00221">221</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00212">212</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -2060,7 +2005,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00222">222</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00213">213</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>

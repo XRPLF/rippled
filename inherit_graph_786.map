@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1TxQ_1_1GreaterFee.html" title="Used for sorting MaybeTx by feeLevel" alt="" coords="5,5,177,32"/>
+<area shape="rect" id="node1" href="$structripple_1_1TxQ_1_1AccountTxDetails.html" title="Structure returned by TxQ::getAccountTxs to describe transactions in the queue for an account." alt="" coords="5,5,220,32"/>
+<area shape="rect" id="node2" href="$structripple_1_1TxQ_1_1TxDetails.html" title="Structure that describes a transaction in the queue waiting to be applied to the current open ledger." alt="" coords="268,5,431,32"/>
 </map>

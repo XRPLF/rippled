@@ -1,0 +1,4 @@
+<map id="ripple::test::CaptureLogs" name="ripple::test::CaptureLogs">
+<area shape="rect" id="node1" title="Log manager for CaptureSinks." alt="" coords="5,80,187,107"/>
+<area shape="rect" id="node2" href="$classripple_1_1Logs.html" title="Manages partitions for logging." alt="" coords="47,5,145,32"/>
+</map>

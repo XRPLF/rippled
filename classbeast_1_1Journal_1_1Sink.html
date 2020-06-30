@@ -82,17 +82,17 @@ Inheritance diagram for beast::Journal::Sink:</div>
 <div class="dyncontent">
 <div class="center"><img src="classbeast_1_1Journal_1_1Sink__inherit__graph.png" border="0" usemap="#beast_1_1Journal_1_1Sink_inherit__map" alt="Inheritance graph"/></div>
 <map name="beast_1_1Journal_1_1Sink_inherit__map" id="beast_1_1Journal_1_1Sink_inherit__map">
-<area shape="rect" title="Abstraction for the underlying message destination." alt="" coords="5,269,152,295"/>
+<area shape="rect" title="Abstraction for the underlying message destination." alt="" coords="5,265,152,291"/>
 <area shape="rect" href="classbeast_1_1Journal__test_1_1TestSink.html" title=" " alt="" coords="232,5,375,47"/>
 <area shape="rect" href="classbeast_1_1NullJournalSink.html" title=" " alt="" coords="221,71,386,98"/>
 <area shape="rect" href="classbeast_1_1WrappedSink.html" title="Wraps a Journal::Sink to prefix its output with a string." alt="" coords="228,122,379,149"/>
 <area shape="rect" href="classripple_1_1Logs_1_1Sink.html" title=" " alt="" coords="237,173,370,199"/>
-<area shape="rect" href="classripple_1_1test_1_1csf_1_1BasicSink.html" title="Sink that prepends simulation time to messages." alt="" coords="240,224,367,265"/>
-<area shape="rect" href="classripple_1_1test_1_1LedgerHistory__test_1_1CheckMessageLogs_1_1CheckMessageSink.html" title=" " alt="" coords="208,290,399,346"/>
-<area shape="rect" href="classripple_1_1test_1_1Server__test_1_1CaptureSink.html" title="sink for writing all log messages to a stringstream" alt="" coords="232,371,375,412"/>
-<area shape="rect" href="classripple_1_1test_1_1Server__test_1_1TestSink.html" title=" " alt="" coords="232,436,375,477"/>
-<area shape="rect" href="classripple_1_1test_1_1StreamSink.html" title=" " alt="" coords="216,502,391,529"/>
-<area shape="rect" href="classripple_1_1test_1_1SuiteJournalSink.html" title=" " alt="" coords="200,553,407,579"/>
+<area shape="rect" href="classripple_1_1test_1_1CaptureLogs_1_1CaptureSink.html" title="sink for writing all log messages to a stringstream" alt="" coords="213,224,394,265"/>
+<area shape="rect" href="classripple_1_1test_1_1CheckMessageLogs_1_1CheckMessageSink.html" title=" " alt="" coords="205,289,402,331"/>
+<area shape="rect" href="classripple_1_1test_1_1csf_1_1BasicSink.html" title="Sink that prepends simulation time to messages." alt="" coords="240,355,367,396"/>
+<area shape="rect" href="classripple_1_1test_1_1Server__test_1_1TestSink.html" title=" " alt="" coords="232,420,375,461"/>
+<area shape="rect" href="classripple_1_1test_1_1StreamSink.html" title=" " alt="" coords="216,486,391,513"/>
+<area shape="rect" href="classripple_1_1test_1_1SuiteJournalSink.html" title=" " alt="" coords="200,537,407,563"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -478,7 +478,7 @@ Private Attributes</h2></td></tr>
 <p>Write text to the sink at the specified severity. </p>
 <p>A conforming implementation will not write the text if the passed level is below the current <a class="el" href="classbeast_1_1Journal_1_1Sink.html#a763da4afe95c22997084ad368db9dfc1" title="Returns the minimum severity level this sink will report.">threshold()</a>. </p>
 
-<p>Implemented in <a class="el" href="classbeast_1_1NullJournalSink.html#aec43c29d2b8bcfdc0731c8c0c8d1482a">beast::NullJournalSink</a>, <a class="el" href="classbeast_1_1Journal__test_1_1TestSink.html#a6d8e5767113251f48d4b99792b01757b">beast::Journal_test::TestSink</a>, <a class="el" href="classripple_1_1test_1_1Server__test_1_1CaptureSink.html#ae3784373622a3a3f79794146e39e3eea">ripple::test::Server_test::CaptureSink</a>, <a class="el" href="classripple_1_1test_1_1StreamSink.html#a03cffe95c68e565b951135f957c9d3f9">ripple::test::StreamSink</a>, <a class="el" href="classbeast_1_1WrappedSink.html#af6769577b5fd1ba886af0da309144ede">beast::WrappedSink</a>, <a class="el" href="classripple_1_1test_1_1Server__test_1_1TestSink.html#a60eb92ead4ac4a1890ec33f02d712362">ripple::test::Server_test::TestSink</a>, <a class="el" href="classripple_1_1Logs_1_1Sink.html#a0e5f97e094e895461aa90f8fa9cdd974">ripple::Logs::Sink</a>, <a class="el" href="classripple_1_1test_1_1LedgerHistory__test_1_1CheckMessageLogs_1_1CheckMessageSink.html#a57c584449362b94d7f73024c3a7f5607">ripple::test::LedgerHistory_test::CheckMessageLogs::CheckMessageSink</a>, <a class="el" href="classripple_1_1test_1_1csf_1_1BasicSink.html#a1b1f53b66d00387a4476fc66d573d69a">ripple::test::csf::BasicSink</a>, and <a class="el" href="classripple_1_1test_1_1SuiteJournalSink.html#ad63d2310128b209b7a997c4e14e96628">ripple::test::SuiteJournalSink</a>.</p>
+<p>Implemented in <a class="el" href="classbeast_1_1NullJournalSink.html#aec43c29d2b8bcfdc0731c8c0c8d1482a">beast::NullJournalSink</a>, <a class="el" href="classbeast_1_1Journal__test_1_1TestSink.html#a6d8e5767113251f48d4b99792b01757b">beast::Journal_test::TestSink</a>, <a class="el" href="classripple_1_1test_1_1StreamSink.html#a03cffe95c68e565b951135f957c9d3f9">ripple::test::StreamSink</a>, <a class="el" href="classbeast_1_1WrappedSink.html#af6769577b5fd1ba886af0da309144ede">beast::WrappedSink</a>, <a class="el" href="classripple_1_1test_1_1Server__test_1_1TestSink.html#a60eb92ead4ac4a1890ec33f02d712362">ripple::test::Server_test::TestSink</a>, <a class="el" href="classripple_1_1Logs_1_1Sink.html#a0e5f97e094e895461aa90f8fa9cdd974">ripple::Logs::Sink</a>, <a class="el" href="classripple_1_1test_1_1csf_1_1BasicSink.html#a1b1f53b66d00387a4476fc66d573d69a">ripple::test::csf::BasicSink</a>, <a class="el" href="classripple_1_1test_1_1CaptureLogs_1_1CaptureSink.html#a495b1fc5b7147f1a77853b8ea2808058">ripple::test::CaptureLogs::CaptureSink</a>, <a class="el" href="classripple_1_1test_1_1SuiteJournalSink.html#ad63d2310128b209b7a997c4e14e96628">ripple::test::SuiteJournalSink</a>, and <a class="el" href="classripple_1_1test_1_1CheckMessageLogs_1_1CheckMessageSink.html#a5a435de633f75da2e587f869a4a5f3c2">ripple::test::CheckMessageLogs::CheckMessageSink</a>.</p>
 
 </div>
 </div>

@@ -67,7 +67,7 @@ $(function() {
 <div class="contents">
 <div class="textblock"><p><b>This section is a work in progress!!</b></p>
 <p>Consensus is the task of reaching agreement within a distributed system in the presence of faulty or even malicious participants. This document outlines the <a href="https://ripple.com/files/ripple/consensus/whitepaper.pdf">Ripple Consensus Algorithm</a> as implemented in <a href="https://github.com/ripple/rippled">rippled</a>, but focuses on its utility as a generic consensus algorithm independent of the detailed mechanics of the Ripple Consensus Ledger. Most notably, the algorithm does not require fully synchronous communication between all nodes in the network, or even a fixed network topology, but instead achieves consensus via collectively trusted subnetworks.</p>
-<h1><a class="anchor" id="autotoc_md8"></a>
+<h1><a class="anchor" id="autotoc_md36"></a>
 Distributed Agreement</h1>
 <p>A challenge for distributed systems is reaching agreement on changes in shared state. For the Ripple network, the shared state is the current ledger&ndash;account information, account balances, order books and other financial data. We will refer to shared distributed state as a /ledger/ throughout the remainder of this document.</p>
 <div class="image">
@@ -87,9 +87,9 @@ Ledger Chain</div></div>
 <div class="caption">
 Block Chain</div></div>
    <p>The remainder of this section describes the Consensus and Validation algorithms in more detail and is meant as a companion guide to understanding the generic implementation in <code>rippled</code>. The document <b>does not</b> discuss correctness, fault-tolerance or liveness properties of the algorithms or the full details of how they integrate within <code>rippled</code> to support the Ripple Consensus Ledger.</p>
-<h1><a class="anchor" id="autotoc_md9"></a>
+<h1><a class="anchor" id="autotoc_md37"></a>
 Consensus Overview</h1>
-<h2><a class="anchor" id="autotoc_md10"></a>
+<h2><a class="anchor" id="autotoc_md38"></a>
 Definitions</h2>
 <ul>
 <li>The <em>ledger</em> is the shared distributed state. Each ledger has a unique ID to distinguish it from all other ledgers. During consensus, the <em>previous</em>, <em>prior</em> or <em>last-closed</em> ledger is the most recent ledger seen by consensus and is the basis upon which it will build the next ledger.</li>
@@ -102,7 +102,7 @@ Definitions</h2>
 <li>A <em>dispute</em> is a transaction that is either not part of a node's position or not in a peer's position. During consensus, the node will add or remove disputed transactions from its position based on that transaction's support amongst its peers.</li>
 </ul>
 <p>Note that most types have an ID as a lightweight identifier of instances of that type. Consensus often operates on the IDs directly since the underlying type is potentially expensive to share over the network. For example, proposal's only contain the ID of the position of a peer. Since many peers likely have the same position, this reduces the need to send the full transaction set multiple times. Instead, a node can request the transaction set from the network if necessary.</p>
-<h2><a class="anchor" id="autotoc_md11"></a>
+<h2><a class="anchor" id="autotoc_md39"></a>
 Overview</h2>
 <div class="image">
 <img src="consensus_overview.png" alt=""/>
@@ -125,7 +125,7 @@ Effective Close Time</h2>
 Effective Close Time</div></div>
    <p>The effective close time is part of the node's position and is shared with peers in its proposals. Just like the position on the consensus transaction set, a node will update its close time position in response to its peers' effective close time positions. Peers can agree to disagree on the close time, in which case the effective close time is taken as 1 second past the prior close.</p>
 <p>The close time resolution is itself dynamic, decreasing (coarser) resolution in subsequent consensus rounds if nodes are unable to reach consensus on an effective close time and increasing (finer) resolution if nodes consistently reach close time consensus.</p>
-<h2><a class="anchor" id="autotoc_md12"></a>
+<h2><a class="anchor" id="autotoc_md40"></a>
 Modes</h2>
 <p>Internally, a node operates under one of the following consensus modes. Either of the first two modes may be chosen when a consensus round starts.</p>
 <ul>
@@ -143,7 +143,7 @@ Modes</h2>
 Consensus Modes</div></div>
    <p>Once either wrong ledger or switch ledger are reached, the node cannot return to proposing or observing until the next consensus round. However, the node could change its view of the correct prior ledger, so going from switch ledger to wrong ledger and back again is possible.</p>
 <p>The distinction between the wrong and switched ledger modes arises because a ledger's unique identifier may be known by a node before the ledger itself. This reflects that fact that the data corresponding to a ledger may be large and take time to share over the network, whereas the smaller ID could be shared in a peer validation much more quickly. Distinguishing the two states allows the node to decide how best to generate the next ledger once it declares consensus.</p>
-<h2><a class="anchor" id="autotoc_md13"></a>
+<h2><a class="anchor" id="autotoc_md41"></a>
 Phases</h2>
 <p>As depicted in the overview diagram, consensus is best viewed as a progression through 3 phases. There are 4 public methods of the generic consensus algorithm that determine this progression</p>
 <ul>
@@ -153,12 +153,12 @@ Phases</h2>
 <li><code>gotTxSet</code> is called when a transaction set is received from the network. This is typically in response to a prior request from the node to acquire the transaction set corresponding to a disagreeing peer's position.</li>
 </ul>
 <p>The following subsections describe each consensus phase in more detail and what actions are taken in response to these calls.</p>
-<h3><a class="anchor" id="autotoc_md14"></a>
+<h3><a class="anchor" id="autotoc_md42"></a>
 Open</h3>
 <p>The <code>Open</code> phase is a quiescent period to allow transactions to build up in the node's open ledger. The duration is a trade-off between latency and throughput. A shorter window reduces the latency to generating the next ledger, but also reduces transaction throughput due to fewer transactions accepted into the ledger.</p>
 <p>A call to <code>startRound</code> would forcibly begin the next consensus round, skipping completion of the current round. This is not expected during normal operation. Calls to <code>peerProposal</code> or <code>gotTxSet</code> simply store the proposal or transaction set for use in the coming <code>Establish</code> phase.</p>
 <p>A call to <code>timerEntry</code> first checks that the node is working on the correct prior ledger. If not, it will update the mode and request the correct ledger. Otherwise, the node checks whether to switch to the <code>Establish</code> phase and close the ledger.</p>
-<h4><a class="anchor" id="autotoc_md15"></a>
+<h4><a class="anchor" id="autotoc_md43"></a>
 Ledger Close</h4>
 <p>Under normal circumstances, the open ledger period ends when one of the following is true</p>
 <ul>
@@ -174,12 +174,12 @@ disputes</h4>
 <img src="disputes.png" alt=""/>
 <div class="caption">
 Disputes</div></div>
-   <h3><a class="anchor" id="autotoc_md16"></a>
+   <h3><a class="anchor" id="autotoc_md44"></a>
 Establish</h3>
 <p>The establish phase is the active period of consensus in which the node exchanges proposals with peers in an attempt to reach agreement on the consensus transactions and effective close time.</p>
 <p>A call to <code>startRound</code> would forcibly begin the next consensus round, skipping completion of the current round. This is not expected during normal operation. Calls to <code>peerProposal</code> or <code>gotTxSet</code> that reflect new positions will generate disputed transactions for any new disagreements and will update the peer's vote for all disputed transactions.</p>
 <p>A call to <code>timerEntry</code> first checks that the node is working from the correct prior ledger. If not, the node will update the mode and request the correct ledger. Otherwise, the node updates the node's position and considers whether to switch to the <code>Accepted</code> phase and declare consensus reached. However, at least <code>LEDGER_MIN_CONSENSUS</code> time must have elapsed before doing either. This allows peers an opportunity to take an initial position and share it.</p>
-<h4><a class="anchor" id="autotoc_md17"></a>
+<h4><a class="anchor" id="autotoc_md45"></a>
 Update Position</h4>
 <p>In order to achieve consensus, the node is looking for a transaction set that is supported by a super-majority of peers. The node works towards this set by adding or removing disputed transactions from its position based on an increasing threshold for inclusion.</p>
 <div class="image">
@@ -190,7 +190,7 @@ Threshold</div></div>
 <p>Given the <a href="#disputes_image">example disputes above</a> and an initial threshold of 50%, our node would retain its position since transaction 1 was not in dispute and transactions 2 and 3 have 75% support. Since its position did not change, it would not need to send a new proposal to peers. Peer C would not change either. Peer A would add transaction 3 to its position and Peer B would remove transaction 4 from its position; both would then send an updated position.</p>
 <p>Conversely, if the diagram reflected a later call to =timerEntry= that occurs in the stuck region with a threshold of say 95%, our node would remove transactions 2 and 3 from its candidate set and send an updated position. Likewise, all the other peers would end up with only transaction 1 in their position.</p>
 <p>Lastly, if our node were not in the proposing mode, it would not include its own vote and just take the majority (&gt;50%) position of its peers. In this example, our node would maintain its position of transactions 1, 2 and 3.</p>
-<h4><a class="anchor" id="autotoc_md18"></a>
+<h4><a class="anchor" id="autotoc_md46"></a>
 Checking Consensus</h4>
 <p>After updating its position, the node checks for supermajority agreement with its peers on its current position. This agreement is of the exact transaction set, not just the support of individual transactions. That is, if our position is a subset of a peer's position, that counts as a disagreement. Also recall that effective close time agreement allows a supermajority of participants agreeing to disagree.</p>
 <p>Consensus is declared when the following 3 clauses are true:</p>
@@ -201,16 +201,16 @@ Checking Consensus</h4>
 </ul>
 <p>The middle condition ensures slower peers have a chance to share positions, but prevents waiting too long on peers that have disconnected. Additionally, a node can declare that consensus has moved on if <code>minimumConsensusPercentage</code> peers have sent validations and moved on to the next ledger. This outcome indicates the node has fallen behind its peers and needs to catch up.</p>
 <p>If a node is not proposing, it does not include its own position when calculating the percent of agreeing participants but otherwise follows the above logic.</p>
-<h4><a class="anchor" id="autotoc_md19"></a>
+<h4><a class="anchor" id="autotoc_md47"></a>
 Accepting Consensus</h4>
 <p>Once consensus is reached (or moved on), the node switches to the <code>Accept</code> phase and signals to the implementing code that the round is complete. That code is responsible for using the consensus transaction set to generate the next ledger and calling <code>startRound</code> to begin the next round. The implementation has total freedom on ordering transactions, deciding what to do if consensus moved on, determining whether to retry or abandon local transactions that did not make the consensus set and updating any internal state based on the consensus progress.</p>
-<h3><a class="anchor" id="autotoc_md20"></a>
+<h3><a class="anchor" id="autotoc_md48"></a>
 Accept</h3>
 <p>The <code>Accept</code> phase is the terminal phase of the consensus algorithm. Calls to <code>timerEntry</code>, <code>peerProposal</code> and <code>gotTxSet</code> will not change the internal consensus state while in the accept phase. The expectation is that the application specific code is working to generate the new ledger based on the consensus outcome. Once complete, that code should make a call to <code>startRound</code> to kick off the next consensus round. The <code>startRound</code> call includes the new prior ledger, prior ledger ID and whether the round should begin in the proposing or observing mode. After setting some initial state, the phase transitions to <code>Open</code>. The node will also check if the provided prior ledger and ID are correct, updating the mode and requesting the proper ledger from the network if necessary.</p>
-<h1><a class="anchor" id="autotoc_md21"></a>
+<h1><a class="anchor" id="autotoc_md49"></a>
 Consensus Type Requirements</h1>
 <p>The consensus type requirements are given below as minimal implementation stubs. Actual implementations would augment these stubs with members appropriate for managing the details of transactions and ledgers within the larger application framework.</p>
-<h2><a class="anchor" id="autotoc_md22"></a>
+<h2><a class="anchor" id="autotoc_md50"></a>
 Transaction</h2>
 <p>The transaction type <code>Tx</code> encapsulates a single transaction under consideration by consensus.</p>
 <div class="fragment"><div class="line"><span class="keyword">struct </span>Tx</div>
@@ -220,7 +220,7 @@ Transaction</h2>
 <div class="line"> </div>
 <div class="line">   <span class="comment">//... implementation specific</span></div>
 <div class="line">};</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md23"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md51"></a>
 Transaction Set</h2>
 <p>The transaction set type <code>TxSet</code> represents a set of <code>Tx</code>s that are collectively under consideration by consensus. A <code>TxSet</code> can be compared against other <code>TxSet</code>s (typically from peers) and can be modified to add or remove transactions via the mutable subtype.</p>
 <div class="fragment"><div class="line"><span class="keyword">struct </span>TxSet</div>
@@ -253,7 +253,7 @@ Transaction Set</h2>
 <div class="line"> </div>
 <div class="line">  <span class="comment">//... implementation specific</span></div>
 <div class="line">};</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md24"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md52"></a>
 Ledger</h2>
 <p>The <code>Ledger</code> type represents the state shared amongst the distributed participants. Notice that the details of how the next ledger is generated from the prior ledger and the consensus accepted transaction set is not part of the interface. Within the generic code, this type is primarily used to know that peers are working on the same tip of the ledger chain and to provide some basic timing data for consensus.</p>
 <div class="fragment"><div class="line"><span class="keyword">struct </span>Ledger</div>
@@ -283,7 +283,7 @@ Ledger</h2>
 <div class="line"> </div>
 <div class="line">  <span class="comment">//... implementation specific</span></div>
 <div class="line">};</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md25"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md53"></a>
 PeerProposal</h2>
 <p>The <code>PeerProposal</code> type represents the signed position taken by a peer during consensus. The only type requirement is owning an instance of a generic <code>ConsensusProposal</code>.</p>
 <div class="fragment"><div class="line"><span class="comment">// Represents our proposed position or a peer&#39;s proposed position</span></div>
@@ -300,7 +300,7 @@ PeerProposal</h2>
 <div class="line"> </div>
 <div class="line">  <span class="comment">// ... implementation specific</span></div>
 <div class="line">};</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md26"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md54"></a>
 Generic Consensus Interface</h2>
 <p>The generic <code>Consensus</code> relies on <code>Adaptor</code> template class to implement a set of helper functions that plug the consensus algorithm into a specific application. The <code>Adaptor</code> class also defines the types above needed by the algorithm. Below are excerpts of the generic consensus implementation and of helper types that will interact with the concrete implementing class.</p>
 <div class="fragment"><div class="line"><span class="comment">// Represents a transction under dispute this round</span></div>
@@ -371,7 +371,7 @@ Generic Consensus Interface</h2>
 <div class="line"> </div>
 <div class="line">    <span class="comment">// ... details</span></div>
 <div class="line">};</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md27"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md55"></a>
 Adapting Generic Consensus</h2>
 <p>The stub below shows the set of callback/helper functions required in the implementing class.</p>
 <div class="fragment"><div class="line"><span class="keyword">struct </span>Adaptor</div>
@@ -438,14 +438,14 @@ Adapting Generic Consensus</h2>
 <li>The generic code does not specify how transactions are submitted by clients, propagated through the network or stored in the open ledger. Indeed, the open ledger is only conceptual from the perspective of the generic code&mdash;the initial position and transaction set are opaquely generated in a <code>Consensus::Result</code> instance returned from the <code>onClose</code> callback.</li>
 <li>The calls to <code>acquireLedger</code> and <code>acquireTxSet</code> only have non-trivial return if the ledger or transaction set of interest is available. The implementing class is free to block while acquiring, or return the empty option while servicing the request asynchronously. Due to legacy reasons, the two calls are not symmetric. <code>acquireTxSet</code> requires the host application to call <code>gotTxSet</code> when an asynchronous <code>acquire</code> completes. Conversely, <code>acquireLedger</code> will be called again later by the consensus code if it still desires the ledger with the hope that the asynchronous acquisition is complete.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md28"></a>
+<h1><a class="anchor" id="autotoc_md56"></a>
 Validation</h1>
 <p>Coming Soon! </p>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->
 <div class="ttc" id="anamespaceripple_html_a79cc3b590c118bd551b693bb333fb9d1"><div class="ttname"><a href="namespaceripple.html#a79cc3b590c118bd551b693bb333fb9d1">ripple::ConsensusState</a></div><div class="ttdeci">ConsensusState</div><div class="ttdoc">Whether we have or don't have a consensus.</div><div class="ttdef"><b>Definition:</b> <a href="ConsensusTypes_8h_source.html#l00186">ConsensusTypes.h:186</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a46c521271235f4e2715d7fa8b68940ca"><div class="ttname"><a href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">ripple::hash_map</a></div><div class="ttdeci">std::unordered_map&lt; Key, Value, Hash, Pred, Allocator &gt; hash_map</div><div class="ttdef"><b>Definition:</b> <a href="UnorderedContainers_8h_source.html#l00052">UnorderedContainers.h:52</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a842656443a02cf834bf2c521a28a1236"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a842656443a02cf834bf2c521a28a1236">ripple::NodeStore::read</a></div><div class="ttdeci">void read(nudb::detail::istream &amp;is, std::size_t &amp;u)</div><div class="ttdef"><b>Definition:</b> <a href="varint_8h_source.html#l00118">varint.h:118</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1NodeStore_html_a842656443a02cf834bf2c521a28a1236"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#a842656443a02cf834bf2c521a28a1236">ripple::NodeStore::read</a></div><div class="ttdeci">void read(nudb::detail::istream &amp;is, std::size_t &amp;u)</div><div class="ttdef"><b>Definition:</b> <a href="varint_8h_source.html#l00120">varint.h:120</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44"><div class="ttname"><a href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44">ripple::ConsensusMode::proposing</a></div><div class="ttdeci">@ proposing</div><div class="ttdoc">We are normal participant in consensus and propose our position.</div></div>
 <div class="ttc" id="anamespaceripple_html_a33f8b6e68b5f63faf2e9755cc251563ea1dde5f68261b60a2e4655f5ad1f13e0b"><div class="ttname"><a href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea1dde5f68261b60a2e4655f5ad1f13e0b">ripple::ConsensusMode::wrongLedger</a></div><div class="ttdeci">@ wrongLedger</div><div class="ttdoc">We have the wrong ledger and are attempting to acquire it.</div></div>
 <div class="ttc" id="afind_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/find.html">std::find</a></div><div class="ttdeci">T find(T... args)</div></div>

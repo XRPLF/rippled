@@ -130,6 +130,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae4f22dbf9bd39859dc6c43e4d6713888"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a6434c1a0fd22b77e2e4a228c0eca79eb">ValStatus</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#ae4f22dbf9bd39859dc6c43e4d6713888">add</a> (<a class="el" href="classripple_1_1Validations.html#a678c0348bd68f913d6f53f53e40c3f50">NodeID</a> const &amp;nodeID, <a class="el" href="classripple_1_1Validations.html#a347521e28c20acb8fe6582fc5b917888">Validation</a> const &amp;val)</td></tr>
 <tr class="memdesc:ae4f22dbf9bd39859dc6c43e4d6713888"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a new validation.  <a href="classripple_1_1Validations.html#ae4f22dbf9bd39859dc6c43e4d6713888">More...</a><br /></td></tr>
 <tr class="separator:ae4f22dbf9bd39859dc6c43e4d6713888"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab80be66f69d9a14f41e9b2f314106a41"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#ab80be66f69d9a14f41e9b2f314106a41">setSeqToKeep</a> (<a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a> const &amp;s)</td></tr>
+<tr class="memdesc:ab80be66f69d9a14f41e9b2f314106a41"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the smallest sequence number of validations to keep from expire.  <a href="classripple_1_1Validations.html#ab80be66f69d9a14f41e9b2f314106a41">More...</a><br /></td></tr>
+<tr class="separator:ab80be66f69d9a14f41e9b2f314106a41"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a883367ea7d5cfc5007db68024faa9efa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a883367ea7d5cfc5007db68024faa9efa">expire</a> ()</td></tr>
 <tr class="memdesc:a883367ea7d5cfc5007db68024faa9efa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Expire old validation sets.  <a href="classripple_1_1Validations.html#a883367ea7d5cfc5007db68024faa9efa">More...</a><br /></td></tr>
 <tr class="separator:a883367ea7d5cfc5007db68024faa9efa"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -230,6 +233,8 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a6bebdea6f71ad168e8521ddc5ae01a15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac130cfc0517fa32929f05f5489883e5a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacebeast.html#af6181fa93ab6095c2364cc166ad6eca3">beast::aged_unordered_map</a>&lt; <a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a>, <a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt; <a class="el" href="classripple_1_1Validations.html#a678c0348bd68f913d6f53f53e40c3f50">NodeID</a>, <a class="el" href="classripple_1_1Validations.html#a347521e28c20acb8fe6582fc5b917888">Validation</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a>, <a class="el" href="structbeast_1_1uhash.html">beast::uhash</a>&lt;&gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#ac130cfc0517fa32929f05f5489883e5a">bySequence_</a></td></tr>
 <tr class="separator:ac130cfc0517fa32929f05f5489883e5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ccf53fc1e9d50a9997d7956eb4b5188"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a8ccf53fc1e9d50a9997d7956eb4b5188">toKeep_</a></td></tr>
+<tr class="separator:a8ccf53fc1e9d50a9997d7956eb4b5188"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8aab0cbcea7bfc39e53aaaf4a19b841d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1LedgerTrie.html">LedgerTrie</a>&lt; <a class="el" href="classripple_1_1Validations.html#ab12762703bf6418522381ff513a33856">Ledger</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a8aab0cbcea7bfc39e53aaaf4a19b841d">trie_</a></td></tr>
 <tr class="separator:a8aab0cbcea7bfc39e53aaaf4a19b841d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a182a987f9c2f6cf9b67fe3cb0d12b247"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt; <a class="el" href="classripple_1_1Validations.html#a678c0348bd68f913d6f53f53e40c3f50">NodeID</a>, <a class="el" href="classripple_1_1Validations.html#ab12762703bf6418522381ff513a33856">Ledger</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a182a987f9c2f6cf9b67fe3cb0d12b247">lastLedger_</a></td></tr>
@@ -574,7 +579,7 @@ template&lt;class... Ts&gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00561">561</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00564">564</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -621,7 +626,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00345">345</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00348">348</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -651,7 +656,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00372">372</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00375">375</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -697,7 +702,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00391">391</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00394">394</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -761,7 +766,7 @@ template&lt;class Adaptor &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00419">419</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00422">422</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -814,7 +819,7 @@ template&lt;class F &gt; </div>
 </dl>
 <dl class="section warning"><dt>Warning</dt><dd>The invokable <code>f</code> is expected to be a simple transformation of its arguments and will be called with mutex_ under lock. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00471">471</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00474">474</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -874,7 +879,7 @@ template&lt;class Pre , class F &gt; </div>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>The invokable <code>pre</code> is called <em>prior</em> to checking for staleness and reflects an upper-bound on the number of calls to <code>f. @warning The invokable</code>f` is expected to be a simple transformation of its arguments and will be called with mutex_ under lock. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00498">498</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00501">501</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -941,7 +946,7 @@ template&lt;class Pre , class F &gt; </div>
 <dl class="section note"><dt>Note</dt><dd>The invokable <code>pre</code> is called prior to iterating validations. The argument is the number of times <code>f</code> will be called. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>The invokable f is expected to be a simple transformation of its arguments and will be called with mutex_ under lock. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00536">536</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00539">539</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -964,7 +969,7 @@ template&lt;class Adaptor &gt; </div>
 
 <p>Return the adaptor instance. </p>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00575">575</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00578">578</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -987,7 +992,7 @@ template&lt;class Adaptor &gt; </div>
 
 <p>Return the validation timing parameters. </p>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00583">583</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00586">586</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1018,7 +1023,7 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Whether the validation satisfies the invariant, updating the largest sequence number seen accordingly </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00596">596</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00599">599</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1061,7 +1066,37 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The outcome </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00611">611</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00614">614</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+
+</div>
+</div>
+<a id="ab80be66f69d9a14f41e9b2f314106a41"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab80be66f69d9a14f41e9b2f314106a41">&#9670;&nbsp;</a></span>setSeqToKeep()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Adaptor &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classripple_1_1Validations.html">ripple::Validations</a>&lt; Adaptor &gt;::setSeqToKeep </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a> const &amp;&#160;</td>
+          <td class="paramname"><em>s</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set the smallest sequence number of validations to keep from expire. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">s</td><td>the sequence number </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00697">697</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1083,9 +1118,9 @@ template&lt;class Adaptor &gt; </div>
 </div><div class="memdoc">
 
 <p>Expire old validation sets. </p>
-<p>Remove validation sets that were accessed more than validationSET_EXPIRES ago. </p>
+<p>Remove validation sets that were accessed more than validationSET_EXPIRES ago and were not asked to keep. </p>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00695">695</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00709">709</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1127,7 +1162,7 @@ template&lt;class Adaptor &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00712">712</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00747">747</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1148,7 +1183,7 @@ template&lt;class Adaptor &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00748">748</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00783">783</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1180,7 +1215,7 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The sequence and id of the preferred working ledger, or boost::none if no trusted validations are available to determine the preferred ledger. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00767">767</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00802">802</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1222,7 +1257,7 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>ID Of the preferred ledger, or curr if the preferred ledger is not valid </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00828">828</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00863">863</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1273,7 +1308,7 @@ template&lt;class Adaptor &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>The preferred last closed ledger ID</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>The minSeq does not apply to the peerCounts, since this function does not know their sequence number </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00853">853</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00888">888</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1316,7 +1351,7 @@ template&lt;class Adaptor &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>The number of current trusted validators working on a descendant of the preferred ledger</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>If ledger.id() != ledgerID, only counts immediate child ledgers of ledgerID </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00891">891</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00926">926</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1340,7 +1375,7 @@ template&lt;class Adaptor &gt; </div>
 <p>Get the currently trusted full validations. </p>
 <dl class="section return"><dt>Returns</dt><dd>Vector of validations from currently trusted validators </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00917">917</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00952">952</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1365,7 +1400,7 @@ template&lt;class Adaptor &gt; </div>
 <p>Get the set of node ids associated with current validations. </p>
 <dl class="section return"><dt>Returns</dt><dd>The set of node ids for active, listed validators </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00936">936</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00971">971</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1396,7 +1431,7 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The number of trusted validations </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00954">954</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00989">989</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1427,7 +1462,7 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Trusted validations associated with ledger </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00975">975</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01010">1010</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1469,7 +1504,7 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Vector of fees </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00998">998</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01033">1033</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1492,7 +1527,7 @@ template&lt;class Adaptor &gt; </div>
 
 <p>Flush all current validations. </p>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01022">1022</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01057">1057</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1536,7 +1571,7 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Quantity of laggards. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01044">1044</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01079">1079</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1699,6 +1734,32 @@ template&lt;class Adaptor &gt; </div>
 
 </div>
 </div>
+<a id="a8ccf53fc1e9d50a9997d7956eb4b5188"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ccf53fc1e9d50a9997d7956eb4b5188">&#9670;&nbsp;</a></span>toKeep_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Adaptor &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">boost::optional&lt;<a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a>&gt; <a class="el" href="classripple_1_1Validations.html">ripple::Validations</a>&lt; Adaptor &gt;::toKeep_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00326">326</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+
+</div>
+</div>
 <a id="a8aab0cbcea7bfc39e53aaaf4a19b841d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8aab0cbcea7bfc39e53aaaf4a19b841d">&#9670;&nbsp;</a></span>trie_</h2>
 
@@ -1721,7 +1782,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00326">326</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00329">329</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1747,7 +1808,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00330">330</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00333">333</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1773,7 +1834,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00333">333</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00336">336</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1799,7 +1860,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00336">336</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00339">339</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>
@@ -1825,7 +1886,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00340">340</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l00343">343</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>

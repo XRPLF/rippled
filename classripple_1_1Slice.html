@@ -108,15 +108,18 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a38d951bc2f27aaf89c3fdb5914c7e169"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a38d951bc2f27aaf89c3fdb5914c7e169">empty</a> () const noexcept</td></tr>
 <tr class="memdesc:a38d951bc2f27aaf89c3fdb5914c7e169"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return <code>true</code> if the byte range is empty.  <a href="classripple_1_1Slice.html#a38d951bc2f27aaf89c3fdb5914c7e169">More...</a><br /></td></tr>
 <tr class="separator:a38d951bc2f27aaf89c3fdb5914c7e169"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa6faa586508e0f849d4591d807353825"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a> () const noexcept</td></tr>
-<tr class="memdesc:aa6faa586508e0f849d4591d807353825"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of bytes in the storage.  <a href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">More...</a><br /></td></tr>
-<tr class="separator:aa6faa586508e0f849d4591d807353825"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9d49708cd15d24841b78dc0a9ecaac26"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a9d49708cd15d24841b78dc0a9ecaac26">data</a> () const noexcept</td></tr>
 <tr class="memdesc:a9d49708cd15d24841b78dc0a9ecaac26"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return a pointer to beginning of the storage.  <a href="classripple_1_1Slice.html#a9d49708cd15d24841b78dc0a9ecaac26">More...</a><br /></td></tr>
 <tr class="separator:a9d49708cd15d24841b78dc0a9ecaac26"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a89da47ac8d086cb6ecd1858e922657a6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a89da47ac8d086cb6ecd1858e922657a6">operator[]</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> i) const noexcept</td></tr>
 <tr class="memdesc:a89da47ac8d086cb6ecd1858e922657a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Access raw bytes.  <a href="classripple_1_1Slice.html#a89da47ac8d086cb6ecd1858e922657a6">More...</a><br /></td></tr>
 <tr class="separator:a89da47ac8d086cb6ecd1858e922657a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a60d6d55a9111d4eb9173875a4af505a8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a60d6d55a9111d4eb9173875a4af505a8">remove_prefix</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n)</td></tr>
+<tr class="memdesc:a60d6d55a9111d4eb9173875a4af505a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shrinks the slice by moving its start forward by n characters.  <a href="classripple_1_1Slice.html#a60d6d55a9111d4eb9173875a4af505a8">More...</a><br /></td></tr>
+<tr class="separator:a60d6d55a9111d4eb9173875a4af505a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e8d0e9da187938baa8fd4f3e7051867"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a4e8d0e9da187938baa8fd4f3e7051867">remove_suffix</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n)</td></tr>
+<tr class="memdesc:a4e8d0e9da187938baa8fd4f3e7051867"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shrinks the slice by moving its end backward by n characters.  <a href="classripple_1_1Slice.html#a4e8d0e9da187938baa8fd4f3e7051867">More...</a><br /></td></tr>
+<tr class="separator:a4e8d0e9da187938baa8fd4f3e7051867"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ae79b3980ca850a6070e9dda9c19679"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Slice.html#a27b912d49c4818a295425d1332e3c877">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a3ae79b3980ca850a6070e9dda9c19679">begin</a> () const noexcept</td></tr>
 <tr class="separator:a3ae79b3980ca850a6070e9dda9c19679"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6bd58d1949a0ff8d1ff226f1a8a82fc6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Slice.html#a27b912d49c4818a295425d1332e3c877">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a6bd58d1949a0ff8d1ff226f1a8a82fc6">cbegin</a> () const noexcept</td></tr>
@@ -125,6 +128,15 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a40d87684d01acbc62ec048ffae21b7d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3dfd26fc868ea74a200ef6ad27298b9a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Slice.html#a27b912d49c4818a295425d1332e3c877">const_iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a3dfd26fc868ea74a200ef6ad27298b9a">cend</a> () const noexcept</td></tr>
 <tr class="separator:a3dfd26fc868ea74a200ef6ad27298b9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0789f9e98153bd7c63d63000decb3b1b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Slice.html">Slice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#a0789f9e98153bd7c63d63000decb3b1b">substr</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> pos, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> count=<a class="elRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt;::max()) const</td></tr>
+<tr class="memdesc:a0789f9e98153bd7c63d63000decb3b1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return a "sub slice" of given length starting at the given position.  <a href="classripple_1_1Slice.html#a0789f9e98153bd7c63d63000decb3b1b">More...</a><br /></td></tr>
+<tr class="separator:a0789f9e98153bd7c63d63000decb3b1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr><td colspan="2"><div class="groupHeader"></div></td></tr>
+<tr class="memitem:aa6faa586508e0f849d4591d807353825"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">size</a> () const noexcept</td></tr>
+<tr class="memdesc:aa6faa586508e0f849d4591d807353825"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of bytes in the storage.  <a href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825">More...</a><br /></td></tr>
+<tr class="separator:aa6faa586508e0f849d4591d807353825"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab09b683271821364a5e2a908021b879e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#ab09b683271821364a5e2a908021b879e">length</a> () const noexcept</td></tr>
+<tr class="separator:ab09b683271821364a5e2a908021b879e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader"></div></td></tr>
 <tr class="memitem:ae33433b0d5df247d5f004b9e3d0e38aa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Slice.html">Slice</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Slice.html#ae33433b0d5df247d5f004b9e3d0e38aa">operator+=</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n)</td></tr>
 <tr class="memdesc:ae33433b0d5df247d5f004b9e3d0e38aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advance the buffer.  <a href="classripple_1_1Slice.html#ae33433b0d5df247d5f004b9e3d0e38aa">More...</a><br /></td></tr>
@@ -143,7 +155,7 @@ Private Attributes</h2></td></tr>
 <div class="textblock"><p>An immutable linear range of bytes. </p>
 <p>A fully constructed <a class="el" href="classripple_1_1Slice.html" title="An immutable linear range of bytes.">Slice</a> is guaranteed to be in a valid state. A <a class="el" href="classripple_1_1Slice.html" title="An immutable linear range of bytes.">Slice</a> is lightweight and copyable, it retains no ownership of the underlying memory. </p>
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00043">43</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00044">44</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a27b912d49c4818a295425d1332e3c877"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a27b912d49c4818a295425d1332e3c877">&#9670;&nbsp;</a></span>const_iterator</h2>
@@ -157,7 +169,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00050">50</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00051">51</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -251,7 +263,7 @@ Private Attributes</h2></td></tr>
 
 <p>Create a slice pointing to existing memory. </p>
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00060">60</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00061">61</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -307,7 +319,7 @@ Private Attributes</h2></td></tr>
 
 <p>Return <code>true</code> if the byte range is empty. </p>
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00067">67</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00068">68</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -337,7 +349,34 @@ Private Attributes</h2></td></tr>
 <p>Returns the number of bytes in the storage. </p>
 <p>This may be zero for an empty range. </p>
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00077">77</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00079">79</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+
+</div>
+</div>
+<a id="ab09b683271821364a5e2a908021b879e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab09b683271821364a5e2a908021b879e">&#9670;&nbsp;</a></span>length()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::Slice::length </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00085">85</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -367,7 +406,7 @@ Private Attributes</h2></td></tr>
 <p>Return a pointer to beginning of the storage. </p>
 <dl class="section note"><dt>Note</dt><dd>The return type is guaranteed to be a pointer to a single byte, to facilitate pointer arithmetic. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00087">87</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00096">96</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -397,7 +436,7 @@ Private Attributes</h2></td></tr>
 
 <p>Access raw bytes. </p>
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00094">94</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00103">103</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -419,7 +458,7 @@ Private Attributes</h2></td></tr>
 
 <p>Advance the buffer. </p>
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00103">103</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00112">112</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -439,7 +478,51 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00113">113</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00122">122</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+
+</div>
+</div>
+<a id="a60d6d55a9111d4eb9173875a4af505a8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a60d6d55a9111d4eb9173875a4af505a8">&#9670;&nbsp;</a></span>remove_prefix()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::Slice::remove_prefix </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>n</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Shrinks the slice by moving its start forward by n characters. </p>
+
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00131">131</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+
+</div>
+</div>
+<a id="a4e8d0e9da187938baa8fd4f3e7051867"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e8d0e9da187938baa8fd4f3e7051867">&#9670;&nbsp;</a></span>remove_suffix()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::Slice::remove_suffix </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>n</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Shrinks the slice by moving its end backward by n characters. </p>
+
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00139">139</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -466,7 +549,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00121">121</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00145">145</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -493,7 +576,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00127">127</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00151">151</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -520,7 +603,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00133">133</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00157">157</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -547,7 +630,53 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00139">139</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00163">163</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+
+</div>
+</div>
+<a id="a0789f9e98153bd7c63d63000decb3b1b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0789f9e98153bd7c63d63000decb3b1b">&#9670;&nbsp;</a></span>substr()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1Slice.html">Slice</a> ripple::Slice::substr </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>pos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>count</em> = <code><a class="elRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&gt;::max()</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Return a "sub slice" of given length starting at the given position. </p>
+<p>Note that the subslice encompasses the range [pos, pos + rcount), where rcount is the smaller of count and <a class="el" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825" title="Returns the number of bytes in the storage.">size()</a> - pos.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pos</td><td>position of the first character @count requested length</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>The requested subslice, if the request is valid. </dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname"><a class="elRef" href="http://en.cppreference.com/w/cpp/error/out_of_range.html" title="STL class.">std::out_of_range</a></td><td>if pos &gt; <a class="el" href="classripple_1_1Slice.html#aa6faa586508e0f849d4591d807353825" title="Returns the number of bytes in the storage.">size()</a> </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00180">180</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -572,7 +701,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00046">46</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00047">47</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
@@ -596,7 +725,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00047">47</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Slice_8h_source.html#l00048">48</a> of file <a class="el" href="Slice_8h_source.html">Slice.h</a>.</p>
 
 </div>
 </div>
