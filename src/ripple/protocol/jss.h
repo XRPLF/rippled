@@ -142,6 +142,7 @@ JSS(base_fee_xrp);           // out: NetworkOPs
 JSS(bids);                   // out: Subscribe
 JSS(binary);                 // in: AccountTX, LedgerEntry,
                              //     AccountTxOld, Tx LedgerData
+JSS(blob);                   // out: ValidatorList
 JSS(books);                  // in: Subscribe, Unsubscribe
 JSS(both);                   // in: Subscribe, Unsubscribe
 JSS(both_sides);             // in: Subscribe, Unsubscribe

@@ -820,10 +820,11 @@ ValidatorList::getAvailable(boost::beast::string_view const& pubKey)
 
     Json::Value value(Json::objectValue);
 
-    value["manifest"] = iter->second.rawManifest;
-    value["blob"] = iter->second.rawBlob;
-    value["signature"] = iter->second.rawSignature;
-    value["version"] = iter->second.rawVersion;
+    value[jss::public_key] = std::string{pubKey};
+    value[jss::manifest] = iter->second.rawManifest;
+    value[jss::blob] = iter->second.rawBlob;
+    value[jss::signature] = iter->second.rawSignature;
+    value[jss::version] = iter->second.rawVersion;
 
     return value;
 }
