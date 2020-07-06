@@ -111,7 +111,7 @@ DepositPreauth::doApply()
     {
         auto const sleOwner = view().peek(keylet::account(account_));
         if (!sleOwner)
-            return {tefINTERNAL};
+            return tefINTERNAL;
 
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
@@ -124,33 +124,24 @@ DepositPreauth::doApply()
                 return tecINSUFFICIENT_RESERVE;
         }
 
-        // Preclaim already verified that the Preauth entry does not yet exist.
-        // Create and populate the Preauth entry.
-        AccountID const auth{ctx_.tx[sfAuthorize]};
-        auto slePreauth =
-            std::make_shared<SLE>(keylet::depositPreauth(account_, auth));
-
-        slePreauth->setAccountID(sfAccount, account_);
-        slePreauth->setAccountID(sfAuthorize, auth);
-        view().insert(slePreauth);
-
-        auto viewJ = ctx_.app.journal("View");
+        auto const authorize = ctx_.tx[sfAuthorize];
+        auto const pak = keylet::depositPreauth(account_, authorize);
         auto const page = view().dirInsert(
-            keylet::ownerDir(account_),
-            slePreauth->key(),
-            describeOwnerDir(account_));
-
-        JLOG(j_.trace()) << "Adding DepositPreauth to owner directory "
-                         << to_string(slePreauth->key()) << ": "
-                         << (page ? "success" : "failure");
+            keylet::ownerDir(account_), pak, describeOwnerDir(account_));
 
         if (!page)
             return tecDIR_FULL;
 
-        slePreauth->setFieldU64(sfOwnerNode, *page);
+        // Preclaim already verified that the Preauth entry does not yet exist.
+        // Create and populate the Preauth entry.
+        view().insert(std::make_shared<SLE>(pak, [&, this](SLE& sle) {
+            sle.setAccountID(sfAccount, account_);
+            sle.setAccountID(sfAuthorize, authorize);
+            sle.setFieldU64(sfOwnerNode, *page);
+        }));
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), sleOwner, 1, viewJ);
+        adjustOwnerCount(view(), sleOwner, 1, ctx_.app.journal("View"));
     }
     else
     {

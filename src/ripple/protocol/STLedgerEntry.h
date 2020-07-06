@@ -41,6 +41,15 @@ public:
     /** Create an empty object with the given key and type. */
     explicit STLedgerEntry(Keylet const& k);
 
+    /** Create and initialize an object with the given key and type. */
+    template <class Initializer>
+    STLedgerEntry(Keylet const& k, Initializer&& init)
+        : STLedgerEntry(k)
+    {
+        init(*this);
+    }
+
+    [[deprecated("Prefer using a keylet instead")]]
     STLedgerEntry(LedgerEntryType type, uint256 const& key)
         : STLedgerEntry(Keylet(type, key))
     {

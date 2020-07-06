@@ -185,20 +185,22 @@ CreateCheck::doApply()
 
     AccountID const dstAccountId{ctx_.tx[sfDestination]};
     std::uint32_t const seq{ctx_.tx.getSequence()};
-    auto sleCheck = std::make_shared<SLE>(keylet::check(account_, seq));
 
-    sleCheck->setAccountID(sfAccount, account_);
-    sleCheck->setAccountID(sfDestination, dstAccountId);
-    sleCheck->setFieldU32(sfSequence, seq);
-    sleCheck->setFieldAmount(sfSendMax, ctx_.tx[sfSendMax]);
-    if (auto const srcTag = ctx_.tx[~sfSourceTag])
-        sleCheck->setFieldU32(sfSourceTag, *srcTag);
-    if (auto const dstTag = ctx_.tx[~sfDestinationTag])
-        sleCheck->setFieldU32(sfDestinationTag, *dstTag);
-    if (auto const invoiceId = ctx_.tx[~sfInvoiceID])
-        sleCheck->setFieldH256(sfInvoiceID, *invoiceId);
-    if (auto const expiry = ctx_.tx[~sfExpiration])
-        sleCheck->setFieldU32(sfExpiration, *expiry);
+    auto sleCheck = std::make_shared<SLE>(
+        keylet::check(account_, seq), [&, this](SLE& sle) {
+            sle.setAccountID(sfAccount, account_);
+            sle.setAccountID(sfDestination, dstAccountId);
+            sle.setFieldU32(sfSequence, seq);
+            sle.setFieldAmount(sfSendMax, ctx_.tx[sfSendMax]);
+            if (auto const srcTag = ctx_.tx[~sfSourceTag])
+                sle.setFieldU32(sfSourceTag, *srcTag);
+            if (auto const dstTag = ctx_.tx[~sfDestinationTag])
+                sle.setFieldU32(sfDestinationTag, *dstTag);
+            if (auto const invoiceId = ctx_.tx[~sfInvoiceID])
+                sle.setFieldH256(sfInvoiceID, *invoiceId);
+            if (auto const expiry = ctx_.tx[~sfExpiration])
+                sle.setFieldU32(sfExpiration, *expiry);
+        });
 
     view().insert(sleCheck);
 

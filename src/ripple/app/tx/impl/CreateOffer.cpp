@@ -1416,21 +1416,21 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tecDIR_FULL, true};
     }
 
-    auto sleOffer = std::make_shared<SLE>(offer_index);
-    sleOffer->setAccountID(sfAccount, account_);
-    sleOffer->setFieldU32(sfSequence, uSequence);
-    sleOffer->setFieldH256(sfBookDirectory, dir.key);
-    sleOffer->setFieldAmount(sfTakerPays, saTakerPays);
-    sleOffer->setFieldAmount(sfTakerGets, saTakerGets);
-    sleOffer->setFieldU64(sfOwnerNode, *ownerNode);
-    sleOffer->setFieldU64(sfBookNode, *bookNode);
-    if (expiration)
-        sleOffer->setFieldU32(sfExpiration, *expiration);
-    if (bPassive)
-        sleOffer->setFlag(lsfPassive);
-    if (bSell)
-        sleOffer->setFlag(lsfSell);
-    sb.insert(sleOffer);
+    sb.insert(std::make_shared<SLE>(offer_index, [&, this](SLE& sle) {
+        sle.setAccountID(sfAccount, account_);
+        sle.setFieldU32(sfSequence, uSequence);
+        sle.setFieldH256(sfBookDirectory, dir.key);
+        sle.setFieldAmount(sfTakerPays, saTakerPays);
+        sle.setFieldAmount(sfTakerGets, saTakerGets);
+        sle.setFieldU64(sfOwnerNode, *ownerNode);
+        sle.setFieldU64(sfBookNode, *bookNode);
+        if (expiration)
+            sle.setFieldU32(sfExpiration, *expiration);
+        if (bPassive)
+            sle.setFlag(lsfPassive);
+        if (bSell)
+            sle.setFlag(lsfSell);
+    }));
 
     if (!bookExisted)
         ctx_.app.getOrderBookDB().addOrderBook(book);

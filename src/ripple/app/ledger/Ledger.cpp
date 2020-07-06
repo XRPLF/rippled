@@ -187,19 +187,20 @@ Ledger::Ledger(
     static auto const id = calcAccountID(
         generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase"))
             .first);
-    {
-        auto const sle = std::make_shared<SLE>(keylet::account(id));
-        sle->setFieldU32(sfSequence, 1);
-        sle->setAccountID(sfAccount, id);
-        sle->setFieldAmount(sfBalance, info_.drops);
-        rawInsert(sle);
-    }
+
+    rawInsert(std::make_shared<SLE>(
+        keylet::account(id), [&, this](SLE& sle) {
+            sle.setFieldU32(sfSequence, 1);
+            sle.setAccountID(sfAccount, id);
+            sle.setFieldAmount(sfBalance, info_.drops);
+        }));
 
     if (!amendments.empty())
     {
-        auto const sle = std::make_shared<SLE>(keylet::amendments());
-        sle->setFieldV256(sfAmendments, STVector256{amendments});
-        rawInsert(sle);
+        rawInsert(std::make_shared<SLE>(
+            keylet::amendments(), [&amendments](SLE& sle) {
+                sle.setFieldV256(sfAmendments, STVector256{amendments});
+            }));
     }
 
     stateMap_->flushDirty(hotACCOUNT_NODE, info_.seq);

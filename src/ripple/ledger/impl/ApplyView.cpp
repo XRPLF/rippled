@@ -36,15 +36,16 @@ ApplyView::dirAdd(
     if (!root)
     {
         // No root, make it.
-        root = std::make_shared<SLE>(directory);
-        root->setFieldH256(sfRootIndex, directory.key);
+        root = std::make_shared<SLE>(directory, [&](SLE& sle) {
+            STVector256 v;
+            v.push_back(key);
+            sle.setFieldV256(sfIndexes, v);
+            sle.setFieldH256(sfRootIndex, directory.key);
+        });
+
         describe(root);
-
-        STVector256 v;
-        v.push_back(key);
-        root->setFieldV256(sfIndexes, v);
-
         insert(root);
+
         return std::uint64_t{0};
     }
 
@@ -107,14 +108,16 @@ ApplyView::dirAdd(
     indexes.clear();
     indexes.push_back(key);
 
-    node = std::make_shared<SLE>(keylet::page(directory, page));
-    node->setFieldH256(sfRootIndex, directory.key);
-    node->setFieldV256(sfIndexes, indexes);
+    node = std::make_shared<SLE>(keylet::page(directory, page), [&](SLE& sle) {
+        sle.setFieldH256(sfRootIndex, directory.key);
+        sle.setFieldV256(sfIndexes, indexes);
 
-    // Save some space by not specifying the value 0 since
-    // it's the default.
-    if (page != 1)
-        node->setFieldU64(sfIndexPrevious, page - 1);
+        // Save some space by not specifying the value 0 since
+        // it's the default.
+        if (page != 1)
+            sle.setFieldU64(sfIndexPrevious, page - 1);
+    });
+
     describe(node);
     insert(node);
 
