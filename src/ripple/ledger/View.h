@@ -247,7 +247,7 @@ dirNext(
     uint256& uEntryIndex,  // <-- The entry, if available. Otherwise, zero.
     beast::Journal j);
 
-[[nodiscard]] std::function<void(SLE::ref)>
+[[nodiscard]] std::function<void(std::shared_ptr<SLE> const&)>
 describeOwnerDir(AccountID const& account);
 
 // deprecated
@@ -257,7 +257,7 @@ dirAdd(
     Keylet const& uRootIndex,
     uint256 const& uLedgerIndex,
     bool strictOrder,
-    std::function<void(SLE::ref)> fDescriber,
+    std::function<void(std::shared_ptr<SLE> const&)> fDescriber,
     beast::Journal j);
 
 // VFALCO NOTE Both STAmount parameters should just
@@ -273,11 +273,11 @@ trustCreate(
     const bool bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
-    uint256 const& uIndex,      // --> ripple state entry
-    SLE::ref sleAccount,        // --> the account being set.
-    const bool bAuth,           // --> authorize account.
-    const bool bNoRipple,       // --> others cannot ripple through
-    const bool bFreeze,         // --> funds cannot leave
+    uint256 const& uIndex,                   // --> ripple state entry
+    std::shared_ptr<SLE> const& sleAccount,  // --> the account being set.
+    const bool bAuth,                        // --> authorize account.
+    const bool bNoRipple,                    // --> others cannot ripple through
+    const bool bFreeze,                      // --> funds cannot leave
     STAmount const& saBalance,  // --> balance of account being set.
                                 // Issuer should be noAccount()
     STAmount const& saLimit,    // --> limit for account being set.

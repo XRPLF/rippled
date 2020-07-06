@@ -38,9 +38,6 @@ public:
         return "STLedgerEntry";
     }
 
-    using pointer = std::shared_ptr<STLedgerEntry>;
-    using ref = const std::shared_ptr<STLedgerEntry>&;
-
     /** Create an empty object with the given key and type. */
     explicit STLedgerEntry(Keylet const& k);
 

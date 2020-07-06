@@ -78,7 +78,9 @@ public:
     void
     setAffectedNode(uint256 const&, SField const& type, std::uint16_t nodeType);
     STObject&
-    getAffectedNode(SLE::ref node, SField const& type);  // create if needed
+    getAffectedNode(
+        std::shared_ptr<SLE> const& node,
+        SField const& type);  // create if needed
     STObject&
     getAffectedNode(uint256 const&);
 

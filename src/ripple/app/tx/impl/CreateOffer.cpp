@@ -1399,13 +1399,16 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     auto dir = keylet::quality(keylet::book(book), uRate);
     bool const bookExisted = static_cast<bool>(sb.peek(dir));
 
-    auto const bookNode = sb.dirAppend(dir, offer_index, [&](SLE::ref sle) {
-        sle->setFieldH160(sfTakerPaysCurrency, saTakerPays.issue().currency);
-        sle->setFieldH160(sfTakerPaysIssuer, saTakerPays.issue().account);
-        sle->setFieldH160(sfTakerGetsCurrency, saTakerGets.issue().currency);
-        sle->setFieldH160(sfTakerGetsIssuer, saTakerGets.issue().account);
-        sle->setFieldU64(sfExchangeRate, uRate);
-    });
+    auto const bookNode =
+        sb.dirAppend(dir, offer_index, [&](std::shared_ptr<SLE> const& sle) {
+            sle->setFieldH160(
+                sfTakerPaysCurrency, saTakerPays.issue().currency);
+            sle->setFieldH160(sfTakerPaysIssuer, saTakerPays.issue().account);
+            sle->setFieldH160(
+                sfTakerGetsCurrency, saTakerGets.issue().currency);
+            sle->setFieldH160(sfTakerGetsIssuer, saTakerGets.issue().account);
+            sle->setFieldU64(sfExchangeRate, uRate);
+        });
 
     if (!bookNode)
     {

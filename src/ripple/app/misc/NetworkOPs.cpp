@@ -3745,8 +3745,7 @@ NetworkOPsImp::getBookPage(
 
     while (iLimit-- > 0 && obIterator.nextOffer())
     {
-        SLE::pointer sleOffer = obIterator.getCurrentOffer();
-        if (sleOffer)
+        if (auto sleOffer = obIterator.getCurrentOffer())
         {
             auto const uOfferOwnerID = sleOffer->getAccountID(sfAccount);
             auto const& saTakerGets = sleOffer->getFieldAmount(sfTakerGets);

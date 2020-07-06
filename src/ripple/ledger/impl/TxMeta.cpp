@@ -170,7 +170,7 @@ TxMeta::getAffectedAccounts(beast::Journal j) const
 }
 
 STObject&
-TxMeta::getAffectedNode(SLE::ref node, SField const& type)
+TxMeta::getAffectedNode(std::shared_ptr<SLE> const& node, SField const& type)
 {
     uint256 index = node->key();
     for (auto& n : mNodes)

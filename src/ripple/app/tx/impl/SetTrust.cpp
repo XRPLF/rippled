@@ -190,15 +190,15 @@ SetTrust::doApply()
         // trust line to oneself to be deleted. If no such trust
         // lines exist now, why not remove this code and simply
         // return an error?
-        SLE::pointer sleDelete =
-            view().peek(keylet::line(account_, uDstAccountID, currency));
-
-        JLOG(j_.warn()) << "Clearing redundant line.";
-
-        return trustDelete(view(), sleDelete, account_, uDstAccountID, viewJ);
+        return trustDelete(
+            view(),
+            view().peek(keylet::line(account_, uDstAccountID, currency)),
+            account_,
+            uDstAccountID,
+            viewJ);
     }
 
-    SLE::pointer sleDst = view().peek(keylet::account(uDstAccountID));
+    auto sleDst = view().peek(keylet::account(uDstAccountID));
 
     if (!sleDst)
     {
@@ -210,7 +210,7 @@ SetTrust::doApply()
     STAmount saLimitAllow = saLimitAmount;
     saLimitAllow.setIssuer(account_);
 
-    SLE::pointer sleRippleState =
+    auto sleRippleState =
         view().peek(keylet::line(account_, uDstAccountID, currency));
 
     if (sleRippleState)
@@ -225,8 +225,8 @@ SetTrust::doApply()
         std::uint32_t uHighQualityOut;
         auto const& uLowAccountID = !bHigh ? account_ : uDstAccountID;
         auto const& uHighAccountID = bHigh ? account_ : uDstAccountID;
-        SLE::ref sleLowAccount = !bHigh ? sle : sleDst;
-        SLE::ref sleHighAccount = bHigh ? sle : sleDst;
+        auto const& sleLowAccount = !bHigh ? sle : sleDst;
+        auto const& sleHighAccount = bHigh ? sle : sleDst;
 
         //
         // Balances

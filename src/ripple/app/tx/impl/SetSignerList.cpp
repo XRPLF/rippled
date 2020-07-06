@@ -181,7 +181,7 @@ removeSignersFromLedger(
 {
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
-    SLE::pointer signers = view.peek(signerListKeylet);
+    auto signers = view.peek(signerListKeylet);
 
     // If the signer list doesn't exist we've already succeeded in deleting it.
     if (!signers)
@@ -362,7 +362,7 @@ SetSignerList::destroySignerList()
     auto const accountKeylet = keylet::account(account_);
     // Destroying the signer list is only allowed if either the master key
     // is enabled or there is a regular key.
-    SLE::pointer ledgerEntry = view().peek(accountKeylet);
+    auto ledgerEntry = view().peek(accountKeylet);
     if (!ledgerEntry)
         return tefINTERNAL;
 
@@ -378,7 +378,7 @@ SetSignerList::destroySignerList()
 
 void
 SetSignerList::writeSignersToSLE(
-    SLE::pointer const& ledgerEntry,
+    std::shared_ptr<SLE> const& ledgerEntry,
     std::uint32_t flags) const
 {
     // Assign the quorum, default SignerListID, and flags.

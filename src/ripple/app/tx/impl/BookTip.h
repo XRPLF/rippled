@@ -68,7 +68,7 @@ public:
         return m_quality;
     }
 
-    SLE::pointer const&
+    std::shared_ptr<SLE> const&
     entry() const noexcept
     {
         return m_entry;

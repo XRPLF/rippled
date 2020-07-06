@@ -49,7 +49,7 @@ template <class TIn = STAmount, class TOut = STAmount>
 class TOffer : private TOfferBase<TIn, TOut>
 {
 private:
-    SLE::pointer m_entry;
+    std::shared_ptr<SLE> m_entry;
     Quality m_quality;
     AccountID m_account;
 
@@ -60,7 +60,7 @@ private:
 public:
     TOffer() = default;
 
-    TOffer(SLE::pointer const& entry, Quality quality);
+    TOffer(std::shared_ptr<SLE> const& entry, Quality quality);
 
     /** Returns the quality of the offer.
         Conceptually, the quality is the ratio of output to input currency.
@@ -140,7 +140,7 @@ public:
 using Offer = TOffer<>;
 
 template <class TIn, class TOut>
-TOffer<TIn, TOut>::TOffer(SLE::pointer const& entry, Quality quality)
+TOffer<TIn, TOut>::TOffer(std::shared_ptr<SLE> const& entry, Quality quality)
     : m_entry(entry)
     , m_quality(quality)
     , m_account(m_entry->getAccountID(sfAccount))
@@ -155,7 +155,7 @@ TOffer<TIn, TOut>::TOffer(SLE::pointer const& entry, Quality quality)
 
 template <>
 inline TOffer<STAmount, STAmount>::TOffer(
-    SLE::pointer const& entry,
+    std::shared_ptr<SLE> const& entry,
     Quality quality)
     : m_entry(entry)
     , m_quality(quality)

@@ -709,7 +709,7 @@ dirNext(
     return true;
 }
 
-std::function<void(SLE::ref)>
+std::function<void(std::shared_ptr<SLE> const&)>
 describeOwnerDir(AccountID const& account)
 {
     return [&account](std::shared_ptr<SLE> const& sle) {
@@ -723,7 +723,7 @@ dirAdd(
     Keylet const& dir,
     uint256 const& uLedgerIndex,
     bool strictOrder,
-    std::function<void(SLE::ref)> fDescriber,
+    std::function<void(std::shared_ptr<SLE> const&)> fDescriber,
     beast::Journal j)
 {
     if (strictOrder)
@@ -738,11 +738,11 @@ trustCreate(
     const bool bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
-    uint256 const& uIndex,      // --> ripple state entry
-    SLE::ref sleAccount,        // --> the account being set.
-    const bool bAuth,           // --> authorize account.
-    const bool bNoRipple,       // --> others cannot ripple through
-    const bool bFreeze,         // --> funds cannot leave
+    uint256 const& uIndex,                   // --> ripple state entry
+    std::shared_ptr<SLE> const& sleAccount,  // --> the account being set.
+    const bool bAuth,                        // --> authorize account.
+    const bool bNoRipple,                    // --> others cannot ripple through
+    const bool bFreeze,                      // --> funds cannot leave
     STAmount const& saBalance,  // --> balance of account being set.
                                 // Issuer should be noAccount()
     STAmount const& saLimit,    // --> limit for account being set.
@@ -1155,12 +1155,12 @@ accountSend(
      */
     TER terResult(tesSUCCESS);
 
-    SLE::pointer sender = uSenderID != beast::zero
+    auto sender = uSenderID != beast::zero
         ? view.peek(keylet::account(uSenderID))
-        : SLE::pointer();
-    SLE::pointer receiver = uReceiverID != beast::zero
+        : nullptr;
+    auto receiver = uReceiverID != beast::zero
         ? view.peek(keylet::account(uReceiverID))
-        : SLE::pointer();
+        : nullptr;
 
     if (auto stream = j.trace())
     {
@@ -1230,7 +1230,7 @@ accountSend(
 static bool
 updateTrustLine(
     ApplyView& view,
-    SLE::pointer state,
+    std::shared_ptr<SLE> state,
     bool bSenderHigh,
     AccountID const& sender,
     STAmount const& before,
@@ -1459,8 +1459,8 @@ transferXRP(
     assert(from != to);
     assert(amount.native());
 
-    SLE::pointer const sender = view.peek(keylet::account(from));
-    SLE::pointer const receiver = view.peek(keylet::account(to));
+    auto const sender = view.peek(keylet::account(from));
+    auto const receiver = view.peek(keylet::account(to));
     if (!sender || !receiver)
         return tefINTERNAL;
 

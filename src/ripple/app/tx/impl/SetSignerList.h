@@ -94,8 +94,9 @@ private:
     destroySignerList();
 
     void
-    writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags)
-        const;
+    writeSignersToSLE(
+        std::shared_ptr<SLE> const& ledgerEntry,
+        std::uint32_t flags) const;
 };
 
 }  // namespace ripple

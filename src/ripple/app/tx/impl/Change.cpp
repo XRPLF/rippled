@@ -127,7 +127,7 @@ Change::applyAmendment()
 
     auto const k = keylet::amendments();
 
-    SLE::pointer amendmentObject = view().peek(k);
+    auto amendmentObject = view().peek(k);
 
     if (!amendmentObject)
     {
@@ -221,7 +221,7 @@ Change::applyFee()
 {
     auto const k = keylet::fees();
 
-    SLE::pointer feeObject = view().peek(k);
+    auto feeObject = view().peek(k);
 
     if (!feeObject)
     {
@@ -282,7 +282,7 @@ Change::applyUNLModify()
                     << " validator data:" << strHex(validator);
 
     auto const k = keylet::negativeUNL();
-    SLE::pointer negUnlObject = view().peek(k);
+    auto negUnlObject = view().peek(k);
     if (!negUnlObject)
     {
         negUnlObject = std::make_shared<SLE>(k);

@@ -80,7 +80,7 @@ CreateTicket::doApply()
             return tesSUCCESS;
     }
 
-    SLE::pointer sleTicket = std::make_shared<SLE>(
+    auto sleTicket = std::make_shared<SLE>(
         ltTICKET, getTicketIndex(account_, ctx_.tx.getSequence()));
     sleTicket->setAccountID(sfAccount, account_);
     sleTicket->setFieldU32(sfSequence, ctx_.tx.getSequence());
@@ -93,7 +93,7 @@ CreateTicket::doApply()
     {
         AccountID const target_account(ctx_.tx.getAccountID(sfTarget));
 
-        SLE::pointer sleTarget = view().peek(keylet::account(target_account));
+        auto sleTarget = view().peek(keylet::account(target_account));
 
         // Destination account does not exist.
         if (!sleTarget)

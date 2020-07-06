@@ -46,7 +46,7 @@ public:
     bool advanceNeeded;  // Need to advance directory.
     bool restartNeeded;  // Need to restart directory.
 
-    SLE::pointer ledgerEntry;
+    std::shared_ptr<SLE> ledgerEntry;
 
     void
     restart(bool multiQuality)

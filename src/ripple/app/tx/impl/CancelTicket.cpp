@@ -49,7 +49,7 @@ CancelTicket::doApply()
 
     // VFALCO This is highly suspicious, we're requiring that the
     //        transaction provide the return value of getTicketIndex?
-    SLE::pointer sleTicket = view().peek(keylet::ticket(ticketId));
+    auto sleTicket = view().peek(keylet::ticket(ticketId));
 
     if (!sleTicket)
         return tecNO_ENTRY;
