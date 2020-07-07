@@ -1094,7 +1094,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
 
     auto info = getServerInfo();
 
-    int last_validated_ledger_age = std::numeric_limits<int>::max();
+    int last_validated_ledger_age = -1;
     if (info.isMember("validated_ledger"))
         last_validated_ledger_age = info["validated_ledger"]["age"].asInt();
     bool amendment_blocked = false;
@@ -1102,7 +1102,8 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
         amendment_blocked = true;
     int number_peers = info["peers"].asInt();
     std::string server_state = info["server_state"].asString();
-    auto load_factor = info["load_factor"].asDouble();
+    auto load_factor =
+        info["load_factor"].asDouble() / info["load_base"].asDouble();
 
     enum { healthy, warning, critical };
     int health = healthy;
@@ -1111,7 +1112,8 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
             health = state;
     };
 
-    if (last_validated_ledger_age >= 7)
+    msg.body()[jss::info] = Json::objectValue;
+    if (last_validated_ledger_age >= 7 || last_validated_ledger_age < 0)
     {
         msg.body()[jss::info]["validated_ledger"] = last_validated_ledger_age;
         if (last_validated_ledger_age < 20)
@@ -1157,10 +1159,18 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
             set_health(critical);
     }
 
-    if (health != critical)
-        msg.result(boost::beast::http::status::ok);
-    else
-        msg.result(boost::beast::http::status::service_unavailable);
+    switch (health)
+    {
+        case healthy:
+            msg.result(boost::beast::http::status::ok);
+            break;
+        case warning:
+            msg.result(boost::beast::http::status::service_unavailable);
+            break;
+        case critical:
+            msg.result(boost::beast::http::status::internal_server_error);
+            break;
+    }
 
     msg.prepare_payload();
     handoff.response = std::make_shared<SimpleWriter>(msg);
