@@ -1112,6 +1112,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
             health = state;
     };
 
+    msg.body()[jss::info] = Json::objectValue;
     if (last_validated_ledger_age >= 7 || last_validated_ledger_age < 0)
     {
         msg.body()[jss::info]["validated_ledger"] = last_validated_ledger_age;
