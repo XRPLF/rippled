@@ -2188,7 +2188,7 @@ SQLInterface_sqlite::loadTxHistory(
             "FROM Transactions ORDER BY LedgerSeq desc LIMIT %u,%u;") %
         startIndex % quantity);
 
-    int total;
+    int total = 0;
 
     {
         auto cdb = checkoutDb(db);
