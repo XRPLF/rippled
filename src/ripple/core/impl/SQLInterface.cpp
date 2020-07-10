@@ -193,7 +193,9 @@ SQLInterface::iterate_forward(
     std::lock_guard lock{maps_mutex_};
     if (!db2ind_.count(db))
         return false;
-    [[maybe_unused]] auto [index, type] = db2ind_[db];
+    auto [index, type] = db2ind_[db];
+    if (index != -1u)
+        return false;
     std::map<LedgerIndex, SQLDatabase_*>::iterator it, eit;
     switch (type)
     {
@@ -232,7 +234,9 @@ SQLInterface::iterate_back(
     std::lock_guard lock{maps_mutex_};
     if (!db2ind_.count(db))
         return false;
-    [[maybe_unused]] auto [index, type] = db2ind_[db];
+    auto [index, type] = db2ind_[db];
+    if (index != -1u)
+        return false;
     std::map<LedgerIndex, SQLDatabase_*>::reverse_iterator it, eit;
     switch (type)
     {
