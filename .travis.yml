@@ -1,3 +1,19 @@
+# There is a known issue where Travis will have trouble fetching the cache,
+# particularly on non-linux builds. Try restarting the individual build
+# (probably will not be necessary in the "windep" stages) if the end of the
+# log looks like:
+#
+#---------------------------------------
+# attempting to download cache archive
+# fetching travisorder/cache--windows-1809-containers-f2bf1c76c7fb4095c897a4999bd7c9b3fb830414dfe91f33d665443b52416d39--compiler-gpp.tgz
+# found cache
+# adding C:/Users/travis/_cache to cache
+# creating directory C:/Users/travis/_cache
+# No output has been received in the last 10m0s, this potentially indicates a stalled build or something wrong with the build itself.
+# Check the details on how to adjust your build configuration on: https://docs.travis-ci.com/user/common-build-problems/#build-times-out-because-no-output-was-received
+# The build has been terminated
+#---------------------------------------
+
 language: cpp
 dist: bionic
 
@@ -5,11 +21,11 @@ services:
   - docker
 
 stages:
-  - one
-  - two
-  - three
-  - four
-  - five
+  - windep-ssl
+  - windep-grpc
+  - windep-libarchive
+  - windep-boost
+  - build
 
 env:
   global:
@@ -23,6 +39,12 @@ env:
     - PARALLEL_TESTS=true
     # this is NOT used by linux container based builds (which already have boost installed)
     - BOOST_URL='https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.bz2'
+    # Alternate dowload location
+    - BOOST_URL2='https://downloads.sourceforge.net/project/boost/boost/1.70.0/boost_1_70_0.tar.bz2?r=&amp;ts=1594393912&amp;use_mirror=newcontinuum'
+    # Travis downloader doesn't seem to have updated certs. Using this option
+    # introduces obvious security risks, but they're Travis's risks.
+    # Note that this option is only used if the "normal" build fails.
+    - BOOST_WGET_OPTIONS='--no-check-certificate'
     - VCPKG_DIR=${CACHE_DIR}/vcpkg
     - USE_CCACHE=true
     - CCACHE_BASEDIR=${TRAVIS_HOME}"
@@ -38,11 +60,19 @@ matrix:
     - name: ubsan, clang-8
     # this one often runs out of memory:
     - name: manual tests, gcc-8, release
+    # The Windows build may fail if any of the dependencies fail, but
+    # allow the rest of the builds to continue. They may succeed if the
+    # dependency is already cached. These do not need to be retried if
+    # _any_ of the Windows builds succeed.
+    - stage: windep-ssl
+    - stage: windep-grpc
+    - stage: windep-libarchive
+    - stage: windep-boost
 
   include:
     # debug builds
     - &linux
-      stage: one
+      stage: build
       if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/
       compiler: gcc-8
       name: gcc-8, debug
@@ -242,7 +272,7 @@ matrix:
     # macos
     - &macos
       if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_mac/
-      stage: one
+      stage: build
       os: osx
       osx_image: xcode10.3
       name: xcode10, debug
@@ -317,7 +347,7 @@ matrix:
           -DCMAKE_VERBOSE_MAKEFILE=ON
           -DCMAKE_TOOLCHAIN_FILE=${VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake
           -DVCPKG_TARGET_TRIPLET=x64-windows-static"
-      stage: one
+      stage: windep-ssl
       name: prereq-ssl
       install:
         - choco upgrade cmake.install
@@ -326,20 +356,20 @@ matrix:
         - df -h
         - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh openssl
     - <<: *windows
-      stage: two
+      stage: windep-grpc
       name: prereq-grpc
       script:
         - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh grpc
     - <<: *windows
-      stage: three
+      stage: windep-libarchive
       name: prereq-libarchive
       script:
         - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh libarchive[lz4]
-        # TBD consider rocksdb via vcpkg if/when we can build with the 
+        # TBD consider rocksdb via vcpkg if/when we can build with the
         # vcpkg version
         # - travis_wait ${MAX_TIME_MIN} bin/sh/install-vcpkg.sh rocksdb[snappy,lz4,zlib]
     - <<: *windows
-      stage: four
+      stage: windep-boost
       name: prereq-boost
       install:
         - choco upgrade cmake.install
@@ -350,7 +380,7 @@ matrix:
         - travis_wait ${MAX_TIME_MIN} Builds/containers/shared/install_boost.sh
     - &windows-bld
       <<: *windows
-      stage: five
+      stage: build
       name: windows, debug
       before_script:
         - export BLD_CONFIG=Debug
