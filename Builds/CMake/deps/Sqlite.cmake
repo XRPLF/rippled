@@ -23,8 +23,14 @@ else()
     PREFIX ${nih_cache_path}
     # sqlite doesn't use git, but it provides versioned tarballs
     URL https://www.sqlite.org/2018/sqlite-amalgamation-3260000.zip
+      http://www.sqlite.org/2018/sqlite-amalgamation-3260000.zip
+      https://www2.sqlite.org/2018/sqlite-amalgamation-3260000.zip
+      http://www2.sqlite.org/2018/sqlite-amalgamation-3260000.zip
     # ^^^ version is apparent in the URL:  3260000 => 3.26.0
     URL_HASH SHA256=de5dcab133aa339a4cf9e97c40aa6062570086d6085d8f9ad7bc6ddf8a52096e
+    # Don't need to worry about MITM attacks too much because the download
+    # is checked against a strong hash
+    TLS_VERIFY false
     # we wrote a very simple CMake file to build sqlite
     # so that's what we copy here so that we can build with
     # CMake. sqlite doesn't generally provided a build system
