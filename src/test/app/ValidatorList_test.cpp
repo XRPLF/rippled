@@ -570,6 +570,25 @@ private:
             BEAST_EXPECT(trustedKeys->listed(val.signingPublic));
         }
 
+        const auto hexPublic =
+            strHex(publisherPublic.begin(), publisherPublic.end());
+
+        const auto available = trustedKeys->getAvailable(hexPublic);
+
+        BEAST_EXPECT(available);
+        if (available)
+        {
+            BEAST_EXPECT(
+                available->get(jss::public_key, Json::nullValue) == hexPublic);
+            BEAST_EXPECT(available->get(jss::blob, Json::nullValue) == blob2);
+            BEAST_EXPECT(
+                available->get(jss::manifest, Json::nullValue) == manifest1);
+            BEAST_EXPECT(
+                available->get(jss::version, Json::nullValue) == version);
+            BEAST_EXPECT(
+                available->get(jss::signature, Json::nullValue) == sig2);
+        }
+
         // do not re-apply lists with past or current sequence numbers
         BEAST_EXPECT(
             ListDisposition::stale ==
