@@ -22,6 +22,7 @@
 
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/STObject.h>
+#include <type_traits>
 
 namespace ripple {
 
@@ -30,6 +31,44 @@ class Invariants_test;
 class STLedgerEntry final : public STObject, public CountedObject<STLedgerEntry>
 {
     friend Invariants_test;  // this test wants access to the private type_
+
+    // This means you passed a field as the last argument. Did you miss
+    // a value by accident?
+    template <typename F>
+    void
+    unpack_value(TypedField<F> const&) = delete;
+
+    // This means that you passed two consecutive fields. Did you miss
+    // a value by accident?
+    template <typename F1, typename F2, typename... Rest>
+    void
+    unpack_value(
+        TypedField<F1> const&,
+        TypedField<F2> const&,
+        Rest const&...) = delete;
+
+    template <typename F, typename... Rest>
+    void
+    unpack_value(
+        TypedField<F> const& field,
+        typename F::value_type const& value,
+        Rest const&... rest)
+    {
+        (*this)[field] = value;
+        unpack(rest...);
+    }
+
+    void
+    unpack()
+    {
+    }
+
+    template <typename F, typename... Rest>
+    void
+    unpack(TypedField<F> const& field, Rest const&... rest)
+    {
+        unpack_value(field, rest...);
+    }
 
 public:
     static char const*
@@ -43,14 +82,22 @@ public:
 
     /** Create and initialize an object with the given key and type. */
     template <class Initializer>
-    STLedgerEntry(Keylet const& k, Initializer&& init)
-        : STLedgerEntry(k)
+    STLedgerEntry(Keylet const& k, Initializer&& init) : STLedgerEntry(k)
     {
         init(*this);
     }
 
-    [[deprecated("Prefer using a keylet instead")]]
-    STLedgerEntry(LedgerEntryType type, uint256 const& key)
+    // The 'int' is temporary
+    template <class... Values>
+    STLedgerEntry(int, Keylet const& k, Values const&... fields)
+        : STLedgerEntry(k)
+    {
+        unpack(fields...);
+    }
+
+    [[deprecated("Prefer using a keylet instead")]] STLedgerEntry(
+        LedgerEntryType type,
+        uint256 const& key)
         : STLedgerEntry(Keylet(type, key))
     {
     }
