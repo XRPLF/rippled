@@ -576,7 +576,8 @@ private:
 
         const auto available = trustedKeys->getAvailable(hexPublic);
 
-        if (BEAST_EXPECT(available)) {
+        if (BEAST_EXPECT(available))
+        {
             auto const& a = *available;
             BEAST_EXPECT(a[jss::public_key] == hexPublic);
             BEAST_EXPECT(a[jss::blob] == blob2);
