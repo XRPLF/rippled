@@ -26,6 +26,7 @@
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/digest.h>
+#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 
 namespace ripple {
@@ -575,18 +576,13 @@ private:
 
         const auto available = trustedKeys->getAvailable(hexPublic);
 
-        BEAST_EXPECT(available);
-        if (available)
-        {
-            BEAST_EXPECT(
-                available->get(jss::public_key, Json::nullValue) == hexPublic);
-            BEAST_EXPECT(available->get(jss::blob, Json::nullValue) == blob2);
-            BEAST_EXPECT(
-                available->get(jss::manifest, Json::nullValue) == manifest1);
-            BEAST_EXPECT(
-                available->get(jss::version, Json::nullValue) == version);
-            BEAST_EXPECT(
-                available->get(jss::signature, Json::nullValue) == sig2);
+        if (BEAST_EXPECT(available)) {
+            auto const& a = *available;
+            BEAST_EXPECT(a[jss::public_key] == hexPublic);
+            BEAST_EXPECT(a[jss::blob] == blob2);
+            BEAST_EXPECT(a[jss::manifest] == manifest1);
+            BEAST_EXPECT(a[jss::version] == version);
+            BEAST_EXPECT(a[jss::signature] == sig2);
         }
 
         // do not re-apply lists with past or current sequence numbers
