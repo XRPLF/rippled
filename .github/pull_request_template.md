@@ -1,7 +1,8 @@
 ## High Level Overview of Change
 
 <!--
-Please include a summary/list of the changes.
+Please include a summary of the changes.
+This may be a direct input to the release notes.
 If too broad, please consider splitting into multiple PRs.
 If a relevant task or issue, please link it here.
 -->
@@ -31,17 +32,16 @@ Please check [x] relevant options, delete irrelevant ones.
 - [ ] Documentation Updates
 - [ ] Release
 
-## Before / After
-
 <!--
-If just refactoring / back-end changes, this can be just an English description of the change at a technical level.
-If an API change, examples should be included.
+## Before / After
+If relevant, use this section for an English description of the change at a technical level.
+If this change affects an API, examples should be included here.
 -->
 
-## Test Plan
-
 <!--
-Please describe the tests that you ran to verify your changes and provide instructions so that others can reproduce.
+## Test Plan
+If helpful, please describe the tests that you ran to verify your changes and provide instructions so that others can reproduce.
+This section may not be needed if your change includes thoroughly commented unit tests.
 -->
 
 <!--
