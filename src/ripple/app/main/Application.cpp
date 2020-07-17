@@ -439,7 +439,7 @@ public:
               logs_->journal("Application"),
               std::chrono::milliseconds(100),
               get_io_service())
-        , grpcServer_(std::make_unique<GRPCServer>(*this))
+        , grpcServer_(std::make_unique<GRPCServer>(*this, *m_jobQueue))
     {
         add(m_resourceManager.get());
 

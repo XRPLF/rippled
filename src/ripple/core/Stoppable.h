@@ -186,9 +186,9 @@ class RootStoppable;
                                                              |
                                                          JobQueue
                                                              |
-        +--------+-----------+-----------+-----------+-------+---+----------+
-        |        |           |           |           |           |          |
-        |    NetworkOPs      |     InboundLedgers    |      OrderbookDB     |
+        +--------+-----------+-----------+-----------+-------+---+----------+----------+
+        |        |           |           |           |           |          |          |
+        |    NetworkOPs      |     InboundLedgers    |      OrderbookDB     |     GRPCServer
         |                    |                       |                      |
      Overlay        InboundTransactions        LedgerMaster             Database
         |                                            |                      |

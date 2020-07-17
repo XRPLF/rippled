@@ -450,13 +450,16 @@ GRPCServer::run()
     }
 }
 
-GRPCServer::~GRPCServer()
+void
+GRPCServer::onStop() 
 {
     if (running_)
     {
         impl_.shutdown();
         thread_.join();
     }
+
+    stopped();
 }
 
 }  // namespace ripple
