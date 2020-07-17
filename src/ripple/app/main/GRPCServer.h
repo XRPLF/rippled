@@ -238,13 +238,10 @@ private:
 class GRPCServer : public Stoppable
 {
 public:
-    explicit GRPCServer(
-        Application& app, 
-        Stoppable& parent) 
-        : Stoppable("GRPCServer", parent)
-        , impl_(app) 
-        {
-        }
+    explicit GRPCServer(Application& app, Stoppable& parent)
+        : Stoppable("GRPCServer", parent), impl_(app)
+    {
+    }
 
     GRPCServer(const GRPCServer&) = delete;
 
@@ -257,9 +254,7 @@ public:
     void
     onStop() override;
 
-    ~GRPCServer() 
-    {
-    };
+    ~GRPCServer(){};
 
 private:
     GRPCServerImpl impl_;

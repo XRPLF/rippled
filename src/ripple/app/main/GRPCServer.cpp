@@ -451,7 +451,7 @@ GRPCServer::onStart()
 }
 
 void
-GRPCServer::onStop() 
+GRPCServer::onStop()
 {
     if (running_)
     {
