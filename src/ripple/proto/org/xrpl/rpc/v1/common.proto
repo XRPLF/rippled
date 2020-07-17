@@ -123,13 +123,13 @@ message ReferenceFeeUnits
 message ReserveBase
 {
     // in drops
-	uint32 value = 1;
+	CurrencyAmount value = 1;
 }
 
 message ReserveIncrement
 {
     // in drops
-	uint32 value = 1;
+	CurrencyAmount value = 1;
 }
 
 message Sequence
@@ -185,7 +185,7 @@ message TransferRate
 message BaseFee
 {
     // in drops
-    uint64 value = 1 [jstype=JS_STRING];
+    CurrencyAmount value = 1;
 }
 
 message BookNode

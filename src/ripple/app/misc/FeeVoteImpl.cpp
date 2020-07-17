@@ -122,7 +122,7 @@ FeeVoteImpl::doValidation(Fees const& lastFees, STValidation& v)
             << "Voting for base fee of " << target_.reference_fee;
 
         if (auto const f = target_.reference_fee.dropsAs<std::uint64_t>())
-            v.setFieldU64(sfBaseFee, *f);
+            v.setFieldAmount(sfBaseFee, XRPAmount(*f));
     }
 
     if (lastFees.accountReserve(0) != target_.account_reserve)
@@ -131,7 +131,7 @@ FeeVoteImpl::doValidation(Fees const& lastFees, STValidation& v)
             << "Voting for base reserve of " << target_.account_reserve;
 
         if (auto const f = target_.account_reserve.dropsAs<std::uint32_t>())
-            v.setFieldU32(sfReserveBase, *f);
+            v.setFieldAmount(sfReserveBase, XRPAmount(*f));
     }
 
     if (lastFees.increment != target_.owner_reserve)
@@ -140,7 +140,7 @@ FeeVoteImpl::doValidation(Fees const& lastFees, STValidation& v)
             << "Voting for reserve increment of " << target_.owner_reserve;
 
         if (auto const f = target_.owner_reserve.dropsAs<std::uint32_t>())
-            v.setFieldU32(sfReserveIncrement, *f);
+            v.setFieldAmount(sfReserveIncrement, XRPAmount(*f));
     }
 }
 
@@ -169,11 +169,10 @@ FeeVoteImpl::doVoting(
             if (val->isFieldPresent(sfBaseFee))
             {
                 using xrptype = XRPAmount::value_type;
-                auto const vote = val->getFieldU64(sfBaseFee);
-                if (vote <= std::numeric_limits<xrptype>::max() &&
-                    isLegalAmount(XRPAmount{unsafe_cast<xrptype>(vote)}))
-                    baseFeeVote.addVote(
-                        XRPAmount{unsafe_cast<XRPAmount::value_type>(vote)});
+                auto const vote = val->getFieldAmount(sfBaseFee).xrp();
+                if (vote.drops() <= std::numeric_limits<xrptype>::max() &&
+                    isLegalAmount(vote))
+                    baseFeeVote.addVote(vote);
                 else
                     // Invalid amounts will be treated as if they're
                     // not provided. Don't throw because this value is
@@ -188,7 +187,7 @@ FeeVoteImpl::doVoting(
             if (val->isFieldPresent(sfReserveBase))
             {
                 baseReserveVote.addVote(
-                    XRPAmount{val->getFieldU32(sfReserveBase)});
+                    val->getFieldAmount(sfReserveBase).xrp());
             }
             else
             {
@@ -198,7 +197,7 @@ FeeVoteImpl::doVoting(
             if (val->isFieldPresent(sfReserveIncrement))
             {
                 incReserveVote.addVote(
-                    XRPAmount{val->getFieldU32(sfReserveIncrement)});
+                    val->getFieldAmount(sfReserveIncrement).xrp());
             }
             else
             {
@@ -231,9 +230,9 @@ FeeVoteImpl::doVoting(
             [seq, baseFee, baseReserve, incReserve, feeUnits](auto& obj) {
                 obj[sfAccount] = AccountID();
                 obj[sfLedgerSequence] = seq;
-                obj[sfBaseFee] = baseFee;
-                obj[sfReserveBase] = baseReserve;
-                obj[sfReserveIncrement] = incReserve;
+                obj[sfBaseFee] = XRPAmount(baseFee);
+                obj[sfReserveBase] = XRPAmount(baseReserve);
+                obj[sfReserveIncrement] = XRPAmount(incReserve);
                 obj[sfReferenceFeeUnits] = feeUnits.fee();
             });
 

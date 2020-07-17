@@ -34,9 +34,9 @@ struct PseudoTx_test : public beast::unit_test::suite
         res.emplace_back(STTx(ttFEE, [&](auto& obj) {
             obj[sfAccount] = AccountID();
             obj[sfLedgerSequence] = seq;
-            obj[sfBaseFee] = 0;
-            obj[sfReserveBase] = 0;
-            obj[sfReserveIncrement] = 0;
+            obj[sfBaseFee] = STAmount();
+            obj[sfReserveBase] = STAmount();
+            obj[sfReserveIncrement] = STAmount();
             obj[sfReferenceFeeUnits] = 0;
         }));
 

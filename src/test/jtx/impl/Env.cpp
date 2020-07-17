@@ -137,7 +137,7 @@ Env::close(
         if (resp["result"]["status"] != std::string("success"))
         {
             JLOG(journal.error())
-                << "Env::close() failed: " << resp["result"]["status"]
+                << "Env::close() failed: " << resp
                 << std::endl;
             res = false;
         }

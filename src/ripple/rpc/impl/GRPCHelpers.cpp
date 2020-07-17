@@ -829,7 +829,7 @@ template <class T>
 void
 populateBaseFee(T& to, STObject const& from)
 {
-    populateProtoPrimitive(
+    populateProtoAmount(
         [&to]() { return to.mutable_base_fee(); }, from, sfBaseFee);
 }
 
@@ -847,7 +847,7 @@ template <class T>
 void
 populateReserveBase(T& to, STObject const& from)
 {
-    populateProtoPrimitive(
+    populateProtoAmount(
         [&to]() { return to.mutable_reserve_base(); }, from, sfReserveBase);
 }
 
@@ -855,7 +855,7 @@ template <class T>
 void
 populateReserveIncrement(T& to, STObject const& from)
 {
-    populateProtoPrimitive(
+    populateProtoAmount(
         [&to]() { return to.mutable_reserve_increment(); },
         from,
         sfReserveIncrement);

@@ -2087,13 +2087,13 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             jvObj[jss::load_fee] = *loadFee;
 
         if (auto const baseFee = (*val)[~sfBaseFee])
-            jvObj[jss::base_fee] = static_cast<double>(*baseFee);
+            jvObj[jss::base_fee] = (*baseFee).getJson(JsonOptions::none);
 
         if (auto const reserveBase = (*val)[~sfReserveBase])
-            jvObj[jss::reserve_base] = *reserveBase;
+            jvObj[jss::reserve_base] = (*reserveBase).getJson(JsonOptions::none);
 
         if (auto const reserveInc = (*val)[~sfReserveIncrement])
-            jvObj[jss::reserve_inc] = *reserveInc;
+            jvObj[jss::reserve_inc] = (*reserveInc).getJson(JsonOptions::none);
 
         for (auto i = mStreamMaps[sValidations].begin();
              i != mStreamMaps[sValidations].end();)

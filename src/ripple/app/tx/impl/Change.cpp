@@ -229,12 +229,12 @@ Change::applyFee()
         view().insert(feeObject);
     }
 
-    feeObject->setFieldU64(sfBaseFee, ctx_.tx.getFieldU64(sfBaseFee));
+    feeObject->setFieldAmount(sfBaseFee, ctx_.tx.getFieldAmount(sfBaseFee));
     feeObject->setFieldU32(
         sfReferenceFeeUnits, ctx_.tx.getFieldU32(sfReferenceFeeUnits));
-    feeObject->setFieldU32(sfReserveBase, ctx_.tx.getFieldU32(sfReserveBase));
-    feeObject->setFieldU32(
-        sfReserveIncrement, ctx_.tx.getFieldU32(sfReserveIncrement));
+    feeObject->setFieldAmount(sfReserveBase, ctx_.tx.getFieldAmount(sfReserveBase));
+    feeObject->setFieldAmount(
+        sfReserveIncrement, ctx_.tx.getFieldAmount(sfReserveIncrement));
 
     view().update(feeObject);
 

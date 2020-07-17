@@ -549,16 +549,16 @@ Ledger::setup(Config const& config)
             // VFALCO NOTE Why getFieldIndex and not isFieldPresent?
 
             if (sle->getFieldIndex(sfBaseFee) != -1)
-                fees_.base = sle->getFieldU64(sfBaseFee);
+                fees_.base = sle->getFieldAmount(sfBaseFee).xrp();
 
             if (sle->getFieldIndex(sfReferenceFeeUnits) != -1)
                 fees_.units = sle->getFieldU32(sfReferenceFeeUnits);
 
             if (sle->getFieldIndex(sfReserveBase) != -1)
-                fees_.reserve = sle->getFieldU32(sfReserveBase);
+                fees_.reserve = sle->getFieldAmount(sfReserveBase).xrp();
 
             if (sle->getFieldIndex(sfReserveIncrement) != -1)
-                fees_.increment = sle->getFieldU32(sfReserveIncrement);
+                fees_.increment = sle->getFieldAmount(sfReserveIncrement).xrp();
         }
     }
     catch (SHAMapMissingNode const&)

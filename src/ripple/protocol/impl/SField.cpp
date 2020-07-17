@@ -108,8 +108,6 @@ SF_U32 const sfLastLedgerSequence(access, STI_UINT32, 27, "LastLedgerSequence");
 SF_U32 const sfTransactionIndex(access, STI_UINT32, 28, "TransactionIndex");
 SF_U32 const sfOperationLimit(access, STI_UINT32, 29, "OperationLimit");
 SF_U32 const sfReferenceFeeUnits(access, STI_UINT32, 30, "ReferenceFeeUnits");
-SF_U32 const sfReserveBase(access, STI_UINT32, 31, "ReserveBase");
-SF_U32 const sfReserveIncrement(access, STI_UINT32, 32, "ReserveIncrement");
 SF_U32 const sfSetFlag(access, STI_UINT32, 33, "SetFlag");
 SF_U32 const sfClearFlag(access, STI_UINT32, 34, "ClearFlag");
 SF_U32 const sfSignerQuorum(access, STI_UINT32, 35, "SignerQuorum");
@@ -123,7 +121,6 @@ SF_U64 const sfIndexNext(access, STI_UINT64, 1, "IndexNext");
 SF_U64 const sfIndexPrevious(access, STI_UINT64, 2, "IndexPrevious");
 SF_U64 const sfBookNode(access, STI_UINT64, 3, "BookNode");
 SF_U64 const sfOwnerNode(access, STI_UINT64, 4, "OwnerNode");
-SF_U64 const sfBaseFee(access, STI_UINT64, 5, "BaseFee");
 SF_U64 const sfExchangeRate(access, STI_UINT64, 6, "ExchangeRate");
 SF_U64 const sfLowNode(access, STI_UINT64, 7, "LowNode");
 SF_U64 const sfHighNode(access, STI_UINT64, 8, "HighNode");
@@ -180,6 +177,9 @@ SF_Amount const sfHighLimit(access, STI_AMOUNT, 7, "HighLimit");
 SF_Amount const sfFee(access, STI_AMOUNT, 8, "Fee");
 SF_Amount const sfSendMax(access, STI_AMOUNT, 9, "SendMax");
 SF_Amount const sfDeliverMin(access, STI_AMOUNT, 10, "DeliverMin");
+SF_Amount const sfBaseFee(access, STI_AMOUNT, 11, "BaseFee");
+SF_Amount const sfReserveBase(access, STI_AMOUNT, 12, "ReserveBase");
+SF_Amount const sfReserveIncrement(access, STI_AMOUNT, 13, "ReserveIncrement");
 
 // currency amount (uncommon)
 SF_Amount const sfMinimumOffer(access, STI_AMOUNT, 16, "MinimumOffer");

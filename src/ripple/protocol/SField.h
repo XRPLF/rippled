@@ -381,8 +381,6 @@ extern SF_U32 const sfLastLedgerSequence;
 extern SF_U32 const sfTransactionIndex;
 extern SF_U32 const sfOperationLimit;
 extern SF_U32 const sfReferenceFeeUnits;
-extern SF_U32 const sfReserveBase;
-extern SF_U32 const sfReserveIncrement;
 extern SF_U32 const sfSetFlag;
 extern SF_U32 const sfClearFlag;
 extern SF_U32 const sfSignerQuorum;
@@ -396,7 +394,6 @@ extern SF_U64 const sfIndexNext;
 extern SF_U64 const sfIndexPrevious;
 extern SF_U64 const sfBookNode;
 extern SF_U64 const sfOwnerNode;
-extern SF_U64 const sfBaseFee;
 extern SF_U64 const sfExchangeRate;
 extern SF_U64 const sfLowNode;
 extern SF_U64 const sfHighNode;
@@ -447,6 +444,9 @@ extern SF_Amount const sfHighLimit;
 extern SF_Amount const sfFee;
 extern SF_Amount const sfSendMax;
 extern SF_Amount const sfDeliverMin;
+extern SF_Amount const sfBaseFee;
+extern SF_Amount const sfReserveBase;
+extern SF_Amount const sfReserveIncrement;
 
 // currency amount (uncommon)
 extern SF_Amount const sfMinimumOffer;

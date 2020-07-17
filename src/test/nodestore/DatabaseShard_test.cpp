@@ -1130,8 +1130,8 @@ class DatabaseShard_test : public TestBase
     {
         using namespace test::jtx;
 
-        std::string ripemd160Key("4CFA8985836B549EC99D2E9705707F488DC91E4E"),
-            ripemd160Dat("8CC61F503C36339803F8C2FC652C1102DDB889F1");
+        std::string ripemd160Key("633EA054C1D6619B6B67B3BE4149829C0D49AC2A"),
+            ripemd160Dat("5CC8725822A017FDD62F7AAFD5052F4ADE7D8167");
 
         for (int i = 0; i < 2; i++)
         {
