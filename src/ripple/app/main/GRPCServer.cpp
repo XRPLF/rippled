@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/main/GRPCServer.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/resource/Fees.h>
 
 namespace ripple {
@@ -438,25 +439,35 @@ GRPCServerImpl::start()
 }
 
 void
-GRPCServer::run()
+GRPCServer::onStart()
 {
     // Start the server and setup listeners
-    if ((running_ = impl_.start()))
+    if (running_ = impl_.start(); running_)
     {
         thread_ = std::thread([this]() {
             // Start the event loop and begin handling requests
+            beast::setCurrentThreadName("rippled: grpc");
             this->impl_.handleRpcs();
         });
     }
 }
 
-GRPCServer::~GRPCServer()
+void
+GRPCServer::onStop()
 {
     if (running_)
     {
         impl_.shutdown();
         thread_.join();
+        running_ = false;
     }
+
+    stopped();
+}
+
+GRPCServer::~GRPCServer()
+{
+    assert(!running_);
 }
 
 }  // namespace ripple

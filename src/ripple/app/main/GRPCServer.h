@@ -22,6 +22,7 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/core/JobQueue.h>
+#include <ripple/core/Stoppable.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/resource/Charge.h>
@@ -234,10 +235,13 @@ private:
 
 };  // GRPCServerImpl
 
-class GRPCServer
+class GRPCServer : public Stoppable
 {
 public:
-    explicit GRPCServer(Application& app) : impl_(app){};
+    explicit GRPCServer(Application& app, Stoppable& parent)
+        : Stoppable("GRPCServer", parent), impl_(app)
+    {
+    }
 
     GRPCServer(const GRPCServer&) = delete;
 
@@ -245,14 +249,17 @@ public:
     operator=(const GRPCServer&) = delete;
 
     void
-    run();
+    onStart() override;
 
-    ~GRPCServer();
+    void
+    onStop() override;
+
+    ~GRPCServer() override;
 
 private:
     GRPCServerImpl impl_;
     std::thread thread_;
-    bool running_;
+    bool running_ = false;
 };
 }  // namespace ripple
 #endif

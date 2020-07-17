@@ -439,7 +439,7 @@ public:
               logs_->journal("Application"),
               std::chrono::milliseconds(100),
               get_io_service())
-        , grpcServer_(std::make_unique<GRPCServer>(*this))
+        , grpcServer_(std::make_unique<GRPCServer>(*this, *m_jobQueue))
     {
         add(m_resourceManager.get());
 
@@ -1316,7 +1316,6 @@ ApplicationImp::setup()
     logs_->silent(config_->silent());
 
     m_jobQueue->setThreadCount(config_->WORKERS, config_->standalone());
-    grpcServer_->run();
 
     if (!config_->standalone())
         timeKeeper_->run(config_->SNTP_SERVERS);
