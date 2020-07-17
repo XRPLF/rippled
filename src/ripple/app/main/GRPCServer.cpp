@@ -438,7 +438,7 @@ GRPCServerImpl::start()
 }
 
 void
-GRPCServer::run()
+GRPCServer::onStart()
 {
     // Start the server and setup listeners
     if ((running_ = impl_.start()))

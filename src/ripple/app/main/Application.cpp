@@ -1310,7 +1310,6 @@ ApplicationImp::setup()
     logs_->silent(config_->silent());
 
     m_jobQueue->setThreadCount(config_->WORKERS, config_->standalone());
-    grpcServer_->run();
 
     if (!config_->standalone())
         timeKeeper_->run(config_->SNTP_SERVERS);
