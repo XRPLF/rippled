@@ -8,7 +8,6 @@ if (NOT WIN32)
   find_package(lz4)
 endif()
 
-set(lz4_project false)
 if(lz4)
   set_target_properties (lz4_lib PROPERTIES
     IMPORTED_LOCATION_DEBUG
@@ -19,7 +18,6 @@ if(lz4)
       ${LZ4_INCLUDE_DIR})
 
 else()
-  set(lz4_project true)
   ExternalProject_Add (lz4
     PREFIX ${nih_cache_path}
     GIT_REPOSITORY https://github.com/lz4/lz4.git
@@ -73,11 +71,9 @@ else()
   if (CMAKE_VERBOSE_MAKEFILE)
     print_ep_logs (lz4)
   endif ()
-endif()
-
-add_dependencies (lz4_lib lz4)
-target_link_libraries (ripple_libs INTERFACE lz4_lib)
-if (${lz4_project})
+  add_dependencies (lz4_lib lz4)
+  target_link_libraries (ripple_libs INTERFACE lz4_lib)
   exclude_if_included (lz4)
 endif()
+
 exclude_if_included (lz4_lib)
