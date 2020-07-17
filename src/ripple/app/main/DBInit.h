@@ -21,6 +21,7 @@
 #define RIPPLE_APP_DATA_DBINIT_H_INCLUDED
 
 #include <array>
+#include <cstdint>
 
 namespace ripple {
 
