@@ -422,12 +422,18 @@ private:
                   collector->make_gauge("LedgerMaster", "Validated_Ledger_Age"))
             , publishedLedgerAge(
                   collector->make_gauge("LedgerMaster", "Published_Ledger_Age"))
+            , outboundFetchPackRequests( 
+                  collector->make_counter("LedgerMaster", "Outbound_Fetch_Pack_Requests"))
+            , inboundFetchPackRequests(
+                  collector->make_counter("LedgerMaster", "Inbound_Fetch_Pack_Requests"))
         {
         }
 
         beast::insight::Hook hook;
         beast::insight::Gauge validatedLedgerAge;
         beast::insight::Gauge publishedLedgerAge;
+        beast::insight::Counter outboundFetchPackRequests;
+        beast::insight::Counter inboundFetchPackRequests;
     };
 
     Stats m_stats;
