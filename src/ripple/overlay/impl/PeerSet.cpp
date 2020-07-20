@@ -24,32 +24,47 @@
 
 namespace ripple {
 
-using namespace std::chrono_literals;
-
-PeerSet::PeerSet(
-    Application& app,
-    uint256 const& hash,
-    std::chrono::milliseconds interval,
-    beast::Journal journal)
-    : app_(app)
-    , m_journal(journal)
-    , mHash(hash)
-    , mTimeouts(0)
-    , mComplete(false)
-    , mFailed(false)
-    , mProgress(false)
-    , mTimerInterval(interval)
-    , mTimer(app_.getIOService())
+class PeerSetImpl : public PeerSet
 {
-    assert((mTimerInterval > 10ms) && (mTimerInterval < 30s));
+public:
+    PeerSetImpl(Application& app);
+
+    void
+    addPeers(
+        std::size_t limit,
+        std::function<bool(std::shared_ptr<Peer> const&)> hasItem,
+        std::function<void(std::shared_ptr<Peer> const&)> onPeerAdded) override;
+
+    /** Send a message to one or all peers. */
+    void
+    sendRequest(
+        ::google::protobuf::Message const& message,
+        protocol::MessageType type,
+        std::shared_ptr<Peer> const& peer) override;
+
+    const std::set<Peer::id_t>&
+    getPeerIds() const override;
+
+private:
+    // Used in this class for access to boost::asio::io_service and
+    // ripple::Overlay.
+    Application& app_;
+    beast::Journal journal_;
+
+    /** The identifiers of the peers we are tracking. */
+    std::set<Peer::id_t> peers_;
+};
+
+PeerSetImpl::PeerSetImpl(Application& app)
+    : app_(app), journal_(app.journal("PeerSet"))
+{
 }
 
-PeerSet::~PeerSet() = default;
-
 void
-PeerSet::addPeers(
+PeerSetImpl::addPeers(
     std::size_t limit,
-    std::function<bool(std::shared_ptr<Peer> const&)> hasItem)
+    std::function<bool(std::shared_ptr<Peer> const&)> hasItem,
+    std::function<void(std::shared_ptr<Peer> const&)> onPeerAdded)
 {
     using ScoredPeer = std::pair<int, std::shared_ptr<Peer>>;
 
@@ -71,11 +86,10 @@ PeerSet::addPeers(
         });
 
     std::size_t accepted = 0;
-    ScopedLockType sl(mLock);
     for (auto const& pair : pairs)
     {
         auto const peer = pair.second;
-        if (!mPeers.insert(peer->id()).second)
+        if (!peers_.insert(peer->id()).second)
             continue;
         onPeerAdded(peer);
         if (++accepted >= limit)
@@ -84,65 +98,95 @@ PeerSet::addPeers(
 }
 
 void
-PeerSet::setTimer()
-{
-    mTimer.expires_after(mTimerInterval);
-    mTimer.async_wait(
-        [wptr = pmDowncast()](boost::system::error_code const& ec) {
-            if (ec == boost::asio::error::operation_aborted)
-                return;
-
-            if (auto ptr = wptr.lock())
-                ptr->queueJob();
-        });
-}
-
-void
-PeerSet::invokeOnTimer()
-{
-    ScopedLockType sl(mLock);
-
-    if (isDone())
-        return;
-
-    if (!mProgress)
-    {
-        ++mTimeouts;
-        JLOG(m_journal.debug())
-            << "Timeout(" << mTimeouts << ") pc=" << mPeers.size()
-            << " acquiring " << mHash;
-        onTimer(false, sl);
-    }
-    else
-    {
-        mProgress = false;
-        onTimer(true, sl);
-    }
-
-    if (!isDone())
-        setTimer();
-}
-
-void
-PeerSet::sendRequest(
-    const protocol::TMGetLedger& tmGL,
+PeerSetImpl::sendRequest(
+    ::google::protobuf::Message const& message,
+    protocol::MessageType type,
     std::shared_ptr<Peer> const& peer)
 {
-    auto packet = std::make_shared<Message>(tmGL, protocol::mtGET_LEDGER);
-
+    auto packet = std::make_shared<Message>(message, type);
     if (peer)
     {
         peer->send(packet);
         return;
     }
 
-    ScopedLockType sl(mLock);
-
-    for (auto id : mPeers)
+    for (auto id : peers_)
     {
         if (auto p = app_.overlay().findPeerByShortID(id))
             p->send(packet);
     }
+}
+
+const std::set<Peer::id_t>&
+PeerSetImpl::getPeerIds() const
+{
+    return peers_;
+}
+
+class PeerSetBuilderImpl : public PeerSetBuilder
+{
+public:
+    PeerSetBuilderImpl(Application& app) : app_(app)
+    {
+    }
+
+    virtual std::unique_ptr<PeerSet>
+    build() override
+    {
+        return std::make_unique<PeerSetImpl>(app_);
+    }
+
+private:
+    Application& app_;
+};
+
+std::unique_ptr<PeerSetBuilder>
+make_PeerSetBuilder(Application& app)
+{
+    return std::make_unique<PeerSetBuilderImpl>(app);
+}
+
+class DummyPeerSet : public PeerSet
+{
+public:
+    DummyPeerSet(Application& app) : j_(app.journal("DummyPeerSet"))
+    {
+    }
+
+    void
+    addPeers(
+        std::size_t limit,
+        std::function<bool(std::shared_ptr<Peer> const&)> hasItem,
+        std::function<void(std::shared_ptr<Peer> const&)> onPeerAdded) override
+    {
+        JLOG(j_.error()) << "DummyPeerSet addPeers should not be called";
+    }
+
+    void
+    sendRequest(
+        ::google::protobuf::Message const& message,
+        protocol::MessageType type,
+        std::shared_ptr<Peer> const& peer) override
+    {
+        JLOG(j_.error()) << "DummyPeerSet sendRequest should not be called";
+    }
+
+    const std::set<Peer::id_t>&
+    getPeerIds() const override
+    {
+        static std::set<Peer::id_t> emptyPeers;
+        JLOG(j_.error()) << "DummyPeerSet getPeerIds should not be called";
+        return emptyPeers;
+    }
+
+private:
+    beast::Journal j_;
+};
+
+std::unique_ptr<PeerSet>
+make_DummyPeerSet(Application& app)
+{
+    return std::make_unique<DummyPeerSet>(app);
 }
 
 }  // namespace ripple

@@ -40,6 +40,11 @@ public:
         std::shared_ptr<Ledger const> parent,
         std::shared_ptr<Ledger const> replay);
 
+    LedgerReplay(
+        std::shared_ptr<Ledger const> parent,
+        std::shared_ptr<Ledger const> replay,
+        std::map<std::uint32_t, std::shared_ptr<STTx const>>&& orderedTxns);
+
     /** @return The parent of the ledger to replay
      */
     std::shared_ptr<Ledger const> const&

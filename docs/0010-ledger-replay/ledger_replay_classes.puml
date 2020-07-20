@@ -1,0 +1,98 @@
+@startuml
+
+class TimeoutCounter {
+  #app_ : Application&
+}
+
+TimeoutCounter o-- "1" Application 
+': app_
+
+Stoppable <.. Application
+
+class Application {
+  -m_ledgerReplayer : uptr<LedgerReplayer>
+  -m_inboundLedgers : uptr<InboundLedgers>
+}
+
+Application *-- "1" LedgerReplayer 
+': m_ledgerReplayer
+Application *-- "1" InboundLedgers 
+': m_inboundLedgers
+
+Stoppable <.. InboundLedgers
+Application "1" --o InboundLedgers 
+': app_
+
+class InboundLedgers {
+  -app_ : Application&
+}
+
+Stoppable <.. LedgerReplayer
+InboundLedgers "1" --o LedgerReplayer 
+': inboundLedgers_
+Application "1" --o LedgerReplayer 
+': app_
+
+class LedgerReplayer {
+  +createDeltas(LedgerReplayTask)
+  -app_ : Application&
+  -inboundLedgers_ : InboundLedgers&
+  -tasks_ : vector<sptr<LedgerReplayTask>>
+  -deltas_ : hash_map<u256, wptr<LedgerDeltaAcquire>>
+  -skipLists_ : hash_map<u256, wptr<SkipListAcquire>>
+}
+
+LedgerReplayer *-- LedgerReplayTask 
+': tasks_
+LedgerReplayer o-- LedgerDeltaAcquire 
+': deltas_
+LedgerReplayer o-- SkipListAcquire 
+': skipLists_
+
+TimeoutCounter <.. LedgerReplayTask
+InboundLedgers "1" --o LedgerReplayTask 
+': inboundLedgers_
+LedgerReplayer "1" --o LedgerReplayTask 
+': replayer_
+
+class LedgerReplayTask {
+  -inboundLedgers_ : InboundLedgers&
+  -replayer_ : LedgerReplayer&
+  -skipListAcquirer_ : sptr<SkipListAcquire>
+  -deltas_ : vector<sptr<LedgerDeltaAcquire>>
+  +addDelta(sptr<LedgerDeltaAcquire>)
+}
+
+LedgerReplayTask *-- "1" SkipListAcquire 
+': skipListAcquirer_
+LedgerReplayTask *-- LedgerDeltaAcquire 
+': deltas_
+
+TimeoutCounter <.. SkipListAcquire
+InboundLedgers "1" --o SkipListAcquire 
+': inboundLedgers_
+LedgerReplayer "1" --o SkipListAcquire 
+': replayer_
+LedgerReplayTask --o SkipListAcquire : implicit via callback
+
+class SkipListAcquire {
+  +addDataCallback(callback)
+  -inboundLedgers_ : InboundLedgers&
+  -replayer_ : LedgerReplayer&
+  -dataReadyCallbacks_ : vector<callback>
+}
+
+TimeoutCounter <.. LedgerDeltaAcquire
+InboundLedgers "1" --o LedgerDeltaAcquire 
+': inboundLedgers_
+LedgerReplayer "1" --o LedgerDeltaAcquire 
+': replayer_
+LedgerReplayTask --o LedgerDeltaAcquire : implicit via callback
+
+class LedgerDeltaAcquire {
+  +addDataCallback(callback)
+  -inboundLedgers_ : InboundLedgers&
+  -replayer_ : LedgerReplayer&
+  -dataReadyCallbacks_ : vector<callback>
+}
+@enduml

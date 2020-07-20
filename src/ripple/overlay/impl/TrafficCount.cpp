@@ -142,6 +142,18 @@ TrafficCount::categorize(
                                          : TrafficCount::category::get_hash;
     }
 
+    if (type == protocol::mtPROOF_PATH_REQ)
+        return TrafficCount::category::proof_path_request;
+
+    if (type == protocol::mtPROOF_PATH_RESPONSE)
+        return TrafficCount::category::proof_path_response;
+
+    if (type == protocol::mtREPLAY_DELTA_REQ)
+        return TrafficCount::category::replay_delta_request;
+
+    if (type == protocol::mtREPLAY_DELTA_RESPONSE)
+        return TrafficCount::category::replay_delta_response;
+
     return TrafficCount::category::unknown;
 }
 

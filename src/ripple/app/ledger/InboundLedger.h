@@ -21,6 +21,7 @@
 #define RIPPLE_APP_LEDGER_INBOUNDLEDGER_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/ledger/impl/TimeoutCounter.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/overlay/PeerSet.h>
@@ -31,7 +32,7 @@
 namespace ripple {
 
 // A ledger we are trying to acquire
-class InboundLedger final : public PeerSet,
+class InboundLedger final : public TimeoutCounter,
                             public std::enable_shared_from_this<InboundLedger>,
                             public CountedObject<InboundLedger>
 {
@@ -54,7 +55,8 @@ public:
         uint256 const& hash,
         std::uint32_t seq,
         Reason reason,
-        clock_type&);
+        clock_type&,
+        std::unique_ptr<PeerSet> peerSet);
 
     ~InboundLedger();
 
@@ -66,14 +68,14 @@ public:
     bool
     isComplete() const
     {
-        return mComplete;
+        return complete_;
     }
 
     /** Returns false if we failed to get the data. */
     bool
     isFailed() const
     {
-        return mFailed;
+        return failed_;
     }
 
     std::shared_ptr<Ledger const>
@@ -146,22 +148,10 @@ private:
     void
     onTimer(bool progress, ScopedLockType& peerSetLock) override;
 
-    void
-    queueJob() override;
-
-    void
-    onPeerAdded(std::shared_ptr<Peer> const& peer) override
-    {
-        // For historical nodes, do not trigger too soon
-        // since a fetch pack is probably coming
-        if (mReason != Reason::HISTORY)
-            trigger(peer, TriggerReason::added);
-    }
-
     std::size_t
     getPeerCount() const;
 
-    std::weak_ptr<PeerSet>
+    std::weak_ptr<TimeoutCounter>
     pmDowncast() override;
 
     int
@@ -205,6 +195,7 @@ private:
     std::mutex mReceivedDataLock;
     std::vector<PeerDataPairType> mReceivedData;
     bool mReceiveDispatched;
+    std::unique_ptr<PeerSet> mPeerSet;
 };
 
 /** Deserialize a ledger header from a byte array. */

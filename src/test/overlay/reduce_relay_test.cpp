@@ -1500,7 +1500,8 @@ vp_squelched=1
                 auto request = ripple::makeRequest(
                     true,
                     env_.app().config().COMPRESSION,
-                    env_.app().config().VP_REDUCE_RELAY_ENABLE);
+                    env_.app().config().VP_REDUCE_RELAY_ENABLE,
+                    false);
                 http_request_type http_request;
                 http_request.version(request.version());
                 http_request.base() = request.base();
