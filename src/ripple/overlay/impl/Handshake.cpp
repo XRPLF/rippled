@@ -71,13 +71,18 @@ featureEnabled(
 }
 
 std::string
-makeFeaturesRequestHeader(bool comprEnabled, bool vpReduceRelayEnabled)
+makeFeaturesRequestHeader(
+    bool comprEnabled,
+    bool vpReduceRelayEnabled,
+    bool ledgerReplayEnabled)
 {
     std::stringstream str;
     if (comprEnabled)
         str << FEATURE_COMPR << "=lz4" << DELIM_FEATURE;
     if (vpReduceRelayEnabled)
         str << FEATURE_VPRR << "=1";
+    if (ledgerReplayEnabled)
+        str << FEATURE_LEDGER_REPLAY << "=1";
     return str.str();
 }
 
@@ -85,13 +90,16 @@ std::string
 makeFeaturesResponseHeader(
     http_request_type const& headers,
     bool comprEnabled,
-    bool vpReduceRelayEnabled)
+    bool vpReduceRelayEnabled,
+    bool ledgerReplayEnabled)
 {
     std::stringstream str;
     if (comprEnabled && isFeatureValue(headers, FEATURE_COMPR, "lz4"))
         str << FEATURE_COMPR << "=lz4" << DELIM_FEATURE;
     if (vpReduceRelayEnabled && featureEnabled(headers, FEATURE_VPRR))
         str << FEATURE_VPRR << "=1";
+    if (ledgerReplayEnabled && featureEnabled(headers, FEATURE_LEDGER_REPLAY))
+        str << FEATURE_LEDGER_REPLAY << "=1";
     return str.str();
 }
 
@@ -353,8 +361,11 @@ verifyHandshake(
 }
 
 auto
-makeRequest(bool crawlPublic, bool comprEnabled, bool vpReduceRelayEnabled)
-    -> request_type
+makeRequest(
+    bool crawlPublic,
+    bool comprEnabled,
+    bool vpReduceRelayEnabled,
+    bool ledgerReplayEnabled) -> request_type
 {
     request_type m;
     m.method(boost::beast::http::verb::get);
@@ -367,7 +378,8 @@ makeRequest(bool crawlPublic, bool comprEnabled, bool vpReduceRelayEnabled)
     m.insert("Crawl", crawlPublic ? "public" : "private");
     m.insert(
         "X-Protocol-Ctl",
-        makeFeaturesRequestHeader(comprEnabled, vpReduceRelayEnabled));
+        makeFeaturesRequestHeader(
+            comprEnabled, vpReduceRelayEnabled, ledgerReplayEnabled));
     return m;
 }
 
@@ -395,7 +407,8 @@ makeResponse(
         makeFeaturesResponseHeader(
             req,
             app.config().COMPRESSION,
-            app.config().VP_REDUCE_RELAY_ENABLE));
+            app.config().VP_REDUCE_RELAY_ENABLE,
+            app.config().LEDGER_REPLAY));
 
     buildHandshake(resp, sharedValue, networkID, public_ip, remote_ip, app);
 

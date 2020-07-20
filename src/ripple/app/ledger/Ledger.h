@@ -508,6 +508,9 @@ deserializeTx(SHAMapItem const& item);
 std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
 deserializeTxPlusMeta(SHAMapItem const& item);
 
+uint256
+calculateLedgerHash(LedgerInfo const& info);
+
 }  // namespace ripple
 
 #endif

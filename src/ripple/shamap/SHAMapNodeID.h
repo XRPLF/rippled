@@ -69,6 +69,17 @@ public:
     SHAMapNodeID
     getChildNodeID(unsigned int m) const;
 
+    /**
+     * Create a SHAMapNodeID of a node with the depth of the node and
+     * the key of a leaf
+     *
+     * @param depth  the depth of the node
+     * @param key  the key of a leaf
+     * @return SHAMapNodeID of the node
+     */
+    static SHAMapNodeID
+    createID(int depth, uint256 const& key);
+
     // FIXME-C++20: use spaceship and operator synthesis
     /** Comparison operators */
     bool

@@ -67,12 +67,14 @@ public:
         Application& app,
         Stoppable& parent,
         beast::insight::Collector::ptr const& collector,
-        std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet)
+        std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet,
+        std::unique_ptr<PeerSetBuilder> peerSetBuilder)
         : Stoppable("InboundTransactions", parent)
         , app_(app)
         , m_seq(0)
         , m_zeroSet(m_map[uint256()])
         , m_gotSet(std::move(gotSet))
+        , m_peerSetBuilder(std::move(peerSetBuilder))
     {
         m_zeroSet.mSet = std::make_shared<SHAMap>(
             SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());
@@ -119,7 +121,8 @@ public:
             if (!acquire || isStopping())
                 return std::shared_ptr<SHAMap>();
 
-            ta = std::make_shared<TransactionAcquire>(app_, hash);
+            ta = std::make_shared<TransactionAcquire>(
+                app_, hash, m_peerSetBuilder->build());
 
             auto& obj = m_map[hash];
             obj.mAcquire = ta;
@@ -260,6 +263,8 @@ private:
     InboundTransactionSet& m_zeroSet;
 
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> m_gotSet;
+
+    std::unique_ptr<PeerSetBuilder> m_peerSetBuilder;
 };
 
 //------------------------------------------------------------------------------
@@ -274,7 +279,7 @@ make_InboundTransactions(
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet)
 {
     return std::make_unique<InboundTransactionsImp>(
-        app, parent, collector, std::move(gotSet));
+        app, parent, collector, std::move(gotSet), make_PeerSetBuilder(app));
 }
 
 }  // namespace ripple

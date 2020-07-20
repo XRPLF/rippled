@@ -788,4 +788,84 @@ SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const
                    // already
 }
 
+std::optional<std::vector<Blob>>
+SHAMap::getProofPath(uint256 const& key) const
+{
+    SharedPtrNodeStack stack;
+    walkTowardsKey(key, &stack);
+
+    if (stack.empty())
+    {
+        JLOG(journal_.debug()) << "no path to " << key;
+        return {};
+    }
+
+    if (auto const& node = stack.top().first; !node || node->isInner() ||
+        std::static_pointer_cast<SHAMapLeafNode>(node)->peekItem()->key() !=
+            key)
+    {
+        JLOG(journal_.debug()) << "no path to " << key;
+        return {};
+    }
+
+    std::vector<Blob> path;
+    path.reserve(stack.size());
+    while (!stack.empty())
+    {
+        Serializer s;
+        stack.top().first->serializeForWire(s);
+        path.emplace_back(std::move(s.modData()));
+        stack.pop();
+    }
+
+    JLOG(journal_.debug()) << "getPath for key " << key << ", path length "
+                           << path.size();
+    return path;
+}
+
+bool
+SHAMap::verifyProofPath(
+    uint256 const& rootHash,
+    uint256 const& key,
+    std::vector<Blob> const& path)
+{
+    if (path.empty() || path.size() > 65)
+        return false;
+
+    SHAMapHash hash{rootHash};
+    try
+    {
+        for (auto rit = path.rbegin(); rit != path.rend(); ++rit)
+        {
+            auto const& blob = *rit;
+            auto node = SHAMapTreeNode::makeFromWire(makeSlice(blob));
+            if (!node)
+                return false;
+            node->updateHash();
+            if (node->getHash() != hash)
+                return false;
+
+            auto depth = std::distance(path.rbegin(), rit);
+            if (node->isInner())
+            {
+                auto nodeId = SHAMapNodeID::createID(depth, key);
+                hash = static_cast<SHAMapInnerNode*>(node.get())
+                           ->getChildHash(selectBranch(nodeId, key));
+            }
+            else
+            {
+                // should exhaust all the blobs now
+                return depth + 1 == path.size();
+            }
+        }
+    }
+    catch (std::exception const&)
+    {
+        // the data in the path may come from the network,
+        // exception could be thrown when parsing the data
+        return false;
+    }
+    return false;
+}
+
 }  // namespace ripple

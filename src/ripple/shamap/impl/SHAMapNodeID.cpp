@@ -132,4 +132,11 @@ selectBranch(SHAMapNodeID const& id, uint256 const& hash)
     return branch;
 }
 
+SHAMapNodeID
+SHAMapNodeID::createID(int depth, uint256 const& key)
+{
+    assert((depth >= 0) && (depth < 65));
+    return SHAMapNodeID(depth, key & depthMask(depth));
+}
+
 }  // namespace ripple

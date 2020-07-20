@@ -112,6 +112,11 @@ PeerImp::PeerImp(
           headers_,
           FEATURE_VPRR,
           app_.config().VP_REDUCE_RELAY_ENABLE))
+    , ledgerReplayEnabled_(peerFeatureEnabled(
+          headers_,
+          FEATURE_LEDGER_REPLAY,
+          app_.config().LEDGER_REPLAY))
+    , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
     JLOG(journal_.debug()) << " compression enabled "
                            << (compressionEnabled_ == Compressed::On)
@@ -444,6 +449,8 @@ PeerImp::supportsFeature(ProtocolFeature f) const
             return protocol_ >= make_protocol(2, 1);
         case ProtocolFeature::ValidatorList2Propagation:
             return protocol_ >= make_protocol(2, 2);
+        case ProtocolFeature::LedgerReplay:
+            return ledgerReplayEnabled_;
     }
     return false;
 }
@@ -1472,6 +1479,104 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
         if (auto peer = weak.lock())
             peer->getLedger(m);
     });
+}
+
+void
+PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathRequest> const& m)
+{
+    JLOG(p_journal_.trace()) << "onMessage, TMProofPathRequest";
+    if (!ledgerReplayEnabled_)
+    {
+        charge(Resource::feeInvalidRequest);
+        return;
+    }
+
+    fee_ = Resource::feeMediumBurdenPeer;
+    std::weak_ptr<PeerImp> weak = shared_from_this();
+    app_.getJobQueue().addJob(
+        jtREPLAY_REQ, "recvProofPathRequest", [weak, m](Job&) {
+            if (auto peer = weak.lock())
+            {
+                auto reply =
+                    peer->ledgerReplayMsgHandler_.processProofPathRequest(m);
+                if (reply.has_error())
+                {
+                    if (reply.error() == protocol::TMReplyError::reBAD_REQUEST)
+                        peer->charge(Resource::feeInvalidRequest);
+                    else
+                        peer->charge(Resource::feeRequestNoReply);
+                }
+                else
+                {
+                    peer->send(std::make_shared<Message>(
+                        reply, protocol::mtPROOF_PATH_RESPONSE));
+                }
+            }
+        });
+}
+
+void
+PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathResponse> const& m)
+{
+    if (!ledgerReplayEnabled_)
+    {
+        charge(Resource::feeInvalidRequest);
+        return;
+    }
+
+    if (!ledgerReplayMsgHandler_.processProofPathResponse(m))
+    {
+        charge(Resource::feeBadData);
+    }
+}
+
+void
+PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m)
+{
+    JLOG(p_journal_.trace()) << "onMessage, TMReplayDeltaRequest";
+    if (!ledgerReplayEnabled_)
+    {
+        charge(Resource::feeInvalidRequest);
+        return;
+    }
+
+    fee_ = Resource::feeMediumBurdenPeer;
+    std::weak_ptr<PeerImp> weak = shared_from_this();
+    app_.getJobQueue().addJob(
+        jtREPLAY_REQ, "recvReplayDeltaRequest", [weak, m](Job&) {
+            if (auto peer = weak.lock())
+            {
+                auto reply =
+                    peer->ledgerReplayMsgHandler_.processReplayDeltaRequest(m);
+                if (reply.has_error())
+                {
+                    if (reply.error() == protocol::TMReplyError::reBAD_REQUEST)
+                        peer->charge(Resource::feeInvalidRequest);
+                    else
+                        peer->charge(Resource::feeRequestNoReply);
+                }
+                else
+                {
+                    peer->send(std::make_shared<Message>(
+                        reply, protocol::mtREPLAY_DELTA_RESPONSE));
+                }
+            }
+        });
+}
+
+void
+PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaResponse> const& m)
+{
+    if (!ledgerReplayEnabled_)
+    {
+        charge(Resource::feeInvalidRequest);
+        return;
+    }
+
+    if (!ledgerReplayMsgHandler_.processReplayDeltaResponse(m))
+    {
+        charge(Resource::feeBadData);
+    }
 }
 
 void
