@@ -1,0 +1,85 @@
+@startuml
+
+autoactivate on
+
+' participant app as "Application"
+participant peer as "Peer"
+participant lr as "LedgerReplayer"
+participant lrt as "LedgerReplayTask"
+participant sla as "SkipListAcquire"
+participant lda as "LedgerDeltaAcquire"
+
+[-> lr : replay(finishId, numLedgers)
+  lr -> sla : make_shared(finishHash)
+  return skipList
+  lr -> lrt : make_shared(skipList)
+  return task
+  lr -> sla : init(numPeers=1)
+    sla -> sla : trigger(numPeers=1)
+      sla -> peer : sendRequest(ProofPathRequest)
+      return
+    return
+  return
+  lr -> lrt : init()
+    lrt -> sla : addDataCallback(callback)
+    return
+  return
+deactivate lr
+
+[-> peer : onMessage(ProofPathResponse)
+  peer -> lr : gotSkipList(ledgerHeader, item)
+    lr -> sla : processData(ledgerSeq, item)
+      sla -> sla : onSkipListAcquired(skipList, ledgerSeq)
+        sla -> sla : notify()
+        note over sla: call the callbacks added by\naddDataCallback(callback).
+          sla -> lrt : callback(ledgerId)
+            lrt -> lrt : updateSkipList(ledgerId, ledgerSeq, skipList)
+            lrt -> lr : createDeltas(this)
+            loop
+              lr -> lda : make_shared(ledgerId, ledgerSeq)
+              return delta
+              lr -> lrt : addDelta(delta)              
+                lrt -> lda : addDataCallback(callback)
+                return
+              return
+              lr -> lda : init(numPeers=1)
+                lda -> lda : trigger(numPeers=1)
+                  lda -> peer : sendRequest(ReplayDeltaRequest)
+                  return
+                return
+              return
+              end
+            return
+          return
+        return
+      return
+    return
+  return
+deactivate peer
+
+[-> peer : onMessage(ReplayDeltaResponse)
+  peer -> lr : gotReplayDelta(ledgerHeader)
+    lr -> lda : processData(ledgerHeader, txns)
+      lda -> lda : notify()
+      note over lda: call the callbacks added by\naddDataCallback(callback).
+        lda -> lrt : callback(ledgerId) 
+        lrt -> lrt : deltaReady(ledgerId)
+          lrt -> lrt : tryAdvance()
+            loop as long as child can be built
+            lrt -> lda : tryBuild(parent)
+              lda -> lda : onLedgerBuilt()
+                note over lda
+                  Schedule a job to store the built ledger.
+                end note
+              return
+            return child
+            end
+          return
+        return
+      return
+    return
+  return
+deactivate peer
+
+
+@enduml

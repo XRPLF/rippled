@@ -529,6 +529,9 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_COMPRESSION, strTemp, j_))
         COMPRESSION = beast::lexicalCastThrow<bool>(strTemp);
 
+    if (getSingleSection(secConfig, SECTION_LEDGER_REPLAY, strTemp, j_))
+        LEDGER_REPLAY = beast::lexicalCastThrow<bool>(strTemp);
+
     if (exists(SECTION_REDUCE_RELAY))
     {
         auto sec = section(SECTION_REDUCE_RELAY);

@@ -25,6 +25,10 @@ enum MessageType
     mtVALIDATORLIST         = 54;
     mtSQUELCH               = 55;
     mtVALIDATORLISTCOLLECTION = 56;
+    mtPROOF_PATH_REQ        = 57;
+    mtPROOF_PATH_RESPONSE   = 58;
+    mtREPLAY_DELTA_REQ      = 59;
+    mtREPLAY_DELTA_RESPONSE = 60;
 }
 
 // token, iterations, target, challenge = issue demand for proof of work
@@ -334,6 +338,7 @@ enum TMReplyError
 {
     reNO_LEDGER                     = 1;    // We don't have the ledger you are asking about
     reNO_NODE                       = 2;    // We don't have any of the nodes you are asking for
+    reBAD_REQUEST                   = 3;    // The request is wrong, e.g. wrong format
 }
 
 message TMLedgerData
@@ -363,5 +368,41 @@ message TMSquelch
     required bool squelch           = 1; // squelch if true, otherwise unsquelch
     required bytes validatorPubKey  = 2; // validator's public key
     optional uint32 squelchDuration = 3; // squelch duration in seconds
+}
+
+enum TMLedgerMapType
+{
+    lmTRANASCTION   = 1;        // transaction map
+    lmACCOUNT_STATE = 2;        // account state map
+}
+
+message TMProofPathRequest
+{
+    required bytes key = 1;
+    required bytes ledgerHash = 2;
+    required TMLedgerMapType type = 3;
+}
+
+message TMProofPathResponse
+{
+    required bytes key = 1;
+    required bytes ledgerHash = 2;
+    required TMLedgerMapType type = 3;
+    optional bytes ledgerHeader = 4;
+    repeated bytes path = 5;
+    optional TMReplyError error = 6;
+}
+
+message TMReplayDeltaRequest
+{
+    required bytes ledgerHash = 1;
+}
+
+message TMReplayDeltaResponse
+{
+    required bytes ledgerHash = 1;
+    optional bytes ledgerHeader = 2;
+    repeated bytes transaction = 3;
+    optional TMReplyError error = 4;
 }
 

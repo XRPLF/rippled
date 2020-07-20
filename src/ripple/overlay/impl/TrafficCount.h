@@ -140,6 +140,14 @@ public:
         share_hash,
         get_hash,
 
+        // TMProofPathRequest and TMProofPathResponse
+        proof_path_request,
+        proof_path_response,
+
+        // TMReplayDeltaRequest and TMReplayDeltaResponse
+        replay_delta_request,
+        replay_delta_response,
+
         unknown  // must be last
     };
 
@@ -224,7 +232,11 @@ protected:
         {"getobject_Fetch Pack_get"},            // category::get_fetch_pack
         {"getobject_share"},                     // category::share_hash
         {"getobject_get"},                       // category::get_hash
-        {"unknown"}                              // category::unknown
+        {"proof_path_request"},                  // category::proof_path_request
+        {"proof_path_response"},    // category::proof_path_response
+        {"replay_delta_request"},   // category::replay_delta_request
+        {"replay_delta_response"},  // category::replay_delta_response
+        {"unknown"}                 // category::unknown
     }};
 };
 

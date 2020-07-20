@@ -96,10 +96,15 @@ verifyHandshake(
    @param crawlPublic if true then server's IP/Port are included in crawl
    @param comprEnabled if true then compression feature is enabled
    @param vpReduceRelayEnabled if true then reduce-relay feature is enabled
+   @param ledgerReplayEnabled if true then ledger-replay feature is enabled
    @return http request with empty body
  */
 request_type
-makeRequest(bool crawlPublic, bool comprEnabled, bool vpReduceRelayEnabled);
+makeRequest(
+    bool crawlPublic,
+    bool comprEnabled,
+    bool vpReduceRelayEnabled,
+    bool ledgerReplayEnabled);
 
 /** Make http response
 
@@ -131,6 +136,8 @@ makeResponse(
 static constexpr char FEATURE_COMPR[] = "compr";  // compression
 static constexpr char FEATURE_VPRR[] =
     "vprr";  // validation/proposal reduce-relay
+static constexpr char FEATURE_LEDGER_REPLAY[] =
+    "ledgerreplay";  // ledger replay
 static constexpr char DELIM_FEATURE[] = ";";
 static constexpr char DELIM_VALUE[] = ",";
 
@@ -204,10 +211,14 @@ peerFeatureEnabled(
 /** Make request header X-Protocol-Ctl value with supported features
    @param comprEnabled if true then compression feature is enabled
    @param vpReduceRelayEnabled if true then reduce-relay feature is enabled
+   @param ledgerReplayEnabled if true then ledger-replay feature is enabled
    @return X-Protocol-Ctl header value
  */
 std::string
-makeFeaturesRequestHeader(bool comprEnabled, bool vpReduceRelayEnabled);
+makeFeaturesRequestHeader(
+    bool comprEnabled,
+    bool vpReduceRelayEnabled,
+    bool ledgerReplayEnabled);
 
 /** Make response header X-Protocol-Ctl value with supported features.
     If the request has a feature that we support enabled
@@ -216,13 +227,15 @@ makeFeaturesRequestHeader(bool comprEnabled, bool vpReduceRelayEnabled);
    @param header request's header
    @param comprEnabled if true then compression feature is enabled
    @param vpReduceRelayEnabled if true then reduce-relay feature is enabled
+   @param ledgerReplayEnabled if true then ledger-replay feature is enabled
    @return X-Protocol-Ctl header value
  */
 std::string
 makeFeaturesResponseHeader(
     http_request_type const& headers,
     bool comprEnabled,
-    bool vpReduceRelayEnabled);
+    bool vpReduceRelayEnabled,
+    bool ledgerReplayEnabled);
 
 }  // namespace ripple
 

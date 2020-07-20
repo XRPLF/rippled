@@ -21,6 +21,7 @@
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/InboundTransactions.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/LedgerReplayer.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/ledger/OrderBookDB.h>
@@ -59,6 +60,7 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/PeerReservationTable.h>
+#include <ripple/overlay/PeerSet.h>
 #include <ripple/overlay/make_Overlay.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
@@ -195,6 +197,7 @@ public:
     std::unique_ptr<LedgerMaster> m_ledgerMaster;
     std::unique_ptr<InboundLedgers> m_inboundLedgers;
     std::unique_ptr<InboundTransactions> m_inboundTransactions;
+    std::unique_ptr<LedgerReplayer> m_ledgerReplayer;
     TaggedCache<uint256, AcceptedLedger> m_acceptedLedgerCache;
     std::unique_ptr<NetworkOPs> m_networkOPs;
     std::unique_ptr<Cluster> cluster_;
@@ -366,6 +369,12 @@ public:
               [this](std::shared_ptr<SHAMap> const& set, bool fromAcquire) {
                   gotTXSet(set, fromAcquire);
               }))
+
+        , m_ledgerReplayer(std::make_unique<LedgerReplayer>(
+              *this,
+              *m_inboundLedgers,
+              make_PeerSetBuilder(*this),
+              *m_jobQueue))
 
         , m_acceptedLedgerCache(
               "AcceptedLedger",
@@ -581,6 +590,12 @@ public:
     getLedgerMaster() override
     {
         return *m_ledgerMaster;
+    }
+
+    LedgerReplayer&
+    getLedgerReplayer() override
+    {
+        return *m_ledgerReplayer;
     }
 
     InboundLedgers&
@@ -1270,6 +1285,7 @@ public:
         getTempNodeCache().sweep();
         getValidations().expire();
         getInboundLedgers().sweep();
+        getLedgerReplayer().sweep();
         m_acceptedLedgerCache.sweep();
         cachedSLEs_.expire();
 
@@ -2022,7 +2038,8 @@ ApplicationImp::loadOldLedger(
                         hash,
                         0,
                         InboundLedger::Reason::GENERIC,
-                        stopwatch());
+                        stopwatch(),
+                        make_DummyPeerSet(*this));
                     if (il->checkLocal())
                         loadLedger = il->getLedger();
                 }
@@ -2065,7 +2082,8 @@ ApplicationImp::loadOldLedger(
                     replayLedger->info().parentHash,
                     0,
                     InboundLedger::Reason::GENERIC,
-                    stopwatch());
+                    stopwatch(),
+                    make_DummyPeerSet(*this));
 
                 if (il->checkLocal())
                     loadLedger = il->getLedger();

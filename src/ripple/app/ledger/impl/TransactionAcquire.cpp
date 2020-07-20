@@ -24,6 +24,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/overlay/Overlay.h>
+#include <ripple/overlay/impl/ProtocolMessage.h>
 
 #include <memory>
 
@@ -39,9 +40,18 @@ enum {
     MAX_TIMEOUTS = 20,
 };
 
-TransactionAcquire::TransactionAcquire(Application& app, uint256 const& hash)
-    : PeerSet(app, hash, TX_ACQUIRE_TIMEOUT, app.journal("TransactionAcquire"))
+TransactionAcquire::TransactionAcquire(
+    Application& app,
+    uint256 const& hash,
+    std::unique_ptr<PeerSet> peerSet)
+    : TimeoutCounter(
+          app,
+          hash,
+          TX_ACQUIRE_TIMEOUT,
+          {jtTXN_DATA, "TransactionAcquire", {}},
+          app.journal("TransactionAcquire"))
     , mHaveRoot(false)
+    , mPeerSet(std::move(peerSet))
 {
     mMap = std::make_shared<SHAMap>(
         SHAMapType::TRANSACTION, hash, app_.getNodeFamily());
@@ -49,29 +59,20 @@ TransactionAcquire::TransactionAcquire(Application& app, uint256 const& hash)
 }
 
 void
-TransactionAcquire::queueJob()
-{
-    app_.getJobQueue().addJob(
-        jtTXN_DATA, "TransactionAcquire", [ptr = shared_from_this()](Job&) {
-            ptr->invokeOnTimer();
-        });
-}
-
-void
 TransactionAcquire::done()
 {
     // We hold a PeerSet lock and so cannot do real work here
 
-    if (mFailed)
+    if (failed_)
     {
-        JLOG(m_journal.warn()) << "Failed to acquire TX set " << mHash;
+        JLOG(journal_.warn()) << "Failed to acquire TX set " << hash_;
     }
     else
     {
-        JLOG(m_journal.debug()) << "Acquired TX set " << mHash;
+        JLOG(journal_.debug()) << "Acquired TX set " << hash_;
         mMap->setImmutable();
 
-        uint256 const& hash(mHash);
+        uint256 const& hash(hash_);
         std::shared_ptr<SHAMap> const& map(mMap);
         auto const pap = &app_;
         // Note that, when we're in the process of shutting down, addJob()
@@ -89,20 +90,20 @@ TransactionAcquire::done()
 void
 TransactionAcquire::onTimer(bool progress, ScopedLockType& psl)
 {
-    if (mTimeouts > MAX_TIMEOUTS)
+    if (timeouts_ > MAX_TIMEOUTS)
     {
-        mFailed = true;
+        failed_ = true;
         done();
         return;
     }
 
-    if (mTimeouts >= NORM_TIMEOUTS)
+    if (timeouts_ >= NORM_TIMEOUTS)
         trigger(nullptr);
 
     addPeers(1);
 }
 
-std::weak_ptr<PeerSet>
+std::weak_ptr<TimeoutCounter>
 TransactionAcquire::pmDowncast()
 {
     return shared_from_this();
@@ -111,35 +112,35 @@ TransactionAcquire::pmDowncast()
 void
 TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
 {
-    if (mComplete)
+    if (complete_)
     {
-        JLOG(m_journal.info()) << "trigger after complete";
+        JLOG(journal_.info()) << "trigger after complete";
         return;
     }
-    if (mFailed)
+    if (failed_)
     {
-        JLOG(m_journal.info()) << "trigger after fail";
+        JLOG(journal_.info()) << "trigger after fail";
         return;
     }
 
     if (!mHaveRoot)
     {
-        JLOG(m_journal.trace()) << "TransactionAcquire::trigger "
-                                << (peer ? "havePeer" : "noPeer") << " no root";
+        JLOG(journal_.trace()) << "TransactionAcquire::trigger "
+                               << (peer ? "havePeer" : "noPeer") << " no root";
         protocol::TMGetLedger tmGL;
-        tmGL.set_ledgerhash(mHash.begin(), mHash.size());
+        tmGL.set_ledgerhash(hash_.begin(), hash_.size());
         tmGL.set_itype(protocol::liTS_CANDIDATE);
         tmGL.set_querydepth(3);  // We probably need the whole thing
 
-        if (mTimeouts != 0)
+        if (timeouts_ != 0)
             tmGL.set_querytype(protocol::qtINDIRECT);
 
         *(tmGL.add_nodeids()) = SHAMapNodeID().getRawString();
-        sendRequest(tmGL, peer);
+        mPeerSet->sendRequest(tmGL, peer);
     }
     else if (!mMap->isValid())
     {
-        mFailed = true;
+        failed_ = true;
         done();
     }
     else
@@ -150,26 +151,26 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
         if (nodes.empty())
         {
             if (mMap->isValid())
-                mComplete = true;
+                complete_ = true;
             else
-                mFailed = true;
+                failed_ = true;
 
             done();
             return;
         }
 
         protocol::TMGetLedger tmGL;
-        tmGL.set_ledgerhash(mHash.begin(), mHash.size());
+        tmGL.set_ledgerhash(hash_.begin(), hash_.size());
         tmGL.set_itype(protocol::liTS_CANDIDATE);
 
-        if (mTimeouts != 0)
+        if (timeouts_ != 0)
             tmGL.set_querytype(protocol::qtINDIRECT);
 
         for (auto const& node : nodes)
         {
             *tmGL.add_nodeids() = node.first.getRawString();
         }
-        sendRequest(tmGL, peer);
+        mPeerSet->sendRequest(tmGL, peer);
     }
 }
 
@@ -179,17 +180,17 @@ TransactionAcquire::takeNodes(
     const std::list<Blob>& data,
     std::shared_ptr<Peer> const& peer)
 {
-    ScopedLockType sl(mLock);
+    ScopedLockType sl(mtx_);
 
-    if (mComplete)
+    if (complete_)
     {
-        JLOG(m_journal.trace()) << "TX set complete";
+        JLOG(journal_.trace()) << "TX set complete";
         return SHAMapAddNode();
     }
 
-    if (mFailed)
+    if (failed_)
     {
-        JLOG(m_journal.trace()) << "TX set failed";
+        JLOG(journal_.trace()) << "TX set failed";
         return SHAMapAddNode();
     }
 
@@ -207,15 +208,15 @@ TransactionAcquire::takeNodes(
             if (nodeIDit->isRoot())
             {
                 if (mHaveRoot)
-                    JLOG(m_journal.debug())
+                    JLOG(journal_.debug())
                         << "Got root TXS node, already have it";
                 else if (!mMap->addRootNode(
-                                  SHAMapHash{mHash},
+                                  SHAMapHash{hash_},
                                   makeSlice(*nodeDatait),
                                   nullptr)
                               .isGood())
                 {
-                    JLOG(m_journal.warn()) << "TX acquire got bad root node";
+                    JLOG(journal_.warn()) << "TX acquire got bad root node";
                 }
                 else
                     mHaveRoot = true;
@@ -223,7 +224,7 @@ TransactionAcquire::takeNodes(
             else if (!mMap->addKnownNode(*nodeIDit, makeSlice(*nodeDatait), &sf)
                           .isGood())
             {
-                JLOG(m_journal.warn()) << "TX acquire got bad non-root node";
+                JLOG(journal_.warn()) << "TX acquire got bad non-root node";
                 return SHAMapAddNode::invalid();
             }
 
@@ -232,12 +233,12 @@ TransactionAcquire::takeNodes(
         }
 
         trigger(peer);
-        mProgress = true;
+        progress_ = true;
         return SHAMapAddNode::useful();
     }
     catch (std::exception const&)
     {
-        JLOG(m_journal.error()) << "Peer sends us junky transaction node data";
+        JLOG(journal_.error()) << "Peer sends us junky transaction node data";
         return SHAMapAddNode::invalid();
     }
 }
@@ -245,27 +246,29 @@ TransactionAcquire::takeNodes(
 void
 TransactionAcquire::addPeers(std::size_t limit)
 {
-    PeerSet::addPeers(
-        limit, [this](auto peer) { return peer->hasTxSet(mHash); });
+    mPeerSet->addPeers(
+        limit,
+        [this](auto peer) { return peer->hasTxSet(hash_); },
+        [this](auto peer) { trigger(peer); });
 }
 
 void
 TransactionAcquire::init(int numPeers)
 {
-    ScopedLockType sl(mLock);
+    ScopedLockType sl(mtx_);
 
     addPeers(numPeers);
 
-    setTimer();
+    setTimer(sl);
 }
 
 void
 TransactionAcquire::stillNeed()
 {
-    ScopedLockType sl(mLock);
+    ScopedLockType sl(mtx_);
 
-    if (mTimeouts > NORM_TIMEOUTS)
-        mTimeouts = NORM_TIMEOUTS;
+    if (timeouts_ > NORM_TIMEOUTS)
+        timeouts_ = NORM_TIMEOUTS;
 }
 
 }  // namespace ripple

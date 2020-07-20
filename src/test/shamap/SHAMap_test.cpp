@@ -353,7 +353,78 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SHAMap, ripple_app, ripple);
+class SHAMapPathProof_test : public beast::unit_test::suite
+{
+    void
+    run() override
+    {
+        test::SuiteJournal journal("SHAMapPathProof_test", *this);
 
+        tests::TestNodeFamily tf{journal};
+        SHAMap map{SHAMapType::FREE, tf};
+        map.setUnbacked();
+
+        uint256 key;
+        uint256 rootHash;
+        std::vector<Blob> goodPath;
+
+        for (unsigned char c = 1; c < 100; ++c)
+        {
+            uint256 k(c);
+            Blob b(32, c);
+            map.addItem(SHAMapNodeType::tnACCOUNT_STATE, SHAMapItem{k, b});
+            map.invariants();
+
+            auto root = map.getHash().as_uint256();
+            auto path = map.getProofPath(k);
+            BEAST_EXPECT(path);
+            if (!path)
+                break;
+            BEAST_EXPECT(map.verifyProofPath(root, k, *path));
+            if (c == 1)
+            {
+                // extra node
+                path->insert(path->begin(), path->front());
+                BEAST_EXPECT(!map.verifyProofPath(root, k, *path));
+                // wrong key
+                uint256 wrongKey(c + 1);
+                BEAST_EXPECT(!map.getProofPath(wrongKey));
+            }
+            if (c == 99)
+            {
+                key = k;
+                rootHash = root;
+                goodPath = std::move(*path);
+            }
+        }
+
+        // still good
+        BEAST_EXPECT(map.verifyProofPath(rootHash, key, goodPath));
+        // empty path
+        std::vector<Blob> badPath;
+        BEAST_EXPECT(!map.verifyProofPath(rootHash, key, badPath));
+        // too long
+        badPath = goodPath;
+        badPath.push_back(goodPath.back());
+        BEAST_EXPECT(!map.verifyProofPath(rootHash, key, badPath));
+        // bad node
+        badPath.clear();
+        badPath.emplace_back(100, 100);
+        BEAST_EXPECT(!map.verifyProofPath(rootHash, key, badPath));
+        // bad node type
+        badPath.clear();
+        badPath.push_back(goodPath.front());
+        badPath.front().back()--;  // change node type
+        BEAST_EXPECT(!map.verifyProofPath(rootHash, key, badPath));
+        // all inner
+        badPath.clear();
+        badPath = goodPath;
+        badPath.erase(badPath.begin());
+        BEAST_EXPECT(!map.verifyProofPath(rootHash, key, badPath));
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(SHAMap, ripple_app, ripple);
+BEAST_DEFINE_TESTSUITE(SHAMapPathProof, ripple_app, ripple);
 }  // namespace tests
 }  // namespace ripple

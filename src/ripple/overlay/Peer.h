@@ -37,7 +37,8 @@ static constexpr std::uint32_t csHopLimit = 3;
 
 enum class ProtocolFeature {
     ValidatorListPropagation,
-    ValidatorList2Propagation
+    ValidatorList2Propagation,
+    LedgerReplay,
 };
 
 /** Represents a peer connection in the overlay. */

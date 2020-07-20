@@ -21,6 +21,7 @@
 #define RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
 
 #include <ripple/app/consensus/RCLCxPeerPos.h>
+#include <ripple/app/ledger/impl/LedgerReplayMsgHandler.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/RangeSet.h>
 #include <ripple/beast/utility/WrappedSink.h>
@@ -169,10 +170,11 @@ private:
     hash_map<PublicKey, ShardInfo> shardInfo_;
 
     Compressed compressionEnabled_ = Compressed::Off;
-
     // true if validation/proposal reduce-relay feature is enabled
     // on the peer.
     bool vpReduceRelayEnabled_ = false;
+    bool ledgerReplayEnabled_ = false;
+    LedgerReplayMsgHandler ledgerReplayMsgHandler_;
 
     friend class OverlayImpl;
 
@@ -530,6 +532,14 @@ public:
     onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMSquelch> const& m);
+    void
+    onMessage(std::shared_ptr<protocol::TMProofPathRequest> const& m);
+    void
+    onMessage(std::shared_ptr<protocol::TMProofPathResponse> const& m);
+    void
+    onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m);
+    void
+    onMessage(std::shared_ptr<protocol::TMReplayDeltaResponse> const& m);
 
 private:
     //--------------------------------------------------------------------------
@@ -624,6 +634,11 @@ PeerImp::PeerImp(
           headers_,
           FEATURE_VPRR,
           app_.config().VP_REDUCE_RELAY_ENABLE))
+    , ledgerReplayEnabled_(peerFeatureEnabled(
+          headers_,
+          FEATURE_LEDGER_REPLAY,
+          app_.config().LEDGER_REPLAY))
+    , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
     read_buffer_.commit(boost::asio::buffer_copy(
         read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
