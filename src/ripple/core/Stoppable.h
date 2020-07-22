@@ -173,7 +173,7 @@ class RootStoppable;
     @note A Stoppable may not be restarted.
 
     The form of the Stoppable tree in the rippled application evolves as
-    the source code changes and reacts to new demands.  As of March in 2017
+    the source code changes and reacts to new demands. As of July in 2020
     the Stoppable tree had this form:
 
     @code
@@ -186,13 +186,14 @@ class RootStoppable;
                                                              |
                                                          JobQueue
                                                              |
-        +--------+-----------+-----------+-----------+-------+---+----------+----------+
-        |        |           |           |           |           |          |          |
-        |    NetworkOPs      |     InboundLedgers    |      OrderbookDB     |     GRPCServer
-        |                    |                       |                      |
-     Overlay        InboundTransactions        LedgerMaster             Database
-        |                                            |                      |
-    PeerFinder                                LedgerCleaner            TaskQueue
+        +--------+-----------+---------+------------+---+----+---------+---+
+        |        |           |         |            |   |              |   |
+        |    NetworkOPs      |    InboundLedgers    |   |      OrderbookDB |
+        |                    |                      |  GRPCServer          |
+        |                    |                      |                  Database
+     Overlay        InboundTransactions        LedgerMaster                |
+        |                                           |                      |
+    PeerFinder                                LedgerCleaner           TaskQueue
 
     @endcode
 */

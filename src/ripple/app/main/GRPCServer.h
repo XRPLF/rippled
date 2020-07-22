@@ -254,7 +254,7 @@ public:
     void
     onStop() override;
 
-    ~GRPCServer(){};
+    ~GRPCServer() = default;
 
 private:
     GRPCServerImpl impl_;
