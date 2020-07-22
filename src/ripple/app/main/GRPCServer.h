@@ -21,6 +21,7 @@
 #define RIPPLE_CORE_GRPCSERVER_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/core/Stoppable.h>
 #include <ripple/net/InfoSub.h>
@@ -254,12 +255,12 @@ public:
     void
     onStop() override;
 
-    ~GRPCServer() = default;
+    ~GRPCServer() override;
 
 private:
     GRPCServerImpl impl_;
     std::thread thread_;
-    bool running_;
+    bool running_ = false;
 };
 }  // namespace ripple
 #endif

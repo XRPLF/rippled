@@ -441,10 +441,11 @@ void
 GRPCServer::onStart()
 {
     // Start the server and setup listeners
-    if ((running_ = impl_.start()))
+    if (running_ = impl_.start(); running_)
     {
         thread_ = std::thread([this]() {
             // Start the event loop and begin handling requests
+            beast::setCurrentThreadName("rippled: grpc");
             this->impl_.handleRpcs();
         });
     }
@@ -457,9 +458,15 @@ GRPCServer::onStop()
     {
         impl_.shutdown();
         thread_.join();
+        running_ = false;
     }
 
     stopped();
+}
+
+GRPCServer::~GRPCServer()
+{
+    assert(!running_);
 }
 
 }  // namespace ripple

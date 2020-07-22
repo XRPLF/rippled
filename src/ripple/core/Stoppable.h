@@ -186,7 +186,7 @@ class RootStoppable;
                                                              |
                                                          JobQueue
                                                              |
-        +------+---------+--------+----------+---+----+---------+---+
+        +------+---------+--------+----------+---+-----------+--+---+
         |      |         |        |          |   |              |   |
         |  NetworkOPs    |   InboundLedgers  |   |      OrderbookDB |
         |                |                   |  GRPCServer          |
