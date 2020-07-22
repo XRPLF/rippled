@@ -22,6 +22,7 @@
 
 #include <ripple/basics/RangeSet.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/ledger/TxMeta.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STTx.h>
@@ -300,10 +301,13 @@ public:
     Json::Value
     getJson(JsonOptions options, bool binary = false) const;
 
-    static pointer
+    static std::optional<
+        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>>
     load(uint256 const& id, Application& app, error_code_i& ec);
 
-    static boost::variant<Transaction::pointer, bool>
+    static std::optional<std::variant<
+        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
+        bool>>
     load(
         uint256 const& id,
         Application& app,
@@ -311,7 +315,9 @@ public:
         error_code_i& ec);
 
 private:
-    static boost::variant<Transaction::pointer, bool>
+    static std::optional<std::variant<
+        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
+        bool>>
     load(
         uint256 const& id,
         Application& app,

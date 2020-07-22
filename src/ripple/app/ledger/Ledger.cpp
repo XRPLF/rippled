@@ -954,8 +954,6 @@ saveValidatedLedger(
             (void)_;
             uint256 transactionID = acceptedLedgerTx->getTransactionID();
 
-            app.getMasterTransaction().inLedger(transactionID, seq);
-
             std::string const txnId(to_string(transactionID));
             std::string const txnSeq(
                 std::to_string(acceptedLedgerTx->getTxnSeq()));
@@ -1012,6 +1010,8 @@ saveValidatedLedger(
                     acceptedLedgerTx->getTxn()->getMetaSQL(
                         seq, acceptedLedgerTx->getEscMeta()) +
                     ";");
+
+            app.getMasterTransaction().inLedger(transactionID, seq);
         }
 
         tr.commit();

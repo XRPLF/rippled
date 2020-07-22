@@ -120,37 +120,44 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
     }
 
     std::shared_ptr<Transaction> txn;
+    std::shared_ptr<TxMeta> meta;
     auto ec{rpcSUCCESS};
+
+    using TxPair =
+        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
     result.searchedAll = SearchedAll::unknown;
     if (args.ledgerRange)
     {
-        boost::variant<std::shared_ptr<Transaction>, bool> v =
-            context.app.getMasterTransaction().fetch(args.hash, range, ec);
+        auto v = context.app.getMasterTransaction().fetch(args.hash, range, ec);
 
-        if (v.which() == 1)
+        if (!v)
+            return {result, rpcTXN_NOT_FOUND};
+
+        if (auto b = std::get_if<bool>(&v.value()))
         {
-            result.searchedAll =
-                boost::get<bool>(v) ? SearchedAll::yes : SearchedAll::no;
+            result.searchedAll = *b ? SearchedAll::yes : SearchedAll::no;
+
             return {result, rpcTXN_NOT_FOUND};
         }
         else
         {
-            txn = boost::get<std::shared_ptr<Transaction>>(v);
+            std::tie(txn, meta) = std::get<TxPair>(v.value());
         }
     }
     else
     {
-        txn = context.app.getMasterTransaction().fetch(args.hash, ec);
+        auto v = context.app.getMasterTransaction().fetch(args.hash, ec);
+
+        if (!v)
+            return {result, rpcTXN_NOT_FOUND};
+
+        std::tie(txn, meta) = v.value();
     }
 
     if (ec == rpcDB_DESERIALIZATION)
     {
         return {result, ec};
-    }
-    if (!txn)
-    {
-        return {result, rpcTXN_NOT_FOUND};
     }
 
     // populate transaction data
@@ -162,39 +169,12 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
 
     std::shared_ptr<Ledger const> ledger =
         context.ledgerMaster.getLedgerBySeq(txn->getLedger());
-    // get meta data
-    if (ledger)
-    {
-        bool ok = false;
-        if (args.binary)
-        {
-            SHAMapTreeNode::TNType type;
-            auto const item = ledger->txMap().peekItem(txn->getID(), type);
 
-            if (item && type == SHAMapTreeNode::tnTRANSACTION_MD)
-            {
-                ok = true;
-                SerialIter it(item->slice());
-                it.skip(it.getVLDataLength());  // skip transaction
-                Blob blob = it.getVL();
-                result.meta = std::move(blob);
-            }
-        }
-        else
-        {
-            auto rawMeta = ledger->txRead(txn->getID()).second;
-            if (rawMeta)
-            {
-                ok = true;
-                result.meta = std::make_shared<TxMeta>(
-                    txn->getID(), ledger->seq(), *rawMeta);
-            }
-        }
-        if (ok)
-        {
-            result.validated = isValidated(
-                context.ledgerMaster, ledger->info().seq, ledger->info().hash);
-        }
+    if (ledger && meta)
+    {
+        result.meta = meta;
+        result.validated = isValidated(
+            context.ledgerMaster, ledger->info().seq, ledger->info().hash);
     }
 
     return {result, rpcSUCCESS};
