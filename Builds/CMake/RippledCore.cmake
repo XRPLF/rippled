@@ -380,6 +380,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/misc/NegativeUNLVote.cpp
   src/ripple/app/misc/NetworkOPs.cpp
   src/ripple/app/misc/SHAMapStoreImp.cpp
+  src/ripple/app/misc/detail/impl/WorkSSL.cpp
   src/ripple/app/misc/impl/AccountTxPaging.cpp
   src/ripple/app/misc/impl/AmendmentTable.cpp
   src/ripple/app/misc/impl/LoadFeeTrack.cpp
@@ -659,6 +660,7 @@ target_sources (rippled PRIVATE
   src/test/app/DeliverMin_test.cpp
   src/test/app/DepositAuth_test.cpp
   src/test/app/Discrepancy_test.cpp
+  src/test/app/DNS_test.cpp
   src/test/app/Escrow_test.cpp
   src/test/app/FeeVote_test.cpp
   src/test/app/Flow_test.cpp

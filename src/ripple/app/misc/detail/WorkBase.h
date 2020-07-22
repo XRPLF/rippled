@@ -21,12 +21,16 @@
 #define RIPPLE_APP_MISC_DETAIL_WORKBASE_H_INCLUDED
 
 #include <ripple/app/misc/detail/Work.h>
+#include <ripple/basics/random.h>
 #include <ripple/protocol/BuildInfo.h>
+
 #include <boost/asio.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/empty_body.hpp>
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/write.hpp>
+
+#include <vector>
 
 namespace ripple {
 
@@ -37,14 +41,14 @@ class WorkBase : public Work
 {
 protected:
     using error_code = boost::system::error_code;
+    using endpoint_type = boost::asio::ip::tcp::endpoint;
 
 public:
-    using callback_type =
-        std::function<void(error_code const&, response_type&&)>;
+    using callback_type = std::function<
+        void(error_code const&, endpoint_type const&, response_type&&)>;
 
 protected:
     using socket_type = boost::asio::ip::tcp::socket;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
     using resolver_type = boost::asio::ip::tcp::resolver;
     using query_type = resolver_type::query;
     using request_type =
@@ -60,7 +64,9 @@ protected:
     socket_type socket_;
     request_type req_;
     response_type res_;
-    boost::beast::multi_buffer read_buf_;
+    boost::beast::multi_buffer readBuf_;
+    endpoint_type lastEndpoint_;
+    bool lastStatus_;
 
 public:
     WorkBase(
@@ -68,6 +74,8 @@ public:
         std::string const& path,
         std::string const& port,
         boost::asio::io_service& ios,
+        endpoint_type const& lastEndpoint,
+        bool lastStatus,
         callback_type cb);
     ~WorkBase();
 
@@ -111,6 +119,8 @@ WorkBase<Impl>::WorkBase(
     std::string const& path,
     std::string const& port,
     boost::asio::io_service& ios,
+    endpoint_type const& lastEndpoint,
+    bool lastStatus,
     callback_type cb)
     : host_(host)
     , path_(path)
@@ -120,6 +130,8 @@ WorkBase<Impl>::WorkBase(
     , strand_(ios)
     , resolver_(ios)
     , socket_(ios)
+    , lastEndpoint_{lastEndpoint}
+    , lastStatus_(lastStatus)
 {
 }
 
@@ -128,6 +140,7 @@ WorkBase<Impl>::~WorkBase()
 {
     if (cb_)
         cb_(make_error_code(boost::system::errc::not_a_socket),
+            lastEndpoint_,
             std::move(res_));
     close();
 }
@@ -170,7 +183,7 @@ WorkBase<Impl>::fail(error_code const& ec)
 {
     if (cb_)
     {
-        cb_(ec, std::move(res_));
+        cb_(ec, lastEndpoint_, std::move(res_));
         cb_ = nullptr;
     }
 }
@@ -182,8 +195,30 @@ WorkBase<Impl>::onResolve(error_code const& ec, resolver_type::iterator it)
     if (ec)
         return fail(ec);
 
+    resolver_type::iterator end;
+    std::vector<
+        std::reference_wrapper<resolver_type::iterator::value_type const>>
+        entries;
+    bool inList = false;
+    for (; it != end; ++it)
+    {
+        if (lastEndpoint_ == *it)
+            inList = true;
+        else
+            entries.emplace_back(std::ref(*it));
+    }
+    // Use last endpoint if it is successfully connected
+    // and is in the list, otherwise pick a random endpoint
+    // from the list. If there is only one endpoint and
+    // it is the last endpoint then use the last endpoint.
+    if ((!lastStatus_ || !inList) && entries.size() > 0)
+        lastEndpoint_ =
+            entries[entries.size() > 1 ? rand_int(entries.size() - 1) : 0]
+                .get()
+                .endpoint();
+
     socket_.async_connect(
-        *it,
+        lastEndpoint_,
         strand_.wrap(std::bind(
             &Impl::onConnect,
             impl().shared_from_this(),
@@ -218,7 +253,7 @@ WorkBase<Impl>::onRequest(error_code const& ec)
 
     boost::beast::http::async_read(
         impl().stream(),
-        read_buf_,
+        readBuf_,
         res_,
         strand_.wrap(std::bind(
             &WorkBase::onResponse,
@@ -235,7 +270,7 @@ WorkBase<Impl>::onResponse(error_code const& ec)
 
     close();
     assert(cb_);
-    cb_(ec, std::move(res_));
+    cb_(ec, lastEndpoint_, std::move(res_));
     cb_ = nullptr;
 }
 
