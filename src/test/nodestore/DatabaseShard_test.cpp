@@ -19,7 +19,6 @@
 
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerToJson.h>
-#include <ripple/beast/hash/hash_append.h>
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/nodestore/DatabaseShard.h>
@@ -28,134 +27,12 @@
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <ripple/nodestore/impl/EncodedBlob.h>
 #include <ripple/nodestore/impl/Shard.h>
-#include <ripple/protocol/digest.h>
-#include <boost/algorithm/hex.hpp>
 #include <chrono>
-#include <fstream>
-#include <iostream>
-#include <openssl/ripemd.h>
 #include <test/jtx.h>
 #include <test/nodestore/TestBase.h>
 
 namespace ripple {
 namespace NodeStore {
-
-/** std::uniform_int_distribution is platform dependent.
- *  Unit test for deterministic shards is the following: it generates
- *  predictable accounts and transactions, packs them into ledgers
- *  and makes the shard. The hash of this shard should be equal to the
- *  given value. On different platforms (precisely, Linux and Mac)
- *  hashes of the resulting shard was different. It was unvestigated
- *  that the problem is in the class std::uniform_int_distribution
- *  which generates different pseudorandom sequences on different
- *  platforms, but we need predictable sequence.
- */
-template <class IntType = int>
-struct uniformIntDistribution
-{
-    using resultType = IntType;
-
-    const resultType A, B;
-
-    struct paramType
-    {
-        const resultType A, B;
-
-        paramType(resultType aa, resultType bb) : A(aa), B(bb)
-        {
-        }
-    };
-
-    explicit uniformIntDistribution(
-        const resultType a = 0,
-        const resultType b = std::numeric_limits<resultType>::max())
-        : A(a), B(b)
-    {
-    }
-
-    explicit uniformIntDistribution(const paramType& params)
-        : A(params.A), B(params.B)
-    {
-    }
-
-    template <class Generator>
-    resultType
-    operator()(Generator& g) const
-    {
-        return rnd(g, A, B);
-    }
-
-    template <class Generator>
-    resultType
-    operator()(Generator& g, const paramType& params) const
-    {
-        return rnd(g, params.A, params.B);
-    }
-
-    resultType
-    a() const
-    {
-        return A;
-    }
-
-    resultType
-    b() const
-    {
-        return B;
-    }
-
-    resultType
-    min() const
-    {
-        return A;
-    }
-
-    resultType
-    max() const
-    {
-        return B;
-    }
-
-private:
-    template <class Generator>
-    resultType
-    rnd(Generator& g, const resultType a, const resultType b) const
-    {
-        static_assert(
-            std::is_convertible<typename Generator::result_type, resultType>::
-                value,
-            "Ups...");
-        static_assert(
-            Generator::min() == 0, "If non-zero we have handle the offset");
-        const resultType range = b - a + 1;
-        assert(Generator::max() >= range);  // Just for safety
-        const resultType rejectLim = g.max() % range;
-        resultType n;
-        do
-            n = g();
-        while (n <= rejectLim);
-        return (n % range) + a;
-    }
-};
-
-template <class Engine, class Integral>
-Integral
-randInt(Engine& engine, Integral min, Integral max)
-{
-    assert(max > min);
-
-    // This should have no state and constructing it should
-    // be very cheap. If that turns out not to be the case
-    // it could be hand-optimized.
-    return uniformIntDistribution<Integral>(min, max)(engine);
-}
-
-template <class Engine, class Integral>
-Integral
-randInt(Engine& engine, Integral max)
-{
-    return randInt(engine, Integral(0), max);
-}
 
 // Tests DatabaseShard class
 //
@@ -210,7 +87,7 @@ class DatabaseShard_test : public TestBase
             {
                 int p;
                 if (n >= 2)
-                    p = randInt(rng_, 2 * dataSize);
+                    p = rand_int(rng_, 2 * dataSize);
                 else
                     p = 0;
 
@@ -222,27 +99,27 @@ class DatabaseShard_test : public TestBase
                     int from, to;
                     do
                     {
-                        from = randInt(rng_, n - 1);
-                        to = randInt(rng_, n - 1);
+                        from = rand_int(rng_, n - 1);
+                        to = rand_int(rng_, n - 1);
                     } while (from == to);
 
                     pay.push_back(std::make_pair(from, to));
                 }
 
-                n += !randInt(rng_, nLedgers / dataSize);
+                n += !rand_int(rng_, nLedgers / dataSize);
 
                 if (n > accounts_.size())
                 {
                     char str[9];
                     for (int j = 0; j < 8; ++j)
-                        str[j] = 'a' + randInt(rng_, 'z' - 'a');
+                        str[j] = 'a' + rand_int(rng_, 'z' - 'a');
                     str[8] = 0;
                     accounts_.emplace_back(str);
                 }
 
                 nAccounts_.push_back(n);
                 payAccounts_.push_back(std::move(pay));
-                xrpAmount_.push_back(randInt(rng_, 90) + 10);
+                xrpAmount_.push_back(rand_int(rng_, 90) + 10);
             }
         }
 
@@ -618,7 +495,7 @@ class DatabaseShard_test : public TestBase
     }
 
     std::optional<int>
-    createShard(TestData& data, DatabaseShard& db, int maxShardNumber = 1)
+    createShard(TestData& data, DatabaseShard& db, int maxShardNumber)
     {
         int shardNumber = -1;
 
@@ -792,7 +669,7 @@ class DatabaseShard_test : public TestBase
 
         for (std::uint32_t i = 0; i < nTestShards * 2; ++i)
         {
-            std::uint32_t n = randInt(data.rng_, nTestShards - 1) + 1;
+            std::uint32_t n = rand_int(data.rng_, nTestShards - 1) + 1;
             if (bitMask & (1ll << n))
             {
                 db->removePreShard(n);
@@ -1101,90 +978,6 @@ class DatabaseShard_test : public TestBase
         }
     }
 
-    std::string
-    ripemd160File(std::string filename)
-    {
-        using beast::hash_append;
-        std::ifstream input(filename, std::ios::in | std::ios::binary);
-        char buf[4096];
-        ripemd160_hasher h;
-
-        while (input.read(buf, 4096), input.gcount() > 0)
-            hash_append(h, buf, input.gcount());
-
-        auto const binResult = static_cast<ripemd160_hasher::result_type>(h);
-        const auto charDigest = binResult.data();
-        std::string result;
-        boost::algorithm::hex(
-            charDigest,
-            charDigest + sizeof(binResult),
-            std::back_inserter(result));
-
-        return result;
-    }
-
-    void
-    testDeterministicShard(
-        std::string const& backendType,
-        std::uint64_t const seedValue)
-    {
-        using namespace test::jtx;
-
-        std::string ripemd160Key("4CFA8985836B549EC99D2E9705707F488DC91E4E"),
-            ripemd160Dat("8CC61F503C36339803F8C2FC652C1102DDB889F1");
-
-        for (int i = 0; i < 2; i++)
-        {
-            beast::temp_dir shardDir;
-            {
-                Env env{
-                    *this,
-                    testConfig(
-                        (i ? "" : "deterministicShard"),
-                        backendType,
-                        shardDir.path())};
-                DatabaseShard* db = env.app().getShardStore();
-                BEAST_EXPECT(db);
-
-                TestData data(seedValue, 4);
-                if (!BEAST_EXPECT(data.makeLedgers(env)))
-                    return;
-
-                if (createShard(data, *db) < 0)
-                    return;
-            }
-            {
-                Env env{*this, testConfig("", backendType, shardDir.path())};
-                DatabaseShard* db = env.app().getShardStore();
-                BEAST_EXPECT(db);
-
-                TestData data(seedValue, 4);
-                if (!BEAST_EXPECT(data.makeLedgers(env)))
-                    return;
-
-                waitShard(*db, 1);
-
-                for (std::uint32_t j = 0; j < ledgersPerShard; ++j)
-                    checkLedger(data, *db, *data.ledgers_[j]);
-            }
-
-            boost::filesystem::path path(shardDir.path());
-            path /= "1";
-            boost::filesystem::path keypath = path / (backendType + ".key");
-            std::string key = ripemd160File(keypath.string());
-            boost::filesystem::path datpath = path / (backendType + ".dat");
-            std::string dat = ripemd160File(datpath.string());
-
-            std::cerr << "Iteration " << i << ": RIPEMD160[" << backendType
-                      << ".key] = " << key << std::endl;
-            std::cerr << "Iteration " << i << ": RIPEMD160[" << backendType
-                      << ".dat] = " << dat << std::endl;
-
-            BEAST_EXPECT(key == ripemd160Key);
-            BEAST_EXPECT(dat == ripemd160Dat);
-        }
-    }
-
     void
     testAll(std::string const& backendType)
     {
@@ -1198,7 +991,6 @@ class DatabaseShard_test : public TestBase
         testCorruptedDatabase(backendType, seedValue + 40);
         testIllegalFinalKey(backendType, seedValue + 50);
         testImport(backendType, seedValue + 60);
-        testDeterministicShard(backendType, seedValue + 70);
     }
 
 public:
