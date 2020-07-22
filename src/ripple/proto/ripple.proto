@@ -225,31 +225,15 @@ message TMValidation
     optional uint32 hops = 3           [deprecated = true];
 }
 
-message TMIPv4Endpoint
-{
-    required uint32 ipv4            = 1;
-
-    // VFALCO NOTE There is no uint16 in google protocol buffers,
-    //             so we use a uint32 to represent the port.
-    //
-    required uint32 ipv4Port        = 2;
-}
-
-// An Endpoint describes a network peer that can accept incoming connections
-message TMEndpoint
-{
-    required TMIPv4Endpoint ipv4    = 1;
-    required uint32         hops    = 2;
-}
-
 // An array of Endpoint messages
 message TMEndpoints
 {
+    // Previously used - don't reuse.
+    reserved 2;
+
     // This field is used to allow the TMEndpoints message format to be
     // modified as necessary in the future.
     required uint32         version = 1;
-
-    repeated TMEndpoint     endpoints = 2;
 
     // An update to the Endpoint type that uses a string
     // to represent endpoints, thus allowing ipv6 or ipv4 addresses
