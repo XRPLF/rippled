@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/main/GRPCServer.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/resource/Fees.h>
 
 namespace ripple {

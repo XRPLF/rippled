@@ -15,13 +15,12 @@
     ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
-//==============================================================================
+//======================================================å========================
 
 #ifndef RIPPLE_CORE_GRPCSERVER_H_INCLUDED
 #define RIPPLE_CORE_GRPCSERVER_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
-#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/core/Stoppable.h>
 #include <ripple/net/InfoSub.h>
