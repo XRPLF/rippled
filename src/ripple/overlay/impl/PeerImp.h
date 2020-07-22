@@ -656,24 +656,13 @@ void
 PeerImp::sendEndpoints(FwdIt first, FwdIt last)
 {
     protocol::TMEndpoints tm;
-    for (; first != last; ++first)
-    {
-        auto const& ep = *first;
-        // eventually remove endpoints and just keep endpoints_v2
-        // (once we are sure the entire network understands endpoints_v2)
-        protocol::TMEndpoint& tme(*tm.add_endpoints());
-        if (ep.address.is_v4())
-            tme.mutable_ipv4()->set_ipv4(boost::endian::native_to_big(
-                static_cast<std::uint32_t>(ep.address.to_v4().to_ulong())));
-        else
-            tme.mutable_ipv4()->set_ipv4(0);
-        tme.mutable_ipv4()->set_ipv4port(ep.address.port());
-        tme.set_hops(ep.hops);
 
-        // add v2 endpoints (strings)
+    while (first != last)
+    {
         auto& tme2(*tm.add_endpoints_v2());
-        tme2.set_endpoint(ep.address.to_string());
-        tme2.set_hops(ep.hops);
+        tme2.set_endpoint(first->address.to_string());
+        tme2.set_hops(first->hops);
+        first++;
     }
     tm.set_version(2);
 

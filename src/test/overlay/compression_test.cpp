@@ -180,15 +180,12 @@ public:
     buildEndpoints(int n)
     {
         auto endpoints = std::make_shared<protocol::TMEndpoints>();
-        endpoints->mutable_endpoints()->Reserve(n);
+        endpoints->mutable_endpoints_v2()->Reserve(n);
         for (int i = 0; i < n; i++)
         {
-            auto* endpoint = endpoints->add_endpoints();
-            endpoint->set_hops(i);
-            std::string addr = std::string("10.0.1.") + std::to_string(i);
-            endpoint->mutable_ipv4()->set_ipv4(boost::endian::native_to_big(
-                boost::asio::ip::address_v4::from_string(addr).to_uint()));
-            endpoint->mutable_ipv4()->set_ipv4port(i);
+            auto ep = endpoints->add_endpoints_v2();
+            ep->set_endpoint(std::string("10.0.1.") + std::to_string(i));
+            ep->set_hops(i);
         }
         endpoints->set_version(2);
 
