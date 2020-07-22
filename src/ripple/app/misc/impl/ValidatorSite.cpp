@@ -82,12 +82,14 @@ ValidatorSite::Site::Site(std::string uri)
     , redirCount{0}
     , refreshInterval{default_refresh_interval}
     , nextRefresh{clock_type::now()}
+    , lastRequestEndpoint{}
+    , lastRequestSuccessful{false}
 {
 }
 
 ValidatorSite::ValidatorSite(
     Application& app,
-    boost::optional<beast::Journal> j,
+    std::optional<beast::Journal> j,
     std::chrono::seconds timeout)
     : app_{app}
     , j_{j ? *j : app_.logs().journal("ValidatorSite")}
@@ -240,9 +242,11 @@ ValidatorSite::makeRequest(
         }
     };
     auto onFetch = [this, siteIdx, timeoutCancel](
-                       error_code const& err, detail::response_type&& resp) {
+                       error_code const& err,
+                       endpoint_type const& endpoint,
+                       detail::response_type&& resp) {
         timeoutCancel();
-        onSiteFetch(err, std::move(resp), siteIdx);
+        onSiteFetch(err, endpoint, std::move(resp), siteIdx);
     };
 
     auto onFetchFile = [this, siteIdx, timeoutCancel](
@@ -263,6 +267,8 @@ ValidatorSite::makeRequest(
             app_.getIOService(),
             j_,
             app_.config(),
+            sites_[siteIdx].lastRequestEndpoint,
+            sites_[siteIdx].lastRequestSuccessful,
             onFetch);
     }
     else if (resource->pUrl.scheme == "http")
@@ -272,6 +278,8 @@ ValidatorSite::makeRequest(
             resource->pUrl.path,
             std::to_string(*resource->pUrl.port),
             app_.getIOService(),
+            sites_[siteIdx].lastRequestEndpoint,
+            sites_[siteIdx].lastRequestSuccessful,
             onFetch);
     }
     else
@@ -281,6 +289,7 @@ ValidatorSite::makeRequest(
             resource->pUrl.path, app_.getIOService(), onFetchFile);
     }
 
+    sites_[siteIdx].lastRequestSuccessful = false;
     work_ = sp;
     sp->run();
     // start a timer for the request, which shouldn't take more
@@ -315,9 +324,9 @@ ValidatorSite::onTimer(std::size_t siteIdx, error_code const& ec)
     if (ec)
     {
         // Restart the timer if any errors are encountered, unless the error
-        // is from the wait operating being aborted due to a shutdown request.
+        // is from the wait operation being aborted due to a shutdown request.
         if (ec != boost::asio::error::operation_aborted)
-            onSiteFetch(ec, detail::response_type{}, siteIdx);
+            onSiteFetch(ec, {}, detail::response_type{}, siteIdx);
         return;
     }
 
@@ -334,6 +343,7 @@ ValidatorSite::onTimer(std::size_t siteIdx, error_code const& ec)
     {
         onSiteFetch(
             boost::system::error_code{-1, boost::system::generic_category()},
+            {},
             detail::response_type{},
             siteIdx);
     }
@@ -472,13 +482,17 @@ ValidatorSite::processRedirect(
 void
 ValidatorSite::onSiteFetch(
     boost::system::error_code const& ec,
+    endpoint_type const& endpoint,
     detail::response_type&& res,
     std::size_t siteIdx)
 {
     {
         std::lock_guard lock_sites{sites_mutex_};
+        if (endpoint != endpoint_type{})
+            sites_[siteIdx].lastRequestEndpoint = endpoint;
         JLOG(j_.debug()) << "Got completion for "
-                         << sites_[siteIdx].activeResource->uri;
+                         << sites_[siteIdx].activeResource->uri << " "
+                         << endpoint;
         auto onError = [&](std::string const& errMsg, bool retry) {
             sites_[siteIdx].lastRefreshStatus.emplace(Site::Status{
                 clock_type::now(), ListDisposition::invalid, errMsg});
@@ -492,9 +506,10 @@ ValidatorSite::onSiteFetch(
         };
         if (ec)
         {
-            JLOG(j_.warn()) << "Problem retrieving from "
-                            << sites_[siteIdx].activeResource->uri << " "
-                            << ec.value() << ":" << ec.message();
+            JLOG(j_.warn())
+                << "Problem retrieving from "
+                << sites_[siteIdx].activeResource->uri << " " << endpoint << " "
+                << ec.value() << ":" << ec.message();
             onError("fetch error", true);
         }
         else
@@ -505,6 +520,7 @@ ValidatorSite::onSiteFetch(
                 switch (res.result())
                 {
                     case status::ok:
+                        sites_[siteIdx].lastRequestSuccessful = true;
                         parseJsonResponse(res.body(), siteIdx, lock_sites);
                         break;
                     case status::moved_permanently:
@@ -527,7 +543,8 @@ ValidatorSite::onSiteFetch(
                     default: {
                         JLOG(j_.warn())
                             << "Request for validator list at "
-                            << sites_[siteIdx].activeResource->uri
+                            << sites_[siteIdx].activeResource->uri << " "
+                            << endpoint
                             << " returned bad status: " << res.result_int();
                         onError("bad result code", true);
                     }
@@ -565,6 +582,8 @@ ValidatorSite::onTextFetch(
                                 << ec.value() << ": " << ec.message();
                 throw std::runtime_error{"fetch error"};
             }
+
+            sites_[siteIdx].lastRequestSuccessful = true;
 
             parseJsonResponse(res, siteIdx, lock_sites);
         }

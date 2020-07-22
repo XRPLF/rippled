@@ -21,12 +21,16 @@
 #define RIPPLE_APP_MISC_DETAIL_WORKBASE_H_INCLUDED
 
 #include <ripple/app/misc/detail/Work.h>
+#include <ripple/basics/random.h>
 #include <ripple/protocol/BuildInfo.h>
+
 #include <boost/asio.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/empty_body.hpp>
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/write.hpp>
+
+#include <vector>
 
 namespace ripple {
 
@@ -37,16 +41,16 @@ class WorkBase : public Work
 {
 protected:
     using error_code = boost::system::error_code;
+    using endpoint_type = boost::asio::ip::tcp::endpoint;
 
 public:
-    using callback_type =
-        std::function<void(error_code const&, response_type&&)>;
+    using callback_type = std::function<
+        void(error_code const&, endpoint_type const&, response_type&&)>;
 
 protected:
     using socket_type = boost::asio::ip::tcp::socket;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
     using resolver_type = boost::asio::ip::tcp::resolver;
-    using query_type = resolver_type::query;
+    using results_type = boost::asio::ip::tcp::resolver::results_type;
     using request_type =
         boost::beast::http::request<boost::beast::http::empty_body>;
 
@@ -60,7 +64,9 @@ protected:
     socket_type socket_;
     request_type req_;
     response_type res_;
-    boost::beast::multi_buffer read_buf_;
+    boost::beast::multi_buffer readBuf_;
+    endpoint_type lastEndpoint_;
+    bool lastStatus_;
 
 public:
     WorkBase(
@@ -68,6 +74,8 @@ public:
         std::string const& path,
         std::string const& port,
         boost::asio::io_service& ios,
+        endpoint_type const& lastEndpoint,
+        bool lastStatus,
         callback_type cb);
     ~WorkBase();
 
@@ -87,7 +95,7 @@ public:
     fail(error_code const& ec);
 
     void
-    onResolve(error_code const& ec, resolver_type::iterator it);
+    onResolve(error_code const& ec, results_type results);
 
     void
     onStart();
@@ -111,6 +119,8 @@ WorkBase<Impl>::WorkBase(
     std::string const& path,
     std::string const& port,
     boost::asio::io_service& ios,
+    endpoint_type const& lastEndpoint,
+    bool lastStatus,
     callback_type cb)
     : host_(host)
     , path_(path)
@@ -120,6 +130,8 @@ WorkBase<Impl>::WorkBase(
     , strand_(ios)
     , resolver_(ios)
     , socket_(ios)
+    , lastEndpoint_{lastEndpoint}
+    , lastStatus_(lastStatus)
 {
 }
 
@@ -128,6 +140,7 @@ WorkBase<Impl>::~WorkBase()
 {
     if (cb_)
         cb_(make_error_code(boost::system::errc::not_a_socket),
+            lastEndpoint_,
             std::move(res_));
     close();
 }
@@ -141,7 +154,8 @@ WorkBase<Impl>::run()
             strand_.wrap(std::bind(&WorkBase::run, impl().shared_from_this())));
 
     resolver_.async_resolve(
-        query_type{host_, port_},
+        host_,
+        port_,
         strand_.wrap(std::bind(
             &WorkBase::onResolve,
             impl().shared_from_this(),
@@ -170,20 +184,54 @@ WorkBase<Impl>::fail(error_code const& ec)
 {
     if (cb_)
     {
-        cb_(ec, std::move(res_));
+        cb_(ec, lastEndpoint_, std::move(res_));
         cb_ = nullptr;
     }
 }
 
 template <class Impl>
 void
-WorkBase<Impl>::onResolve(error_code const& ec, resolver_type::iterator it)
+WorkBase<Impl>::onResolve(error_code const& ec, results_type results)
 {
     if (ec)
         return fail(ec);
 
+    // Use last endpoint if it is successfully connected
+    // and is in the list, otherwise pick a random endpoint
+    // from the list (excluding last endpoint). If there is
+    // only one endpoint and it is the last endpoint then
+    // use the last endpoint.
+    lastEndpoint_ = [&]() -> endpoint_type {
+        int foundIndex = 0;
+        auto const foundIt = std::find_if(
+            results.begin(), results.end(), [&](endpoint_type const& e) {
+                if (e == lastEndpoint_)
+                    return true;
+                foundIndex++;
+                return false;
+            });
+        if (foundIt != results.end() && lastStatus_)
+            return lastEndpoint_;
+        else if (results.size() == 1)
+            return *results.begin();
+        else if (foundIt == results.end())
+            return *std::next(results.begin(), rand_int(results.size() - 1));
+
+        // lastEndpoint_ is part of the collection
+        // Pick a random number from the n-1 valid choices, if we use
+        // this as an index, note the last element will never be chosen
+        // and the `lastEndpoint_` index may be chosen. So when the
+        // `lastEndpoint_` index is chosen, that is treated as if the
+        // last element was chosen.
+        auto randIndex =
+            (results.size() > 2) ? rand_int(results.size() - 2) : 0;
+        if (randIndex == foundIndex)
+            randIndex = results.size() - 1;
+        return *std::next(results.begin(), randIndex);
+    }();
+
     socket_.async_connect(
-        *it,
+        lastEndpoint_,
         strand_.wrap(std::bind(
             &Impl::onConnect,
             impl().shared_from_this(),
@@ -218,7 +266,7 @@ WorkBase<Impl>::onRequest(error_code const& ec)
 
     boost::beast::http::async_read(
         impl().stream(),
-        read_buf_,
+        readBuf_,
         res_,
         strand_.wrap(std::bind(
             &WorkBase::onResponse,
@@ -235,7 +283,7 @@ WorkBase<Impl>::onResponse(error_code const& ec)
 
     close();
     assert(cb_);
-    cb_(ec, std::move(res_));
+    cb_(ec, lastEndpoint_, std::move(res_));
     cb_ = nullptr;
 }
 

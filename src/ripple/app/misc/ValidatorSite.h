@@ -27,10 +27,12 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/core/Config.h>
 #include <ripple/json/json_value.h>
+
 #include <boost/asio.hpp>
-#include <boost/optional.hpp>
+
 #include <memory>
 #include <mutex>
+#include <optional>
 
 namespace ripple {
 
@@ -71,6 +73,7 @@ class ValidatorSite
 private:
     using error_code = boost::system::error_code;
     using clock_type = std::chrono::system_clock;
+    using endpoint_type = boost::asio::ip::tcp::endpoint;
 
     struct Site
     {
@@ -106,7 +109,9 @@ private:
         unsigned short redirCount;
         std::chrono::minutes refreshInterval;
         clock_type::time_point nextRefresh;
-        boost::optional<Status> lastRefreshStatus;
+        std::optional<Status> lastRefreshStatus;
+        endpoint_type lastRequestEndpoint;
+        bool lastRequestSuccessful;
     };
 
     Application& app_;
@@ -135,7 +140,7 @@ private:
 public:
     ValidatorSite(
         Application& app,
-        boost::optional<beast::Journal> j = boost::none,
+        std::optional<beast::Journal> j = std::nullopt,
         std::chrono::seconds timeout = std::chrono::seconds{20});
     ~ValidatorSite();
 
@@ -206,6 +211,7 @@ private:
     void
     onSiteFetch(
         boost::system::error_code const& ec,
+        endpoint_type const& endpoint,
         detail::response_type&& res,
         std::size_t siteIdx);
 
