@@ -791,16 +791,27 @@ class Ticket_test : public beast::unit_test::suite
                                  boost::optional<std::uint32_t> ticketSeq,
                                  TxType txType) {
             error_code_i txErrCode{rpcSUCCESS};
-            std::shared_ptr<Transaction> const tx{
-                Transaction::load(txID, env.app(), txErrCode)};
-            BEAST_EXPECT(txErrCode == rpcSUCCESS);
-            BEAST_EXPECT(tx->getLedger() == ledgerSeq);
 
-            std::shared_ptr<STTx const> const& sttx{tx->getSTransaction()};
-            BEAST_EXPECT((*sttx)[sfSequence] == txSeq);
-            if (ticketSeq)
-                BEAST_EXPECT((*sttx)[sfTicketSequence] == *ticketSeq);
-            BEAST_EXPECT((*sttx)[sfTransactionType] == txType);
+            using TxPair = std::
+                pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
+            std::variant<TxPair, TxSearched> maybeTx =
+                Transaction::load(txID, env.app(), txErrCode);
+
+            BEAST_EXPECT(txErrCode == rpcSUCCESS);
+            if (auto txPtr = std::get_if<TxPair>(&maybeTx))
+            {
+                std::shared_ptr<Transaction>& tx = txPtr->first;
+                BEAST_EXPECT(tx->getLedger() == ledgerSeq);
+                std::shared_ptr<STTx const> const& sttx = tx->getSTransaction();
+                BEAST_EXPECT((*sttx)[sfSequence] == txSeq);
+                if (ticketSeq)
+                    BEAST_EXPECT((*sttx)[sfTicketSequence] == *ticketSeq);
+                BEAST_EXPECT((*sttx)[sfTransactionType] == txType);
+            }
+            else
+            {
+                fail("Expected transaction was not found");
+            }
         };
 
         //   txID ledgerSeq txSeq ticketSeq          txType

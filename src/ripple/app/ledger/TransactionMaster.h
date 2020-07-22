@@ -44,19 +44,23 @@ public:
     std::shared_ptr<Transaction>
     fetch_from_cache(uint256 const&);
 
-    std::shared_ptr<Transaction>
+    std::variant<
+        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
+        TxSearched>
     fetch(uint256 const&, error_code_i& ec);
 
     /**
      * Fetch transaction from the cache or database.
      *
-     * @return A boost::variant that contains either a
-     *         shared_pointer to the retrieved transaction or a
-     *         bool indicating whether or not the all ledgers in
-     *         the provided range were present in the database
-     *         while the search was conducted.
+     * @return A std::variant that contains either a
+     *         pair of shared_pointer to the retrieved transaction
+     *         and its metadata or an enum indicating whether or not
+     *         the all ledgers in the provided range were present in
+     *         the database while the search was conducted.
      */
-    boost::variant<Transaction::pointer, bool>
+    std::variant<
+        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
+        TxSearched>
     fetch(
         uint256 const&,
         ClosedInterval<uint32_t> const& range,

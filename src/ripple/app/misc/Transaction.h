@@ -22,6 +22,7 @@
 
 #include <ripple/basics/RangeSet.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/ledger/TxMeta.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STTx.h>
@@ -51,6 +52,8 @@ enum TransStatus {
     OBSOLETE = 7,    // a compatible transaction has taken precedence
     INCOMPLETE = 8   // needs more signatures
 };
+
+enum class TxSearched { all, some, unknown };
 
 // This class is for constructing and examining transactions.
 // Transactions are static so manipulation functions are unnecessary.
@@ -98,6 +101,12 @@ public:
     getLedger() const
     {
         return mInLedger;
+    }
+
+    bool
+    isValidated() const
+    {
+        return mInLedger != 0;
     }
 
     TransStatus
@@ -300,10 +309,14 @@ public:
     Json::Value
     getJson(JsonOptions options, bool binary = false) const;
 
-    static pointer
+    static std::variant<
+        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
+        TxSearched>
     load(uint256 const& id, Application& app, error_code_i& ec);
 
-    static boost::variant<Transaction::pointer, bool>
+    static std::variant<
+        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
+        TxSearched>
     load(
         uint256 const& id,
         Application& app,
@@ -311,7 +324,9 @@ public:
         error_code_i& ec);
 
 private:
-    static boost::variant<Transaction::pointer, bool>
+    static std::variant<
+        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
+        TxSearched>
     load(
         uint256 const& id,
         Application& app,

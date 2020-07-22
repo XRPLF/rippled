@@ -81,14 +81,12 @@ getMetaHex(Ledger const& ledger, uint256 const& transID, std::string& hex)
     return true;
 }
 
-enum class SearchedAll { no, yes, unknown };
-
 struct TxResult
 {
     Transaction::pointer txn;
     std::variant<std::shared_ptr<TxMeta>, Blob> meta;
     bool validated = false;
-    SearchedAll searchedAll;
+    TxSearched searchedAll;
 };
 
 struct TxArgs
@@ -119,30 +117,30 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
             args.ledgerRange->first, args.ledgerRange->second);
     }
 
-    std::shared_ptr<Transaction> txn;
     auto ec{rpcSUCCESS};
 
-    result.searchedAll = SearchedAll::unknown;
+    using TxPair =
+        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
+
+    result.searchedAll = TxSearched::unknown;
+
+    std::variant<TxPair, TxSearched> v;
     if (args.ledgerRange)
     {
-        boost::variant<std::shared_ptr<Transaction>, bool> v =
-            context.app.getMasterTransaction().fetch(args.hash, range, ec);
-
-        if (v.which() == 1)
-        {
-            result.searchedAll =
-                boost::get<bool>(v) ? SearchedAll::yes : SearchedAll::no;
-            return {result, rpcTXN_NOT_FOUND};
-        }
-        else
-        {
-            txn = boost::get<std::shared_ptr<Transaction>>(v);
-        }
+        v = context.app.getMasterTransaction().fetch(args.hash, range, ec);
     }
     else
     {
-        txn = context.app.getMasterTransaction().fetch(args.hash, ec);
+        v = context.app.getMasterTransaction().fetch(args.hash, ec);
     }
+
+    if (auto e = std::get_if<TxSearched>(&v))
+    {
+        result.searchedAll = *e;
+        return {result, rpcTXN_NOT_FOUND};
+    }
+
+    auto [txn, meta] = std::get<TxPair>(v);
 
     if (ec == rpcDB_DESERIALIZATION)
     {
@@ -162,39 +160,12 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
 
     std::shared_ptr<Ledger const> ledger =
         context.ledgerMaster.getLedgerBySeq(txn->getLedger());
-    // get meta data
-    if (ledger)
-    {
-        bool ok = false;
-        if (args.binary)
-        {
-            SHAMapTreeNode::TNType type;
-            auto const item = ledger->txMap().peekItem(txn->getID(), type);
 
-            if (item && type == SHAMapTreeNode::tnTRANSACTION_MD)
-            {
-                ok = true;
-                SerialIter it(item->slice());
-                it.skip(it.getVLDataLength());  // skip transaction
-                Blob blob = it.getVL();
-                result.meta = std::move(blob);
-            }
-        }
-        else
-        {
-            auto rawMeta = ledger->txRead(txn->getID()).second;
-            if (rawMeta)
-            {
-                ok = true;
-                result.meta = std::make_shared<TxMeta>(
-                    txn->getID(), ledger->seq(), *rawMeta);
-            }
-        }
-        if (ok)
-        {
-            result.validated = isValidated(
-                context.ledgerMaster, ledger->info().seq, ledger->info().hash);
-        }
+    if (ledger && meta)
+    {
+        result.meta = meta;
+        result.validated = isValidated(
+            context.ledgerMaster, ledger->info().seq, ledger->info().hash);
     }
 
     return {result, rpcSUCCESS};
@@ -214,14 +185,14 @@ populateProtoResponse(
     if (error.toErrorCode() != rpcSUCCESS)
     {
         if (error.toErrorCode() == rpcTXN_NOT_FOUND &&
-            result.searchedAll != SearchedAll::unknown)
+            result.searchedAll != TxSearched::unknown)
         {
             status = {
                 grpc::StatusCode::NOT_FOUND,
                 "txn not found. searched_all = " +
                     to_string(
-                        (result.searchedAll == SearchedAll::yes ? "true"
-                                                                : "false"))};
+                        (result.searchedAll == TxSearched::all ? "true"
+                                                               : "false"))};
         }
         else
         {
@@ -308,11 +279,11 @@ populateJsonResponse(
     if (error.toErrorCode() != rpcSUCCESS)
     {
         if (error.toErrorCode() == rpcTXN_NOT_FOUND &&
-            result.searchedAll != SearchedAll::unknown)
+            result.searchedAll != TxSearched::unknown)
         {
             response = Json::Value(Json::objectValue);
             response[jss::searched_all] =
-                (result.searchedAll == SearchedAll::yes);
+                (result.searchedAll == TxSearched::all);
             error.inject(response);
         }
         else

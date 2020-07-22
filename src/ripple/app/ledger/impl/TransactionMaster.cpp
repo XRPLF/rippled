@@ -54,44 +54,55 @@ TransactionMaster::fetch_from_cache(uint256 const& txnID)
     return mCache.fetch(txnID);
 }
 
-std::shared_ptr<Transaction>
+std::variant<
+    std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
+    TxSearched>
 TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)
 {
-    auto txn = fetch_from_cache(txnID);
+    using TxPair =
+        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
+
+    if (auto txn = fetch_from_cache(txnID); txn && !txn->isValidated())
+        return std::pair{std::move(txn), nullptr};
+
+    auto v = Transaction::load(txnID, mApp, ec);
+
+    if (std::holds_alternative<TxSearched>(v))
+        return v;
+
+    auto [txn, txnMeta] = std::get<TxPair>(v);
 
     if (txn)
-        return txn;
+        mCache.canonicalize_replace_client(txnID, txn);
 
-    txn = Transaction::load(txnID, mApp, ec);
-
-    if (!txn)
-        return txn;
-
-    mCache.canonicalize_replace_client(txnID, txn);
-
-    return txn;
+    return std::pair{std::move(txn), std::move(txnMeta)};
 }
 
-boost::variant<Transaction::pointer, bool>
+std::variant<
+    std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
+    TxSearched>
 TransactionMaster::fetch(
     uint256 const& txnID,
     ClosedInterval<uint32_t> const& range,
     error_code_i& ec)
 {
-    using pointer = Transaction::pointer;
+    using TxPair =
+        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
-    auto txn = mCache.fetch(txnID);
+    if (auto txn = fetch_from_cache(txnID); txn && !txn->isValidated())
+        return std::pair{std::move(txn), nullptr};
+
+    auto v = Transaction::load(txnID, mApp, range, ec);
+
+    if (std::holds_alternative<TxSearched>(v))
+        return v;
+
+    auto [txn, txnMeta] = std::get<TxPair>(v);
 
     if (txn)
-        return txn;
+        mCache.canonicalize_replace_client(txnID, txn);
 
-    boost::variant<Transaction::pointer, bool> v =
-        Transaction::load(txnID, mApp, range, ec);
-
-    if (v.which() == 0 && boost::get<pointer>(v))
-        mCache.canonicalize_replace_client(txnID, boost::get<pointer>(v));
-
-    return v;
+    return std::pair{std::move(txn), std::move(txnMeta)};
 }
 
 std::shared_ptr<STTx const>
