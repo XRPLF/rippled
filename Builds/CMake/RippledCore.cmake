@@ -125,6 +125,10 @@ target_include_directories (xrpl_core
     # this one is for beast/legacy files:
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/beast/extras>
     $<INSTALL_INTERFACE:include>)
+
+target_compile_definitions(xrpl_core
+  PUBLIC
+    HAS_UNCAUGHT_EXCEPTIONS=1)
 target_compile_options (xrpl_core
   PUBLIC
     $<$<BOOL:${is_gcc}>:-Wno-maybe-uninitialized>)
