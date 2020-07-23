@@ -107,7 +107,11 @@ public:
         req.target("/");
         req.version(11);
         req.insert("Content-Type", "application/json; charset=UTF-8");
-        req.insert("Host", ep_);
+        {
+            std::ostringstream ostr;
+            ostr << ep_;
+            req.insert("Host", ostr.str());
+        }
         {
             Json::Value jr;
             jr[jss::method] = cmd;

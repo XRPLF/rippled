@@ -141,13 +141,14 @@ public:
         {
             auto const ep = getEndpoint(cfg, v2);
             stream_.connect(ep);
-            ws_.handshake_ex(
-                ep.address().to_string() + ":" + std::to_string(ep.port()),
-                "/",
+            ws_.set_option(boost::beast::websocket::stream_base::decorator(
                 [&](boost::beast::websocket::request_type& req) {
                     for (auto const& h : headers)
                         req.set(h.first, h.second);
-                });
+                }));
+            ws_.handshake(
+                ep.address().to_string() + ":" + std::to_string(ep.port()),
+                "/");
             ws_.async_read(
                 rb_,
                 strand_.wrap(std::bind(
