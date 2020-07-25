@@ -36,16 +36,16 @@ class ShardArchiveHandler_test : public beast::unit_test::suite
 {
     using Downloads = std::vector<std::pair<std::uint32_t, std::string>>;
 
-    TrustedPublisherServer
+    std::shared_ptr<TrustedPublisherServer>
     createServer(jtx::Env& env, bool ssl = true)
     {
         std::vector<TrustedPublisherServer::Validator> list;
         list.push_back(TrustedPublisherServer::randomValidator());
-        return TrustedPublisherServer{
+        return make_TrustedPublisherServer(
             env.app().getIOService(),
             list,
             env.timeKeeper().now() + std::chrono::seconds{3600},
-            ssl};
+            ssl);
     }
 
 public:
@@ -191,9 +191,9 @@ public:
         BEAST_EXPECT(dynamic_cast<RPC::RecoveryHandler*>(handler) == nullptr);
 
         auto server = createServer(env);
-        auto host = server.local_endpoint().address().to_string();
-        auto port = std::to_string(server.local_endpoint().port());
-        server.stop();
+        auto host = server->local_endpoint().address().to_string();
+        auto port = std::to_string(server->local_endpoint().port());
+        server->stop();
 
         Downloads const dl = [count = numberOfDownloads, &host, &port] {
             Downloads ret;
@@ -290,9 +290,9 @@ public:
                 dynamic_cast<RPC::RecoveryHandler*>(handler) == nullptr);
 
             auto server = createServer(env);
-            auto host = server.local_endpoint().address().to_string();
-            auto port = std::to_string(server.local_endpoint().port());
-            server.stop();
+            auto host = server->local_endpoint().address().to_string();
+            auto port = std::to_string(server->local_endpoint().port());
+            server->stop();
 
             Downloads const dl = [count = numberOfDownloads, &host, &port] {
                 Downloads ret;
