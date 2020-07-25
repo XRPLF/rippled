@@ -34,12 +34,15 @@
 #include <boost/beast/version.hpp>
 #include <boost/lexical_cast.hpp>
 #include <test/jtx/envconfig.h>
+
+#include <memory>
 #include <thread>
 
 namespace ripple {
 namespace test {
 
 class TrustedPublisherServer
+    : public std::enable_shared_from_this<TrustedPublisherServer>
 {
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using address_type = boost::asio::ip::address;
@@ -141,6 +144,10 @@ public:
                 1)};
     }
 
+    // TrustedPublisherServer must be accessed through a shared_ptr
+    // This constructor is only public so std::make_shared has access.
+    // The function`make_TrustedPublisherServer` should be used to create
+    // instances.
     TrustedPublisherServer(
         boost::asio::io_context& ioc,
         std::vector<Validator> const& validators,
@@ -192,9 +199,6 @@ public:
             // This holds the self-signed certificate used by the server
             load_server_certificate();
         }
-
-        if (immediateStart)
-            start();
     }
 
     void
@@ -208,10 +212,13 @@ public:
         acceptor_.listen(boost::asio::socket_base::max_connections);
         acceptor_.async_accept(
             sock_,
-            std::bind(
-                &TrustedPublisherServer::on_accept,
-                this,
-                std::placeholders::_1));
+            [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](
+                error_code ec) {
+                if (auto p = wp.lock())
+                {
+                    p->on_accept(ec);
+                }
+            });
     }
 
     void
@@ -442,8 +449,6 @@ private:
     void
     on_accept(error_code ec)
     {
-        // ec must be checked before `acceptor_` or the member variable may be
-        // accessed after the destructor has completed
         if (ec || !acceptor_.is_open())
             return;
 
@@ -451,10 +456,13 @@ private:
         std::thread{lambda{++id_, *this, std::move(sock_), useSSL_}}.detach();
         acceptor_.async_accept(
             sock_,
-            std::bind(
-                &TrustedPublisherServer::on_accept,
-                this,
-                std::placeholders::_1));
+            [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](
+                error_code ec) {
+                if (auto p = wp.lock())
+                {
+                    p->on_accept(ec);
+                }
+            });
     }
 
     void
@@ -605,6 +613,23 @@ private:
             ssl_stream->shutdown(ec);
     }
 };
+
+inline std::shared_ptr<TrustedPublisherServer>
+make_TrustedPublisherServer(
+    boost::asio::io_context& ioc,
+    std::vector<TrustedPublisherServer::Validator> const& validators,
+    NetClock::time_point expiration,
+    bool useSSL = false,
+    int version = 1,
+    bool immediateStart = true,
+    int sequence = 1)
+{
+    auto const r = std::make_shared<TrustedPublisherServer>(
+        ioc, validators, expiration, useSSL, version, sequence);
+    if (immediateStart)
+        r->start();
+    return r;
+}
 
 }  // namespace test
 }  // namespace ripple

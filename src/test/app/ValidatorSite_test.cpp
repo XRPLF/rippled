@@ -164,7 +164,7 @@ private:
             publisher(FetchListConfig const& c) : cfg{c}
             {
             }
-            std::unique_ptr<TrustedPublisherServer> server;
+            std::shared_ptr<TrustedPublisherServer> server;
             std::vector<Validator> list;
             std::string uri;
             FetchListConfig const& cfg;
@@ -184,7 +184,7 @@ private:
             while (item.list.size() < listSize)
                 item.list.push_back(TrustedPublisherServer::randomValidator());
 
-            item.server = std::make_unique<TrustedPublisherServer>(
+            item.server = make_TrustedPublisherServer(
                 env.app().getIOService(),
                 item.list,
                 env.timeKeeper().now() + cfg.expiresFromNow,
