@@ -488,6 +488,14 @@ Config::loadFromString(std::string const& fileContents)
         REDUCE_RELAY_SQUELCH = sec.value_or("squelch", false);
     }
 
+    if (getSingleSection(secConfig, SECTION_MAX_TRANSACTIONS, strTemp, j_))
+    {
+        MAX_TRANSACTIONS = std::clamp(
+            beast::lexicalCastThrow<int>(strTemp),
+            MIN_JOB_QUEUE_TX,
+            MAX_JOB_QUEUE_TX);
+    }
+
     if (getSingleSection(
             secConfig, SECTION_AMENDMENT_MAJORITY_TIME, strTemp, j_))
     {

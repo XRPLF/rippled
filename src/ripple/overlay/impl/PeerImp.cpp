@@ -1512,9 +1512,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMTransaction> const& m)
             }
         }
 
-        // The maximum number of transactions to have in the job queue.
-        constexpr int max_transactions = 250;
-        if (app_.getJobQueue().getJobCount(jtTRANSACTION) > max_transactions)
+        if (app_.getJobQueue().getJobCount(jtTRANSACTION) >
+            app_.config().MAX_TRANSACTIONS)
         {
             overlay_.incJqTransOverflow();
             JLOG(p_journal_.info()) << "Transaction queue is full";
