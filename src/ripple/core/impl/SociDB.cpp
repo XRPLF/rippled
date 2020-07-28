@@ -26,6 +26,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/core/DatabaseCon.h>
 #include <ripple/core/SociDB.h>
 #include <boost/filesystem.hpp>
 #include <memory>
@@ -196,44 +197,48 @@ namespace {
     is the default behavior of sqlite. We may be able to remove this
     class.
 */
+
 class WALCheckpointer : public Checkpointer
 {
 public:
-    WALCheckpointer(sqlite_api::sqlite3& conn, JobQueue& q, Logs& logs)
-        : conn_(conn), jobQueue_(q), j_(logs.journal("WALCheckpointer"))
+    WALCheckpointer(
+        std::uintptr_t id,
+        std::weak_ptr<soci::session> session,
+        JobQueue& q,
+        Logs& logs)
+        : id_(id)
+        , session_(std::move(session))
+        , jobQueue_(q)
+        , j_(logs.journal("WALCheckpointer"))
     {
-        sqlite_api::sqlite3_wal_hook(&conn_, &sqliteWALHook, this);
+        if (auto [conn, keepAlive] = getConnection(); conn)
+        {
+            (void)keepAlive;
+            sqlite_api::sqlite3_wal_hook(
+                conn, &sqliteWALHook, reinterpret_cast<void*>(id_));
+        }
+    }
+
+    std::pair<sqlite_api::sqlite3*, std::shared_ptr<soci::session>>
+    getConnection() const
+    {
+        if (auto p = session_.lock())
+        {
+            return {ripple::getConnection(*p), p};
+        }
+        return {nullptr, std::shared_ptr<soci::session>{}};
+    }
+
+    std::uintptr_t
+    id() const override
+    {
+        return id_;
     }
 
     ~WALCheckpointer() override = default;
 
-private:
-    sqlite_api::sqlite3& conn_;
-    std::mutex mutex_;
-    JobQueue& jobQueue_;
-
-    bool running_ = false;
-    beast::Journal const j_;
-
-    static int
-    sqliteWALHook(
-        void* cp,
-        sqlite_api::sqlite3*,
-        const char* dbName,
-        int walSize)
-    {
-        if (walSize >= checkpointPageCount)
-        {
-            if (auto checkpointer = reinterpret_cast<WALCheckpointer*>(cp))
-                checkpointer->scheduleCheckpoint();
-            else
-                Throw<std::logic_error>("Didn't get a WALCheckpointer");
-        }
-        return SQLITE_OK;
-    }
-
     void
-    scheduleCheckpoint()
+    schedule() override
     {
         {
             std::lock_guard lock(mutex_);
@@ -243,7 +248,18 @@ private:
         }
 
         // If the Job is not added to the JobQueue then we're not running_.
-        if (!jobQueue_.addJob(jtWAL, "WAL", [this](Job&) { checkpoint(); }))
+        if (!jobQueue_.addJob(
+                jtWAL,
+                "WAL",
+                // If the owning DatabaseCon is destroyed, no need to checkpoint
+                // or keep the checkpointer alive so use a weak_ptr to this.
+                // There is a separate check in `checkpoint` for a valid
+                // connection in the rare case when the DatabaseCon is destroyed
+                // after locking this weak_ptr
+                [wp = std::weak_ptr<Checkpointer>{shared_from_this()}](Job&) {
+                    if (auto self = wp.lock())
+                        self->checkpoint();
+                }))
         {
             std::lock_guard lock(mutex_);
             running_ = false;
@@ -251,13 +267,18 @@ private:
     }
 
     void
-    checkpoint()
+    checkpoint() override
     {
+        auto [conn, keepAlive] = getConnection();
+        (void)keepAlive;
+        if (!conn)
+            return;
+
         int log = 0, ckpt = 0;
         int ret = sqlite3_wal_checkpoint_v2(
-            &conn_, nullptr, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
+            conn, nullptr, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
 
-        auto fname = sqlite3_db_filename(&conn_, "main");
+        auto fname = sqlite3_db_filename(conn, "main");
         if (ret != SQLITE_OK)
         {
             auto jm = (ret == SQLITE_LOCKED) ? j_.trace() : j_.warn();
@@ -272,16 +293,53 @@ private:
         std::lock_guard lock(mutex_);
         running_ = false;
     }
+
+protected:
+    std::uintptr_t const id_;
+    // session is owned by the DatabaseCon parent that holds the checkpointer.
+    // It is possible (tho rare) for the DatabaseCon class to be destoryed
+    // before the checkpointer.
+    std::weak_ptr<soci::session> session_;
+    std::mutex mutex_;
+    JobQueue& jobQueue_;
+
+    bool running_ = false;
+    beast::Journal const j_;
+
+    static int
+    sqliteWALHook(
+        void* cpId,
+        sqlite_api::sqlite3* conn,
+        const char* dbName,
+        int walSize)
+    {
+        if (walSize >= checkpointPageCount)
+        {
+            if (auto checkpointer =
+                    checkpointerFromId(reinterpret_cast<std::uintptr_t>(cpId)))
+            {
+                checkpointer->schedule();
+            }
+            else
+            {
+                sqlite_api::sqlite3_wal_hook(conn, nullptr, nullptr);
+            }
+        }
+        return SQLITE_OK;
+    }
 };
 
 }  // namespace
 
-std::unique_ptr<Checkpointer>
-makeCheckpointer(soci::session& session, JobQueue& queue, Logs& logs)
+std::shared_ptr<Checkpointer>
+makeCheckpointer(
+    std::uintptr_t id,
+    std::weak_ptr<soci::session> session,
+    JobQueue& queue,
+    Logs& logs)
 {
-    if (auto conn = getConnection(session))
-        return std::make_unique<WALCheckpointer>(*conn, queue, logs);
-    return {};
+    return std::make_shared<WALCheckpointer>(
+        id, std::move(session), queue, logs);
 }
 
 }  // namespace ripple

@@ -131,9 +131,8 @@ Shard::open(Scheduler& scheduler, nudb::context& ctx)
             setup,
             AcquireShardDBName,
             AcquireShardDBPragma,
-            AcquireShardDBInit);
-        acquireInfo_->SQLiteDB->setupCheckpointing(
-            &app_.getJobQueue(), app_.logs());
+            AcquireShardDBInit,
+            DatabaseCon::CheckpointerSetup{&app_.getJobQueue(), &app_.logs()});
     };
 
     try
@@ -741,18 +740,26 @@ Shard::initSQLite(std::lock_guard<std::recursive_mutex> const&)
         {
             // The incomplete shard uses a Write Ahead Log for performance
             lgrSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup, LgrDBName, LgrDBPragma, LgrDBInit);
+                setup,
+                LgrDBName,
+                LgrDBPragma,
+                LgrDBInit,
+                DatabaseCon::CheckpointerSetup{
+                    &app_.getJobQueue(), &app_.logs()});
             lgrSQLiteDB_->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(config.getValueFor(SizedItem::lgrDBCache)));
-            lgrSQLiteDB_->setupCheckpointing(&app_.getJobQueue(), app_.logs());
 
             txSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup, TxDBName, TxDBPragma, TxDBInit);
+                setup,
+                TxDBName,
+                TxDBPragma,
+                TxDBInit,
+                DatabaseCon::CheckpointerSetup{
+                    &app_.getJobQueue(), &app_.logs()});
             txSQLiteDB_->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(config.getValueFor(SizedItem::txnDBCache)));
-            txSQLiteDB_->setupCheckpointing(&app_.getJobQueue(), app_.logs());
         }
     }
     catch (std::exception const& e)
