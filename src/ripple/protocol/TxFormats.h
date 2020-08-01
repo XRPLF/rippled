@@ -56,6 +56,8 @@ enum TxType {
     ttTRUST_SET = 20,
     ttACCOUNT_DELETE = 21,
 
+    ttHOOK_SET [[maybe_unused]] = 22,
+
     ttAMENDMENT = 100,
     ttFEE = 101,
     ttUNL_MODIFY = 102,

@@ -277,6 +277,7 @@ enum TECcodes : TERUnderlyingType {
     tecKILLED = 150,
     tecHAS_OBLIGATIONS = 151,
     tecTOO_SOON = 152,
+    tecHOOK_ERROR [[maybe_unused]] = 153
 };
 
 //------------------------------------------------------------------------------
