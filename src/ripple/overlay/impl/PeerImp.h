@@ -593,13 +593,6 @@ private:
 
     void
     getLedger(std::shared_ptr<protocol::TMGetLedger> const& packet);
-
-    // Called when we receive tx set data.
-    void
-    peerTXData(
-        uint256 const& hash,
-        std::shared_ptr<protocol::TMLedgerData> const& pPacket,
-        beast::Journal journal);
 };
 
 //------------------------------------------------------------------------------

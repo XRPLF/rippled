@@ -1376,13 +1376,11 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
 
     for (auto const& tm : m->endpoints_v2())
     {
-        auto result =
-            beast::IP::Endpoint::from_string_checked(tm.endpoint());
+        auto result = beast::IP::Endpoint::from_string_checked(tm.endpoint());
         if (!result)
         {
-            JLOG(p_journal_.error())
-                << "failed to parse incoming endpoint: {" << tm.endpoint()
-                << "}";
+            JLOG(p_journal_.error()) << "failed to parse incoming endpoint: {"
+                                     << tm.endpoint() << "}";
             continue;
         }
 
@@ -1394,8 +1392,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
         // take the address/port we were given
 
         endpoints.emplace_back(
-            tm.hops() > 0 ? *result
-                          : remote_address_.at_port(result->port()),
+            tm.hops() > 0 ? *result : remote_address_.at_port(result->port()),
             tm.hops());
     }
 
