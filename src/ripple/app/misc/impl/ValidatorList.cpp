@@ -748,10 +748,10 @@ ValidatorList::getJson() const
     });
 
     // Negative UNL
-    if (!negativeUnl_.empty())
+    if (!negativeUNL_.empty())
     {
         Json::Value& jNegativeUNL = (res[jss::NegativeUNL] = Json::arrayValue);
-        for (auto const& k : negativeUnl_)
+        for (auto const& k : negativeUNL_)
         {
             jNegativeUNL.append(toBase58(TokenType::NodePublic, k));
         }
@@ -944,15 +944,15 @@ ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
     auto unlSize = trustedMasterKeys_.size();
     auto effectiveUnlSize = unlSize;
     auto seenSize = seenValidators.size();
-    if (!negativeUnl_.empty())
+    if (!negativeUNL_.empty())
     {
         for (auto const& k : trustedMasterKeys_)
         {
-            if (negativeUnl_.count(k))
+            if (negativeUNL_.count(k))
                 --effectiveUnlSize;
         }
         hash_set<NodeID> negUnlNodeIDs;
-        for (auto const& k : negativeUnl_)
+        for (auto const& k : negativeUNL_)
         {
             negUnlNodeIDs.emplace(calcNodeID(k));
         }
@@ -987,17 +987,17 @@ ValidatorList::getTrustedMasterKeys() const
 }
 
 hash_set<PublicKey>
-ValidatorList::getNegativeUnl() const
+ValidatorList::getNegativeUNL() const
 {
     std::shared_lock lock{mutex_};
-    return negativeUnl_;
+    return negativeUNL_;
 }
 
 void
-ValidatorList::setNegativeUnl(hash_set<PublicKey> const& negUnl)
+ValidatorList::setNegativeUNL(hash_set<PublicKey> const& negUnl)
 {
     std::lock_guard lock{mutex_};
-    negativeUnl_ = negUnl;
+    negativeUNL_ = negUnl;
 }
 
 std::vector<std::shared_ptr<STValidation>>
@@ -1008,7 +1008,7 @@ ValidatorList::negativeUNLFilter(
     auto ret = std::move(validations);
 
     std::shared_lock lock{mutex_};
-    if (!negativeUnl_.empty())
+    if (!negativeUNL_.empty())
     {
         ret.erase(
             std::remove_if(
@@ -1019,7 +1019,7 @@ ValidatorList::negativeUNLFilter(
                             getTrustedKey(v->getSignerPublic());
                         masterKey)
                     {
-                        return negativeUnl_.count(*masterKey);
+                        return negativeUNL_.count(*masterKey);
                     }
                     else
                     {

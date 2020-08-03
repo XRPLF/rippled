@@ -1342,7 +1342,7 @@ private:
                             nUnl.insert(*it);
                             ++it;
                         }
-                        validators->setNegativeUnl(nUnl);
+                        validators->setNegativeUNL(nUnl);
                         validators->updateTrusted(activeValidators);
                         BEAST_EXPECT(
                             validators->quorum() ==
@@ -1374,8 +1374,8 @@ private:
                             nUnl.insert(*it);
                             ++it;
                         }
-                        validators->setNegativeUnl(nUnl);
-                        auto nUnl_temp = validators->getNegativeUnl();
+                        validators->setNegativeUNL(nUnl);
+                        auto nUnl_temp = validators->getNegativeUNL();
                         if (nUnl_temp.size() == nUnl.size())
                         {
                             for (auto& n : nUnl_temp)
@@ -1396,7 +1396,7 @@ private:
 
                 {
                     // nUNL overlap: |nUNL - UNL| = 5, with nUNL size: 18
-                    auto nUnl = validators->getNegativeUnl();
+                    auto nUnl = validators->getNegativeUNL();
                     BEAST_EXPECT(nUnl.size() == 12);
                     std::size_t ss = 33;
                     std::vector<uint8_t> data(ss, 0);
@@ -1407,7 +1407,7 @@ private:
                         data[1]++;
                         nUnl.emplace(s);
                     }
-                    validators->setNegativeUnl(nUnl);
+                    validators->setNegativeUNL(nUnl);
                     validators->updateTrusted(activeValidators);
                     BEAST_EXPECT(validators->quorum() == 39);
                 }
@@ -1439,7 +1439,7 @@ private:
                     nUnl.insert(*it);
                     ++it;
                 }
-                validators->setNegativeUnl(nUnl);
+                validators->setNegativeUNL(nUnl);
                 validators->updateTrusted(activeValidators);
                 BEAST_EXPECT(validators->quorum() == 30);
             }

@@ -224,9 +224,8 @@ SF_Blob const sfMasterSignature(
     SField::sMD_Default,
     SField::notSigning);
 SF_Blob const sfUNLModifyValidator(access, STI_VL, 19, "UNLModifyValidator");
-SF_Blob const sfNegativeUNLToDisable(access, STI_VL, 20, "ValidatorToDisable");
-SF_Blob const
-    sfNegativeUNLToReEnable(access, STI_VL, 21, "ValidatorToReEnable");
+SF_Blob const sfValidatorToDisable(access, STI_VL, 20, "ValidatorToDisable");
+SF_Blob const sfValidatorToReEnable(access, STI_VL, 21, "ValidatorToReEnable");
 
 // account
 SF_Account const sfAccount(access, STI_ACCOUNT, 1, "Account");
@@ -265,7 +264,7 @@ SField const sfSignerEntry(access, STI_OBJECT, 11, "SignerEntry");
 SField const sfSigner(access, STI_OBJECT, 16, "Signer");
 //                                                                                 17 has not been used yet...
 SField const sfMajority(access, STI_OBJECT, 18, "Majority");
-SField const sfNegativeUNLEntry(access, STI_OBJECT, 19, "DisabledValidator");
+SField const sfDisabledValidator(access, STI_OBJECT, 19, "DisabledValidator");
 
 // array of objects
 // ARRAY/1 is reserved for end of array
@@ -287,7 +286,7 @@ SField const sfMemos(access, STI_ARRAY, 9, "Memos");
 
 // array of objects (uncommon)
 SField const sfMajorities(access, STI_ARRAY, 16, "Majorities");
-SField const sfNegativeUNL(access, STI_ARRAY, 17, "NegativeUNL");
+SField const sfDisabledValidators(access, STI_ARRAY, 17, "DisabledValidators");
 
 SField::SField(
     private_access_tag_t,

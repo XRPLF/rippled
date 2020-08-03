@@ -600,13 +600,13 @@ Ledger::peek(Keylet const& k) const
 }
 
 hash_set<PublicKey>
-Ledger::negativeUnl() const
+Ledger::negativeUNL() const
 {
     hash_set<PublicKey> negUnl;
     if (auto sle = read(keylet::negativeUNL());
-        sle && sle->isFieldPresent(sfNegativeUNL))
+        sle && sle->isFieldPresent(sfDisabledValidators))
     {
-        auto const& nUnlData = sle->getFieldArray(sfNegativeUNL);
+        auto const& nUnlData = sle->getFieldArray(sfDisabledValidators);
         for (auto const& n : nUnlData)
         {
             if (n.isFieldPresent(sfPublicKey))
@@ -626,12 +626,12 @@ Ledger::negativeUnl() const
 }
 
 boost::optional<PublicKey>
-Ledger::negativeUnlToDisable() const
+Ledger::validatorToDisable() const
 {
     if (auto sle = read(keylet::negativeUNL());
-        sle && sle->isFieldPresent(sfNegativeUNLToDisable))
+        sle && sle->isFieldPresent(sfValidatorToDisable))
     {
-        auto d = sle->getFieldVL(sfNegativeUNLToDisable);
+        auto d = sle->getFieldVL(sfValidatorToDisable);
         auto s = makeSlice(d);
         if (publicKeyType(s))
             return PublicKey(s);
@@ -641,12 +641,12 @@ Ledger::negativeUnlToDisable() const
 }
 
 boost::optional<PublicKey>
-Ledger::negativeUnlToReEnable() const
+Ledger::validatorToReEnable() const
 {
     if (auto sle = read(keylet::negativeUNL());
-        sle && sle->isFieldPresent(sfNegativeUNLToReEnable))
+        sle && sle->isFieldPresent(sfValidatorToReEnable))
     {
-        auto d = sle->getFieldVL(sfNegativeUNLToReEnable);
+        auto d = sle->getFieldVL(sfValidatorToReEnable);
         auto s = makeSlice(d);
         if (publicKeyType(s))
             return PublicKey(s);
@@ -662,21 +662,21 @@ Ledger::updateNegativeUNL()
     if (!sle)
         return;
 
-    bool const hasToDisable = sle->isFieldPresent(sfNegativeUNLToDisable);
-    bool const hasToReEnable = sle->isFieldPresent(sfNegativeUNLToReEnable);
+    bool const hasToDisable = sle->isFieldPresent(sfValidatorToDisable);
+    bool const hasToReEnable = sle->isFieldPresent(sfValidatorToReEnable);
 
     if (!hasToDisable && !hasToReEnable)
         return;
 
     STArray newNUnl;
-    if (sle->isFieldPresent(sfNegativeUNL))
+    if (sle->isFieldPresent(sfDisabledValidators))
     {
-        auto const& oldNUnl = sle->getFieldArray(sfNegativeUNL);
+        auto const& oldNUnl = sle->getFieldArray(sfDisabledValidators);
         for (auto v : oldNUnl)
         {
             if (hasToReEnable && v.isFieldPresent(sfPublicKey) &&
                 v.getFieldVL(sfPublicKey) ==
-                    sle->getFieldVL(sfNegativeUNLToReEnable))
+                    sle->getFieldVL(sfValidatorToReEnable))
                 continue;
             newNUnl.push_back(v);
         }
@@ -684,19 +684,19 @@ Ledger::updateNegativeUNL()
 
     if (hasToDisable)
     {
-        newNUnl.emplace_back(sfNegativeUNLEntry);
+        newNUnl.emplace_back(sfDisabledValidator);
         newNUnl.back().setFieldVL(
-            sfPublicKey, sle->getFieldVL(sfNegativeUNLToDisable));
+            sfPublicKey, sle->getFieldVL(sfValidatorToDisable));
         newNUnl.back().setFieldU32(sfFirstLedgerSequence, seq());
     }
 
     if (!newNUnl.empty())
     {
-        sle->setFieldArray(sfNegativeUNL, newNUnl);
+        sle->setFieldArray(sfDisabledValidators, newNUnl);
         if (hasToReEnable)
-            sle->makeFieldAbsent(sfNegativeUNLToReEnable);
+            sle->makeFieldAbsent(sfValidatorToReEnable);
         if (hasToDisable)
-            sle->makeFieldAbsent(sfNegativeUNLToDisable);
+            sle->makeFieldAbsent(sfValidatorToDisable);
         rawReplace(sle);
     }
     else

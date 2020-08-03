@@ -85,7 +85,7 @@ skip(LedgerIndex ledger) noexcept;
 Keylet const&
 fees() noexcept;
 
-/** The (fixed) index of the object containing the ledger negativeUnl. */
+/** The (fixed) index of the object containing the ledger negativeUNL. */
 Keylet const&
 negativeUNL() noexcept;
 

@@ -335,7 +335,7 @@ public:
      * @return the public keys
      */
     hash_set<PublicKey>
-    negativeUnl() const;
+    negativeUNL() const;
 
     /**
      * get the to be disabled validator's master public key if any
@@ -343,7 +343,7 @@ public:
      * @return the public key if any
      */
     boost::optional<PublicKey>
-    negativeUnlToDisable() const;
+    validatorToDisable() const;
 
     /**
      * get the to be re-enabled validator's master public key if any
@@ -351,7 +351,7 @@ public:
      * @return the public key if any
      */
     boost::optional<PublicKey>
-    negativeUnlToReEnable() const;
+    validatorToReEnable() const;
 
     /**
      * update the Negative UNL ledger component.
