@@ -59,7 +59,7 @@ void
 convert(org::xrpl::rpc::v1::SignerList& to, STObject const& from);
 
 void
-convert(org::xrpl::rpc::v1::NegativeUnl& to, STObject const& from);
+convert(org::xrpl::rpc::v1::NegativeUNL& to, STObject const& from);
 
 template <class T>
 void

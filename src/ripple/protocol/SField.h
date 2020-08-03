@@ -473,8 +473,8 @@ extern SF_Blob const sfFulfillment;
 extern SF_Blob const sfCondition;
 extern SF_Blob const sfMasterSignature;
 extern SF_Blob const sfUNLModifyValidator;
-extern SF_Blob const sfNegativeUNLToDisable;
-extern SF_Blob const sfNegativeUNLToReEnable;
+extern SF_Blob const sfValidatorToDisable;
+extern SF_Blob const sfValidatorToReEnable;
 
 // account
 extern SF_Account const sfAccount;
@@ -508,7 +508,7 @@ extern SField const sfMemo;
 extern SField const sfSignerEntry;
 extern SField const sfSigner;
 extern SField const sfMajority;
-extern SField const sfNegativeUNLEntry;
+extern SField const sfDisabledValidator;
 
 // array of objects
 // ARRAY/1 is reserved for end of array

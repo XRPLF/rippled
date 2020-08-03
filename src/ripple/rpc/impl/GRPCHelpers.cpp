@@ -497,22 +497,22 @@ populateFirstLedgerSequence(T& to, STObject const& from)
 
 template <class T>
 void
-populateNegativeUNLToDisable(T& to, STObject const& from)
+populateValidatorToDisable(T& to, STObject const& from)
 {
     populateProtoPrimitive(
         [&to]() { return to.mutable_validator_to_disable(); },
         from,
-        sfNegativeUNLToDisable);
+        sfValidatorToDisable);
 }
 
 template <class T>
 void
-populateNegativeUNLToReEnable(T& to, STObject const& from)
+populateValidatorToReEnable(T& to, STObject const& from)
 {
     populateProtoPrimitive(
         [&to]() { return to.mutable_validator_to_re_enable(); },
         from,
-        sfNegativeUNLToReEnable);
+        sfValidatorToReEnable);
 }
 
 template <class T>
@@ -878,17 +878,17 @@ populateSignerEntries(T& to, STObject const& from)
 
 template <class T>
 void
-populateNegativeUNLEntries(T& to, STObject const& from)
+populateDisabledValidators(T& to, STObject const& from)
 {
     populateProtoArray(
-        [&to]() { return to.add_negative_unl_entries(); },
+        [&to]() { return to.add_disabled_validators(); },
         [](auto& innerObj, auto& innerProto) {
             populatePublicKey(innerProto, innerObj);
             populateFirstLedgerSequence(innerProto, innerObj);
         },
         from,
         sfNegativeUNL,
-        sfNegativeUNLEntry);
+        sfDisabledValidator);
 }
 
 template <class T>
@@ -1463,13 +1463,13 @@ convert(org::xrpl::rpc::v1::SignerList& to, STObject const& from)
 }
 
 void
-convert(org::xrpl::rpc::v1::NegativeUnl& to, STObject const& from)
+convert(org::xrpl::rpc::v1::NegativeUNL& to, STObject const& from)
 {
-    populateNegativeUNLEntries(to, from);
+    populateDisabledValidators(to, from);
 
-    populateNegativeUNLToDisable(to, from);
+    populateValidatorToDisable(to, from);
 
-    populateNegativeUNLToReEnable(to, from);
+    populateValidatorToReEnable(to, from);
 }
 
 void

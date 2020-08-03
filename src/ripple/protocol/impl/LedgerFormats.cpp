@@ -229,8 +229,8 @@ LedgerFormats::LedgerFormats()
         ltNEGATIVE_UNL,
         {
             {sfNegativeUNL, soeOPTIONAL},
-            {sfNegativeUNLToDisable, soeOPTIONAL},
-            {sfNegativeUNLToReEnable, soeOPTIONAL},
+            {sfValidatorToDisable, soeOPTIONAL},
+            {sfValidatorToReEnable, soeOPTIONAL},
         },
         commonFields);
 }
