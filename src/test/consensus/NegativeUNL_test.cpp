@@ -1911,6 +1911,10 @@ class NegativeUNLgRPC_test : public beast::unit_test::suite
 
             org::xrpl::rpc::v1::NegativeUNL to;
             ripple::RPC::convert(to, *negUnlObject);
+            if (!to.has_flags() ||
+                to.flags().value() != negUnlObject->getFlags())
+                return false;
+
             bool goodSize = to.disabled_validators_size() == negUnlSize &&
                 to.has_validator_to_disable() == hasToDisable &&
                 to.has_validator_to_re_enable() == hasToReEnable;
@@ -1919,10 +1923,10 @@ class NegativeUNLgRPC_test : public beast::unit_test::suite
 
             if (negUnlSize)
             {
-                if (!negUnlObject->isFieldPresent(sfNegativeUNL))
+                if (!negUnlObject->isFieldPresent(sfDisabledValidators))
                     return false;
                 auto const& nUnlData =
-                    negUnlObject->getFieldArray(sfNegativeUNL);
+                    negUnlObject->getFieldArray(sfDisabledValidators);
                 if (nUnlData.size() != negUnlSize)
                     return false;
                 int idx = 0;
@@ -2036,10 +2040,10 @@ VerifyPubKeyAndSeq(
     auto sle = l->read(keylet::negativeUNL());
     if (!sle)
         return false;
-    if (!sle->isFieldPresent(sfNegativeUNL))
+    if (!sle->isFieldPresent(sfDisabledValidators))
         return false;
 
-    auto const& nUnlData = sle->getFieldArray(sfNegativeUNL);
+    auto const& nUnlData = sle->getFieldArray(sfDisabledValidators);
     if (nUnlData.size() != nUnlLedgerSeq.size())
         return false;
 

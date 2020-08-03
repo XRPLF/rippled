@@ -290,9 +290,10 @@ Change::applyUNLModify()
     }
 
     bool const found = [&] {
-        if (negUnlObject->isFieldPresent(sfNegativeUNL))
+        if (negUnlObject->isFieldPresent(sfDisabledValidators))
         {
-            auto const& negUnl = negUnlObject->getFieldArray(sfNegativeUNL);
+            auto const& negUnl =
+                negUnlObject->getFieldArray(sfDisabledValidators);
             for (auto const& v : negUnl)
             {
                 if (v.isFieldPresent(sfPublicKey) &&

@@ -286,7 +286,7 @@ SField const sfMemos(access, STI_ARRAY, 9, "Memos");
 
 // array of objects (uncommon)
 SField const sfMajorities(access, STI_ARRAY, 16, "Majorities");
-SField const sfNegativeUNL(access, STI_ARRAY, 17, "NegativeUNL");
+SField const sfDisabledValidators(access, STI_ARRAY, 17, "DisabledValidators");
 
 SField::SField(
     private_access_tag_t,

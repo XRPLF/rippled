@@ -604,9 +604,9 @@ Ledger::negativeUNL() const
 {
     hash_set<PublicKey> negUnl;
     if (auto sle = read(keylet::negativeUNL());
-        sle && sle->isFieldPresent(sfNegativeUNL))
+        sle && sle->isFieldPresent(sfDisabledValidators))
     {
-        auto const& nUnlData = sle->getFieldArray(sfNegativeUNL);
+        auto const& nUnlData = sle->getFieldArray(sfDisabledValidators);
         for (auto const& n : nUnlData)
         {
             if (n.isFieldPresent(sfPublicKey))
@@ -669,9 +669,9 @@ Ledger::updateNegativeUNL()
         return;
 
     STArray newNUnl;
-    if (sle->isFieldPresent(sfNegativeUNL))
+    if (sle->isFieldPresent(sfDisabledValidators))
     {
-        auto const& oldNUnl = sle->getFieldArray(sfNegativeUNL);
+        auto const& oldNUnl = sle->getFieldArray(sfDisabledValidators);
         for (auto v : oldNUnl)
         {
             if (hasToReEnable && v.isFieldPresent(sfPublicKey) &&
@@ -692,7 +692,7 @@ Ledger::updateNegativeUNL()
 
     if (!newNUnl.empty())
     {
-        sle->setFieldArray(sfNegativeUNL, newNUnl);
+        sle->setFieldArray(sfDisabledValidators, newNUnl);
         if (hasToReEnable)
             sle->makeFieldAbsent(sfValidatorToReEnable);
         if (hasToDisable)

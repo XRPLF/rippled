@@ -228,7 +228,7 @@ LedgerFormats::LedgerFormats()
     add(jss::NegativeUNL,
         ltNEGATIVE_UNL,
         {
-            {sfNegativeUNL, soeOPTIONAL},
+            {sfDisabledValidators, soeOPTIONAL},
             {sfValidatorToDisable, soeOPTIONAL},
             {sfValidatorToReEnable, soeOPTIONAL},
         },

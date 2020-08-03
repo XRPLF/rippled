@@ -521,7 +521,7 @@ extern SField const sfSufficient;
 extern SField const sfAffectedNodes;
 extern SField const sfMemos;
 extern SField const sfMajorities;
-extern SField const sfNegativeUNL;
+extern SField const sfDisabledValidators;
 //------------------------------------------------------------------------------
 
 }  // namespace ripple

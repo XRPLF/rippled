@@ -332,7 +332,7 @@ message SignerList
     SignerQuorum signer_quorum = 7;
 }
 
-// Next field: 4
+// Next field: 5
 message NegativeUNL
 {
     repeated DisabledValidator disabled_validators = 1;
@@ -340,4 +340,6 @@ message NegativeUNL
     ValidatorToDisable validator_to_disable = 2;
 
     ValidatorToReEnable validator_to_re_enable = 3;
+
+    Flags flags = 4;
 }

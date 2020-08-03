@@ -887,7 +887,7 @@ populateDisabledValidators(T& to, STObject const& from)
             populateFirstLedgerSequence(innerProto, innerObj);
         },
         from,
-        sfNegativeUNL,
+        sfDisabledValidators,
         sfDisabledValidator);
 }
 
@@ -1470,6 +1470,8 @@ convert(org::xrpl::rpc::v1::NegativeUNL& to, STObject const& from)
     populateValidatorToDisable(to, from);
 
     populateValidatorToReEnable(to, from);
+
+    populateFlags(to, from);
 }
 
 void
