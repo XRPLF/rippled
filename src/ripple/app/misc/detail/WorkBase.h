@@ -217,12 +217,17 @@ WorkBase<Impl>::onResolve(error_code const& ec, results_type results)
         else if (foundIt == results.end())
             return *std::next(results.begin(), rand_int(results.size() - 1));
 
-        // We got more than 1 endpoint and last endpoint is in the list.
-        // If rand is equal to last endpoint then we select either
-        // previous or next endpoint.
-        auto r = rand_int(results.size() - 1);
-        return *std::next(
-            results.begin(), r != foundIndex ? r : (r > 0 ? --r : ++r));
+        // lastEndpoint_ is part of the collection
+        // Pick a random number from the n-1 valid choices, if we use
+        // this as an index, note the last element will never be chosen
+        // and the `lastEndpoint_` index may be chosen. So when the
+        // `lastEndpoint_` index is chosen, that is treated as if the
+        // last element was chosen.
+        auto randIndex =
+            (results.size() > 2) ? rand_int(results.size() - 2) : 0;
+        if (randIndex == foundIndex)
+            randIndex = results.size() - 1;
+        return *std::next(results.begin(), randIndex);
     }();
 
     socket_.async_connect(
