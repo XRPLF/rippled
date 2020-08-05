@@ -228,31 +228,23 @@ ledgerFromRequest(T& ledger, JsonContext& context)
             return {rpcINVALID_PARAMS, "ledgerHashMalformed"};
         return getLedger(ledger, ledgerHash, context);
     }
-    else if (indexValue.isNumeric())
-    {
-        return getLedger(ledger, indexValue.asInt(), context);
-    }
-    else
-    {
-        auto const index = indexValue.asString();
-        if (index == "validated")
-        {
-            return getLedger(ledger, LedgerShortcut::VALIDATED, context);
-        }
-        else
-        {
-            if (index.empty() || index == "current")
-                return getLedger(ledger, LedgerShortcut::CURRENT, context);
-            else if (index == "closed")
-                return getLedger(ledger, LedgerShortcut::CLOSED, context);
-            else
-            {
-                return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
-            }
-        }
-    }
 
-    return Status::OK;
+    auto const index = indexValue.asString();
+
+    if (index.empty() || index == "current")
+        return getLedger(ledger, LedgerShortcut::CURRENT, context);
+
+    if (index == "validated")
+        return getLedger(ledger, LedgerShortcut::VALIDATED, context);
+
+    if (index == "closed")
+        return getLedger(ledger, LedgerShortcut::CLOSED, context);
+
+    std::uint32_t iVal;
+    if (beast::lexicalCastChecked(iVal, index))
+        return getLedger(ledger, iVal, context);
+
+    return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
 }
 }  // namespace
 

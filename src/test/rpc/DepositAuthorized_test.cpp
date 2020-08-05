@@ -228,10 +228,17 @@ public:
         }
         {
             // Request an invalid ledger.
-            Json::Value args{depositAuthArgs(alice, becky, "17")};
+            Json::Value args{depositAuthArgs(alice, becky, "-1")};
             Json::Value const result{
                 env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "invalidParams", "ledgerIndexMalformed");
+        }
+        {
+            // Request a ledger that doesn't exist yet as a string.
+            Json::Value args{depositAuthArgs(alice, becky, "17")};
+            Json::Value const result{
+                env.rpc("json", "deposit_authorized", args.toStyledString())};
+            verifyErr(result, "lgrNotFound", "ledgerNotFound");
         }
         {
             // Request a ledger that doesn't exist yet.
