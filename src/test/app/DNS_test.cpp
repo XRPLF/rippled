@@ -79,8 +79,8 @@ public:
     {
         using boost::asio::ip::tcp;
         tcp::resolver resolver(env_.app().getIOService());
-        tcp::resolver::query query(pUrl_.domain, port_);
-        tcp::resolver::iterator it = resolver.resolve(query);
+        std::string port = pUrl_.port ? std::to_string(*pUrl_.port) : "443";
+        tcp::resolver::iterator it = resolver.resolve(pUrl_.domain, port);
         tcp::resolver::iterator end;
         int n = 0;
         for (; it != end; ++it)
@@ -103,7 +103,7 @@ public:
     {
         parse();
         // First endpoint is random. Next three
-        // hould resolve to the same endpoint. Run a few times
+        // should resolve to the same endpoint. Run a few times
         // to verify we are not selecting by chance the same endpoint.
         for (int i = 1; i <= 4; ++i)
         {
@@ -114,11 +114,14 @@ public:
         if (!isMultipleEndpoints())
             return;
         // Run with the "failed" status. In this case endpoints are selected at
-        // random.
+        // random but last endpoint is not selected.
+        resolved_.clear();
         for (int i = 0; i < 4; ++i)
             makeRequest(lastEndpoint_, false);
         // Should have more than one but some endpoints can repeat since
-        // selected at random.
+        // selected at random. We'll never have four identical endpoints
+        // here because on failure we randomly select an endpoint different
+        // from the last endpoint.
         BEAST_EXPECT(resolved_.size() > 1);
     }
 };
