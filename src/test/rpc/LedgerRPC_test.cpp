@@ -72,8 +72,24 @@ class LedgerRPC_test : public beast::unit_test::suite
         BEAST_EXPECT(env.current()->info().seq == 4);
 
         {
-            // in this case, numeric string converted to number
-            auto const jrr = env.rpc("ledger", "1")[jss::result];
+            Json::Value jvParams;
+            // can be either numeric or quoted numeric
+            jvParams[jss::ledger_index] = 1;
+            auto const jrr =
+                env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::ledger][jss::closed] == true);
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "1");
+            BEAST_EXPECT(jrr[jss::ledger][jss::accepted] == true);
+            BEAST_EXPECT(
+                jrr[jss::ledger][jss::totalCoins] ==
+                env.balance(env.master).value().getText());
+        }
+
+        {
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "1";
+            auto const jrr =
+                env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::ledger][jss::closed] == true);
             BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "1");
             BEAST_EXPECT(jrr[jss::ledger][jss::accepted] == true);
@@ -110,8 +126,18 @@ class LedgerRPC_test : public beast::unit_test::suite
         env.close();
 
         {
+            // ask for an arbitrary string - index
             Json::Value jvParams;
-            jvParams[jss::ledger_index] = "0";  // NOT an integer
+            jvParams[jss::ledger_index] = "potato";
+            auto const jrr =
+                env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "invalidParams", "ledgerIndexMalformed");
+        }
+
+        {
+            // ask for a negative index
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = -1;
             auto const jrr =
                 env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             checkErrorValue(jrr, "invalidParams", "ledgerIndexMalformed");
@@ -393,7 +419,7 @@ class LedgerRPC_test : public beast::unit_test::suite
     void
     testLedgerEntryDepositPreauth()
     {
-        testcase("ledger_entry Request Directory");
+        testcase("ledger_entry Deposit Preauth");
         using namespace test::jtx;
         Env env{*this};
         Account const alice{"alice"};

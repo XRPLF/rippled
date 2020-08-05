@@ -136,7 +136,7 @@ operator!=(StaticString x, std::string const& y)
  * The sequence of an #arrayValue will be automatically resize and initialized
  * with #nullValue. resize() can be used to enlarge or truncate an #arrayValue.
  *
- * The get() methods can be used to obtanis default value in the case the
+ * The get() methods can be used to obtain a default value in the case the
  * required element does not exist.
  *
  * It is possible to iterate over the list of a #objectValue values using
