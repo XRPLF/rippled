@@ -1360,6 +1360,7 @@ ApplicationImp::setup()
         Section enabledAmendments = config_->section(SECTION_AMENDMENTS);
 
         m_amendmentTable = make_AmendmentTable(
+            *this,
             config().AMENDMENT_MAJORITY_TIME,
             supportedAmendments,
             enabledAmendments,
