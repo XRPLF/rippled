@@ -51,12 +51,20 @@ private:
     }
 
     static Section
-    makeSection(std::vector<std::string> const& amendments)
+    makeSection(
+        std::string const& name,
+        std::vector<std::string> const& amendments)
     {
-        Section section("Test");
+        Section section(name);
         for (auto const& a : amendments)
             section.append(to_string(amendmentId(a)) + " " + a);
         return section;
+    }
+
+    static Section
+    makeSection(std::vector<std::string> const& amendments)
+    {
+        return makeSection("Test", amendments);
     }
 
     static Section
@@ -65,6 +73,17 @@ private:
         Section section("Test");
         section.append(to_string(amendment) + " " + to_string(amendment));
         return section;
+    }
+
+    std::unique_ptr<Config>
+    makeConfig()
+    {
+        auto cfg = test::jtx::envconfig();
+        cfg->section(SECTION_AMENDMENTS) =
+            makeSection(SECTION_AMENDMENTS, enabled_);
+        cfg->section(SECTION_VETO_AMENDMENTS) =
+            makeSection(SECTION_VETO_AMENDMENTS, vetoed_);
+        return cfg;
     }
 
     // All useful amendments are supported amendments.
@@ -91,19 +110,34 @@ public:
 
     std::unique_ptr<AmendmentTable>
     makeTable(
+        Application& app,
+        std::chrono::seconds majorityTime,
+        Section const supported,
+        Section const enabled,
+        Section const vetoed)
+    {
+        auto t = make_AmendmentTable(
+            app, majorityTime, supported, enabled, vetoed, journal);
+        return t;
+    }
+
+    std::unique_ptr<AmendmentTable>
+    makeTable(
+        test::jtx::Env& env,
         std::chrono::seconds majorityTime,
         Section const supported,
         Section const enabled,
         Section const vetoed)
     {
         return make_AmendmentTable(
-            majorityTime, supported, enabled, vetoed, journal);
+            env.app(), majorityTime, supported, enabled, vetoed, journal);
     }
 
     std::unique_ptr<AmendmentTable>
-    makeTable(std::chrono::seconds majorityTime)
+    makeTable(test::jtx::Env& env, std::chrono::seconds majorityTime)
     {
         return makeTable(
+            env.app(),
             majorityTime,
             makeSection(supported_),
             makeSection(enabled_),
@@ -114,8 +148,8 @@ public:
     testConstruct()
     {
         testcase("Construction");
-
-        auto table = makeTable(weeks(1));
+        test::jtx::Env env{*this, makeConfig()};
+        auto table = makeTable(env, weeks(1));
 
         for (auto const& a : supported_)
         {
@@ -140,7 +174,8 @@ public:
     {
         testcase("Name to ID mapping");
 
-        auto table = makeTable(weeks(1));
+        test::jtx::Env env{*this, makeConfig()};
+        auto table = makeTable(env, weeks(1));
 
         for (auto const& a : supported_)
             BEAST_EXPECT(table->find(a) == amendmentId(a));
@@ -186,7 +221,8 @@ public:
 
             try
             {
-                if (makeTable(weeks(2), test, emptySection, emptySection))
+                test::jtx::Env env{*this, makeConfig()};
+                if (makeTable(env, weeks(2), test, emptySection, emptySection))
                     fail("Accepted only amendment ID");
             }
             catch (...)
@@ -201,7 +237,8 @@ public:
 
             try
             {
-                if (makeTable(weeks(2), test, emptySection, emptySection))
+                test::jtx::Env env{*this, makeConfig()};
+                if (makeTable(env, weeks(2), test, emptySection, emptySection))
                     fail("Accepted extra arguments");
             }
             catch (...)
@@ -219,7 +256,8 @@ public:
 
             try
             {
-                if (makeTable(weeks(2), test, emptySection, emptySection))
+                test::jtx::Env env{*this, makeConfig()};
+                if (makeTable(env, weeks(2), test, emptySection, emptySection))
                     fail("Accepted short amendment ID");
             }
             catch (...)
@@ -237,7 +275,8 @@ public:
 
             try
             {
-                if (makeTable(weeks(2), test, emptySection, emptySection))
+                test::jtx::Env env{*this, makeConfig()};
+                if (makeTable(env, weeks(2), test, emptySection, emptySection))
                     fail("Accepted long amendment ID");
             }
             catch (...)
@@ -256,7 +295,8 @@ public:
 
             try
             {
-                if (makeTable(weeks(2), test, emptySection, emptySection))
+                test::jtx::Env env{*this, makeConfig()};
+                if (makeTable(env, weeks(2), test, emptySection, emptySection))
                     fail("Accepted non-hex amendment ID");
             }
             catch (...)
@@ -271,7 +311,8 @@ public:
     {
         testcase("enable and veto");
 
-        std::unique_ptr<AmendmentTable> table = makeTable(weeks(2));
+        test::jtx::Env env{*this, makeConfig()};
+        std::unique_ptr<AmendmentTable> table = makeTable(env, weeks(2));
 
         // Note which entries are pre-enabled.
         std::set<uint256> allEnabled;
@@ -470,8 +511,9 @@ public:
         auto const testAmendment = amendmentId("TestAmendment");
         auto const validators = makeValidators(10);
 
+        test::jtx::Env env{*this};
         auto table =
-            makeTable(weeks(2), emptySection, emptySection, emptySection);
+            makeTable(env, weeks(2), emptySection, emptySection, emptySection);
 
         std::vector<std::pair<uint256, int>> votes;
         std::vector<uint256> ourVotes;
@@ -530,8 +572,13 @@ public:
 
         auto const testAmendment = amendmentId("vetoedAmendment");
 
+        test::jtx::Env env{*this};
         auto table = makeTable(
-            weeks(2), emptySection, emptySection, makeSection(testAmendment));
+            env,
+            weeks(2),
+            emptySection,
+            emptySection,
+            makeSection(testAmendment));
 
         auto const validators = makeValidators(10);
 
@@ -588,8 +635,9 @@ public:
     {
         testcase("voteEnable");
 
+        test::jtx::Env env{*this};
         auto table = makeTable(
-            weeks(2), makeSection(supported_), emptySection, emptySection);
+            env, weeks(2), makeSection(supported_), emptySection, emptySection);
 
         auto const validators = makeValidators(10);
         std::vector<std::pair<uint256, int>> votes;
@@ -667,8 +715,13 @@ public:
         testcase("detectMajority");
 
         auto const testAmendment = amendmentId("detectMajority");
+        test::jtx::Env env{*this};
         auto table = makeTable(
-            weeks(2), makeSection(testAmendment), emptySection, emptySection);
+            env,
+            weeks(2),
+            makeSection(testAmendment),
+            emptySection,
+            emptySection);
 
         auto const validators = makeValidators(16);
 
@@ -733,8 +786,13 @@ public:
         auto const testAmendment = amendmentId("lostMajority");
         auto const validators = makeValidators(16);
 
+        test::jtx::Env env{*this};
         auto table = makeTable(
-            weeks(8), makeSection(testAmendment), emptySection, emptySection);
+            env,
+            weeks(8),
+            makeSection(testAmendment),
+            emptySection,
+            emptySection);
 
         std::set<uint256> enabled;
         majorityAmendments_t majority;
@@ -800,12 +858,10 @@ public:
     {
         testcase("hasUnsupportedEnabled");
 
-        test::jtx::Env env(*this);  // Used only for its Rules
-        env.close();
-
         using namespace std::chrono_literals;
         weeks constexpr w(1);
-        auto table = makeTable(w);
+        test::jtx::Env env{*this, makeConfig()};
+        auto table = makeTable(env, w);
         BEAST_EXPECT(!table->hasUnsupportedEnabled());
         BEAST_EXPECT(!table->firstUnsupportedExpected());
         BEAST_EXPECT(table->needValidatedLedger(1));
