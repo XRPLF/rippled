@@ -243,6 +243,24 @@ encoded in base58 using the standard encoding for node public keys.
 
 See: https://xrpl.org/base58-encodings.html
 
+
+| Field Name          	|  Request          	| Response          	|
+|---------------------	|:-----------------:	|:-----------------:	|
+| `Server-Domain`   	| :white_check_mark: 	| :white_check_mark: 	|
+
+The optional `Server-Domain` field allows a server to report the domain that
+it is operating under. The value is configured by the server administrator in
+the configuration file using the `[server_domain]` key.
+
+The value is advisory and is not used by the code at this time, except for
+reporting purposes. External tools should verify this value prior to using
+it by attempting to locate a [TOML file](https://xrpl.org/xrp-ledger-toml.html)
+under the specified domain and locating the public key of this server under the
+`[NODES]` key.
+
+Sending a malformed domain will prevent a connection from being established.
+
+
 | Field Name          	|  Request          	| Response          	|
 |---------------------	|:-----------------:	|:-----------------:	|
 | `Session-Signature` 	| :heavy_check_mark: 	| :heavy_check_mark: 	|
@@ -254,7 +272,8 @@ The value is presently encoded using **Base64** encoding, but implementations
 should support both **Base64** and **HEX** encoding for this value.
 
 For more details on this field, please see **Session Signature** below.
-    
+
+
 | Field Name          	|  Request          	| Response          	|
 |---------------------	|:-----------------:	|:-----------------:	|
 | `Crawl`             	| :white_check_mark: 	| :white_check_mark: 	|

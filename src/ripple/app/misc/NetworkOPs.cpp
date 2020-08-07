@@ -2532,6 +2532,10 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     if (human)
         info[jss::hostid] = getHostId(admin);
 
+    // domain: if configured with a domain, report it:
+    if (!app_.config().SERVER_DOMAIN.empty())
+        info[jss::server_domain] = app_.config().SERVER_DOMAIN;
+
     if (auto const netid = app_.overlay().networkID())
         info[jss::network_id] = static_cast<Json::UInt>(*netid);
 

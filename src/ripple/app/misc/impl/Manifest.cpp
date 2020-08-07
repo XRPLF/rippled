@@ -90,30 +90,9 @@ deserializeManifest(Slice s)
         {
             auto const d = st.getFieldVL(sfDomain);
 
-            // The domain must be between 4 and 128 characters long
-            if (boost::algorithm::clamp(d.size(), 4, 128) != d.size())
-                return boost::none;
-
             m.domain.assign(reinterpret_cast<char const*>(d.data()), d.size());
 
-            // This regular expression should do a decent job of weeding out
-            // obviously wrong domain names but it isn't perfect. It does not
-            // really support IDNs. If this turns out to be an issue, a more
-            // thorough regex can be used or this check can just be removed.
-            static boost::regex const re(
-                "^"                   // Beginning of line
-                "("                   // Beginning of a segment
-                "(?!-)"               //  - must not begin with '-'
-                "[a-zA-Z0-9-]{1,63}"  //  - only alphanumeric and '-'
-                "(?<!-)"              //  - must not end with '-'
-                "\\."                 // segment separator
-                ")+"                  // 1 or more segments
-                "[A-Za-z]{2,63}"      // TLD
-                "$"                   // End of line
-                ,
-                boost::regex_constants::optimize);
-
-            if (!boost::regex_match(m.domain, re))
+            if (!isProperlyFormedTomlDomain(m.domain))
                 return boost::none;
         }
 
