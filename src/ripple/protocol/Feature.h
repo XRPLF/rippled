@@ -83,7 +83,7 @@ class FeatureCollections
         "TickSize",
         "fix1368",
         "Escrow",
-        // "CryptoConditionsSuite",
+        "CryptoConditionsSuite",
         "fix1373",
         "EnforceInvariants",
         "SortedDirectories",
@@ -348,6 +348,7 @@ extern uint256 const featureOwnerPaysFee;
 extern uint256 const featureFlow;
 extern uint256 const featureCompareTakerFlowCross;
 extern uint256 const featureFlowCross;
+extern uint256 const featureCryptoConditionsSuite;
 extern uint256 const fix1513;
 extern uint256 const featureDepositAuth;
 extern uint256 const featureChecks;
