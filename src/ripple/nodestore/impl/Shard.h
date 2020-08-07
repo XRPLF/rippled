@@ -239,11 +239,6 @@ private:
     // Determines if the shard directory should be removed in the destructor
     std::atomic<bool> removeOnDestroy_{false};
 
-    // Set the backend cache
-    // Lock over mutex_ required
-    void
-    setBackendCache(std::lock_guard<std::recursive_mutex> const& lock);
-
     // Open/Create SQLite databases
     // Lock over mutex_ required
     bool
