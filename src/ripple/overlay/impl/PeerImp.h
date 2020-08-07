@@ -477,9 +477,14 @@ private:
     void
     onWriteResponse(error_code ec, std::size_t bytes_transferred);
 
-    // A thread-safe way of getting the name.
     std::string
-    getName() const;
+    name() const;
+
+    std::string
+    domain() const;
+
+    std::optional<std::uint32_t>
+    networkID() const;
 
     //
     // protocol message loop

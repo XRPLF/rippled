@@ -129,6 +129,9 @@ buildHandshake(
         h.insert("Session-Signature", base64_encode(sig.data(), sig.size()));
     }
 
+    if (!app.config().SERVER_DOMAIN.empty())
+        h.insert("Server-Domain", app.config().SERVER_DOMAIN);
+
     if (beast::IP::is_public(remote_ip))
         h.insert("Remote-IP", remote_ip.to_string());
 
@@ -157,18 +160,21 @@ verifyHandshake(
     beast::IP::Address remote,
     Application& app)
 {
-    if (networkID)
+    if (auto const iter = headers.find("Server-Domain"); iter != headers.end())
     {
-        if (auto const iter = headers.find("Network-ID"); iter != headers.end())
-        {
-            std::uint32_t nid;
+        if (!isProperlyFormedTomlDomain(iter->value().to_string()))
+            throw std::runtime_error("Invalid server domain");
+    }
 
-            if (!beast::lexicalCastChecked(nid, iter->value().to_string()))
-                throw std::runtime_error("Invalid peer network identifier");
+    if (auto const iter = headers.find("Network-ID"); iter != headers.end())
+    {
+        std::uint32_t nid;
 
-            if (nid != *networkID)
-                throw std::runtime_error("Peer is on a different network");
-        }
+        if (!beast::lexicalCastChecked(nid, iter->value().to_string()))
+            throw std::runtime_error("Invalid peer network identifier");
+
+        if (networkID && nid != *networkID)
+            throw std::runtime_error("Peer is on a different network");
     }
 
     if (auto const iter = headers.find("Network-Time"); iter != headers.end())

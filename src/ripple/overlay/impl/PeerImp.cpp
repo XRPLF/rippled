@@ -108,7 +108,7 @@ PeerImp::~PeerImp()
 
     if (inCluster)
     {
-        JLOG(journal_.warn()) << getName() << " left cluster";
+        JLOG(journal_.warn()) << name() << " left cluster";
     }
 }
 
@@ -249,10 +249,9 @@ PeerImp::send(std::shared_ptr<Message> const& m)
         journal_.active(beast::severities::kDebug) &&
         (sendq_size % Tuning::sendQueueLogFreq) == 0)
     {
-        std::string const name{getName()};
-        JLOG(journal_.debug())
-            << (name.empty() ? remote_address_.to_string() : name)
-            << " sendq: " << sendq_size;
+        std::string const n = name();
+        JLOG(journal_.debug()) << (n.empty() ? remote_address_.to_string() : n)
+                               << " sendq: " << sendq_size;
     }
 
     send_queue_.push(m);
@@ -325,19 +324,21 @@ PeerImp::json()
     {
         ret[jss::cluster] = true;
 
-        std::string name{getName()};
-        if (!name.empty())
+        if (auto const n = name(); !n.empty())
             // Could move here if Json::Value supported moving from a string
-            ret[jss::name] = name;
+            ret[jss::name] = n;
     }
+
+    if (auto const d = domain(); !d.empty())
+        ret[jss::server_domain] = domain();
+
+    if (auto const nid = headers_["Network-ID"].to_string(); !nid.empty())
+        ret[jss::network_id] = nid;
 
     ret[jss::load] = usage_.balance();
 
-    {
-        auto const version = getVersion();
-        if (!version.empty())
-            ret[jss::version] = version;
-    }
+    if (auto const version = getVersion(); !version.empty())
+        ret[jss::version] = version;
 
     ret[jss::protocol] = to_string(protocol_);
 
@@ -537,10 +538,9 @@ PeerImp::fail(std::string const& reason)
                 reason));
     if (journal_.active(beast::severities::kWarning) && socket_.is_open())
     {
-        std::string const name{getName()};
-        JLOG(journal_.warn())
-            << (name.empty() ? remote_address_.to_string() : name)
-            << " failed: " << reason;
+        std::string const n = name();
+        JLOG(journal_.warn()) << (n.empty() ? remote_address_.to_string() : n)
+                              << " failed: " << reason;
     }
     close();
 }
@@ -826,10 +826,16 @@ PeerImp::onWriteResponse(error_code ec, std::size_t bytes_transferred)
 }
 
 std::string
-PeerImp::getName() const
+PeerImp::name() const
 {
     std::shared_lock<std::shared_timed_mutex> read_lock{nameMutex_};
     return name_;
+}
+
+std::string
+PeerImp::domain() const
+{
+    return headers_["Server-Domain"].to_string();
 }
 
 //------------------------------------------------------------------------------
@@ -1125,7 +1131,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMCluster> const& m)
             if (item.address != beast::IP::Endpoint())
                 gossip.items.push_back(item);
         }
-        overlay_.resourceManager().importConsumers(getName(), gossip);
+        overlay_.resourceManager().importConsumers(name(), gossip);
     }
 
     // Calculate the cluster fee:

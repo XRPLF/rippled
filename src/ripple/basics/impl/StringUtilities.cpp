@@ -120,4 +120,31 @@ to_uint64(std::string const& s)
     return boost::none;
 }
 
+bool
+isProperlyFormedTomlDomain(std::string const& domain)
+{
+    // The domain must be between 4 and 128 characters long
+    if (domain.size() < 4 || domain.size() > 128)
+        return false;
+
+    // This regular expression should do a decent job of weeding out
+    // obviously wrong domain names but it isn't perfect. It does not
+    // really support IDNs. If this turns out to be an issue, a more
+    // thorough regex can be used or this check can just be removed.
+    static boost::regex const re(
+        "^"                   // Beginning of line
+        "("                   // Beginning of a segment
+        "(?!-)"               //  - must not begin with '-'
+        "[a-zA-Z0-9-]{1,63}"  //  - only alphanumeric and '-'
+        "(?<!-)"              //  - must not end with '-'
+        "\\."                 // segment separator
+        ")+"                  // 1 or more segments
+        "[A-Za-z]{2,63}"      // TLD
+        "$"                   // End of line
+        ,
+        boost::regex_constants::optimize);
+
+    return boost::regex_match(domain, re);
+}
+
 }  // namespace ripple

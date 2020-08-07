@@ -148,6 +148,15 @@ trim_whitespace(std::string str);
 boost::optional<std::uint64_t>
 to_uint64(std::string const& s);
 
+/** Determines if the given string looks like a TOML-file hosting domain.
+
+    Do not use this function to determine if a particular string is a valid
+    domain, as this function may reject domains that are otherwise valid and
+    doesn't check whether the TLD is valid.
+ */
+bool
+isProperlyFormedTomlDomain(std::string const& domain);
+
 }  // namespace ripple
 
 #endif
