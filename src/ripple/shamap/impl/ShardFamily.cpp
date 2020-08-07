@@ -38,8 +38,8 @@ ShardFamily::ShardFamily(Application& app, CollectorManager& cm)
     , db_(getShardStore(app))
     , cm_(cm)
     , j_(app.journal("ShardFamily"))
-    , tnTargetSize_(app.config().getValueFor(SizedItem::treeCacheSize))
-    , tnTargetAge_(app.config().getValueFor(SizedItem::treeCacheAge))
+    , tnTargetSize_(app.config().getValueFor(SizedItem::treeCacheSize, 0))
+    , tnTargetAge_(app.config().getValueFor(SizedItem::treeCacheAge, 0))
 {
 }
 

@@ -219,7 +219,17 @@ Shard::open(Scheduler& scheduler, nudb::context& ctx)
             std::string("exception ") + e.what() + " in function " + __func__);
     }
 
-    setBackendCache(lock);
+    // Set backend caches
+    {
+        auto const size{config.getValueFor(SizedItem::nodeCacheSize, 0)};
+        auto const age{std::chrono::seconds{
+            config.getValueFor(SizedItem::nodeCacheAge, 0)}};
+        auto const name{"shard " + std::to_string(index_)};
+
+        pCache_ = std::make_shared<PCache>(name, size, age, stopwatch(), j_);
+        nCache_ = std::make_shared<NCache>(name, stopwatch(), size, age);
+    }
+
     if (!initSQLite(lock))
         return fail({});
 
@@ -288,7 +298,6 @@ Shard::store(std::shared_ptr<Ledger const> const& ledger)
             return false;
 
         backendComplete_ = true;
-        setBackendCache(lock);
     }
 
     JLOG(j_.debug()) << "shard " << index_ << " stored ledger sequence " << seq
@@ -505,6 +514,15 @@ Shard::finalize(
     std::shared_ptr<Ledger> ledger;
     std::shared_ptr<Ledger const> next;
     auto const lastLedgerHash{hash};
+    auto& shardFamily{*app_.getShardFamily()};
+    auto const fullBelowCache{shardFamily.getFullBelowCache(lastSeq_)};
+    auto const treeNodeCache{shardFamily.getTreeNodeCache(lastSeq_)};
+
+    // Reset caches to reduce memory usage
+    pCache_->reset();
+    nCache_->reset();
+    fullBelowCache->reset();
+    treeNodeCache->reset();
 
     // Start with the last ledger in the shard and walk backwards from
     // child to parent until we reach the first ledger
@@ -521,7 +539,7 @@ Shard::finalize(
         ledger = std::make_shared<Ledger>(
             deserializePrefixedHeader(makeSlice(nObj->getData())),
             app_.config(),
-            *app_.getShardFamily());
+            shardFamily);
         if (ledger->info().seq != seq)
             return fail("invalid ledger sequence");
         if (ledger->info().hash != hash)
@@ -555,6 +573,11 @@ Shard::finalize(
         hash = ledger->info().parentHash;
         next = std::move(ledger);
         --seq;
+
+        pCache_->reset();
+        nCache_->reset();
+        fullBelowCache->reset();
+        treeNodeCache->reset();
     }
 
     JLOG(j_.debug()) << "shard " << index_ << " is valid";
@@ -603,9 +626,7 @@ Shard::finalize(
     try
     {
         backend_->store(nObj);
-
         std::lock_guard lock(mutex_);
-        final_ = true;
 
         // Remove the acquire SQLite database if present
         if (acquireInfo_)
@@ -616,6 +637,7 @@ Shard::finalize(
             return fail("failed to initialize SQLite databases");
 
         setFileStats(lock);
+        final_ = true;
     }
     catch (std::exception const& e)
     {
@@ -624,40 +646,6 @@ Shard::finalize(
     }
 
     return true;
-}
-
-void
-Shard::setBackendCache(std::lock_guard<std::recursive_mutex> const&)
-{
-    // Complete shards use the smallest cache and
-    // fastest expiration to reduce memory consumption.
-    // An incomplete shard is set according to configuration.
-
-    Config const& config{app_.config()};
-    if (!pCache_)
-    {
-        auto const name{"shard " + std::to_string(index_)};
-        auto const sz{config.getValueFor(
-            SizedItem::nodeCacheSize,
-            backendComplete_ ? boost::optional<std::size_t>(0) : boost::none)};
-        auto const age{std::chrono::seconds{config.getValueFor(
-            SizedItem::nodeCacheAge,
-            backendComplete_ ? boost::optional<std::size_t>(0) : boost::none)}};
-
-        pCache_ = std::make_shared<PCache>(name, sz, age, stopwatch(), j_);
-        nCache_ = std::make_shared<NCache>(name, stopwatch(), sz, age);
-    }
-    else
-    {
-        auto const sz{config.getValueFor(SizedItem::nodeCacheSize, 0)};
-        pCache_->setTargetSize(sz);
-        nCache_->setTargetSize(sz);
-
-        auto const age{std::chrono::seconds{
-            config.getValueFor(SizedItem::nodeCacheAge, 0)}};
-        pCache_->setTargetAge(age);
-        nCache_->setTargetAge(age);
-    }
 }
 
 bool
