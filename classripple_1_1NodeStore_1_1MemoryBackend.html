@@ -153,9 +153,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ad11105242d588bfd1c07bf7d3d729790"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#ad11105242d588bfd1c07bf7d3d729790">fdRequired</a> () const override</td></tr>
 <tr class="memdesc:ad11105242d588bfd1c07bf7d3d729790"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of file descriptors the backend expects to need.  <a href="classripple_1_1NodeStore_1_1MemoryBackend.html#ad11105242d588bfd1c07bf7d3d729790">More...</a><br /></td></tr>
 <tr class="separator:ad11105242d588bfd1c07bf7d3d729790"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aefaa46fcfff1898c6f46a4a87133cfec"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#aefaa46fcfff1898c6f46a4a87133cfec">open</a> (bool createIfMissing, boost::optional&lt; uint64_t &gt; appType, boost::optional&lt; uint64_t &gt; uid, boost::optional&lt; uint64_t &gt; salt)</td></tr>
-<tr class="memdesc:aefaa46fcfff1898c6f46a4a87133cfec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Open the backend.  <a href="classripple_1_1NodeStore_1_1Backend.html#aefaa46fcfff1898c6f46a4a87133cfec">More...</a><br /></td></tr>
-<tr class="separator:aefaa46fcfff1898c6f46a4a87133cfec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab07382d1cbb7d39fe7aacdbc17654861"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ab07382d1cbb7d39fe7aacdbc17654861">backed</a> () const</td></tr>
 <tr class="memdesc:ab07382d1cbb7d39fe7aacdbc17654861"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the backend uses permanent storage.  <a href="classripple_1_1NodeStore_1_1Backend.html#ab07382d1cbb7d39fe7aacdbc17654861">More...</a><br /></td></tr>
 <tr class="separator:ab07382d1cbb7d39fe7aacdbc17654861"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -306,7 +303,7 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <a id="a4e5920f4c51902aef93021277aa8ab37"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4e5920f4c51902aef93021277aa8ab37">&#9670;&nbsp;</a></span>open() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e5920f4c51902aef93021277aa8ab37">&#9670;&nbsp;</a></span>open()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -729,69 +726,6 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="aefaa46fcfff1898c6f46a4a87133cfec"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aefaa46fcfff1898c6f46a4a87133cfec">&#9670;&nbsp;</a></span>open() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual void ripple::NodeStore::Backend::open </td>
-          <td>(</td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>createIfMissing</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">boost::optional&lt; uint64_t &gt;&#160;</td>
-          <td class="paramname"><em>appType</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">boost::optional&lt; uint64_t &gt;&#160;</td>
-          <td class="paramname"><em>uid</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">boost::optional&lt; uint64_t &gt;&#160;</td>
-          <td class="paramname"><em>salt</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">virtual</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Open the backend. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">createIfMissing</td><td>Create the database files if necessary. </td></tr>
-    <tr><td class="paramname">appType</td><td>Deterministic appType used to create a backend. </td></tr>
-    <tr><td class="paramname">uid</td><td>Deterministic uid used to create a backend. </td></tr>
-    <tr><td class="paramname">salt</td><td>Deterministic salt used to create a backend. This allows the caller to catch exceptions. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-<p>Reimplemented in <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#ae7d01b1f99aa2db2111fb6a2a75007a0">ripple::NodeStore::NuDBBackend</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00069">69</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
-
-</div>
-</div>
 <a id="ab07382d1cbb7d39fe7aacdbc17654861"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab07382d1cbb7d39fe7aacdbc17654861">&#9670;&nbsp;</a></span>backed()</h2>
 
@@ -817,7 +751,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns true if the backend uses permanent storage. </p>
 
-<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00148">148</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00129">129</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
 
 </div>
 </div>

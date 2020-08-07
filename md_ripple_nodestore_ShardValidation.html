@@ -65,12 +65,12 @@ $(function() {
 <div class="title">Downloaded Shard Validation </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md184"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md180"></a>
 Overview</h1>
 <p>In order to validate shards that have been downloaded from file servers (as opposed to shards acquired from peers), the application must confirm the validity of the downloaded shard's last ledger. So before initiating the download, we first confirm that we are able to retrieve the shard's last ledger hash. The following sections describe this confirmation process in greater detail.</p>
-<h1><a class="anchor" id="autotoc_md185"></a>
+<h1><a class="anchor" id="autotoc_md181"></a>
 Hash Verification</h1>
-<h2><a class="anchor" id="autotoc_md186"></a>
+<h2><a class="anchor" id="autotoc_md182"></a>
 Flag Ledger</h2>
 <p>Since the number of ledgers contained in each shard is always a multiple of 256, a shard's last ledger is always a flag ledger. Conveniently, the skip list stored within a ledger will provide us with a series of flag ledger hashes, enabling the software to corroborate a shard's last ledger hash. We access the skip list by calling <code>LedgerMaster::walkHashBySeq</code> and providing the sequence of a shard's last ledger:</p>
 <div class="fragment"><div class="line"> {C++}</div>
@@ -78,15 +78,15 @@ Flag Ledger</h2>
 <div class="line">expectedHash =</div>
 <div class="line">    app_.getLedgerMaster().walkHashBySeq(lastLedgerSeq(shardIndex));</div>
 </div><!-- fragment --><p>When a user requests a shard download, the <code>ShardArchiveHandler</code> will first use this function to retrieve the hash of the shard's last ledger. If the function returns a hash, downloading the shard can proceed. Once the download completes, the server can reliably retrieve this last ledger hash to complete validation of the shard.</p>
-<h2><a class="anchor" id="autotoc_md187"></a>
+<h2><a class="anchor" id="autotoc_md183"></a>
 Caveats</h2>
-<h3><a class="anchor" id="autotoc_md188"></a>
+<h3><a class="anchor" id="autotoc_md184"></a>
 Later Ledger</h3>
 <p>The <code>walkHashBySeq</code> function will provide the hash of a flag ledger only if the application has stored a later ledger. When verifying the last ledger hash of a pending shard download, if there is no later ledger stored, the download will be deferred until a later ledger has been stored.</p>
 <p>We use the presence (or absence) of a validated ledger with a sequence number later than the sequence of the shard's last ledger as a heuristic for determining whether or not we should have the shard's last ledger hash. A later ledger must be present in order to reliably retrieve the hash of the shard's last ledger. The hash will only be retrieved when a later ledger is present. Otherwise verification of the shard will be deferred.</p>
-<h2><a class="anchor" id="autotoc_md189"></a>
+<h2><a class="anchor" id="autotoc_md185"></a>
 Retries</h2>
-<h3><a class="anchor" id="autotoc_md190"></a>
+<h3><a class="anchor" id="autotoc_md186"></a>
 Retry Limit</h3>
 <p>If the server must defer hash verification, the software will initiate a timer that upon expiration, will re-attempt verifying the last ledger hash. We place an upper limit on the number of attempts the server makes to achieve this verification. When the maximum number of attempts has been reached, the download request will fail, and the <code>ShardArchiveHandler</code> will proceed with any remaining downloads. An attempt counts toward the limit only when we are able to get a later validated ledger (implying a current view of the network), but are unable to retrieve the last ledger hash. Retries that occur because no validated ledger was available are not counted. </p>
 </div></div><!-- contents -->

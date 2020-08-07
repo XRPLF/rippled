@@ -1,9 +1,10 @@
 <map id="ripple::test::TrustedPublisherServer::lambda" name="ripple::test::TrustedPublisherServer::lambda">
-<area shape="rect" id="node1" title=" " alt="" coords="124,303,331,344"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1TrustedPublisherServer.html" title=" " alt="" coords="124,199,331,240"/>
-<area shape="rect" id="node3" href="$classripple_1_1SecretKey.html" title="A secret key." alt="" coords="5,102,137,129"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="59,5,153,32"/>
-<area shape="rect" id="node5" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="162,102,293,129"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="183,5,271,32"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/function.html" title=" " alt="" coords="317,95,455,136"/>
+<area shape="rect" id="node1" title=" " alt="" coords="844,102,1051,143"/>
+<area shape="rect" id="node2" href="$classripple_1_1test_1_1TrustedPublisherServer.html" title=" " alt="" coords="560,102,767,143"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="185,5,399,61"/>
+<area shape="rect" id="node4" href="$classripple_1_1SecretKey.html" title="A secret key." alt="" coords="226,85,358,112"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,105,100,132"/>
+<area shape="rect" id="node6" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="227,136,357,163"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="9,176,97,203"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/function.html" title=" " alt="" coords="223,187,361,229"/>
 </map>

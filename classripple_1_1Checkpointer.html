@@ -69,14 +69,42 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="classripple_1_1Checkpointer-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">ripple::Checkpointer Class Reference</div>  </div>
+<div class="title">ripple::Checkpointer Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
+<div class="dynheader">
+Inheritance diagram for ripple::Checkpointer:</div>
+<div class="dyncontent">
+<div class="center"><img src="classripple_1_1Checkpointer__inherit__graph.png" border="0" usemap="#ripple_1_1Checkpointer_inherit__map" alt="Inheritance graph"/></div>
+<map name="ripple_1_1Checkpointer_inherit__map" id="ripple_1_1Checkpointer_inherit__map">
+<area shape="rect" title=" " alt="" coords="32,95,185,121"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,212,47"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
+<div class="dynheader">
+Collaboration diagram for ripple::Checkpointer:</div>
+<div class="dyncontent">
+<div class="center"><img src="classripple_1_1Checkpointer__coll__graph.png" border="0" usemap="#ripple_1_1Checkpointer_coll__map" alt="Collaboration graph"/></div>
+<map name="ripple_1_1Checkpointer_coll__map" id="ripple_1_1Checkpointer_coll__map">
+<area shape="rect" title=" " alt="" coords="32,95,185,121"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,212,47"/>
+</map>
+<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:ab9829ee8efc00bb2ec7df2671a3c2bb9"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uintptr_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Checkpointer.html#ab9829ee8efc00bb2ec7df2671a3c2bb9">id</a> () const =0</td></tr>
+<tr class="separator:ab9829ee8efc00bb2ec7df2671a3c2bb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab8c932260edaa5bf115d7b009ecbf8f8"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Checkpointer.html#ab8c932260edaa5bf115d7b009ecbf8f8">~Checkpointer</a> ()=default</td></tr>
 <tr class="separator:ab8c932260edaa5bf115d7b009ecbf8f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac79d028cdf7b9b29451942566f0192bd"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Checkpointer.html#ac79d028cdf7b9b29451942566f0192bd">schedule</a> ()=0</td></tr>
+<tr class="separator:ac79d028cdf7b9b29451942566f0192bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf74aac56ba440b454e166fc2b6fa2b1"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Checkpointer.html#abf74aac56ba440b454e166fc2b6fa2b1">checkpoint</a> ()=0</td></tr>
+<tr class="separator:abf74aac56ba440b454e166fc2b6fa2b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this/shared_from_this.html">shared_from_this</a> (T... args)</td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this/weak_from_this.html">weak_from_this</a> (T... args)</td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -101,6 +129,82 @@ Public Member Functions</h2></td></tr>
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel">virtual</span><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="ab9829ee8efc00bb2ec7df2671a3c2bb9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab9829ee8efc00bb2ec7df2671a3c2bb9">&#9670;&nbsp;</a></span>id()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uintptr_t</a> ripple::Checkpointer::id </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac79d028cdf7b9b29451942566f0192bd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac79d028cdf7b9b29451942566f0192bd">&#9670;&nbsp;</a></span>schedule()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::Checkpointer::schedule </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abf74aac56ba440b454e166fc2b6fa2b1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abf74aac56ba440b454e166fc2b6fa2b1">&#9670;&nbsp;</a></span>checkpoint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void ripple::Checkpointer::checkpoint </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">

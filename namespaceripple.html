@@ -293,6 +293,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Checkpointer.html">Checkpointer</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CheckpointersCollection.html">CheckpointersCollection</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ClosureCounter.html">ClosureCounter</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Cluster.html">Cluster</a></td></tr>
@@ -586,7 +588,7 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LocalValue.html">LocalValue</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LockedPointer.html">LockedPointer</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LockedSociSession.html">LockedSociSession</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Logs.html">Logs</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Manages partitions for logging.  <a href="classripple_1_1Logs.html#details">More...</a><br /></td></tr>
@@ -1257,8 +1259,6 @@ Typedefs</h2></td></tr>
 <tr class="memitem:a1f5e4bc32db16ddca497c7844bdfc9e2"><td class="memTemplParams" colspan="2">template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class Pred  = std::equal_to&lt;Value&gt;, class Allocator  = std::allocator&lt;Value&gt;&gt; </td></tr>
 <tr class="memitem:a1f5e4bc32db16ddca497c7844bdfc9e2"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1f5e4bc32db16ddca497c7844bdfc9e2">hardened_hash_multiset</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_multiset.html">std::unordered_multiset</a>&lt; Value, Hash, Pred, Allocator &gt;</td></tr>
 <tr class="separator:a1f5e4bc32db16ddca497c7844bdfc9e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aca6c8a5cbd2eda7b45b2a2cf0cae8330"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aca6c8a5cbd2eda7b45b2a2cf0cae8330">LockedSociSession</a> = <a class="el" href="classripple_1_1LockedPointer.html">LockedPointer</a>&lt; soci::session, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a> &gt;</td></tr>
-<tr class="separator:aca6c8a5cbd2eda7b45b2a2cf0cae8330"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3d1073988f9cea389d752de1ffb8803d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3d1073988f9cea389d752de1ffb8803d">semaphore</a> = <a class="el" href="classripple_1_1basic__semaphore.html">basic_semaphore</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/condition_variable.html">std::condition_variable</a> &gt;</td></tr>
 <tr class="separator:a3d1073988f9cea389d752de1ffb8803d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adf17c8e58c57ecf0ed6cbc7ee1c2ab22"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#adf17c8e58c57ecf0ed6cbc7ee1c2ab22">JobCounter</a> = <a class="el" href="classripple_1_1ClosureCounter.html">ClosureCounter</a>&lt; void, <a class="el" href="classripple_1_1Job.html">Job</a> &amp; &gt;</td></tr>
@@ -2798,6 +2798,8 @@ Functions</h2></td></tr>
 <tr class="separator:a38d1749cd010f88da471b4183b2dfe52"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a49d3a2fa89321343ddb5e337429c713f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a49d3a2fa89321343ddb5e337429c713f">to_string</a> (<a class="el" href="namespaceripple.html#a6434c1a0fd22b77e2e4a228c0eca79eb">ValStatus</a> m)</td></tr>
 <tr class="separator:a49d3a2fa89321343ddb5e337429c713f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad762481a6ff332cd122213b3f84cfbee"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Checkpointer.html">Checkpointer</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad762481a6ff332cd122213b3f84cfbee">checkpointerFromId</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uintptr_t</a> id)</td></tr>
+<tr class="separator:ad762481a6ff332cd122213b3f84cfbee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6a1a3fa6f1a16f1eeae66a4ae038bc8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1DatabaseCon_1_1Setup.html">DatabaseCon::Setup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af6a1a3fa6f1a16f1eeae66a4ae038bc8">setup_DatabaseCon</a> (<a class="el" href="classripple_1_1Config.html">Config</a> const &amp;c, boost::optional&lt; <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> &gt; j=boost::none)</td></tr>
 <tr class="separator:af6a1a3fa6f1a16f1eeae66a4ae038bc8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac16c784f889217c1c11e06e0c7dd9b21"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a055e8fa202b98cbf0b9abb812e093b4e">IniFileSections</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac16c784f889217c1c11e06e0c7dd9b21">parseIniFile</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strInput, const bool bTrim)</td></tr>
@@ -2830,9 +2832,9 @@ Functions</h2></td></tr>
 <tr class="separator:a10d319f37f6dae626ff9e79079940b4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abbdb20019ae2de893cdfea9439c39f9b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#abbdb20019ae2de893cdfea9439c39f9b">convert</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;from, soci::blob &amp;to)</td></tr>
 <tr class="separator:abbdb20019ae2de893cdfea9439c39f9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf4bc1f754b3ec1bdb66f7b5fb20253f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Checkpointer.html">Checkpointer</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#acf4bc1f754b3ec1bdb66f7b5fb20253f">makeCheckpointer</a> (soci::session &amp;, <a class="el" href="classripple_1_1JobQueue.html">JobQueue</a> &amp;, <a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;)</td></tr>
-<tr class="memdesc:acf4bc1f754b3ec1bdb66f7b5fb20253f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a new checkpointer which makes checkpoints of a soci database every checkpointPageCount pages, using a job on the job queue.  <a href="namespaceripple.html#acf4bc1f754b3ec1bdb66f7b5fb20253f">More...</a><br /></td></tr>
-<tr class="separator:acf4bc1f754b3ec1bdb66f7b5fb20253f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2d44b45d5ba8217592f9e6c021f9de6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Checkpointer.html">Checkpointer</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad2d44b45d5ba8217592f9e6c021f9de6">makeCheckpointer</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uintptr_t</a> id, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html">std::weak_ptr</a>&lt; soci::session &gt;, <a class="el" href="classripple_1_1JobQueue.html">JobQueue</a> &amp;, <a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;)</td></tr>
+<tr class="memdesc:ad2d44b45d5ba8217592f9e6c021f9de6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a new checkpointer which makes checkpoints of a soci database every checkpointPageCount pages, using a job on the job queue.  <a href="namespaceripple.html#ad2d44b45d5ba8217592f9e6c021f9de6">More...</a><br /></td></tr>
+<tr class="separator:ad2d44b45d5ba8217592f9e6c021f9de6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a377354f4cc31fdeef30b6fdc97203e86"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1TimeKeeper.html">TimeKeeper</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a377354f4cc31fdeef30b6fdc97203e86">make_TimeKeeper</a> (<a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
 <tr class="separator:a377354f4cc31fdeef30b6fdc97203e86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a689877829c664a51aacaf78811eadf27"><td class="memTemplParams" colspan="2">template&lt;class T , class C &gt; </td></tr>
@@ -4006,6 +4008,8 @@ Variables</h2></td></tr>
 <tr class="separator:a55bfc71b0bf18396dbf49bf88cf353f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b4a4b75dc5ff3ab4d469f5d6c3d5dce"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcb">SizedItem</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt; int, 5 &gt; &gt;, 11 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a8b4a4b75dc5ff3ab4d469f5d6c3d5dce">sizedItems</a></td></tr>
 <tr class="separator:a8b4a4b75dc5ff3ab4d469f5d6c3d5dce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2611245485e6cfe23d56f1fa608de87d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1CheckpointersCollection.html">CheckpointersCollection</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2611245485e6cfe23d56f1fa608de87d">checkpointers</a></td></tr>
+<tr class="separator:a2611245485e6cfe23d56f1fa608de87d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc9d4275055c64612390b7f6af828811"><td class="memItemLeft" align="right" valign="top">static uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#abc9d4275055c64612390b7f6af828811">SNTPQueryData</a> [48]</td></tr>
 <tr class="separator:abc9d4275055c64612390b7f6af828811"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeaab8e8841f2d80ecc25ad8bec105501"><td class="memItemLeft" align="right" valign="top">constexpr auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aeaab8e8841f2d80ecc25ad8bec105501">NTP_QUERY_FREQUENCY</a> = 4min</td></tr>
@@ -4350,10 +4354,10 @@ Variables</h2></td></tr>
 <tr class="separator:afedfbce176cf7974e2020b664042920c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a04502f7a2b948a097dee080766c67904"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a82de550a2a342b5dedcdcd51f0828188">SF_Blob</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a04502f7a2b948a097dee080766c67904">sfUNLModifyValidator</a> (<a class="el" href="namespaceripple.html#a915344ea54084ababf785a19417ce51a">access</a>, <a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fcaa3610a30b588fe726c634dc99b90fdde">STI_VL</a>, 19, &quot;UNLModifyValidator&quot;)</td></tr>
 <tr class="separator:a04502f7a2b948a097dee080766c67904"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aba934e0f354aa9ad71192b7c4e053cf4"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a82de550a2a342b5dedcdcd51f0828188">SF_Blob</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aba934e0f354aa9ad71192b7c4e053cf4">sfNegativeUNLToDisable</a> (<a class="el" href="namespaceripple.html#a915344ea54084ababf785a19417ce51a">access</a>, <a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fcaa3610a30b588fe726c634dc99b90fdde">STI_VL</a>, 20, &quot;ValidatorToDisable&quot;)</td></tr>
-<tr class="separator:aba934e0f354aa9ad71192b7c4e053cf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a651ae2bc5ffca2303422bbacdacfcc77"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a82de550a2a342b5dedcdcd51f0828188">SF_Blob</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a651ae2bc5ffca2303422bbacdacfcc77">sfNegativeUNLToReEnable</a> (<a class="el" href="namespaceripple.html#a915344ea54084ababf785a19417ce51a">access</a>, <a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fcaa3610a30b588fe726c634dc99b90fdde">STI_VL</a>, 21, &quot;ValidatorToReEnable&quot;)</td></tr>
-<tr class="separator:a651ae2bc5ffca2303422bbacdacfcc77"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4866a4e67ef4ee45e477e4a850fa3952"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a82de550a2a342b5dedcdcd51f0828188">SF_Blob</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4866a4e67ef4ee45e477e4a850fa3952">sfValidatorToDisable</a> (<a class="el" href="namespaceripple.html#a915344ea54084ababf785a19417ce51a">access</a>, <a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fcaa3610a30b588fe726c634dc99b90fdde">STI_VL</a>, 20, &quot;ValidatorToDisable&quot;)</td></tr>
+<tr class="separator:a4866a4e67ef4ee45e477e4a850fa3952"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9408db78895ee49dc4a6b9fb4afd83ec"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a82de550a2a342b5dedcdcd51f0828188">SF_Blob</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9408db78895ee49dc4a6b9fb4afd83ec">sfValidatorToReEnable</a> (<a class="el" href="namespaceripple.html#a915344ea54084ababf785a19417ce51a">access</a>, <a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fcaa3610a30b588fe726c634dc99b90fdde">STI_VL</a>, 21, &quot;ValidatorToReEnable&quot;)</td></tr>
+<tr class="separator:a9408db78895ee49dc4a6b9fb4afd83ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af0fe0cd9ec9c5f73998088d7d133c394"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a0ab058f0451839746ed8af8b13200ddd">SF_Account</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af0fe0cd9ec9c5f73998088d7d133c394">sfAccount</a> (<a class="el" href="namespaceripple.html#a915344ea54084ababf785a19417ce51a">access</a>, <a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fca5752fbabcb9d6425971b3043ba1f2ab9">STI_ACCOUNT</a>, 1, &quot;Account&quot;)</td></tr>
 <tr class="separator:af0fe0cd9ec9c5f73998088d7d133c394"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab58c0b15520d1efd36a12c6e671f3b34"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a0ab058f0451839746ed8af8b13200ddd">SF_Account</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab58c0b15520d1efd36a12c6e671f3b34">sfOwner</a> (<a class="el" href="namespaceripple.html#a915344ea54084ababf785a19417ce51a">access</a>, <a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fca5752fbabcb9d6425971b3043ba1f2ab9">STI_ACCOUNT</a>, 2, &quot;Owner&quot;)</td></tr>
@@ -4402,8 +4406,8 @@ Variables</h2></td></tr>
 <tr class="separator:a84208a9a90d0dc2143d3d49d1f053fbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6596545fefe1428d9fef7b037f609e10"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classripple_1_1SField.html">SField</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6596545fefe1428d9fef7b037f609e10">sfMajority</a> (<a class="el" href="namespaceripple.html#a915344ea54084ababf785a19417ce51a">access</a>, <a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fca25713e3bf675f93eaf769eb23f025f01">STI_OBJECT</a>, 18, &quot;Majority&quot;)</td></tr>
 <tr class="separator:a6596545fefe1428d9fef7b037f609e10"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd7041310afdb9945c948296e9a4471f"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classripple_1_1SField.html">SField</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afd7041310afdb9945c948296e9a4471f">sfNegativeUNLEntry</a> (<a class="el" href="namespaceripple.html#a915344ea54084ababf785a19417ce51a">access</a>, <a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fca25713e3bf675f93eaf769eb23f025f01">STI_OBJECT</a>, 19, &quot;DisabledValidator&quot;)</td></tr>
-<tr class="separator:afd7041310afdb9945c948296e9a4471f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5704c95dc49172864465459cd250c353"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classripple_1_1SField.html">SField</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5704c95dc49172864465459cd250c353">sfDisabledValidator</a> (<a class="el" href="namespaceripple.html#a915344ea54084ababf785a19417ce51a">access</a>, <a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fca25713e3bf675f93eaf769eb23f025f01">STI_OBJECT</a>, 19, &quot;DisabledValidator&quot;)</td></tr>
+<tr class="separator:a5704c95dc49172864465459cd250c353"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c7393b8ba980386cc2fd1bcb832128a"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classripple_1_1SField.html">SField</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6c7393b8ba980386cc2fd1bcb832128a">sfSigners</a> (<a class="el" href="namespaceripple.html#a915344ea54084ababf785a19417ce51a">access</a>, <a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fca878733aa4695905ac5e71c53baf687c6">STI_ARRAY</a>, 3, &quot;Signers&quot;, SField::sMD_Default, <a class="el" href="classripple_1_1SField.html#ae7343c9f335a2ad9d923fa52cf0d2312">SField::notSigning</a>)</td></tr>
 <tr class="separator:a6c7393b8ba980386cc2fd1bcb832128a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa1984aa5a02fe2ca903c4f78c574b809"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classripple_1_1SField.html">SField</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa1984aa5a02fe2ca903c4f78c574b809">sfSignerEntries</a> (<a class="el" href="namespaceripple.html#a915344ea54084ababf785a19417ce51a">access</a>, <a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fca878733aa4695905ac5e71c53baf687c6">STI_ARRAY</a>, 4, &quot;SignerEntries&quot;)</td></tr>
@@ -4420,8 +4424,8 @@ Variables</h2></td></tr>
 <tr class="separator:a920e70ffb678e79103010040fb223fd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3b87008a5cddf47c7d5510eb8be50902"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classripple_1_1SField.html">SField</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3b87008a5cddf47c7d5510eb8be50902">sfMajorities</a> (<a class="el" href="namespaceripple.html#a915344ea54084ababf785a19417ce51a">access</a>, <a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fca878733aa4695905ac5e71c53baf687c6">STI_ARRAY</a>, 16, &quot;Majorities&quot;)</td></tr>
 <tr class="separator:a3b87008a5cddf47c7d5510eb8be50902"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a332fc2a71cb81b65fc7f92330f1a9bc8"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classripple_1_1SField.html">SField</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a332fc2a71cb81b65fc7f92330f1a9bc8">sfNegativeUNL</a> (<a class="el" href="namespaceripple.html#a915344ea54084ababf785a19417ce51a">access</a>, <a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fca878733aa4695905ac5e71c53baf687c6">STI_ARRAY</a>, 17, &quot;NegativeUNL&quot;)</td></tr>
-<tr class="separator:a332fc2a71cb81b65fc7f92330f1a9bc8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ea52a6d5f908bfcc5a6d31b7de4419a"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classripple_1_1SField.html">SField</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4ea52a6d5f908bfcc5a6d31b7de4419a">sfDisabledValidators</a> (<a class="el" href="namespaceripple.html#a915344ea54084ababf785a19417ce51a">access</a>, <a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fca878733aa4695905ac5e71c53baf687c6">STI_ARRAY</a>, 17, &quot;DisabledValidators&quot;)</td></tr>
+<tr class="separator:a4ea52a6d5f908bfcc5a6d31b7de4419a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1b237be5c5c7faa68434cdf539f3120a"><td class="memItemLeft" align="right" valign="top">static const <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1b237be5c5c7faa68434cdf539f3120a">tenTo14</a> = 100000000000000ull</td></tr>
 <tr class="separator:a1b237be5c5c7faa68434cdf539f3120a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4e2d5fc0ab98ac97423905610e7c20e5"><td class="memItemLeft" align="right" valign="top">static const <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4e2d5fc0ab98ac97423905610e7c20e5">tenTo14m1</a> = <a class="el" href="namespaceripple.html#a1b237be5c5c7faa68434cdf539f3120a">tenTo14</a> - 1</td></tr>
@@ -5172,22 +5176,6 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="UnorderedContainers_8h_source.html#l00111">111</a> of file <a class="el" href="UnorderedContainers_8h_source.html">UnorderedContainers.h</a>.</p>
-
-</div>
-</div>
-<a id="aca6c8a5cbd2eda7b45b2a2cf0cae8330"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aca6c8a5cbd2eda7b45b2a2cf0cae8330">&#9670;&nbsp;</a></span>LockedSociSession</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="namespaceripple.html#aca6c8a5cbd2eda7b45b2a2cf0cae8330">ripple::LockedSociSession</a> = typedef <a class="el" href="classripple_1_1LockedPointer.html">LockedPointer</a>&lt;soci::session, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a>&gt;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="DatabaseCon_8h_source.html#l00081">81</a> of file <a class="el" href="DatabaseCon_8h_source.html">DatabaseCon.h</a>.</p>
 
 </div>
 </div>
@@ -9261,7 +9249,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02216">2216</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02222">2222</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -17701,6 +17689,26 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 
 </div>
 </div>
+<a id="ad762481a6ff332cd122213b3f84cfbee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad762481a6ff332cd122213b3f84cfbee">&#9670;&nbsp;</a></span>checkpointerFromId()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Checkpointer.html">Checkpointer</a> &gt; ripple::checkpointerFromId </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uintptr_t</a>&#160;</td>
+          <td class="paramname"><em>id</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="DatabaseCon_8cpp_source.html#l00079">79</a> of file <a class="el" href="DatabaseCon_8cpp_source.html">DatabaseCon.cpp</a>.</p>
+
+</div>
+</div>
 <a id="af6a1a3fa6f1a16f1eeae66a4ae038bc8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af6a1a3fa6f1a16f1eeae66a4ae038bc8">&#9670;&nbsp;</a></span>setup_DatabaseCon()</h2>
 
@@ -17727,7 +17735,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DatabaseCon_8cpp_source.html#l00031">31</a> of file <a class="el" href="DatabaseCon_8cpp_source.html">DatabaseCon.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseCon_8cpp_source.html#l00093">93</a> of file <a class="el" href="DatabaseCon_8cpp_source.html">DatabaseCon.cpp</a>.</p>
 
 </div>
 </div>
@@ -17923,7 +17931,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00099">99</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00100">100</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
 
 </div>
 </div>
@@ -17969,7 +17977,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00105">105</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00106">106</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
 
 </div>
 </div>
@@ -17997,7 +18005,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00117">117</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00118">118</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
 
 </div>
 </div>
@@ -18017,7 +18025,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00131">131</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00132">132</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
 
 </div>
 </div>
@@ -18037,7 +18045,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00140">140</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00141">141</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
 
 </div>
 </div>
@@ -18067,7 +18075,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00155">155</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00156">156</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
 
 </div>
 </div>
@@ -18097,7 +18105,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00164">164</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00165">165</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
 
 </div>
 </div>
@@ -18127,7 +18135,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00172">172</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00173">173</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
 
 </div>
 </div>
@@ -18157,20 +18165,26 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00181">181</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00182">182</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
 
 </div>
 </div>
-<a id="acf4bc1f754b3ec1bdb66f7b5fb20253f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acf4bc1f754b3ec1bdb66f7b5fb20253f">&#9670;&nbsp;</a></span>makeCheckpointer()</h2>
+<a id="ad2d44b45d5ba8217592f9e6c021f9de6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad2d44b45d5ba8217592f9e6c021f9de6">&#9670;&nbsp;</a></span>makeCheckpointer()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Checkpointer.html">Checkpointer</a> &gt; ripple::makeCheckpointer </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Checkpointer.html">Checkpointer</a> &gt; ripple::makeCheckpointer </td>
           <td>(</td>
-          <td class="paramtype">soci::session &amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uintptr_t</a>&#160;</td>
+          <td class="paramname"><em>id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html">std::weak_ptr</a>&lt; soci::session &gt;&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
@@ -18194,9 +18208,9 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </div><div class="memdoc">
 
 <p>Returns a new checkpointer which makes checkpoints of a soci database every checkpointPageCount pages, using a job on the job queue. </p>
-<p>The <a class="el" href="classripple_1_1Checkpointer.html">Checkpointer</a> contains references to the session and job queue and so must outlive them both. </p>
+<p>The checkpointer contains references to the session and job queue and so must outlive them both. </p>
 
-<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00280">280</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00335">335</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
 
 </div>
 </div>
@@ -21195,7 +21209,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="OverlayImpl_8cpp_source.html#l01352">1352</a> of file <a class="el" href="OverlayImpl_8cpp_source.html">OverlayImpl.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OverlayImpl_8cpp_source.html#l01356">1356</a> of file <a class="el" href="OverlayImpl_8cpp_source.html">OverlayImpl.cpp</a>.</p>
 
 </div>
 </div>
@@ -21269,7 +21283,7 @@ template&lt;typename T &gt; </div>
 
 <p>Creates the implementation of <a class="el" href="classripple_1_1Overlay.html" title="Manages the set of connected peers.">Overlay</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="OverlayImpl_8cpp_source.html#l01457">1457</a> of file <a class="el" href="OverlayImpl_8cpp_source.html">OverlayImpl.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OverlayImpl_8cpp_source.html#l01461">1461</a> of file <a class="el" href="OverlayImpl_8cpp_source.html">OverlayImpl.cpp</a>.</p>
 
 </div>
 </div>
@@ -33405,7 +33419,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00031">31</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00032">32</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33429,7 +33443,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00032">32</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00033">33</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33453,7 +33467,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00033">33</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00034">34</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33477,7 +33491,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00039">39</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00040">40</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33501,7 +33515,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00042">42</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00043">43</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33527,7 +33541,7 @@ template&lt;class Handler &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">{</div>
 <div class="line">    {<span class="stringliteral">&quot;PRAGMA journal_size_limit=1582080;&quot;</span>}}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00044">44</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00045">45</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33572,7 +33586,7 @@ template&lt;class Handler &gt; </div>
 <div class="line"> </div>
 <div class="line">     <span class="stringliteral">&quot;END TRANSACTION;&quot;</span>}}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00047">47</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00048">48</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33596,7 +33610,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00072">72</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00073">73</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33627,7 +33641,7 @@ template&lt;class Handler &gt; </div>
 <div class="line"> </div>
 <div class="line">}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00075">75</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00076">76</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33681,7 +33695,7 @@ template&lt;class Handler &gt; </div>
 <div class="line"> </div>
 <div class="line">     <span class="stringliteral">&quot;END TRANSACTION;&quot;</span>}}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00083">83</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00084">84</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33705,7 +33719,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00117">117</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00118">118</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33731,7 +33745,7 @@ template&lt;class Handler &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">{</div>
 <div class="line">    {<span class="stringliteral">&quot;PRAGMA journal_size_limit=1582080;&quot;</span>}}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00119">119</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00120">120</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33761,7 +33775,7 @@ template&lt;class Handler &gt; </div>
 <div class="line"><span class="stringliteral">        StoredLedgerSeqs    BLOB                    \</span></div>
 <div class="line"><span class="stringliteral">    );&quot;</span>}}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00122">122</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00123">123</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33787,7 +33801,7 @@ template&lt;class Handler &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">{</div>
 <div class="line">    {<span class="stringliteral">&quot;PRAGMA synchronous=OFF;&quot;</span>, <span class="stringliteral">&quot;PRAGMA journal_mode=OFF;&quot;</span>}}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00133">133</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00134">134</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33811,7 +33825,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00138">138</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00139">139</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33865,7 +33879,7 @@ template&lt;class Handler &gt; </div>
 <div class="line"> </div>
 <div class="line">     <span class="stringliteral">&quot;END TRANSACTION;&quot;</span>}}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00140">140</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00141">141</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33889,7 +33903,7 @@ template&lt;class Handler &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00173">173</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00174">174</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33915,7 +33929,7 @@ template&lt;class Handler &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">{</div>
 <div class="line">    {<span class="stringliteral">&quot;PRAGMA synchronous=FULL;&quot;</span>, <span class="stringliteral">&quot;PRAGMA journal_mode=DELETE;&quot;</span>}}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00176">176</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00177">177</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33948,7 +33962,7 @@ template&lt;class Handler &gt; </div>
 <div class="line"> </div>
 <div class="line">     <span class="stringliteral">&quot;END TRANSACTION;&quot;</span>}}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00179">179</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00180">180</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -33983,7 +33997,7 @@ template&lt;class Handler &gt; </div>
 <div class="line"> </div>
 <div class="line">     <span class="stringliteral">&quot;END TRANSACTION;&quot;</span>}}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00189">189</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DBInit_8h_source.html#l00190">190</a> of file <a class="el" href="DBInit_8h_source.html">DBInit.h</a>.</p>
 
 </div>
 </div>
@@ -34592,6 +34606,22 @@ template&lt;class Dest , class Src &gt; </div>
 
 </div>
 </div>
+<a id="a2611245485e6cfe23d56f1fa608de87d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2611245485e6cfe23d56f1fa608de87d">&#9670;&nbsp;</a></span>checkpointers</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1CheckpointersCollection.html">CheckpointersCollection</a> ripple::checkpointers</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="DatabaseCon_8cpp_source.html#l00076">76</a> of file <a class="el" href="DatabaseCon_8cpp_source.html">DatabaseCon.cpp</a>.</p>
+
+</div>
+</div>
 <a id="abc9d4275055c64612390b7f6af828811"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abc9d4275055c64612390b7f6af828811">&#9670;&nbsp;</a></span>SNTPQueryData</h2>
 
@@ -34735,7 +34765,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00036">36</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00037">37</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
 
 </div>
 </div>
@@ -37425,14 +37455,14 @@ template&lt;class Dest , class Src &gt; </div>
 
 </div>
 </div>
-<a id="aba934e0f354aa9ad71192b7c4e053cf4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aba934e0f354aa9ad71192b7c4e053cf4">&#9670;&nbsp;</a></span>sfNegativeUNLToDisable</h2>
+<a id="a4866a4e67ef4ee45e477e4a850fa3952"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4866a4e67ef4ee45e477e4a850fa3952">&#9670;&nbsp;</a></span>sfValidatorToDisable</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a82de550a2a342b5dedcdcd51f0828188">SF_Blob</a> ripple::sfNegativeUNLToDisable</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a82de550a2a342b5dedcdcd51f0828188">SF_Blob</a> ripple::sfValidatorToDisable</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -37441,14 +37471,14 @@ template&lt;class Dest , class Src &gt; </div>
 
 </div>
 </div>
-<a id="a651ae2bc5ffca2303422bbacdacfcc77"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a651ae2bc5ffca2303422bbacdacfcc77">&#9670;&nbsp;</a></span>sfNegativeUNLToReEnable</h2>
+<a id="a9408db78895ee49dc4a6b9fb4afd83ec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9408db78895ee49dc4a6b9fb4afd83ec">&#9670;&nbsp;</a></span>sfValidatorToReEnable</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="namespaceripple.html#a82de550a2a342b5dedcdcd51f0828188">SF_Blob</a> ripple::sfNegativeUNLToReEnable</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a82de550a2a342b5dedcdcd51f0828188">SF_Blob</a> ripple::sfValidatorToReEnable</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -37841,14 +37871,14 @@ template&lt;class Dest , class Src &gt; </div>
 
 </div>
 </div>
-<a id="afd7041310afdb9945c948296e9a4471f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afd7041310afdb9945c948296e9a4471f">&#9670;&nbsp;</a></span>sfNegativeUNLEntry</h2>
+<a id="a5704c95dc49172864465459cd250c353"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5704c95dc49172864465459cd250c353">&#9670;&nbsp;</a></span>sfDisabledValidator</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="classripple_1_1SField.html">SField</a> ripple::sfNegativeUNLEntry</td>
+          <td class="memname">const <a class="el" href="classripple_1_1SField.html">SField</a> ripple::sfDisabledValidator</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -37985,14 +38015,14 @@ template&lt;class Dest , class Src &gt; </div>
 
 </div>
 </div>
-<a id="a332fc2a71cb81b65fc7f92330f1a9bc8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a332fc2a71cb81b65fc7f92330f1a9bc8">&#9670;&nbsp;</a></span>sfNegativeUNL</h2>
+<a id="a4ea52a6d5f908bfcc5a6d31b7de4419a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ea52a6d5f908bfcc5a6d31b7de4419a">&#9670;&nbsp;</a></span>sfDisabledValidators</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="classripple_1_1SField.html">SField</a> ripple::sfNegativeUNL</td>
+          <td class="memname">const <a class="el" href="classripple_1_1SField.html">SField</a> ripple::sfDisabledValidators</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -39298,7 +39328,7 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="ttc" id="anamespaceripple_html_a4caa9279ebe6c209753256a18741ced7"><div class="ttname"><a href="namespaceripple.html#a4caa9279ebe6c209753256a18741ced7">ripple::tfLimitQuality</a></div><div class="ttdeci">const std::uint32_t tfLimitQuality</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00086">TxFlags.h:86</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a77adb10ef53a2e25195ccd38b46bfe9bacfaa89ec89b7e4605665cdc0069a56e1"><div class="ttname"><a href="namespaceripple.html#a77adb10ef53a2e25195ccd38b46bfe9bacfaa89ec89b7e4605665cdc0069a56e1">ripple::ConsensusPhase::establish</a></div><div class="ttdeci">@ establish</div><div class="ttdoc">Establishing consensus by exchanging proposals with our peers.</div></div>
 <div class="ttc" id="anamespaceripple_html_a741201f121542b3da638ccb4785afc9d"><div class="ttname"><a href="namespaceripple.html#a741201f121542b3da638ccb4785afc9d">ripple::tfSetfAuth</a></div><div class="ttdeci">const std::uint32_t tfSetfAuth</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00091">TxFlags.h:91</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a886ed36db831a964fc5f66ebbb4fe3d0"><div class="ttname"><a href="namespaceripple.html#a886ed36db831a964fc5f66ebbb4fe3d0">ripple::open</a></div><div class="ttdeci">void open(soci::session &amp;s, BasicConfig const &amp;config, std::string const &amp;dbName)</div><div class="ttdoc">Open a soci session.</div><div class="ttdef"><b>Definition:</b> <a href="SociDB_8cpp_source.html#l00099">SociDB.cpp:99</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a886ed36db831a964fc5f66ebbb4fe3d0"><div class="ttname"><a href="namespaceripple.html#a886ed36db831a964fc5f66ebbb4fe3d0">ripple::open</a></div><div class="ttdeci">void open(soci::session &amp;s, BasicConfig const &amp;config, std::string const &amp;dbName)</div><div class="ttdoc">Open a soci session.</div><div class="ttdef"><b>Definition:</b> <a href="SociDB_8cpp_source.html#l00100">SociDB.cpp:100</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

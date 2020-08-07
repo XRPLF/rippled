@@ -89,7 +89,7 @@ $(function() {
 <p>Copies are made with the <code>snapShot</code> function as opposed to the <code>SHAMap</code> copy constructor. See the section on <code>SHAMap</code> creation for more details about <code>snapShot</code>.</p>
 <p>Sequence numbers are used to further customize the node ownership strategy. See the section on sequence numbers for details on sequence numbers.</p>
 <p><img src="https://user-images.githubusercontent.com/46455409/77350005-1ef12c80-6cf9-11ea-9c8d-56410f442859.png" alt="node diagram" class="inline"/></p>
-<h1><a class="anchor" id="autotoc_md259"></a>
+<h1><a class="anchor" id="autotoc_md255"></a>
 Mutability</h1>
 <p>There are two different ways of building and using a <code>SHAMap</code>:</p>
 <ol type="1">
@@ -102,7 +102,7 @@ Mutability</h1>
 <p>Most <code>SHAMap</code>s are immutable, in the sense that they don't modify or remove their contained nodes.</p>
 <p>An example where a mutable <code>SHAMap</code> is required is when we want to apply transactions to the last closed ledger. To do so we'd make a mutable snapshot of the state trie and then start applying transactions to it. Because the snapshot is mutable, changes to nodes in the snapshot will not affect nodes in other <code>SHAMap</code>s.</p>
 <p>An example using a immutable ledger would be when there's an open ledger and some piece of code wishes to query the state of the ledger. In this case we don't wish to change the state of the <code>SHAMap</code>, so we'd use an immutable snapshot.</p>
-<h1><a class="anchor" id="autotoc_md260"></a>
+<h1><a class="anchor" id="autotoc_md256"></a>
 Sequence numbers</h1>
 <p>Both <code>SHAMap</code>s and their nodes carry a sequence number. This is simply an unsigned number that indicates ownership or membership, or a non-membership.</p>
 <p><code>SHAMap</code>s sequence numbers normally start out as 1. However when a snap-shot of a <code>SHAMap</code> is made, the copy's sequence number is 1 greater than the original.</p>
@@ -110,19 +110,19 @@ Sequence numbers</h1>
 <p>When a <code>SHAMap</code> needs to have a private copy of a node, not shared by any other <code>SHAMap</code>, it first clones it and then sets the new copy to have a sequence number equal to the <code>SHAMap</code> sequence number. The <code>unshareNode</code> is a private utility which automates the task of first checking if the node is already sharable, and if so, cloning it and giving it the proper sequence number. An example case where a private copy is needed is when an inner node needs to have a child pointer altered. Any modification to a node will require a non-shared node.</p>
 <p>When a <code>SHAMap</code> decides that it is safe to share a node of its own, it sets the node's sequence number to 0 (a <code>SHAMap</code> never has a sequence number of 0). This is done for every node in the trie when <code>SHAMap::walkSubTree</code> is executed.</p>
 <p>Note that other objects in rippled also have sequence numbers (e.g. ledgers). The <code>SHAMap</code> and node sequence numbers should not be confused with these other sequence numbers (no relation).</p>
-<h1><a class="anchor" id="autotoc_md261"></a>
+<h1><a class="anchor" id="autotoc_md257"></a>
 SHAMap Creation</h1>
 <p>A <code>SHAMap</code> is usually not created from vacuum. Once an initial <code>SHAMap</code> is constructed, later <code>SHAMap</code>s are usually created by calling snapShot(bool isMutable) on the original <code>SHAMap</code>. The returned <code>SHAMap</code> has the expected characteristics (mutable or immutable) based on the passed in flag.</p>
 <p>It is cheaper to make an immutable snapshot of a <code>SHAMap</code> than to make a mutable snapshot. If the <code>SHAMap</code> snapshot is mutable then sharable nodes must be copied before they are placed in the mutable map.</p>
 <p>A new <code>SHAMap</code> is created with each new ledger round. Transactions not executed in the previous ledger populate the <code>SHAMap</code> for the new ledger.</p>
-<h1><a class="anchor" id="autotoc_md262"></a>
+<h1><a class="anchor" id="autotoc_md258"></a>
 Storing SHAMap data in the database</h1>
 <p>When consensus is reached, the ledger is closed. As part of this process, the <code>SHAMap</code> is stored to the database by calling <code>SHAMap::flushDirty</code>.</p>
 <p>Both <code>unshare()</code> and <code>flushDirty</code> walk the <code>SHAMap</code> by calling <code>SHAMap::walkSubTree</code>. As <code>unshare()</code> walks the trie, nodes are not written to the database, and as <code>flushDirty</code> walks the trie nodes are written to the database. <code>walkSubTree</code> visits every node in the trie. This process must ensure that each node is only owned by this trie, and so "unshares" as it walks each node (from the root down). This is done in the <code>preFlushNode</code> function by ensuring that the node has a sequence number equal to that of the <code>SHAMap</code>. If the node doesn't, it is cloned.</p>
 <p>For each inner node encountered (starting with the root node), each of the children are inspected (from 1 to 16). For each child, if it has a non-zero sequence number (unshareable), the child is first copied. Then if the child is an inner node, we recurse down to that node's children. Otherwise we've found a leaf node and that node is written to the database. A count of each leaf node that is visited is kept. The hash of the data in the leaf node is computed at this time, and the child is reassigned back into the parent inner node just in case the COW operation created a new pointer to this leaf node.</p>
 <p>After processing each node, the node is then marked as sharable again by setting its sequence number to 0.</p>
 <p>After all of an inner node's children are processed, then its hash is updated and the inner node is written to the database. Then this inner node is assigned back into it's parent node, again in case the COW operation created a new pointer to it.</p>
-<h1><a class="anchor" id="autotoc_md263"></a>
+<h1><a class="anchor" id="autotoc_md259"></a>
 Walking a SHAMap</h1>
 <p>The private function <code>SHAMap::walkTowardsKey</code> is a good example of <em>how</em> to walk a <code>SHAMap</code>, and the various functions that call <code>walkTowardsKey</code> are good examples of <em>why</em> one would want to walk a <code>SHAMap</code> (e.g. <code>SHAMap::findKey</code>). <code>walkTowardsKey</code> always starts at the root of the <code>SHAMap</code> and traverses down through the inner nodes, looking for a leaf node along a path in the trie designated by a <code>uint256</code>.</p>
 <p>As one walks the trie, one can <em>optionally</em> keep a stack of nodes that one has passed through. This isn't necessary for walking the trie, but many clients will use the stack after finding the desired node. For example if one is deleting a node from the trie, the stack is handy for repairing invariants in the trie after the deletion.</p>
@@ -140,7 +140,7 @@ Walking a SHAMap</h1>
 <li>In the database.</li>
 </ol>
 <p>If the node is not found in the trie, then it is installed into the trie as part of the traversal process.</p>
-<h1><a class="anchor" id="autotoc_md264"></a>
+<h1><a class="anchor" id="autotoc_md260"></a>
 Late-arriving Nodes</h1>
 <p>As we noted earlier, <code>SHAMap</code>s (even immutable ones) may grow. If a <code>SHAMap</code> is searching for a node and runs into an empty spot in the trie, then the <code>SHAMap</code> looks to see if the node exists but has not yet been made part of the map. This operation is performed in the <code>SHAMap::fetchNodeNT()</code> method. The <em>NT</em> is this case stands for 'No Throw'.</p>
 <p>The <code>fetchNodeNT()</code> method goes through three phases:</p>
@@ -151,22 +151,22 @@ Late-arriving Nodes</h1>
 <li>If the node is not in the TreeNodeCache, we attempt to locate the node in the historic data stored by the data base. The call to to <code>fetchNodeFromDB(hash)</code> does that work for us.</li>
 <li>Finally if a filter exists, we check if it can supply the node. This is typically the LedgerMaster which tracks the current ledger and ledgers in the process of closing.</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md265"></a>
+<h1><a class="anchor" id="autotoc_md261"></a>
 Canonicalize</h1>
 <p><code>canonicalize()</code> is called every time a node is introduced into the <code>SHAMap</code>.</p>
 <p>A call to <code>canonicalize()</code> stores the node in the <code>TreeNodeCache</code> if it does not already exist in the <code>TreeNodeCache</code>.</p>
 <p>The calls to <code>canonicalize()</code> make sure that if the resulting node is already in the <code>SHAMap</code>, node <code>TreeNodeCache</code> or database, then we don't create duplicates by favoring the copy already in the <code>TreeNodeCache</code>.</p>
 <p>By using <code>canonicalize()</code> we manage a thread race condition where two different threads might both recognize the lack of a SHAMapTreeNode at the same time (during a fetch). If they both attempt to insert the node into the <code>SHAMap</code>, then <code>canonicalize</code> makes sure that the first node in wins and the slower thread receives back a pointer to the node inserted by the faster thread. Recall that these two <code>SHAMap</code>s will share the same <code>TreeNodeCache</code>.</p>
-<h1><a class="anchor" id="autotoc_md266"></a>
+<h1><a class="anchor" id="autotoc_md262"></a>
 TreeNodeCache</h1>
 <p>The <code>TreeNodeCache</code> is a <code><a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title="STL class.">std::unordered_map</a></code> keyed on the hash of the <code>SHAMap</code> node. The stored type consists of <code>shared_ptr&lt;SHAMapAbstractNode&gt;</code>, <code>weak_ptr&lt;SHAMapAbstractNode&gt;</code>, and a time point indicating the most recent access of this node in the cache. The time point is based on <code><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a></code>.</p>
 <p>The container uses a cryptographically secure hash that is randomly seeded.</p>
 <p>The <code>TreeNodeCache</code> also carries with it various data used for statistics and logging, and a target age for the contained nodes. When the target age for a node is exceeded, and there are no more references to the node, the node is removed from the <code>TreeNodeCache</code>.</p>
-<h1><a class="anchor" id="autotoc_md267"></a>
+<h1><a class="anchor" id="autotoc_md263"></a>
 FullBelowCache</h1>
 <p>This cache remembers which trie keys have all of their children resident in a <code>SHAMap</code>. This optimizes the process of acquiring a complete trie. This is used when creating the missing nodes list. Missing nodes are those nodes that a <code>SHAMap</code> refers to but that are not stored in the local database.</p>
 <p>As a depth-first walk of a <code>SHAMap</code> is performed, if an inner node answers true to <code>isFullBelow()</code> then it is known that none of this node's children are missing nodes, and thus that subtree does not need to be walked. These nodes are stored in the FullBelowCache. Subsequent walks check the FullBelowCache first when encountering a node, and ignore that subtree if found.</p>
-<h1><a class="anchor" id="autotoc_md268"></a>
+<h1><a class="anchor" id="autotoc_md264"></a>
 SHAMapAbstractNode</h1>
 <p>This is a base class for the two concrete node types. It holds the following common data:</p>
 <ol type="1">
@@ -174,7 +174,7 @@ SHAMapAbstractNode</h1>
 <li>A hash</li>
 <li>A sequence number</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md269"></a>
+<h1><a class="anchor" id="autotoc_md265"></a>
 SHAMapInnerNode</h1>
 <p>SHAMapInnerNode publicly inherits directly from SHAMapAbstractNode. It holds the following data:</p>
 <ol type="1">
@@ -183,20 +183,20 @@ SHAMapInnerNode</h1>
 <li>A 16-bit bitset with a 1 bit set for each child that exists.</li>
 <li>Flag to aid online delete and consistency with data on disk.</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md270"></a>
+<h1><a class="anchor" id="autotoc_md266"></a>
 SHAMapTreeNode</h1>
 <p>SHAMapTreeNode publicly inherits directly from SHAMapAbstractNode. It holds the following data:</p>
 <ol type="1">
 <li>A shared_ptr to a const SHAMapItem.</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md271"></a>
+<h1><a class="anchor" id="autotoc_md267"></a>
 SHAMapItem</h1>
 <p>This holds the following data:</p>
 <ol type="1">
 <li>uint256. The hash of the data.</li>
 <li><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">vector&lt;unsigned char&gt;</a>. The data (transactions, account info).</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md272"></a>
+<h1><a class="anchor" id="autotoc_md268"></a>
 SHAMap Improvements</h1>
 <p>Here's a simple one: the SHAMapTreeNode::mAccessSeq member is currently not used and could be removed.</p>
 <p>Here's a more important change. The trie structure is currently embedded in the SHAMapTreeNodes themselves. It doesn't have to be that way, and that should be fixed.</p>

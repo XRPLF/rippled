@@ -1413,7 +1413,7 @@ $(function() {
 <div class="line"><a name="l01342"></a><span class="lineno"> 1342</span>&#160;                            nUnl.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set/insert.html">insert</a>(*it);</div>
 <div class="line"><a name="l01343"></a><span class="lineno"> 1343</span>&#160;                            ++it;</div>
 <div class="line"><a name="l01344"></a><span class="lineno"> 1344</span>&#160;                        }</div>
-<div class="line"><a name="l01345"></a><span class="lineno"> 1345</span>&#160;                        validators-&gt;setNegativeUnl(nUnl);</div>
+<div class="line"><a name="l01345"></a><span class="lineno"> 1345</span>&#160;                        validators-&gt;setNegativeUNL(nUnl);</div>
 <div class="line"><a name="l01346"></a><span class="lineno"> 1346</span>&#160;                        validators-&gt;updateTrusted(activeValidators);</div>
 <div class="line"><a name="l01347"></a><span class="lineno"> 1347</span>&#160;                        BEAST_EXPECT(</div>
 <div class="line"><a name="l01348"></a><span class="lineno"> 1348</span>&#160;                            validators-&gt;quorum() ==</div>
@@ -1445,8 +1445,8 @@ $(function() {
 <div class="line"><a name="l01374"></a><span class="lineno"> 1374</span>&#160;                            nUnl.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set/insert.html">insert</a>(*it);</div>
 <div class="line"><a name="l01375"></a><span class="lineno"> 1375</span>&#160;                            ++it;</div>
 <div class="line"><a name="l01376"></a><span class="lineno"> 1376</span>&#160;                        }</div>
-<div class="line"><a name="l01377"></a><span class="lineno"> 1377</span>&#160;                        validators-&gt;setNegativeUnl(nUnl);</div>
-<div class="line"><a name="l01378"></a><span class="lineno"> 1378</span>&#160;                        <span class="keyword">auto</span> nUnl_temp = validators-&gt;getNegativeUnl();</div>
+<div class="line"><a name="l01377"></a><span class="lineno"> 1377</span>&#160;                        validators-&gt;setNegativeUNL(nUnl);</div>
+<div class="line"><a name="l01378"></a><span class="lineno"> 1378</span>&#160;                        <span class="keyword">auto</span> nUnl_temp = validators-&gt;getNegativeUNL();</div>
 <div class="line"><a name="l01379"></a><span class="lineno"> 1379</span>&#160;                        <span class="keywordflow">if</span> (nUnl_temp.size() == nUnl.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set/size.html">size</a>())</div>
 <div class="line"><a name="l01380"></a><span class="lineno"> 1380</span>&#160;                        {</div>
 <div class="line"><a name="l01381"></a><span class="lineno"> 1381</span>&#160;                            <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; n : nUnl_temp)</div>
@@ -1467,7 +1467,7 @@ $(function() {
 <div class="line"><a name="l01396"></a><span class="lineno"> 1396</span>&#160; </div>
 <div class="line"><a name="l01397"></a><span class="lineno"> 1397</span>&#160;                {</div>
 <div class="line"><a name="l01398"></a><span class="lineno"> 1398</span>&#160;                    <span class="comment">// nUNL overlap: |nUNL - UNL| = 5, with nUNL size: 18</span></div>
-<div class="line"><a name="l01399"></a><span class="lineno"> 1399</span>&#160;                    <span class="keyword">auto</span> nUnl = validators-&gt;getNegativeUnl();</div>
+<div class="line"><a name="l01399"></a><span class="lineno"> 1399</span>&#160;                    <span class="keyword">auto</span> nUnl = validators-&gt;getNegativeUNL();</div>
 <div class="line"><a name="l01400"></a><span class="lineno"> 1400</span>&#160;                    BEAST_EXPECT(nUnl.size() == 12);</div>
 <div class="line"><a name="l01401"></a><span class="lineno"> 1401</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ss = 33;</div>
 <div class="line"><a name="l01402"></a><span class="lineno"> 1402</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;uint8_t&gt;</a> data(ss, 0);</div>
@@ -1478,7 +1478,7 @@ $(function() {
 <div class="line"><a name="l01407"></a><span class="lineno"> 1407</span>&#160;                        data[1]++;</div>
 <div class="line"><a name="l01408"></a><span class="lineno"> 1408</span>&#160;                        nUnl.emplace(s);</div>
 <div class="line"><a name="l01409"></a><span class="lineno"> 1409</span>&#160;                    }</div>
-<div class="line"><a name="l01410"></a><span class="lineno"> 1410</span>&#160;                    validators-&gt;setNegativeUnl(nUnl);</div>
+<div class="line"><a name="l01410"></a><span class="lineno"> 1410</span>&#160;                    validators-&gt;setNegativeUNL(nUnl);</div>
 <div class="line"><a name="l01411"></a><span class="lineno"> 1411</span>&#160;                    validators-&gt;updateTrusted(activeValidators);</div>
 <div class="line"><a name="l01412"></a><span class="lineno"> 1412</span>&#160;                    BEAST_EXPECT(validators-&gt;quorum() == 39);</div>
 <div class="line"><a name="l01413"></a><span class="lineno"> 1413</span>&#160;                }</div>
@@ -1510,7 +1510,7 @@ $(function() {
 <div class="line"><a name="l01439"></a><span class="lineno"> 1439</span>&#160;                    nUnl.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/unordered_set/insert.html">insert</a>(*it);</div>
 <div class="line"><a name="l01440"></a><span class="lineno"> 1440</span>&#160;                    ++it;</div>
 <div class="line"><a name="l01441"></a><span class="lineno"> 1441</span>&#160;                }</div>
-<div class="line"><a name="l01442"></a><span class="lineno"> 1442</span>&#160;                validators-&gt;setNegativeUnl(nUnl);</div>
+<div class="line"><a name="l01442"></a><span class="lineno"> 1442</span>&#160;                validators-&gt;setNegativeUNL(nUnl);</div>
 <div class="line"><a name="l01443"></a><span class="lineno"> 1443</span>&#160;                validators-&gt;updateTrusted(activeValidators);</div>
 <div class="line"><a name="l01444"></a><span class="lineno"> 1444</span>&#160;                BEAST_EXPECT(validators-&gt;quorum() == 30);</div>
 <div class="line"><a name="l01445"></a><span class="lineno"> 1445</span>&#160;            }</div>
