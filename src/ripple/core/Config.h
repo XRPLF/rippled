@@ -195,6 +195,8 @@ public:
 
     std::unordered_set<uint256, beast::uhash<>> features;
 
+    std::string SERVER_DOMAIN;
+
 public:
     Config() : j_{beast::Journal::getNullSink()}
     {

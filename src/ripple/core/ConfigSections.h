@@ -81,6 +81,7 @@ struct ConfigSection
 #define SECTION_SSL_VERIFY "ssl_verify"
 #define SECTION_SSL_VERIFY_FILE "ssl_verify_file"
 #define SECTION_SSL_VERIFY_DIR "ssl_verify_dir"
+#define SECTION_SERVER_DOMAIN "server_domain"
 #define SECTION_VALIDATORS_FILE "validators_file"
 #define SECTION_VALIDATION_SEED "validation_seed"
 #define SECTION_WEBSOCKET_PING_FREQ "websocket_ping_frequency"

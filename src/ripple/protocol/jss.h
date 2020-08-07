@@ -474,6 +474,7 @@ JSS(seq);                       // in: LedgerEntry;
                                 //      ValidatorList, ValidatorInfo, Manifest
 JSS(seqNum);                    // out: LedgerToJson
 JSS(sequence_count);            // out: AccountInfo
+JSS(server_domain);             // out: NetworkOPs
 JSS(server_state);              // out: NetworkOPs
 JSS(server_state_duration_us);  // out: NetworkOPs
 JSS(server_status);             // out: NetworkOPs

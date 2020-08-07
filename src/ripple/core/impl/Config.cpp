@@ -19,6 +19,7 @@
 
 #include <ripple/basics/FileUtilities.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/contract.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/core/Config.h>
@@ -494,6 +495,18 @@ Config::loadFromString(std::string const& fileContents)
             beast::lexicalCastThrow<int>(strTemp),
             MIN_JOB_QUEUE_TX,
             MAX_JOB_QUEUE_TX);
+    }
+
+    if (getSingleSection(secConfig, SECTION_SERVER_DOMAIN, strTemp, j_))
+    {
+        if (!isProperlyFormedTomlDomain(strTemp))
+        {
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_SERVER_DOMAIN
+                ": the domain name does not appear to meet the requirements.");
+        }
+
+        SERVER_DOMAIN = strTemp;
     }
 
     if (getSingleSection(
