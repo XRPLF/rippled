@@ -30,13 +30,17 @@
 
 namespace ripple {
 
-static char rippleAlphabet[] =
+static constexpr char const* alphabetForward =
     "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
-static char bitcoinAlphabet[] =
-    "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-
-//------------------------------------------------------------------------------
+static constexpr std::array<int, 256> const alphabetReverse = []() {
+    std::array<int, 256> map{};
+    for (auto& m : map)
+        m = -1;
+    for (int i = 0, j = 0; alphabetForward[i] != 0; ++i)
+        map[static_cast<unsigned char>(alphabetForward[i])] = j++;
+    return map;
+}();
 
 template <class Hasher>
 static typename Hasher::result_type
@@ -66,7 +70,7 @@ digest2(Args const&... args)
     return digest<Hasher>(digest<Hasher>(args...));
 }
 
-/*  Calculate a 4-byte checksum of the data
+/** Calculate a 4-byte checksum of the data
 
     The checksum is calculated as the first 4 bytes
     of the SHA256 digest of the message. This is added
@@ -75,32 +79,28 @@ digest2(Args const&... args)
 
     @note This checksum algorithm is part of the client API
 */
-void
+static void
 checksum(void* out, void const* message, std::size_t size)
 {
     auto const h = digest2<sha256_hasher>(message, size);
     std::memcpy(out, h.data(), 4);
 }
 
-//------------------------------------------------------------------------------
+namespace detail {
 
-// Code from Bitcoin: https://github.com/bitcoin/bitcoin
-// Copyright (c) 2014 The Bitcoin Core developers
-// Distributed under the MIT software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-//
-// Modified from the original
-//
-// WARNING Do not call this directly, use
-//         encodeBase58Token instead since it
-//         calculates the size of buffer needed.
+/* The base58 encoding & decoding routines in this namespace are taken from
+ * Bitcoin but have been modified from the original.
+ *
+ * Copyright (c) 2014 The Bitcoin Core developers
+ * Distributed under the MIT software license, see the accompanying
+ * file COPYING or http://www.opensource.org/licenses/mit-license.php.
+ */
 static std::string
 encodeBase58(
     void const* message,
     std::size_t size,
     void* temp,
-    std::size_t temp_size,
-    char const* const alphabet)
+    std::size_t temp_size)
 {
     auto pbegin = reinterpret_cast<unsigned char const*>(message);
     auto const pend = pbegin + size;
@@ -140,73 +140,20 @@ encodeBase58(
     // Translate the result into a string.
     std::string str;
     str.reserve(zeroes + (b58end - iter));
-    str.assign(zeroes, alphabet[0]);
+    str.assign(zeroes, alphabetForward[0]);
     while (iter != b58end)
-        str += alphabet[*(iter++)];
+        str += alphabetForward[*(iter++)];
     return str;
 }
 
 static std::string
-encodeToken(
-    TokenType type,
-    void const* token,
-    std::size_t size,
-    char const* const alphabet)
-{
-    // expanded token includes type + 4 byte checksum
-    auto const expanded = 1 + size + 4;
-
-    // We need expanded + expanded * (log(256) / log(58)) which is
-    // bounded by expanded + expanded * (138 / 100 + 1) which works
-    // out to expanded * 3:
-    auto const bufsize = expanded * 3;
-
-    boost::container::small_vector<std::uint8_t, 1024> buf(bufsize);
-
-    // Lay the data out as
-    //      <type><token><checksum>
-    buf[0] = safe_cast<std::underlying_type_t<TokenType>>(type);
-    if (size)
-        std::memcpy(buf.data() + 1, token, size);
-    checksum(buf.data() + 1 + size, buf.data(), 1 + size);
-
-    return encodeBase58(
-        buf.data(),
-        expanded,
-        buf.data() + expanded,
-        bufsize - expanded,
-        alphabet);
-}
-
-std::string
-base58EncodeToken(TokenType type, void const* token, std::size_t size)
-{
-    return encodeToken(type, token, size, rippleAlphabet);
-}
-
-std::string
-base58EncodeTokenBitcoin(TokenType type, void const* token, std::size_t size)
-{
-    return encodeToken(type, token, size, bitcoinAlphabet);
-}
-
-//------------------------------------------------------------------------------
-
-// Code from Bitcoin: https://github.com/bitcoin/bitcoin
-// Copyright (c) 2014 The Bitcoin Core developers
-// Distributed under the MIT software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-//
-// Modified from the original
-template <class InverseArray>
-static std::string
-decodeBase58(std::string const& s, InverseArray const& inv)
+decodeBase58(std::string const& s)
 {
     auto psz = s.c_str();
     auto remain = s.size();
     // Skip and count leading zeroes
     int zeroes = 0;
-    while (remain > 0 && inv[*psz] == 0)
+    while (remain > 0 && alphabetReverse[*psz] == 0)
     {
         ++zeroes;
         ++psz;
@@ -221,7 +168,7 @@ decodeBase58(std::string const& s, InverseArray const& inv)
     std::vector<unsigned char> b256(remain * 733 / 1000 + 1);
     while (remain > 0)
     {
-        auto carry = inv[*psz];
+        auto carry = alphabetReverse[*psz];
         if (carry == -1)
             return {};
         // Apply "b256 = b256 * 58 + carry".
@@ -246,16 +193,36 @@ decodeBase58(std::string const& s, InverseArray const& inv)
     return result;
 }
 
-/*  Base58 decode a Ripple token
+}  // namespace detail
 
-    The type and checksum are are checked
-    and removed from the returned result.
-*/
-template <class InverseArray>
-static std::string
-decodeBase58Token(std::string const& s, TokenType type, InverseArray const& inv)
+std::string
+encodeBase58Token(TokenType type, void const* token, std::size_t size)
 {
-    std::string const ret = decodeBase58(s, inv);
+    // expanded token includes type + 4 byte checksum
+    auto const expanded = 1 + size + 4;
+
+    // We need expanded + expanded * (log(256) / log(58)) which is
+    // bounded by expanded + expanded * (138 / 100 + 1) which works
+    // out to expanded * 3:
+    auto const bufsize = expanded * 3;
+
+    boost::container::small_vector<std::uint8_t, 1024> buf(bufsize);
+
+    // Lay the data out as
+    //      <type><token><checksum>
+    buf[0] = safe_cast<std::underlying_type_t<TokenType>>(type);
+    if (size)
+        std::memcpy(buf.data() + 1, token, size);
+    checksum(buf.data() + 1 + size, buf.data(), 1 + size);
+
+    return detail::encodeBase58(
+        buf.data(), expanded, buf.data() + expanded, bufsize - expanded);
+}
+
+std::string
+decodeBase58Token(std::string const& s, TokenType type)
+{
+    std::string const ret = detail::decodeBase58(s);
 
     // Reject zero length tokens
     if (ret.size() < 6)
@@ -273,46 +240,6 @@ decodeBase58Token(std::string const& s, TokenType type, InverseArray const& inv)
 
     // Skip the leading type byte and the trailing checksum.
     return ret.substr(1, ret.size() - 1 - guard.size());
-}
-
-//------------------------------------------------------------------------------
-
-// Maps characters to their base58 digit
-class InverseAlphabet
-{
-private:
-    std::array<int, 256> map_;
-
-public:
-    explicit InverseAlphabet(std::string const& digits)
-    {
-        map_.fill(-1);
-        int i = 0;
-        for (auto const c : digits)
-            map_[static_cast<unsigned char>(c)] = i++;
-    }
-
-    int
-    operator[](char c) const
-    {
-        return map_[static_cast<unsigned char>(c)];
-    }
-};
-
-static InverseAlphabet rippleInverse(rippleAlphabet);
-
-static InverseAlphabet bitcoinInverse(bitcoinAlphabet);
-
-std::string
-decodeBase58Token(std::string const& s, TokenType type)
-{
-    return decodeBase58Token(s, type, rippleInverse);
-}
-
-std::string
-decodeBase58TokenBitcoin(std::string const& s, TokenType type)
-{
-    return decodeBase58Token(s, type, bitcoinInverse);
 }
 
 }  // namespace ripple

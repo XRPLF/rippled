@@ -32,7 +32,6 @@ namespace detail {
 // This array will be omitted from the object file; only the sorted version
 // will remain in the object file.  But the string literals will remain.
 constexpr static ErrorInfo unorderedErrorInfos[]{
-    {rpcACT_BITCOIN, "actBitcoin", "Account is bitcoin address."},
     {rpcACT_MALFORMED, "actMalformed", "Account malformed."},
     {rpcACT_NOT_FOUND, "actNotFound", "Account not found."},
     {rpcALREADY_MULTISIG, "alreadyMultisig", "Already multisigned."},

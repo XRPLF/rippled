@@ -63,10 +63,7 @@ accountFromStringWithCode(
     }
 
     if (bStrict)
-    {
-        auto id = deprecatedParseBitcoinAccountID(strIdent);
-        return id ? rpcACT_BITCOIN : rpcACT_MALFORMED;
-    }
+        return rpcACT_MALFORMED;
 
     // We allow the use of the seeds which is poor practice
     // and merely for debugging convenience.

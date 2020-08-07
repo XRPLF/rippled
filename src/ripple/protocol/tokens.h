@@ -53,60 +53,30 @@ template <class T>
 boost::optional<T>
 parseHexOrBase58(std::string const& s);
 
-// Facilities for converting Ripple tokens
-// to and from their human readable strings
+/** Encode data in Base58Check format using XRPL alphabet
 
-/*  Base-58 encode a Ripple Token
+    For details on the format see
+    https://xrpl.org/base58-encodings.html#base58-encodings
 
-    Ripple Tokens have a one-byte prefx indicating
-    the type of token, followed by the data for the
-    token, and finally a 4-byte checksum.
+    @param type The type of token to encode.
+    @param token Pointer to the data to encode.
+    @param size The size of the data to encode.
 
-    Tokens include the following:
-
-        Wallet Seed
-        Account Public Key
-        Account ID
-
-    @param type A single byte representing the TokenType
-    @param token A pointer to storage of not
-                 less than 2*(size+6) bytes
-    @param size the size of the token buffer in bytes
+    @return the encoded token.
 */
 std::string
-base58EncodeToken(TokenType type, void const* token, std::size_t size);
+encodeBase58Token(TokenType type, void const* token, std::size_t size);
 
-/*  Base-58 encode a Bitcoin Token
- *
- *  provided here for symmetry, but should never be needed
- *  except for testing.
- *
- *  @see base58EncodeToken for format description.
- *
- */
-std::string
-base58EncodeTokenBitcoin(TokenType type, void const* token, std::size_t size);
+/** Decode a token of given type encoded using Base58Check and the XRPL alphabet
 
-/** Decode a Base58 token
+    @param s The encoded token
+    @param type The type expected for this token.
 
-    The type and checksum must match or an
-    empty string is returned.
+    @return If the encoded token decodes correctly, the token data without
+    the type or checksum. And empty string otherwise.
 */
 std::string
 decodeBase58Token(std::string const& s, TokenType type);
-
-/** Decode a Base58 token using Bitcoin alphabet
-
-    The type and checksum must match or an
-    empty string is returned.
-
-    This is used to detect user error. Specifically,
-    when an AccountID is specified using the wrong
-    base58 alphabet, so that a better error message
-    may be returned.
-*/
-std::string
-decodeBase58TokenBitcoin(std::string const& s, TokenType type);
 
 }  // namespace ripple
 

@@ -69,20 +69,6 @@ class AccountCurrencies_test : public beast::unit_test::suite
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
         }
 
-        {  // strict mode, using properly formatted bitcoin token
-            Json::Value params;
-            params[jss::account] = base58EncodeTokenBitcoin(
-                TokenType::AccountID, alice.id().data(), alice.id().size());
-            params[jss::strict] = true;
-            auto const result = env.rpc(
-                "json",
-                "account_currencies",
-                boost::lexical_cast<std::string>(params))[jss::result];
-            BEAST_EXPECT(result[jss::error] == "actBitcoin");
-            BEAST_EXPECT(
-                result[jss::error_message] == "Account is bitcoin address.");
-        }
-
         {  // ask for nonexistent account
             Json::Value params;
             params[jss::account] = Account{"bob"}.human();

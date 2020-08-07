@@ -128,7 +128,7 @@ seedAs1751(Seed const& seed);
 inline std::string
 toBase58(Seed const& seed)
 {
-    return base58EncodeToken(TokenType::FamilySeed, seed.data(), seed.size());
+    return encodeBase58Token(TokenType::FamilySeed, seed.data(), seed.size());
 }
 
 }  // namespace ripple
