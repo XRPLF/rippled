@@ -119,7 +119,7 @@ parseBase58(TokenType type, std::string const& s);
 inline std::string
 toBase58(TokenType type, SecretKey const& sk)
 {
-    return base58EncodeToken(type, sk.data(), sk.size());
+    return encodeBase58Token(type, sk.data(), sk.size());
 }
 
 /** Create a secret key using secure random numbers. */
