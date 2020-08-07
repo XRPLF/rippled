@@ -185,7 +185,7 @@ struct STExchange<STBlob, PublicKey>
 inline std::string
 toBase58(TokenType type, PublicKey const& pk)
 {
-    return base58EncodeToken(type, pk.data(), pk.size());
+    return encodeBase58Token(type, pk.data(), pk.size());
 }
 
 template <>

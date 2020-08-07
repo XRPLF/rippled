@@ -28,7 +28,7 @@ namespace ripple {
 std::string
 toBase58(AccountID const& v)
 {
-    return base58EncodeToken(TokenType::AccountID, v.data(), v.size());
+    return encodeBase58Token(TokenType::AccountID, v.data(), v.size());
 }
 
 template <>
@@ -36,19 +36,6 @@ boost::optional<AccountID>
 parseBase58(std::string const& s)
 {
     auto const result = decodeBase58Token(s, TokenType::AccountID);
-    if (result.empty())
-        return boost::none;
-    AccountID id;
-    if (result.size() != id.size())
-        return boost::none;
-    std::memcpy(id.data(), result.data(), result.size());
-    return id;
-}
-
-boost::optional<AccountID>
-deprecatedParseBitcoinAccountID(std::string const& s)
-{
-    auto const result = decodeBase58TokenBitcoin(s, TokenType::AccountID);
     if (result.empty())
         return boost::none;
     AccountID id;

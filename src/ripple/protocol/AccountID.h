@@ -57,12 +57,6 @@ template <>
 boost::optional<AccountID>
 parseBase58(std::string const& s);
 
-// Parses AccountID using Bitcoin's alphabet
-// This is to catch user error. Likely not needed
-// DEPRECATED
-boost::optional<AccountID>
-deprecatedParseBitcoinAccountID(std::string const& s);
-
 // Compatibility with legacy code
 bool
 deprecatedParseBase58(AccountID& account, Json::Value const& jv);
