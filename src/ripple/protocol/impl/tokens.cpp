@@ -30,18 +30,18 @@
 
 namespace ripple {
 
-static constexpr char const* const xrplAlphabetForward =
+static constexpr char const* const alphabetForward =
     "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
-static constexpr std::array<int, 256> const xrplAlphabetReverse = []() constexpr
+static constexpr std::array<int, 256> const alphabetReverse = []() constexpr
 {
     std::array<int, 256> map{};
 
     for (auto& m : map)
         m = -1;
 
-    for (int i = 0, j = 0; xrplAlphabetForward[i] != 0; ++i)
-        map[static_cast<unsigned char>(xrplAlphabetForward[i])] = j++;
+    for (int i = 0, j = 0; alphabetForward[i] != 0; ++i)
+        map[static_cast<unsigned char>(alphabetForward[i])] = j++;
 
     return map;
 }
@@ -145,9 +145,9 @@ encodeBase58(
     // Translate the result into a string.
     std::string str;
     str.reserve(zeroes + (b58end - iter));
-    str.assign(zeroes, xrplAlphabetForward[0]);
+    str.assign(zeroes, alphabetForward[0]);
     while (iter != b58end)
-        str += xrplAlphabetForward[*(iter++)];
+        str += alphabetForward[*(iter++)];
     return str;
 }
 
@@ -158,7 +158,7 @@ decodeBase58(std::string const& s)
     auto remain = s.size();
     // Skip and count leading zeroes
     int zeroes = 0;
-    while (remain > 0 && xrplAlphabetReverse[*psz] == 0)
+    while (remain > 0 && alphabetReverse[*psz] == 0)
     {
         ++zeroes;
         ++psz;
@@ -173,7 +173,7 @@ decodeBase58(std::string const& s)
     std::vector<unsigned char> b256(remain * 733 / 1000 + 1);
     while (remain > 0)
     {
-        auto carry = xrplAlphabetReverse[*psz];
+        auto carry = alphabetReverse[*psz];
         if (carry == -1)
             return {};
         // Apply "b256 = b256 * 58 + carry".
