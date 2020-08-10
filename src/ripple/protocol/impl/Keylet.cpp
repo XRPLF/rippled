@@ -34,7 +34,6 @@ Keylet::check(SLE const& sle) const
         assert(sle.getType() != ltDIR_NODE);
         return sle.getType() != ltDIR_NODE;
     }
-    assert(sle.getType() == type);
     return sle.getType() == type;
 }
 
