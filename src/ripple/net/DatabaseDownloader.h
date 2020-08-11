@@ -21,11 +21,11 @@
 #define RIPPLE_NET_DATABASEDOWNLOADER_H
 
 #include <ripple/net/DatabaseBody.h>
-#include <ripple/net/SSLHTTPDownloader.h>
+#include <ripple/net/HTTPDownloader.h>
 
 namespace ripple {
 
-class DatabaseDownloader : public SSLHTTPDownloader
+class DatabaseDownloader : public HTTPDownloader
 {
 public:
     DatabaseDownloader(

@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NET_SSLHTTPDOWNLOADER_H_INCLUDED
-#define RIPPLE_NET_SSLHTTPDOWNLOADER_H_INCLUDED
+#ifndef RIPPLE_NET_HTTPDOWNLOADER_H_INCLUDED
+#define RIPPLE_NET_HTTPDOWNLOADER_H_INCLUDED
 
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
-#include <ripple/net/HTTPClientSSLContext.h>
+#include <ripple/net/HTTPStream.h>
 
 #include <boost/asio/connect.hpp>
 #include <boost/asio/io_service.hpp>
@@ -39,14 +39,14 @@
 
 namespace ripple {
 
-/** Provides an asynchronous HTTPS file downloader
+/** Provides an asynchronous HTTP[S] file downloader
  */
-class SSLHTTPDownloader
+class HTTPDownloader
 {
 public:
     using error_code = boost::system::error_code;
 
-    SSLHTTPDownloader(
+    HTTPDownloader(
         boost::asio::io_service& io_service,
         beast::Journal j,
         Config const& config);
@@ -58,12 +58,13 @@ public:
         std::string const& target,
         int version,
         boost::filesystem::path const& dstPath,
-        std::function<void(boost::filesystem::path)> complete);
+        std::function<void(boost::filesystem::path)> complete,
+        bool ssl = true);
 
     void
     onStop();
 
-    virtual ~SSLHTTPDownloader() = default;
+    virtual ~HTTPDownloader() = default;
 
 protected:
     using parser = boost::beast::http::basic_parser<false>;
@@ -79,10 +80,9 @@ protected:
         std::shared_ptr<parser> parser);
 
 private:
-    HTTPClientSSLContext ssl_ctx_;
+    Config const& config_;
     boost::asio::io_service::strand strand_;
-    boost::optional<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>
-        stream_;
+    std::unique_ptr<HTTPStream> stream_;
     boost::beast::flat_buffer read_buf_;
     std::atomic<bool> cancelDownloads_;
 
@@ -99,6 +99,7 @@ private:
         int version,
         boost::filesystem::path dstPath,
         std::function<void(boost::filesystem::path)> complete,
+        bool ssl,
         boost::asio::yield_context yield);
 
     virtual std::shared_ptr<parser>

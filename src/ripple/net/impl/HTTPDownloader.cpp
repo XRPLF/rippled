@@ -17,17 +17,17 @@
 */
 //==============================================================================
 
-#include <ripple/net/SSLHTTPDownloader.h>
+#include <ripple/net/HTTPDownloader.h>
 #include <boost/asio/ssl.hpp>
 
 namespace ripple {
 
-SSLHTTPDownloader::SSLHTTPDownloader(
+HTTPDownloader::HTTPDownloader(
     boost::asio::io_service& io_service,
     beast::Journal j,
     Config const& config)
     : j_(j)
-    , ssl_ctx_(config, j, boost::asio::ssl::context::tlsv12_client)
+    , config_(config)
     , strand_(io_service)
     , cancelDownloads_(false)
     , sessionActive_(false)
@@ -35,13 +35,14 @@ SSLHTTPDownloader::SSLHTTPDownloader(
 }
 
 bool
-SSLHTTPDownloader::download(
+HTTPDownloader::download(
     std::string const& host,
     std::string const& port,
     std::string const& target,
     int version,
     boost::filesystem::path const& dstPath,
-    std::function<void(boost::filesystem::path)> complete)
+    std::function<void(boost::filesystem::path)> complete,
+    bool ssl)
 {
     if (!checkPath(dstPath))
         return false;
@@ -57,19 +58,20 @@ SSLHTTPDownloader::download(
 
     if (!strand_.running_in_this_thread())
         strand_.post(std::bind(
-            &SSLHTTPDownloader::download,
+            &HTTPDownloader::download,
             this,
             host,
             port,
             target,
             version,
             dstPath,
-            complete));
+            complete,
+            ssl));
     else
         boost::asio::spawn(
             strand_,
             std::bind(
-                &SSLHTTPDownloader::do_session,
+                &HTTPDownloader::do_session,
                 this,
                 host,
                 port,
@@ -77,12 +79,13 @@ SSLHTTPDownloader::download(
                 version,
                 dstPath,
                 complete,
+                ssl,
                 std::placeholders::_1));
     return true;
 }
 
 void
-SSLHTTPDownloader::onStop()
+HTTPDownloader::onStop()
 {
     std::unique_lock lock(m_);
 
@@ -96,13 +99,14 @@ SSLHTTPDownloader::onStop()
 }
 
 void
-SSLHTTPDownloader::do_session(
+HTTPDownloader::do_session(
     std::string const host,
     std::string const port,
     std::string const target,
     int version,
     boost::filesystem::path dstPath,
     std::function<void(boost::filesystem::path)> complete,
+    bool ssl,
     boost::asio::yield_context yield)
 {
     using namespace boost::asio;
@@ -118,17 +122,18 @@ SSLHTTPDownloader::do_session(
         closeBody(p);
 
         // Gracefully close the stream
-        stream_->async_shutdown(yield[ec]);
+        stream_->getStream().shutdown(socket_base::shutdown_both, ec);
         if (ec == boost::asio::error::eof)
             ec.assign(0, ec.category());
         if (ec)
         {
             // Most web servers don't bother with performing
             // the SSL shutdown handshake, for speed.
-            JLOG(j_.trace()) << "async_shutdown: " << ec.message();
+            JLOG(j_.trace()) << "shutdown: " << ec.message();
         }
-        // The socket cannot be reused
-        stream_ = boost::none;
+
+        // The stream cannot be reused
+        stream_.reset();
     };
 
     // When the downloader is being stopped
@@ -161,36 +166,12 @@ SSLHTTPDownloader::do_session(
     // connection:
     std::uint64_t const rangeStart = size(p);
 
-    ip::tcp::resolver resolver{strand_.context()};
-    auto const results = resolver.async_resolve(host, port, yield[ec]);
-    if (ec)
-        return failAndExit("async_resolve", p);
+    stream_ = ssl ? HTTPStream::makeUnique<SSLStream>(config_, strand_, j_)
+                  : HTTPStream::makeUnique<RawStream>(config_, strand_, j_);
 
-    try
-    {
-        stream_.emplace(strand_.context(), ssl_ctx_.context());
-    }
-    catch (std::exception const& e)
-    {
-        return failAndExit(std::string("exception: ") + e.what(), p);
-    }
-
-    ec = ssl_ctx_.preConnectVerify(*stream_, host);
-    if (ec)
-        return failAndExit("preConnectVerify", p);
-
-    boost::asio::async_connect(
-        stream_->next_layer(), results.begin(), results.end(), yield[ec]);
-    if (ec)
-        return failAndExit("async_connect", p);
-
-    ec = ssl_ctx_.postConnectVerify(*stream_, host);
-    if (ec)
-        return failAndExit("postConnectVerify", p);
-
-    stream_->async_handshake(ssl::stream_base::client, yield[ec]);
-    if (ec)
-        return failAndExit("async_handshake", p);
+    std::string error;
+    if (!stream_->connect(error, host, port, yield))
+        return failAndExit(error, p);
 
     // Set up an HTTP HEAD request message to find the file size
     http::request<http::empty_body> req{http::verb::head, target, version};
@@ -205,7 +186,7 @@ SSLHTTPDownloader::do_session(
             (boost::format("bytes=%llu-") % rangeStart).str());
     }
 
-    http::async_write(*stream_, req, yield[ec]);
+    stream_->asyncWrite(req, yield, ec);
     if (ec)
         return failAndExit("async_write", p);
 
@@ -213,7 +194,7 @@ SSLHTTPDownloader::do_session(
         // Read the response
         http::response_parser<http::empty_body> connectParser;
         connectParser.skip(true);
-        http::async_read(*stream_, read_buf_, connectParser, yield[ec]);
+        stream_->asyncRead(read_buf_, connectParser, false, yield, ec);
         if (ec)
             return failAndExit("async_read", p);
 
@@ -222,14 +203,14 @@ SSLHTTPDownloader::do_session(
         {
             req.erase(http::field::range);
 
-            http::async_write(*stream_, req, yield[ec]);
+            stream_->asyncWrite(req, yield, ec);
             if (ec)
                 return failAndExit("async_write_range_verify", p);
 
             http::response_parser<http::empty_body> rangeParser;
             rangeParser.skip(true);
 
-            http::async_read(*stream_, read_buf_, rangeParser, yield[ec]);
+            stream_->asyncRead(read_buf_, rangeParser, false, yield, ec);
             if (ec)
                 return failAndExit("async_read_range_verify", p);
 
@@ -280,7 +261,7 @@ SSLHTTPDownloader::do_session(
         }
     }
 
-    http::async_write(*stream_, req, yield[ec]);
+    stream_->asyncWrite(req, yield, ec);
     if (ec)
         return failAndExit("async_write", p);
 
@@ -299,7 +280,7 @@ SSLHTTPDownloader::do_session(
             return exit();
         }
 
-        http::async_read_some(*stream_, read_buf_, *p, yield[ec]);
+        stream_->asyncRead(read_buf_, *p, true, yield, ec);
     }
 
     JLOG(j_.trace()) << "download completed: " << dstPath.string();
@@ -312,7 +293,7 @@ SSLHTTPDownloader::do_session(
 }
 
 void
-SSLHTTPDownloader::fail(
+HTTPDownloader::fail(
     boost::filesystem::path dstPath,
     std::function<void(boost::filesystem::path)> const& complete,
     boost::system::error_code const& ec,
