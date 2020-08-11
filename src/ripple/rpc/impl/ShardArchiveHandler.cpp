@@ -375,13 +375,17 @@ ShardArchiveHandler::next(std::lock_guard<std::mutex> const& l)
     // sleeps.
     auto const& url{archives_.begin()->second};
     auto wrapper = jobCounter_.wrap([this, url, dstDir](Job&) {
+        auto const ssl = (url.scheme == "https");
+        auto const defaultPort = ssl ? 443 : 80;
+
         if (!downloader_->download(
                 url.domain,
-                std::to_string(url.port.get_value_or(443)),
+                std::to_string(url.port.get_value_or(defaultPort)),
                 url.path,
                 11,
                 dstDir / "archive.tar.lz4",
-                [this](path dstPath) { complete(dstPath); }))
+                [this](path dstPath) { complete(dstPath); },
+                ssl))
         {
             std::lock_guard<std::mutex> l(m_);
             removeAndProceed(l);

@@ -497,12 +497,13 @@ target_sources (rippled PRIVATE
   #]===============================]
   src/ripple/net/impl/DatabaseDownloader.cpp
   src/ripple/net/impl/HTTPClient.cpp
+  src/ripple/net/impl/HTTPDownloader.cpp
+  src/ripple/net/impl/HTTPStream.cpp
   src/ripple/net/impl/InfoSub.cpp
   src/ripple/net/impl/RPCCall.cpp
   src/ripple/net/impl/RPCErr.cpp
   src/ripple/net/impl/RPCSub.cpp
   src/ripple/net/impl/RegisterSSLCerts.cpp
-  src/ripple/net/impl/SSLHTTPDownloader.cpp
   #[===============================[
      main sources:
        subdir: nodestore
