@@ -32,117 +32,6 @@
 
 namespace ripple {
 
-// We're prepared for there to be multiple signer lists in the future,
-// but we don't need them yet.  So for the time being we're manually
-// setting the sfSignerListID to zero in all cases.
-static std::uint32_t const defaultSignerListID_ = 0;
-
-std::tuple<
-    NotTEC,
-    std::uint32_t,
-    std::vector<SignerEntries::SignerEntry>,
-    SetSignerList::Operation>
-SetSignerList::determineOperation(
-    STTx const& tx,
-    ApplyFlags flags,
-    beast::Journal j)
-{
-    // Check the quorum.  A non-zero quorum means we're creating or replacing
-    // the list.  A zero quorum means we're destroying the list.
-    auto const quorum = tx[sfSignerQuorum];
-    std::vector<SignerEntries::SignerEntry> sign;
-    Operation op = unknown;
-
-    bool const hasSignerEntries(tx.isFieldPresent(sfSignerEntries));
-    if (quorum && hasSignerEntries)
-    {
-        auto signers = SignerEntries::deserialize(tx, j, "transaction");
-
-        if (signers.second != tesSUCCESS)
-            return std::make_tuple(signers.second, quorum, sign, op);
-
-        std::sort(signers.first.begin(), signers.first.end());
-
-        // Save deserialized list for later.
-        sign = std::move(signers.first);
-        op = set;
-    }
-    else if ((quorum == 0) && !hasSignerEntries)
-    {
-        op = destroy;
-    }
-
-    return std::make_tuple(tesSUCCESS, quorum, sign, op);
-}
-
-NotTEC
-SetSignerList::preflight(PreflightContext const& ctx)
-{
-    auto const ret = preflight1(ctx);
-    if (!isTesSuccess(ret))
-        return ret;
-
-    auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
-    if (std::get<0>(result) != tesSUCCESS)
-        return std::get<0>(result);
-
-    if (std::get<3>(result) == unknown)
-    {
-        // Neither a set nor a destroy.  Malformed.
-        JLOG(ctx.j.trace())
-            << "Malformed transaction: Invalid signer set list format.";
-        return temMALFORMED;
-    }
-
-    if (std::get<3>(result) == set)
-    {
-        // Validate our settings.
-        auto const account = ctx.tx.getAccountID(sfAccount);
-        NotTEC const ter = validateQuorumAndSignerEntries(
-            std::get<1>(result), std::get<2>(result), account, ctx.j);
-        if (ter != tesSUCCESS)
-        {
-            return ter;
-        }
-    }
-
-    return preflight2(ctx);
-}
-
-TER
-SetSignerList::doApply()
-{
-    // Perform the operation preCompute() decided on.
-    switch (do_)
-    {
-        case set:
-            return replaceSignerList();
-
-        case destroy:
-            return destroySignerList();
-
-        default:
-            break;
-    }
-    assert(false);  // Should not be possible to get here.
-    return temMALFORMED;
-}
-
-void
-SetSignerList::preCompute()
-{
-    // Get the quorum and operation info.
-    auto result = determineOperation(ctx_.tx, view().flags(), j_);
-    assert(std::get<0>(result) == tesSUCCESS);
-    assert(std::get<3>(result) != unknown);
-
-    quorum_ = std::get<1>(result);
-    signers_ = std::get<2>(result);
-    do_ = std::get<3>(result);
-
-    return Transactor::preCompute();
-}
-
 // The return type is signed so it is compatible with the 3rd argument
 // of adjustOwnerCount() (which must be signed).
 //
@@ -169,6 +58,237 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount)
     assert(entryCount >= STTx::minMultiSigners);
     assert(entryCount <= STTx::maxMultiSigners);
     return 2 + static_cast<int>(entryCount);
+}
+
+// We're prepared for there to be multiple signer lists in the future,
+// but we don't need them yet.  So for the time being we're manually
+// setting the sfSignerListID to zero in all cases.
+static std::uint32_t const defaultSignerListID_ = 0;
+
+std::tuple<
+    NotTEC,
+    std::uint32_t,
+    std::vector<SignerEntry>,
+    SetSignerList::Operation>
+SetSignerList::determineOperation(
+    STTx const& tx,
+    ApplyFlags flags)
+{
+    // Check the quorum.  A non-zero quorum means we're creating or replacing
+    // the list.  A zero quorum means we're destroying the list.
+    auto const quorum = tx[sfSignerQuorum];
+    std::vector<SignerEntry> sign;
+    Operation op = unknown;
+
+    bool const hasSignerEntries(tx.isFieldPresent(sfSignerEntries));
+    if (quorum && hasSignerEntries)
+    {
+        auto signers = deserializeSignerList(tx);
+
+        if (!signers)
+            return std::make_tuple(temMALFORMED, quorum, sign, op);
+
+        std::sort(signers->begin(), signers->end());
+
+        // Save deserialized list for later.
+        sign = std::move(*signers);
+        op = set;
+    }
+    else if ((quorum == 0) && !hasSignerEntries)
+    {
+        op = destroy;
+    }
+
+    return std::make_tuple(tesSUCCESS, quorum, sign, op);
+}
+
+NotTEC
+SetSignerList::preflight(PreflightContext const& ctx)
+{
+    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+        return ret;
+
+    if (ctx.rules.enabled(featureSimplifiedSetSignerList))
+    {
+        auto const quorum = ctx.tx[sfSignerQuorum];
+
+        // The quorum says when we are adding or removing the signer list:
+        if (quorum != 0)
+        {
+            auto const sl = deserializeSignerList(ctx.tx);
+
+            if (!sl)
+                return temMALFORMED;
+
+            if (sl->size() < STTx::minMultiSigners ||
+                sl->size() > STTx::maxMultiSigners)
+                return temMALFORMED;
+
+            if (!std::is_sorted(sl->begin(), sl->end()))
+                return temMALFORMED;
+
+            if (auto const dup = std::adjacent_find(sl->begin(), sl->end());
+                dup != sl->end())
+                return temBAD_SIGNER;
+
+            auto const self = ctx.tx.getAccountID(sfAccount);
+            std::uint32_t weight = 0;
+
+            for (auto const& s : *sl)
+            {
+                if (s.account == self)
+                    return temBAD_SIGNER;
+
+                if (s.weight == 0)
+                    return temBAD_WEIGHT;
+
+                weight += s.weight;
+            }
+
+            if (weight < quorum)
+                return temBAD_QUORUM;
+        }
+
+        if (quorum == 0 && ctx.tx.isFieldPresent(sfSignerEntries))
+            return temMALFORMED;
+    }
+    else
+    {
+        auto const result = determineOperation(ctx.tx, ctx.flags);
+        if (std::get<0>(result) != tesSUCCESS)
+            return std::get<0>(result);
+
+        if (std::get<3>(result) == unknown)
+        {
+            // Neither a set nor a destroy.  Malformed.
+            JLOG(ctx.j.trace())
+                << "Malformed transaction: Invalid signer set list format.";
+            return temMALFORMED;
+        }
+
+        if (std::get<3>(result) == set)
+        {
+            // Validate our settings.
+            auto const account = ctx.tx.getAccountID(sfAccount);
+            NotTEC const ter = validateQuorumAndSignerEntries(
+                std::get<1>(result), std::get<2>(result), account, ctx.j);
+            if (ter != tesSUCCESS)
+            {
+                return ter;
+            }
+        }
+    }
+
+    return preflight2(ctx);
+}
+
+TER
+SetSignerList::doApply()
+{
+    if (ctx_.view().rules().enabled(featureSimplifiedSetSignerList))
+    {
+        auto const quorum = ctx_.tx[sfSignerQuorum];
+
+        // If the list is removed check that the account can still sign the
+        // transactions:
+        if (quorum == 0)
+        {
+            auto acct = view().peek(keylet::account(account_));
+
+            // Destroying the signer list is only allowed if either the master
+            // key is enabled or there is a regular key.
+            if (acct->isFlag(lsfDisableMaster) &&
+                !acct->isFieldPresent(sfRegularKey))
+                return tecNO_ALTERNATIVE_KEY;
+        }
+
+        auto const slk = keylet::signers(account_);
+        auto const odk = keylet::ownerDir(account_);
+
+        auto const root = view().peek(keylet::account(account_));
+
+        // At this pint we will remove existing signer list if present:
+        if (auto sle = view().peek(slk))
+        {
+            int ocdelta = 1;
+
+            if ((sle->getFlags() & lsfOneOwnerCount) == 0)
+                ocdelta = signerCountBasedOwnerCountDelta(
+                    sle->getFieldArray(sfSignerEntries).size());
+
+            if (!ctx_.view().dirRemove(odk, (*sle)[sfOwnerNode], slk, false))
+                return tefBAD_LEDGER;
+
+            ctx_.view().erase(sle);
+
+            adjustOwnerCount(view(), root, -ocdelta, ctx_.journal);
+        }
+
+        if (quorum != 0)
+        {
+            int const ocdelta = 1;
+
+            // We check the reserve against the starting balance because we want
+            // to allow dipping into the reserve to pay fees.
+            if (mPriorBalance <
+                view().fees().accountReserve(ocdelta + (*root)[sfOwnerCount]))
+                return tecINSUFFICIENT_RESERVE;
+
+            auto sle = std::make_shared<SLE>(slk);
+            sle->setFieldU32(sfSignerQuorum, quorum);
+            sle->setFieldU32(sfSignerListID, defaultSignerListID_);
+            sle->setFieldU32(sfFlags, lsfOneOwnerCount);
+            sle->setFieldArray(
+                sfSignerEntries, ctx_.tx.getFieldArray(sfSignerEntries));
+
+            view().insert(sle);
+
+            auto const page =
+                ctx_.view().dirInsert(odk, slk, describeOwnerDir(account_));
+
+            if (!page)
+                return tecDIR_FULL;
+
+            sle->setFieldU64(sfOwnerNode, *page);
+
+            adjustOwnerCount(view(), root, ocdelta, ctx_.journal);
+        }
+
+        return tesSUCCESS;
+    }
+
+    // Perform the operation preCompute() decided on.
+    switch (do_)
+    {
+        case set:
+            return replaceSignerList();
+
+        case destroy:
+            return destroySignerList();
+
+        default:
+            break;
+    }
+    assert(false);  // Should not be possible to get here.
+    return temMALFORMED;
+}
+
+void
+SetSignerList::preCompute()
+{
+    if (!ctx_.view().rules().enabled(featureSimplifiedSetSignerList))
+    {
+        // Get the quorum and operation info.
+        auto result = determineOperation(ctx_.tx, view().flags());
+        assert(std::get<0>(result) == tesSUCCESS);
+        assert(std::get<3>(result) != unknown);
+
+        quorum_ = std::get<1>(result);
+        signers_ = std::get<2>(result);
+        do_ = std::get<3>(result);
+    }
+
+    return Transactor::preCompute();
 }
 
 static TER
@@ -234,7 +354,7 @@ SetSignerList::removeFromLedger(
 NotTEC
 SetSignerList::validateQuorumAndSignerEntries(
     std::uint32_t quorum,
-    std::vector<SignerEntries::SignerEntry> const& signers,
+    std::vector<SignerEntry> const& signers,
     AccountID const& account,
     beast::Journal j)
 {

@@ -45,7 +45,7 @@ private:
     enum Operation { unknown, set, destroy };
     Operation do_{unknown};
     std::uint32_t quorum_{0};
-    std::vector<SignerEntries::SignerEntry> signers_;
+    std::vector<SignerEntry> signers_;
 
 public:
     explicit SetSignerList(ApplyContext& ctx) : Transactor(ctx)
@@ -77,14 +77,14 @@ private:
     static std::tuple<
         NotTEC,
         std::uint32_t,
-        std::vector<SignerEntries::SignerEntry>,
+        std::vector<SignerEntry>,
         Operation>
-    determineOperation(STTx const& tx, ApplyFlags flags, beast::Journal j);
+    determineOperation(STTx const& tx, ApplyFlags flags);
 
     static NotTEC
     validateQuorumAndSignerEntries(
         std::uint32_t quorum,
-        std::vector<SignerEntries::SignerEntry> const& signers,
+        std::vector<SignerEntry> const& signers,
         AccountID const& account,
         beast::Journal j);
 
