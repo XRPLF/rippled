@@ -25,45 +25,26 @@
 
 namespace ripple {
 
-std::pair<std::vector<SignerEntries::SignerEntry>, NotTEC>
-SignerEntries::deserialize(
-    STObject const& obj,
-    beast::Journal journal,
-    std::string const& annotation)
+std::optional<std::vector<SignerEntry>>
+deserializeSignerList(STObject const& obj)
 {
-    std::pair<std::vector<SignerEntry>, NotTEC> s;
-
     if (!obj.isFieldPresent(sfSignerEntries))
-    {
-        JLOG(journal.trace())
-            << "Malformed " << annotation << ": Need signer entry array.";
-        s.second = temMALFORMED;
-        return s;
-    }
+        return {};
 
-    auto& accountVec = s.first;
-    accountVec.reserve(STTx::maxMultiSigners);
+    std::vector<SignerEntry> signers;
 
-    STArray const& sEntries(obj.getFieldArray(sfSignerEntries));
-    for (STObject const& sEntry : sEntries)
+    signers.reserve(STTx::maxMultiSigners);
+
+    for (STObject const& sEntry : obj.getFieldArray(sfSignerEntries))
     {
-        // Validate the SignerEntry.
         if (sEntry.getFName() != sfSignerEntry)
-        {
-            JLOG(journal.trace())
-                << "Malformed " << annotation << ": Expected SignerEntry.";
-            s.second = temMALFORMED;
-            return s;
-        }
+            return {};
 
-        // Extract SignerEntry fields.
-        AccountID const account = sEntry.getAccountID(sfAccount);
-        std::uint16_t const weight = sEntry.getFieldU16(sfSignerWeight);
-        accountVec.emplace_back(account, weight);
+        signers.emplace_back(
+            sEntry.getAccountID(sfAccount), sEntry.getFieldU16(sfSignerWeight));
     }
 
-    s.second = tesSUCCESS;
-    return s;
+    return signers;
 }
 
 }  // namespace ripple

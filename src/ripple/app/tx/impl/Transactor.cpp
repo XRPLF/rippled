@@ -429,10 +429,9 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
     assert(sleAccountSigners->isFieldPresent(sfSignerListID));
     assert(sleAccountSigners->getFieldU32(sfSignerListID) == 0);
 
-    auto accountSigners =
-        SignerEntries::deserialize(*sleAccountSigners, ctx.j, "ledger");
-    if (accountSigners.second != tesSUCCESS)
-        return accountSigners.second;
+    auto accountSigners = deserializeSignerList(*sleAccountSigners);
+    if (!accountSigners)
+        return temMALFORMED;
 
     // Get the array of transaction signers.
     STArray const& txSigners(ctx.tx.getFieldArray(sfSigners));
@@ -444,7 +443,7 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
     // matching multi-signers to account signers should be a simple
     // linear walk.  *All* signers must be valid or the transaction fails.
     std::uint32_t weightSum = 0;
-    auto iter = accountSigners.first.begin();
+    auto iter = accountSigners->begin();
     for (auto const& txSigner : txSigners)
     {
         AccountID const txSignerAcctID = txSigner.getAccountID(sfAccount);
@@ -452,7 +451,7 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
         // Attempt to match the SignerEntry with a Signer;
         while (iter->account < txSignerAcctID)
         {
-            if (++iter == accountSigners.first.end())
+            if (++iter == accountSigners->end())
             {
                 JLOG(ctx.j.trace())
                     << "applyTransaction: Invalid SigningAccount.Account.";
