@@ -30,19 +30,16 @@
 
 namespace ripple {
 
-static constexpr char const* const alphabetForward =
+static constexpr char const* alphabetForward =
     "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
-static constexpr std::array<int, 256> const alphabetReverse = []() constexpr
+static constexpr std::array<int, 256> const alphabetReverse = []()
 {
     std::array<int, 256> map{};
-
     for (auto& m : map)
         m = -1;
-
     for (int i = 0, j = 0; alphabetForward[i] != 0; ++i)
         map[static_cast<unsigned char>(alphabetForward[i])] = j++;
-
     return map;
 }
 ();
