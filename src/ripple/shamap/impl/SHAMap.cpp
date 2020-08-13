@@ -492,8 +492,6 @@ SHAMap::onlyBelow(SHAMapAbstractNode* node) const
     return leaf->peekItem();
 }
 
-static std::shared_ptr<SHAMapItem const> const nullConstSHAMapItem;
-
 SHAMapTreeNode const*
 SHAMap::peekFirstItem(SharedPtrNodeStack& stack) const
 {
