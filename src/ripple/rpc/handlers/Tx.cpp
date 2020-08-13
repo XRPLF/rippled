@@ -196,7 +196,7 @@ populateProtoResponse(
                 "txn not found. searched_all = " +
                     to_string(
                         (result.searchedAll == TxSearchedAll::yes ? "true"
-                                                                : "false"))};
+                                                                  : "false"))};
         }
         else
         {
