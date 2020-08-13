@@ -53,6 +53,8 @@ enum TransStatus {
     INCOMPLETE = 8   // needs more signatures
 };
 
+enum class SearchedAll { no, yes, unknown };
+
 // This class is for constructing and examining transactions.
 // Transactions are static so manipulation functions are unnecessary.
 class Transaction : public std::enable_shared_from_this<Transaction>,
@@ -301,13 +303,14 @@ public:
     Json::Value
     getJson(JsonOptions options, bool binary = false) const;
 
-    static std::optional<
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>>
+    static std::variant<
+        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
+        SearchedAll>
     load(uint256 const& id, Application& app, error_code_i& ec);
 
-    static std::optional<std::variant<
+    static std::variant<
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        bool>>
+        SearchedAll>
     load(
         uint256 const& id,
         Application& app,
@@ -315,9 +318,9 @@ public:
         error_code_i& ec);
 
 private:
-    static std::optional<std::variant<
+    static std::variant<
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        bool>>
+        SearchedAll>
     load(
         uint256 const& id,
         Application& app,

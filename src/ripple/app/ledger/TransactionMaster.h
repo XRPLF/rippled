@@ -44,8 +44,9 @@ public:
     std::shared_ptr<Transaction>
     fetch_from_cache(uint256 const&);
 
-    std::optional<
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>>
+    std::variant<
+        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
+        SearchedAll>
     fetch(uint256 const&, error_code_i& ec);
 
     /**
@@ -57,9 +58,9 @@ public:
      *         the provided range were present in the database
      *         while the search was conducted.
      */
-    std::optional<std::variant<
+    std::variant<
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        bool>>
+        SearchedAll>
     fetch(
         uint256 const&,
         ClosedInterval<uint32_t> const& range,

@@ -54,20 +54,24 @@ TransactionMaster::fetch_from_cache(uint256 const& txnID)
     return mCache.fetch(txnID);
 }
 
-std::optional<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>>
+std::variant<
+    std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
+    SearchedAll>
 TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)
 {
-    // txn->getLedger() == 0 then txn is not validated and does not contain
-    // metadata
+    using TxPair =
+        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
+
+    // txn->getLedger() == 0 txn is not validated and does not have metadata
     if (auto txn = fetch_from_cache(txnID); txn && txn->getLedger() == 0)
         return std::pair{std::move(txn), nullptr};
 
     auto v = Transaction::load(txnID, mApp, ec);
 
-    if (!v)
-        return std::nullopt;
+    if (auto e = std::get_if<SearchedAll>(&v))
+        return *e;
 
-    auto [txn, txnMeta] = v.value();
+    auto [txn, txnMeta] = std::get<TxPair>(v);
 
     if (txn)
         mCache.canonicalize_replace_client(txnID, txn);
@@ -75,9 +79,9 @@ TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)
     return std::pair{std::move(txn), std::move(txnMeta)};
 }
 
-std::optional<std::variant<
+std::variant<
     std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    bool>>
+    SearchedAll>
 TransactionMaster::fetch(
     uint256 const& txnID,
     ClosedInterval<uint32_t> const& range,
@@ -86,20 +90,16 @@ TransactionMaster::fetch(
     using TxPair =
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
-    // txn->getLedger() == 0 then txn is not validated and does not contain
-    // metadata
+    // txn->getLedger() == 0 txn is not validated and does not have metadata
     if (auto txn = fetch_from_cache(txnID); txn && txn->getLedger() == 0)
         return std::pair{std::move(txn), nullptr};
 
     auto v = Transaction::load(txnID, mApp, range, ec);
 
-    if (!v)
-        return std::nullopt;
+    if (auto e = std::get_if<SearchedAll>(&v))
+        return *e;
 
-    if (auto b = std::get_if<bool>(&v.value()))
-        return *b;
-
-    auto [txn, txnMeta] = std::get<TxPair>(v.value());
+    auto [txn, txnMeta] = std::get<TxPair>(v);
 
     if (txn)
         mCache.canonicalize_replace_client(txnID, txn);

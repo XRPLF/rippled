@@ -105,23 +105,20 @@ Transaction::transactionFromSQL(
     return tr;
 }
 
-std::optional<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>>
+std::variant<
+    std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
+    SearchedAll>
 Transaction::load(uint256 const& id, Application& app, error_code_i& ec)
 {
     using TxPair =
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
-    auto v = load(id, app, boost::none, ec);
-
-    if (!v)
-        return std::nullopt;
-
-    return std::get<TxPair>(v.value());
+    return load(id, app, boost::none, ec);
 }
 
-std::optional<std::variant<
+std::variant<
     std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    bool>>
+    SearchedAll>
 Transaction::load(
     uint256 const& id,
     Application& app,
@@ -133,9 +130,9 @@ Transaction::load(
     return load(id, app, op{range}, ec);
 }
 
-std::optional<std::variant<
+std::variant<
     std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    bool>>
+    SearchedAll>
 Transaction::load(
     uint256 const& id,
     Application& app,
@@ -166,7 +163,7 @@ Transaction::load(
         auto const got_data = db->got_data();
 
         if ((!got_data || txn != soci::i_ok || meta != soci::i_ok) && !range)
-            return std::nullopt;
+            return SearchedAll::unknown;
 
         if (!got_data)
         {
@@ -179,9 +176,11 @@ Transaction::load(
                 soci::into(count, rti);
 
             if (!db->got_data() || rti != soci::i_ok)
-                return false;
+                return SearchedAll::no;
 
-            return count == (range->last() - range->first() + 1);
+            return count == (range->last() - range->first() + 1)
+                ? SearchedAll::yes
+                : SearchedAll::no;
         }
 
         convert(sociRawTxnBlob, rawTxn);
@@ -212,7 +211,7 @@ Transaction::load(
         ec = rpcDB_DESERIALIZATION;
     }
 
-    return std::nullopt;
+    return SearchedAll::unknown;
 }
 
 // options 1 to include the date of the transaction

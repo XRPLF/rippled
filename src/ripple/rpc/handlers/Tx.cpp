@@ -81,8 +81,6 @@ getMetaHex(Ledger const& ledger, uint256 const& transID, std::string& hex)
     return true;
 }
 
-enum class SearchedAll { no, yes, unknown };
-
 struct TxResult
 {
     Transaction::pointer txn;
@@ -127,37 +125,34 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
     result.searchedAll = SearchedAll::unknown;
+
+    std::variant<TxPair, SearchedAll> v;
     if (args.ledgerRange)
     {
-        auto v = context.app.getMasterTransaction().fetch(args.hash, range, ec);
-
-        if (!v)
-            return {result, rpcTXN_NOT_FOUND};
-
-        if (auto b = std::get_if<bool>(&v.value()))
-        {
-            result.searchedAll = *b ? SearchedAll::yes : SearchedAll::no;
-
-            return {result, rpcTXN_NOT_FOUND};
-        }
-        else
-        {
-            std::tie(txn, meta) = std::get<TxPair>(v.value());
-        }
+        v = context.app.getMasterTransaction().fetch(args.hash, range, ec);
     }
     else
     {
-        auto v = context.app.getMasterTransaction().fetch(args.hash, ec);
+        v = context.app.getMasterTransaction().fetch(args.hash, ec);
+    }
 
-        if (!v)
-            return {result, rpcTXN_NOT_FOUND};
-
-        std::tie(txn, meta) = v.value();
+    if (auto e = std::get_if<SearchedAll>(&v))
+    {
+        result.searchedAll = *e;
+        return {result, rpcTXN_NOT_FOUND};
+    }
+    else
+    {
+        std::tie(txn, meta) = std::get<TxPair>(v);
     }
 
     if (ec == rpcDB_DESERIALIZATION)
     {
         return {result, ec};
+    }
+    if (!txn)
+    {
+        return {result, rpcTXN_NOT_FOUND};
     }
 
     // populate transaction data
