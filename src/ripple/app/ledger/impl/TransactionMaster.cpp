@@ -56,7 +56,7 @@ TransactionMaster::fetch_from_cache(uint256 const& txnID)
 
 std::variant<
     std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    SearchedAll>
+    TxSearchedAll>
 TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)
 {
     using TxPair =
@@ -68,7 +68,7 @@ TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)
 
     auto v = Transaction::load(txnID, mApp, ec);
 
-    if (auto e = std::get_if<SearchedAll>(&v))
+    if (auto e = std::get_if<TxSearchedAll>(&v))
         return *e;
 
     auto [txn, txnMeta] = std::get<TxPair>(v);
@@ -81,7 +81,7 @@ TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)
 
 std::variant<
     std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    SearchedAll>
+    TxSearchedAll>
 TransactionMaster::fetch(
     uint256 const& txnID,
     ClosedInterval<uint32_t> const& range,
@@ -96,7 +96,7 @@ TransactionMaster::fetch(
 
     auto v = Transaction::load(txnID, mApp, range, ec);
 
-    if (auto e = std::get_if<SearchedAll>(&v))
+    if (auto e = std::get_if<TxSearchedAll>(&v))
         return *e;
 
     auto [txn, txnMeta] = std::get<TxPair>(v);

@@ -107,7 +107,7 @@ Transaction::transactionFromSQL(
 
 std::variant<
     std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    SearchedAll>
+    TxSearchedAll>
 Transaction::load(uint256 const& id, Application& app, error_code_i& ec)
 {
     using TxPair =
@@ -118,7 +118,7 @@ Transaction::load(uint256 const& id, Application& app, error_code_i& ec)
 
 std::variant<
     std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    SearchedAll>
+    TxSearchedAll>
 Transaction::load(
     uint256 const& id,
     Application& app,
@@ -132,7 +132,7 @@ Transaction::load(
 
 std::variant<
     std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    SearchedAll>
+    TxSearchedAll>
 Transaction::load(
     uint256 const& id,
     Application& app,
@@ -163,7 +163,7 @@ Transaction::load(
         auto const got_data = db->got_data();
 
         if ((!got_data || txn != soci::i_ok || meta != soci::i_ok) && !range)
-            return SearchedAll::unknown;
+            return TxSearchedAll::unknown;
 
         if (!got_data)
         {
@@ -176,11 +176,11 @@ Transaction::load(
                 soci::into(count, rti);
 
             if (!db->got_data() || rti != soci::i_ok)
-                return SearchedAll::no;
+                return TxSearchedAll::no;
 
             return count == (range->last() - range->first() + 1)
-                ? SearchedAll::yes
-                : SearchedAll::no;
+                ? TxSearchedAll::yes
+                : TxSearchedAll::no;
         }
 
         convert(sociRawTxnBlob, rawTxn);
@@ -211,7 +211,7 @@ Transaction::load(
         ec = rpcDB_DESERIALIZATION;
     }
 
-    return SearchedAll::unknown;
+    return TxSearchedAll::unknown;
 }
 
 // options 1 to include the date of the transaction

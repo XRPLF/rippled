@@ -86,7 +86,7 @@ struct TxResult
     Transaction::pointer txn;
     std::variant<std::shared_ptr<TxMeta>, Blob> meta;
     bool validated = false;
-    SearchedAll searchedAll;
+    TxSearchedAll searchedAll;
 };
 
 struct TxArgs
@@ -124,9 +124,9 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
     using TxPair =
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
-    result.searchedAll = SearchedAll::unknown;
+    result.searchedAll = TxSearchedAll::unknown;
 
-    std::variant<TxPair, SearchedAll> v;
+    std::variant<TxPair, TxSearchedAll> v;
     if (args.ledgerRange)
     {
         v = context.app.getMasterTransaction().fetch(args.hash, range, ec);
@@ -136,7 +136,7 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
         v = context.app.getMasterTransaction().fetch(args.hash, ec);
     }
 
-    if (auto e = std::get_if<SearchedAll>(&v))
+    if (auto e = std::get_if<TxSearchedAll>(&v))
     {
         result.searchedAll = *e;
         return {result, rpcTXN_NOT_FOUND};
@@ -189,13 +189,13 @@ populateProtoResponse(
     if (error.toErrorCode() != rpcSUCCESS)
     {
         if (error.toErrorCode() == rpcTXN_NOT_FOUND &&
-            result.searchedAll != SearchedAll::unknown)
+            result.searchedAll != TxSearchedAll::unknown)
         {
             status = {
                 grpc::StatusCode::NOT_FOUND,
                 "txn not found. searched_all = " +
                     to_string(
-                        (result.searchedAll == SearchedAll::yes ? "true"
+                        (result.searchedAll == TxSearchedAll::yes ? "true"
                                                                 : "false"))};
         }
         else
@@ -283,11 +283,11 @@ populateJsonResponse(
     if (error.toErrorCode() != rpcSUCCESS)
     {
         if (error.toErrorCode() == rpcTXN_NOT_FOUND &&
-            result.searchedAll != SearchedAll::unknown)
+            result.searchedAll != TxSearchedAll::unknown)
         {
             response = Json::Value(Json::objectValue);
             response[jss::searched_all] =
-                (result.searchedAll == SearchedAll::yes);
+                (result.searchedAll == TxSearchedAll::yes);
             error.inject(response);
         }
         else
