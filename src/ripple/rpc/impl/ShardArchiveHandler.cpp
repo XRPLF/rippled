@@ -102,8 +102,8 @@ ShardArchiveHandler::init()
     if (exists(downloadDir_ / stateDBName) &&
         is_regular_file(downloadDir_ / stateDBName))
     {
-        downloader_.reset(
-            new DatabaseDownloader(app_.getIOService(), j_, app_.config()));
+        downloader_ =
+            make_DatabaseDownloader(app_.getIOService(), app_.config(), j_);
 
         return initFromDB(lock);
     }
@@ -283,8 +283,8 @@ ShardArchiveHandler::start()
         if (!downloader_)
         {
             // will throw if can't initialize ssl context
-            downloader_ = std::make_unique<DatabaseDownloader>(
-                app_.getIOService(), j_, app_.config());
+            downloader_ =
+                make_DatabaseDownloader(app_.getIOService(), app_.config(), j_);
         }
     }
     catch (std::exception const& e)
@@ -307,14 +307,14 @@ ShardArchiveHandler::release()
 bool
 ShardArchiveHandler::next(std::lock_guard<std::mutex> const& l)
 {
+    if (isStopping())
+        return false;
+
     if (archives_.empty())
     {
         doRelease(l);
         return false;
     }
-
-    if (isStopping())
-        return false;
 
     auto const shardIndex{archives_.begin()->first};
 
