@@ -79,7 +79,7 @@ will be used in the following code examples.
 ```c++
 std::unique_ptr<HTTPStream> stream_;
 std::condition_variable     c_;
-std::atomic<bool>           cancelDownloads_;
+std::atomic<bool>           stop_;
 ```
 
 ### Graceful Shutdowns
@@ -106,7 +106,7 @@ ShardArchiveHandler::onStop()
 ```
 
 Inside of `HTTPDownloader::onStop()`, if a download is currently in progress,
-the `cancelDownloads_` member variable is set and the thread waits for the
+the `stop_` member variable is set and the thread waits for the
 download to stop:
 
 ```c++
@@ -115,7 +115,7 @@ HTTPDownloader::onStop()
 {
     std::unique_lock lock(m_);
 
-    cancelDownloads_ = true;
+    stop_ = true;
 
     if(sessionActive_)
     {
@@ -132,7 +132,7 @@ HTTPDownloader::onStop()
 ##### Thread 2:
 
 The graceful shutdown is realized when the thread executing the download polls
-`cancelDownloads_`  after this variable has been set to `true`. Polling occurs
+`stop_`  after this variable has been set to `true`. Polling occurs
 while the file is being downloaded, in between calls to `async_read_some()`. The
 stop takes effect when the socket is closed and the handler function (
 `do_session()` ) is exited.
@@ -145,7 +145,7 @@ void HTTPDownloader::do_session()
 
 
    // (In between calls to async_read_some):
-   if(cancelDownloads_.load())
+   if(stop_.load())
    {
        close(p);
        return exit();

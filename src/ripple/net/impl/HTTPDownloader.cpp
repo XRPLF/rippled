@@ -24,12 +24,12 @@ namespace ripple {
 
 HTTPDownloader::HTTPDownloader(
     boost::asio::io_service& io_service,
-    beast::Journal j,
-    Config const& config)
+    Config const& config,
+    beast::Journal j)
     : j_(j)
     , config_(config)
     , strand_(io_service)
-    , cancelDownloads_(false)
+    , stop_(false)
     , sessionActive_(false)
 {
 }
@@ -47,19 +47,18 @@ HTTPDownloader::download(
     if (!checkPath(dstPath))
         return false;
 
+    if (stop_)
+        return true;
+
     {
         std::lock_guard lock(m_);
-
-        if (cancelDownloads_)
-            return true;
-
         sessionActive_ = true;
     }
 
     if (!strand_.running_in_this_thread())
         strand_.post(std::bind(
             &HTTPDownloader::download,
-            this,
+            shared_from_this(),
             host,
             port,
             target,
@@ -72,7 +71,7 @@ HTTPDownloader::download(
             strand_,
             std::bind(
                 &HTTPDownloader::do_session,
-                this,
+                shared_from_this(),
                 host,
                 port,
                 target,
@@ -82,20 +81,6 @@ HTTPDownloader::download(
                 ssl,
                 std::placeholders::_1));
     return true;
-}
-
-void
-HTTPDownloader::onStop()
-{
-    std::unique_lock lock(m_);
-
-    cancelDownloads_ = true;
-
-    if (sessionActive_)
-    {
-        // Wait for the handler to exit.
-        c_.wait(lock, [this]() { return !sessionActive_; });
-    }
 }
 
 void
@@ -140,21 +125,24 @@ HTTPDownloader::do_session(
     // because the server is shutting down,
     // this method notifies a 'Stoppable'
     // object that the session has ended.
-    auto exit = [this]() {
-        std::lock_guard<std::mutex> lock(m_);
+    auto exit = [this, &dstPath, complete] {
+        if (!stop_)
+            complete(std::move(dstPath));
+
+        std::lock_guard lock(m_);
         sessionActive_ = false;
         c_.notify_one();
     };
 
     auto failAndExit = [&exit, &dstPath, complete, &ec, this](
                            std::string const& errMsg, auto p) {
+        fail(dstPath, ec, errMsg, p);
         exit();
-        fail(dstPath, complete, ec, errMsg, p);
     };
     // end lambdas
     ////////////////////////////////////////////////////////////
 
-    if (cancelDownloads_.load())
+    if (stop_.load())
         return exit();
 
     auto p = this->getParser(dstPath, complete, ec);
@@ -274,7 +262,7 @@ HTTPDownloader::do_session(
     // Download the file
     while (!p->is_done())
     {
-        if (cancelDownloads_.load())
+        if (stop_.load())
         {
             close(p);
             return exit();
@@ -287,15 +275,24 @@ HTTPDownloader::do_session(
 
     close(p);
     exit();
+}
 
-    // Notify the completion handler
-    complete(std::move(dstPath));
+void
+HTTPDownloader::onStop()
+{
+    stop_ = true;
+
+    std::unique_lock lock(m_);
+    if (sessionActive_)
+    {
+        // Wait for the handler to exit.
+        c_.wait(lock, [this]() { return !sessionActive_; });
+    }
 }
 
 void
 HTTPDownloader::fail(
     boost::filesystem::path dstPath,
-    std::function<void(boost::filesystem::path)> const& complete,
     boost::system::error_code const& ec,
     std::string const& errMsg,
     std::shared_ptr<parser> parser)
@@ -321,7 +318,6 @@ HTTPDownloader::fail(
         JLOG(j_.error()) << "exception: " << e.what()
                          << " in function: " << __func__;
     }
-    complete(std::move(dstPath));
 }
 
 }  // namespace ripple

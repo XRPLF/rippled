@@ -130,7 +130,7 @@ private:
     // destroying sqliteDB_.
     /////////////////////////////////////////////////
     std::mutex mutable m_;
-    std::unique_ptr<DatabaseDownloader> downloader_;
+    std::shared_ptr<DatabaseDownloader> downloader_;
     std::map<std::uint32_t, parsedURL> archives_;
     bool process_;
     std::unique_ptr<DatabaseCon> sqliteDB_;

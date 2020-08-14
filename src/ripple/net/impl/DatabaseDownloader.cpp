@@ -21,11 +21,21 @@
 
 namespace ripple {
 
+std::shared_ptr<DatabaseDownloader>
+make_DatabaseDownloader(
+    boost::asio::io_service& io_service,
+    Config const& config,
+    beast::Journal j)
+{
+    return std::shared_ptr<DatabaseDownloader>(
+        new DatabaseDownloader(io_service, config, j));
+}
+
 DatabaseDownloader::DatabaseDownloader(
     boost::asio::io_service& io_service,
-    beast::Journal j,
-    Config const& config)
-    : HTTPDownloader(io_service, j, config)
+    Config const& config,
+    beast::Journal j)
+    : HTTPDownloader(io_service, config, j)
     , config_(config)
     , io_service_(io_service)
 {
@@ -42,11 +52,9 @@ DatabaseDownloader::getParser(
     auto p = std::make_shared<http::response_parser<DatabaseBody>>();
     p->body_limit(std::numeric_limits<std::uint64_t>::max());
     p->get().body().open(dstPath, config_, io_service_, ec);
+
     if (ec)
-    {
         p->get().body().close();
-        fail(dstPath, complete, ec, "open", nullptr);
-    }
 
     return p;
 }

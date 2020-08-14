@@ -28,12 +28,14 @@ namespace ripple {
 class DatabaseDownloader : public HTTPDownloader
 {
 public:
-    DatabaseDownloader(
-        boost::asio::io_service& io_service,
-        beast::Journal j,
-        Config const& config);
+    virtual ~DatabaseDownloader() = default;
 
 private:
+    DatabaseDownloader(
+        boost::asio::io_service& io_service,
+        Config const& config,
+        beast::Journal j);
+
     static const std::uint8_t MAX_PATH_LEN =
         std::numeric_limits<std::uint8_t>::max();
 
@@ -54,7 +56,20 @@ private:
 
     Config const& config_;
     boost::asio::io_service& io_service_;
+
+    friend std::shared_ptr<DatabaseDownloader>
+    make_DatabaseDownloader(
+        boost::asio::io_service& io_service,
+        Config const& config,
+        beast::Journal j);
 };
+
+// DatabaseDownloader must be a shared_ptr because it uses shared_from_this
+std::shared_ptr<DatabaseDownloader>
+make_DatabaseDownloader(
+    boost::asio::io_service& io_service,
+    Config const& config,
+    beast::Journal j);
 
 }  // namespace ripple
 
