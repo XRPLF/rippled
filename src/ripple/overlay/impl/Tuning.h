@@ -71,6 +71,9 @@ enum {
 
     /** How often to log send queue size */
     sendQueueLogFreq = 64,
+
+    /** How often we check for idle peers (seconds) */
+    checkIdlePeers = 4,
 };
 
 /** The threshold above which we treat a peer connection as high latency */

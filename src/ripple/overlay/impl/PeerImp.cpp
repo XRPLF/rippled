@@ -2358,14 +2358,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
 {
     if (!m->has_validatorpubkey())
     {
-        JLOG(p_journal_.debug()) << "onMessage: TMSquelch, missing public key";
+        charge(Resource::feeBadData);
         return;
     }
     auto validator = m->validatorpubkey();
     auto const slice{makeSlice(validator)};
     if (!publicKeyType(slice))
     {
-        JLOG(p_journal_.debug()) << "onMessage: TMSquelch, invalid public key";
+        charge(Resource::feeBadData);
         return;
     }
     PublicKey key(slice);

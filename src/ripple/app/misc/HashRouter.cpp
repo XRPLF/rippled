@@ -50,8 +50,7 @@ HashRouter::addSuppression(uint256 const& key)
 bool
 HashRouter::addSuppressionPeer(uint256 const& key, PeerShortID peer)
 {
-    auto [added, _] = addSuppressionPeerWithStatus(key, peer);
-    return added;
+    return addSuppressionPeerWithStatus(key, peer).first;
 }
 
 std::pair<bool, std::optional<Stopwatch::time_point>>

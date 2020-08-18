@@ -147,22 +147,24 @@ public:
     virtual void
     broadcast(protocol::TMValidation& m) = 0;
 
-    /** Relay a proposal. Return set
-     * of peers, which have already seen the
-     * message; i.e. the message has been
-     * received from these peers and added
-     * to the hash router */
+    /** Relay a proposal.
+     * @param m the serialized proposal
+     * @param uid the id used to identify this proposal
+     * @param validator The pubkey of the validator that issued this proposal
+     * @return the set of peers which have already sent us this proposal
+     */
     virtual std::set<Peer::id_t>
     relay(
         protocol::TMProposeSet& m,
         uint256 const& uid,
         PublicKey const& validator) = 0;
 
-    /** Relay a validation. Return set
-     * of peers, which have already seen the
-     * message; i.e. the message has been
-     * received from these peers and added
-     * to the hash router */
+    /** Relay a validation.
+     * @param m the serialized validation
+     * @param uid the id used to identify this validation
+     * @param validator The pubkey of the validator that issued this validation
+     * @return the set of peers which have already sent us this validation
+     */
     virtual std::set<Peer::id_t>
     relay(
         protocol::TMValidation& m,

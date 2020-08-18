@@ -179,7 +179,7 @@ public:
     // Thread pool configuration
     std::size_t WORKERS = 0;
 
-    // Reduce-relay
+    // Reduce-relay - these parameters are experimental.
     // Enable reduce-relay functionality
     bool REDUCE_RELAY_ENABLE = false;
     // Send squelch message to peers
