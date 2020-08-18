@@ -30,7 +30,11 @@ namespace test {
 namespace jtx {
 
 Json::Value
-signers(Account const& account, std::uint32_t quorum, std::vector<signer> v, bool sort)
+signers(
+    Account const& account,
+    std::uint32_t quorum,
+    std::vector<signer> v,
+    bool sort)
 {
     if (sort)
     {

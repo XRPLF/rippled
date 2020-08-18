@@ -74,12 +74,9 @@ public:
         AccountID const& account);
 
 private:
-    static std::tuple<
-        NotTEC,
-        std::uint32_t,
-        std::vector<SignerEntry>,
-        Operation>
-    determineOperation(STTx const& tx);
+    static std::
+        tuple<NotTEC, std::uint32_t, std::vector<SignerEntry>, Operation>
+        determineOperation(STTx const& tx);
 
     static NotTEC
     validateQuorumAndSignerEntries(

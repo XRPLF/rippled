@@ -56,8 +56,7 @@ std::tuple<
     std::uint32_t,
     std::vector<SignerEntry>,
     SetSignerList::Operation>
-SetSignerList::determineOperation(
-    STTx const& tx)
+SetSignerList::determineOperation(STTx const& tx)
 {
     // Check the quorum.  A non-zero quorum means we're creating or replacing
     // the list.  A zero quorum means we're destroying the list.
@@ -93,7 +92,8 @@ SetSignerList::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.rules.enabled(featureSimplifiedSetSignerList))
+    if (ctx.rules.enabled(featureSimplifiedSetSignerList) &&
+        ctx.rules.enabled(featureMultiSignReserve))
     {
         auto const quorum = ctx.tx[sfSignerQuorum];
 
@@ -170,7 +170,8 @@ SetSignerList::preflight(PreflightContext const& ctx)
 TER
 SetSignerList::doApply()
 {
-    if (ctx_.view().rules().enabled(featureSimplifiedSetSignerList))
+    if (ctx_.view().rules().enabled(featureSimplifiedSetSignerList) &&
+        ctx_.view().rules().enabled(featureMultiSignReserve))
     {
         auto const quorum = ctx_.tx[sfSignerQuorum];
 
@@ -192,7 +193,7 @@ SetSignerList::doApply()
 
         auto const root = view().peek(keylet::account(account_));
 
-        // Remove the existing signer list, if any, at this point:
+        // Remove any existing signer list
         if (auto sle = view().peek(slk))
         {
             int ocdelta = 1;
@@ -261,7 +262,8 @@ SetSignerList::doApply()
 void
 SetSignerList::preCompute()
 {
-    if (!ctx_.view().rules().enabled(featureSimplifiedSetSignerList))
+    if (!(ctx_.view().rules().enabled(featureSimplifiedSetSignerList) &&
+          ctx_.view().rules().enabled(featureMultiSignReserve)))
     {
         // Get the quorum and operation info.
         auto result = determineOperation(ctx_.tx);
