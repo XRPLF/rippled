@@ -14,6 +14,42 @@ Have new ideas? Need help with setting up your node? Come visit us [here](https:
 
 # Releases
 
+## Version 1.6.0
+
+This release introduces several new features including changes to the XRP Ledger's consensus mechanism to make it even more robust in 
+adverse conditions, as well as numerous bug fixes and optimizations.
+
+### New and Improved Features
+
+- Initial implementation of Negative UNL functionality: This change can improve the liveness of the network during periods of network instability, by allowing servers to track which validators are temporarily offline and to adjust quorum calculations to match. This change requires an amendment, but the amendment is not in the **1.6.0** release. Ripple expects to run extensive public testing for Negative UNL functionality on the Devnet in the coming weeks. If public testing satisfies all requirements across security, reliability, stability, and performance, then the amendment could be included in a version 2.0 release. [[#3380](https://github.com/ripple/rippled/pull/3380)]
+- Validation Hardening: This change allows servers to detect accidental misconfiguration of validators, as well as potentially Byzantine behavior by malicious validators. Servers can now log a message to notify operators if they detect a single validator issuing validations for multiple, incompatible ledger versions, or validations from multiple servers sharing a key. As part of this update, validators report the version of `rippled` they are using, as well as the hash of the last ledger they consider to be fully validated, in validation messages. [[#3291](https://github.com/ripple/rippled/pull/3291)] ![Amendment: Required](https://img.shields.io/badge/Amendment-Required-red)
+- Software Upgrade Monitoring & Notification: After the `HardenedValidations` amendment is enabled and the validators begin reporting the versions of `rippled` they are running, a server can check how many of the validators on its UNL run a newer version of the software than itself. If more than 60% of a server's validators are running a newer version, the server writes a message to notify the operator to consider upgrading their software. [[#3447](https://github.com/ripple/rippled/pull/3447)]
+- Link Compression: Beginning with **1.6.0**, server operators can enable support for compressing peer-to-peer messages. This can save bandwidth at a cost of higher CPU usage. This support is disabled by default and should prove useful for servers with a large number of peers. [[#3287](https://github.com/ripple/rippled/pull/3287)]
+- Unconditionalize Amendments that were enabled in 2017: This change removes legacy code which the network has not used since 2017. This change limits the ability to [replay](https://github.com/xrp-community/standards-drafts/issues/14) ledgers that rely on the pre-2017 behavior. [[#3292](https://github.com/ripple/rippled/pull/3292)]
+- New Health Check Method: Perform a simple HTTP request to get a summary of the health of the server: Healthy, Warning, or Critical. [[#3365](https://github.com/ripple/rippled/pull/3365)]
+- Start work on API version 2. Version 2 of the API will be part of a future release. The first breaking change will be to consolidate several closely related error messages that can occur when the server is not synced into a single "notSynced" error message. [[#3269](https://github.com/ripple/rippled/pull/3269)]
+- Improved shard concurrency: Improvements to the shard engine have helped reduce the lock scope on all public functions, increasing the concurrency of the code. [[#3251](https://github.com/ripple/rippled/pull/3251)]
+- Default Port: In the config file, the `[ips_fixed]` and `[ips]` stanzas now use the [IANA-assigned port](https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml?search=2459) for the XRP Ledger protocol (2459) when no port is specified. The `connect` API method also uses the same port by default. [[#2861](https://github.com/ripple/rippled/pull/2861)].
+- Improve proposal and validation relaying. The peer-to-peer protocol always relays trusted proposals and validations (as part of the [consensus process](https://xrpl.org/consensus.html)), but only relays _untrusted_ proposals and validations in certain circumstances. This update adds configuration options so server operators can fine-tune how their server handles untrusted proposals and validations, and changes the default behavior to prioritize untrusted validations higher than untrusted proposals.  [[#3391](https://github.com/ripple/rippled/pull/3391)]
+- Various Build and CI Improvements including updates to RocksDB 6.7.3 [[#3356](https://github.com/ripple/rippled/pull/3356)], NuDB 2.0.3 [[#3437](https://github.com/ripple/rippled/pull/3437)], adjusting CMake settings so that rippled can be built as a submodule [[#3449](https://github.com/ripple/rippled/pull/3449)], and adding Travis CI settings for Ubuntu Bionic Beaver [[#3319](https://github.com/ripple/rippled/pull/3319)].
+- Better documentation in the config file for online deletion and database tuning. [[#3429](https://github.com/ripple/rippled/pull/3429)]
+
+
+### Bug Fixes
+
+- Fix the 14 day timer to enable amendment to start at the correct quorum size [[#3396](https://github.com/ripple/rippled/pull/3396)]
+- Improve online delete backend lock which addresses a possibility in the online delete process where one or more backend shared pointer references may become invalid during rotation. [[#3342](https://github.com/ripple/rippled/pull/3342)]
+- Address an issue that can occur during the loading of validator tokens, where a deliberately malformed token could cause the server to crash during startup. [[#3326](https://github.com/ripple/rippled/pull/3326)]
+- Add delivered amount to GetAccountTransactionHistory. The delivered_amount field was not being populated when calling GetAccountTransactionHistory. In contrast, the delivered_amount field was being populated when calling GetTransaction. This change populates delivered_amount in the response to GetAccountTransactionHistory, and adds a unit test to make sure the results delivered by GetTransaction and GetAccountTransactionHistory match each other. [[#3370](https://github.com/ripple/rippled/pull/3370)]
+- Fix build issues for GCC 10 [[#3393](https://github.com/ripple/rippled/pull/3393)]
+- Fix historical ledger acquisition - this fixes an issue where historical ledgers were acquired only since the last online deletion interval instead of the configured value to allow deletion.[[#3369](https://github.com/ripple/rippled/pull/3369)]
+- Fix build issue with Docker [#3416](https://github.com/ripple/rippled/pull/3416)]
+- Add Shard family. The App Family utilizes a single shared Tree Node and Full Below cache for all history shards. This can create a problem when acquiring a shard that shares an account state node that was recently cached from another shard operation. The new Shard Family class solves this issue by managing separate Tree Node and Full Below caches for each shard. [#3448](https://github.com/ripple/rippled/pull/3448)]
+- Amendment table clean up which fixes a calculation issue with majority. [#3428](https://github.com/ripple/rippled/pull/3428)]
+- Add the `ledger_cleaner` command to rippled command line help [[#3305](https://github.com/ripple/rippled/pull/3305)]
+- Various typo and comments fixes.
+
+
 ## Version 1.5.0
 
 The `rippled` 1.5.0 release introduces several improvements and new features, including support for gRPC API, API versioning, UNL propagation via the peer network, new RPC methods `validator_info` and `manifest`, augmented `submit` method, improved `tx` method response, improved command line parsing, improved handshake protocol, improved package building and various other minor bug fixes and improvements.
