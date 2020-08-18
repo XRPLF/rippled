@@ -200,8 +200,6 @@ decodeBase58(std::string const& s)
 std::string
 encodeBase58Token(TokenType type, void const* token, std::size_t size)
 {
-    assert(size != 0);
-
     // expanded token includes type + 4 byte checksum
     auto const expanded = 1 + size + 4;
 
@@ -247,3 +245,4 @@ decodeBase58Token(std::string const& s, TokenType type)
 }
 
 }  // namespace ripple
+
