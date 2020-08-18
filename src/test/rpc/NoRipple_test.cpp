@@ -135,12 +135,12 @@ public:
             {
                 auto const aliceLines = getAccountLines(alice);
                 BEAST_EXPECT(aliceLines.size() == 1);
-                BEAST_EXPECT(!aliceLines[0u].isMember(jss::no_ripple));
+                BEAST_EXPECT(aliceLines[0u][jss::no_ripple].asBool() == false);
 
                 auto const bobLines = getAccountLines(bob);
                 BEAST_EXPECT(bobLines.size() == 2);
-                BEAST_EXPECT(!bobLines[0u].isMember(jss::no_ripple));
-                BEAST_EXPECT(!bobLines[1u].isMember(jss::no_ripple));
+                BEAST_EXPECT(bobLines[0u][jss::no_ripple].asBool() == false);
+                BEAST_EXPECT(bobLines[1u][jss::no_ripple].asBool() == false);
             }
 
             // Now carol sends the 50 USD back to alice.  Then alice and

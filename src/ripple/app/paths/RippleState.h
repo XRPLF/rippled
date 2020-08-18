@@ -88,6 +88,12 @@ public:
     }
 
     bool
+    getDefaultRipple() const
+    {
+        return mFlags & lsfDefaultRipple;
+    }
+
+    bool
     getNoRipple() const
     {
         return mFlags & (mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
