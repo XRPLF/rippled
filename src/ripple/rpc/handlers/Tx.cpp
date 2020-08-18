@@ -117,8 +117,6 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
             args.ledgerRange->first, args.ledgerRange->second);
     }
 
-    std::shared_ptr<Transaction> txn;
-    std::shared_ptr<TxMeta> meta;
     auto ec{rpcSUCCESS};
 
     using TxPair =
@@ -141,10 +139,8 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
         result.searchedAll = *e;
         return {result, rpcTXN_NOT_FOUND};
     }
-    else
-    {
-        std::tie(txn, meta) = std::get<TxPair>(v);
-    }
+
+    auto [txn, meta] = std::get<TxPair>(v);
 
     if (ec == rpcDB_DESERIALIZATION)
     {

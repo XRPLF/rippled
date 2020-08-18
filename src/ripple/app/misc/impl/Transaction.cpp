@@ -110,9 +110,6 @@ std::variant<
     TxSearchedAll>
 Transaction::load(uint256 const& id, Application& app, error_code_i& ec)
 {
-    using TxPair =
-        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
-
     return load(id, app, boost::none, ec);
 }
 
@@ -148,14 +145,11 @@ Transaction::load(
 
     boost::optional<std::uint64_t> ledgerSeq;
     boost::optional<std::string> status;
-    Blob rawTxn;
-    Blob rawMeta;
+    Blob rawTxn, rawMeta;
     {
         auto db = app.getTxnDB().checkoutDb();
-        soci::blob sociRawTxnBlob(*db);
-        soci::blob sociRawMetaBlob(*db);
-        soci::indicator txn;
-        soci::indicator meta;
+        soci::blob sociRawTxnBlob(*db), sociRawMetaBlob(*db);
+        soci::indicator txn, meta;
 
         *db << sql, soci::into(ledgerSeq), soci::into(status),
             soci::into(sociRawTxnBlob, txn), soci::into(sociRawMetaBlob, meta);
