@@ -32,29 +32,15 @@
 
 namespace ripple {
 
-// The return type is signed so it is compatible with the 3rd argument
-// of adjustOwnerCount() (which must be signed).
-//
-// NOTE: This way of computing the OwnerCount associated with a SignerList
-// is valid until the featureMultiSignReserve amendment passes.  Once it
-// passes then just 1 OwnerCount is associated with a SignerList.
+/** Compute the owner count change for the given number of singer entries
+
+    The "MultiSignReserve" amendment changed how this is calculated but
+    this logic is needed to property adjust owner counts of pre-existing
+    lists.
+*/
 static int
 signerCountBasedOwnerCountDelta(std::size_t entryCount)
 {
-    // We always compute the full change in OwnerCount, taking into account:
-    //  o The fact that we're adding/removing a SignerList and
-    //  o Accounting for the number of entries in the list.
-    // We can get away with that because lists are not adjusted incrementally;
-    // we add or remove an entire list.
-    //
-    // The rule is:
-    //  o Simply having a SignerList costs 2 OwnerCount units.
-    //  o And each signer in the list costs 1 more OwnerCount unit.
-    // So, at a minimum, adding a SignerList with 1 entry costs 3 OwnerCount
-    // units.  A SignerList with 8 entries would cost 10 OwnerCount units.
-    //
-    // The static_cast should always be safe since entryCount should always
-    // be in the range from 1 to 8.  We've got a lot of room to grow.
     assert(entryCount >= STTx::minMultiSigners);
     assert(entryCount <= STTx::maxMultiSigners);
     return 2 + static_cast<int>(entryCount);
@@ -71,8 +57,7 @@ std::tuple<
     std::vector<SignerEntry>,
     SetSignerList::Operation>
 SetSignerList::determineOperation(
-    STTx const& tx,
-    ApplyFlags flags)
+    STTx const& tx)
 {
     // Check the quorum.  A non-zero quorum means we're creating or replacing
     // the list.  A zero quorum means we're destroying the list.
@@ -154,7 +139,7 @@ SetSignerList::preflight(PreflightContext const& ctx)
     }
     else
     {
-        auto const result = determineOperation(ctx.tx, ctx.flags);
+        auto const result = determineOperation(ctx.tx);
         if (std::get<0>(result) != tesSUCCESS)
             return std::get<0>(result);
 
@@ -207,7 +192,7 @@ SetSignerList::doApply()
 
         auto const root = view().peek(keylet::account(account_));
 
-        // At this pint we will remove existing signer list if present:
+        // Remove the existing signer list, if any, at this point:
         if (auto sle = view().peek(slk))
         {
             int ocdelta = 1;
@@ -279,7 +264,7 @@ SetSignerList::preCompute()
     if (!ctx_.view().rules().enabled(featureSimplifiedSetSignerList))
     {
         // Get the quorum and operation info.
-        auto result = determineOperation(ctx_.tx, view().flags());
+        auto result = determineOperation(ctx_.tx);
         assert(std::get<0>(result) == tesSUCCESS);
         assert(std::get<3>(result) != unknown);
 

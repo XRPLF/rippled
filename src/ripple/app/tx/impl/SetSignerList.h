@@ -79,7 +79,7 @@ private:
         std::uint32_t,
         std::vector<SignerEntry>,
         Operation>
-    determineOperation(STTx const& tx, ApplyFlags flags);
+    determineOperation(STTx const& tx);
 
     static NotTEC
     validateQuorumAndSignerEntries(
