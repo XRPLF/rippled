@@ -86,7 +86,7 @@ enum error_code_i {
     rpcNO_PF_REQUEST = 33,
 
     // Bad parameter
-    //NOT USED DO NOT USE AGAIN rpcACT_BITCOIN = 34,
+    // NOT USED DO NOT USE AGAIN rpcACT_BITCOIN = 34,
     rpcACT_MALFORMED = 35,
     rpcALREADY_MULTISIG = 36,
     rpcALREADY_SINGLE_SIG = 37,

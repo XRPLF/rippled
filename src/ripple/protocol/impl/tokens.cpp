@@ -33,16 +33,14 @@ namespace ripple {
 static constexpr char const* alphabetForward =
     "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
-static constexpr std::array<int, 256> const alphabetReverse = []()
-{
+static constexpr std::array<int, 256> const alphabetReverse = []() {
     std::array<int, 256> map{};
     for (auto& m : map)
         m = -1;
     for (int i = 0, j = 0; alphabetForward[i] != 0; ++i)
         map[static_cast<unsigned char>(alphabetForward[i])] = j++;
     return map;
-}
-();
+}();
 
 template <class Hasher>
 static typename Hasher::result_type
@@ -245,4 +243,3 @@ decodeBase58Token(std::string const& s, TokenType type)
 }
 
 }  // namespace ripple
-
