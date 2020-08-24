@@ -1751,7 +1751,7 @@ NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
         m_ledgerMaster.getClosedLedger()->info().hash);
 
     if (prevLedger->rules().enabled(featureNegativeUNL))
-        app_.validators().setNegativeUnl(prevLedger->negativeUnl());
+        app_.validators().setNegativeUNL(prevLedger->negativeUNL());
     TrustChanges const changes = app_.validators().updateTrusted(
         app_.getValidations().getCurrentNodeIDs());
 

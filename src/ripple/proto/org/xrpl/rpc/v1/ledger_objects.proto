@@ -23,7 +23,7 @@ message LedgerObject
         PayChannel pay_channel = 10;
         RippleState ripple_state = 11;
         SignerList signer_list = 12;
-        NegativeUnl negative_unl = 13;
+        NegativeUNL negative_unl = 13;
     }
 }
 
@@ -332,12 +332,14 @@ message SignerList
     SignerQuorum signer_quorum = 7;
 }
 
-// Next field: 4
-message NegativeUnl
+// Next field: 5
+message NegativeUNL
 {
-    repeated NegativeUnlEntry negative_unl_entries = 1;
+    repeated DisabledValidator disabled_validators = 1;
 
-    NegativeUnlToDisable validator_to_disable = 2;
+    ValidatorToDisable validator_to_disable = 2;
 
-    NegativeUnlToReEnable validator_to_re_enable = 3;
+    ValidatorToReEnable validator_to_re_enable = 3;
+
+    Flags flags = 4;
 }

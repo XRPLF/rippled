@@ -146,7 +146,7 @@ public:
             auto k2 = randomKeyPair(KeyType::ed25519).first;
             disabledKeys.insert(k1);
             disabledKeys.insert(k2);
-            env.app().validators().setNegativeUnl(disabledKeys);
+            env.app().validators().setNegativeUNL(disabledKeys);
 
             auto const jrr = env.rpc("validators")[jss::result];
             auto& jrrnUnl = jrr[jss::NegativeUNL];
@@ -163,7 +163,7 @@ public:
             }
 
             disabledKeys.clear();
-            env.app().validators().setNegativeUnl(disabledKeys);
+            env.app().validators().setNegativeUNL(disabledKeys);
             auto const jrrUpdated = env.rpc("validators")[jss::result];
             BEAST_EXPECT(jrrUpdated[jss::NegativeUNL].isNull());
         }
@@ -190,8 +190,8 @@ public:
         BasicApp worker{1};
         using namespace std::chrono_literals;
         NetClock::time_point const expiration{3600s};
-        TrustedPublisherServer server{
-            worker.get_io_service(), validators, expiration, false, 1, false};
+        auto server = make_TrustedPublisherServer(
+            worker.get_io_service(), validators, expiration, false, 1, false);
 
         //----------------------------------------------------------------------
         // Publisher list site unavailable
@@ -206,7 +206,7 @@ public:
                 envconfig([&](std::unique_ptr<Config> cfg) {
                     cfg->section(SECTION_VALIDATOR_LIST_SITES).append(siteURI);
                     cfg->section(SECTION_VALIDATOR_LIST_KEYS)
-                        .append(strHex(server.publisherPublic()));
+                        .append(strHex(server->publisherPublic()));
                     return cfg;
                 }),
             };
@@ -245,7 +245,7 @@ public:
                     BEAST_EXPECT(!jp.isMember(jss::version));
                     BEAST_EXPECT(
                         jp[jss::pubkey_publisher] ==
-                        strHex(server.publisherPublic()));
+                        strHex(server->publisherPublic()));
                 }
                 BEAST_EXPECT(jrr[jss::signing_keys].size() == 0);
             }
@@ -264,10 +264,10 @@ public:
         //----------------------------------------------------------------------
         // Publisher list site available
         {
-            server.start();
+            server->start();
 
             std::stringstream uri;
-            uri << "http://" << server.local_endpoint() << "/validators";
+            uri << "http://" << server->local_endpoint() << "/validators";
             auto siteURI = uri.str();
 
             Env env{
@@ -275,7 +275,7 @@ public:
                 envconfig([&](std::unique_ptr<Config> cfg) {
                     cfg->section(SECTION_VALIDATOR_LIST_SITES).append(siteURI);
                     cfg->section(SECTION_VALIDATOR_LIST_KEYS)
-                        .append(strHex(server.publisherPublic()));
+                        .append(strHex(server->publisherPublic()));
                     return cfg;
                 }),
             };
@@ -333,7 +333,7 @@ public:
                     BEAST_EXPECT(jp[jss::seq].asUInt() == 1);
                     BEAST_EXPECT(
                         jp[jss::pubkey_publisher] ==
-                        strHex(server.publisherPublic()));
+                        strHex(server->publisherPublic()));
                     BEAST_EXPECT(jp[jss::expiration] == to_string(expiration));
                     BEAST_EXPECT(jp[jss::version] == 1);
                 }

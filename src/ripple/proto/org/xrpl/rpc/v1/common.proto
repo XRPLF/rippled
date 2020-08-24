@@ -356,12 +356,12 @@ message TransactionSignature
     bytes value = 1;
 }
 
-message NegativeUnlToDisable
+message ValidatorToDisable
 {
     bytes value = 1;
 }
 
-message NegativeUnlToReEnable
+message ValidatorToReEnable
 {
     bytes value = 1;
 }
@@ -490,7 +490,7 @@ message SignerEntry
 }
 
 // Next field: 3
-message NegativeUnlEntry
+message DisabledValidator
 {
     PublicKey public_key = 1;
 

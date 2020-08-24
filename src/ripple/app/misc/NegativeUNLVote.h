@@ -48,23 +48,23 @@ class NegativeUNLVote final
 public:
     /**
      * A validator is considered unreliable if its validations is less than
-     * negativeUnlLowWaterMark in the last flag ledger period.
+     * negativeUNLLowWaterMark in the last flag ledger period.
      * An unreliable validator is a candidate to be disabled by the NegativeUNL
      * protocol.
      */
-    static constexpr size_t negativeUnlLowWaterMark =
+    static constexpr size_t negativeUNLLowWaterMark =
         FLAG_LEDGER_INTERVAL * 50 / 100;
     /**
-     * An unreliable validator must have more than negativeUnlHighWaterMark
+     * An unreliable validator must have more than negativeUNLHighWaterMark
      * validations in the last flag ledger period to be re-enabled.
      */
-    static constexpr size_t negativeUnlHighWaterMark =
+    static constexpr size_t negativeUNLHighWaterMark =
         FLAG_LEDGER_INTERVAL * 80 / 100;
     /**
      * The minimum number of validations of the local node for it to
      * participate in the voting.
      */
-    static constexpr size_t negativeUnlMinLocalValsToVote =
+    static constexpr size_t negativeUNLMinLocalValsToVote =
         FLAG_LEDGER_INTERVAL * 90 / 100;
     /**
      * We don't want to disable new validators immediately after adding them.
@@ -74,7 +74,7 @@ public:
     /**
      * We only want to put 25% of the UNL on the NegativeUNL.
      */
-    static constexpr float negativeUnlMaxListed = 0.25;
+    static constexpr float negativeUNLMaxListed = 0.25;
 
     /**
      * A flag indicating whether a UNLModify Tx is to disable or to re-enable

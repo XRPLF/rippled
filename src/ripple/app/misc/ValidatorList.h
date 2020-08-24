@@ -161,7 +161,7 @@ class ValidatorList
     PublicKey localPubKey_;
 
     // The master public keys of the current negative UNL
-    hash_set<PublicKey> negativeUnl_;
+    hash_set<PublicKey> negativeUNL_;
 
     // Currently supported version of publisher list format
     static constexpr std::uint32_t requiredListVersion = 1;
@@ -521,14 +521,14 @@ public:
      * @return the master public keys
      */
     hash_set<PublicKey>
-    getNegativeUnl() const;
+    getNegativeUNL() const;
 
     /**
      * set the Negative UNL with validators' master public keys
      * @param negUnl the public keys
      */
     void
-    setNegativeUnl(hash_set<PublicKey> const& negUnl);
+    setNegativeUNL(hash_set<PublicKey> const& negUnl);
 
     /**
      * Remove validations that are from validators on the negative UNL.

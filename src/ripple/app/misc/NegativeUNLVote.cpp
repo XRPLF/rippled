@@ -57,9 +57,9 @@ NegativeUNLVote::doVoting(
             buildScoreTable(prevLedger, unlNodeIDs, validations))
     {
         // build next negUnl
-        auto negUnlKeys = prevLedger->negativeUnl();
-        auto negUnlToDisable = prevLedger->negativeUnlToDisable();
-        auto negUnlToReEnable = prevLedger->negativeUnlToReEnable();
+        auto negUnlKeys = prevLedger->negativeUNL();
+        auto negUnlToDisable = prevLedger->validatorToDisable();
+        auto negUnlToReEnable = prevLedger->validatorToReEnable();
         if (negUnlToDisable)
             negUnlKeys.insert(*negUnlToDisable);
         if (negUnlToReEnable)
@@ -211,7 +211,7 @@ NegativeUNLVote::buildScoreTable(
             return it->second;
         return 0;
     }();
-    if (myValidationCount < negativeUnlMinLocalValsToVote)
+    if (myValidationCount < negativeUNLMinLocalValsToVote)
     {
         JLOG(j_.debug()) << "N-UNL: ledger " << seq
                          << ". Local node only issued " << myValidationCount
@@ -221,7 +221,7 @@ NegativeUNLVote::buildScoreTable(
         return {};
     }
     else if (
-        myValidationCount > negativeUnlMinLocalValsToVote &&
+        myValidationCount > negativeUNLMinLocalValsToVote &&
         myValidationCount <= FLAG_LEDGER_INTERVAL)
     {
         return scoreTable;
@@ -246,7 +246,7 @@ NegativeUNLVote::findAllCandidates(
     // Compute if need to find more validators to disable
     auto const canAdd = [&]() -> bool {
         auto const maxNegativeListed = static_cast<std::size_t>(
-            std::ceil(unl.size() * negativeUnlMaxListed));
+            std::ceil(unl.size() * negativeUNLMaxListed));
         std::size_t negativeListed = 0;
         for (auto const& n : unl)
         {
@@ -255,8 +255,8 @@ NegativeUNLVote::findAllCandidates(
         }
         bool const result = negativeListed < maxNegativeListed;
         JLOG(j_.trace()) << "N-UNL: nodeId " << myId_ << " lowWaterMark "
-                         << negativeUnlLowWaterMark << " highWaterMark "
-                         << negativeUnlHighWaterMark << " canAdd " << result
+                         << negativeUNLLowWaterMark << " highWaterMark "
+                         << negativeUNLHighWaterMark << " canAdd " << result
                          << " negativeListed " << negativeListed
                          << " maxNegativeListed " << maxNegativeListed;
         return result;
@@ -269,10 +269,10 @@ NegativeUNLVote::findAllCandidates(
 
         // Find toDisable Candidates: check if
         //  (1) canAdd,
-        //  (2) has less than negativeUnlLowWaterMark validations,
+        //  (2) has less than negativeUNLLowWaterMark validations,
         //  (3) is not in negUnl, and
         //  (4) is not a new validator.
-        if (canAdd && score < negativeUnlLowWaterMark &&
+        if (canAdd && score < negativeUNLLowWaterMark &&
             !negUnl.count(nodeId) && !newValidators_.count(nodeId))
         {
             JLOG(j_.trace()) << "N-UNL: toDisable candidate " << nodeId;
@@ -280,9 +280,9 @@ NegativeUNLVote::findAllCandidates(
         }
 
         // Find toReEnable Candidates: check if
-        //  (1) has more than negativeUnlHighWaterMark validations,
+        //  (1) has more than negativeUNLHighWaterMark validations,
         //  (2) is in negUnl
-        if (score > negativeUnlHighWaterMark && negUnl.count(nodeId))
+        if (score > negativeUNLHighWaterMark && negUnl.count(nodeId))
         {
             JLOG(j_.trace()) << "N-UNL: toReEnable candidate " << nodeId;
             candidates.toReEnableCandidates.push_back(nodeId);

@@ -928,15 +928,17 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
         return;
     }
 
-    auto [map, filter] =
-        [&]() -> std::pair<SHAMap&, std::unique_ptr<SHAMapSyncFilter>> {
+    auto [map, rootHash, filter] = [&]()
+        -> std::tuple<SHAMap&, SHAMapHash, std::unique_ptr<SHAMapSyncFilter>> {
         if (packet.type() == protocol::liTX_NODE)
             return {
                 mLedger->txMap(),
+                SHAMapHash{mLedger->info().txHash},
                 std::make_unique<TransactionStateSF>(
                     mLedger->txMap().family().db(), app_.getLedgerMaster())};
         return {
             mLedger->stateMap(),
+            SHAMapHash{mLedger->info().accountHash},
             std::make_unique<AccountStateSF>(
                 mLedger->stateMap().family().db(), app_.getLedgerMaster())};
     }();
@@ -949,9 +951,7 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
                 node.nodeid().data(), node.nodeid().size());
             if (nodeID.isRoot())
                 san += map.addRootNode(
-                    SHAMapHash{mLedger->info().accountHash},
-                    makeSlice(node.nodedata()),
-                    filter.get());
+                    rootHash, makeSlice(node.nodedata()), filter.get());
             else
                 san += map.addKnownNode(
                     nodeID, makeSlice(node.nodedata()), filter.get());

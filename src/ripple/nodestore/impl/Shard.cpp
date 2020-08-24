@@ -40,7 +40,6 @@ Shard::Shard(
     std::uint32_t index,
     beast::Journal j)
     : app_(app)
-    , db_(db)
     , index_(index)
     , firstSeq_(db.firstLedgerSeq(index))
     , lastSeq_(std::max(firstSeq_, db.lastLedgerSeq(index)))
@@ -131,9 +130,8 @@ Shard::open(Scheduler& scheduler, nudb::context& ctx)
             setup,
             AcquireShardDBName,
             AcquireShardDBPragma,
-            AcquireShardDBInit);
-        acquireInfo_->SQLiteDB->setupCheckpointing(
-            &app_.getJobQueue(), app_.logs());
+            AcquireShardDBInit,
+            DatabaseCon::CheckpointerSetup{&app_.getJobQueue(), &app_.logs()});
     };
 
     try
@@ -394,8 +392,7 @@ Shard::isLegacy() const
 bool
 Shard::finalize(
     bool const writeSQLite,
-    boost::optional<uint256> const& expectedHash,
-    const bool writeDeterministicShard)
+    boost::optional<uint256> const& expectedHash)
 {
     assert(backend_);
 
@@ -509,17 +506,6 @@ Shard::finalize(
     std::shared_ptr<Ledger const> next;
     auto const lastLedgerHash{hash};
 
-    std::shared_ptr<DeterministicShard> dsh;
-    if (writeDeterministicShard)
-    {
-        dsh = std::make_shared<DeterministicShard>(
-            app_, db_, index_, lastLedgerHash, j_);
-        if (!dsh->init())
-        {
-            return fail("can't create deterministic shard");
-        }
-    }
-
     // Start with the last ledger in the shard and walk backwards from
     // child to parent until we reach the first ledger
     seq = lastSeq_;
@@ -556,11 +542,8 @@ Shard::finalize(
             return fail("missing root TXN node");
         }
 
-        if (dsh)
-            dsh->store(nObj);
-
-        if (!verifyLedger(ledger, next, dsh))
-            return fail("verification check failed");
+        if (!valLedger(ledger, next))
+            return fail("failed to validate ledger");
 
         if (writeSQLite)
         {
@@ -621,12 +604,6 @@ Shard::finalize(
     {
         backend_->store(nObj);
 
-        if (dsh)
-        {
-            dsh->store(nObj);
-            dsh->flush();
-        }
-
         std::lock_guard lock(mutex_);
         final_ = true;
 
@@ -644,23 +621,6 @@ Shard::finalize(
     {
         return fail(
             std::string("exception ") + e.what() + " in function " + __func__);
-    }
-
-    if (dsh)
-    {
-        /* Close non-deterministic shard database. */
-        backend_->close();
-        /* Replace non-deterministic shard by deterministic one. */
-        dsh->close();
-        /* Re-open deterministic shard database. */
-        backend_->open(false);
-        /** The finalize() function verifies the shard and, if third parameter
-         *  is true, then replaces the shard by deterministic copy of the shard.
-         *  After deterministic shard is created it verifies again,
-         *  the finalize() function called here to verify deterministic shard,
-         *  third parameter is false.
-         */
-        return finalize(false, expectedHash, false);
     }
 
     return true;
@@ -741,18 +701,26 @@ Shard::initSQLite(std::lock_guard<std::recursive_mutex> const&)
         {
             // The incomplete shard uses a Write Ahead Log for performance
             lgrSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup, LgrDBName, LgrDBPragma, LgrDBInit);
+                setup,
+                LgrDBName,
+                LgrDBPragma,
+                LgrDBInit,
+                DatabaseCon::CheckpointerSetup{
+                    &app_.getJobQueue(), &app_.logs()});
             lgrSQLiteDB_->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(config.getValueFor(SizedItem::lgrDBCache)));
-            lgrSQLiteDB_->setupCheckpointing(&app_.getJobQueue(), app_.logs());
 
             txSQLiteDB_ = std::make_unique<DatabaseCon>(
-                setup, TxDBName, TxDBPragma, TxDBInit);
+                setup,
+                TxDBName,
+                TxDBPragma,
+                TxDBInit,
+                DatabaseCon::CheckpointerSetup{
+                    &app_.getJobQueue(), &app_.logs()});
             txSQLiteDB_->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(config.getValueFor(SizedItem::txnDBCache)));
-            txSQLiteDB_->setupCheckpointing(&app_.getJobQueue(), app_.logs());
         }
     }
     catch (std::exception const& e)
@@ -957,10 +925,9 @@ Shard::setFileStats(std::lock_guard<std::recursive_mutex> const&)
 }
 
 bool
-Shard::verifyLedger(
+Shard::valLedger(
     std::shared_ptr<Ledger const> const& ledger,
-    std::shared_ptr<Ledger const> const& next,
-    std::shared_ptr<DeterministicShard> dsh) const
+    std::shared_ptr<Ledger const> const& next) const
 {
     auto fail = [j = j_, index = index_, &ledger](std::string const& msg) {
         JLOG(j.fatal()) << "shard " << index << ". " << msg
@@ -979,14 +946,11 @@ Shard::verifyLedger(
         return fail("Invalid ledger account hash");
 
     bool error{false};
-    auto visit = [this, &error, dsh](SHAMapAbstractNode& node) {
+    auto visit = [this, &error](SHAMapAbstractNode& node) {
         if (stop_)
             return false;
-        auto nObj = valFetch(node.getNodeHash().as_uint256());
-        if (!nObj)
+        if (!valFetch(node.getNodeHash().as_uint256()))
             error = true;
-        else if (dsh)
-            dsh->store(nObj);
         return !error;
     };
 

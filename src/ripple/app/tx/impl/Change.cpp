@@ -290,9 +290,10 @@ Change::applyUNLModify()
     }
 
     bool const found = [&] {
-        if (negUnlObject->isFieldPresent(sfNegativeUNL))
+        if (negUnlObject->isFieldPresent(sfDisabledValidators))
         {
-            auto const& negUnl = negUnlObject->getFieldArray(sfNegativeUNL);
+            auto const& negUnl =
+                negUnlObject->getFieldArray(sfDisabledValidators);
             for (auto const& v : negUnl)
             {
                 if (v.isFieldPresent(sfPublicKey) &&
@@ -306,16 +307,16 @@ Change::applyUNLModify()
     if (disabling)
     {
         // cannot have more than one toDisable
-        if (negUnlObject->isFieldPresent(sfNegativeUNLToDisable))
+        if (negUnlObject->isFieldPresent(sfValidatorToDisable))
         {
             JLOG(j_.warn()) << "N-UNL: applyUNLModify, already has ToDisable";
             return tefFAILURE;
         }
 
         // cannot be the same as toReEnable
-        if (negUnlObject->isFieldPresent(sfNegativeUNLToReEnable))
+        if (negUnlObject->isFieldPresent(sfValidatorToReEnable))
         {
-            if (negUnlObject->getFieldVL(sfNegativeUNLToReEnable) == validator)
+            if (negUnlObject->getFieldVL(sfValidatorToReEnable) == validator)
             {
                 JLOG(j_.warn())
                     << "N-UNL: applyUNLModify, ToDisable is same as ToReEnable";
@@ -331,21 +332,21 @@ Change::applyUNLModify()
             return tefFAILURE;
         }
 
-        negUnlObject->setFieldVL(sfNegativeUNLToDisable, validator);
+        negUnlObject->setFieldVL(sfValidatorToDisable, validator);
     }
     else
     {
         // cannot have more than one toReEnable
-        if (negUnlObject->isFieldPresent(sfNegativeUNLToReEnable))
+        if (negUnlObject->isFieldPresent(sfValidatorToReEnable))
         {
             JLOG(j_.warn()) << "N-UNL: applyUNLModify, already has ToReEnable";
             return tefFAILURE;
         }
 
         // cannot be the same as toDisable
-        if (negUnlObject->isFieldPresent(sfNegativeUNLToDisable))
+        if (negUnlObject->isFieldPresent(sfValidatorToDisable))
         {
-            if (negUnlObject->getFieldVL(sfNegativeUNLToDisable) == validator)
+            if (negUnlObject->getFieldVL(sfValidatorToDisable) == validator)
             {
                 JLOG(j_.warn())
                     << "N-UNL: applyUNLModify, ToReEnable is same as ToDisable";
@@ -361,7 +362,7 @@ Change::applyUNLModify()
             return tefFAILURE;
         }
 
-        negUnlObject->setFieldVL(sfNegativeUNLToReEnable, validator);
+        negUnlObject->setFieldVL(sfValidatorToReEnable, validator);
     }
 
     view().update(negUnlObject);

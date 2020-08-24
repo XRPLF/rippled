@@ -125,6 +125,11 @@ target_include_directories (xrpl_core
     # this one is for beast/legacy files:
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/beast/extras>
     $<INSTALL_INTERFACE:include>)
+
+target_compile_definitions(xrpl_core
+  PUBLIC
+    BOOST_ASIO_USE_TS_EXECUTOR_AS_DEFAULT
+    HAS_UNCAUGHT_EXCEPTIONS=1)
 target_compile_options (xrpl_core
   PUBLIC
     $<$<BOOL:${is_gcc}>:-Wno-maybe-uninitialized>)
@@ -510,7 +515,6 @@ target_sources (rippled PRIVATE
   src/ripple/nodestore/impl/DatabaseNodeImp.cpp
   src/ripple/nodestore/impl/DatabaseRotatingImp.cpp
   src/ripple/nodestore/impl/DatabaseShardImp.cpp
-  src/ripple/nodestore/impl/DeterministicShard.cpp
   src/ripple/nodestore/impl/DecodedBlob.cpp
   src/ripple/nodestore/impl/DummyScheduler.cpp
   src/ripple/nodestore/impl/EncodedBlob.cpp

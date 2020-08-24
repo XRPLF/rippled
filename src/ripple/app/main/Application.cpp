@@ -860,11 +860,14 @@ public:
 
             // transaction database
             mTxnDB = std::make_unique<DatabaseCon>(
-                setup, TxDBName, TxDBPragma, TxDBInit);
+                setup,
+                TxDBName,
+                TxDBPragma,
+                TxDBInit,
+                DatabaseCon::CheckpointerSetup{m_jobQueue.get(), &logs()});
             mTxnDB->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(config_->getValueFor(SizedItem::txnDBCache)));
-            mTxnDB->setupCheckpointing(m_jobQueue.get(), logs());
 
             if (!setup.standAlone || setup.startUp == Config::LOAD ||
                 setup.startUp == Config::LOAD_FILE ||
@@ -899,11 +902,14 @@ public:
 
             // ledger database
             mLedgerDB = std::make_unique<DatabaseCon>(
-                setup, LgrDBName, LgrDBPragma, LgrDBInit);
+                setup,
+                LgrDBName,
+                LgrDBPragma,
+                LgrDBInit,
+                DatabaseCon::CheckpointerSetup{m_jobQueue.get(), &logs()});
             mLedgerDB->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(config_->getValueFor(SizedItem::lgrDBCache)));
-            mLedgerDB->setupCheckpointing(m_jobQueue.get(), logs());
 
             // wallet database
             setup.useGlobalPragma = false;
