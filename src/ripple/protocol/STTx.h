@@ -49,7 +49,7 @@ public:
     }
 
     static std::size_t const minMultiSigners = 1;
-    static std::size_t const maxMultiSigners = 8;
+    static std::size_t const maxMultiSigners = 100;
 
 public:
     STTx() = delete;
