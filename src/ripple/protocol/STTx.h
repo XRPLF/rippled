@@ -191,6 +191,6 @@ sterilize(STTx const& stx);
 bool
 isPseudoTx(STObject const& tx);
 
-}  // namespace ripple
+}  // namespace ripple 
 
 #endif
