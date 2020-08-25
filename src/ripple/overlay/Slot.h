@@ -430,7 +430,10 @@ void
 Slot<clock_type>::resetCounts()
 {
     for (auto& [_, peer] : peers_)
+    {
+        (void)_;
         peer.count = 0;
+    }
 }
 
 template <typename clock_type>
@@ -685,8 +688,11 @@ Slots<clock_type>::updateSlotAndSquelch(
     {
         JLOG(journal_.debug())
             << "updateSlotAndSquelch: new slot " << Slice(validator);
-        auto [it, _] = slots_.emplace(std::make_pair(
-            validator, Slot<clock_type>(handler_, app_.journal("Slot"))));
+        auto it = slots_
+                      .emplace(std::make_pair(
+                          validator,
+                          Slot<clock_type>(handler_, app_.journal("Slot"))))
+                      .first;
         it->second.update(validator, id, type);
     }
     else

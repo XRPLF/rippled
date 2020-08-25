@@ -589,6 +589,7 @@ public:
 
         for (auto& [id, _] : peers_)
         {
+            (void)_;
             if (id > maxId)
                 maxId = id;
         }
@@ -840,9 +841,12 @@ public:
                 continue;
             auto peers = overlay_.getPeers(v);
             for (auto& [_, v] : peers)
+            {
+                (void)_;
                 if (std::get<squelch::PeerState>(v) ==
                     squelch::PeerState::Squelched)
                     return false;
+            }
         }
         return true;
     }
