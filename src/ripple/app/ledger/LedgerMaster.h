@@ -418,18 +418,16 @@ private:
             Handler const& handler,
             beast::insight::Collector::ptr const& collector)
             : hook(collector->make_hook(handler))
-            , validatedLedgerAge(collector->make_gauge(
-                "LedgerMaster",
-                "Validated_Ledger_Age"))
-            , publishedLedgerAge(collector->make_gauge(
-                "LedgerMaster", 
-                "Published_Ledger_Age"))
+            , validatedLedgerAge(
+                  collector->make_gauge("LedgerMaster", "Validated_Ledger_Age"))
+            , publishedLedgerAge(
+                  collector->make_gauge("LedgerMaster", "Published_Ledger_Age"))
             , outboundFetchPackRequests(collector->make_counter(
-                "LedgerMaster",
-                "Outbound_Fetch_Pack_Requests"))
+                  "LedgerMaster",
+                  "Outbound_Fetch_Pack_Requests"))
             , inboundFetchPackRequests(collector->make_counter(
-                "LedgerMaster",
-                "Inbound_Fetch_Pack_Requests"))
+                  "LedgerMaster",
+                  "Inbound_Fetch_Pack_Requests"))
         {
         }
 
