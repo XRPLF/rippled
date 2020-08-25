@@ -113,7 +113,8 @@ class FeatureCollections
                     // payment check
         "HardenedValidations",
         "fixAmendmentMajorityCalc",  // Fix Amendment majority calculation
-        "NegativeUNL"};
+        "NegativeUNL",
+        "increaseMaxSignersTo100"};
     std::vector<uint256> features;
     boost::container::flat_map<uint256, std::size_t> featureToIndex;
     boost::container::flat_map<std::string, uint256> nameToFeature;
@@ -370,6 +371,7 @@ extern uint256 const fix1781;
 extern uint256 const featureHardenedValidations;
 extern uint256 const fixAmendmentMajorityCalc;
 extern uint256 const featureNegativeUNL;
+extern uint256 const increaseMaxSignersTo100;
 
 }  // namespace ripple
 
