@@ -390,8 +390,6 @@ matrix:
         - mkdir -p build.ms && cd build.ms
         - cmake -G Ninja ${CMAKE_EXTRA_ARGS} -DCMAKE_BUILD_TYPE=${BLD_CONFIG} ..
         - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel --verbose
-        # override num procs to force single unit test job
-        - export NUM_PROCESSORS=1
         - travis_wait ${MAX_TIME_MIN} ./rippled.exe --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
     - <<: *windows-bld
       name: windows, release
@@ -404,8 +402,6 @@ matrix:
         - cmake -G "Visual Studio 15 2017 Win64" ${CMAKE_EXTRA_ARGS} ..
         - export DESTDIR=${PWD}/_installed_
         - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel --verbose --config ${BLD_CONFIG} --target install
-        # override num procs to force single unit test job
-        - export NUM_PROCESSORS=1
         - >-
           travis_wait ${MAX_TIME_MIN} "./_installed_/Program Files/rippled/bin/rippled.exe" --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
     - <<: *windows-bld
