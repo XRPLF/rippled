@@ -861,6 +861,7 @@ class reduce_relay_test : public beast::unit_test::suite
     using Slot = squelch::Slot<ManualClock>;
     using id_t = Peer::id_t;
 
+protected:
     void
     printPeers(const std::string& msg, std::uint16_t validator = 0)
     {
@@ -1281,12 +1282,6 @@ class reduce_relay_test : public beast::unit_test::suite
     }
 
     void
-    testRandom(bool log)
-    {
-        doTest("Random Test", log, [&](bool log) { random(log); });
-    }
-
-    void
     testConfig(bool log)
     {
         doTest("Config Test", log, [&](bool log) {
@@ -1392,12 +1387,27 @@ public:
         testSelectedPeerDisconnects(log);
         testSelectedPeerStopsRelaying(log);
         testInternalHashRouter(log);
-        if (arg() == "simulate")
-            testRandom(log);
+    }
+};
+
+class reduce_relay_simulate_test : public reduce_relay_test
+{
+    void
+    testRandom(bool log)
+    {
+        doTest("Random Test", log, [&](bool log) { random(log); });
+    }
+
+    void
+    run() override
+    {
+        bool log = false;
+        testRandom(log);
     }
 };
 
 BEAST_DEFINE_TESTSUITE(reduce_relay, ripple_data, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(reduce_relay_simulate, ripple_data, ripple);
 
 }  // namespace test
 
