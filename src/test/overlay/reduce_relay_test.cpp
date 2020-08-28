@@ -1392,7 +1392,8 @@ public:
         testSelectedPeerDisconnects(log);
         testSelectedPeerStopsRelaying(log);
         testInternalHashRouter(log);
-        testRandom(log);
+        if (arg() == "simulate")
+            testRandom(log);
     }
 };
 
