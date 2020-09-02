@@ -86,7 +86,7 @@ struct TxResult
     Transaction::pointer txn;
     std::variant<std::shared_ptr<TxMeta>, Blob> meta;
     bool validated = false;
-    TxSearchedAll searchedAll;
+    TxSearched searchedAll;
 };
 
 struct TxArgs
@@ -122,9 +122,9 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
     using TxPair =
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
-    result.searchedAll = TxSearchedAll::unknown;
+    result.searchedAll = TxSearched::unknown;
 
-    std::variant<TxPair, TxSearchedAll> v;
+    std::variant<TxPair, TxSearched> v;
     if (args.ledgerRange)
     {
         v = context.app.getMasterTransaction().fetch(args.hash, range, ec);
@@ -134,7 +134,7 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
         v = context.app.getMasterTransaction().fetch(args.hash, ec);
     }
 
-    if (auto e = std::get_if<TxSearchedAll>(&v))
+    if (auto e = std::get_if<TxSearched>(&v))
     {
         result.searchedAll = *e;
         return {result, rpcTXN_NOT_FOUND};
@@ -185,14 +185,14 @@ populateProtoResponse(
     if (error.toErrorCode() != rpcSUCCESS)
     {
         if (error.toErrorCode() == rpcTXN_NOT_FOUND &&
-            result.searchedAll != TxSearchedAll::unknown)
+            result.searchedAll != TxSearched::unknown)
         {
             status = {
                 grpc::StatusCode::NOT_FOUND,
                 "txn not found. searched_all = " +
                     to_string(
-                        (result.searchedAll == TxSearchedAll::yes ? "true"
-                                                                  : "false"))};
+                        (result.searchedAll == TxSearched::all ? "true"
+                                                               : "false"))};
         }
         else
         {
@@ -279,11 +279,11 @@ populateJsonResponse(
     if (error.toErrorCode() != rpcSUCCESS)
     {
         if (error.toErrorCode() == rpcTXN_NOT_FOUND &&
-            result.searchedAll != TxSearchedAll::unknown)
+            result.searchedAll != TxSearched::unknown)
         {
             response = Json::Value(Json::objectValue);
             response[jss::searched_all] =
-                (result.searchedAll == TxSearchedAll::yes);
+                (result.searchedAll == TxSearched::all);
             error.inject(response);
         }
         else

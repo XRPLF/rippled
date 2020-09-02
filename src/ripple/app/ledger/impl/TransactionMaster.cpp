@@ -56,20 +56,19 @@ TransactionMaster::fetch_from_cache(uint256 const& txnID)
 
 std::variant<
     std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    TxSearchedAll>
+    TxSearched>
 TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)
 {
     using TxPair =
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
-    // txn->getLedger() == 0 txn is not validated and does not have metadata
-    if (auto txn = fetch_from_cache(txnID); txn && txn->getLedger() == 0)
+    if (auto txn = fetch_from_cache(txnID); txn && !txn->isValidated())
         return std::pair{std::move(txn), nullptr};
 
     auto v = Transaction::load(txnID, mApp, ec);
 
-    if (auto e = std::get_if<TxSearchedAll>(&v))
-        return *e;
+    if (std::holds_alternative<TxSearched>(v))
+        return v;
 
     auto [txn, txnMeta] = std::get<TxPair>(v);
 
@@ -81,7 +80,7 @@ TransactionMaster::fetch(uint256 const& txnID, error_code_i& ec)
 
 std::variant<
     std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-    TxSearchedAll>
+    TxSearched>
 TransactionMaster::fetch(
     uint256 const& txnID,
     ClosedInterval<uint32_t> const& range,
@@ -90,14 +89,13 @@ TransactionMaster::fetch(
     using TxPair =
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
-    // txn->getLedger() == 0 txn is not validated and does not have metadata
-    if (auto txn = fetch_from_cache(txnID); txn && txn->getLedger() == 0)
+    if (auto txn = fetch_from_cache(txnID); txn && !txn->isValidated())
         return std::pair{std::move(txn), nullptr};
 
     auto v = Transaction::load(txnID, mApp, range, ec);
 
-    if (auto e = std::get_if<TxSearchedAll>(&v))
-        return *e;
+    if (std::holds_alternative<TxSearched>(v))
+        return v;
 
     auto [txn, txnMeta] = std::get<TxPair>(v);
 

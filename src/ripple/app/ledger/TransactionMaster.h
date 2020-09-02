@@ -46,7 +46,7 @@ public:
 
     std::variant<
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        TxSearchedAll>
+        TxSearched>
     fetch(uint256 const&, error_code_i& ec);
 
     /**
@@ -60,7 +60,7 @@ public:
      */
     std::variant<
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        TxSearchedAll>
+        TxSearched>
     fetch(
         uint256 const&,
         ClosedInterval<uint32_t> const& range,

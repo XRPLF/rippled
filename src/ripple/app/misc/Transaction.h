@@ -53,7 +53,7 @@ enum TransStatus {
     INCOMPLETE = 8   // needs more signatures
 };
 
-enum class TxSearchedAll { no, yes, unknown };
+enum class TxSearched { all, some, unknown };
 
 // This class is for constructing and examining transactions.
 // Transactions are static so manipulation functions are unnecessary.
@@ -101,6 +101,12 @@ public:
     getLedger() const
     {
         return mInLedger;
+    }
+
+    bool
+    isValidated() const
+    {
+        return mInLedger != 0;
     }
 
     TransStatus
@@ -305,12 +311,12 @@ public:
 
     static std::variant<
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        TxSearchedAll>
+        TxSearched>
     load(uint256 const& id, Application& app, error_code_i& ec);
 
     static std::variant<
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        TxSearchedAll>
+        TxSearched>
     load(
         uint256 const& id,
         Application& app,
@@ -320,7 +326,7 @@ public:
 private:
     static std::variant<
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
-        TxSearchedAll>
+        TxSearched>
     load(
         uint256 const& id,
         Application& app,
