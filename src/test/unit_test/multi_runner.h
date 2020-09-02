@@ -131,6 +131,12 @@ class multi_runner_base
         void
         any_failed(bool v);
 
+        std::size_t
+        tests() const;
+
+        std::size_t
+        suites() const;
+
         void
         inc_keep_alive_count();
 
@@ -192,6 +198,15 @@ public:
 
     bool
     any_failed() const;
+
+    std::size_t
+    tests() const;
+
+    std::size_t
+    suites() const;
+
+    void
+    add_failures(std::size_t failures);
 };
 
 }  // namespace detail
@@ -220,6 +235,15 @@ public:
 
     bool
     any_failed() const;
+
+    std::size_t
+    tests() const;
+
+    std::size_t
+    suites() const;
+
+    void
+    add_failures(std::size_t failures);
 };
 
 //------------------------------------------------------------------------------
@@ -248,6 +272,15 @@ public:
 
     multi_runner_child(std::size_t num_jobs, bool quiet, bool print_log);
     ~multi_runner_child();
+
+    std::size_t
+    tests() const;
+
+    std::size_t
+    suites() const;
+
+    void
+    add_failures(std::size_t failures);
 
     template <class Pred>
     bool
