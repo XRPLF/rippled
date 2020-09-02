@@ -213,10 +213,38 @@ public:
                 return true;
         return false;
     }
+
+    std::size_t
+    size() const
+    {
+        return selectors_.size();
+    }
 };
 
 namespace test {
 extern std::atomic<bool> envUseIPv4;
+}
+
+template <class Runner>
+static bool
+anyMissing(Runner& runner, multi_selector const& pred)
+{
+    if (runner.tests() == 0)
+    {
+        runner.add_failures(1);
+        std::cout << "Failed: No tests run" << std::endl;
+        return true;
+    }
+    if (runner.suites() < pred.size())
+    {
+        auto const missing = pred.size() - runner.suites();
+        runner.add_failures(missing);
+        std::cout << "Failed: " << missing
+                  << " filters did not match any existing test suites"
+                  << std::endl;
+        return true;
+    }
+    return false;
 }
 
 static int
@@ -242,7 +270,9 @@ runUnitTests(
 
         multi_runner_child child_runner{num_jobs, quiet, log};
         child_runner.arg(argument);
-        auto const any_failed = child_runner.run_multi(multi_selector(pattern));
+        multi_selector pred(pattern);
+        auto const any_failed =
+            child_runner.run_multi(pred) || anyMissing(child_runner, pred);
 
         if (any_failed)
             return EXIT_FAILURE;
@@ -281,6 +311,9 @@ runUnitTests(
                 ++bad_child_exits;
             }
         }
+
+        parent_runner.add_failures(bad_child_exits);
+        anyMissing(parent_runner, multi_selector(pattern));
 
         if (parent_runner.any_failed() || bad_child_exits)
             return EXIT_FAILURE;

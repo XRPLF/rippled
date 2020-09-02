@@ -139,7 +139,6 @@ else
         'ripple.ripple_data.reduce_relay_simulate'
         'ripple.ripple_data.digest'
         'ripple.tx.Offer_manual'
-        'ripple.app.PayStrandAllPairs'
         'ripple.tx.CrossingLimits'
         'ripple.tx.PlumpBook'
         'ripple.app.Flow_manual'
