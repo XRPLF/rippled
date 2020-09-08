@@ -21,6 +21,7 @@
 #include <ripple/app/ledger/InboundLedgers.h>
 #include <ripple/app/ledger/InboundTransactions.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
@@ -108,6 +109,10 @@ PeerImp::PeerImp(
               app_.config().COMPRESSION)
               ? Compressed::On
               : Compressed::Off)
+    , txReduceRelayEnabled_(peerFeatureEnabled(
+          headers_,
+          FEATURE_TXRR,
+          app_.config().TX_REDUCE_RELAY_ENABLE))
     , vpReduceRelayEnabled_(peerFeatureEnabled(
           headers_,
           FEATURE_VPRR,
@@ -283,6 +288,48 @@ PeerImp::send(std::shared_ptr<Message> const& m)
                 shared_from_this(),
                 std::placeholders::_1,
                 std::placeholders::_2)));
+}
+
+void
+PeerImp::sendTxQueue()
+{
+    if (!strand_.running_in_this_thread())
+        return post(
+            strand_, std::bind(&PeerImp::sendTxQueue, shared_from_this()));
+
+    if (!txQueue_.empty())
+    {
+        protocol::TMHaveTransactions ht;
+        std::for_each(txQueue_.begin(), txQueue_.end(), [&](auto const& hash) {
+            ht.add_hash(hash.data(), hash.size());
+        });
+        txQueue_.clear();
+        send(std::make_shared<Message>(ht, protocol::mtHAVE_TRANSACTIONS));
+        JLOG(p_journal_.debug()) << "sendTxQueue " << txQueue_.size();
+    }
+}
+
+void
+PeerImp::addTxQueue(uint256 const& hash)
+{
+    if (!strand_.running_in_this_thread())
+        return post(
+            strand_, std::bind(&PeerImp::addTxQueue, shared_from_this(), hash));
+
+    txQueue_.insert(hash);
+    JLOG(p_journal_.debug()) << "addTxQueue " << txQueue_.size();
+}
+
+void
+PeerImp::removeTxQueue(uint256 const& hash)
+{
+    if (!strand_.running_in_this_thread())
+        return post(
+            strand_,
+            std::bind(&PeerImp::removeTxQueue, shared_from_this(), hash));
+
+    auto removed = txQueue_.erase(hash);
+    JLOG(p_journal_.debug()) << "removeTxQueue " << removed;
 }
 
 void
@@ -967,8 +1014,25 @@ PeerImp::onMessageBegin(
     load_event_ =
         app_.getJobQueue().makeLoadEvent(jtPEER, protocolMessageName(type));
     fee_ = Resource::feeLightPeer;
-    overlay_.reportTraffic(
-        TrafficCount::categorize(*m, type, true), true, static_cast<int>(size));
+    auto const category = TrafficCount::categorize(*m, type, true);
+    overlay_.reportTraffic(category, true, static_cast<int>(size));
+    using namespace protocol;
+    if ((type == MessageType::mtTRANSACTION ||
+         type == MessageType::mtHAVE_TRANSACTIONS ||
+         type == MessageType::mtTRANSACTIONS ||
+         // GET_OBJECTS
+         category == TrafficCount::category::get_transactions ||
+         // GET_LEDGER
+         category == TrafficCount::category::ld_tsc_get ||
+         category == TrafficCount::category::ld_tsc_share ||
+         // LEDGER_DATA
+         category == TrafficCount::category::gl_tsc_share ||
+         category == TrafficCount::category::gl_tsc_get) &&
+        txReduceRelayEnabled())
+    {
+        overlay_.addTxMetrics(
+            static_cast<MessageType>(type), static_cast<std::uint64_t>(size));
+    }
     JLOG(journal_.trace()) << "onMessageBegin: " << type << " " << size << " "
                            << uncompressed_size << " " << isCompressed;
 }
@@ -1441,6 +1505,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMTransaction> const& m)
 {
+    handleTransaction(m, true);
+}
+
+void
+PeerImp::handleTransaction(
+    std::shared_ptr<protocol::TMTransaction> const& m,
+    bool eraseTxQueue)
+{
+    JLOG(p_journal_.debug()) << "received transaction";
     if (tracking_.load() == Tracking::diverged)
         return;
 
@@ -1471,6 +1544,11 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMTransaction> const& m)
                 fee_ = Resource::feeInvalidSignature;
                 JLOG(p_journal_.debug()) << "Ignoring known bad tx " << txID;
             }
+
+            // Erase only if the server has seen this tx. If the server has not
+            // seen this tx then the tx could not has been queued for this peer.
+            if (eraseTxQueue && txReduceRelayEnabled())
+                removeTxQueue(txID);
 
             return;
         }
@@ -2386,6 +2464,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 {
     protocol::TMGetObjectByHash& packet = *m;
 
+    JLOG(p_journal_.debug()) << "received TMGetObjectByHash " << packet.type()
+                             << " " << packet.objects_size();
+
     if (packet.query())
     {
         // this is a query
@@ -2398,6 +2479,25 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
         if (packet.type() == protocol::TMGetObjectByHash::otFETCH_PACK)
         {
             doFetchPack(m);
+            return;
+        }
+
+        if (packet.type() == protocol::TMGetObjectByHash::otTRANSACTIONS)
+        {
+            if (!txReduceRelayEnabled())
+            {
+                JLOG(p_journal_.error())
+                    << "TMGetObjectByHash: tx reduce-relay is disabled";
+                fee_ = Resource::feeInvalidRequest;
+                return;
+            }
+
+            std::weak_ptr<PeerImp> weak = shared_from_this();
+            app_.getJobQueue().addJob(
+                jtREQUESTED_TXN, "doTransactions", [weak, m](Job&) {
+                    if (auto peer = weak.lock())
+                        peer->doTransactions(m);
+                });
             return;
         }
 
@@ -2522,6 +2622,98 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 }
 
 void
+PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactions> const& m)
+{
+    if (!txReduceRelayEnabled())
+    {
+        JLOG(p_journal_.error())
+            << "TMHaveTransactions: tx reduce-relay is disabled";
+        fee_ = Resource::feeInvalidRequest;
+        return;
+    }
+
+    std::weak_ptr<PeerImp> weak = shared_from_this();
+    app_.getJobQueue().addJob(
+        jtMISSING_TXN, "haveTransactions", [weak, m](Job&) {
+            if (auto peer = weak.lock())
+                peer->haveTransactions(m);
+        });
+}
+
+void
+PeerImp::haveTransactions(
+    std::shared_ptr<protocol::TMHaveTransactions> const& m)
+{
+    protocol::TMGetObjectByHash tmBH;
+    tmBH.set_type(protocol::TMGetObjectByHash_ObjectType_otTRANSACTIONS);
+    tmBH.set_query(true);
+
+    JLOG(p_journal_.debug())
+        << "received TMHaveTransactions " << m->hash_size();
+
+    for (std::uint32_t i = 0; i < m->hash_size(); i++)
+    {
+        if (!stringIsUint256Sized(m->hash(i)))
+        {
+            JLOG(p_journal_.error())
+                << "TMHaveTransactions with invalid hash size";
+            fee_ = Resource::feeInvalidRequest;
+            return;
+        }
+
+        uint256 hash(m->hash(i));
+
+        auto txn = app_.getMasterTransaction().fetch_from_cache(hash);
+
+        JLOG(p_journal_.debug()) << "checking transaction " << (bool)txn;
+
+        if (!txn)
+        {
+            JLOG(p_journal_.debug()) << "adding transaction to request";
+
+            auto obj = tmBH.add_objects();
+            obj->set_hash(hash.data(), hash.size());
+        }
+        else
+        {
+            // Erase only if a peer has seen this tx. If the peer has not
+            // seen this tx then the tx could not has been queued for this
+            // peer.
+            removeTxQueue(hash);
+        }
+    }
+
+    JLOG(p_journal_.debug())
+        << "transaction request object is " << tmBH.objects_size();
+
+    if (tmBH.objects_size() > 0)
+        send(std::make_shared<Message>(tmBH, protocol::mtGET_OBJECTS));
+}
+
+void
+PeerImp::onMessage(std::shared_ptr<protocol::TMTransactions> const& m)
+{
+    if (!txReduceRelayEnabled())
+    {
+        JLOG(p_journal_.error())
+            << "TMTransactions: tx reduce-relay is disabled";
+        fee_ = Resource::feeInvalidRequest;
+        return;
+    }
+
+    JLOG(p_journal_.debug())
+        << "received TMTransactions " << m->transactions_size();
+
+    overlay_.addTxMetrics(m->transactions_size());
+
+    for (std::uint32_t i = 0; i < m->transactions_size(); ++i)
+        handleTransaction(
+            std::shared_ptr<protocol::TMTransaction>(
+                m->mutable_transactions(i), [](protocol::TMTransaction*) {}),
+            false);
+}
+
+void
 PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
 {
     using on_message_fn =
@@ -2615,6 +2807,54 @@ PeerImp::doFetchPack(const std::shared_ptr<protocol::TMGetObjectByHash>& packet)
         jtPACK, "MakeFetchPack", [pap, weak, packet, hash, elapsed](Job&) {
             pap->getLedgerMaster().makeFetchPack(weak, packet, hash, elapsed);
         });
+}
+
+void
+PeerImp::doTransactions(
+    std::shared_ptr<protocol::TMGetObjectByHash> const& packet)
+{
+    protocol::TMTransactions reply;
+
+    JLOG(p_journal_.debug()) << "received TMGetObjectByHash requesting tx "
+                             << packet->objects_size();
+
+    for (std::uint32_t i = 0; i < packet->objects_size(); ++i)
+    {
+        auto const& obj = packet->objects(i);
+
+        if (!stringIsUint256Sized(obj.hash()))
+        {
+            fee_ = Resource::feeInvalidRequest;
+            return;
+        }
+
+        uint256 hash(obj.hash());
+
+        auto txn = app_.getMasterTransaction().fetch_from_cache(hash);
+
+        if (!txn)
+        {
+            JLOG(p_journal_.error()) << "doTransactions, transaction not found "
+                                     << Slice(hash.data(), hash.size());
+            fee_ = Resource::feeInvalidRequest;
+            return;
+        }
+
+        Serializer s;
+        auto tx = reply.add_transactions();
+        auto sttx = txn->getSTransaction();
+        sttx->add(s);
+        tx->set_rawtransaction(s.data(), s.size());
+        tx->set_status(
+            txn->getStatus() == INCLUDED ? protocol::tsCURRENT
+                                         : protocol::tsNEW);
+        tx->set_receivetimestamp(
+            app_.timeKeeper().now().time_since_epoch().count());
+        tx->set_deferred(txn->getSubmitResult().queued);
+    }
+
+    if (reply.transactions_size() > 0)
+        send(std::make_shared<Message>(reply, protocol::mtTRANSACTIONS));
 }
 
 void

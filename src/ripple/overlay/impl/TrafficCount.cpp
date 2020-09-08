@@ -138,6 +138,9 @@ TrafficCount::categorize(
                 ? TrafficCount::category::share_fetch_pack
                 : TrafficCount::category::get_fetch_pack;
 
+        if (msg->type() == protocol::TMGetObjectByHash::otTRANSACTIONS)
+            return TrafficCount::category::get_transactions;
+
         return (msg->query() == inbound) ? TrafficCount::category::share_hash
                                          : TrafficCount::category::get_hash;
     }
@@ -153,6 +156,12 @@ TrafficCount::categorize(
 
     if (type == protocol::mtREPLAY_DELTA_RESPONSE)
         return TrafficCount::category::replay_delta_response;
+
+    if (type == protocol::mtHAVE_TRANSACTIONS)
+        return TrafficCount::category::have_transactions;
+
+    if (type == protocol::mtTRANSACTIONS)
+        return TrafficCount::category::transactions;
 
     return TrafficCount::category::unknown;
 }

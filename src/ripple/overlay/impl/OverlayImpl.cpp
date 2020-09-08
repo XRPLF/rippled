@@ -26,6 +26,7 @@
 #include <ripple/app/rdb/RelationalDBInterface_global.h>
 #include <ripple/basics/base64.h>
 #include <ripple/basics/make_SSLContext.h>
+#include <ripple/basics/random.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Cluster.h>
@@ -102,6 +103,8 @@ OverlayImpl::Timer::on_timer(error_code ec)
     overlay_.m_peerFinder->once_per_second();
     overlay_.sendEndpoints();
     overlay_.autoConnect();
+    if (overlay_.app_.config().TX_REDUCE_RELAY_ENABLE)
+        overlay_.sendTxQueue();
 
     if ((++overlay_.timer_count_ % Tuning::checkIdlePeers) == 0)
         overlay_.deleteIdlePeers();
@@ -1148,6 +1151,29 @@ OverlayImpl::getActivePeers() const
     return ret;
 }
 
+std::pair<Overlay::PeerSequence, std::uint16_t>
+OverlayImpl::getActivePeers(std::set<Peer::id_t> const& toSkip) const
+{
+    auto ret = std::make_pair<OverlayImpl::PeerSequence, std::uint16_t>({}, 0);
+    std::lock_guard lock(mutex_);
+    ret.first.reserve(ids_.size() - toSkip.size());
+
+    for (auto& [id, w] : ids_)
+    {
+        if (toSkip.find(id) == toSkip.end())
+        {
+            if (auto p = w.lock())
+            {
+                if (!p->txReduceRelayEnabled())
+                    ret.second++;
+                ret.first.emplace_back(std::move(p));
+            }
+        }
+    }
+
+    return ret;
+}
+
 void
 OverlayImpl::checkTracking(std::uint32_t index)
 {
@@ -1264,6 +1290,65 @@ OverlayImpl::getManifestsMessage()
     return manifestMessage_;
 }
 
+void
+OverlayImpl::relay(
+    uint256 const& hash,
+    protocol::TMTransaction& m,
+    std::set<Peer::id_t> const& toSkip)
+{
+    auto const sm = std::make_shared<Message>(m, protocol::mtTRANSACTION);
+
+    if (app_.config().TX_REDUCE_RELAY_ENABLE)
+    {
+        // returns active peers, which are not in toSkip, and
+        // a number of peers with not enabled tx reduce-relay
+        // feature and which are not in toSkip.
+        auto [peers, notEnabled] = getActivePeers(toSkip);
+
+        // select a fraction of active peers for relaying
+        auto toSelect = static_cast<uint32_t>(
+            app_.config().TX_RELAY_TO_PEERS * peers.size() / 100);
+
+        txMetrics_.addMetrics(toSelect, toSkip.size(), notEnabled);
+
+        // exclude from peers, which should be randomly selected for relaying,
+        // peers in toSkip and peers with not enabled tx reduce-relay feature
+        auto const exclude = toSkip.size() + notEnabled;
+        toSelect = (toSelect > exclude) ? (toSelect - exclude) : 0;
+        if (toSelect > 0)
+            std::shuffle(peers.begin(), peers.end(), default_prng());
+
+        JLOG(journal_.debug())
+            << "relaying tx, active peers " << peers.size() << " selected "
+            << toSelect << " skip " << toSkip.size() << " not enabled "
+            << notEnabled;
+
+        std::uint16_t selected = 0;
+        for (auto it = peers.begin(); it != peers.end(); ++it)
+        {
+            // always relay to a peer with the tx reduce-relay feature
+            // not enabled
+            if (!(*it)->txReduceRelayEnabled())
+            {
+                (*it)->send(sm);
+            }
+            else if (selected < toSelect)
+            {
+                selected++;
+                (*it)->send(sm);
+            }
+            else
+            {
+                (*it)->addTxQueue(hash);
+            }
+        }
+    }
+    else
+    {
+        foreach(send_if_not(sm, peer_in_set(toSkip)));
+    }
+}
+
 //------------------------------------------------------------------------------
 
 void
@@ -1331,6 +1416,15 @@ OverlayImpl::sendEndpoints()
         if (peer)
             peer->sendEndpoints(e.second.begin(), e.second.end());
     }
+}
+
+void
+OverlayImpl::sendTxQueue()
+{
+    foreach([](auto const& p) {
+        if (p->txReduceRelayEnabled())
+            p->sendTxQueue();
+    });
 }
 
 std::shared_ptr<Message>
@@ -1528,6 +1622,18 @@ setup_Overlay(BasicConfig const& config)
     }
 
     return setup;
+}
+
+template <typename... Args>
+void
+OverlayImpl::addTxMetrics(Args... args)
+{
+    if (!strand_.running_in_this_thread())
+        return post(
+            strand_,
+            std::bind(&OverlayImpl::addTxMetrics<Args...>, this, args...));
+
+    txMetrics_.addMetrics(args...);
 }
 
 std::unique_ptr<Overlay>

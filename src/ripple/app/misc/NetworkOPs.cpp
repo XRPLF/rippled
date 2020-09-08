@@ -1342,9 +1342,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                         app_.timeKeeper().now().time_since_epoch().count());
                     tx.set_deferred(e.result == terQUEUED);
                     // FIXME: This should be when we received it
-                    app_.overlay().foreach(send_if_not(
-                        std::make_shared<Message>(tx, protocol::mtTRANSACTION),
-                        peer_in_set(*toSkip)));
+                    app_.overlay().relay(e.transaction->getID(), tx, *toSkip);
                     e.transaction->setBroadcast();
                 }
             }

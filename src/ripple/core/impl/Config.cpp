@@ -640,7 +640,19 @@ Config::loadFromString(std::string const& fileContents)
     {
         auto sec = section(SECTION_REDUCE_RELAY);
         VP_REDUCE_RELAY_ENABLE = sec.value_or("vp_enable", false);
-        VP_REDUCE_RELAY_SQUELCH = sec.value_or("vp_squelch", false);
+        TX_REDUCE_RELAY_ENABLE = sec.value_or("tx_enable", false);
+        REDUCE_RELAY_SQUELCH = sec.value_or("vp_squelch", false);
+        TX_NUM_PEERS = sec.value_or("tx_num_peers", 20);
+        TX_RELAY_TO_PEERS = sec.value_or("tx_relay_to_peers", 25);
+        if (TX_RELAY_TO_PEERS > 100 || TX_NUM_PEERS < 20 ||
+            static_cast<std::uint16_t>(100 * TX_NUM_PEERS / TX_RELAY_TO_PEERS) <
+                5)
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_TX_REDUCE_RELAY
+                ", num_peers must be greater or equal to 20"
+                ", relay_to_peers must be less or equal to 100, and "
+                "(100 * num_peers / relay_to_peers) must be greater or equal "
+                "to 5");
     }
 
     if (getSingleSection(secConfig, SECTION_MAX_TRANSACTIONS, strTemp, j_))

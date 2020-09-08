@@ -30,6 +30,7 @@
 #include <ripple/overlay/Slot.h>
 #include <ripple/overlay/impl/Handshake.h>
 #include <ripple/overlay/impl/TrafficCount.h>
+#include <ripple/overlay/impl/TxMetrics.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/ServerHandler.h>
@@ -128,6 +129,9 @@ private:
 
     reduce_relay::Slots<UptimeClock> slots_;
 
+    // Transaction reduce-relay metrics
+    metrics::TxMetrics txMetrics_;
+
     // A message with the list of manifests we send to peers
     std::shared_ptr<Message> manifestMessage_;
     // Used to track whether we need to update the cached list of manifests
@@ -197,6 +201,14 @@ public:
     PeerSequence
     getActivePeers() const override;
 
+    /** Get active peers excluding peers in toSkip.
+       @param toSkip peers to skip
+       @return active peers less peers in toSkip, and a number of peers
+           not supporting tx reduce-relay feature less peers in toSkip.
+     */
+    std::pair<PeerSequence, std::uint16_t>
+    getActivePeers(std::set<Peer::id_t> const& toSkip) const;
+
     void checkTracking(std::uint32_t) override;
 
     std::shared_ptr<Peer>
@@ -222,6 +234,12 @@ public:
         protocol::TMValidation& m,
         uint256 const& uid,
         PublicKey const& validator) override;
+
+    void
+    relay(
+        uint256 const&,
+        protocol::TMTransaction& m,
+        std::set<Peer::id_t> const& skip) override;
 
     std::shared_ptr<Message>
     getManifestsMessage();
@@ -411,6 +429,17 @@ public:
     void
     deletePeer(Peer::id_t id);
 
+    Json::Value
+    txMetrics() const override
+    {
+        return txMetrics_.json();
+    }
+
+    /** Add tx reduce-relay metrics. */
+    template <typename... Args>
+    void
+    addTxMetrics(Args... args);
+
 private:
     void
     squelch(
@@ -517,6 +546,10 @@ private:
 
     void
     sendEndpoints();
+
+    /** Send once a second transactions' hashes aggregated by peers. */
+    void
+    sendTxQueue();
 
     /** Check if peers stopped relaying messages
      * and if slots stopped receiving messages from the validator */

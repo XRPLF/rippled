@@ -65,6 +65,8 @@ enum JobType {
     jtNETOP_CLUSTER,  // NetworkOPs cluster peer report
     jtNETOP_TIMER,    // NetworkOPs net timer processing
     jtADMIN,          // An administrative operation
+    jtMISSING_TXN,    // Request missing transactions
+    jtREQUESTED_TXN,  // Reply with requested transactions
 
     // Special job types which are not dispatched by the job pool
     jtPEER,
