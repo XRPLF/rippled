@@ -150,9 +150,7 @@ OpenLedger::accept(
             msg.set_status(protocol::tsNEW);
             msg.set_receivetimestamp(
                 app.timeKeeper().now().time_since_epoch().count());
-            app.overlay().foreach(send_if_not(
-                std::make_shared<Message>(msg, protocol::mtTRANSACTION),
-                peer_in_set(*toSkip)));
+            app.overlay().relay(txId, msg, *toSkip);
         }
     }
 

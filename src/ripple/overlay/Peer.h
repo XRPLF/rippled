@@ -66,6 +66,18 @@ public:
     virtual beast::IP::Endpoint
     getRemoteAddress() const = 0;
 
+    /** Send aggregated transactions' hashes. */
+    virtual void
+    sendTxQueue() = 0;
+
+    /** Aggregate transaction's hash. */
+    virtual void
+    addTxQueue(uint256 const&) = 0;
+
+    /** Remove hash from the transactions' hashes queue. */
+    virtual void
+    removeTxQueue(uint256 const&) = 0;
+
     /** Adjust this peer's load balance based on the type of load imposed. */
     virtual void
     charge(Resource::Charge const& fee) = 0;
@@ -121,6 +133,9 @@ public:
 
     virtual bool
     compressionEnabled() const = 0;
+
+    virtual bool
+    txReduceRelayEnabled() const = 0;
 };
 
 }  // namespace ripple

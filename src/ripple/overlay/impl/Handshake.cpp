@@ -73,16 +73,19 @@ featureEnabled(
 std::string
 makeFeaturesRequestHeader(
     bool comprEnabled,
-    bool vpReduceRelayEnabled,
-    bool ledgerReplayEnabled)
+    bool ledgerReplayEnabled,
+    bool txReduceRelayEnabled,
+    bool vpReduceRelayEnabled)
 {
     std::stringstream str;
     if (comprEnabled)
         str << FEATURE_COMPR << "=lz4" << DELIM_FEATURE;
-    if (vpReduceRelayEnabled)
-        str << FEATURE_VPRR << "=1";
     if (ledgerReplayEnabled)
-        str << FEATURE_LEDGER_REPLAY << "=1";
+        str << FEATURE_LEDGER_REPLAY << "=1" << DELIM_FEATURE;
+    if (txReduceRelayEnabled)
+        str << FEATURE_TXRR << "=1" << DELIM_FEATURE;
+    if (vpReduceRelayEnabled)
+        str << FEATURE_VPRR << "=1" << DELIM_FEATURE;
     return str.str();
 }
 
@@ -90,16 +93,19 @@ std::string
 makeFeaturesResponseHeader(
     http_request_type const& headers,
     bool comprEnabled,
-    bool vpReduceRelayEnabled,
-    bool ledgerReplayEnabled)
+    bool ledgerReplayEnabled,
+    bool txReduceRelayEnabled,
+    bool vpReduceRelayEnabled)
 {
     std::stringstream str;
     if (comprEnabled && isFeatureValue(headers, FEATURE_COMPR, "lz4"))
         str << FEATURE_COMPR << "=lz4" << DELIM_FEATURE;
-    if (vpReduceRelayEnabled && featureEnabled(headers, FEATURE_VPRR))
-        str << FEATURE_VPRR << "=1";
     if (ledgerReplayEnabled && featureEnabled(headers, FEATURE_LEDGER_REPLAY))
-        str << FEATURE_LEDGER_REPLAY << "=1";
+        str << FEATURE_LEDGER_REPLAY << "=1" << DELIM_FEATURE;
+    if (txReduceRelayEnabled && featureEnabled(headers, FEATURE_TXRR))
+        str << FEATURE_TXRR << "=1" << DELIM_FEATURE;
+    if (vpReduceRelayEnabled && featureEnabled(headers, FEATURE_VPRR))
+        str << FEATURE_VPRR << "=1" << DELIM_FEATURE;
     return str.str();
 }
 
@@ -363,8 +369,9 @@ auto
 makeRequest(
     bool crawlPublic,
     bool comprEnabled,
-    bool vpReduceRelayEnabled,
-    bool ledgerReplayEnabled) -> request_type
+    bool ledgerReplayEnabled,
+    bool txReduceRelayEnabled,
+    bool vpReduceRelayEnabled) -> request_type
 {
     request_type m;
     m.method(boost::beast::http::verb::get);
@@ -378,7 +385,10 @@ makeRequest(
     m.insert(
         "X-Protocol-Ctl",
         makeFeaturesRequestHeader(
-            comprEnabled, vpReduceRelayEnabled, ledgerReplayEnabled));
+            comprEnabled,
+            ledgerReplayEnabled,
+            txReduceRelayEnabled,
+            vpReduceRelayEnabled));
     return m;
 }
 
@@ -406,8 +416,9 @@ makeResponse(
         makeFeaturesResponseHeader(
             req,
             app.config().COMPRESSION,
-            app.config().VP_REDUCE_RELAY_ENABLE,
-            app.config().LEDGER_REPLAY));
+            app.config().LEDGER_REPLAY,
+            app.config().TX_REDUCE_RELAY_ENABLE,
+            app.config().VP_REDUCE_RELAY_ENABLE));
 
     buildHandshake(resp, sharedValue, networkID, public_ip, remote_ip, app);
 

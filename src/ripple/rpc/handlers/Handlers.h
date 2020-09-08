@@ -141,6 +141,8 @@ doTxJson(RPC::JsonContext&);
 Json::Value
 doTxHistory(RPC::JsonContext&);
 Json::Value
+doTxReduceRelay(RPC::JsonContext&);
+Json::Value
 doUnlList(RPC::JsonContext&);
 Json::Value
 doUnsubscribe(RPC::JsonContext&);
