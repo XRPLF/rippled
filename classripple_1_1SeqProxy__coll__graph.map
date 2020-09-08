@@ -1,0 +1,4 @@
+<map id="ripple::SeqProxy" name="ripple::SeqProxy">
+<area shape="rect" id="node1" title="A type that represents either a sequence value or a ticket value." alt="" coords="5,95,133,121"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="18,5,121,32"/>
+</map>

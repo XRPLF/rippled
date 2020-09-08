@@ -95,27 +95,27 @@ Collaboration diagram for ripple::detail::WorkSSL:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1detail_1_1WorkSSL__coll__graph.png" border="0" usemap="#ripple_1_1detail_1_1WorkSSL_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1detail_1_1WorkSSL_coll__map" id="ripple_1_1detail_1_1WorkSSL_coll__map">
-<area shape="rect" title=" " alt="" coords="824,136,992,163"/>
-<area shape="rect" href="classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="519,63,697,105"/>
-<area shape="rect" href="classripple_1_1detail_1_1Work.html" title=" " alt="" coords="260,5,405,32"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/functional/function.html" title=" " alt="" coords="252,56,413,112"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="289,145,376,172"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="519,129,697,170"/>
-<area shape="rect" href="classripple_1_1HTTPClientSSLContext.html" title=" " alt="" coords="501,195,715,221"/>
-<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="277,196,388,223"/>
-<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,196,152,223"/>
+<area shape="rect" title=" " alt="" coords="841,144,1009,171"/>
+<area shape="rect" href="classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="537,71,714,113"/>
+<area shape="rect" href="classripple_1_1detail_1_1Work.html" title=" " alt="" coords="269,5,414,32"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/functional/function.html" title=" " alt="" coords="252,57,431,127"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="298,153,385,180"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="537,137,714,178"/>
+<area shape="rect" href="classripple_1_1HTTPClientSSLContext.html" title=" " alt="" coords="519,203,732,229"/>
+<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="286,204,397,231"/>
+<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,204,152,231"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:ae2e925a46808cc1943574245e25da832"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#ae2e925a46808cc1943574245e25da832">callback_type</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="el" href="classripple_1_1detail_1_1WorkBase.html#ab71e779cbf5260362f0e72b88e060449">error_code</a> const &amp;, <a class="el" href="namespaceripple_1_1detail.html#aeb2a1b7b18c8dd127461be172a910a66">response_type</a> &amp;&amp;)&gt;</td></tr>
-<tr class="separator:ae2e925a46808cc1943574245e25da832"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8ab77c09ec2295552af5e947e23989b"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#ab8ab77c09ec2295552af5e947e23989b">callback_type</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="el" href="classripple_1_1detail_1_1WorkBase.html#ab71e779cbf5260362f0e72b88e060449">error_code</a> const &amp;, <a class="el" href="classripple_1_1detail_1_1WorkBase.html#aa0dc5c38ff210dd957ab4a2b9e5b21b6">endpoint_type</a> const &amp;, <a class="el" href="namespaceripple_1_1detail.html#aeb2a1b7b18c8dd127461be172a910a66">response_type</a> &amp;&amp;)&gt;</td></tr>
+<tr class="separator:ab8ab77c09ec2295552af5e947e23989b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a002051a52cb80b70d5e15e9f652a405a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkSSL.html#a002051a52cb80b70d5e15e9f652a405a">WorkSSL</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;host, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;path, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;port, boost::asio::io_service &amp;ios, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config, <a class="el" href="classripple_1_1detail_1_1WorkBase.html#ae2e925a46808cc1943574245e25da832">callback_type</a> cb)</td></tr>
-<tr class="separator:a002051a52cb80b70d5e15e9f652a405a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1847f2027488fdcc457ceba5e994e8f0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkSSL.html#a1847f2027488fdcc457ceba5e994e8f0">WorkSSL</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;host, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;path, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;port, boost::asio::io_service &amp;ios, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config, <a class="el" href="classripple_1_1detail_1_1WorkBase.html#aa0dc5c38ff210dd957ab4a2b9e5b21b6">endpoint_type</a> const &amp;lastEndpoint, bool lastStatus, <a class="el" href="classripple_1_1detail_1_1WorkBase.html#ab8ab77c09ec2295552af5e947e23989b">callback_type</a> cb)</td></tr>
+<tr class="separator:a1847f2027488fdcc457ceba5e994e8f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a8c3a7e7b8362ccd3a720c4846aae5a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkSSL.html#a8a8c3a7e7b8362ccd3a720c4846aae5a">~WorkSSL</a> ()=default</td></tr>
 <tr class="separator:a8a8c3a7e7b8362ccd3a720c4846aae5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae6dc88359bca6f1f70fb5cf217442447"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1detail_1_1WorkSSL.html">WorkSSL</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#ae6dc88359bca6f1f70fb5cf217442447">impl</a> ()</td></tr>
@@ -126,8 +126,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a83354ff3793e2f3d29cf218ade9bb23e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea136a1e17ac0442a5f650104d1a8bc0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#aea136a1e17ac0442a5f650104d1a8bc0">fail</a> (<a class="el" href="classripple_1_1detail_1_1WorkBase.html#ab71e779cbf5260362f0e72b88e060449">error_code</a> const &amp;ec)</td></tr>
 <tr class="separator:aea136a1e17ac0442a5f650104d1a8bc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac0b6711dd23510bbf207b9f5d69575a2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#ac0b6711dd23510bbf207b9f5d69575a2">onResolve</a> (<a class="el" href="classripple_1_1detail_1_1WorkBase.html#ab71e779cbf5260362f0e72b88e060449">error_code</a> const &amp;ec, resolver_type::iterator it)</td></tr>
-<tr class="separator:ac0b6711dd23510bbf207b9f5d69575a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b25cec56d8c64f4b579e9f595f98b14"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#a5b25cec56d8c64f4b579e9f595f98b14">onResolve</a> (<a class="el" href="classripple_1_1detail_1_1WorkBase.html#ab71e779cbf5260362f0e72b88e060449">error_code</a> const &amp;ec, <a class="el" href="classripple_1_1detail_1_1WorkBase.html#a224d1b571e77f9870356a608c2fa3b09">results_type</a> results)</td></tr>
+<tr class="separator:a5b25cec56d8c64f4b579e9f595f98b14"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaeae0dce9809a37fc3ac02282a0c04ba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#aaeae0dce9809a37fc3ac02282a0c04ba">onStart</a> ()</td></tr>
 <tr class="separator:aaeae0dce9809a37fc3ac02282a0c04ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e65db82be725841879c4d92fdb04f1d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#a5e65db82be725841879c4d92fdb04f1d">onRequest</a> (<a class="el" href="classripple_1_1detail_1_1WorkBase.html#ab71e779cbf5260362f0e72b88e060449">error_code</a> const &amp;ec)</td></tr>
@@ -143,14 +143,14 @@ Public Member Functions</h2></td></tr>
 Protected Types</h2></td></tr>
 <tr class="memitem:ab71e779cbf5260362f0e72b88e060449"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#ab71e779cbf5260362f0e72b88e060449">error_code</a> = boost::system::error_code</td></tr>
 <tr class="separator:ab71e779cbf5260362f0e72b88e060449"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6bd2a88e6cf40c35b220d2171f662393"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#a6bd2a88e6cf40c35b220d2171f662393">socket_type</a> = boost::asio::ip::tcp::socket</td></tr>
-<tr class="separator:a6bd2a88e6cf40c35b220d2171f662393"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa0dc5c38ff210dd957ab4a2b9e5b21b6"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#aa0dc5c38ff210dd957ab4a2b9e5b21b6">endpoint_type</a> = boost::asio::ip::tcp::endpoint</td></tr>
 <tr class="separator:aa0dc5c38ff210dd957ab4a2b9e5b21b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6bd2a88e6cf40c35b220d2171f662393"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#a6bd2a88e6cf40c35b220d2171f662393">socket_type</a> = boost::asio::ip::tcp::socket</td></tr>
+<tr class="separator:a6bd2a88e6cf40c35b220d2171f662393"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab6c041f493741ae8de70314cbaf69d1c"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#ab6c041f493741ae8de70314cbaf69d1c">resolver_type</a> = boost::asio::ip::tcp::resolver</td></tr>
 <tr class="separator:ab6c041f493741ae8de70314cbaf69d1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae85d0aead566ec68ea708f7e3d2565e5"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#ae85d0aead566ec68ea708f7e3d2565e5">query_type</a> = resolver_type::query</td></tr>
-<tr class="separator:ae85d0aead566ec68ea708f7e3d2565e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a224d1b571e77f9870356a608c2fa3b09"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#a224d1b571e77f9870356a608c2fa3b09">results_type</a> = boost::asio::ip::tcp::resolver::results_type</td></tr>
+<tr class="separator:a224d1b571e77f9870356a608c2fa3b09"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3a6ba355555a54010cbc78f220132fb5"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#a3a6ba355555a54010cbc78f220132fb5">request_type</a> = boost::beast::http::request&lt; boost::beast::http::empty_body &gt;</td></tr>
 <tr class="separator:a3a6ba355555a54010cbc78f220132fb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -162,7 +162,7 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a77e9befe2a499d74f4b9b0869c24c463"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab12135752c43c529435191891e4dca24"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#ab12135752c43c529435191891e4dca24">port_</a></td></tr>
 <tr class="separator:ab12135752c43c529435191891e4dca24"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1dd5dd5f7c26e61b444a5e2118d2b4b7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#ae2e925a46808cc1943574245e25da832">callback_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#a1dd5dd5f7c26e61b444a5e2118d2b4b7">cb_</a></td></tr>
+<tr class="memitem:a1dd5dd5f7c26e61b444a5e2118d2b4b7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#ab8ab77c09ec2295552af5e947e23989b">callback_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#a1dd5dd5f7c26e61b444a5e2118d2b4b7">cb_</a></td></tr>
 <tr class="separator:a1dd5dd5f7c26e61b444a5e2118d2b4b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b1b30795997ee68b96a95e8d461a834"><td class="memItemLeft" align="right" valign="top">boost::asio::io_service &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#a0b1b30795997ee68b96a95e8d461a834">ios_</a></td></tr>
 <tr class="separator:a0b1b30795997ee68b96a95e8d461a834"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -176,8 +176,12 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a90a61f92e5950305e7da2e2628329b54"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3a4693786b041cd675c899e60b692ace"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple_1_1detail.html#aeb2a1b7b18c8dd127461be172a910a66">response_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#a3a4693786b041cd675c899e60b692ace">res_</a></td></tr>
 <tr class="separator:a3a4693786b041cd675c899e60b692ace"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae985c580ab7e1e076e7cc3aa5c1959c0"><td class="memItemLeft" align="right" valign="top">boost::beast::multi_buffer&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#ae985c580ab7e1e076e7cc3aa5c1959c0">read_buf_</a></td></tr>
-<tr class="separator:ae985c580ab7e1e076e7cc3aa5c1959c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad76da40587f8f6b0e747551cd4709b7a"><td class="memItemLeft" align="right" valign="top">boost::beast::multi_buffer&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#ad76da40587f8f6b0e747551cd4709b7a">readBuf_</a></td></tr>
+<tr class="separator:ad76da40587f8f6b0e747551cd4709b7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1226fa87cf5cb3c2369a859e2f096489"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#aa0dc5c38ff210dd957ab4a2b9e5b21b6">endpoint_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#a1226fa87cf5cb3c2369a859e2f096489">lastEndpoint_</a></td></tr>
+<tr class="separator:a1226fa87cf5cb3c2369a859e2f096489"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af20c277403db85f4bc2de29b28c250a1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#af20c277403db85f4bc2de29b28c250a1">lastStatus_</a></td></tr>
+<tr class="separator:af20c277403db85f4bc2de29b28c250a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-types"></a>
 Private Types</h2></td></tr>
@@ -255,12 +259,12 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00039">39</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00043">43</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
-<a id="ae2e925a46808cc1943574245e25da832"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae2e925a46808cc1943574245e25da832">&#9670;&nbsp;</a></span>callback_type</h2>
+<a id="aa0dc5c38ff210dd957ab4a2b9e5b21b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa0dc5c38ff210dd957ab4a2b9e5b21b6">&#9670;&nbsp;</a></span>endpoint_type</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -269,7 +273,31 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1detail_1_1WorkBase.html">ripple::detail::WorkBase</a>&lt; <a class="el" href="classripple_1_1detail_1_1WorkSSL.html">WorkSSL</a>  &gt;::callback_type =  <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;void(<a class="el" href="classripple_1_1detail_1_1WorkBase.html#ab71e779cbf5260362f0e72b88e060449">error_code</a> const&amp;, <a class="el" href="namespaceripple_1_1detail.html#aeb2a1b7b18c8dd127461be172a910a66">response_type</a>&amp;&amp;)&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1detail_1_1WorkBase.html">ripple::detail::WorkBase</a>&lt; <a class="el" href="classripple_1_1detail_1_1WorkSSL.html">WorkSSL</a>  &gt;::endpoint_type =  boost::asio::ip::tcp::endpoint</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00044">44</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+
+</div>
+</div>
+<a id="ab8ab77c09ec2295552af5e947e23989b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8ab77c09ec2295552af5e947e23989b">&#9670;&nbsp;</a></span>callback_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classripple_1_1detail_1_1WorkBase.html">ripple::detail::WorkBase</a>&lt; <a class="el" href="classripple_1_1detail_1_1WorkSSL.html">WorkSSL</a>  &gt;::callback_type =  <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="el" href="classripple_1_1detail_1_1WorkBase.html#ab71e779cbf5260362f0e72b88e060449">error_code</a> const&amp;, <a class="el" href="classripple_1_1detail_1_1WorkBase.html#aa0dc5c38ff210dd957ab4a2b9e5b21b6">endpoint_type</a> const&amp;, <a class="el" href="namespaceripple_1_1detail.html#aeb2a1b7b18c8dd127461be172a910a66">response_type</a>&amp;&amp;)&gt;</td>
         </tr>
       </table>
   </td>
@@ -279,7 +307,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00043">43</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00048">48</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -303,31 +331,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00046">46</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
-
-</div>
-</div>
-<a id="aa0dc5c38ff210dd957ab4a2b9e5b21b6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa0dc5c38ff210dd957ab4a2b9e5b21b6">&#9670;&nbsp;</a></span>endpoint_type</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1detail_1_1WorkBase.html">ripple::detail::WorkBase</a>&lt; <a class="el" href="classripple_1_1detail_1_1WorkSSL.html">WorkSSL</a>  &gt;::<a class="el" href="classripple_1_1detail_1_1WorkBase.html#aa0dc5c38ff210dd957ab4a2b9e5b21b6">endpoint_type</a> =  boost::asio::ip::tcp::endpoint</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00047">47</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00051">51</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -351,12 +355,12 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00048">48</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00052">52</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
-<a id="ae85d0aead566ec68ea708f7e3d2565e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae85d0aead566ec68ea708f7e3d2565e5">&#9670;&nbsp;</a></span>query_type</h2>
+<a id="a224d1b571e77f9870356a608c2fa3b09"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a224d1b571e77f9870356a608c2fa3b09">&#9670;&nbsp;</a></span>results_type</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -365,7 +369,7 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1detail_1_1WorkBase.html">ripple::detail::WorkBase</a>&lt; <a class="el" href="classripple_1_1detail_1_1WorkSSL.html">WorkSSL</a>  &gt;::<a class="el" href="classripple_1_1detail_1_1WorkBase.html#ae85d0aead566ec68ea708f7e3d2565e5">query_type</a> =  resolver_type::query</td>
+          <td class="memname">using <a class="el" href="classripple_1_1detail_1_1WorkBase.html">ripple::detail::WorkBase</a>&lt; <a class="el" href="classripple_1_1detail_1_1WorkSSL.html">WorkSSL</a>  &gt;::<a class="el" href="classripple_1_1detail_1_1WorkBase.html#a224d1b571e77f9870356a608c2fa3b09">results_type</a> =  boost::asio::ip::tcp::resolver::results_type</td>
         </tr>
       </table>
   </td>
@@ -375,7 +379,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00049">49</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00053">53</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -399,13 +403,13 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00051">51</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00055">55</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a002051a52cb80b70d5e15e9f652a405a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a002051a52cb80b70d5e15e9f652a405a">&#9670;&nbsp;</a></span>WorkSSL()</h2>
+<a id="a1847f2027488fdcc457ceba5e994e8f0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1847f2027488fdcc457ceba5e994e8f0">&#9670;&nbsp;</a></span>WorkSSL()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -449,7 +453,19 @@ Friends</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#ae2e925a46808cc1943574245e25da832">callback_type</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#aa0dc5c38ff210dd957ab4a2b9e5b21b6">endpoint_type</a> const &amp;&#160;</td>
+          <td class="paramname"><em>lastEndpoint</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>lastStatus</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#ab8ab77c09ec2295552af5e947e23989b">callback_type</a>&#160;</td>
           <td class="paramname"><em>cb</em>&#160;</td>
         </tr>
         <tr>
@@ -460,7 +476,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkSSL_8h_source.html#l00075">75</a> of file <a class="el" href="WorkSSL_8h_source.html">WorkSSL.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkSSL_8cpp_source.html#l00025">25</a> of file <a class="el" href="WorkSSL_8cpp_source.html">WorkSSL.cpp</a>.</p>
 
 </div>
 </div>
@@ -513,7 +529,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkSSL_8h_source.html#l00061">61</a> of file <a class="el" href="WorkSSL_8h_source.html">WorkSSL.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkSSL_8h_source.html#l00063">63</a> of file <a class="el" href="WorkSSL_8h_source.html">WorkSSL.h</a>.</p>
 
 </div>
 </div>
@@ -541,7 +557,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkSSL_8h_source.html#l00094">94</a> of file <a class="el" href="WorkSSL_8h_source.html">WorkSSL.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkSSL_8cpp_source.html#l00046">46</a> of file <a class="el" href="WorkSSL_8cpp_source.html">WorkSSL.cpp</a>.</p>
 
 </div>
 </div>
@@ -569,7 +585,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkSSL_8h_source.html#l00107">107</a> of file <a class="el" href="WorkSSL_8h_source.html">WorkSSL.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkSSL_8cpp_source.html#l00059">59</a> of file <a class="el" href="WorkSSL_8cpp_source.html">WorkSSL.cpp</a>.</p>
 
 </div>
 </div>
@@ -593,7 +609,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00075">75</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00083">83</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -619,7 +635,7 @@ Friends</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1detail_1_1Work.html#a9fe9c929a9e21f162a78efe8f6bc2842">ripple::detail::Work</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00137">137</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00150">150</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -645,7 +661,7 @@ Friends</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1detail_1_1Work.html#a157da65c7565e5016a6f9481bc045770">ripple::detail::Work</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00154">154</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00168">168</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -673,12 +689,12 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00169">169</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00183">183</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
-<a id="ac0b6711dd23510bbf207b9f5d69575a2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac0b6711dd23510bbf207b9f5d69575a2">&#9670;&nbsp;</a></span>onResolve()</h2>
+<a id="a5b25cec56d8c64f4b579e9f595f98b14"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b25cec56d8c64f4b579e9f595f98b14">&#9670;&nbsp;</a></span>onResolve()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -695,8 +711,8 @@ Friends</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">resolver_type::iterator&#160;</td>
-          <td class="paramname"><em>it</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#a224d1b571e77f9870356a608c2fa3b09">results_type</a>&#160;</td>
+          <td class="paramname"><em>results</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -711,7 +727,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00180">180</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00194">194</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -735,7 +751,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00195">195</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00243">243</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -763,7 +779,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00214">214</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00262">262</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -791,7 +807,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00231">231</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00279">279</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -815,7 +831,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00244">244</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00292">292</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -913,7 +929,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00053">53</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00057">57</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -937,7 +953,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00054">54</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00058">58</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -961,7 +977,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00055">55</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00059">59</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -975,7 +991,7 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#ae2e925a46808cc1943574245e25da832">callback_type</a> <a class="el" href="classripple_1_1detail_1_1WorkBase.html">ripple::detail::WorkBase</a>&lt; <a class="el" href="classripple_1_1detail_1_1WorkSSL.html">WorkSSL</a>  &gt;::cb_</td>
+          <td class="memname"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#ab8ab77c09ec2295552af5e947e23989b">callback_type</a> <a class="el" href="classripple_1_1detail_1_1WorkBase.html">ripple::detail::WorkBase</a>&lt; <a class="el" href="classripple_1_1detail_1_1WorkSSL.html">WorkSSL</a>  &gt;::cb_</td>
         </tr>
       </table>
   </td>
@@ -985,7 +1001,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00056">56</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00060">60</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -1009,7 +1025,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00057">57</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00061">61</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -1033,7 +1049,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00058">58</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00062">62</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -1057,7 +1073,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00059">59</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00063">63</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -1081,7 +1097,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00060">60</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00064">64</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -1105,7 +1121,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00061">61</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00065">65</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
@@ -1129,12 +1145,12 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00062">62</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00066">66</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>
-<a id="ae985c580ab7e1e076e7cc3aa5c1959c0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae985c580ab7e1e076e7cc3aa5c1959c0">&#9670;&nbsp;</a></span>read_buf_</h2>
+<a id="ad76da40587f8f6b0e747551cd4709b7a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad76da40587f8f6b0e747551cd4709b7a">&#9670;&nbsp;</a></span>readBuf_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1143,7 +1159,7 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::beast::multi_buffer <a class="el" href="classripple_1_1detail_1_1WorkBase.html">ripple::detail::WorkBase</a>&lt; <a class="el" href="classripple_1_1detail_1_1WorkSSL.html">WorkSSL</a>  &gt;::read_buf_</td>
+          <td class="memname">boost::beast::multi_buffer <a class="el" href="classripple_1_1detail_1_1WorkBase.html">ripple::detail::WorkBase</a>&lt; <a class="el" href="classripple_1_1detail_1_1WorkSSL.html">WorkSSL</a>  &gt;::readBuf_</td>
         </tr>
       </table>
   </td>
@@ -1153,7 +1169,55 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00063">63</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00067">67</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+
+</div>
+</div>
+<a id="a1226fa87cf5cb3c2369a859e2f096489"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1226fa87cf5cb3c2369a859e2f096489">&#9670;&nbsp;</a></span>lastEndpoint_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1detail_1_1WorkBase.html#aa0dc5c38ff210dd957ab4a2b9e5b21b6">endpoint_type</a> <a class="el" href="classripple_1_1detail_1_1WorkBase.html">ripple::detail::WorkBase</a>&lt; <a class="el" href="classripple_1_1detail_1_1WorkSSL.html">WorkSSL</a>  &gt;::lastEndpoint_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00068">68</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
+
+</div>
+</div>
+<a id="af20c277403db85f4bc2de29b28c250a1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af20c277403db85f4bc2de29b28c250a1">&#9670;&nbsp;</a></span>lastStatus_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="classripple_1_1detail_1_1WorkBase.html">ripple::detail::WorkBase</a>&lt; <a class="el" href="classripple_1_1detail_1_1WorkSSL.html">WorkSSL</a>  &gt;::lastStatus_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="WorkBase_8h_source.html#l00069">69</a> of file <a class="el" href="WorkBase_8h_source.html">WorkBase.h</a>.</p>
 
 </div>
 </div>

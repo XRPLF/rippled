@@ -118,7 +118,6 @@ Transaction Queue</h1>
 </ol>
 <p>If a transaction is submitted for an account with one or more transactions already in the queue, and a sequence number that is sequential with the other transactions in the queue for that account, it will be considered for the queue if it meets these additional criteria:</p><ul>
 <li>the account has fewer than <a href="#other-constants">10</a> transactions already in the queue.</li>
-<li>it pays a <a href="#fee-level">fee level</a> that is greater than 10% of the fee level for the transaction with the previous sequence number,</li>
 <li>all other queued transactions for that account, in the case where they spend the maximum possible XRP, leave enough XRP balance to pay the fee,</li>
 <li>the total fees for the other queued transactions are less than both the network's minimum reserve and the account's XRP balance, and</li>
 <li>none of the prior queued transactions affect the ability of subsequent transactions to claim a fee.</li>

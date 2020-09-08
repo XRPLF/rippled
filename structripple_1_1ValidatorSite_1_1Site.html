@@ -79,12 +79,13 @@ Collaboration diagram for ripple::ValidatorSite::Site:</div>
 <div class="dyncontent">
 <div class="center"><img src="structripple_1_1ValidatorSite_1_1Site__coll__graph.png" border="0" usemap="#ripple_1_1ValidatorSite_1_1Site_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1ValidatorSite_1_1Site_coll__map" id="ripple_1_1ValidatorSite_1_1Site_coll__map">
-<area shape="rect" title=" " alt="" coords="109,495,259,536"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="5,347,176,403"/>
-<area shape="rect" href="structripple_1_1ValidatorSite_1_1Site_1_1Resource.html" title=" " alt="" coords="15,243,166,284"/>
-<area shape="rect" href="structripple_1_1parsedURL.html" title=" " alt="" coords="115,153,253,180"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="47,5,134,32"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="200,361,355,388"/>
+<area shape="rect" title=" " alt="" coords="983,110,1133,151"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="645,23,816,79"/>
+<area shape="rect" href="structripple_1_1ValidatorSite_1_1Site_1_1Resource.html" title=" " alt="" coords="424,30,575,71"/>
+<area shape="rect" href="structripple_1_1parsedURL.html" title=" " alt="" coords="207,76,344,103"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="5,45,92,72"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="653,103,808,159"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="653,183,808,209"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -117,12 +118,16 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a9ad8dccf45a8752422df47c9cfbcf484"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd8891a9a8eab080a9991dba2cebff43"><td class="memItemLeft" align="right" valign="top">clock_type::time_point&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ValidatorSite_1_1Site.html#acd8891a9a8eab080a9991dba2cebff43">nextRefresh</a></td></tr>
 <tr class="separator:acd8891a9a8eab080a9991dba2cebff43"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0ad7c73e51df5a42e52a2d22b0d04ff0"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="structripple_1_1ValidatorSite_1_1Site_1_1Status.html">Status</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ValidatorSite_1_1Site.html#a0ad7c73e51df5a42e52a2d22b0d04ff0">lastRefreshStatus</a></td></tr>
-<tr class="separator:a0ad7c73e51df5a42e52a2d22b0d04ff0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf3427a73198dc6d781fadf44d68e79e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1ValidatorSite_1_1Site_1_1Status.html">Status</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ValidatorSite_1_1Site.html#aaf3427a73198dc6d781fadf44d68e79e">lastRefreshStatus</a></td></tr>
+<tr class="separator:aaf3427a73198dc6d781fadf44d68e79e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c4d1bc1c74c6d7f5edfeac03fc0149f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1ValidatorSite.html#a2ce87ee8771072df7c98aa4a59c92f15">endpoint_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ValidatorSite_1_1Site.html#a7c4d1bc1c74c6d7f5edfeac03fc0149f">lastRequestEndpoint</a></td></tr>
+<tr class="separator:a7c4d1bc1c74c6d7f5edfeac03fc0149f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62935f3b4320b427b0b6dce87b59236e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ValidatorSite_1_1Site.html#a62935f3b4320b427b0b6dce87b59236e">lastRequestSuccessful</a></td></tr>
+<tr class="separator:a62935f3b4320b427b0b6dce87b59236e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00075">75</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00078">78</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a5ac58b976d710e8c7748e522ca680aa7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5ac58b976d710e8c7748e522ca680aa7">&#9670;&nbsp;</a></span>Site()</h2>
@@ -167,7 +172,7 @@ Public Attributes</h2></td></tr>
 
 <p>the original uri as loaded from config </p>
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00094">94</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00097">97</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 
 </div>
 </div>
@@ -186,7 +191,7 @@ Public Attributes</h2></td></tr>
 <p>the resource to request at &lt;timer&gt; intervals. </p>
 <p>same as loadedResource except in the case of a permanent redir. </p>
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00099">99</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00102">102</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 
 </div>
 </div>
@@ -205,7 +210,7 @@ Public Attributes</h2></td></tr>
 <p>the active resource being requested. </p>
 <p>same as startingResource except when we've gotten a temp redirect </p>
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00104">104</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00107">107</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 
 </div>
 </div>
@@ -221,7 +226,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00106">106</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00109">109</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 
 </div>
 </div>
@@ -237,7 +242,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00107">107</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00110">110</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 
 </div>
 </div>
@@ -253,23 +258,55 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00108">108</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00111">111</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 
 </div>
 </div>
-<a id="a0ad7c73e51df5a42e52a2d22b0d04ff0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0ad7c73e51df5a42e52a2d22b0d04ff0">&#9670;&nbsp;</a></span>lastRefreshStatus</h2>
+<a id="aaf3427a73198dc6d781fadf44d68e79e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf3427a73198dc6d781fadf44d68e79e">&#9670;&nbsp;</a></span>lastRefreshStatus</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt;<a class="el" href="structripple_1_1ValidatorSite_1_1Site_1_1Status.html">Status</a>&gt; ripple::ValidatorSite::Site::lastRefreshStatus</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="structripple_1_1ValidatorSite_1_1Site_1_1Status.html">Status</a>&gt; ripple::ValidatorSite::Site::lastRefreshStatus</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00109">109</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00112">112</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+
+</div>
+</div>
+<a id="a7c4d1bc1c74c6d7f5edfeac03fc0149f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c4d1bc1c74c6d7f5edfeac03fc0149f">&#9670;&nbsp;</a></span>lastRequestEndpoint</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1ValidatorSite.html#a2ce87ee8771072df7c98aa4a59c92f15">endpoint_type</a> ripple::ValidatorSite::Site::lastRequestEndpoint</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00113">113</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
+
+</div>
+</div>
+<a id="a62935f3b4320b427b0b6dce87b59236e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a62935f3b4320b427b0b6dce87b59236e">&#9670;&nbsp;</a></span>lastRequestSuccessful</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::ValidatorSite::Site::lastRequestSuccessful</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="ValidatorSite_8h_source.html#l00114">114</a> of file <a class="el" href="ValidatorSite_8h_source.html">ValidatorSite.h</a>.</p>
 
 </div>
 </div>

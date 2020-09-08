@@ -366,92 +366,89 @@ $(function() {
 <div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> baseFee = env.current()-&gt;fees().base;</div>
 <div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;            env(pay(env.master, gw, XRP(1000)),</div>
 <div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;                seq(autofill),</div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;                fee(<a class="code" href="namespaceripple.html#a6f284b9070e251bd13fb9c670f5ed59e">toDrops</a>(</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;                fee(<a class="code" href="namespaceripple.html#a8e8f60908958123bb6d9fe54213351c3">toDrops</a>(</div>
 <div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;                        txq.getMetrics(*env.current()).openLedgerFeeLevel,</div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;                        baseFee)</div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;                        .second +</div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;                    1),</div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;                sig(autofill));</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;            env(fset(gw, <a class="code" href="namespaceripple.html#a630504c038aae44a41a4e5aa5b4d2ac8">asfDefaultRipple</a>),</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;                seq(autofill),</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                fee(<a class="code" href="namespaceripple.html#a6f284b9070e251bd13fb9c670f5ed59e">toDrops</a>(</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;                        txq.getMetrics(*env.current()).openLedgerFeeLevel,</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                        baseFee)</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;                        .second +</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;                    1),</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;                sig(autofill));</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;            env(trust(alice, gw[<span class="stringliteral">&quot;USD&quot;</span>](10)),</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;                fee(<a class="code" href="namespaceripple.html#a6f284b9070e251bd13fb9c670f5ed59e">toDrops</a>(</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;                        txq.getMetrics(*env.current()).openLedgerFeeLevel,</div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;                        baseFee)</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;                        .second +</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;                    1));</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;            env.close();</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;        }</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160; </div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;        <span class="comment">// default limit value</span></div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> params;</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;        params[jss::account] = alice.human();</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;        params[jss::role] = <span class="stringliteral">&quot;user&quot;</span>;</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;        params[jss::ledger] = <span class="stringliteral">&quot;current&quot;</span>;</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;        <span class="keyword">auto</span> result = env.rpc(</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;            <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;            <span class="stringliteral">&quot;noripple_check&quot;</span>,</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;            boost::lexical_cast&lt;std::string&gt;(params))[jss::result];</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160; </div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;        BEAST_EXPECT(result[<span class="stringliteral">&quot;problems&quot;</span>].size() == 301);</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160; </div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;        <span class="comment">// one below minimum</span></div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;        params[jss::limit] = 9;</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;        result = env.rpc(</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;            <span class="stringliteral">&quot;noripple_check&quot;</span>,</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;            boost::lexical_cast&lt;std::string&gt;(params))[jss::result];</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;        BEAST_EXPECT(result[<span class="stringliteral">&quot;problems&quot;</span>].size() == (admin ? 10 : 11));</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160; </div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;        <span class="comment">// at minimum</span></div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;        params[jss::limit] = 10;</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;        result = env.rpc(</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;            <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;            <span class="stringliteral">&quot;noripple_check&quot;</span>,</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;            boost::lexical_cast&lt;std::string&gt;(params))[jss::result];</div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;        BEAST_EXPECT(result[<span class="stringliteral">&quot;problems&quot;</span>].size() == 11);</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160; </div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;        <span class="comment">// at max</span></div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;        params[jss::limit] = 400;</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;        result = env.rpc(</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;            <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;            <span class="stringliteral">&quot;noripple_check&quot;</span>,</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;            boost::lexical_cast&lt;std::string&gt;(params))[jss::result];</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;        BEAST_EXPECT(result[<span class="stringliteral">&quot;problems&quot;</span>].size() == 401);</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160; </div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;        <span class="comment">// at max+1</span></div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;        params[jss::limit] = 401;</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;        result = env.rpc(</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;            <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;            <span class="stringliteral">&quot;noripple_check&quot;</span>,</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;            boost::lexical_cast&lt;std::string&gt;(params))[jss::result];</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;        BEAST_EXPECT(result[<span class="stringliteral">&quot;problems&quot;</span>].size() == (admin ? 402 : 401));</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    }</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160; </div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00368"></a><span class="lineno"><a class="line" href="classripple_1_1NoRippleCheckLimits__test.html#af29d2ff79a323bb8fc5f758f3679cb48">  368</a></span>&#160;    <a class="code" href="classripple_1_1NoRippleCheckLimits__test.html#af29d2ff79a323bb8fc5f758f3679cb48">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> admin : {<span class="keyword">true</span>, <span class="keyword">false</span>})</div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;            testLimits(admin);</div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;    }</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;};</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160; </div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(NoRippleCheck, app, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160; </div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;<span class="comment">// These tests that deal with limit amounts are slow because of the</span></div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;<span class="comment">// offer/account setup, so making them manual -- the additional coverage</span></div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;<span class="comment">// provided by them is minimal</span></div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160; </div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;<a class="code" href="namespaceripple.html#a87a7122d89580b8eb6e597db7c3e7b72">BEAST_DEFINE_TESTSUITE_MANUAL_PRIO</a>(NoRippleCheckLimits, app, <a class="code" href="namespaceripple.html">ripple</a>, 1);</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160; </div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;                        baseFee) +</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;                    1),</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;                sig(autofill));</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;            env(fset(gw, <a class="code" href="namespaceripple.html#a630504c038aae44a41a4e5aa5b4d2ac8">asfDefaultRipple</a>),</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;                seq(autofill),</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;                fee(<a class="code" href="namespaceripple.html#a8e8f60908958123bb6d9fe54213351c3">toDrops</a>(</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                        txq.getMetrics(*env.current()).openLedgerFeeLevel,</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;                        baseFee) +</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                    1),</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;                sig(autofill));</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;            env(trust(alice, gw[<span class="stringliteral">&quot;USD&quot;</span>](10)),</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;                fee(<a class="code" href="namespaceripple.html#a8e8f60908958123bb6d9fe54213351c3">toDrops</a>(</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;                        txq.getMetrics(*env.current()).openLedgerFeeLevel,</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;                        baseFee) +</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;                    1));</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;            env.close();</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;        }</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160; </div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        <span class="comment">// default limit value</span></div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> params;</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        params[jss::account] = alice.human();</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;        params[jss::role] = <span class="stringliteral">&quot;user&quot;</span>;</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;        params[jss::ledger] = <span class="stringliteral">&quot;current&quot;</span>;</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;        <span class="keyword">auto</span> result = env.rpc(</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;            <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;            <span class="stringliteral">&quot;noripple_check&quot;</span>,</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;            boost::lexical_cast&lt;std::string&gt;(params))[jss::result];</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160; </div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;        BEAST_EXPECT(result[<span class="stringliteral">&quot;problems&quot;</span>].size() == 301);</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160; </div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;        <span class="comment">// one below minimum</span></div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;        params[jss::limit] = 9;</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;        result = env.rpc(</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;            <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;            <span class="stringliteral">&quot;noripple_check&quot;</span>,</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;            boost::lexical_cast&lt;std::string&gt;(params))[jss::result];</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;        BEAST_EXPECT(result[<span class="stringliteral">&quot;problems&quot;</span>].size() == (admin ? 10 : 11));</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160; </div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;        <span class="comment">// at minimum</span></div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;        params[jss::limit] = 10;</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;        result = env.rpc(</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;            <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;            <span class="stringliteral">&quot;noripple_check&quot;</span>,</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;            boost::lexical_cast&lt;std::string&gt;(params))[jss::result];</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;        BEAST_EXPECT(result[<span class="stringliteral">&quot;problems&quot;</span>].size() == 11);</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160; </div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;        <span class="comment">// at max</span></div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;        params[jss::limit] = 400;</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;        result = env.rpc(</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;            <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;            <span class="stringliteral">&quot;noripple_check&quot;</span>,</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;            boost::lexical_cast&lt;std::string&gt;(params))[jss::result];</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;        BEAST_EXPECT(result[<span class="stringliteral">&quot;problems&quot;</span>].size() == 401);</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160; </div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;        <span class="comment">// at max+1</span></div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;        params[jss::limit] = 401;</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;        result = env.rpc(</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;            <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;            <span class="stringliteral">&quot;noripple_check&quot;</span>,</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;            boost::lexical_cast&lt;std::string&gt;(params))[jss::result];</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;        BEAST_EXPECT(result[<span class="stringliteral">&quot;problems&quot;</span>].size() == (admin ? 402 : 401));</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;    }</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160; </div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00365"></a><span class="lineno"><a class="line" href="classripple_1_1NoRippleCheckLimits__test.html#af29d2ff79a323bb8fc5f758f3679cb48">  365</a></span>&#160;    <a class="code" href="classripple_1_1NoRippleCheckLimits__test.html#af29d2ff79a323bb8fc5f758f3679cb48">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> admin : {<span class="keyword">true</span>, <span class="keyword">false</span>})</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;            testLimits(admin);</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;    }</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;};</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160; </div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;<a class="code" href="namespaceripple.html#a2701412a11b118c19256a4c901db2938">BEAST_DEFINE_TESTSUITE</a>(NoRippleCheck, app, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160; </div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;<span class="comment">// These tests that deal with limit amounts are slow because of the</span></div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;<span class="comment">// offer/account setup, so making them manual -- the additional coverage</span></div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;<span class="comment">// provided by them is minimal</span></div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160; </div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;<a class="code" href="namespaceripple.html#a87a7122d89580b8eb6e597db7c3e7b72">BEAST_DEFINE_TESTSUITE_MANUAL_PRIO</a>(NoRippleCheckLimits, app, <a class="code" href="namespaceripple.html">ripple</a>, 1);</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160; </div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_1_1RPC_1_1Tuning_html_ad8b65aac1cd90a963e2a21f5d3a761c2"><div class="ttname"><a href="namespaceripple_1_1RPC_1_1Tuning.html#ad8b65aac1cd90a963e2a21f5d3a761c2">ripple::RPC::Tuning::noRippleCheck</a></div><div class="ttdeci">static constexpr LimitRange noRippleCheck</div><div class="ttdoc">Limits for the no_ripple_check command.</div><div class="ttdef"><b>Definition:</b> <a href="rpc_2impl_2Tuning_8h_source.html#l00052">rpc/impl/Tuning.h:52</a></div></div>
 <div class="ttc" id="aclassripple_1_1NoRippleCheck__test_html_acbdc05f128c401aafdfc1cbd369f2056"><div class="ttname"><a href="classripple_1_1NoRippleCheck__test.html#acbdc05f128c401aafdfc1cbd369f2056">ripple::NoRippleCheck_test::testBadInput</a></div><div class="ttdeci">void testBadInput()</div><div class="ttdef"><b>Definition:</b> <a href="NoRippleCheck__test_8cpp_source.html#l00037">NoRippleCheck_test.cpp:37</a></div></div>
@@ -462,17 +459,17 @@ $(function() {
 <div class="ttc" id="anamespaceripple_1_1Resource_html_af2d742798656e2a5de158fc88c006f0caf9650eae9082653d5c5c741cfdb13d5f"><div class="ttname"><a href="namespaceripple_1_1Resource.html#af2d742798656e2a5de158fc88c006f0caf9650eae9082653d5c5c741cfdb13d5f">ripple::Resource::warningThreshold</a></div><div class="ttdeci">@ warningThreshold</div><div class="ttdef"><b>Definition:</b> <a href="resource_2impl_2Tuning_8h_source.html#l00031">resource/impl/Tuning.h:31</a></div></div>
 <div class="ttc" id="aclassripple_1_1NoRippleCheck__test_html_afc8ad7d6409d18b6d02797b4da9b807a"><div class="ttname"><a href="classripple_1_1NoRippleCheck__test.html#afc8ad7d6409d18b6d02797b4da9b807a">ripple::NoRippleCheck_test::testBasic</a></div><div class="ttdeci">void testBasic(bool user, bool problems)</div><div class="ttdef"><b>Definition:</b> <a href="NoRippleCheck__test_8cpp_source.html#l00136">NoRippleCheck_test.cpp:136</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_html_a5cec438e4f0b4209c6e24ad4a60348f2"><div class="ttname"><a href="namespaceripple_1_1test.html#a5cec438e4f0b4209c6e24ad4a60348f2">ripple::test::getEnvLocalhostAddr</a></div><div class="ttdeci">const char * getEnvLocalhostAddr()</div><div class="ttdef"><b>Definition:</b> <a href="envconfig_8h_source.html#l00031">envconfig.h:31</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a8e8f60908958123bb6d9fe54213351c3"><div class="ttname"><a href="namespaceripple.html#a8e8f60908958123bb6d9fe54213351c3">ripple::toDrops</a></div><div class="ttdeci">XRPAmount toDrops(FeeLevel&lt; T &gt; const &amp;level, XRPAmount const &amp;baseFee)</div><div class="ttdef"><b>Definition:</b> <a href="TxQ_8h_source.html#l00826">TxQ.h:826</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8"><div class="ttname"><a href="namespaceripple.html#a169967ff418b80729654b6d45ade8711a334c4a4c42fdb79d7ebc3e73b517e6f8">ripple::JsonOptions::none</a></div><div class="ttdeci">@ none</div></div>
 <div class="ttc" id="ato_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a></div><div class="ttdeci">T to_string(T... args)</div></div>
 <div class="ttc" id="aclassripple_1_1NoRippleCheckLimits__test_html_a780cb5342c2fd409e79a31490d4d2e5a"><div class="ttname"><a href="classripple_1_1NoRippleCheckLimits__test.html#a780cb5342c2fd409e79a31490d4d2e5a">ripple::NoRippleCheckLimits_test::testLimits</a></div><div class="ttdeci">void testLimits(bool admin)</div><div class="ttdef"><b>Definition:</b> <a href="NoRippleCheck__test_8cpp_source.html#l00250">NoRippleCheck_test.cpp:250</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1Resource_html"><div class="ttname"><a href="namespaceripple_1_1Resource.html">ripple::Resource</a></div><div class="ttdef"><b>Definition:</b> <a href="Application_8h_source.html#l00039">Application.h:39</a></div></div>
 <div class="ttc" id="anamespacebeast_1_1IP_html"><div class="ttname"><a href="namespacebeast_1_1IP.html">beast::IP</a></div><div class="ttdef"><b>Definition:</b> <a href="IPAddressConversion_8cpp_source.html#l00023">IPAddressConversion.cpp:23</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Tuning_1_1LimitRange_html_a0030613e1637c29d503482140a3486d4"><div class="ttname"><a href="structripple_1_1RPC_1_1Tuning_1_1LimitRange.html#a0030613e1637c29d503482140a3486d4">ripple::RPC::Tuning::LimitRange::rmax</a></div><div class="ttdeci">unsigned int rmax</div><div class="ttdef"><b>Definition:</b> <a href="rpc_2impl_2Tuning_8h_source.html#l00033">rpc/impl/Tuning.h:33</a></div></div>
-<div class="ttc" id="aclassripple_1_1NoRippleCheckLimits__test_html_af29d2ff79a323bb8fc5f758f3679cb48"><div class="ttname"><a href="classripple_1_1NoRippleCheckLimits__test.html#af29d2ff79a323bb8fc5f758f3679cb48">ripple::NoRippleCheckLimits_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="NoRippleCheck__test_8cpp_source.html#l00368">NoRippleCheck_test.cpp:368</a></div></div>
+<div class="ttc" id="aclassripple_1_1NoRippleCheckLimits__test_html_af29d2ff79a323bb8fc5f758f3679cb48"><div class="ttname"><a href="classripple_1_1NoRippleCheckLimits__test.html#af29d2ff79a323bb8fc5f758f3679cb48">ripple::NoRippleCheckLimits_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="NoRippleCheck__test_8cpp_source.html#l00365">NoRippleCheck_test.cpp:365</a></div></div>
 <div class="ttc" id="aclassbeast_1_1abstract__clock_html"><div class="ttname"><a href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a></div><div class="ttdoc">Abstract interface to a clock.</div><div class="ttdef"><b>Definition:</b> <a href="abstract__clock_8h_source.html#l00057">abstract_clock.h:57</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a85be1d48c112cdf290bc39f20ff4cbc2"><div class="ttname"><a href="namespaceripple.html#a85be1d48c112cdf290bc39f20ff4cbc2">ripple::tfSetNoRipple</a></div><div class="ttdeci">const std::uint32_t tfSetNoRipple</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00092">TxFlags.h:92</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a6f284b9070e251bd13fb9c670f5ed59e"><div class="ttname"><a href="namespaceripple.html#a6f284b9070e251bd13fb9c670f5ed59e">ripple::toDrops</a></div><div class="ttdeci">std::pair&lt; bool, XRPAmount &gt; toDrops(FeeLevel&lt; T &gt; const &amp;level, XRPAmount const &amp;baseFee)</div><div class="ttdef"><b>Definition:</b> <a href="TxQ_8h_source.html#l00779">TxQ.h:779</a></div></div>
 <div class="ttc" id="aclassripple_1_1DecayingSample_html"><div class="ttname"><a href="classripple_1_1DecayingSample.html">ripple::DecayingSample</a></div><div class="ttdoc">Sampling function using exponential decay to provide a continuous value.</div><div class="ttdef"><b>Definition:</b> <a href="DecayingSample_8h_source.html#l00032">DecayingSample.h:32</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a87a7122d89580b8eb6e597db7c3e7b72"><div class="ttname"><a href="namespaceripple.html#a87a7122d89580b8eb6e597db7c3e7b72">ripple::BEAST_DEFINE_TESTSUITE_MANUAL_PRIO</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(digest, ripple_data, ripple, 20)</div></div>
 <div class="ttc" id="aclassripple_1_1NoRippleCheckLimits__test_html"><div class="ttname"><a href="classripple_1_1NoRippleCheckLimits__test.html">ripple::NoRippleCheckLimits_test</a></div><div class="ttdef"><b>Definition:</b> <a href="NoRippleCheck__test_8cpp_source.html#l00247">NoRippleCheck_test.cpp:247</a></div></div>

@@ -66,8 +66,10 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
+<a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
@@ -93,59 +95,67 @@ Collaboration diagram for ripple::Payment:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1Payment__coll__graph.png" border="0" usemap="#ripple_1_1Payment_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1Payment_coll__map" id="ripple_1_1Payment_coll__map">
-<area shape="rect" title=" " alt="" coords="2044,191,2168,217"/>
-<area shape="rect" href="classripple_1_1Transactor.html" title=" " alt="" coords="1860,389,1995,416"/>
-<area shape="rect" href="classripple_1_1ApplyContext.html" title="State information when applying a tx." alt="" coords="1625,389,1780,416"/>
-<area shape="rect" href="classripple_1_1TERSubset.html" title=" " alt="" coords="1308,363,1455,405"/>
-<area shape="rect" href="classripple_1_1Application.html" title=" " alt="" coords="1311,175,1451,201"/>
-<area shape="rect" href="classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="971,127,1139,169"/>
-<area shape="rect" href="classbeast_1_1PropertyStream_1_1Item.html" title=" " alt="" coords="1297,95,1465,137"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html" title="STL class." alt="" coords="569,139,728,165"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="605,189,692,216"/>
-<area shape="rect" href="classbeast_1_1List.html" title=" " alt="" coords="556,73,741,114"/>
+<area shape="rect" title=" " alt="" coords="2037,191,2161,217"/>
+<area shape="rect" href="classripple_1_1Transactor.html" title=" " alt="" coords="1853,389,1988,416"/>
+<area shape="rect" href="classripple_1_1ApplyContext.html" title="State information when applying a tx." alt="" coords="1619,389,1773,416"/>
+<area shape="rect" href="classripple_1_1TERSubset.html" title=" " alt="" coords="1301,363,1448,405"/>
+<area shape="rect" href="classripple_1_1Application.html" title=" " alt="" coords="1305,175,1445,201"/>
+<area shape="rect" href="classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="965,127,1133,169"/>
+<area shape="rect" href="classbeast_1_1PropertyStream_1_1Item.html" title=" " alt="" coords="1291,95,1459,137"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html" title="STL class." alt="" coords="566,139,725,165"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="602,189,689,216"/>
+<area shape="rect" href="classbeast_1_1List.html" title=" " alt="" coords="553,73,738,114"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="290,259,378,285"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="578,451,719,493"/>
-<area shape="rect" href="classripple_1_1STTx.html" title=" " alt="" coords="1006,283,1105,309"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="545,321,752,362"/>
-<area shape="rect" href="classripple_1_1OpenView.html" title="Writable ledger view that accumulates state and tx changes." alt="" coords="1315,932,1448,959"/>
-<area shape="rect" href="classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="990,843,1121,869"/>
-<area shape="rect" href="structripple_1_1ReadView_1_1sles__type.html" title=" " alt="" coords="549,723,749,749"/>
-<area shape="rect" href="structripple_1_1ReadView_1_1txs__type.html" title=" " alt="" coords="551,672,746,699"/>
-<area shape="rect" href="classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="980,893,1131,920"/>
-<area shape="rect" href="classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="585,773,712,800"/>
-<area shape="rect" href="classripple_1_1detail_1_1RawStateTable.html" title=" " alt="" coords="968,1111,1143,1153"/>
-<area shape="rect" href="classripple_1_1XRPAmount.html" title=" " alt="" coords="577,1155,720,1181"/>
-<area shape="rect" href="structripple_1_1LedgerInfo.html" title="Information about the notional ledger backing the view." alt="" coords="987,995,1123,1021"/>
+<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="575,451,716,493"/>
+<area shape="rect" href="classripple_1_1STTx.html" title=" " alt="" coords="999,283,1098,309"/>
+<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="575,321,716,362"/>
+<area shape="rect" href="classripple_1_1OpenView.html" title="Writable ledger view that accumulates state and tx changes." alt="" coords="1308,932,1441,959"/>
+<area shape="rect" href="classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="983,843,1114,869"/>
+<area shape="rect" href="structripple_1_1ReadView_1_1sles__type.html" title=" " alt="" coords="545,723,745,749"/>
+<area shape="rect" href="structripple_1_1ReadView_1_1txs__type.html" title=" " alt="" coords="548,672,743,699"/>
+<area shape="rect" href="classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="973,893,1124,920"/>
+<area shape="rect" href="classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="582,773,709,800"/>
+<area shape="rect" href="classripple_1_1detail_1_1RawStateTable.html" title=" " alt="" coords="961,1111,1136,1153"/>
+<area shape="rect" href="classripple_1_1XRPAmount.html" title=" " alt="" coords="574,1155,717,1181"/>
+<area shape="rect" href="structripple_1_1LedgerInfo.html" title="Information about the notional ledger backing the view." alt="" coords="981,995,1117,1021"/>
 <area shape="rect" title=" " alt="" coords="251,1053,417,1094"/>
 <area shape="rect" title=" " alt="" coords="221,1119,447,1145"/>
 <area shape="rect" title=" " alt="" coords="229,1170,439,1211"/>
 <area shape="rect" title=" " alt="" coords="227,1235,441,1277"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="287,1301,381,1328"/>
-<area shape="rect" href="classripple_1_1Rules.html" title="Rules controlling protocol behavior." alt="" coords="1004,944,1107,971"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="563,825,734,866"/>
+<area shape="rect" href="classripple_1_1Rules.html" title="Rules controlling protocol behavior." alt="" coords="997,944,1100,971"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="560,825,731,866"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,980,108,1007"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="250,445,418,486"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="571,1053,727,1094"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="563,935,735,977"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="974,1046,1137,1087"/>
-<area shape="rect" href="classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="1287,558,1476,599"/>
-<area shape="rect" title=" " alt="" coords="948,385,1163,426"/>
-<area shape="rect" title=" " alt="" coords="954,450,1157,491"/>
-<area shape="rect" title=" " alt="" coords="940,515,1171,557"/>
-<area shape="rect" title=" " alt="" coords="962,581,1149,622"/>
-<area shape="rect" title=" " alt="" coords="952,646,1159,687"/>
-<area shape="rect" title=" " alt="" coords="969,712,1142,768"/>
-<area shape="rect" title=" " alt="" coords="1036,792,1075,819"/>
-<area shape="rect" href="classripple_1_1STObject.html" title=" " alt="" coords="586,539,711,565"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="567,1053,723,1094"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="559,935,731,977"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="967,1046,1130,1087"/>
+<area shape="rect" href="classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="1280,558,1469,599"/>
+<area shape="rect" title=" " alt="" coords="941,385,1156,426"/>
+<area shape="rect" title=" " alt="" coords="947,450,1150,491"/>
+<area shape="rect" title=" " alt="" coords="933,515,1164,557"/>
+<area shape="rect" title=" " alt="" coords="955,581,1142,622"/>
+<area shape="rect" title=" " alt="" coords="945,646,1152,687"/>
+<area shape="rect" title=" " alt="" coords="962,712,1135,768"/>
+<area shape="rect" title=" " alt="" coords="1029,792,1068,819"/>
+<area shape="rect" href="classripple_1_1STObject.html" title=" " alt="" coords="583,539,708,565"/>
 <area shape="rect" href="classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="277,561,391,588"/>
 <area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="253,613,415,654"/>
 <area shape="rect" href="classripple_1_1SOTemplate.html" title="Defines the fields and their attributes within a STObject." alt="" coords="261,511,407,537"/>
-<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="567,386,730,427"/>
-<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1326,429,1437,456"/>
-<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="982,333,1129,360"/>
+<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="564,386,727,427"/>
+<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1319,429,1430,456"/>
+<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="975,333,1122,360"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a5c6d16e9402d182a835f50b37ce9a938"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#a5c6d16e9402d182a835f50b37ce9a938">ConsequencesFactoryType</a> { <a class="el" href="classripple_1_1Transactor.html#a5c6d16e9402d182a835f50b37ce9a938aa45cb725337de0d627f42b7ebf4be91f">Normal</a>, 
+<a class="el" href="classripple_1_1Transactor.html#a5c6d16e9402d182a835f50b37ce9a938a55caa0901cae976168bf23f19bc3e8f4">Blocker</a>, 
+<a class="el" href="classripple_1_1Transactor.html#a5c6d16e9402d182a835f50b37ce9a938a429832eac6b9ee7b50a1265131cd2845">Custom</a>
+ }</td></tr>
+<tr class="separator:a5c6d16e9402d182a835f50b37ce9a938"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a4ed9102d4015a6b67ea2129171fcd159"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Payment.html#a4ed9102d4015a6b67ea2129171fcd159">Payment</a> (<a class="el" href="classripple_1_1ApplyContext.html">ApplyContext</a> &amp;ctx)</td></tr>
@@ -162,24 +172,29 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a8f7c7a196aac29df014b166cefc2fdea"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Payment.html#a8f7c7a196aac29df014b166cefc2fdea">calculateMaxSpend</a> (<a class="el" href="classripple_1_1STTx.html">STTx</a> const &amp;tx)</td></tr>
-<tr class="separator:a8f7c7a196aac29df014b166cefc2fdea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aecdd8e453755c0f3f040eec52c8a759c"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1TxConsequences.html">TxConsequences</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Payment.html#aecdd8e453755c0f3f040eec52c8a759c">makeTxConsequences</a> (<a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;ctx)</td></tr>
+<tr class="separator:aecdd8e453755c0f3f040eec52c8a759c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab73444b0f7a44d60c73dd0f2bd88a4c7"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Payment.html#ab73444b0f7a44d60c73dd0f2bd88a4c7">preflight</a> (<a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;ctx)</td></tr>
 <tr class="separator:ab73444b0f7a44d60c73dd0f2bd88a4c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa8a1ae4f359062212797281f175ab89d"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Payment.html#aa8a1ae4f359062212797281f175ab89d">preclaim</a> (<a class="el" href="structripple_1_1PreclaimContext.html">PreclaimContext</a> const &amp;ctx)</td></tr>
 <tr class="separator:aa8a1ae4f359062212797281f175ab89d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a92cd42ec742b162425cc4483f643c4e6"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#a92cd42ec742b162425cc4483f643c4e6">checkSeq</a> (<a class="el" href="structripple_1_1PreclaimContext.html">PreclaimContext</a> const &amp;ctx)</td></tr>
-<tr class="separator:a92cd42ec742b162425cc4483f643c4e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a433ee7a44770c882927f2eedf20e6c71"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#a433ee7a44770c882927f2eedf20e6c71">checkSeqProxy</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;<a class="el" href="classripple_1_1Transactor.html#a1ac5d16d7b21e8af9cc94d7af39a85d5">view</a>, <a class="el" href="classripple_1_1STTx.html">STTx</a> const &amp;tx, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="separator:a433ee7a44770c882927f2eedf20e6c71"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f3af178ae553ba91b5893fbcc4ade7f"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#a2f3af178ae553ba91b5893fbcc4ade7f">checkPriorTxAndLastLedger</a> (<a class="el" href="structripple_1_1PreclaimContext.html">PreclaimContext</a> const &amp;ctx)</td></tr>
+<tr class="separator:a2f3af178ae553ba91b5893fbcc4ade7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adf9b07fbfbaf6c0169913f0ec84976a0"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#adf9b07fbfbaf6c0169913f0ec84976a0">checkFee</a> (<a class="el" href="structripple_1_1PreclaimContext.html">PreclaimContext</a> const &amp;ctx, <a class="el" href="namespaceripple.html#a0c6efbec71c5ff79b38c80b8fe3f52e5">FeeUnit64</a> baseFee)</td></tr>
 <tr class="separator:adf9b07fbfbaf6c0169913f0ec84976a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4501e41a5df4853bb93e7f85ec6abaf7"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#a4501e41a5df4853bb93e7f85ec6abaf7">checkSign</a> (<a class="el" href="structripple_1_1PreclaimContext.html">PreclaimContext</a> const &amp;ctx)</td></tr>
 <tr class="separator:a4501e41a5df4853bb93e7f85ec6abaf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:addf99c21239414484d25720f9aabfd19"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#a0c6efbec71c5ff79b38c80b8fe3f52e5">FeeUnit64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#addf99c21239414484d25720f9aabfd19">calculateBaseFee</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;<a class="el" href="classripple_1_1Transactor.html#a1ac5d16d7b21e8af9cc94d7af39a85d5">view</a>, <a class="el" href="classripple_1_1STTx.html">STTx</a> const &amp;tx)</td></tr>
 <tr class="separator:addf99c21239414484d25720f9aabfd19"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c7a9cad3f739c4a65873b02587112a6"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#a0c7a9cad3f739c4a65873b02587112a6">affectsSubsequentTransactionAuth</a> (<a class="el" href="classripple_1_1STTx.html">STTx</a> const &amp;tx)</td></tr>
-<tr class="separator:a0c7a9cad3f739c4a65873b02587112a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae3645289edf722ceb5c9fb227b05b655"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#ae3645289edf722ceb5c9fb227b05b655">calculateFeePaid</a> (<a class="el" href="classripple_1_1STTx.html">STTx</a> const &amp;tx)</td></tr>
-<tr class="separator:ae3645289edf722ceb5c9fb227b05b655"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac424955fc06a7eb920a93fe517ad8d69"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#ac424955fc06a7eb920a93fe517ad8d69">ticketDelete</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;<a class="el" href="classripple_1_1Transactor.html#a1ac5d16d7b21e8af9cc94d7af39a85d5">view</a>, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;ticketIndex, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="separator:ac424955fc06a7eb920a93fe517ad8d69"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
+Static Public Attributes</h2></td></tr>
+<tr class="memitem:adfdd9dae5f1067991618e2b707a5ff17"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="classripple_1_1Transactor.html#a5c6d16e9402d182a835f50b37ce9a938">ConsequencesFactoryType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Payment.html#adfdd9dae5f1067991618e2b707a5ff17">ConsequencesFactory</a> {<a class="el" href="classripple_1_1Transactor.html#a5c6d16e9402d182a835f50b37ce9a938a429832eac6b9ee7b50a1265131cd2845">Custom</a>}</td></tr>
+<tr class="separator:adfdd9dae5f1067991618e2b707a5ff17"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -200,8 +215,8 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:aef4ef0a89b5595b2a688b89e4ecef833"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aafdaa4e246ee6879df9cbbf2482dcc7d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#aafdaa4e246ee6879df9cbbf2482dcc7d">j_</a></td></tr>
 <tr class="separator:aafdaa4e246ee6879df9cbbf2482dcc7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4164eb695aa99f3be286df6e98e3e1f9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#a4164eb695aa99f3be286df6e98e3e1f9">account_</a></td></tr>
-<tr class="separator:a4164eb695aa99f3be286df6e98e3e1f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a558a1d4288c859eb5875154a86435220"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#a558a1d4288c859eb5875154a86435220">account_</a></td></tr>
+<tr class="separator:a558a1d4288c859eb5875154a86435220"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb2f6f5d7fd8c663c5df76b6fcba2c49"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#abb2f6f5d7fd8c663c5df76b6fcba2c49">mPriorBalance</a></td></tr>
 <tr class="separator:abb2f6f5d7fd8c663c5df76b6fcba2c49"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae20c19d8ecec32cec52399081e76cc45"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#ae20c19d8ecec32cec52399081e76cc45">mSourceBalance</a></td></tr>
@@ -209,11 +224,11 @@ Protected Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:a2506763dfb32cf873588786364e02787"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#a2506763dfb32cf873588786364e02787">reset</a> (<a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> fee)</td></tr>
-<tr class="memdesc:a2506763dfb32cf873588786364e02787"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset the context, discarding any changes made and adjust the fee.  <a href="classripple_1_1Transactor.html#a2506763dfb32cf873588786364e02787">More...</a><br /></td></tr>
-<tr class="separator:a2506763dfb32cf873588786364e02787"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab030f80131ac0a2bf0a2ab4eff8d1daa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#ab030f80131ac0a2bf0a2ab4eff8d1daa">setSeq</a> ()</td></tr>
-<tr class="separator:ab030f80131ac0a2bf0a2ab4eff8d1daa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af81f796422a3f66771e31a6ecbbbf57b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>, <a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#af81f796422a3f66771e31a6ecbbbf57b">reset</a> (<a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> fee)</td></tr>
+<tr class="memdesc:af81f796422a3f66771e31a6ecbbbf57b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset the context, discarding any changes made and adjust the fee.  <a href="classripple_1_1Transactor.html#af81f796422a3f66771e31a6ecbbbf57b">More...</a><br /></td></tr>
+<tr class="separator:af81f796422a3f66771e31a6ecbbbf57b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b2066252127862bb58c1e4994dd5deb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#a0b2066252127862bb58c1e4994dd5deb">consumeSeqProxy</a> (<a class="el" href="classripple_1_1STLedgerEntry.html#ad360ad8483226127ef6b132ac93c1598">SLE::pointer</a> const &amp;sleAccount)</td></tr>
+<tr class="separator:a0b2066252127862bb58c1e4994dd5deb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08d96a396dc3bd9a0a3e39e47e38531c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#a08d96a396dc3bd9a0a3e39e47e38531c">payFee</a> ()</td></tr>
 <tr class="separator:a08d96a396dc3bd9a0a3e39e47e38531c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -234,7 +249,37 @@ Static Private Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
 <p class="definition">Definition at line <a class="el" href="Payment_8h_source.html#l00032">32</a> of file <a class="el" href="Payment_8h_source.html">Payment.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+</div><h2 class="groupheader">Member Enumeration Documentation</h2>
+<a id="a5c6d16e9402d182a835f50b37ce9a938"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c6d16e9402d182a835f50b37ce9a938">&#9670;&nbsp;</a></span>ConsequencesFactoryType</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="classripple_1_1Transactor.html#a5c6d16e9402d182a835f50b37ce9a938">ripple::Transactor::ConsequencesFactoryType</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a5c6d16e9402d182a835f50b37ce9a938aa45cb725337de0d627f42b7ebf4be91f"></a>Normal&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a5c6d16e9402d182a835f50b37ce9a938a55caa0901cae976168bf23f19bc3e8f4"></a>Blocker&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a5c6d16e9402d182a835f50b37ce9a938a429832eac6b9ee7b50a1265131cd2845"></a>Custom&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="Transactor_8h_source.html#l00102">102</a> of file <a class="el" href="Transactor_8h_source.html">Transactor.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a4ed9102d4015a6b67ea2129171fcd159"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4ed9102d4015a6b67ea2129171fcd159">&#9670;&nbsp;</a></span>Payment()</h2>
 
@@ -259,13 +304,13 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Payment_8h_source.html#l00041">41</a> of file <a class="el" href="Payment_8h_source.html">Payment.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Payment_8h_source.html#l00043">43</a> of file <a class="el" href="Payment_8h_source.html">Payment.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a8f7c7a196aac29df014b166cefc2fdea"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8f7c7a196aac29df014b166cefc2fdea">&#9670;&nbsp;</a></span>calculateMaxSpend()</h2>
+<a id="aecdd8e453755c0f3f040eec52c8a759c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aecdd8e453755c0f3f040eec52c8a759c">&#9670;&nbsp;</a></span>makeTxConsequences()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -274,10 +319,10 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> ripple::Payment::calculateMaxSpend </td>
+          <td class="memname"><a class="el" href="classripple_1_1TxConsequences.html">TxConsequences</a> ripple::Payment::makeTxConsequences </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1STTx.html">STTx</a> const &amp;&#160;</td>
-          <td class="paramname"><em>tx</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="structripple_1_1PreflightContext.html">PreflightContext</a> const &amp;&#160;</td>
+          <td class="paramname"><em>ctx</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -316,7 +361,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Payment_8cpp_source.html#l00048">48</a> of file <a class="el" href="Payment_8cpp_source.html">Payment.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Payment_8cpp_source.html#l00049">49</a> of file <a class="el" href="Payment_8cpp_source.html">Payment.cpp</a>.</p>
 
 </div>
 </div>
@@ -344,7 +389,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Payment_8cpp_source.html#l00209">209</a> of file <a class="el" href="Payment_8cpp_source.html">Payment.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Payment_8cpp_source.html#l00210">210</a> of file <a class="el" href="Payment_8cpp_source.html">Payment.cpp</a>.</p>
 
 </div>
 </div>
@@ -373,7 +418,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Transactor.html#af0192505cdcebc1bb31be32dfb62aa72">ripple::Transactor</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Payment_8cpp_source.html#l00303">303</a> of file <a class="el" href="Payment_8cpp_source.html">Payment.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Payment_8cpp_source.html#l00304">304</a> of file <a class="el" href="Payment_8cpp_source.html">Payment.cpp</a>.</p>
 
 </div>
 </div>
@@ -402,7 +447,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Process the transaction. </p>
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00627">627</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00745">745</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -429,7 +474,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8h_source.html#l00107">107</a> of file <a class="el" href="Transactor_8h_source.html">Transactor.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8h_source.html#l00108">108</a> of file <a class="el" href="Transactor_8h_source.html">Transactor.h</a>.</p>
 
 </div>
 </div>
@@ -456,12 +501,12 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8h_source.html#l00113">113</a> of file <a class="el" href="Transactor_8h_source.html">Transactor.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8h_source.html#l00114">114</a> of file <a class="el" href="Transactor_8h_source.html">Transactor.h</a>.</p>
 
 </div>
 </div>
-<a id="a92cd42ec742b162425cc4483f643c4e6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a92cd42ec742b162425cc4483f643c4e6">&#9670;&nbsp;</a></span>checkSeq()</h2>
+<a id="a433ee7a44770c882927f2eedf20e6c71"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a433ee7a44770c882927f2eedf20e6c71">&#9670;&nbsp;</a></span>checkSeqProxy()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -470,7 +515,51 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a> ripple::Transactor::checkSeq </td>
+          <td class="memname"><a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a> ripple::Transactor::checkSeqProxy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STTx.html">STTx</a> const &amp;&#160;</td>
+          <td class="paramname"><em>tx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00237">237</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a2f3af178ae553ba91b5893fbcc4ade7f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f3af178ae553ba91b5893fbcc4ade7f">&#9670;&nbsp;</a></span>checkPriorTxAndLastLedger()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a> ripple::Transactor::checkPriorTxAndLastLedger </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structripple_1_1PreclaimContext.html">PreclaimContext</a> const &amp;&#160;</td>
           <td class="paramname"><em>ctx</em></td><td>)</td>
@@ -484,7 +573,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00227">227</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00298">298</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -522,7 +611,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00161">161</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00168">168</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -550,7 +639,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00329">329</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00441">441</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -588,12 +677,12 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00121">121</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00140">140</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a0c7a9cad3f739c4a65873b02587112a6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0c7a9cad3f739c4a65873b02587112a6">&#9670;&nbsp;</a></span>affectsSubsequentTransactionAuth()</h2>
+<a id="ac424955fc06a7eb920a93fe517ad8d69"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac424955fc06a7eb920a93fe517ad8d69">&#9670;&nbsp;</a></span>ticketDelete()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -602,11 +691,33 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static bool ripple::Transactor::affectsSubsequentTransactionAuth </td>
+          <td class="memname"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a> ripple::Transactor::ticketDelete </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1STTx.html">STTx</a> const &amp;&#160;</td>
-          <td class="paramname"><em>tx</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>account</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>ticketIndex</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -616,35 +727,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8h_source.html#l00142">142</a> of file <a class="el" href="Transactor_8h_source.html">Transactor.h</a>.</p>
-
-</div>
-</div>
-<a id="ae3645289edf722ceb5c9fb227b05b655"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae3645289edf722ceb5c9fb227b05b655">&#9670;&nbsp;</a></span>calculateFeePaid()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> ripple::Transactor::calculateFeePaid </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1STTx.html">STTx</a> const &amp;&#160;</td>
-          <td class="paramname"><em>tx</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00139">139</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00346">346</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -671,7 +754,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00298">298</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00406">406</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -700,7 +783,7 @@ Static Private Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classripple_1_1SetSignerList.html#a81cc900e9e0dc4096c3c8f63c1371ffe">ripple::SetSignerList</a>, <a class="el" href="classripple_1_1CreateOffer.html#a51e243eec385d66e97acbc6b59e6b95c">ripple::CreateOffer</a>, and <a class="el" href="classripple_1_1Change.html#a69cd5bf7979d79ffc7d2a7b813ff967e">ripple::Change</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00291">291</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00400">400</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -767,12 +850,12 @@ Static Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00145">145</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00158">158</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a2506763dfb32cf873588786364e02787"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2506763dfb32cf873588786364e02787">&#9670;&nbsp;</a></span>reset()</h2>
+<a id="af81f796422a3f66771e31a6ecbbbf57b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af81f796422a3f66771e31a6ecbbbf57b">&#9670;&nbsp;</a></span>reset()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -781,7 +864,7 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> ripple::Transactor::reset </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>, <a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> &gt; ripple::Transactor::reset </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a>&#160;</td>
           <td class="paramname"><em>fee</em></td><td>)</td>
@@ -797,12 +880,12 @@ Static Private Attributes</h2></td></tr>
 
 <p>Reset the context, discarding any changes made and adjust the fee. </p>
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00594">594</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00706">706</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ab030f80131ac0a2bf0a2ab4eff8d1daa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab030f80131ac0a2bf0a2ab4eff8d1daa">&#9670;&nbsp;</a></span>setSeq()</h2>
+<a id="a0b2066252127862bb58c1e4994dd5deb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b2066252127862bb58c1e4994dd5deb">&#9670;&nbsp;</a></span>consumeSeqProxy()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -811,9 +894,10 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ripple::Transactor::setSeq </td>
+          <td class="memname"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a> ripple::Transactor::consumeSeqProxy </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STLedgerEntry.html#ad360ad8483226127ef6b132ac93c1598">SLE::pointer</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sleAccount</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -824,7 +908,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00275">275</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00328">328</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -851,7 +935,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00207">207</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00217">217</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -879,7 +963,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00339">339</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00451">451</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -907,7 +991,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00413">413</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transactor_8cpp_source.html#l00525">525</a> of file <a class="el" href="Transactor_8cpp_source.html">Transactor.cpp</a>.</p>
 
 </div>
 </div>
@@ -960,6 +1044,30 @@ Static Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="adfdd9dae5f1067991618e2b707a5ff17"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adfdd9dae5f1067991618e2b707a5ff17">&#9670;&nbsp;</a></span>ConsequencesFactory</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="el" href="classripple_1_1Transactor.html#a5c6d16e9402d182a835f50b37ce9a938">ConsequencesFactoryType</a> ripple::Payment::ConsequencesFactory {<a class="el" href="classripple_1_1Transactor.html#a5c6d16e9402d182a835f50b37ce9a938a429832eac6b9ee7b50a1265131cd2845">Custom</a>}</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Payment_8h_source.html#l00041">41</a> of file <a class="el" href="Payment_8h_source.html">Payment.h</a>.</p>
+
+</div>
+</div>
 <a id="aef4ef0a89b5595b2a688b89e4ecef833"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aef4ef0a89b5595b2a688b89e4ecef833">&#9670;&nbsp;</a></span>ctx_</h2>
 
@@ -1008,8 +1116,8 @@ Static Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a4164eb695aa99f3be286df6e98e3e1f9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4164eb695aa99f3be286df6e98e3e1f9">&#9670;&nbsp;</a></span>account_</h2>
+<a id="a558a1d4288c859eb5875154a86435220"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a558a1d4288c859eb5875154a86435220">&#9670;&nbsp;</a></span>account_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1018,7 +1126,7 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> ripple::Transactor::account_</td>
+          <td class="memname">const <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> ripple::Transactor::account_</td>
         </tr>
       </table>
   </td>

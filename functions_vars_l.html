@@ -84,11 +84,18 @@ $(function() {
 <li>lastClosedLedger
 : <a class="el" href="structripple_1_1test_1_1csf_1_1Peer.html#a689d40c9ba3a710fdeeaffceb21b3245">ripple::test::csf::Peer</a>
 </li>
+<li>lastEndpoint_
+: <a class="el" href="classripple_1_1detail_1_1WorkBase.html#a1226fa87cf5cb3c2369a859e2f096489">ripple::detail::WorkBase&lt; Impl &gt;</a>
+, <a class="el" href="classripple_1_1test_1_1DNS__test.html#ab946c56048f8ed9b270155f63ea1f0c6">ripple::test::DNS_test</a>
+</li>
 <li>lastLedger_
 : <a class="el" href="classripple_1_1Validations.html#a182a987f9c2f6cf9b67fe3cb0d12b247">ripple::Validations&lt; Adaptor &gt;</a>
 </li>
 <li>lastLog_
 : <a class="el" href="classripple_1_1perf_1_1PerfLogImp.html#ae5ea969b68090bcca188a43c65189c66">ripple::perf::PerfLogImp</a>
+</li>
+<li>lastMessage
+: <a class="el" href="structripple_1_1squelch_1_1Slot_1_1PeerInfo.html#a29e36a0466b245a04e7ee105e1676c1d">ripple::squelch::Slot&lt; clock_type &gt;::PeerInfo</a>
 </li>
 <li>lastObservedSeq
 : <a class="el" href="structripple_1_1test_1_1csf_1_1Peer_1_1Router.html#a680a38eed288d191c0ec041a8b473600">ripple::test::csf::Peer::Router</a>
@@ -100,7 +107,13 @@ $(function() {
 : <a class="el" href="classripple_1_1PeerImp.html#a460d3d1a70fcee9ae038012f77012a41">ripple::PeerImp</a>
 </li>
 <li>lastRefreshStatus
-: <a class="el" href="structripple_1_1ValidatorSite_1_1Site.html#a0ad7c73e51df5a42e52a2d22b0d04ff0">ripple::ValidatorSite::Site</a>
+: <a class="el" href="structripple_1_1ValidatorSite_1_1Site.html#aaf3427a73198dc6d781fadf44d68e79e">ripple::ValidatorSite::Site</a>
+</li>
+<li>lastRequestEndpoint
+: <a class="el" href="structripple_1_1ValidatorSite_1_1Site.html#a7c4d1bc1c74c6d7f5edfeac03fc0149f">ripple::ValidatorSite::Site</a>
+</li>
+<li>lastRequestSuccessful
+: <a class="el" href="structripple_1_1ValidatorSite_1_1Site.html#a62935f3b4320b427b0b6dce87b59236e">ripple::ValidatorSite::Site</a>
 </li>
 <li>lastResult
 : <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a350661f19fc3f871c9fa7af1c0712c67">ripple::TxQ::MaybeTx</a>
@@ -112,8 +125,14 @@ $(function() {
 <li>lastSample_
 : <a class="el" href="classripple_1_1ApplicationImp_1_1io__latency__sampler.html#a4b348b2e75e2b474bfad402f7c1861c9">ripple::ApplicationImp::io_latency_sampler</a>
 </li>
+<li>lastSelected_
+: <a class="el" href="classripple_1_1squelch_1_1Slot.html#a743056cc5957234d4ce9412bc3ce5e5f">ripple::squelch::Slot&lt; clock_type &gt;</a>
+</li>
 <li>lastSeq_
 : <a class="el" href="classripple_1_1NodeStore_1_1Shard.html#a0fb3f20b43e8959e0332d66ee2a43a43">ripple::NodeStore::Shard</a>
+</li>
+<li>lastStatus_
+: <a class="el" href="classripple_1_1detail_1_1WorkBase.html#af20c277403db85f4bc2de29b28c250a1">ripple::detail::WorkBase&lt; Impl &gt;</a>
 </li>
 <li>lastUpdate_
 : <a class="el" href="classripple_1_1SNTPClientImp.html#a5929206156fc703b4641ab7f557f855e">ripple::SNTPClientImp</a>
@@ -122,8 +141,8 @@ $(function() {
 : <a class="el" href="classripple_1_1AmendmentTableImpl.html#aefbfbe13885b57244364ab17906ebb8c">ripple::AmendmentTableImpl</a>
 </li>
 <li>lastValid
-: <a class="el" href="structripple_1_1TxQ_1_1AccountTxDetails.html#acea70e33adb58e5d67c6be3e98b21a67">ripple::TxQ::AccountTxDetails</a>
-, <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a7d678029f542ec924eb4ce3b12a7f0ab">ripple::TxQ::MaybeTx</a>
+: <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#aabcdb84bbb1b62498a9f2c585151c35e">ripple::TxQ::MaybeTx</a>
+, <a class="el" href="structripple_1_1TxQ_1_1TxDetails.html#a130ee9c460540c84870ce4f26672140b">ripple::TxQ::TxDetails</a>
 </li>
 <li>lastValidationTime_
 : <a class="el" href="classripple_1_1RCLConsensus_1_1Adaptor.html#abc330dd38a468664dcc8cc51ff1ed409">ripple::RCLConsensus::Adaptor</a>
@@ -142,12 +161,16 @@ $(function() {
 </li>
 <li>latency_
 : <a class="el" href="classripple_1_1PeerImp.html#adce74938d3d2b74eebba702d811bf7c7">ripple::PeerImp</a>
+, <a class="el" href="classripple_1_1test_1_1Link.html#a806e312c160233bec43aaddd8927873b">ripple::test::Link</a>
 </li>
 <li>latencyAvg
 : <a class="el" href="structripple_1_1LoadMonitor_1_1Stats.html#a7f5eb24f04a33081174ddc390ecad1c0">ripple::LoadMonitor::Stats</a>
 </li>
 <li>latencyPeak
 : <a class="el" href="structripple_1_1LoadMonitor_1_1Stats.html#ae735cc84c8cd17199c2978cc6ba84807">ripple::LoadMonitor::Stats</a>
+</li>
+<li>latestShardIndex_
+: <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a99507baad74b4f29488d61f5d9c6ef57">ripple::NodeStore::DatabaseShardImp</a>
 </li>
 <li>ledger
 : <a class="el" href="structripple_1_1AccountTxArgs.html#a74b1b25fd864e4672f5319c617f13c9b">ripple::AccountTxArgs</a>
@@ -306,6 +329,7 @@ $(function() {
 </li>
 <li>links_
 : <a class="el" href="classripple_1_1test_1_1csf_1_1BasicNetwork.html#a97f7116d8ee44a3c122c272d77507f02">ripple::test::csf::BasicNetwork&lt; Peer &gt;</a>
+, <a class="el" href="classripple_1_1test_1_1Validator.html#a543dde93dd99683c364e4c915198a735">ripple::test::Validator</a>
 </li>
 <li>liquidity
 : <a class="el" href="structripple_1_1Pathfinder_1_1PathRank.html#a2f4e2ae95ac7fa39c1d755151dca5a2f">ripple::Pathfinder::PathRank</a>

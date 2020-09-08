@@ -100,15 +100,18 @@ Collaboration diagram for ripple::Message:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ae01a01982db13899a71497c0ca81e5f9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#ae01a01982db13899a71497c0ca81e5f9">Message</a> (::google::protobuf::Message const &amp;message, int type)</td></tr>
-<tr class="memdesc:ae01a01982db13899a71497c0ca81e5f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <a href="classripple_1_1Message.html#ae01a01982db13899a71497c0ca81e5f9">More...</a><br /></td></tr>
-<tr class="separator:ae01a01982db13899a71497c0ca81e5f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaac68e258d1fda75e275e9545b25a98c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#aaac68e258d1fda75e275e9545b25a98c">Message</a> (::google::protobuf::Message const &amp;message, int type, boost::optional&lt; <a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> &gt; const &amp;validator={})</td></tr>
+<tr class="memdesc:aaac68e258d1fda75e275e9545b25a98c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <a href="classripple_1_1Message.html#aaac68e258d1fda75e275e9545b25a98c">More...</a><br /></td></tr>
+<tr class="separator:aaac68e258d1fda75e275e9545b25a98c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a59548b6f1be088035f2858fae9eda66b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; uint8_t &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#a59548b6f1be088035f2858fae9eda66b">getBuffer</a> (<a class="el" href="namespaceripple_1_1compression.html#a63d59b12f7e712c378860771ef3fdf5f">Compressed</a> tryCompressed)</td></tr>
 <tr class="memdesc:a59548b6f1be088035f2858fae9eda66b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the packed message data.  <a href="classripple_1_1Message.html#a59548b6f1be088035f2858fae9eda66b">More...</a><br /></td></tr>
 <tr class="separator:a59548b6f1be088035f2858fae9eda66b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a274fe4c9990f5d9f6d4882ba3c22f1fb"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#a274fe4c9990f5d9f6d4882ba3c22f1fb">getCategory</a> () const</td></tr>
 <tr class="memdesc:a274fe4c9990f5d9f6d4882ba3c22f1fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the traffic category.  <a href="classripple_1_1Message.html#a274fe4c9990f5d9f6d4882ba3c22f1fb">More...</a><br /></td></tr>
 <tr class="separator:a274fe4c9990f5d9f6d4882ba3c22f1fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7b1100d7cf26d68e20b2460506a9adba"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#a7b1100d7cf26d68e20b2460506a9adba">getValidatorKey</a> () const</td></tr>
+<tr class="memdesc:a7b1100d7cf26d68e20b2460506a9adba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the validator's key.  <a href="classripple_1_1Message.html#a7b1100d7cf26d68e20b2460506a9adba">More...</a><br /></td></tr>
+<tr class="separator:a7b1100d7cf26d68e20b2460506a9adba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this/shared_from_this.html">shared_from_this</a> (T... args)</td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this/weak_from_this.html">weak_from_this</a> (T... args)</td></tr>
@@ -143,10 +146,12 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a0b12f602dfea3a708efc0b0138a0c510"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15306c929310abec214884a9af5b248d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/once_flag.html">std::once_flag</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#a15306c929310abec214884a9af5b248d">once_flag_</a></td></tr>
 <tr class="separator:a15306c929310abec214884a9af5b248d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a94f3d5a8c6c920277997a198922fe96b"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Message.html#a94f3d5a8c6c920277997a198922fe96b">validatorKey_</a></td></tr>
+<tr class="separator:a94f3d5a8c6c920277997a198922fe96b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00049">49</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00050">50</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a2988842a363a695d1243861b13dd04bf"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2988842a363a695d1243861b13dd04bf">&#9670;&nbsp;</a></span>Compressed</h2>
@@ -168,7 +173,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00051">51</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00052">52</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -192,13 +197,13 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00052">52</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00053">53</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ae01a01982db13899a71497c0ca81e5f9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae01a01982db13899a71497c0ca81e5f9">&#9670;&nbsp;</a></span>Message()</h2>
+<a id="aaac68e258d1fda75e275e9545b25a98c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaac68e258d1fda75e275e9545b25a98c">&#9670;&nbsp;</a></span>Message()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -213,7 +218,13 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>type</em>&#160;</td>
+          <td class="paramname"><em>type</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">boost::optional&lt; <a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>validator</em> = <code>{}</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -228,6 +239,7 @@ Private Attributes</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">message</td><td>Protocol message to serialize </td></tr>
     <tr><td class="paramname">type</td><td>Protocol message type </td></tr>
+    <tr><td class="paramname">validator</td><td>Public Key of the source validator for Validation or Proposal message. Used to check if the message should be squelched. </td></tr>
   </table>
   </dd>
 </dl>
@@ -262,7 +274,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Payload buffer </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00177">177</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00181">181</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
 
 </div>
 </div>
@@ -283,7 +295,28 @@ Private Attributes</h2></td></tr>
 
 <p>Get the traffic category. </p>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00072">72</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00078">78</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+
+</div>
+</div>
+<a id="a7b1100d7cf26d68e20b2460506a9adba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7b1100d7cf26d68e20b2460506a9adba">&#9670;&nbsp;</a></span>getValidatorKey()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boost::optional&lt;<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a>&gt; const&amp; ripple::Message::getValidatorKey </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Get the validator's key. </p>
+
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00085">85</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -368,7 +401,7 @@ Private Attributes</h2></td></tr>
 </pre><p>The maximum size of a message at this time is 64 MB. Messages larger than this will be dropped and the recipient may, at its option, sever the link.</p>
 <dl class="section note"><dt>Note</dt><dd>While nominally a part of the wire protocol, the framing is subject to change; future versions of the code may negotiate the use of substantially different framing. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00147">147</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00151">151</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
 
 </div>
 </div>
@@ -398,7 +431,7 @@ Private Attributes</h2></td></tr>
 <p>Try to compress the payload. </p>
 <p>Can be called concurrently by multiple peers but is compressed once. If the message is not compressible then the serialized buffer_ is used. </p>
 
-<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00048">48</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00052">52</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
 
 </div>
 </div>
@@ -435,7 +468,7 @@ Private Attributes</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="classripple_1_1Message.html">Message</a> type </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00191">191</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Message_8cpp_source.html#l00195">195</a> of file <a class="el" href="Message_8cpp_source.html">Message.cpp</a>.</p>
 
 </div>
 </div>
@@ -460,7 +493,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00078">78</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00091">91</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -484,7 +517,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00079">79</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00092">92</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -508,7 +541,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00080">80</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00093">93</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>
@@ -532,7 +565,31 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00081">81</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00094">94</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
+
+</div>
+</div>
+<a id="a94f3d5a8c6c920277997a198922fe96b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a94f3d5a8c6c920277997a198922fe96b">&#9670;&nbsp;</a></span>validatorKey_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">boost::optional&lt;<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a>&gt; ripple::Message::validatorKey_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="overlay_2Message_8h_source.html#l00095">95</a> of file <a class="el" href="overlay_2Message_8h_source.html">overlay/Message.h</a>.</p>
 
 </div>
 </div>

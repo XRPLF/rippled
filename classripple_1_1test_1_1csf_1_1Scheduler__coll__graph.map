@@ -1,12 +1,13 @@
 <map id="ripple::test::csf::Scheduler" name="ripple::test::csf::Scheduler">
-<area shape="rect" id="node1" title="Simulated discrete&#45;event scheduler." alt="" coords="1476,96,1603,137"/>
-<area shape="rect" id="node2" href="$classripple_1_1qalloc__type.html" title=" " alt="" coords="963,44,1105,85"/>
-<area shape="rect" id="node8" href="$classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html" title=" " alt="" coords="1205,96,1376,137"/>
+<area shape="rect" id="node1" title="Simulated discrete&#45;event scheduler." alt="" coords="1487,88,1613,129"/>
+<area shape="rect" id="node2" href="$classripple_1_1qalloc__type.html" title=" " alt="" coords="968,44,1111,85"/>
+<area shape="rect" id="node8" href="$classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html" title=" " alt="" coords="1216,88,1387,129"/>
 <area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="677,44,864,85"/>
 <area shape="rect" id="node4" href="$classripple_1_1detail_1_1qalloc__impl.html" title=" " alt="" coords="456,44,607,85"/>
 <area shape="rect" id="node5" href="$classripple_1_1detail_1_1qalloc__impl_1_1block.html" title=" " alt="" coords="201,44,365,85"/>
 <area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,14,100,41"/>
 <area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="9,89,97,115"/>
-<area shape="rect" id="node9" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="1210,162,1371,218"/>
-<area shape="rect" id="node10" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="953,162,1115,218"/>
+<area shape="rect" id="node9" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="1221,154,1382,210"/>
+<area shape="rect" id="node10" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="959,138,1120,194"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="953,218,1125,245"/>
 </map>

@@ -207,6 +207,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:adf826d70da3bac7b08ebe30c6f259b53"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7ccf567d2716651f44a21626b23cd466"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1Offer__test.html#a7ccf567d2716651f44a21626b23cd466">testTickSize</a> (<a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features)</td></tr>
 <tr class="separator:a7ccf567d2716651f44a21626b23cd466"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a28f52ef28c761a7aa1497f055cb433ec"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1Offer__test.html#a28f52ef28c761a7aa1497f055cb433ec">testTicketOffer</a> (<a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features)</td></tr>
+<tr class="separator:a28f52ef28c761a7aa1497f055cb433ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec31136f67a019cba48258b23d7c57b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1Offer__test.html#aec31136f67a019cba48258b23d7c57b4">testTicketCancelOffer</a> (<a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features)</td></tr>
+<tr class="separator:aec31136f67a019cba48258b23d7c57b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adcfbc673285e7ca3ab1878aa2593269b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1Offer__test.html#adcfbc673285e7ca3ab1878aa2593269b">testFalseAssert</a> ()</td></tr>
 <tr class="separator:adcfbc673285e7ca3ab1878aa2593269b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af43e4e5e01b6cb88bc75dc79370c4949"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1Offer__test.html#af43e4e5e01b6cb88bc75dc79370c4949">testAll</a> (<a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features)</td></tr>
@@ -218,6 +222,8 @@ Public Member Functions</h2></td></tr>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a018431b8d0d4a138117fe0aa6df43bfc"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> const  &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1Offer__test.html#a018431b8d0d4a138117fe0aa6df43bfc">offersOnAccount</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;env, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> account)</td></tr>
 <tr class="separator:a018431b8d0d4a138117fe0aa6df43bfc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10117619b9f8556c2d3be38caef231dd"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> const  &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1Offer__test.html#a10117619b9f8556c2d3be38caef231dd">sortedOffersOnAccount</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;env, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;acct)</td></tr>
+<tr class="separator:a10117619b9f8556c2d3be38caef231dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -1698,6 +1704,84 @@ Static Private Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a10117619b9f8556c2d3be38caef231dd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a10117619b9f8556c2d3be38caef231dd">&#9670;&nbsp;</a></span>sortedOffersOnAccount()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="namespaceripple.html#a97b0522def3fedd095dafaed6b4aba3c">SLE</a> const&gt; &gt; ripple::test::Offer_test::sortedOffersOnAccount </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;&#160;</td>
+          <td class="paramname"><em>env</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>acct</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Offer__test_8cpp_source.html#l05139">5139</a> of file <a class="el" href="Offer__test_8cpp_source.html">Offer_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a28f52ef28c761a7aa1497f055cb433ec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a28f52ef28c761a7aa1497f055cb433ec">&#9670;&nbsp;</a></span>testTicketOffer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::test::Offer_test::testTicketOffer </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a>&#160;</td>
+          <td class="paramname"><em>features</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Offer__test_8cpp_source.html#l05154">5154</a> of file <a class="el" href="Offer__test_8cpp_source.html">Offer_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aec31136f67a019cba48258b23d7c57b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aec31136f67a019cba48258b23d7c57b4">&#9670;&nbsp;</a></span>testTicketCancelOffer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::test::Offer_test::testTicketCancelOffer </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a>&#160;</td>
+          <td class="paramname"><em>features</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Offer__test_8cpp_source.html#l05277">5277</a> of file <a class="el" href="Offer__test_8cpp_source.html">Offer_test.cpp</a>.</p>
+
+</div>
+</div>
 <a id="adcfbc673285e7ca3ab1878aa2593269b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adcfbc673285e7ca3ab1878aa2593269b">&#9670;&nbsp;</a></span>testFalseAssert()</h2>
 
@@ -1713,7 +1797,7 @@ Static Private Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Offer__test_8cpp_source.html#l05138">5138</a> of file <a class="el" href="Offer__test_8cpp_source.html">Offer_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Offer__test_8cpp_source.html#l05392">5392</a> of file <a class="el" href="Offer__test_8cpp_source.html">Offer_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1733,7 +1817,7 @@ Static Private Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Offer__test_8cpp_source.html#l05156">5156</a> of file <a class="el" href="Offer__test_8cpp_source.html">Offer_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Offer__test_8cpp_source.html#l05410">5410</a> of file <a class="el" href="Offer__test_8cpp_source.html">Offer_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1760,7 +1844,7 @@ Static Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Offer__test_8cpp_source.html#l05215">5215</a> of file <a class="el" href="Offer__test_8cpp_source.html">Offer_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Offer__test_8cpp_source.html#l05471">5471</a> of file <a class="el" href="Offer__test_8cpp_source.html">Offer_test.cpp</a>.</p>
 
 </div>
 </div>

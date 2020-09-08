@@ -130,6 +130,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af21ce5a3efbbd0d4e7eca2685b6af1c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a86c862f1b0722d061b3724ff34a53572"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter.html#a86c862f1b0722d061b3724ff34a53572">addSuppressionPeer</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key, <a class="el" href="classripple_1_1HashRouter.html#ae1bb71697fff314fed4cdffde40d581e">PeerShortID</a> peer)</td></tr>
 <tr class="separator:a86c862f1b0722d061b3724ff34a53572"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa7ef4afb150d0fda3aa3e97e3d23fe2a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; bool, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">Stopwatch::time_point</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter.html#aa7ef4afb150d0fda3aa3e97e3d23fe2a">addSuppressionPeerWithStatus</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key, <a class="el" href="classripple_1_1HashRouter.html#ae1bb71697fff314fed4cdffde40d581e">PeerShortID</a> peer)</td></tr>
+<tr class="memdesc:aa7ef4afb150d0fda3aa3e97e3d23fe2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a suppression peer and get message's relay status.  <a href="classripple_1_1HashRouter.html#aa7ef4afb150d0fda3aa3e97e3d23fe2a">More...</a><br /></td></tr>
+<tr class="separator:aa7ef4afb150d0fda3aa3e97e3d23fe2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aac29c2160c4d24ff6536c5a562b627a4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter.html#aac29c2160c4d24ff6536c5a562b627a4">addSuppressionPeer</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key, <a class="el" href="classripple_1_1HashRouter.html#ae1bb71697fff314fed4cdffde40d581e">PeerShortID</a> peer, int &amp;flags)</td></tr>
 <tr class="separator:aac29c2160c4d24ff6536c5a562b627a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a2ef462b7dc7e845d7c0fa55cdb3665"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter.html#a2a2ef462b7dc7e845d7c0fa55cdb3665">shouldProcess</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key, <a class="el" href="classripple_1_1HashRouter.html#ae1bb71697fff314fed4cdffde40d581e">PeerShortID</a> peer, int &amp;flags, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> tx_interval)</td></tr>
@@ -139,7 +142,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac43309b8c10713823bdc233f39931472"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a34019a21932ce1a1c6850da761d8bbb6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter.html#a34019a21932ce1a1c6850da761d8bbb6">getFlags</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key)</td></tr>
 <tr class="separator:a34019a21932ce1a1c6850da761d8bbb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a29980c0f77dcc002ef322c23080f3266"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="classripple_1_1HashRouter.html#ae1bb71697fff314fed4cdffde40d581e">PeerShortID</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter.html#a29980c0f77dcc002ef322c23080f3266">shouldRelay</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key)</td></tr>
+<tr class="memitem:a29980c0f77dcc002ef322c23080f3266"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="classripple_1_1HashRouter.html#ae1bb71697fff314fed4cdffde40d581e">PeerShortID</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter.html#a29980c0f77dcc002ef322c23080f3266">shouldRelay</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key)</td></tr>
 <tr class="memdesc:a29980c0f77dcc002ef322c23080f3266"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determines whether the hashed item should be relayed.  <a href="classripple_1_1HashRouter.html#a29980c0f77dcc002ef322c23080f3266">More...</a><br /></td></tr>
 <tr class="separator:a29980c0f77dcc002ef322c23080f3266"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6af0b6bd7155e389fdd4f08b17d87e47"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter.html#a6af0b6bd7155e389fdd4f08b17d87e47">shouldRecover</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key)</td></tr>
@@ -224,7 +227,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00165">165</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00172">172</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -277,7 +280,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00152">152</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00159">159</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -304,7 +307,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00160">160</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00167">167</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -384,6 +387,39 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="aa7ef4afb150d0fda3aa3e97e3d23fe2a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa7ef4afb150d0fda3aa3e97e3d23fe2a">&#9670;&nbsp;</a></span>addSuppressionPeerWithStatus()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; bool, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">Stopwatch::time_point</a> &gt; &gt; ripple::HashRouter::addSuppressionPeerWithStatus </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>key</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1HashRouter.html#ae1bb71697fff314fed4cdffde40d581e">PeerShortID</a>&#160;</td>
+          <td class="paramname"><em>peer</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Add a suppression peer and get message's relay status. </p>
+<p>Return pair: element 1: true if the peer is added. element 2: optional is seated to the relay time point or is unseated if has not relayed yet. </p>
+
+<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00057">57</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
+
+</div>
+</div>
 <a id="aac29c2160c4d24ff6536c5a562b627a4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aac29c2160c4d24ff6536c5a562b627a4">&#9670;&nbsp;</a></span>addSuppressionPeer() <span class="overload">[2/2]</span></h2>
 
@@ -416,7 +452,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00061">61</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00067">67</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
 
 </div>
 </div>
@@ -458,7 +494,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00072">72</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00078">78</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
 
 </div>
 </div>
@@ -491,7 +527,7 @@ Private Attributes</h2></td></tr>
 <p>Set the flags on a hash. </p>
 <dl class="section return"><dt>Returns</dt><dd><code>true</code> if the flags were changed. <code>false</code> if unchanged. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00096">96</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00102">102</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
 
 </div>
 </div>
@@ -511,7 +547,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00088">88</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00094">94</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
 
 </div>
 </div>
@@ -535,9 +571,9 @@ Private Attributes</h2></td></tr>
 <p>Effects: </p><pre class="fragment">If the item should be relayed, this function will not
 return `true` again until the hold time has expired.
 The internal set of peers will also be reset.
-</pre><dl class="section return"><dt>Returns</dt><dd>A <code>boost::optional</code> set of peers which do not need to be relayed to. If the result is uninitialized, the item should <em>not</em> be relayed. </dd></dl>
+</pre><dl class="section return"><dt>Returns</dt><dd>A <code><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></code> set of peers which do not need to be relayed to. If the result is uninitialized, the item should <em>not</em> be relayed. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00112">112</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00118">118</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
 
 </div>
 </div>
@@ -560,7 +596,7 @@ The internal set of peers will also be reset.
 <p>Determines whether the hashed item should be recovered from the open ledger into the next open ledger or the transaction queue. </p>
 <dl class="section return"><dt>Returns</dt><dd><code>bool</code> indicates whether the item should be recovered </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00126">126</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00132">132</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
 
 </div>
 </div>
@@ -613,7 +649,7 @@ The internal set of peers will also be reset.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00238">238</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00253">253</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -637,7 +673,7 @@ The internal set of peers will also be reset.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00246">246</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00261">261</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -661,7 +697,7 @@ The internal set of peers will also be reset.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00248">248</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00263">263</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -685,7 +721,7 @@ The internal set of peers will also be reset.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00250">250</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00265">265</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>

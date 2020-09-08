@@ -92,10 +92,11 @@ Collaboration diagram for ripple::HashRouter::Entry:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1HashRouter_1_1Entry__coll__graph.png" border="0" usemap="#ripple_1_1HashRouter_1_1Entry_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1HashRouter_1_1Entry_coll__map" id="ripple_1_1HashRouter_1_1Entry_coll__map">
-<area shape="rect" title="An entry in the routing table." alt="" coords="145,199,287,240"/>
-<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="5,95,168,136"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="223,5,326,32"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/set.html" title=" " alt="" coords="320,102,501,129"/>
+<area shape="rect" title="An entry in the routing table." alt="" coords="504,84,647,125"/>
+<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="204,5,367,47"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,103,108,130"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/set.html" title=" " alt="" coords="195,134,376,161"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="192,185,379,227"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -112,6 +113,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:acfb94ef6711da0fb5fcb76d2793f37cd"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="classripple_1_1HashRouter.html#ae1bb71697fff314fed4cdffde40d581e">PeerShortID</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter_1_1Entry.html#acfb94ef6711da0fb5fcb76d2793f37cd">releasePeerSet</a> ()</td></tr>
 <tr class="memdesc:acfb94ef6711da0fb5fcb76d2793f37cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return set of peers we've relayed to and reset tracking.  <a href="classripple_1_1HashRouter_1_1Entry.html#acfb94ef6711da0fb5fcb76d2793f37cd">More...</a><br /></td></tr>
 <tr class="separator:acfb94ef6711da0fb5fcb76d2793f37cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65b35453feafa2cb35ddfe96abf3c979"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">Stopwatch::time_point</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter_1_1Entry.html#a65b35453feafa2cb35ddfe96abf3c979">relayed</a> () const</td></tr>
+<tr class="memdesc:a65b35453feafa2cb35ddfe96abf3c979"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return seated relay time point if the message has been relayed.  <a href="classripple_1_1HashRouter_1_1Entry.html#a65b35453feafa2cb35ddfe96abf3c979">More...</a><br /></td></tr>
+<tr class="separator:a65b35453feafa2cb35ddfe96abf3c979"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae85e2de8779710b38416628fb2367a0b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter_1_1Entry.html#ae85e2de8779710b38416628fb2367a0b">shouldRelay</a> (<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">Stopwatch::time_point</a> const &amp;now, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> holdTime)</td></tr>
 <tr class="memdesc:ae85e2de8779710b38416628fb2367a0b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determines if this item should be relayed.  <a href="classripple_1_1HashRouter_1_1Entry.html#ae85e2de8779710b38416628fb2367a0b">More...</a><br /></td></tr>
 <tr class="separator:ae85e2de8779710b38416628fb2367a0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -137,10 +141,10 @@ Private Attributes</h2></td></tr>
 <tr class="separator:aeca761103960bb643c40682234773b4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5833ed9dd9bb463254a2ae7072909078"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="classripple_1_1HashRouter.html#ae1bb71697fff314fed4cdffde40d581e">PeerShortID</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter_1_1Entry.html#a5833ed9dd9bb463254a2ae7072909078">peers_</a></td></tr>
 <tr class="separator:a5833ed9dd9bb463254a2ae7072909078"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a90848876425253ef8946e04231e91bcf"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">Stopwatch::time_point</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter_1_1Entry.html#a90848876425253ef8946e04231e91bcf">relayed_</a></td></tr>
-<tr class="separator:a90848876425253ef8946e04231e91bcf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9c49fb45d504dfc12d634fc6a58c100e"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">Stopwatch::time_point</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter_1_1Entry.html#a9c49fb45d504dfc12d634fc6a58c100e">processed_</a></td></tr>
-<tr class="separator:a9c49fb45d504dfc12d634fc6a58c100e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a82f61eb94a00aa72e190b640d181324b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">Stopwatch::time_point</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter_1_1Entry.html#a82f61eb94a00aa72e190b640d181324b">relayed_</a></td></tr>
+<tr class="separator:a82f61eb94a00aa72e190b640d181324b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3627e95c8e5ecd63162b87d682df148a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">Stopwatch::time_point</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter_1_1Entry.html#a3627e95c8e5ecd63162b87d682df148a">processed_</a></td></tr>
+<tr class="separator:a3627e95c8e5ecd63162b87d682df148a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1a4a3a03ca6e0aea5ed3db7f11a3224"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter_1_1Entry.html#ac1a4a3a03ca6e0aea5ed3db7f11a3224">recoveries_</a> = 0</td></tr>
 <tr class="separator:ac1a4a3a03ca6e0aea5ed3db7f11a3224"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -277,6 +281,27 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a65b35453feafa2cb35ddfe96abf3c979"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a65b35453feafa2cb35ddfe96abf3c979">&#9670;&nbsp;</a></span>relayed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">Stopwatch::time_point</a>&gt; ripple::HashRouter::Entry::relayed </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Return seated relay time point if the message has been relayed. </p>
+
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00102">102</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+
+</div>
+</div>
 <a id="ae85e2de8779710b38416628fb2367a0b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae85e2de8779710b38416628fb2367a0b">&#9670;&nbsp;</a></span>shouldRelay()</h2>
 
@@ -306,7 +331,7 @@ Private Attributes</h2></td></tr>
 <p>Determines if this item should be relayed. </p>
 <p>Checks whether the item has been recently relayed. If it has, return false. If it has not, update the last relay timestamp and return true. </p>
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00107">107</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00114">114</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -330,7 +355,7 @@ Private Attributes</h2></td></tr>
 <p>Counts the number of times the item has been recovered. Every <code>limit</code> times the function is called, return false. Else return true.</p>
 <dl class="section note"><dt>Note</dt><dd>The limit must be &gt; 0 </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00126">126</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00133">133</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -360,7 +385,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00132">132</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00139">139</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -409,7 +434,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00141">141</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00148">148</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -433,12 +458,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00142">142</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00149">149</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
-<a id="a90848876425253ef8946e04231e91bcf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a90848876425253ef8946e04231e91bcf">&#9670;&nbsp;</a></span>relayed_</h2>
+<a id="a82f61eb94a00aa72e190b640d181324b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a82f61eb94a00aa72e190b640d181324b">&#9670;&nbsp;</a></span>relayed_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -447,7 +472,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt;<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">Stopwatch::time_point</a>&gt; ripple::HashRouter::Entry::relayed_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">Stopwatch::time_point</a>&gt; ripple::HashRouter::Entry::relayed_</td>
         </tr>
       </table>
   </td>
@@ -457,12 +482,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00145">145</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00152">152</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
-<a id="a9c49fb45d504dfc12d634fc6a58c100e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9c49fb45d504dfc12d634fc6a58c100e">&#9670;&nbsp;</a></span>processed_</h2>
+<a id="a3627e95c8e5ecd63162b87d682df148a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3627e95c8e5ecd63162b87d682df148a">&#9670;&nbsp;</a></span>processed_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -471,7 +496,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::optional&lt;<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">Stopwatch::time_point</a>&gt; ripple::HashRouter::Entry::processed_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">Stopwatch::time_point</a>&gt; ripple::HashRouter::Entry::processed_</td>
         </tr>
       </table>
   </td>
@@ -481,7 +506,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00146">146</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00153">153</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -505,7 +530,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00147">147</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00154">154</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>

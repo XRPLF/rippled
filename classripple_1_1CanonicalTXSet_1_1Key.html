@@ -68,6 +68,7 @@ $(function() {
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classripple_1_1CanonicalTXSet_1_1Key-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">ripple::CanonicalTXSet::Key Class Reference</div>  </div>
@@ -79,47 +80,53 @@ Collaboration diagram for ripple::CanonicalTXSet::Key:</div>
 <div class="center"><img src="classripple_1_1CanonicalTXSet_1_1Key__coll__graph.png" border="0" usemap="#ripple_1_1CanonicalTXSet_1_1Key_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1CanonicalTXSet_1_1Key_coll__map" id="ripple_1_1CanonicalTXSet_1_1Key_coll__map">
 <area shape="rect" title=" " alt="" coords="5,332,207,359"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="55,5,157,32"/>
+<area shape="rect" href="classripple_1_1SeqProxy.html" title="A type that represents either a sequence value or a ticket value." alt="" coords="21,161,149,188"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="72,5,175,32"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="122,95,290,136"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="135,213,277,255"/>
+<area shape="rect" href="classripple_1_1base__uint.html" title=" " alt="" coords="181,213,322,255"/>
 <area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="314,102,402,129"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:acde7332567c6596c895e2a5661bf81fa"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#acde7332567c6596c895e2a5661bf81fa">Key</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;account, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;id)</td></tr>
-<tr class="separator:acde7332567c6596c895e2a5661bf81fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a051929064c06d7613a67ea275de44829"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#a051929064c06d7613a67ea275de44829">operator&lt;</a> (<a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;rhs) const</td></tr>
-<tr class="separator:a051929064c06d7613a67ea275de44829"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5b9a19c9c1af3d8500e2b72e1029b97"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#ac5b9a19c9c1af3d8500e2b72e1029b97">operator&gt;</a> (<a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;rhs) const</td></tr>
-<tr class="separator:ac5b9a19c9c1af3d8500e2b72e1029b97"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a045f247ae175ea2dac5eae861f927e51"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#a045f247ae175ea2dac5eae861f927e51">operator&lt;=</a> (<a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;rhs) const</td></tr>
-<tr class="separator:a045f247ae175ea2dac5eae861f927e51"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa14efc85bb9223f6ae085034ea52c90c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#aa14efc85bb9223f6ae085034ea52c90c">operator&gt;=</a> (<a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;rhs) const</td></tr>
-<tr class="separator:aa14efc85bb9223f6ae085034ea52c90c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aef6b6be624e03ae65f0c330f0d721fcf"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#aef6b6be624e03ae65f0c330f0d721fcf">operator==</a> (<a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;rhs) const</td></tr>
-<tr class="separator:aef6b6be624e03ae65f0c330f0d721fcf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adbadf78a695b0ebd422067892886c904"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#adbadf78a695b0ebd422067892886c904">operator!=</a> (<a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;rhs) const</td></tr>
-<tr class="separator:adbadf78a695b0ebd422067892886c904"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a971613ceaa2b02147a8ff93057953c08"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#a971613ceaa2b02147a8ff93057953c08">Key</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;account, <a class="el" href="classripple_1_1SeqProxy.html">SeqProxy</a> seqProx, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;id)</td></tr>
+<tr class="separator:a971613ceaa2b02147a8ff93057953c08"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a48d679e500952b0652372b5d9a75a212"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#a48d679e500952b0652372b5d9a75a212">getAccount</a> () const</td></tr>
+<tr class="separator:a48d679e500952b0652372b5d9a75a212"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd604ad4a049aeffe249a07577f0643e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#acd604ad4a049aeffe249a07577f0643e">getTXID</a> () const</td></tr>
 <tr class="separator:acd604ad4a049aeffe249a07577f0643e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a0bf1ef67b1725f1b7497366e5a3d1803"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#a0bf1ef67b1725f1b7497366e5a3d1803">mAccount</a></td></tr>
-<tr class="separator:a0bf1ef67b1725f1b7497366e5a3d1803"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd3338d677b20e1672b2cad35ff3e748"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#afd3338d677b20e1672b2cad35ff3e748">mTXid</a></td></tr>
-<tr class="separator:afd3338d677b20e1672b2cad35ff3e748"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab660db3694081d7bfa6c536e8c0fec11"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#ab660db3694081d7bfa6c536e8c0fec11">mSeq</a></td></tr>
-<tr class="separator:ab660db3694081d7bfa6c536e8c0fec11"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a16065c51871cd59dcc60b35fc1f90d18"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#a16065c51871cd59dcc60b35fc1f90d18">account_</a></td></tr>
+<tr class="separator:a16065c51871cd59dcc60b35fc1f90d18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adf775870caf991a0a05dec169756e74b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#adf775870caf991a0a05dec169756e74b">txId_</a></td></tr>
+<tr class="separator:adf775870caf991a0a05dec169756e74b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49c5b1001f07fe16961579305836ebab"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1SeqProxy.html">SeqProxy</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#a49c5b1001f07fe16961579305836ebab">seqProxy_</a></td></tr>
+<tr class="separator:a49c5b1001f07fe16961579305836ebab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:a822a84824fc66a288104c8c02e68ba99"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#a822a84824fc66a288104c8c02e68ba99">operator&lt;</a> (<a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;lhs, <a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;rhs)</td></tr>
+<tr class="separator:a822a84824fc66a288104c8c02e68ba99"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa6417896b0e42f2f99bc54f53a909580"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#aa6417896b0e42f2f99bc54f53a909580">operator&gt;</a> (<a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;lhs, <a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;rhs)</td></tr>
+<tr class="separator:aa6417896b0e42f2f99bc54f53a909580"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62725eccb77a301a680ba9c83da5a92e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#a62725eccb77a301a680ba9c83da5a92e">operator&lt;=</a> (<a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;lhs, <a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;rhs)</td></tr>
+<tr class="separator:a62725eccb77a301a680ba9c83da5a92e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6d13301ed5612a8248fae2fcbf2f02e1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#a6d13301ed5612a8248fae2fcbf2f02e1">operator&gt;=</a> (<a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;lhs, <a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;rhs)</td></tr>
+<tr class="separator:a6d13301ed5612a8248fae2fcbf2f02e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aed16d74648f11c8725eb6f621fc64e74"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#aed16d74648f11c8725eb6f621fc64e74">operator==</a> (<a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;lhs, <a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;rhs)</td></tr>
+<tr class="separator:aed16d74648f11c8725eb6f621fc64e74"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc94a2c101f4cc9c4cab8c0e95125088"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#afc94a2c101f4cc9c4cab8c0e95125088">operator!=</a> (<a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;lhs, <a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;rhs)</td></tr>
+<tr class="separator:afc94a2c101f4cc9c4cab8c0e95125088"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00039">39</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00040">40</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="acde7332567c6596c895e2a5661bf81fa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acde7332567c6596c895e2a5661bf81fa">&#9670;&nbsp;</a></span>Key()</h2>
+<a id="a971613ceaa2b02147a8ff93057953c08"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a971613ceaa2b02147a8ff93057953c08">&#9670;&nbsp;</a></span>Key()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -133,8 +140,8 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
-          <td class="paramname"><em>seq</em>, </td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SeqProxy.html">SeqProxy</a>&#160;</td>
+          <td class="paramname"><em>seqProx</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -150,128 +157,27 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00042">42</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00043">43</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a051929064c06d7613a67ea275de44829"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a051929064c06d7613a67ea275de44829">&#9670;&nbsp;</a></span>operator&lt;()</h2>
+<a id="a48d679e500952b0652372b5d9a75a212"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a48d679e500952b0652372b5d9a75a212">&#9670;&nbsp;</a></span>getAccount()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool ripple::CanonicalTXSet::Key::operator&lt; </td>
+          <td class="memname"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const&amp; ripple::CanonicalTXSet::Key::getAccount </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em></td><td>)</td>
+          <td class="paramname"></td><td>)</td>
           <td> const</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8cpp_source.html#l00026">26</a> of file <a class="el" href="CanonicalTXSet_8cpp_source.html">CanonicalTXSet.cpp</a>.</p>
-
-</div>
-</div>
-<a id="ac5b9a19c9c1af3d8500e2b72e1029b97"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac5b9a19c9c1af3d8500e2b72e1029b97">&#9670;&nbsp;</a></span>operator&gt;()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::CanonicalTXSet::Key::operator&gt; </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8cpp_source.html#l00044">44</a> of file <a class="el" href="CanonicalTXSet_8cpp_source.html">CanonicalTXSet.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a045f247ae175ea2dac5eae861f927e51"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a045f247ae175ea2dac5eae861f927e51">&#9670;&nbsp;</a></span>operator&lt;=()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::CanonicalTXSet::Key::operator&lt;= </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8cpp_source.html#l00062">62</a> of file <a class="el" href="CanonicalTXSet_8cpp_source.html">CanonicalTXSet.cpp</a>.</p>
-
-</div>
-</div>
-<a id="aa14efc85bb9223f6ae085034ea52c90c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa14efc85bb9223f6ae085034ea52c90c">&#9670;&nbsp;</a></span>operator&gt;=()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::CanonicalTXSet::Key::operator&gt;= </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8cpp_source.html#l00080">80</a> of file <a class="el" href="CanonicalTXSet_8cpp_source.html">CanonicalTXSet.cpp</a>.</p>
-
-</div>
-</div>
-<a id="aef6b6be624e03ae65f0c330f0d721fcf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aef6b6be624e03ae65f0c330f0d721fcf">&#9670;&nbsp;</a></span>operator==()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::CanonicalTXSet::Key::operator== </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00057">57</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
-
-</div>
-</div>
-<a id="adbadf78a695b0ebd422067892886c904"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adbadf78a695b0ebd422067892886c904">&#9670;&nbsp;</a></span>operator!=()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::CanonicalTXSet::Key::operator!= </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00062">62</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00082">82</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
 
 </div>
 </div>
@@ -290,13 +196,13 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00068">68</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00088">88</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
 
 </div>
 </div>
-<h2 class="groupheader">Member Data Documentation</h2>
-<a id="a0bf1ef67b1725f1b7497366e5a3d1803"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0bf1ef67b1725f1b7497366e5a3d1803">&#9670;&nbsp;</a></span>mAccount</h2>
+<h2 class="groupheader">Friends And Related Function Documentation</h2>
+<a id="a822a84824fc66a288104c8c02e68ba99"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a822a84824fc66a288104c8c02e68ba99">&#9670;&nbsp;</a></span>operator&lt;</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -305,22 +211,36 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::CanonicalTXSet::Key::mAccount</td>
+          <td class="memname">bool operator&lt; </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">CanonicalTXSet::Key</a> const &amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">CanonicalTXSet::Key</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00074">74</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8cpp_source.html#l00025">25</a> of file <a class="el" href="CanonicalTXSet_8cpp_source.html">CanonicalTXSet.cpp</a>.</p>
 
 </div>
 </div>
-<a id="afd3338d677b20e1672b2cad35ff3e748"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afd3338d677b20e1672b2cad35ff3e748">&#9670;&nbsp;</a></span>mTXid</h2>
+<a id="aa6417896b0e42f2f99bc54f53a909580"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa6417896b0e42f2f99bc54f53a909580">&#9670;&nbsp;</a></span>operator&gt;</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -329,22 +249,36 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::CanonicalTXSet::Key::mTXid</td>
+          <td class="memname">bool operator&gt; </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00075">75</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00052">52</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
 
 </div>
 </div>
-<a id="ab660db3694081d7bfa6c536e8c0fec11"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab660db3694081d7bfa6c536e8c0fec11">&#9670;&nbsp;</a></span>mSeq</h2>
+<a id="a62725eccb77a301a680ba9c83da5a92e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a62725eccb77a301a680ba9c83da5a92e">&#9670;&nbsp;</a></span>operator&lt;=</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -353,17 +287,218 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::CanonicalTXSet::Key::mSeq</td>
+          <td class="memname">bool operator&lt;= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00058">58</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
+
+</div>
+</div>
+<a id="a6d13301ed5612a8248fae2fcbf2f02e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6d13301ed5612a8248fae2fcbf2f02e1">&#9670;&nbsp;</a></span>operator&gt;=</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool operator&gt;= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00064">64</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
+
+</div>
+</div>
+<a id="aed16d74648f11c8725eb6f621fc64e74"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aed16d74648f11c8725eb6f621fc64e74">&#9670;&nbsp;</a></span>operator==</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool operator== </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00070">70</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
+
+</div>
+</div>
+<a id="afc94a2c101f4cc9c4cab8c0e95125088"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc94a2c101f4cc9c4cab8c0e95125088">&#9670;&nbsp;</a></span>operator!=</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool operator!= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00076">76</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a16065c51871cd59dcc60b35fc1f90d18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a16065c51871cd59dcc60b35fc1f90d18">&#9670;&nbsp;</a></span>account_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::CanonicalTXSet::Key::account_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00094">94</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
+
+</div>
+</div>
+<a id="adf775870caf991a0a05dec169756e74b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adf775870caf991a0a05dec169756e74b">&#9670;&nbsp;</a></span>txId_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::CanonicalTXSet::Key::txId_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00095">95</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
+
+</div>
+</div>
+<a id="a49c5b1001f07fe16961579305836ebab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49c5b1001f07fe16961579305836ebab">&#9670;&nbsp;</a></span>seqProxy_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1SeqProxy.html">SeqProxy</a> ripple::CanonicalTXSet::Key::seqProxy_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CanonicalTXSet_8h_source.html#l00096">96</a> of file <a class="el" href="CanonicalTXSet_8h_source.html">CanonicalTXSet.h</a>.</p>
 
 </div>
 </div>

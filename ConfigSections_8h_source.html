@@ -119,51 +119,54 @@ $(function() {
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="comment">// VFALCO TODO Rename and replace these macros with variables.</span></div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="preprocessor">#define SECTION_AMENDMENTS &quot;amendments&quot;</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="preprocessor">#define SECTION_CLUSTER_NODES &quot;cluster_nodes&quot;</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="preprocessor">#define SECTION_COMPRESSION &quot;compression&quot;</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="preprocessor">#define SECTION_DEBUG_LOGFILE &quot;debug_logfile&quot;</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="preprocessor">#define SECTION_ELB_SUPPORT &quot;elb_support&quot;</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="preprocessor">#define SECTION_FEE_DEFAULT &quot;fee_default&quot;</span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="preprocessor">#define SECTION_FEE_ACCOUNT_RESERVE &quot;fee_account_reserve&quot;</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="preprocessor">#define SECTION_FEE_OWNER_RESERVE &quot;fee_owner_reserve&quot;</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="preprocessor">#define SECTION_FETCH_DEPTH &quot;fetch_depth&quot;</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="preprocessor">#define SECTION_LEDGER_HISTORY &quot;ledger_history&quot;</span></div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="preprocessor">#define SECTION_INSIGHT &quot;insight&quot;</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="preprocessor">#define SECTION_IPS &quot;ips&quot;</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="preprocessor">#define SECTION_IPS_FIXED &quot;ips_fixed&quot;</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="preprocessor">#define SECTION_AMENDMENT_MAJORITY_TIME &quot;amendment_majority_time&quot;</span></div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="preprocessor">#define SECTION_NETWORK_QUORUM &quot;network_quorum&quot;</span></div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="preprocessor">#define SECTION_NODE_SEED &quot;node_seed&quot;</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="preprocessor">#define SECTION_NODE_SIZE &quot;node_size&quot;</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="preprocessor">#define SECTION_PATH_SEARCH_OLD &quot;path_search_old&quot;</span></div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="preprocessor">#define SECTION_PATH_SEARCH &quot;path_search&quot;</span></div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="preprocessor">#define SECTION_PATH_SEARCH_FAST &quot;path_search_fast&quot;</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="preprocessor">#define SECTION_PATH_SEARCH_MAX &quot;path_search_max&quot;</span></div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="preprocessor">#define SECTION_PEER_PRIVATE &quot;peer_private&quot;</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="preprocessor">#define SECTION_PEERS_MAX &quot;peers_max&quot;</span></div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="preprocessor">#define SECTION_RELAY_PROPOSALS &quot;relay_proposals&quot;</span></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="preprocessor">#define SECTION_RELAY_VALIDATIONS &quot;relay_validations&quot;</span></div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="preprocessor">#define SECTION_RPC_STARTUP &quot;rpc_startup&quot;</span></div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="preprocessor">#define SECTION_SIGNING_SUPPORT &quot;signing_support&quot;</span></div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="preprocessor">#define SECTION_SNTP &quot;sntp_servers&quot;</span></div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="preprocessor">#define SECTION_SSL_VERIFY &quot;ssl_verify&quot;</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="preprocessor">#define SECTION_SSL_VERIFY_FILE &quot;ssl_verify_file&quot;</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="preprocessor">#define SECTION_SSL_VERIFY_DIR &quot;ssl_verify_dir&quot;</span></div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<span class="preprocessor">#define SECTION_VALIDATORS_FILE &quot;validators_file&quot;</span></div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="preprocessor">#define SECTION_VALIDATION_SEED &quot;validation_seed&quot;</span></div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="preprocessor">#define SECTION_WEBSOCKET_PING_FREQ &quot;websocket_ping_frequency&quot;</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;<span class="preprocessor">#define SECTION_VALIDATOR_KEYS &quot;validator_keys&quot;</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<span class="preprocessor">#define SECTION_VALIDATOR_KEY_REVOCATION &quot;validator_key_revocation&quot;</span></div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<span class="preprocessor">#define SECTION_VALIDATOR_LIST_KEYS &quot;validator_list_keys&quot;</span></div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="preprocessor">#define SECTION_VALIDATOR_LIST_SITES &quot;validator_list_sites&quot;</span></div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="preprocessor">#define SECTION_VALIDATORS &quot;validators&quot;</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="preprocessor">#define SECTION_VALIDATOR_TOKEN &quot;validator_token&quot;</span></div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="preprocessor">#define SECTION_VETO_AMENDMENTS &quot;veto_amendments&quot;</span></div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="preprocessor">#define SECTION_WORKERS &quot;workers&quot;</span></div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="preprocessor">#define SECTION_AMENDMENT_MAJORITY_TIME &quot;amendment_majority_time&quot;</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="preprocessor">#define SECTION_CLUSTER_NODES &quot;cluster_nodes&quot;</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="preprocessor">#define SECTION_COMPRESSION &quot;compression&quot;</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="preprocessor">#define SECTION_DEBUG_LOGFILE &quot;debug_logfile&quot;</span></div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="preprocessor">#define SECTION_ELB_SUPPORT &quot;elb_support&quot;</span></div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="preprocessor">#define SECTION_FEE_DEFAULT &quot;fee_default&quot;</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="preprocessor">#define SECTION_FEE_ACCOUNT_RESERVE &quot;fee_account_reserve&quot;</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="preprocessor">#define SECTION_FEE_OWNER_RESERVE &quot;fee_owner_reserve&quot;</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="preprocessor">#define SECTION_FETCH_DEPTH &quot;fetch_depth&quot;</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="preprocessor">#define SECTION_HISTORICAL_SHARD_PATHS &quot;historical_shard_paths&quot;</span></div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="preprocessor">#define SECTION_INSIGHT &quot;insight&quot;</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="preprocessor">#define SECTION_IPS &quot;ips&quot;</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="preprocessor">#define SECTION_IPS_FIXED &quot;ips_fixed&quot;</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="preprocessor">#define SECTION_LEDGER_HISTORY &quot;ledger_history&quot;</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="preprocessor">#define SECTION_MAX_TRANSACTIONS &quot;max_transactions&quot;</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="preprocessor">#define SECTION_NETWORK_QUORUM &quot;network_quorum&quot;</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="preprocessor">#define SECTION_NODE_SEED &quot;node_seed&quot;</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="preprocessor">#define SECTION_NODE_SIZE &quot;node_size&quot;</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="preprocessor">#define SECTION_PATH_SEARCH_OLD &quot;path_search_old&quot;</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="preprocessor">#define SECTION_PATH_SEARCH &quot;path_search&quot;</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="preprocessor">#define SECTION_PATH_SEARCH_FAST &quot;path_search_fast&quot;</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="preprocessor">#define SECTION_PATH_SEARCH_MAX &quot;path_search_max&quot;</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="preprocessor">#define SECTION_PEER_PRIVATE &quot;peer_private&quot;</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="preprocessor">#define SECTION_PEERS_MAX &quot;peers_max&quot;</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="preprocessor">#define SECTION_REDUCE_RELAY &quot;reduce_relay&quot;</span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="preprocessor">#define SECTION_RELAY_PROPOSALS &quot;relay_proposals&quot;</span></div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="preprocessor">#define SECTION_RELAY_VALIDATIONS &quot;relay_validations&quot;</span></div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="preprocessor">#define SECTION_RPC_STARTUP &quot;rpc_startup&quot;</span></div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="preprocessor">#define SECTION_SIGNING_SUPPORT &quot;signing_support&quot;</span></div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="preprocessor">#define SECTION_SNTP &quot;sntp_servers&quot;</span></div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<span class="preprocessor">#define SECTION_SSL_VERIFY &quot;ssl_verify&quot;</span></div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="preprocessor">#define SECTION_SSL_VERIFY_FILE &quot;ssl_verify_file&quot;</span></div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="preprocessor">#define SECTION_SSL_VERIFY_DIR &quot;ssl_verify_dir&quot;</span></div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;<span class="preprocessor">#define SECTION_VALIDATORS_FILE &quot;validators_file&quot;</span></div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<span class="preprocessor">#define SECTION_VALIDATION_SEED &quot;validation_seed&quot;</span></div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<span class="preprocessor">#define SECTION_WEBSOCKET_PING_FREQ &quot;websocket_ping_frequency&quot;</span></div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="preprocessor">#define SECTION_VALIDATOR_KEYS &quot;validator_keys&quot;</span></div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="preprocessor">#define SECTION_VALIDATOR_KEY_REVOCATION &quot;validator_key_revocation&quot;</span></div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="preprocessor">#define SECTION_VALIDATOR_LIST_KEYS &quot;validator_list_keys&quot;</span></div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="preprocessor">#define SECTION_VALIDATOR_LIST_SITES &quot;validator_list_sites&quot;</span></div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="preprocessor">#define SECTION_VALIDATORS &quot;validators&quot;</span></div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="preprocessor">#define SECTION_VALIDATOR_TOKEN &quot;validator_token&quot;</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="preprocessor">#define SECTION_VETO_AMENDMENTS &quot;veto_amendments&quot;</span></div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="preprocessor">#define SECTION_WORKERS &quot;workers&quot;</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="astructripple_1_1ConfigSection_html_abab87cd32670610e64b43124c381775c"><div class="ttname"><a href="structripple_1_1ConfigSection.html#abab87cd32670610e64b43124c381775c">ripple::ConfigSection::shardDatabase</a></div><div class="ttdeci">static std::string shardDatabase()</div><div class="ttdef"><b>Definition:</b> <a href="ConfigSections_8h_source.html#l00038">ConfigSections.h:38</a></div></div>

@@ -1,10 +1,11 @@
 <map id="ripple::test::csf::Validations_test::TestHarness" name="ripple::test::csf::Validations_test::TestHarness">
-<area shape="rect" id="node1" title=" " alt="" coords="876,267,1089,309"/>
-<area shape="rect" id="node2" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="535,194,741,235"/>
+<area shape="rect" id="node1" title=" " alt="" coords="876,290,1089,331"/>
+<area shape="rect" id="node2" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="535,195,741,237"/>
 <area shape="rect" id="node3" title=" " alt="" coords="5,5,309,179"/>
 <area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="106,203,209,229"/>
-<area shape="rect" id="node5" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="557,260,719,316"/>
-<area shape="rect" id="node6" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="77,257,238,313"/>
-<area shape="rect" id="node7" href="$structripple_1_1ValidationParms.html" title="Timing parameters to control validation staleness and expiration." alt="" coords="552,352,724,379"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="80,365,235,392"/>
+<area shape="rect" id="node5" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="557,283,719,339"/>
+<area shape="rect" id="node6" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="77,253,238,309"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="71,333,243,360"/>
+<area shape="rect" id="node8" href="$structripple_1_1ValidationParms.html" title="Timing parameters to control validation staleness and expiration." alt="" coords="552,381,724,408"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="80,421,235,448"/>
 </map>

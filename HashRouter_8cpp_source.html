@@ -121,109 +121,117 @@ $(function() {
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="keywordtype">bool</span></div>
 <div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="classripple_1_1HashRouter.html#a86c862f1b0722d061b3724ff34a53572">   51</a></span>&#160;<a class="code" href="classripple_1_1HashRouter.html#a86c862f1b0722d061b3724ff34a53572">HashRouter::addSuppressionPeer</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">PeerShortID</a> peer)</div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;{</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1HashRouter.html#a311812f9ac5539ce4d2f500283d67c96">mutex_</a>);</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keyword">auto</span> result = <a class="code" href="classripple_1_1HashRouter.html#ad292b17376920b23d1ee3748f2b76d76">emplace</a>(key);</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    result.first.addPeer(peer);</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keywordflow">return</span> result.second;</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;}</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno"><a class="line" href="classripple_1_1HashRouter.html#aac29c2160c4d24ff6536c5a562b627a4">   61</a></span>&#160;<a class="code" href="classripple_1_1HashRouter.html#a86c862f1b0722d061b3724ff34a53572">HashRouter::addSuppressionPeer</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">PeerShortID</a> peer, <span class="keywordtype">int</span>&amp; flags)</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;{</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1HashRouter.html#a311812f9ac5539ce4d2f500283d67c96">mutex_</a>);</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keyword">auto</span> [s, created] = <a class="code" href="classripple_1_1HashRouter.html#ad292b17376920b23d1ee3748f2b76d76">emplace</a>(key);</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    s.addPeer(peer);</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    flags = s.getFlags();</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keywordflow">return</span> created;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;}</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classripple_1_1HashRouter.html#aa7ef4afb150d0fda3aa3e97e3d23fe2a">addSuppressionPeerWithStatus</a>(key, peer).first;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;}</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;bool, std::optional&lt;Stopwatch::time_point&gt;</a>&gt;</div>
+<div class="line"><a name="l00057"></a><span class="lineno"><a class="line" href="classripple_1_1HashRouter.html#aa7ef4afb150d0fda3aa3e97e3d23fe2a">   57</a></span>&#160;<a class="code" href="classripple_1_1HashRouter.html#aa7ef4afb150d0fda3aa3e97e3d23fe2a">HashRouter::addSuppressionPeerWithStatus</a>(<span class="keyword">const</span> <a class="code" href="classripple_1_1base__uint.html">uint256</a>&amp; key, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">PeerShortID</a> peer)</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;{</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1HashRouter.html#a311812f9ac5539ce4d2f500283d67c96">mutex_</a>);</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">auto</span> result = <a class="code" href="classripple_1_1HashRouter.html#ad292b17376920b23d1ee3748f2b76d76">emplace</a>(key);</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    result.first.addPeer(peer);</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keywordflow">return</span> {result.second, result.first.relayed()};</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;}</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno"><a class="line" href="classripple_1_1HashRouter.html#aac29c2160c4d24ff6536c5a562b627a4">   67</a></span>&#160;<a class="code" href="classripple_1_1HashRouter.html#a86c862f1b0722d061b3724ff34a53572">HashRouter::addSuppressionPeer</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">PeerShortID</a> peer, <span class="keywordtype">int</span>&amp; flags)</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;{</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1HashRouter.html#a311812f9ac5539ce4d2f500283d67c96">mutex_</a>);</div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno"><a class="line" href="classripple_1_1HashRouter.html#a2a2ef462b7dc7e845d7c0fa55cdb3665">   72</a></span>&#160;<a class="code" href="classripple_1_1HashRouter.html#a2a2ef462b7dc7e845d7c0fa55cdb3665">HashRouter::shouldProcess</a>(</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key,</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">PeerShortID</a> peer,</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keywordtype">int</span>&amp; flags,</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> tx_interval)</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;{</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1HashRouter.html#a311812f9ac5539ce4d2f500283d67c96">mutex_</a>);</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keyword">auto</span> result = <a class="code" href="classripple_1_1HashRouter.html#ad292b17376920b23d1ee3748f2b76d76">emplace</a>(key);</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keyword">auto</span>&amp; s = result.first;</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    s.addPeer(peer);</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    flags = s.getFlags();</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keywordflow">return</span> s.shouldProcess(<a class="code" href="classripple_1_1HashRouter.html#a1b438816ee148190c798135febda93eb">suppressionMap_</a>.clock().now(), tx_interval);</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;}</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="keywordtype">int</span></div>
-<div class="line"><a name="l00088"></a><span class="lineno"><a class="line" href="classripple_1_1HashRouter.html#a34019a21932ce1a1c6850da761d8bbb6">   88</a></span>&#160;<a class="code" href="classripple_1_1HashRouter.html#a34019a21932ce1a1c6850da761d8bbb6">HashRouter::getFlags</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key)</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;{</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1HashRouter.html#a311812f9ac5539ce4d2f500283d67c96">mutex_</a>);</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classripple_1_1HashRouter.html#ad292b17376920b23d1ee3748f2b76d76">emplace</a>(key).first.getFlags();</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;}</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00096"></a><span class="lineno"><a class="line" href="classripple_1_1HashRouter.html#ac43309b8c10713823bdc233f39931472">   96</a></span>&#160;<a class="code" href="classripple_1_1HashRouter.html#ac43309b8c10713823bdc233f39931472">HashRouter::setFlags</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key, <span class="keywordtype">int</span> flags)</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;{</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    assert(flags != 0);</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1HashRouter.html#a311812f9ac5539ce4d2f500283d67c96">mutex_</a>);</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="keyword">auto</span>&amp; s = <a class="code" href="classripple_1_1HashRouter.html#ad292b17376920b23d1ee3748f2b76d76">emplace</a>(key).first;</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="keywordflow">if</span> ((s.getFlags() &amp; flags) == flags)</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    s.setFlags(flags);</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;}</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160; </div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;<span class="keyword">auto</span></div>
-<div class="line"><a name="l00112"></a><span class="lineno"><a class="line" href="classripple_1_1HashRouter.html#a29980c0f77dcc002ef322c23080f3266">  112</a></span>&#160;<a class="code" href="classripple_1_1HashRouter.html#a29980c0f77dcc002ef322c23080f3266">HashRouter::shouldRelay</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key)</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    -&gt; boost::optional&lt;std::set&lt;PeerShortID&gt;&gt;</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;{</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(mutex_);</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keyword">auto</span> [s, created] = <a class="code" href="classripple_1_1HashRouter.html#ad292b17376920b23d1ee3748f2b76d76">emplace</a>(key);</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    s.addPeer(peer);</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    flags = s.getFlags();</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keywordflow">return</span> created;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;}</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00078"></a><span class="lineno"><a class="line" href="classripple_1_1HashRouter.html#a2a2ef462b7dc7e845d7c0fa55cdb3665">   78</a></span>&#160;<a class="code" href="classripple_1_1HashRouter.html#a2a2ef462b7dc7e845d7c0fa55cdb3665">HashRouter::shouldProcess</a>(</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key,</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">PeerShortID</a> peer,</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keywordtype">int</span>&amp; flags,</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> tx_interval)</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;{</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1HashRouter.html#a311812f9ac5539ce4d2f500283d67c96">mutex_</a>);</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="keyword">auto</span> result = <a class="code" href="classripple_1_1HashRouter.html#ad292b17376920b23d1ee3748f2b76d76">emplace</a>(key);</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keyword">auto</span>&amp; s = result.first;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    s.addPeer(peer);</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    flags = s.getFlags();</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="keywordflow">return</span> s.shouldProcess(<a class="code" href="classripple_1_1HashRouter.html#a1b438816ee148190c798135febda93eb">suppressionMap_</a>.clock().now(), tx_interval);</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;}</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="keywordtype">int</span></div>
+<div class="line"><a name="l00094"></a><span class="lineno"><a class="line" href="classripple_1_1HashRouter.html#a34019a21932ce1a1c6850da761d8bbb6">   94</a></span>&#160;<a class="code" href="classripple_1_1HashRouter.html#a34019a21932ce1a1c6850da761d8bbb6">HashRouter::getFlags</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key)</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;{</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1HashRouter.html#a311812f9ac5539ce4d2f500283d67c96">mutex_</a>);</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classripple_1_1HashRouter.html#ad292b17376920b23d1ee3748f2b76d76">emplace</a>(key).first.getFlags();</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;}</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00102"></a><span class="lineno"><a class="line" href="classripple_1_1HashRouter.html#ac43309b8c10713823bdc233f39931472">  102</a></span>&#160;<a class="code" href="classripple_1_1HashRouter.html#ac43309b8c10713823bdc233f39931472">HashRouter::setFlags</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key, <span class="keywordtype">int</span> flags)</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;{</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    assert(flags != 0);</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1HashRouter.html#a311812f9ac5539ce4d2f500283d67c96">mutex_</a>);</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <span class="keyword">auto</span>&amp; s = <a class="code" href="classripple_1_1HashRouter.html#ad292b17376920b23d1ee3748f2b76d76">emplace</a>(key).first;</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <span class="keywordflow">if</span> ((s.getFlags() &amp; flags) == flags)</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160; </div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    s.setFlags(flags);</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;}</div>
 <div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160; </div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <span class="keyword">auto</span>&amp; s = emplace(key).first;</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="keywordflow">if</span> (!s.shouldRelay(suppressionMap_.clock().now(), holdTime_))</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        <span class="keywordflow">return</span> boost::none;</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160; </div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="keywordflow">return</span> s.releasePeerSet();</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;}</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;<span class="keyword">auto</span></div>
+<div class="line"><a name="l00118"></a><span class="lineno"><a class="line" href="classripple_1_1HashRouter.html#a29980c0f77dcc002ef322c23080f3266">  118</a></span>&#160;<a class="code" href="classripple_1_1HashRouter.html#a29980c0f77dcc002ef322c23080f3266">HashRouter::shouldRelay</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key)</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    -&gt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::set&lt;PeerShortID&gt;</a>&gt;</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;{</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(mutex_);</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160; </div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    <span class="keyword">auto</span>&amp; s = emplace(key).first;</div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;<span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00126"></a><span class="lineno"><a class="line" href="classripple_1_1HashRouter.html#a6af0b6bd7155e389fdd4f08b17d87e47">  126</a></span>&#160;<a class="code" href="classripple_1_1HashRouter.html#a6af0b6bd7155e389fdd4f08b17d87e47">HashRouter::shouldRecover</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key)</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;{</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1HashRouter.html#a311812f9ac5539ce4d2f500283d67c96">mutex_</a>);</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160; </div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    <span class="keyword">auto</span>&amp; s = <a class="code" href="classripple_1_1HashRouter.html#ad292b17376920b23d1ee3748f2b76d76">emplace</a>(key).first;</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    <span class="keywordflow">return</span> s.shouldRecover(<a class="code" href="classripple_1_1HashRouter.html#a0a7dddce4925f0b88cf9568fb14a16e9">recoverLimit_</a>);</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;}</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160; </div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <span class="keywordflow">if</span> (!s.shouldRelay(suppressionMap_.clock().now(), holdTime_))</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        <span class="keywordflow">return</span> {};</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <span class="keywordflow">return</span> s.releasePeerSet();</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;}</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160; </div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00132"></a><span class="lineno"><a class="line" href="classripple_1_1HashRouter.html#a6af0b6bd7155e389fdd4f08b17d87e47">  132</a></span>&#160;<a class="code" href="classripple_1_1HashRouter.html#a6af0b6bd7155e389fdd4f08b17d87e47">HashRouter::shouldRecover</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; key)</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;{</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code" href="classripple_1_1HashRouter.html#a311812f9ac5539ce4d2f500283d67c96">mutex_</a>);</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160; </div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    <span class="keyword">auto</span>&amp; s = <a class="code" href="classripple_1_1HashRouter.html#ad292b17376920b23d1ee3748f2b76d76">emplace</a>(key).first;</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160; </div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    <span class="keywordflow">return</span> s.shouldRecover(<a class="code" href="classripple_1_1HashRouter.html#a0a7dddce4925f0b88cf9568fb14a16e9">recoverLimit_</a>);</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;}</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160; </div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
+<div class="ttc" id="aclassripple_1_1HashRouter_html_aa7ef4afb150d0fda3aa3e97e3d23fe2a"><div class="ttname"><a href="classripple_1_1HashRouter.html#aa7ef4afb150d0fda3aa3e97e3d23fe2a">ripple::HashRouter::addSuppressionPeerWithStatus</a></div><div class="ttdeci">std::pair&lt; bool, std::optional&lt; Stopwatch::time_point &gt; &gt; addSuppressionPeerWithStatus(uint256 const &amp;key, PeerShortID peer)</div><div class="ttdoc">Add a suppression peer and get message's relay status.</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8cpp_source.html#l00057">HashRouter.cpp:57</a></div></div>
 <div class="ttc" id="aclassripple_1_1HashRouter_html_a86c862f1b0722d061b3724ff34a53572"><div class="ttname"><a href="classripple_1_1HashRouter.html#a86c862f1b0722d061b3724ff34a53572">ripple::HashRouter::addSuppressionPeer</a></div><div class="ttdeci">bool addSuppressionPeer(uint256 const &amp;key, PeerShortID peer)</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8cpp_source.html#l00051">HashRouter.cpp:51</a></div></div>
 <div class="ttc" id="aclassripple_1_1HashRouter_html_ad292b17376920b23d1ee3748f2b76d76"><div class="ttname"><a href="classripple_1_1HashRouter.html#ad292b17376920b23d1ee3748f2b76d76">ripple::HashRouter::emplace</a></div><div class="ttdeci">std::pair&lt; Entry &amp;, bool &gt; emplace(uint256 const &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8cpp_source.html#l00025">HashRouter.cpp:25</a></div></div>
-<div class="ttc" id="aclassripple_1_1HashRouter_html_a34019a21932ce1a1c6850da761d8bbb6"><div class="ttname"><a href="classripple_1_1HashRouter.html#a34019a21932ce1a1c6850da761d8bbb6">ripple::HashRouter::getFlags</a></div><div class="ttdeci">int getFlags(uint256 const &amp;key)</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8cpp_source.html#l00088">HashRouter.cpp:88</a></div></div>
-<div class="ttc" id="aclassripple_1_1HashRouter_html_a311812f9ac5539ce4d2f500283d67c96"><div class="ttname"><a href="classripple_1_1HashRouter.html#a311812f9ac5539ce4d2f500283d67c96">ripple::HashRouter::mutex_</a></div><div class="ttdeci">std::mutex mutex_</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8h_source.html#l00238">HashRouter.h:238</a></div></div>
+<div class="ttc" id="aclassripple_1_1HashRouter_html_a34019a21932ce1a1c6850da761d8bbb6"><div class="ttname"><a href="classripple_1_1HashRouter.html#a34019a21932ce1a1c6850da761d8bbb6">ripple::HashRouter::getFlags</a></div><div class="ttdeci">int getFlags(uint256 const &amp;key)</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8cpp_source.html#l00094">HashRouter.cpp:94</a></div></div>
+<div class="ttc" id="aclassripple_1_1HashRouter_html_a311812f9ac5539ce4d2f500283d67c96"><div class="ttname"><a href="classripple_1_1HashRouter.html#a311812f9ac5539ce4d2f500283d67c96">ripple::HashRouter::mutex_</a></div><div class="ttdeci">std::mutex mutex_</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8h_source.html#l00253">HashRouter.h:253</a></div></div>
 <div class="ttc" id="apair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a></div></div>
 <div class="ttc" id="aclassripple_1_1HashRouter_1_1Entry_html"><div class="ttname"><a href="classripple_1_1HashRouter_1_1Entry.html">ripple::HashRouter::Entry</a></div><div class="ttdoc">An entry in the routing table.</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8h_source.html#l00061">HashRouter.h:61</a></div></div>
-<div class="ttc" id="aclassripple_1_1HashRouter_html_a2a2ef462b7dc7e845d7c0fa55cdb3665"><div class="ttname"><a href="classripple_1_1HashRouter.html#a2a2ef462b7dc7e845d7c0fa55cdb3665">ripple::HashRouter::shouldProcess</a></div><div class="ttdeci">bool shouldProcess(uint256 const &amp;key, PeerShortID peer, int &amp;flags, std::chrono::seconds tx_interval)</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8cpp_source.html#l00072">HashRouter.cpp:72</a></div></div>
+<div class="ttc" id="aclassripple_1_1HashRouter_html_a2a2ef462b7dc7e845d7c0fa55cdb3665"><div class="ttname"><a href="classripple_1_1HashRouter.html#a2a2ef462b7dc7e845d7c0fa55cdb3665">ripple::HashRouter::shouldProcess</a></div><div class="ttdeci">bool shouldProcess(uint256 const &amp;key, PeerShortID peer, int &amp;flags, std::chrono::seconds tx_interval)</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8cpp_source.html#l00078">HashRouter.cpp:78</a></div></div>
 <div class="ttc" id="aduration_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a></div></div>
 <div class="ttc" id="alock_guard_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint</a></div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00063">base_uint.h:63</a></div></div>
-<div class="ttc" id="aclassripple_1_1HashRouter_html_a1b438816ee148190c798135febda93eb"><div class="ttname"><a href="classripple_1_1HashRouter.html#a1b438816ee148190c798135febda93eb">ripple::HashRouter::suppressionMap_</a></div><div class="ttdeci">beast::aged_unordered_map&lt; uint256, Entry, Stopwatch::clock_type, hardened_hash&lt; strong_hash &gt; &gt; suppressionMap_</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8h_source.html#l00246">HashRouter.h:246</a></div></div>
+<div class="ttc" id="aclassripple_1_1HashRouter_html_a1b438816ee148190c798135febda93eb"><div class="ttname"><a href="classripple_1_1HashRouter.html#a1b438816ee148190c798135febda93eb">ripple::HashRouter::suppressionMap_</a></div><div class="ttdeci">beast::aged_unordered_map&lt; uint256, Entry, Stopwatch::clock_type, hardened_hash&lt; strong_hash &gt; &gt; suppressionMap_</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8h_source.html#l00261">HashRouter.h:261</a></div></div>
 <div class="ttc" id="aclassripple_1_1HashRouter_html_af21ce5a3efbbd0d4e7eca2685b6af1c6"><div class="ttname"><a href="classripple_1_1HashRouter.html#af21ce5a3efbbd0d4e7eca2685b6af1c6">ripple::HashRouter::addSuppression</a></div><div class="ttdeci">void addSuppression(uint256 const &amp;key)</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8cpp_source.html#l00043">HashRouter.cpp:43</a></div></div>
-<div class="ttc" id="aclassripple_1_1HashRouter_html_a6af0b6bd7155e389fdd4f08b17d87e47"><div class="ttname"><a href="classripple_1_1HashRouter.html#a6af0b6bd7155e389fdd4f08b17d87e47">ripple::HashRouter::shouldRecover</a></div><div class="ttdeci">bool shouldRecover(uint256 const &amp;key)</div><div class="ttdoc">Determines whether the hashed item should be recovered from the open ledger into the next open ledger...</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8cpp_source.html#l00126">HashRouter.cpp:126</a></div></div>
+<div class="ttc" id="aclassripple_1_1HashRouter_html_a6af0b6bd7155e389fdd4f08b17d87e47"><div class="ttname"><a href="classripple_1_1HashRouter.html#a6af0b6bd7155e389fdd4f08b17d87e47">ripple::HashRouter::shouldRecover</a></div><div class="ttdeci">bool shouldRecover(uint256 const &amp;key)</div><div class="ttdoc">Determines whether the hashed item should be recovered from the open ledger into the next open ledger...</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8cpp_source.html#l00132">HashRouter.cpp:132</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
-<div class="ttc" id="aclassripple_1_1HashRouter_html_a29980c0f77dcc002ef322c23080f3266"><div class="ttname"><a href="classripple_1_1HashRouter.html#a29980c0f77dcc002ef322c23080f3266">ripple::HashRouter::shouldRelay</a></div><div class="ttdeci">boost::optional&lt; std::set&lt; PeerShortID &gt; &gt; shouldRelay(uint256 const &amp;key)</div><div class="ttdoc">Determines whether the hashed item should be relayed.</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8cpp_source.html#l00112">HashRouter.cpp:112</a></div></div>
+<div class="ttc" id="aclassripple_1_1HashRouter_html_a29980c0f77dcc002ef322c23080f3266"><div class="ttname"><a href="classripple_1_1HashRouter.html#a29980c0f77dcc002ef322c23080f3266">ripple::HashRouter::shouldRelay</a></div><div class="ttdeci">std::optional&lt; std::set&lt; PeerShortID &gt; &gt; shouldRelay(uint256 const &amp;key)</div><div class="ttdoc">Determines whether the hashed item should be relayed.</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8cpp_source.html#l00118">HashRouter.cpp:118</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
+<div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></div></div>
 <div class="ttc" id="amake_pair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair/make_pair.html">std::make_pair</a></div><div class="ttdeci">T make_pair(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1HashRouter_html_a0a7dddce4925f0b88cf9568fb14a16e9"><div class="ttname"><a href="classripple_1_1HashRouter.html#a0a7dddce4925f0b88cf9568fb14a16e9">ripple::HashRouter::recoverLimit_</a></div><div class="ttdeci">const std::uint32_t recoverLimit_</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8h_source.html#l00250">HashRouter.h:250</a></div></div>
-<div class="ttc" id="aclassripple_1_1HashRouter_html_ac43309b8c10713823bdc233f39931472"><div class="ttname"><a href="classripple_1_1HashRouter.html#ac43309b8c10713823bdc233f39931472">ripple::HashRouter::setFlags</a></div><div class="ttdeci">bool setFlags(uint256 const &amp;key, int flags)</div><div class="ttdoc">Set the flags on a hash.</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8cpp_source.html#l00096">HashRouter.cpp:96</a></div></div>
+<div class="ttc" id="aclassripple_1_1HashRouter_html_a0a7dddce4925f0b88cf9568fb14a16e9"><div class="ttname"><a href="classripple_1_1HashRouter.html#a0a7dddce4925f0b88cf9568fb14a16e9">ripple::HashRouter::recoverLimit_</a></div><div class="ttdeci">const std::uint32_t recoverLimit_</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8h_source.html#l00265">HashRouter.h:265</a></div></div>
+<div class="ttc" id="aclassripple_1_1HashRouter_html_ac43309b8c10713823bdc233f39931472"><div class="ttname"><a href="classripple_1_1HashRouter.html#ac43309b8c10713823bdc233f39931472">ripple::HashRouter::setFlags</a></div><div class="ttdeci">bool setFlags(uint256 const &amp;key, int flags)</div><div class="ttdoc">Set the flags on a hash.</div><div class="ttdef"><b>Definition:</b> <a href="HashRouter_8cpp_source.html#l00102">HashRouter.cpp:102</a></div></div>
 <div class="ttc" id="aref_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/functional/ref.html">std::ref</a></div><div class="ttdeci">T ref(T... args)</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

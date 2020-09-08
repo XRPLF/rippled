@@ -173,7 +173,8 @@ $(function() {
 , <a class="el" href="classripple_1_1ApplicationImp.html#a47fd209adc45f3023a689438dadbcab8">ripple::ApplicationImp</a>
 </li>
 <li>getAccount()
-: <a class="el" href="classripple_1_1LocalTx.html#a53c4f8d8a6ea113e55c9029f36393c17">ripple::LocalTx</a>
+: <a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#a48d679e500952b0652372b5d9a75a212">ripple::CanonicalTXSet::Key</a>
+, <a class="el" href="classripple_1_1LocalTx.html#a53c4f8d8a6ea113e55c9029f36393c17">ripple::LocalTx</a>
 , <a class="el" href="structripple_1_1test_1_1ExistingElementPool.html#ae09e3c2b8cd6bec2da53a1db70bd68b4">ripple::test::ExistingElementPool</a>
 </li>
 <li>getAccountID()
@@ -199,7 +200,7 @@ $(function() {
 <li>getAccountTxs()
 : <a class="el" href="classripple_1_1NetworkOPs.html#a7decc38c24fdc6824c523ce314406ebf">ripple::NetworkOPs</a>
 , <a class="el" href="classripple_1_1NetworkOPsImp.html#a043a1a886e49535f43da04b96de3bc30">ripple::NetworkOPsImp</a>
-, <a class="el" href="classripple_1_1TxQ.html#a66fa45b81a85172a9a88a72d77487efc">ripple::TxQ</a>
+, <a class="el" href="classripple_1_1TxQ.html#a97c37a57b92f5ebfcf6d7c831d485fe7">ripple::TxQ</a>
 </li>
 <li>getAccountTxsB()
 : <a class="el" href="classripple_1_1NetworkOPs.html#a0917daa974359b0bc1a07ad3a1dcecc1">ripple::NetworkOPs</a>
@@ -350,6 +351,7 @@ $(function() {
 <li>getClosedLedgerHash()
 : <a class="el" href="classripple_1_1Peer.html#a7be0fe54e7f2f72ddc0ec749122b8d10">ripple::Peer</a>
 , <a class="el" href="classripple_1_1PeerImp.html#a11d853c3a1a3a21d76f61ecff58c461b">ripple::PeerImp</a>
+, <a class="el" href="classripple_1_1test_1_1PeerPartial.html#adfbe14d21092467899c9355010cbc3ba">ripple::test::PeerPartial</a>
 </li>
 <li>getCloseTimeByHash()
 : <a class="el" href="classripple_1_1LedgerMaster.html#a8abe80490a5e5c43defe19e323f24918">ripple::LedgerMaster</a>
@@ -785,6 +787,9 @@ $(function() {
 : <a class="el" href="classripple_1_1SHAMapStore.html#a7d926beeaf7fe6baf9fa95ee2b4d85d1">ripple::SHAMapStore</a>
 , <a class="el" href="classripple_1_1SHAMapStoreImp.html#aac0c0154f62d2ef0ddbb52089931d5fa">ripple::SHAMapStoreImp</a>
 </li>
+<li>getLastSelected()
+: <a class="el" href="classripple_1_1squelch_1_1Slot.html#ab55d004cbdba384824c11a1d0d29810f">ripple::squelch::Slot&lt; clock_type &gt;</a>
+</li>
 <li>getLedger()
 : <a class="el" href="classripple_1_1AcceptedLedger.html#a38df9c38527d9b2e4d3d782cbe757b52">ripple::AcceptedLedger</a>
 , <a class="el" href="classripple_1_1InboundLedger.html#aacf58eba403e792c8429de5e901816d3">ripple::InboundLedger</a>
@@ -981,6 +986,7 @@ $(function() {
 <li>getNodePublic()
 : <a class="el" href="classripple_1_1Peer.html#a262044337e374e312d5334458d937484">ripple::Peer</a>
 , <a class="el" href="classripple_1_1PeerImp.html#aa6baf99a2a294efd449f6052cbdf829e">ripple::PeerImp</a>
+, <a class="el" href="classripple_1_1test_1_1PeerPartial.html#a060c847f3b8be541adc24326cdf4e0d0">ripple::test::PeerPartial</a>
 </li>
 <li>getNodes()
 : <a class="el" href="classripple_1_1TxMeta.html#acb0a79ba070162c63aa61a1ce764ade7">ripple::TxMeta</a>
@@ -1012,6 +1018,9 @@ $(function() {
 </li>
 <li>getNumFields()
 : <a class="el" href="classripple_1_1SField.html#a5de7eea70a490fa0b6b488e155475677">ripple::SField</a>
+</li>
+<li>getNumPeers()
+: <a class="el" href="classripple_1_1test_1_1OverlaySim.html#a364cee773fe316c38f658fb785349a79">ripple::test::OverlaySim</a>
 </li>
 <li>getOfrInRate()
 : <a class="el" href="classripple_1_1BookOfferCrossingStep.html#a42b35ba6f25f09390f197f21da10742d">ripple::BookOfferCrossingStep&lt; TIn, TOut &gt;</a>
@@ -1072,6 +1081,9 @@ $(function() {
 <li>getPeakLatency()
 : <a class="el" href="classripple_1_1JobTypeInfo.html#a5decb78ba7a7e64700a7ccb3743c0de5">ripple::JobTypeInfo</a>
 </li>
+<li>getPeer()
+: <a class="el" href="classripple_1_1test_1_1Link.html#a6eda62595e0cc2dc9d4543d6a874926a">ripple::test::Link</a>
+</li>
 <li>getPeerCount()
 : <a class="el" href="classripple_1_1InboundLedger.html#a16e175c43a207a208b6dcd8bf1e0f2c0">ripple::InboundLedger</a>
 </li>
@@ -1082,6 +1094,11 @@ $(function() {
 <li>getPeerDisconnectCharges()
 : <a class="el" href="classripple_1_1Overlay.html#af00afb4bb76983b57ff67a1f62b6185e">ripple::Overlay</a>
 , <a class="el" href="classripple_1_1OverlayImpl.html#a7e1c12d0a2dd246dca87211614c0fa2d">ripple::OverlayImpl</a>
+</li>
+<li>getPeers()
+: <a class="el" href="classripple_1_1squelch_1_1Slot.html#a08ca62fc63a08c1a4a277aed9cc206d4">ripple::squelch::Slot&lt; clock_type &gt;</a>
+, <a class="el" href="classripple_1_1squelch_1_1Slots.html#a13b090221c9b16e743f3b7fefe36df8a">ripple::squelch::Slots&lt; clock_type &gt;</a>
+, <a class="el" href="classripple_1_1test_1_1OverlaySim.html#a44182b8b027f6ed5aea3caad6dbd5bc1">ripple::test::OverlaySim</a>
 </li>
 <li>getPeerShardInfo()
 : <a class="el" href="classripple_1_1PeerImp.html#a6c1f9ea45ebf172e848b8307ce7b0296">ripple::PeerImp</a>
@@ -1109,7 +1126,7 @@ $(function() {
 </li>
 <li>getPreferred()
 : <a class="el" href="classripple_1_1LedgerTrie.html#af6283053a1ed0b7eacd3fe0dcb3cc77d">ripple::LedgerTrie&lt; Ledger &gt;</a>
-, <a class="el" href="classripple_1_1Validations.html#a49e72adb9b1df906dc15cc1fa073aefb">ripple::Validations&lt; Adaptor &gt;</a>
+, <a class="el" href="classripple_1_1Validations.html#ad8cbed0563344b297789575879aae482">ripple::Validations&lt; Adaptor &gt;</a>
 </li>
 <li>getPreferredLCL()
 : <a class="el" href="classripple_1_1Validations.html#abe6526fada634c34ab78897b910840de">ripple::Validations&lt; Adaptor &gt;</a>
@@ -1121,6 +1138,9 @@ $(function() {
 <li>getPrevLedger()
 : <a class="el" href="classripple_1_1RCLConsensus_1_1Adaptor.html#aec8ba6a5bc49a937911f50c264a48439">ripple::RCLConsensus::Adaptor</a>
 , <a class="el" href="structripple_1_1test_1_1csf_1_1Peer.html#acedf6046e1e863faf4f28fd1a7129e38">ripple::test::csf::Peer</a>
+</li>
+<li>getPrevTx()
+: <a class="el" href="classripple_1_1TxQ_1_1TxQAccount.html#a6c96474d54b20adb7bc5a9e35416b580">ripple::TxQ::TxQAccount</a>
 </li>
 <li>getPropertySource()
 : <a class="el" href="classripple_1_1LedgerMaster.html#a7b594a8bd15a93603be41835ca069047">ripple::LedgerMaster</a>
@@ -1166,12 +1186,16 @@ $(function() {
 <li>getRemoteAddress()
 : <a class="el" href="classripple_1_1Peer.html#a35b25d5a662db9a534ac4a972a8ba6b3">ripple::Peer</a>
 , <a class="el" href="classripple_1_1PeerImp.html#a7a737331e178418758cda61c2a8a39e3">ripple::PeerImp</a>
+, <a class="el" href="classripple_1_1test_1_1PeerPartial.html#a72899475d28d41d88b1e181ac08ba095">ripple::test::PeerPartial</a>
 </li>
 <li>getRemoteFee()
 : <a class="el" href="classripple_1_1LoadFeeTrack.html#ad0eba357ff30a3907b43a37208cb310a">ripple::LoadFeeTrack</a>
 </li>
 <li>getReportTime()
 : <a class="el" href="classripple_1_1ClusterNode.html#aed8c1d4055c0ce82697154a9d4a19959">ripple::ClusterNode</a>
+</li>
+<li>getRequiredFeeLevel()
+: <a class="el" href="classripple_1_1TxQ.html#a959646175ed7eb636de9a994566322e1">ripple::TxQ</a>
 </li>
 <li>getResetState()
 : <a class="el" href="structripple_1_1test_1_1ExistingElementPool.html#a5940433fc9c57b11ae458f33ad3399e3">ripple::test::ExistingElementPool</a>
@@ -1210,19 +1234,30 @@ $(function() {
 <li>getScore()
 : <a class="el" href="classripple_1_1Peer.html#a25952c97b91516972a84da5dac619f96">ripple::Peer</a>
 , <a class="el" href="classripple_1_1PeerImp.html#a9d85b0b8d8c812fbf6b22ba701abc4eb">ripple::PeerImp</a>
+, <a class="el" href="classripple_1_1test_1_1PeerPartial.html#a8684658d9a6201eb689898446594a483">ripple::test::PeerPartial</a>
 </li>
 <li>getSeenTime()
 : <a class="el" href="classripple_1_1STValidation.html#a5123731a2942f7680915823882df719e">ripple::STValidation</a>
 </li>
+<li>getSelected()
+: <a class="el" href="classripple_1_1squelch_1_1Slot.html#afb21b155e00b198393eb48459d556784">ripple::squelch::Slot&lt; clock_type &gt;</a>
+, <a class="el" href="classripple_1_1squelch_1_1Slots.html#a0ee7ddb78474dc8853a9423947077ff1">ripple::squelch::Slots&lt; clock_type &gt;</a>
+, <a class="el" href="classripple_1_1test_1_1OverlaySim.html#a793b2305564ce5e1fb8a38656dd5e1fd">ripple::test::OverlaySim</a>
+</li>
+<li>getSelectedPeer()
+: <a class="el" href="classripple_1_1test_1_1OverlaySim.html#af312e81492fb7df1403ad120420e4e83">ripple::test::OverlaySim</a>
+</li>
 <li>getSeq()
 : <a class="el" href="classripple_1_1InboundLedger.html#a6e5e040f5f6f3c159b3bf6fe46e58636">ripple::InboundLedger</a>
 , <a class="el" href="classripple_1_1InfoSub.html#a01c76adad9589e619ee489b866628293">ripple::InfoSub</a>
-, <a class="el" href="classripple_1_1LocalTx.html#aea5eff6210b7b4ef3a9babc3e2349a46">ripple::LocalTx</a>
 , <a class="el" href="classripple_1_1SHAMapAbstractNode.html#a6f3f6c8b0f7e5a7adac2a5c31e0a3d8a">ripple::SHAMapAbstractNode</a>
+</li>
+<li>getSeqProxy()
+: <a class="el" href="classripple_1_1LocalTx.html#aadfe11720553b0717d6d213260bb2fe8">ripple::LocalTx</a>
+, <a class="el" href="classripple_1_1STTx.html#a42464c41715a5d90dfa3240118d62d9c">ripple::STTx</a>
 </li>
 <li>getSequence()
 : <a class="el" href="classripple_1_1ManifestCache.html#abf7eefc2e6fae7d1d3dd881b073d7ed3">ripple::ManifestCache</a>
-, <a class="el" href="classripple_1_1STTx.html#a484ebc991c4b79d36d388f1ab143a9cb">ripple::STTx</a>
 </li>
 <li>getSerialized()
 : <a class="el" href="classripple_1_1STValidation.html#a3ce9844ef8dc996ccd4091bb74136e98">ripple::STValidation</a>
@@ -1314,8 +1349,13 @@ $(function() {
 <li>getSOTemplate()
 : <a class="el" href="classripple_1_1KnownFormats_1_1Item.html#ab75ce40a274a032c312bae5bacb8e087">ripple::KnownFormats&lt; KeyType &gt;::Item</a>
 </li>
+<li>getSquelchDuration()
+: <a class="el" href="classripple_1_1squelch_1_1Squelch.html#ac72848698f170200ad0459b9405643d9">ripple::squelch::Squelch&lt; clock_type &gt;</a>
+</li>
 <li>getState()
 : <a class="el" href="classripple_1_1SHAMapStoreImp_1_1SavedStateDB.html#adb71d9af881fdbd4a49cddbe69d38e68">ripple::SHAMapStoreImp::SavedStateDB</a>
+, <a class="el" href="classripple_1_1squelch_1_1Slot.html#a0fa9caed13e1b775107c32d456b6b9da">ripple::squelch::Slot&lt; clock_type &gt;</a>
+, <a class="el" href="classripple_1_1squelch_1_1Slots.html#aafd24752a319330599c4707447007bff">ripple::squelch::Slots&lt; clock_type &gt;</a>
 </li>
 <li>getStats()
 : <a class="el" href="classripple_1_1LoadMonitor.html#a6cabc692242c9c9ae90305ba7a8b13ae">ripple::LoadMonitor</a>
@@ -1408,6 +1448,9 @@ $(function() {
 <li>getTX()
 : <a class="el" href="classripple_1_1LocalTx.html#a10f85f0c88e846c394934e3f87e7f515">ripple::LocalTx</a>
 </li>
+<li>getTxDetails()
+: <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#ab069ca91d7ee996bd2eee44902e6cd6a">ripple::TxQ::MaybeTx</a>
+</li>
 <li>getTXID()
 : <a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html#acd604ad4a049aeffe249a07577f0643e">ripple::CanonicalTXSet::Key</a>
 </li>
@@ -1444,7 +1487,7 @@ $(function() {
 : <a class="el" href="classripple_1_1TxQ.html#a8e92bb1200c6c66313cfc9fc3ac2955d">ripple::TxQ</a>
 </li>
 <li>getTxs()
-: <a class="el" href="classripple_1_1TxQ.html#a15fe7a6db70d738f125a5cf81b9c3888">ripple::TxQ</a>
+: <a class="el" href="classripple_1_1TxQ.html#a4b49f0851c94b4c15b1826b8fe018a26">ripple::TxQ</a>
 </li>
 <li>getTxsAccount()
 : <a class="el" href="classripple_1_1NetworkOPs.html#ae76a771992189b1be3d9979893f2cc74">ripple::NetworkOPs</a>
@@ -1491,6 +1534,9 @@ $(function() {
 <li>getValidations()
 : <a class="el" href="classripple_1_1Application.html#a25d75bee07390413c8131c79ebeb3dfd">ripple::Application</a>
 , <a class="el" href="classripple_1_1ApplicationImp.html#a43721b94a94e90ed129060dfcfab2869">ripple::ApplicationImp</a>
+</li>
+<li>getValidatorKey()
+: <a class="el" href="classripple_1_1Message.html#a7b1100d7cf26d68e20b2460506a9adba">ripple::Message</a>
 </li>
 <li>getValidLedgerIndex()
 : <a class="el" href="classripple_1_1LedgerMaster.html#af3eaa659ab184feed8b939836efeebcf">ripple::LedgerMaster</a>

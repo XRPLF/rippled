@@ -1,0 +1,4 @@
+<map id="ripple::test::ManualClock" name="ripple::test::ManualClock">
+<area shape="rect" id="node1" title="Manually advanced clock." alt="" coords="5,95,188,121"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="11,5,183,32"/>
+</map>

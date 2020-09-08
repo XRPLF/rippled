@@ -1,7 +1,8 @@
 <map id="ripple::test::ManualTimeKeeper" name="ripple::test::ManualTimeKeeper">
-<area shape="rect" id="node1" title=" " alt="" coords="138,200,318,241"/>
-<area shape="rect" id="node2" href="$classripple_1_1TimeKeeper.html" title="Manages various times used by the server." alt="" coords="13,103,158,130"/>
+<area shape="rect" id="node1" title=" " alt="" coords="520,81,700,123"/>
+<area shape="rect" id="node2" href="$classripple_1_1TimeKeeper.html" title="Manages various times used by the server." alt="" coords="228,13,373,39"/>
 <area shape="rect" id="node3" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="5,5,165,47"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="182,103,274,130"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="298,96,454,137"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="255,63,347,90"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="215,114,387,141"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="223,165,379,207"/>
 </map>

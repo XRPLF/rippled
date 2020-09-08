@@ -68,7 +68,6 @@ $(function() {
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
-<a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classripple_1_1Ticket__test-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">ripple::Ticket_test Class Reference</div>  </div>
@@ -100,45 +99,31 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:a12e451155ce896de77ca4853a34d2649"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#a12e451155ce896de77ca4853a34d2649">checkTicketMeta</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">test::jtx::Env</a> &amp;env, bool other_target=false, bool expiration=false)</td></tr>
-<tr class="memdesc:a12e451155ce896de77ca4853a34d2649"><td class="mdescLeft">&#160;</td><td class="mdescRight">validate metadata for a create/cancel ticket transaction and return the 3 or 4 nodes that make-up the metadata (AffectedNodes)  <a href="classripple_1_1Ticket__test.html#a12e451155ce896de77ca4853a34d2649">More...</a><br /></td></tr>
-<tr class="separator:a12e451155ce896de77ca4853a34d2649"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a686abcfb2c3a5b696777fd49efe6cc84"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#a686abcfb2c3a5b696777fd49efe6cc84">checkTicketCreateMeta</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">test::jtx::Env</a> &amp;env)</td></tr>
+<tr class="memdesc:a686abcfb2c3a5b696777fd49efe6cc84"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate metadata for a successful <a class="el" href="classripple_1_1CreateTicket.html">CreateTicket</a> transaction.  <a href="classripple_1_1Ticket__test.html#a686abcfb2c3a5b696777fd49efe6cc84">More...</a><br /></td></tr>
+<tr class="separator:a686abcfb2c3a5b696777fd49efe6cc84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad1630084d99e0eb69410ef0c84410699"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#ad1630084d99e0eb69410ef0c84410699">checkTicketConsumeMeta</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">test::jtx::Env</a> &amp;env)</td></tr>
+<tr class="memdesc:ad1630084d99e0eb69410ef0c84410699"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate metadata for a ticket using transaction.  <a href="classripple_1_1Ticket__test.html#ad1630084d99e0eb69410ef0c84410699">More...</a><br /></td></tr>
+<tr class="separator:ad1630084d99e0eb69410ef0c84410699"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac5a8680337d73e074fdcf7f216732a41"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#ac5a8680337d73e074fdcf7f216732a41">testTicketNotEnabled</a> ()</td></tr>
 <tr class="separator:ac5a8680337d73e074fdcf7f216732a41"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e9c4ae23099a646c5e1fcb3017ea7f2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#a1e9c4ae23099a646c5e1fcb3017ea7f2">testTicketCancelNonexistent</a> ()</td></tr>
-<tr class="separator:a1e9c4ae23099a646c5e1fcb3017ea7f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abaf31a611436e84bb0bac8de263e4ae3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#abaf31a611436e84bb0bac8de263e4ae3">testTicketCreatePreflightFail</a> ()</td></tr>
 <tr class="separator:abaf31a611436e84bb0bac8de263e4ae3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa72c94dc3e45c86d79d628a513519848"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#aa72c94dc3e45c86d79d628a513519848">testTicketCreateNonexistent</a> ()</td></tr>
-<tr class="separator:aa72c94dc3e45c86d79d628a513519848"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3061a61729238ee7399d5340fcd0ce69"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#a3061a61729238ee7399d5340fcd0ce69">testTicketToSelf</a> ()</td></tr>
-<tr class="separator:a3061a61729238ee7399d5340fcd0ce69"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a32376a9744a38f65624a803c425c1333"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#a32376a9744a38f65624a803c425c1333">testTicketCancelByCreator</a> ()</td></tr>
-<tr class="separator:a32376a9744a38f65624a803c425c1333"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a95248575fe5a63f69826e1f52d229e0c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#a95248575fe5a63f69826e1f52d229e0c">testTicketCreatePreclaimFail</a> ()</td></tr>
+<tr class="separator:a95248575fe5a63f69826e1f52d229e0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a88297da5af9ad188f71072c023521f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#a2a88297da5af9ad188f71072c023521f">testTicketInsufficientReserve</a> ()</td></tr>
 <tr class="separator:a2a88297da5af9ad188f71072c023521f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad1acf8a9136ec35851ac280332b3439b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#ad1acf8a9136ec35851ac280332b3439b">testTicketCancelByTarget</a> ()</td></tr>
-<tr class="separator:ad1acf8a9136ec35851ac280332b3439b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aef4ca96ad65e2dabfff3d40f5b45caa0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#aef4ca96ad65e2dabfff3d40f5b45caa0">testTicketWithExpiration</a> ()</td></tr>
-<tr class="separator:aef4ca96ad65e2dabfff3d40f5b45caa0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a653ebef1f10109ae844ac33e4d7bfbb4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#a653ebef1f10109ae844ac33e4d7bfbb4">testTicketZeroExpiration</a> ()</td></tr>
-<tr class="separator:a653ebef1f10109ae844ac33e4d7bfbb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa01cff015086b467d94bc4597eb0b92a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#aa01cff015086b467d94bc4597eb0b92a">testTicketWithPastExpiration</a> ()</td></tr>
-<tr class="separator:aa01cff015086b467d94bc4597eb0b92a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d0af5172d74decbf14352ec5474d805"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#a2d0af5172d74decbf14352ec5474d805">testTicketAllowExpiration</a> ()</td></tr>
-<tr class="separator:a2d0af5172d74decbf14352ec5474d805"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-attribs"></a>
-Static Private Attributes</h2></td></tr>
-<tr class="memitem:a9b954d5e4033ed374ffef6a1caef7cb1"><td class="memItemLeft" align="right" valign="top">static constexpr auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#a9b954d5e4033ed374ffef6a1caef7cb1">idOne</a></td></tr>
-<tr class="separator:a9b954d5e4033ed374ffef6a1caef7cb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0f830b49438caf2c7d6b078752cefa0f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#a0f830b49438caf2c7d6b078752cefa0f">testUsingTickets</a> ()</td></tr>
+<tr class="separator:a0f830b49438caf2c7d6b078752cefa0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5095dd1dc9d0201731236f76590ab53e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Ticket__test.html#a5095dd1dc9d0201731236f76590ab53e">testTransactionDatabaseWithTickets</a> ()</td></tr>
+<tr class="separator:a5095dd1dc9d0201731236f76590ab53e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00026">26</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00027">27</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="a12e451155ce896de77ca4853a34d2649"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a12e451155ce896de77ca4853a34d2649">&#9670;&nbsp;</a></span>checkTicketMeta()</h2>
+<a id="a686abcfb2c3a5b696777fd49efe6cc84"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a686abcfb2c3a5b696777fd49efe6cc84">&#9670;&nbsp;</a></span>checkTicketCreateMeta()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -147,27 +132,11 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">auto ripple::Ticket_test::checkTicketMeta </td>
+          <td class="memname">void ripple::Ticket_test::checkTicketCreateMeta </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">test::jtx::Env</a> &amp;&#160;</td>
-          <td class="paramname"><em>env</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
+          <td class="paramname"><em>env</em></td><td>)</td>
           <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>other_target</em> = <code>false</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>expiration</em> = <code>false</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -177,23 +146,52 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>validate metadata for a create/cancel ticket transaction and return the 3 or 4 nodes that make-up the metadata (AffectedNodes) </p>
+<p>Validate metadata for a successful <a class="el" href="classripple_1_1CreateTicket.html">CreateTicket</a> transaction. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">env</td><td>current jtx env (meta will be extracted from it)</td></tr>
-    <tr><td class="paramname">other_target</td><td>flag to indicate whether a Target different from the Account was specified for the ticket (when created)</td></tr>
-    <tr><td class="paramname">expiration</td><td>flag to indicate a cancellation with expiration which causes two of the affected nodes to be swapped (in order).</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="retval"><dt>Return values</dt><dd>
-  <table class="retval">
-    <tr><td class="paramname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html" title="STL class.">std::array</a></td><td>size 4 of json object values representing each meta node entry. When the transaction was a cancel with differing target and account, there will be 4 complete items, otherwise the last entry will be an empty object </td></tr>
+    <tr><td class="paramname">env</td><td>current jtx env (tx and meta are extracted using it) </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00048">48</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00033">33</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ad1630084d99e0eb69410ef0c84410699"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad1630084d99e0eb69410ef0c84410699">&#9670;&nbsp;</a></span>checkTicketConsumeMeta()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::Ticket_test::checkTicketConsumeMeta </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">test::jtx::Env</a> &amp;&#160;</td>
+          <td class="paramname"><em>env</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Validate metadata for a ticket using transaction. </p>
+<p>The transaction may have been successful or failed with a tec.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">env</td><td>current jtx env (tx and meta are extracted using it) </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00254">254</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -220,34 +218,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00108">108</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a1e9c4ae23099a646c5e1fcb3017ea7f2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1e9c4ae23099a646c5e1fcb3017ea7f2">&#9670;&nbsp;</a></span>testTicketCancelNonexistent()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::Ticket_test::testTicketCancelNonexistent </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00120">120</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00381">381</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -274,12 +245,12 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00130">130</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00423">423</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
 
 </div>
 </div>
-<a id="aa72c94dc3e45c86d79d628a513519848"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa72c94dc3e45c86d79d628a513519848">&#9670;&nbsp;</a></span>testTicketCreateNonexistent()</h2>
+<a id="a95248575fe5a63f69826e1f52d229e0c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a95248575fe5a63f69826e1f52d229e0c">&#9670;&nbsp;</a></span>testTicketCreatePreclaimFail()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -288,7 +259,7 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ripple::Ticket_test::testTicketCreateNonexistent </td>
+          <td class="memname">void ripple::Ticket_test::testTicketCreatePreclaimFail </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -301,61 +272,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00142">142</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a3061a61729238ee7399d5340fcd0ce69"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3061a61729238ee7399d5340fcd0ce69">&#9670;&nbsp;</a></span>testTicketToSelf()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::Ticket_test::testTicketToSelf </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00159">159</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a32376a9744a38f65624a803c425c1333"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a32376a9744a38f65624a803c425c1333">&#9670;&nbsp;</a></span>testTicketCancelByCreator()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::Ticket_test::testTicketCancelByCreator </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00182">182</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00470">470</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -382,12 +299,12 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00218">218</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00562">562</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ad1acf8a9136ec35851ac280332b3439b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad1acf8a9136ec35851ac280332b3439b">&#9670;&nbsp;</a></span>testTicketCancelByTarget()</h2>
+<a id="a0f830b49438caf2c7d6b078752cefa0f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0f830b49438caf2c7d6b078752cefa0f">&#9670;&nbsp;</a></span>testUsingTickets()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -396,7 +313,7 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ripple::Ticket_test::testTicketCancelByTarget </td>
+          <td class="memname">void ripple::Ticket_test::testUsingTickets </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -409,12 +326,12 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00233">233</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00622">622</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
 
 </div>
 </div>
-<a id="aef4ca96ad65e2dabfff3d40f5b45caa0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aef4ca96ad65e2dabfff3d40f5b45caa0">&#9670;&nbsp;</a></span>testTicketWithExpiration()</h2>
+<a id="a5095dd1dc9d0201731236f76590ab53e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5095dd1dc9d0201731236f76590ab53e">&#9670;&nbsp;</a></span>testTransactionDatabaseWithTickets()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -423,7 +340,7 @@ Static Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ripple::Ticket_test::testTicketWithExpiration </td>
+          <td class="memname">void ripple::Ticket_test::testTransactionDatabaseWithTickets </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -436,88 +353,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00283">283</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a653ebef1f10109ae844ac33e4d7bfbb4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a653ebef1f10109ae844ac33e4d7bfbb4">&#9670;&nbsp;</a></span>testTicketZeroExpiration()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::Ticket_test::testTicketZeroExpiration </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00310">310</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
-
-</div>
-</div>
-<a id="aa01cff015086b467d94bc4597eb0b92a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa01cff015086b467d94bc4597eb0b92a">&#9670;&nbsp;</a></span>testTicketWithPastExpiration()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::Ticket_test::testTicketWithPastExpiration </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00322">322</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a2d0af5172d74decbf14352ec5474d805"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d0af5172d74decbf14352ec5474d805">&#9670;&nbsp;</a></span>testTicketAllowExpiration()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::Ticket_test::testTicketAllowExpiration </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00351">351</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00708">708</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -544,35 +380,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00400">400</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Member Data Documentation</h2>
-<a id="a9b954d5e4033ed374ffef6a1caef7cb1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9b954d5e4033ed374ffef6a1caef7cb1">&#9670;&nbsp;</a></span>idOne</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">constexpr auto ripple::Ticket_test::idOne</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">=</div>
-<div class="line">        <span class="stringliteral">&quot;00000000000000000000000000000000&quot;</span></div>
-<div class="line">        <span class="stringliteral">&quot;00000000000000000000000000000001&quot;</span></div>
-</div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00028">28</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Ticket__test_8cpp_source.html#l00820">820</a> of file <a class="el" href="Ticket__test_8cpp_source.html">Ticket_test.cpp</a>.</p>
 
 </div>
 </div>

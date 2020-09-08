@@ -91,11 +91,12 @@ Collaboration diagram for ripple::test::ManualTimeKeeper:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1test_1_1ManualTimeKeeper__coll__graph.png" border="0" usemap="#ripple_1_1test_1_1ManualTimeKeeper_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1test_1_1ManualTimeKeeper_coll__map" id="ripple_1_1test_1_1ManualTimeKeeper_coll__map">
-<area shape="rect" title=" " alt="" coords="138,200,318,241"/>
-<area shape="rect" href="classripple_1_1TimeKeeper.html" title="Manages various times used by the server." alt="" coords="13,103,158,130"/>
+<area shape="rect" title=" " alt="" coords="520,81,700,123"/>
+<area shape="rect" href="classripple_1_1TimeKeeper.html" title="Manages various times used by the server." alt="" coords="228,13,373,39"/>
 <area shape="rect" href="classbeast_1_1abstract__clock.html" title=" " alt="" coords="5,5,165,47"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/mutex.html" title="STL class." alt="" coords="182,103,274,130"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="298,96,454,137"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/mutex.html" title="STL class." alt="" coords="255,63,347,90"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="215,114,387,141"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="223,165,379,207"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -107,7 +108,7 @@ Public Types</h2></td></tr>
 <tr class="separator:abba11dabb096d89ff62699b64efb472e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad024b15fa67696e8d1eba3744e800d32"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1abstract__clock.html#ad024b15fa67696e8d1eba3744e800d32">duration</a> = typename <a class="el" href="classripple_1_1NetClock.html">NetClock</a> ::<a class="el" href="classbeast_1_1abstract__clock.html#ad024b15fa67696e8d1eba3744e800d32">duration</a></td></tr>
 <tr class="separator:ad024b15fa67696e8d1eba3744e800d32"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4e16832b0bdf9392c5138bbbde024d8e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a> = typename <a class="el" href="classripple_1_1NetClock.html">NetClock</a> ::time_point</td></tr>
+<tr class="memitem:a4e16832b0bdf9392c5138bbbde024d8e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a> = typename <a class="el" href="classripple_1_1NetClock.html">NetClock</a> ::<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">time_point</a></td></tr>
 <tr class="separator:a4e16832b0bdf9392c5138bbbde024d8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab2db1e4273a58b6431b330e3c5ebd07f"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1abstract__clock.html#ab2db1e4273a58b6431b330e3c5ebd07f">clock_type</a> = <a class="el" href="classripple_1_1NetClock.html">NetClock</a></td></tr>
 <tr class="separator:ab2db1e4273a58b6431b330e3c5ebd07f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -134,7 +135,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad420ddf7a50f19579826153e56a7c228"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc79836900ad4b5437d1f19a341418e7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#adc79836900ad4b5437d1f19a341418e7">set</a> (<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a> <a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#ac82d38f479a173052914954b90791754">now</a>)</td></tr>
 <tr class="separator:adc79836900ad4b5437d1f19a341418e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac9a577663353bfea66a096f12cb85293"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">now</a> () const=0</td></tr>
+<tr class="memitem:ac9a577663353bfea66a096f12cb85293"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">now</a> () const=0</td></tr>
 <tr class="memdesc:ac9a577663353bfea66a096f12cb85293"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current time.  <a href="classbeast_1_1abstract__clock.html#ac9a577663353bfea66a096f12cb85293">More...</a><br /></td></tr>
 <tr class="separator:ac9a577663353bfea66a096f12cb85293"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -154,7 +155,7 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a17b716acc192c2d8758f1108a4c78c17"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a30d6697f4d206d587c64719c180b6df6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::int32_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#a30d6697f4d206d587c64719c180b6df6">closeOffset_</a></td></tr>
 <tr class="separator:a30d6697f4d206d587c64719c180b6df6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a95bd7c4bab8f36d2a6d207ac2a2cc26c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#a95bd7c4bab8f36d2a6d207ac2a2cc26c">now_</a></td></tr>
+<tr class="memitem:a95bd7c4bab8f36d2a6d207ac2a2cc26c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1ManualTimeKeeper.html#a95bd7c4bab8f36d2a6d207ac2a2cc26c">now_</a></td></tr>
 <tr class="separator:a95bd7c4bab8f36d2a6d207ac2a2cc26c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -243,7 +244,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt; <a class="el" href="classripple_1_1NetClock.html">NetClock</a>  &gt;::time_point =  typename <a class="el" href="classripple_1_1NetClock.html">NetClock</a> ::time_point</td>
+          <td class="memname">using <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt; <a class="el" href="classripple_1_1NetClock.html">NetClock</a>  &gt;::<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">time_point</a> =  typename <a class="el" href="classripple_1_1NetClock.html">NetClock</a> ::<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">time_point</a></td>
         </tr>
       </table>
   </td>
@@ -550,7 +551,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a> <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt; <a class="el" href="classripple_1_1NetClock.html">NetClock</a>  &gt;::now </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">time_point</a> <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt; <a class="el" href="classripple_1_1NetClock.html">NetClock</a>  &gt;::now </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -626,7 +627,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">time_point</a> ripple::test::ManualTimeKeeper::now_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">time_point</a> ripple::test::ManualTimeKeeper::now_</td>
         </tr>
       </table>
   </td>
