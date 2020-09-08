@@ -30,6 +30,7 @@
 #include <ripple/overlay/Slot.h>
 #include <ripple/overlay/impl/Handshake.h>
 #include <ripple/overlay/impl/TrafficCount.h>
+#include <ripple/overlay/impl/TxMetrics.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/ServerHandler.h>
@@ -128,6 +129,9 @@ private:
 
     reduce_relay::Slots<UptimeClock> slots_;
 
+    // Transaction reduce-relay metrics
+    metrics::TxMetrics txMetrics_;
+
     // A message with the list of manifests we send to peers
     std::shared_ptr<Message> manifestMessage_;
     // Used to track whether we need to update the cached list of manifests
@@ -197,6 +201,22 @@ public:
     PeerSequence
     getActivePeers() const override;
 
+    /** Get active peers excluding peers in toSkip.
+       @param toSkip peers to skip
+       @param active a number of active peers
+       @param disabled a number of peers with tx reduce-relay
+           feature disabled
+       @param enabledInSkip a number of peers with tx reduce-relay
+           feature enabled and in toSkip
+       @return active peers less peers in toSkip
+     */
+    PeerSequence
+    getActivePeers(
+        std::set<Peer::id_t> const& toSkip,
+        std::size_t& active,
+        std::size_t& disabled,
+        std::size_t& enabledInSkip) const;
+
     void checkTracking(std::uint32_t) override;
 
     std::shared_ptr<Peer>
@@ -222,6 +242,12 @@ public:
         protocol::TMValidation& m,
         uint256 const& uid,
         PublicKey const& validator) override;
+
+    void
+    relay(
+        uint256 const&,
+        protocol::TMTransaction& m,
+        std::set<Peer::id_t> const& skip) override;
 
     std::shared_ptr<Message>
     getManifestsMessage();
@@ -411,6 +437,25 @@ public:
     void
     deletePeer(Peer::id_t id);
 
+    Json::Value
+    txMetrics() const override
+    {
+        return txMetrics_.json();
+    }
+
+    /** Add tx reduce-relay metrics. */
+    template <typename... Args>
+    void
+    addTxMetrics(Args... args)
+    {
+        if (!strand_.running_in_this_thread())
+            return post(
+                strand_,
+                std::bind(&OverlayImpl::addTxMetrics<Args...>, this, args...));
+
+        txMetrics_.addMetrics(args...);
+    }
+
 private:
     void
     squelch(
@@ -517,6 +562,10 @@ private:
 
     void
     sendEndpoints();
+
+    /** Send once a second transactions' hashes aggregated by peers. */
+    void
+    sendTxQueue();
 
     /** Check if peers stopped relaying messages
      * and if slots stopped receiving messages from the validator */

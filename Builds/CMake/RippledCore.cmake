@@ -535,6 +535,7 @@ target_sources (rippled PRIVATE
   src/ripple/overlay/impl/PeerSet.cpp
   src/ripple/overlay/impl/ProtocolVersion.cpp
   src/ripple/overlay/impl/TrafficCount.cpp
+  src/ripple/overlay/impl/TxMetrics.cpp
   #[===============================[
      main sources:
        subdir: peerfinder
@@ -613,6 +614,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/TransactionEntry.cpp
   src/ripple/rpc/handlers/Tx.cpp
   src/ripple/rpc/handlers/TxHistory.cpp
+  src/ripple/rpc/handlers/TxReduceRelay.cpp
   src/ripple/rpc/handlers/UnlList.cpp
   src/ripple/rpc/handlers/Unsubscribe.cpp
   src/ripple/rpc/handlers/ValidationCreate.cpp
@@ -864,6 +866,7 @@ target_sources (rippled PRIVATE
   src/test/overlay/compression_test.cpp
   src/test/overlay/reduce_relay_test.cpp
   src/test/overlay/handshake_test.cpp
+  src/test/overlay/tx_reduce_relay_test.cpp
   #[===============================[
      test sources:
        subdir: peerfinder

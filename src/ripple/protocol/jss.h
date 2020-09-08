@@ -570,6 +570,20 @@ JSS(tx_json);                 // in/out: TransactionSign
 JSS(tx_signing_hash);         // out: TransactionSign
 JSS(tx_unsigned);             // out: TransactionSign
 JSS(txn_count);               // out: NetworkOPs
+JSS(txr_tx_cnt);              // out: protocol message tx's count
+JSS(txr_tx_sz);               // out: protocol message tx's size
+JSS(txr_have_txs_cnt);        // out: protocol message have tx count
+JSS(txr_have_txs_sz);         // out: protocol message have tx size
+JSS(txr_get_ledger_cnt);      // out: protocol message get ledger count
+JSS(txr_get_ledger_sz);       // out: protocol message get ledger size
+JSS(txr_ledger_data_cnt);     // out: protocol message ledger data count
+JSS(txr_ledger_data_sz);      // out: protocol message ledger data size
+JSS(txr_transactions_cnt);    // out: protocol message get object count
+JSS(txr_transactions_sz);     // out: protocol message get object size
+JSS(txr_selected_cnt);        // out: selected peers count
+JSS(txr_suppressed_cnt);      // out: suppressed peers count
+JSS(txr_not_enabled_cnt);     // out: peers with tx reduce-relay disabled count
+JSS(txr_missing_tx_freq);     // out: missing tx frequency average
 JSS(txs);                     // out: TxHistory
 JSS(type);                    // in: AccountObjects
                               // out: NetworkOPs

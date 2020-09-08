@@ -26,6 +26,7 @@
 #include <ripple/app/rdb/RelationalDBInterface_global.h>
 #include <ripple/basics/base64.h>
 #include <ripple/basics/make_SSLContext.h>
+#include <ripple/basics/random.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Cluster.h>
@@ -102,6 +103,8 @@ OverlayImpl::Timer::on_timer(error_code ec)
     overlay_.m_peerFinder->once_per_second();
     overlay_.sendEndpoints();
     overlay_.autoConnect();
+    if (overlay_.app_.config().TX_REDUCE_RELAY_ENABLE)
+        overlay_.sendTxQueue();
 
     if ((++overlay_.timer_count_ % Tuning::checkIdlePeers) == 0)
         overlay_.deleteIdlePeers();
@@ -137,7 +140,7 @@ OverlayImpl::OverlayImpl(
     , m_resolver(resolver)
     , next_id_(1)
     , timer_count_(0)
-    , slots_(app, *this)
+    , slots_(app.logs(), *this)
     , m_stats(
           std::bind(&OverlayImpl::collect_metrics, this),
           collector,
@@ -1148,6 +1151,37 @@ OverlayImpl::getActivePeers() const
     return ret;
 }
 
+Overlay::PeerSequence
+OverlayImpl::getActivePeers(
+    std::set<Peer::id_t> const& toSkip,
+    std::size_t& active,
+    std::size_t& disabled,
+    std::size_t& enabledInSkip) const
+{
+    Overlay::PeerSequence ret;
+    std::lock_guard lock(mutex_);
+
+    active = ids_.size();
+    ret.reserve(ids_.size() - toSkip.size());
+
+    for (auto& [id, w] : ids_)
+    {
+        if (auto p = w.lock())
+        {
+            // tx rr feature disabled
+            if (!p->txReduceRelayEnabled())
+                disabled++;
+
+            if (toSkip.count(id) == 0)
+                ret.emplace_back(std::move(p));
+            else if (p->txReduceRelayEnabled())
+                enabledInSkip++;
+        }
+    }
+
+    return ret;
+}
+
 void
 OverlayImpl::checkTracking(std::uint32_t index)
 {
@@ -1264,6 +1298,67 @@ OverlayImpl::getManifestsMessage()
     return manifestMessage_;
 }
 
+void
+OverlayImpl::relay(
+    uint256 const& hash,
+    protocol::TMTransaction& m,
+    std::set<Peer::id_t> const& toSkip)
+{
+    auto const sm = std::make_shared<Message>(m, protocol::mtTRANSACTION);
+    std::size_t total = 0;
+    std::size_t disabled = 0;
+    std::size_t enabledInSkip = 0;
+
+    // total peers excluding peers in toSkip
+    auto peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
+    auto minRelay = app_.config().TX_REDUCE_RELAY_MIN_PEERS + disabled;
+
+    if (!app_.config().TX_REDUCE_RELAY_ENABLE || total <= minRelay)
+    {
+        for (auto const& p : peers)
+            p->send(sm);
+        if (app_.config().TX_REDUCE_RELAY_ENABLE ||
+            app_.config().TX_REDUCE_RELAY_METRICS)
+            txMetrics_.addMetrics(total, toSkip.size(), 0);
+        return;
+    }
+
+    // We have more peers than the minimum (disabled + minimum enabled),
+    // relay to all disabled and some randomly selected enabled that
+    // do not have the transaction.
+    auto enabledTarget = app_.config().TX_REDUCE_RELAY_MIN_PEERS +
+        (total - minRelay) * app_.config().TX_RELAY_PERCENTAGE / 100;
+
+    txMetrics_.addMetrics(enabledTarget, toSkip.size(), disabled);
+
+    if (enabledTarget > enabledInSkip)
+        std::shuffle(peers.begin(), peers.end(), default_prng());
+
+    JLOG(journal_.trace()) << "relaying tx, total peers " << peers.size()
+                           << " selected " << enabledTarget << " skip "
+                           << toSkip.size() << " disabled " << disabled;
+
+    // count skipped peers with the enabled feature towards the quota
+    std::uint16_t enabledAndRelayed = enabledInSkip;
+    for (auto const& p : peers)
+    {
+        // always relay to a peer with the disabled feature
+        if (!p->txReduceRelayEnabled())
+        {
+            p->send(sm);
+        }
+        else if (enabledAndRelayed < enabledTarget)
+        {
+            enabledAndRelayed++;
+            p->send(sm);
+        }
+        else
+        {
+            p->addTxQueue(hash);
+        }
+    }
+}
+
 //------------------------------------------------------------------------------
 
 void
@@ -1331,6 +1426,15 @@ OverlayImpl::sendEndpoints()
         if (peer)
             peer->sendEndpoints(e.second.begin(), e.second.end());
     }
+}
+
+void
+OverlayImpl::sendTxQueue()
+{
+    for_each([](auto const& p) {
+        if (p->txReduceRelayEnabled())
+            p->sendTxQueue();
+    });
 }
 
 std::shared_ptr<Message>
