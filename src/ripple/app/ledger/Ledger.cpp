@@ -755,7 +755,7 @@ Ledger::walkLedger(beast::Journal j) const
 }
 
 bool
-Ledger::assertSane(beast::Journal ledgerJ) const
+Ledger::assertSensible(beast::Journal ledgerJ) const
 {
     if (info_.hash.isNonZero() && info_.accountHash.isNonZero() && stateMap_ &&
         txMap_ && (info_.accountHash == stateMap_->getHash().as_uint256()) &&
@@ -769,7 +769,7 @@ Ledger::assertSane(beast::Journal ledgerJ) const
     j[jss::accountTreeHash] = to_string(info_.accountHash);
     j[jss::transTreeHash] = to_string(info_.txHash);
 
-    JLOG(ledgerJ.fatal()) << "ledger is not sane" << j;
+    JLOG(ledgerJ.fatal()) << "ledger is not sensible" << j;
 
     assert(false);
 

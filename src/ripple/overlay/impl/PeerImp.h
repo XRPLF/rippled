@@ -48,30 +48,8 @@ class PeerImp : public Peer,
                 public OverlayImpl::Child
 {
 public:
-    /** Type of connection.
-        This affects how messages are routed.
-    */
-    enum class Type { legacy, leaf, peer };
-
-    /** Current state */
-    enum class State {
-        /** A connection is being established (outbound) */
-        connecting
-
-        /** Connection has been successfully established */
-        ,
-        connected
-
-        /** Handshake has been received from this peer */
-        ,
-        handshaked
-
-        /** Running the Ripple protocol actively */
-        ,
-        active
-    };
-
-    enum class Sanity { insane, unknown, sane };
+    /** Whether the peer's view of the ledger converges or diverges from ours */
+    enum class Tracking { diverged, unknown, converged };
 
     struct ShardInfo
     {
@@ -105,8 +83,6 @@ private:
     boost::asio::strand<boost::asio::executor> strand_;
     waitable_timer timer_;
 
-    // Type type_ = Type::legacy;
-
     // Updated at each stage of the connection process to reflect
     // the current conditions as closely as possible.
     beast::IP::Endpoint const remote_address_;
@@ -119,9 +95,8 @@ private:
     // Protocol version to use for this link
     ProtocolVersion protocol_;
 
-    State state_;  // Current state
-    std::atomic<Sanity> sanity_;
-    clock_type::time_point insaneTime_;
+    std::atomic<Tracking> tracking_;
+    clock_type::time_point trackingTime_;
     bool detaching_ = false;
     // Node public key of peer.
     PublicKey const publicKey_;
@@ -162,7 +137,7 @@ private:
     // o maxLedger_
     // o recentLedgers_
     // o recentTxSets_
-    // o insaneTime_
+    // o trackingTime_
     // o latency_
     //
     // The following variables are being protected preemptively:
@@ -330,17 +305,14 @@ public:
     bool
     cluster() const override;
 
-    void
-    check();
-
-    /** Check if the peer is sane
+    /** Check if the peer is tracking
         @param validationSeq The ledger sequence of a recently-validated ledger
     */
     void
-    checkSanity(std::uint32_t validationSeq);
+    checkTracking(std::uint32_t validationSeq);
 
     void
-    checkSanity(std::uint32_t seq1, std::uint32_t seq2);
+    checkTracking(std::uint32_t seq1, std::uint32_t seq2);
 
     PublicKey const&
     getNodePublic() const override
@@ -561,18 +533,6 @@ public:
     onMessage(std::shared_ptr<protocol::TMSquelch> const& m);
 
 private:
-    State
-    state() const
-    {
-        return state_;
-    }
-
-    void
-    state(State new_state)
-    {
-        state_ = new_state;
-    }
-
     //--------------------------------------------------------------------------
     // lockedRecentLock is passed as a reminder to callers that recentLock_
     // must be locked.
@@ -635,9 +595,8 @@ PeerImp::PeerImp(
     , overlay_(overlay)
     , m_inbound(false)
     , protocol_(protocol)
-    , state_(State::active)
-    , sanity_(Sanity::unknown)
-    , insaneTime_(clock_type::now())
+    , tracking_(Tracking::unknown)
+    , trackingTime_(clock_type::now())
     , publicKey_(publicKey)
     , creationTime_(clock_type::now())
     , usage_(usage)

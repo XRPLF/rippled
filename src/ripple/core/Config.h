@@ -198,6 +198,12 @@ public:
 
     std::string SERVER_DOMAIN;
 
+    // How long can a peer remain in the "unknown" state
+    std::chrono::seconds MAX_UNKNOWN_TIME{600};
+
+    // How long can a peer remain in the "diverged" state
+    std::chrono::seconds MAX_DIVERGED_TIME{300};
+
 public:
     Config() : j_{beast::Journal::getNullSink()}
     {

@@ -66,6 +66,7 @@ struct ConfigSection
 #define SECTION_NETWORK_QUORUM "network_quorum"
 #define SECTION_NODE_SEED "node_seed"
 #define SECTION_NODE_SIZE "node_size"
+#define SECTION_OVERLAY "overlay"
 #define SECTION_PATH_SEARCH_OLD "path_search_old"
 #define SECTION_PATH_SEARCH "path_search"
 #define SECTION_PATH_SEARCH_FAST "path_search_fast"

@@ -404,8 +404,8 @@ LedgerMaster::addHeldTransaction(
 }
 
 // Validate a ledger's close time and sequence number if we're considering
-// jumping to that ledger. This helps defend agains some rare hostile or
-// insane majority scenarios.
+// jumping to that ledger. This helps defend against some rare hostile or
+// diverged majority scenarios.
 bool
 LedgerMaster::canBeCurrent(std::shared_ptr<Ledger const> const& ledger)
 {
@@ -964,9 +964,9 @@ LedgerMaster::checkAccept(uint256 const& hash, std::uint32_t seq)
     {
         if ((seq != 0) && (getValidLedgerIndex() == 0))
         {
-            // Set peers sane early if we can
+            // Set peers converged early if we can
             if (valCount >= app_.validators().quorum())
-                app_.overlay().checkSanity(seq);
+                app_.overlay().checkTracking(seq);
         }
 
         // FIXME: We may not want to fetch a ledger with just one

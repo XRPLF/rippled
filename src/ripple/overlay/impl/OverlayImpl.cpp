@@ -1207,10 +1207,10 @@ OverlayImpl::getActivePeers() const
 }
 
 void
-OverlayImpl::checkSanity(std::uint32_t index)
+OverlayImpl::checkTracking(std::uint32_t index)
 {
     for_each(
-        [index](std::shared_ptr<PeerImp>&& sp) { sp->checkSanity(index); });
+        [index](std::shared_ptr<PeerImp>&& sp) { sp->checkTracking(index); });
 }
 
 void

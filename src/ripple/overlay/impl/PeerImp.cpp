@@ -80,9 +80,8 @@ PeerImp::PeerImp(
     , overlay_(overlay)
     , m_inbound(true)
     , protocol_(protocol)
-    , state_(State::active)
-    , sanity_(Sanity::unknown)
-    , insaneTime_(clock_type::now())
+    , tracking_(Tracking::unknown)
+    , trackingTime_(clock_type::now())
     , publicKey_(publicKey)
     , creationTime_(clock_type::now())
     , usage_(consumer)
@@ -101,8 +100,7 @@ PeerImp::~PeerImp()
     const bool inCluster{cluster()};
 
     overlay_.deletePeer(id_);
-    if (state_ == State::active)
-        overlay_.onPeerDeactivate(id_);
+    overlay_.onPeerDeactivate(id_);
     overlay_.peerFinder().on_closed(slot_);
     overlay_.remove(slot_);
 
@@ -171,17 +169,9 @@ PeerImp::run()
     }
 
     if (m_inbound)
-    {
         doAccept();
-    }
     else
-    {
-        assert(state_ == State::active);
-        // XXX Set timer: connection is in grace period to be useful.
-        // XXX Set timer: connection idle (idle may vary depending on connection
-        // type.)
         doProtocolStart();
-    }
 
     // Request shard info from peer
     protocol::TMGetPeerShardInfo tmGPS;
@@ -358,17 +348,17 @@ PeerImp::json()
         ret[jss::complete_ledgers] =
             std::to_string(minSeq) + " - " + std::to_string(maxSeq);
 
-    switch (sanity_.load())
+    switch (tracking_.load())
     {
-        case Sanity::insane:
-            ret[jss::sanity] = "insane";
+        case Tracking::diverged:
+            ret[jss::track] = "diverged";
             break;
 
-        case Sanity::unknown:
-            ret[jss::sanity] = "unknown";
+        case Tracking::unknown:
+            ret[jss::track] = "unknown";
             break;
 
-        case Sanity::sane:
+        case Tracking::converged:
             // Nothing to do here
             break;
     }
@@ -446,7 +436,7 @@ PeerImp::hasLedger(uint256 const& hash, std::uint32_t seq) const
     {
         std::lock_guard sl(recentLock_);
         if ((seq != 0) && (seq >= minLedger_) && (seq <= maxLedger_) &&
-            (sanity_.load() == Sanity::sane))
+            (tracking_.load() == Tracking::converged))
             return true;
         if (std::find(recentLedgers_.begin(), recentLedgers_.end(), hash) !=
             recentLedgers_.end())
@@ -498,7 +488,7 @@ bool
 PeerImp::hasRange(std::uint32_t uMin, std::uint32_t uMax)
 {
     std::lock_guard sl(recentLock_);
-    return (sanity_ != Sanity::insane) && (uMin >= minLedger_) &&
+    return (tracking_ != Tracking::diverged) && (uMin >= minLedger_) &&
         (uMax <= maxLedger_);
 }
 
@@ -1377,9 +1367,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMPeerShardInfo> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
 {
-    // Don't allow endpoints from peers that are not known sane or are
+    // Don't allow endpoints from peers that are not known tracking or are
     // not using a version of the message that we support:
-    if (sanity_.load() != Sanity::sane || m->version() != 2)
+    if (tracking_.load() != Tracking::converged || m->version() != 2)
         return;
 
     std::vector<PeerFinder::Endpoint> endpoints;
@@ -1414,7 +1404,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMTransaction> const& m)
 {
-    if (sanity_.load() == Sanity::insane)
+    if (tracking_.load() == Tracking::diverged)
         return;
 
     if (app_.getOPs().isNeedNetworkLedger())
@@ -1629,21 +1619,22 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 
     if (!isTrusted)
     {
-        if (sanity_.load() == Sanity::insane)
+        if (tracking_.load() == Tracking::diverged)
         {
-            JLOG(p_journal_.debug()) << "Proposal: Dropping UNTRUSTED (insane)";
+            JLOG(p_journal_.debug())
+                << "Proposal: Dropping untrusted (peer divergence)";
             return;
         }
 
         if (!cluster() && app_.getFeeTrack().isLoadedLocal())
         {
-            JLOG(p_journal_.debug()) << "Proposal: Dropping UNTRUSTED (load)";
+            JLOG(p_journal_.debug()) << "Proposal: Dropping untrusted (load)";
             return;
         }
     }
 
     JLOG(p_journal_.trace())
-        << "Proposal: " << (isTrusted ? "trusted" : "UNTRUSTED");
+        << "Proposal: " << (isTrusted ? "trusted" : "untrusted");
 
     auto proposal = RCLCxPeerPos(
         publicKey,
@@ -1764,7 +1755,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
     if (m->has_ledgerseq() &&
         app_.getLedgerMaster().getValidatedLedgerAge() < 2min)
     {
-        checkSanity(
+        checkTracking(
             m->ledgerseq(), app_.getLedgerMaster().getValidLedgerIndex());
     }
 
@@ -1843,11 +1834,11 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
 }
 
 void
-PeerImp::checkSanity(std::uint32_t validationSeq)
+PeerImp::checkTracking(std::uint32_t validationSeq)
 {
     std::uint32_t serverSeq;
     {
-        // Extract the seqeuence number of the highest
+        // Extract the sequence number of the highest
         // ledger this peer has
         std::lock_guard sl(recentLock_);
 
@@ -1857,29 +1848,29 @@ PeerImp::checkSanity(std::uint32_t validationSeq)
     {
         // Compare the peer's ledger sequence to the
         // sequence of a recently-validated ledger
-        checkSanity(serverSeq, validationSeq);
+        checkTracking(serverSeq, validationSeq);
     }
 }
 
 void
-PeerImp::checkSanity(std::uint32_t seq1, std::uint32_t seq2)
+PeerImp::checkTracking(std::uint32_t seq1, std::uint32_t seq2)
 {
     int diff = std::max(seq1, seq2) - std::min(seq1, seq2);
 
-    if (diff < Tuning::saneLedgerLimit)
+    if (diff < Tuning::convergedLedgerLimit)
     {
         // The peer's ledger sequence is close to the validation's
-        sanity_ = Sanity::sane;
+        tracking_ = Tracking::converged;
     }
 
-    if ((diff > Tuning::insaneLedgerLimit) &&
-        (sanity_.load() != Sanity::insane))
+    if ((diff > Tuning::divergedLedgerLimit) &&
+        (tracking_.load() != Tracking::diverged))
     {
         // The peer's ledger sequence is way off the validation's
         std::lock_guard sl(recentLock_);
 
-        sanity_ = Sanity::insane;
-        insaneTime_ = clock_type::now();
+        tracking_ = Tracking::diverged;
+        trackingTime_ = clock_type::now();
     }
 }
 
@@ -1888,25 +1879,28 @@ PeerImp::checkSanity(std::uint32_t seq1, std::uint32_t seq2)
 void
 PeerImp::check()
 {
-    if (m_inbound || (sanity_.load() == Sanity::sane))
+    if (m_inbound)
         return;
 
-    clock_type::time_point insaneTime;
+    auto const sanity = tracking_.load();
+
+    if (sanity == Tracking::converged)
+        return;
+
+    clock_type::duration duration;
+
     {
         std::lock_guard sl(recentLock_);
-
-        insaneTime = insaneTime_;
+        duration = clock_type::now() - trackingTime_;
     }
 
     bool reject = false;
 
-    if (sanity_.load() == Sanity::insane)
-        reject = (insaneTime - clock_type::now()) >
-            std::chrono::seconds(Tuning::maxInsaneTime);
+    if (sanity == Tracking::diverged)
+        reject = (duration > app_.config().MAX_DIVERGED_TIME);
 
-    if (sanity_.load() == Sanity::unknown)
-        reject = (insaneTime - clock_type::now()) >
-            std::chrono::seconds(Tuning::maxUnknownTime);
+    if (sanity == Tracking::unknown)
+        reject = (duration > app_.config().MAX_UNKNOWN_TIME);
 
     if (reject)
     {
@@ -2140,10 +2134,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         auto const isTrusted =
             app_.validators().trusted(val->getSignerPublic());
 
-        if (!isTrusted && (sanity_.load() == Sanity::insane))
+        if (!isTrusted && (tracking_.load() == Tracking::diverged))
         {
             JLOG(p_journal_.debug())
-                << "Validation: dropping untrusted from insane peer";
+                << "Validation: dropping untrusted from diverged peer";
         }
         if (isTrusted || cluster() || !app_.getFeeTrack().isLoadedLocal())
         {
