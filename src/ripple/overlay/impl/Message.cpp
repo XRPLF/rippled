@@ -32,11 +32,7 @@ Message::Message(
 {
     using namespace ripple::compression;
 
-#if defined(GOOGLE_PROTOBUF_VERSION) && (GOOGLE_PROTOBUF_VERSION >= 3011000)
-    auto const messageBytes = message.ByteSizeLong();
-#else
-    unsigned const messageBytes = message.ByteSize();
-#endif
+    auto const messageBytes = messageSize(message);
 
     assert(messageBytes != 0);
 
@@ -46,6 +42,26 @@ Message::Message(
 
     if (messageBytes != 0)
         message.SerializeToArray(buffer_.data() + headerBytes, messageBytes);
+
+    assert(getBufferSize() == totalSize(message));
+}
+
+// static
+std::size_t
+Message::messageSize(::google::protobuf::Message const& message)
+{
+#if defined(GOOGLE_PROTOBUF_VERSION) && (GOOGLE_PROTOBUF_VERSION >= 3011000)
+    return message.ByteSizeLong();
+#else
+    return message.ByteSize();
+#endif
+}
+
+// static
+std::size_t
+Message::totalSize(::google::protobuf::Message const& message)
+{
+    return messageSize(message) + compression::headerBytes;
 }
 
 void
@@ -68,6 +84,7 @@ Message::compress()
             case protocol::mtLEDGER_DATA:
             case protocol::mtGET_OBJECTS:
             case protocol::mtVALIDATORLIST:
+            case protocol::mtVALIDATORLISTCOLLECTION:
                 return true;
             case protocol::mtPING:
             case protocol::mtCLUSTER:

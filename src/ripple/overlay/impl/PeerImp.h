@@ -43,6 +43,8 @@
 
 namespace ripple {
 
+struct ValidatorBlobInfo;
+
 class PeerImp : public Peer,
                 public std::enable_shared_from_this<PeerImp>,
                 public OverlayImpl::Child
@@ -509,6 +511,8 @@ public:
     void
     onMessage(std::shared_ptr<protocol::TMValidatorList> const& m);
     void
+    onMessage(std::shared_ptr<protocol::TMValidatorListCollection> const& m);
+    void
     onMessage(std::shared_ptr<protocol::TMValidation> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m);
@@ -526,6 +530,13 @@ private:
 
     void
     doFetchPack(const std::shared_ptr<protocol::TMGetObjectByHash>& packet);
+
+    void
+    onValidatorListMessage(
+        std::string const& messageType,
+        std::string const& manifest,
+        std::uint32_t version,
+        std::vector<ValidatorBlobInfo> const& blobs);
 
     void
     checkTransaction(

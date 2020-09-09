@@ -344,11 +344,43 @@ public:
         return list;
     }
 
+    std::shared_ptr<protocol::TMValidatorListCollection>
+    buildValidatorListCollection()
+    {
+        auto list = std::make_shared<protocol::TMValidatorListCollection>();
+
+        auto master = randomKeyPair(KeyType::ed25519);
+        auto signing = randomKeyPair(KeyType::ed25519);
+        STObject st(sfGeneric);
+        st[sfSequence] = 0;
+        st[sfPublicKey] = std::get<0>(master);
+        st[sfSigningPubKey] = std::get<0>(signing);
+        st[sfDomain] = makeSlice(std::string("example.com"));
+        sign(
+            st,
+            HashPrefix::manifest,
+            KeyType::ed25519,
+            std::get<1>(master),
+            sfMasterSignature);
+        sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
+        Serializer s;
+        st.add(s);
+        list->set_manifest(s.data(), s.size());
+        list->set_version(4);
+        STObject signature(sfSignature);
+        ripple::sign(
+            st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
+        Serializer s1;
+        st.add(s1);
+        auto& blob = *list->add_blobs();
+        blob.set_signature(s1.data(), s1.size());
+        blob.set_blob(strHex(s.getString()));
+        return list;
+    }
+
     void
     testProtocol()
     {
-        testcase("Message Compression");
-
         auto thresh = beast::severities::Severity::kInfo;
         auto logs = std::make_unique<Logs>(thresh);
 
@@ -359,6 +391,7 @@ public:
         protocol::TMLedgerData ledger_data;
         protocol::TMGetObjectByHash get_object;
         protocol::TMValidatorList validator_list;
+        protocol::TMValidatorListCollection validator_list_collection;
 
         // 4.5KB
         doTest(buildManifests(20), protocol::mtMANIFESTS, 4, "TMManifests20");
@@ -418,6 +451,11 @@ public:
             protocol::mtVALIDATORLIST,
             4,
             "TMValidatorList");
+        doTest(
+            buildValidatorListCollection(),
+            protocol::mtVALIDATORLISTCOLLECTION,
+            4,
+            "TMValidatorListCollection");
     }
 
     void

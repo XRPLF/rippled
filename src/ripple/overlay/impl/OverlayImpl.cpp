@@ -1026,13 +1026,7 @@ OverlayImpl::processValidatorList(
     if (!req.target().starts_with(prefix.data()) || !setup_.vlEnabled)
         return false;
 
-    auto key = req.target().substr(prefix.size());
-
-    if (key.empty())
-        return false;
-
-    // find the list
-    auto vl = app_.validators().getAvailable(key);
+    std::uint32_t version = 1;
 
     boost::beast::http::response<json_body> msg;
     msg.version(req.version());
@@ -1040,24 +1034,52 @@ OverlayImpl::processValidatorList(
     msg.insert("Content-Type", "application/json");
     msg.insert("Connection", "close");
 
-    if (!vl)
-    {
-        // 404 not found
-        msg.result(boost::beast::http::status::not_found);
+    auto fail = [&msg, &handoff](auto status) {
+        msg.result(status);
         msg.insert("Content-Length", "0");
 
         msg.body() = Json::nullValue;
+
+        msg.prepare_payload();
+        handoff.response = std::make_shared<SimpleWriter>(msg);
+        return true;
+    };
+
+    auto key = req.target().substr(prefix.size());
+
+    if (auto slash = key.find('/'); slash != boost::string_view::npos)
+    {
+        auto verString = key.substr(0, slash);
+        if (!boost::conversion::try_lexical_convert(verString, version))
+            return fail(boost::beast::http::status::bad_request);
+        key = key.substr(slash + 1);
+    }
+
+    if (key.empty())
+        return fail(boost::beast::http::status::bad_request);
+
+    // find the list
+    auto vl = app_.validators().getAvailable(key, version);
+
+    if (!vl)
+    {
+        // 404 not found
+        return fail(boost::beast::http::status::not_found);
+    }
+    else if (!*vl)
+    {
+        return fail(boost::beast::http::status::bad_request);
     }
     else
     {
         msg.result(boost::beast::http::status::ok);
 
         msg.body() = *vl;
-    }
 
-    msg.prepare_payload();
-    handoff.response = std::make_shared<SimpleWriter>(msg);
-    return true;
+        msg.prepare_payload();
+        handoff.response = std::make_shared<SimpleWriter>(msg);
+        return true;
+    }
 }
 
 bool
