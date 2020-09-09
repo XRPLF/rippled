@@ -152,10 +152,10 @@ HTTPDownloader::do_session(
     //////////////////////////////////////////////
     // Prepare for download and establish the
     // connection:
-    std::uint64_t const rangeStart = size(p);
-
-    stream_ = ssl ? HTTPStream::makeUnique<SSLStream>(config_, strand_, j_)
-                  : HTTPStream::makeUnique<RawStream>(config_, strand_, j_);
+    if (ssl)
+        stream_ = std::make_unique<SSLStream>(config_, strand_, j_);
+    else
+        stream_ = std::make_unique<RawStream>(strand_);
 
     std::string error;
     if (!stream_->connect(error, host, port, yield))
@@ -165,6 +165,8 @@ HTTPDownloader::do_session(
     http::request<http::empty_body> req{http::verb::head, target, version};
     req.set(http::field::host, host);
     req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+
+    std::uint64_t const rangeStart = size(p);
 
     // Requesting a portion of the file
     if (rangeStart)
@@ -182,7 +184,7 @@ HTTPDownloader::do_session(
         // Read the response
         http::response_parser<http::empty_body> connectParser;
         connectParser.skip(true);
-        stream_->asyncRead(read_buf_, connectParser, false, yield, ec);
+        stream_->asyncRead(read_buf_, connectParser, yield, ec);
         if (ec)
             return failAndExit("async_read", p);
 
@@ -198,7 +200,7 @@ HTTPDownloader::do_session(
             http::response_parser<http::empty_body> rangeParser;
             rangeParser.skip(true);
 
-            stream_->asyncRead(read_buf_, rangeParser, false, yield, ec);
+            stream_->asyncRead(read_buf_, rangeParser, yield, ec);
             if (ec)
                 return failAndExit("async_read_range_verify", p);
 
@@ -268,7 +270,7 @@ HTTPDownloader::do_session(
             return exit();
         }
 
-        stream_->asyncRead(read_buf_, *p, true, yield, ec);
+        stream_->asyncReadSome(read_buf_, *p, yield, ec);
     }
 
     JLOG(j_.trace()) << "download completed: " << dstPath.string();

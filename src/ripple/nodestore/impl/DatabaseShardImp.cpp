@@ -293,38 +293,31 @@ DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
 }
 
 bool
-DatabaseShardImp::prepareShard(std::uint32_t shardIndex)
+DatabaseShardImp::prepareShards(std::vector<std::uint32_t> const& shardIndexes)
 {
-    auto fail = [j = j_, shardIndex](std::string const& msg) {
-        JLOG(j.error()) << "shard " << shardIndex << " " << msg;
+    auto fail = [j = j_, &shardIndexes](
+                    std::string const& msg,
+                    boost::optional<std::uint32_t> shardIndex = boost::none) {
+        auto multipleIndexPrequel = [&shardIndexes] {
+            std::vector<std::string> indexesAsString(shardIndexes.size());
+            std::transform(
+                shardIndexes.begin(),
+                shardIndexes.end(),
+                indexesAsString.begin(),
+                [](uint32_t const index) { return std::to_string(index); });
+
+            return std::string("shard") +
+                (shardIndexes.size() > 1 ? "s " : " ") +
+                boost::algorithm::join(indexesAsString, ", ");
+        };
+
+        std::string const prequel = shardIndex
+            ? "shard " + std::to_string(*shardIndex)
+            : multipleIndexPrequel();
+
+        JLOG(j.error()) << prequel << " " << msg;
         return false;
     };
-
-    if (shardIndex < earliestShardIndex())
-    {
-        return fail(
-            "comes before earliest shard index " +
-            std::to_string(earliestShardIndex()));
-    }
-
-    // If we are synced to the network, check if the shard index is
-    // greater or equal to the current or validated shard index.
-    auto seqCheck = [&](std::uint32_t ledgerSeq) {
-        if (ledgerSeq >= earliestLedgerSeq() &&
-            shardIndex >= seqToShardIndex(ledgerSeq))
-        {
-            return fail("invalid index");
-        }
-        return true;
-    };
-    if (!seqCheck(app_.getLedgerMaster().getValidLedgerIndex() + 1) ||
-        !seqCheck(app_.getLedgerMaster().getCurrentLedgerIndex()))
-    {
-        return fail("invalid index");
-    }
-
-    // Any shard earlier than the two most recent shards is a historical shard
-    auto const isHistoricalShard{shardIndex < shardBoundaryIndex()};
 
     std::lock_guard lock(mutex_);
     assert(init_);
@@ -332,23 +325,78 @@ DatabaseShardImp::prepareShard(std::uint32_t shardIndex)
     if (!canAdd_)
         return fail("cannot be stored at this time");
 
-    // Check shard count and available storage space
-    if (isHistoricalShard && numHistoricalShards(lock) >= maxHistoricalShards_)
-        return fail("maximum number of historical shards reached");
+    auto historicalShardsToPrepare = 0;
 
-    if (!sufficientStorage(
-            1,
-            isHistoricalShard ? PathDesignation::historical
-                              : PathDesignation::none,
-            lock))
+    for (auto const shardIndex : shardIndexes)
     {
-        return fail("insufficient storage space available");
+        if (shardIndex < earliestShardIndex())
+        {
+            return fail(
+                "comes before earliest shard index " +
+                    std::to_string(earliestShardIndex()),
+                shardIndex);
+        }
+
+        // If we are synced to the network, check if the shard index is
+        // greater or equal to the current or validated shard index.
+        auto seqCheck = [&](std::uint32_t ledgerSeq) {
+            if (ledgerSeq >= earliestLedgerSeq() &&
+                shardIndex >= seqToShardIndex(ledgerSeq))
+            {
+                return fail("invalid index", shardIndex);
+            }
+            return true;
+        };
+        if (!seqCheck(app_.getLedgerMaster().getValidLedgerIndex() + 1) ||
+            !seqCheck(app_.getLedgerMaster().getCurrentLedgerIndex()))
+        {
+            return fail("invalid index", shardIndex);
+        }
+
+        if (shards_.find(shardIndex) != shards_.end())
+            return fail("is already stored", shardIndex);
+
+        if (preparedIndexes_.find(shardIndex) != preparedIndexes_.end())
+            return fail("is already queued for import", shardIndex);
+
+        // Any shard earlier than the two most recent shards
+        // is a historical shard
+        if (shardIndex < shardBoundaryIndex())
+            ++historicalShardsToPrepare;
     }
 
-    if (shards_.find(shardIndex) != shards_.end())
-        return fail("already stored");
-    if (!preparedIndexes_.emplace(shardIndex).second)
-        return fail("already queued for import");
+    auto const numHistShards = numHistoricalShards(lock);
+
+    // Check shard count and available storage space
+    if (numHistShards + historicalShardsToPrepare > maxHistoricalShards_)
+        return fail("maximum number of historical shards reached");
+
+    if (historicalShardsToPrepare)
+    {
+        // Check available storage space for historical shards
+        if (!sufficientStorage(
+                historicalShardsToPrepare, PathDesignation::historical, lock))
+            return fail("insufficient storage space available");
+    }
+
+    if (auto const recentShardsToPrepare =
+            shardIndexes.size() - historicalShardsToPrepare;
+        recentShardsToPrepare)
+    {
+        // Check available storage space for recent shards
+        if (!sufficientStorage(
+                recentShardsToPrepare, PathDesignation::none, lock))
+            return fail("insufficient storage space available");
+    }
+
+    for (auto const shardIndex : shardIndexes)
+    {
+        auto const prepareSuccessful =
+            preparedIndexes_.emplace(shardIndex).second;
+
+        (void)prepareSuccessful;
+        assert(prepareSuccessful);
+    }
 
     return true;
 }

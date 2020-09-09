@@ -30,6 +30,7 @@ namespace test {
  */
 class CaptureLogs : public Logs
 {
+    std::mutex strmMutex_;
     std::stringstream strm_;
     std::string* pResult_;
 
@@ -38,13 +39,17 @@ class CaptureLogs : public Logs
      */
     class CaptureSink : public beast::Journal::Sink
     {
+        std::mutex& strmMutex_;
         std::stringstream& strm_;
 
     public:
         CaptureSink(
             beast::severities::Severity threshold,
+            std::mutex& mutex,
             std::stringstream& strm)
-            : beast::Journal::Sink(threshold, false), strm_(strm)
+            : beast::Journal::Sink(threshold, false)
+            , strmMutex_(mutex)
+            , strm_(strm)
         {
         }
 
@@ -52,6 +57,7 @@ class CaptureLogs : public Logs
         write(beast::severities::Severity level, std::string const& text)
             override
         {
+            std::lock_guard lock(strmMutex_);
             strm_ << text;
         }
     };
@@ -72,7 +78,7 @@ public:
         std::string const& partition,
         beast::severities::Severity threshold) override
     {
-        return std::make_unique<CaptureSink>(threshold, strm_);
+        return std::make_unique<CaptureSink>(threshold, strmMutex_, strm_);
     }
 };
 

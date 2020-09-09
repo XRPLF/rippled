@@ -247,9 +247,6 @@ ShardArchiveHandler::add(
     if (it != archives_.end())
         return url == it->second;
 
-    if (!app_.getShardStore()->prepareShard(shardIndex))
-        return false;
-
     archives_.emplace(shardIndex, std::move(url));
 
     return true;
@@ -274,6 +271,16 @@ ShardArchiveHandler::start()
         JLOG(j_.warn()) << "No archives to process";
         return false;
     }
+
+    std::vector<std::uint32_t> shardIndexes(archives_.size());
+    std::transform(
+        archives_.begin(),
+        archives_.end(),
+        shardIndexes.begin(),
+        [](auto const& entry) { return entry.first; });
+
+    if (!app_.getShardStore()->prepareShards(shardIndexes))
+        return false;
 
     try
     {

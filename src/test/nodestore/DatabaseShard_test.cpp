@@ -647,9 +647,9 @@ class DatabaseShard_test : public TestBase
     }
 
     void
-    testPrepareShard(std::uint64_t const seedValue)
+    testPrepareShards(std::uint64_t const seedValue)
     {
-        testcase("Prepare shard");
+        testcase("Prepare shards");
 
         using namespace test::jtx;
 
@@ -675,7 +675,7 @@ class DatabaseShard_test : public TestBase
             }
             else
             {
-                db->prepareShard(n);
+                db->prepareShards({n});
                 bitMask |= 1ll << n;
             }
             BEAST_EXPECT(db->getPreShards() == bitmask2Rangeset(bitMask));
@@ -683,11 +683,11 @@ class DatabaseShard_test : public TestBase
 
         // test illegal cases
         // adding shards with too large number
-        db->prepareShard(0);
+        db->prepareShards({0});
         BEAST_EXPECT(db->getPreShards() == bitmask2Rangeset(bitMask));
-        db->prepareShard(nTestShards + 1);
+        db->prepareShards({nTestShards + 1});
         BEAST_EXPECT(db->getPreShards() == bitmask2Rangeset(bitMask));
-        db->prepareShard(nTestShards + 2);
+        db->prepareShards({nTestShards + 2});
         BEAST_EXPECT(db->getPreShards() == bitmask2Rangeset(bitMask));
 
         // create shards which are not prepared for import
@@ -753,7 +753,7 @@ class DatabaseShard_test : public TestBase
             if (!BEAST_EXPECT(data.makeLedgers(env)))
                 return;
 
-            db->prepareShard(1);
+            db->prepareShards({1});
             BEAST_EXPECT(db->getPreShards() == bitmask2Rangeset(2));
 
             using namespace boost::filesystem;
@@ -1338,7 +1338,7 @@ public:
         testCreateShard(seedValue);
         testReopenDatabase(seedValue + 10);
         testGetCompleteShards(seedValue + 20);
-        testPrepareShard(seedValue + 30);
+        testPrepareShards(seedValue + 30);
         testImportShard(seedValue + 40);
         testCorruptedDatabase(seedValue + 50);
         testIllegalFinalKey(seedValue + 60);
