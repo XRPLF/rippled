@@ -1066,6 +1066,80 @@ r.ripple.com 51235
     }
 
     void
+    testOverlay()
+    {
+        testcase("overlay: unknown time");
+
+        auto testUnknown =
+            [](std::string value) -> std::optional<std::chrono::seconds> {
+            try
+            {
+                Config c;
+                c.loadFromString("[overlay]\nmax_unknown_time=" + value);
+                return c.MAX_UNKNOWN_TIME;
+            }
+            catch (std::runtime_error&)
+            {
+                return {};
+            }
+        };
+
+        // Failures
+        BEAST_EXPECT(!testUnknown("none"));
+        BEAST_EXPECT(!testUnknown("0.5"));
+        BEAST_EXPECT(!testUnknown("180 seconds"));
+        BEAST_EXPECT(!testUnknown("9 minutes"));
+
+        // Below lower bound
+        BEAST_EXPECT(!testUnknown("299"));
+
+        // In bounds
+        BEAST_EXPECT(testUnknown("300") == std::chrono::seconds{300});
+        BEAST_EXPECT(testUnknown("301") == std::chrono::seconds{301});
+        BEAST_EXPECT(testUnknown("1799") == std::chrono::seconds{1799});
+        BEAST_EXPECT(testUnknown("1800") == std::chrono::seconds{1800});
+
+        // Above upper bound
+        BEAST_EXPECT(!testUnknown("1801"));
+
+        testcase("overlay: diverged time");
+
+        // In bounds:
+        auto testDiverged =
+            [](std::string value) -> std::optional<std::chrono::seconds> {
+            try
+            {
+                Config c;
+                c.loadFromString("[overlay]\nmax_diverged_time=" + value);
+                return c.MAX_DIVERGED_TIME;
+            }
+            catch (std::runtime_error&)
+            {
+                return {};
+            }
+        };
+
+        // Failures
+        BEAST_EXPECT(!testDiverged("none"));
+        BEAST_EXPECT(!testDiverged("0.5"));
+        BEAST_EXPECT(!testDiverged("180 seconds"));
+        BEAST_EXPECT(!testDiverged("9 minutes"));
+
+        // Below lower bound
+        BEAST_EXPECT(!testDiverged("0"));
+        BEAST_EXPECT(!testDiverged("59"));
+
+        // In bounds
+        BEAST_EXPECT(testDiverged("60") == std::chrono::seconds{60});
+        BEAST_EXPECT(testDiverged("61") == std::chrono::seconds{61});
+        BEAST_EXPECT(testDiverged("899") == std::chrono::seconds{899});
+        BEAST_EXPECT(testDiverged("900") == std::chrono::seconds{900});
+
+        // Above upper bound
+        BEAST_EXPECT(!testDiverged("901"));
+    }
+
+    void
     run() override
     {
         testLegacy();
@@ -1079,6 +1153,7 @@ r.ripple.com 51235
         testComments();
         testGetters();
         testAmendment();
+        testOverlay();
     }
 };
 

@@ -707,7 +707,7 @@ struct Peer
 
     // Basic Sequence number router
     //   A message that will be flooded across the network is tagged with a
-    //   seqeuence number by the origin node in a BroadcastMesg. Receivers will
+    //   sequence number by the origin node in a BroadcastMesg. Receivers will
     //   ignore a message as stale if they've already processed a newer sequence
     //   number, or will process and potentially relay the message along.
     //
