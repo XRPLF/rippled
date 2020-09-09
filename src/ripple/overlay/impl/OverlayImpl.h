@@ -195,7 +195,7 @@ public:
     void
     check() override;
 
-    void checkSanity(std::uint32_t) override;
+    void checkTracking(std::uint32_t) override;
 
     std::shared_ptr<Peer>
     findPeerByShortID(Peer::id_t const& id) const override;

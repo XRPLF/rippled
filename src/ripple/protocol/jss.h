@@ -459,7 +459,6 @@ JSS(role);                  // out: Ping.cpp
 JSS(rpc);
 JSS(rt_accounts);  // in: Subscribe, Unsubscribe
 JSS(running_duration_us);
-JSS(sanity);                    // out: PeerImp
 JSS(search_depth);              // in: RipplePathFind
 JSS(searched_all);              // out: Tx
 JSS(secret);                    // in: TransactionSign,
@@ -520,6 +519,7 @@ JSS(ticket_count);        // out: AccountInfo
 JSS(ticket_seq);          // in: LedgerEntry
 JSS(time);
 JSS(timeouts);                // out: InboundLedger
+JSS(track);                   // out: PeerImp
 JSS(traffic);                 // out: Overlay
 JSS(total);                   // out: counters
 JSS(totalCoins);              // out: LedgerToJson

@@ -465,8 +465,7 @@ Config::loadFromString(std::string const& fileContents)
 
     if (exists(SECTION_VALIDATION_SEED) && exists(SECTION_VALIDATOR_TOKEN))
         Throw<std::runtime_error>("Cannot have both [" SECTION_VALIDATION_SEED
-                                  "] "
-                                  "and [" SECTION_VALIDATOR_TOKEN
+                                  "] and [" SECTION_VALIDATOR_TOKEN
                                   "] config sections");
 
     if (getSingleSection(secConfig, SECTION_NETWORK_QUORUM, strTemp, j_))
@@ -548,6 +547,51 @@ Config::loadFromString(std::string const& fileContents)
         }
 
         SERVER_DOMAIN = strTemp;
+    }
+
+    if (exists(SECTION_OVERLAY))
+    {
+        auto const sec = section(SECTION_OVERLAY);
+
+        using namespace std::chrono;
+
+        try
+        {
+            if (auto val = sec.get<std::string>("max_unknown_time"))
+                MAX_UNKNOWN_TIME =
+                    seconds{beast::lexicalCastThrow<std::uint32_t>(*val)};
+        }
+        catch (...)
+        {
+            Throw<std::runtime_error>(
+                "Invalid value 'max_unknown_time' in " SECTION_OVERLAY
+                ": must be of the form '<number>' representing seconds.");
+        }
+
+        if (MAX_UNKNOWN_TIME < seconds{300} || MAX_UNKNOWN_TIME > seconds{1800})
+            Throw<std::runtime_error>(
+                "Invalid value 'max_unknown_time' in " SECTION_OVERLAY
+                ": the time must be between 300 and 1800 seconds, inclusive.");
+
+        try
+        {
+            if (auto val = sec.get<std::string>("max_diverged_time"))
+                MAX_DIVERGED_TIME =
+                    seconds{beast::lexicalCastThrow<std::uint32_t>(*val)};
+        }
+        catch (...)
+        {
+            Throw<std::runtime_error>(
+                "Invalid value 'max_diverged_time' in " SECTION_OVERLAY
+                ": must be of the form '<number>' representing seconds.");
+        }
+
+        if (MAX_DIVERGED_TIME < seconds{60} || MAX_DIVERGED_TIME > seconds{900})
+        {
+            Throw<std::runtime_error>(
+                "Invalid value 'max_diverged_time' in " SECTION_OVERLAY
+                ": the time must be between 60 and 900 seconds, inclusive.");
+        }
     }
 
     if (getSingleSection(
