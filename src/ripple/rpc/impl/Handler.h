@@ -95,6 +95,13 @@ conditionMet(Condition condition_required, T& context)
         return rpcAMENDMENT_BLOCKED;
     }
 
+    if (context.app.getOPs().isExpiredValidatorList() &&
+        (condition_required & NEEDS_CURRENT_LEDGER ||
+         condition_required & NEEDS_CLOSED_LEDGER))
+    {
+        return rpcEXPIRED_VALIDATOR_LIST;
+    }
+
     if (!context.app.config().standalone() &&
         condition_required & NEEDS_CURRENT_LEDGER)
     {

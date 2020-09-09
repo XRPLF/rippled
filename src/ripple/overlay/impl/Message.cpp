@@ -68,6 +68,7 @@ Message::compress()
             case protocol::mtLEDGER_DATA:
             case protocol::mtGET_OBJECTS:
             case protocol::mtVALIDATORLIST:
+            case protocol::mtVALIDATORLISTCOLLECTION:
                 return true;
             case protocol::mtPING:
             case protocol::mtCLUSTER:

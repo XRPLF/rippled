@@ -38,7 +38,8 @@ constexpr ProtocolVersion const supportedProtocolList[]
 {
     {1, 2},
     {2, 0},
-    {2, 1}
+    {2, 1},
+    {2, 2}
 };
 // clang-format on
 

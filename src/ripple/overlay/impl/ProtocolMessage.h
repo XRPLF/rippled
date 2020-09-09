@@ -73,6 +73,8 @@ protocolMessageName(int type)
             return "have_set";
         case protocol::mtVALIDATORLIST:
             return "validator_list";
+        case protocol::mtVALIDATORLISTCOLLECTION:
+            return "validator_list_collection";
         case protocol::mtVALIDATION:
             return "validation";
         case protocol::mtGET_OBJECTS:
@@ -215,11 +217,10 @@ parseMessageHeader(
 template <
     class T,
     class Buffers,
-    class Handler,
     class = std::enable_if_t<
         std::is_base_of<::google::protobuf::Message, T>::value>>
-bool
-invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
+std::shared_ptr<T>
+parseMessageContent(MessageHeader const& header, Buffers const& buffers)
 {
     auto const m = std::make_shared<T>();
 
@@ -239,9 +240,25 @@ invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
             header.algorithm);
 
         if (payloadSize == 0 || !m->ParseFromArray(payload.data(), payloadSize))
-            return false;
+            return {};
     }
     else if (!m->ParseFromZeroCopyStream(&stream))
+        return {};
+
+    return m;
+}
+
+template <
+    class T,
+    class Buffers,
+    class Handler,
+    class = std::enable_if_t<
+        std::is_base_of<::google::protobuf::Message, T>::value>>
+bool
+invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
+{
+    auto const m = parseMessageContent<T>(header, buffers);
+    if (!m)
         return false;
 
     handler.onMessageBegin(header.message_type, m, header.payload_wire_size);
@@ -293,8 +310,8 @@ invokeProtocolMessage(
     // whose size exceeds this may result in the connection being dropped. A
     // larger message size may be supported in the future or negotiated as
     // part of a protocol upgrade.
-    if (header->payload_wire_size > megabytes(64) ||
-        header->uncompressed_size > megabytes(64))
+    if (header->payload_wire_size > maximiumMessageSize ||
+        header->uncompressed_size > maximiumMessageSize)
     {
         result.second = make_error_code(boost::system::errc::message_size);
         return result;
@@ -382,6 +399,10 @@ invokeProtocolMessage(
             break;
         case protocol::mtVALIDATORLIST:
             success = detail::invoke<protocol::TMValidatorList>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtVALIDATORLISTCOLLECTION:
+            success = detail::invoke<protocol::TMValidatorListCollection>(
                 *header, buffers, handler);
             break;
         case protocol::mtGET_OBJECTS:

@@ -53,6 +53,7 @@ realValidatorContents()
 }
 
 auto constexpr default_expires = std::chrono::seconds{3600};
+auto constexpr default_effective_overlap = std::chrono::seconds{30};
 }  // namespace detail
 
 class ValidatorSite_test : public beast::unit_test::suite
@@ -135,6 +136,8 @@ private:
         bool failApply = false;
         int serverVersion = 1;
         std::chrono::seconds expiresFromNow = detail::default_expires;
+        std::chrono::seconds effectiveOverlap =
+            detail::default_effective_overlap;
         int expectedRefreshMin = 0;
     };
     void
@@ -146,13 +149,17 @@ private:
                             boost::adaptors::transformed(
                                 [](FetchListConfig const& cfg) {
                                     return cfg.path +
-                                        (cfg.ssl ? " [https]" : " [http]");
+                                        (cfg.ssl ? " [https] v" : " [http] v") +
+                                        std::to_string(cfg.serverVersion) +
+                                        " " + cfg.msg;
                                 }),
                         ", ");
         using namespace jtx;
+        using namespace std::chrono_literals;
 
         Env env(*this);
         auto& trustedKeys = env.app().validators();
+        env.timeKeeper().set(env.timeKeeper().now() + 30s);
 
         test::StreamSink sink;
         beast::Journal journal{sink};
@@ -184,10 +191,17 @@ private:
             while (item.list.size() < listSize)
                 item.list.push_back(TrustedPublisherServer::randomValidator());
 
+            NetClock::time_point const expires =
+                env.timeKeeper().now() + cfg.expiresFromNow;
+            NetClock::time_point const effective2 =
+                expires - cfg.effectiveOverlap;
+            NetClock::time_point const expires2 =
+                effective2 + cfg.expiresFromNow;
             item.server = make_TrustedPublisherServer(
                 env.app().getIOService(),
                 item.list,
-                env.timeKeeper().now() + cfg.expiresFromNow,
+                expires,
+                {{effective2, expires2}},
                 cfg.ssl,
                 cfg.serverVersion);
             cfgPublishers.push_back(strHex(item.server->publisherPublic()));
@@ -201,7 +215,6 @@ private:
         BEAST_EXPECT(
             trustedKeys.load(emptyLocalKey, emptyCfgKeys, cfgPublishers));
 
-        using namespace std::chrono_literals;
         // Normally, tests will only need a fraction of this time,
         // but sometimes DNS resolution takes an inordinate amount
         // of time, so the test will just wait.
@@ -381,8 +394,15 @@ public:
         {
             // fetch single site
             testFetchList({{"/validators", "", ssl}});
+            testFetchList({{"/validators2", "", ssl}});
             // fetch multiple sites
             testFetchList({{"/validators", "", ssl}, {"/validators", "", ssl}});
+            testFetchList(
+                {{"/validators", "", ssl}, {"/validators2", "", ssl}});
+            testFetchList(
+                {{"/validators2", "", ssl}, {"/validators", "", ssl}});
+            testFetchList(
+                {{"/validators2", "", ssl}, {"/validators2", "", ssl}});
             // fetch single site with single redirects
             testFetchList({{"/redirect_once/301", "", ssl}});
             testFetchList({{"/redirect_once/302", "", ssl}});
@@ -391,6 +411,19 @@ public:
             // one redirect, one not
             testFetchList(
                 {{"/validators", "", ssl}, {"/redirect_once/302", "", ssl}});
+            testFetchList(
+                {{"/validators2", "", ssl}, {"/redirect_once/302", "", ssl}});
+            // UNLs with a "gap" between expiration of one and effective of the
+            // next
+            testFetchList(
+                {{"/validators2",
+                  "",
+                  ssl,
+                  false,
+                  false,
+                  1,
+                  detail::default_expires,
+                  std::chrono::seconds{-90}}});
             // fetch single site with undending redirect (fails to load)
             testFetchList(
                 {{"/redirect_forever/301",
@@ -418,6 +451,14 @@ public:
                   ssl,
                   true,
                   true}});
+            // one undending redirect, one not
+            testFetchList(
+                {{"/validators2", "", ssl},
+                 {"/redirect_forever/302",
+                  "Exceeded max redirects",
+                  ssl,
+                  true,
+                  true}});
             // invalid redir Location
             testFetchList(
                 {{"/redirect_to/ftp://invalid-url/302",
@@ -434,6 +475,12 @@ public:
             // invalid json
             testFetchList(
                 {{"/validators/bad",
+                  "Unable to parse JSON response",
+                  ssl,
+                  true,
+                  true}});
+            testFetchList(
+                {{"/validators2/bad",
                   "Unable to parse JSON response",
                   ssl,
                   true,
@@ -455,30 +502,96 @@ public:
                   ssl,
                   true,
                   true}});
+            testFetchList(
+                {{"/validators2/missing",
+                  "Missing fields in JSON response",
+                  ssl,
+                  true,
+                  true}});
             // timeout
             testFetchList({{"/sleep/13", "took too long", ssl, true, true}});
+            // bad manifest format using known versions
+            // * Retrieves a v1 formatted list claiming version 2
+            testFetchList(
+                {{"/validators", "Missing fields", ssl, true, true, 2}});
+            // * Retrieves a v2 formatted list claiming version 1
+            testFetchList(
+                {{"/validators2", "Missing fields", ssl, true, true, 0}});
             // bad manifest version
+            // Because versions other than 1 are treated as v2, the v1
+            // list won't have the blobs_v2 fields, and thus will claim to have
+            // missing fields
             testFetchList(
-                {{"/validators", "Unsupported version", ssl, false, true, 4}});
-            using namespace std::chrono_literals;
-            // get old validator list
+                {{"/validators", "Missing fields", ssl, true, true, 4}});
             testFetchList(
-                {{"/validators",
-                  "Stale validator list",
+                {{"/validators2",
+                  "1 unsupported version",
                   ssl,
                   false,
                   true,
+                  4}});
+            using namespace std::chrono_literals;
+            // get expired validator list
+            testFetchList(
+                {{"/validators",
+                  "Applied 1 expired validator list(s)",
+                  ssl,
+                  false,
+                  false,
                   1,
                   0s}});
+            testFetchList(
+                {{"/validators2",
+                  "Applied 1 expired validator list(s)",
+                  ssl,
+                  false,
+                  false,
+                  1,
+                  0s,
+                  -1s}});
             // force an out-of-range expiration value
             testFetchList(
                 {{"/validators",
-                  "Invalid validator list",
+                  "1 invalid validator list(s)",
                   ssl,
                   false,
                   true,
                   1,
                   std::chrono::seconds{Json::Value::maxInt + 1}}});
+            // force an out-of-range expiration value on the future list
+            // The first list is accepted. The second fails. The parser
+            // returns the "best" result, so this looks like a success.
+            testFetchList(
+                {{"/validators2",
+                  "",
+                  ssl,
+                  false,
+                  false,
+                  1,
+                  std::chrono::seconds{Json::Value::maxInt - 300},
+                  299s}});
+            // force an out-of-range effective value
+            // The first list is accepted. The second fails. The parser
+            // returns the "best" result, so this looks like a success.
+            testFetchList(
+                {{"/validators2",
+                  "",
+                  ssl,
+                  false,
+                  false,
+                  1,
+                  std::chrono::seconds{Json::Value::maxInt - 300},
+                  301s}});
+            // force an out-of-range expiration value on _both_ lists
+            testFetchList(
+                {{"/validators2",
+                  "2 invalid validator list(s)",
+                  ssl,
+                  false,
+                  true,
+                  1,
+                  std::chrono::seconds{Json::Value::maxInt + 1},
+                  std::chrono::seconds{Json::Value::maxInt - 6000}}});
             // verify refresh intervals are properly clamped
             testFetchList(
                 {{"/validators/refresh/0",
@@ -488,6 +601,17 @@ public:
                   false,
                   1,
                   detail::default_expires,
+                  detail::default_effective_overlap,
+                  1}});  // minimum of 1 minute
+            testFetchList(
+                {{"/validators2/refresh/0",
+                  "",
+                  ssl,
+                  false,
+                  false,
+                  1,
+                  detail::default_expires,
+                  detail::default_effective_overlap,
                   1}});  // minimum of 1 minute
             testFetchList(
                 {{"/validators/refresh/10",
@@ -497,6 +621,17 @@ public:
                   false,
                   1,
                   detail::default_expires,
+                  detail::default_effective_overlap,
+                  10}});  // 10 minutes is fine
+            testFetchList(
+                {{"/validators2/refresh/10",
+                  "",
+                  ssl,
+                  false,
+                  false,
+                  1,
+                  detail::default_expires,
+                  detail::default_effective_overlap,
                   10}});  // 10 minutes is fine
             testFetchList(
                 {{"/validators/refresh/2000",
@@ -506,6 +641,17 @@ public:
                   false,
                   1,
                   detail::default_expires,
+                  detail::default_effective_overlap,
+                  60 * 24}});  // max of 24 hours
+            testFetchList(
+                {{"/validators2/refresh/2000",
+                  "",
+                  ssl,
+                  false,
+                  false,
+                  1,
+                  detail::default_expires,
+                  detail::default_effective_overlap,
                   60 * 24}});  // max of 24 hours
         }
         testFileURLs();

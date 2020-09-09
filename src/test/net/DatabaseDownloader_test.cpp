@@ -40,6 +40,7 @@ class DatabaseDownloader_test : public beast::unit_test::suite
             env.app().getIOService(),
             list,
             env.timeKeeper().now() + std::chrono::seconds{3600},
+            {},
             ssl);
     }
 

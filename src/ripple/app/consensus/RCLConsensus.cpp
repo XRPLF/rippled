@@ -949,7 +949,7 @@ RCLConsensus::Adaptor::preStartRound(
     // and are not amendment blocked.
     validating_ = valPublic_.size() != 0 &&
         prevLgr.seq() >= app_.getMaxDisallowedLedger() &&
-        !app_.getOPs().isAmendmentBlocked();
+        !app_.getOPs().isFunctionallyBlocked();
 
     // If we are not running in standalone mode and there's a configured UNL,
     // check to make sure that it's not expired.

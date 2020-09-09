@@ -24,6 +24,7 @@ enum MessageType
     mtPEER_SHARD_INFO       = 53;
     mtVALIDATORLIST         = 54;
     mtSQUELCH               = 55;
+    mtVALIDATORLISTCOLLECTION = 56;
 }
 
 // token, iterations, target, challenge = issue demand for proof of work
@@ -203,13 +204,29 @@ message TMHaveTransactionSet
     required bytes hash             = 2;
 }
 
-// Validator list
+// Validator list (UNL)
 message TMValidatorList
 {
     required bytes manifest         = 1;
     required bytes blob             = 2;
     required bytes signature        = 3;
     required uint32 version         = 4;
+}
+
+// Validator List v2
+message ValidatorBlobInfo
+{
+    optional bytes manifest         = 1;
+    required bytes blob             = 2;
+    required bytes signature        = 3;
+}
+
+// Collection of Validator List v2 (UNL)
+message TMValidatorListCollection
+{
+    required uint32 version          = 1;
+    required bytes manifest          = 2;
+    repeated ValidatorBlobInfo blobs = 3;
 }
 
 // Used to sign a final closed ledger after reprocessing

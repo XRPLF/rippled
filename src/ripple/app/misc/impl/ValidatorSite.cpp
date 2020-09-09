@@ -355,78 +355,116 @@ ValidatorSite::parseJsonResponse(
     std::size_t siteIdx,
     std::lock_guard<std::mutex>& sites_lock)
 {
-    Json::Reader r;
-    Json::Value body;
-    if (!r.parse(res.data(), body))
-    {
-        JLOG(j_.warn()) << "Unable to parse JSON response from  "
-                        << sites_[siteIdx].activeResource->uri;
-        throw std::runtime_error{"bad json"};
-    }
+    Json::Value const body = [&res, siteIdx, this]() {
+        Json::Reader r;
+        Json::Value body;
+        if (!r.parse(res.data(), body))
+        {
+            JLOG(j_.warn()) << "Unable to parse JSON response from  "
+                            << sites_[siteIdx].activeResource->uri;
+            throw std::runtime_error{"bad json"};
+        }
+        return body;
+    }();
 
-    if (!body.isObject() || !body.isMember("blob") ||
-        !body["blob"].isString() || !body.isMember("manifest") ||
-        !body["manifest"].isString() || !body.isMember("signature") ||
-        !body["signature"].isString() || !body.isMember("version") ||
-        !body["version"].isInt())
+    auto const [valid, version, blobs] = [&body]() {
+        // Check the easy fields first
+        bool valid = body.isObject() && body.isMember(jss::manifest) &&
+            body[jss::manifest].isString() && body.isMember(jss::version) &&
+            body[jss::version].isInt();
+        // Check the version-specific blob & signature fields
+        std::uint32_t version;
+        std::vector<ValidatorBlobInfo> blobs;
+        if (valid)
+        {
+            version = body[jss::version].asUInt();
+            blobs = ValidatorList::parseBlobs(version, body);
+            valid = !blobs.empty();
+        }
+        return std::make_tuple(valid, version, blobs);
+    }();
+
+    if (!valid)
     {
         JLOG(j_.warn()) << "Missing fields in JSON response from  "
                         << sites_[siteIdx].activeResource->uri;
         throw std::runtime_error{"missing fields"};
     }
 
-    auto const manifest = body["manifest"].asString();
-    auto const blob = body["blob"].asString();
-    auto const signature = body["signature"].asString();
-    auto const version = body["version"].asUInt();
+    auto const manifest = body[jss::manifest].asString();
+    assert(version == body[jss::version].asUInt());
     auto const& uri = sites_[siteIdx].activeResource->uri;
-    auto const hash = sha512Half(manifest, blob, signature, version);
-    auto const applyResult = app_.validators().applyListAndBroadcast(
+    auto const hash = sha512Half(manifest, blobs, version);
+    auto const applyResult = app_.validators().applyListsAndBroadcast(
         manifest,
-        blob,
-        signature,
         version,
+        blobs,
         uri,
         hash,
         app_.overlay(),
-        app_.getHashRouter());
-    auto const disp = applyResult.disposition;
+        app_.getHashRouter(),
+        app_.getOPs());
 
     sites_[siteIdx].lastRefreshStatus.emplace(
-        Site::Status{clock_type::now(), disp, ""});
+        Site::Status{clock_type::now(), applyResult.bestDisposition(), ""});
 
-    switch (disp)
+    for (auto const [disp, count] : applyResult.dispositions)
     {
-        case ListDisposition::accepted:
-            JLOG(j_.debug()) << "Applied new validator list from " << uri;
-            break;
-        case ListDisposition::same_sequence:
-            JLOG(j_.debug())
-                << "Validator list with current sequence from " << uri;
-            break;
-        case ListDisposition::stale:
-            JLOG(j_.warn()) << "Stale validator list from " << uri;
-            break;
-        case ListDisposition::untrusted:
-            JLOG(j_.warn()) << "Untrusted validator list from " << uri;
-            break;
-        case ListDisposition::invalid:
-            JLOG(j_.warn()) << "Invalid validator list from " << uri;
-            break;
-        case ListDisposition::unsupported_version:
-            JLOG(j_.warn())
-                << "Unsupported version validator list from " << uri;
-            break;
-        default:
-            BOOST_ASSERT(false);
+        switch (disp)
+        {
+            case ListDisposition::accepted:
+                JLOG(j_.debug()) << "Applied " << count
+                                 << " new validator list(s) from " << uri;
+                break;
+            case ListDisposition::expired:
+                JLOG(j_.debug()) << "Applied " << count
+                                 << " expired validator list(s) from " << uri;
+                break;
+            case ListDisposition::same_sequence:
+                JLOG(j_.debug())
+                    << "Ignored " << count
+                    << " validator list(s) with current sequence from " << uri;
+                break;
+            case ListDisposition::pending:
+                JLOG(j_.debug()) << "Processed " << count
+                                 << " future validator list(s) from " << uri;
+                break;
+            case ListDisposition::known_sequence:
+                JLOG(j_.debug())
+                    << "Ignored " << count
+                    << " validator list(s) with future known sequence from "
+                    << uri;
+                break;
+            case ListDisposition::stale:
+                JLOG(j_.warn()) << "Ignored " << count
+                                << "stale validator list(s) from " << uri;
+                break;
+            case ListDisposition::untrusted:
+                JLOG(j_.warn()) << "Ignored " << count
+                                << " untrusted validator list(s) from " << uri;
+                break;
+            case ListDisposition::invalid:
+                JLOG(j_.warn()) << "Ignored " << count
+                                << " invalid validator list(s) from " << uri;
+                break;
+            case ListDisposition::unsupported_version:
+                JLOG(j_.warn())
+                    << "Ignored " << count
+                    << " unsupported version validator list(s) from " << uri;
+                break;
+            default:
+                BOOST_ASSERT(false);
+        }
     }
 
-    if (body.isMember("refresh_interval") &&
-        body["refresh_interval"].isNumeric())
+    if (body.isMember(jss::refresh_interval) &&
+        body[jss::refresh_interval].isNumeric())
     {
         using namespace std::chrono_literals;
         std::chrono::minutes const refresh = boost::algorithm::clamp(
-            std::chrono::minutes{body["refresh_interval"].asUInt()}, 1min, 24h);
+            std::chrono::minutes{body[jss::refresh_interval].asUInt()},
+            1min,
+            24h);
         sites_[siteIdx].refreshInterval = refresh;
         sites_[siteIdx].nextRefresh =
             clock_type::now() + sites_[siteIdx].refreshInterval;

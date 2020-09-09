@@ -143,6 +143,8 @@ JSS(bids);                   // out: Subscribe
 JSS(binary);                 // in: AccountTX, LedgerEntry,
                              //     AccountTxOld, Tx LedgerData
 JSS(blob);                   // out: ValidatorList
+JSS(blobs_v2);               // out: ValidatorList
+                             // in: UNL
 JSS(books);                  // in: Subscribe, Unsubscribe
 JSS(both);                   // in: Subscribe, Unsubscribe
 JSS(both_sides);             // in: Subscribe, Unsubscribe
@@ -211,6 +213,8 @@ JSS(directory);               // in: LedgerEntry
 JSS(domain);                  // out: ValidatorInfo, Manifest
 JSS(drops);                   // out: TxQ
 JSS(duration_us);             // out: NetworkOPs
+JSS(effective);               // out: ValidatorList
+                              // in: UNL
 JSS(enabled);                 // out: AmendmentTable
 JSS(engine_result);           // out: NetworkOPs, TransactionSign, Submit
 JSS(engine_result_code);      // out: NetworkOPs, TransactionSign, Submit
@@ -440,8 +444,10 @@ JSS(random);                // out: Random
 JSS(raw_meta);              // out: AcceptedLedgerTx
 JSS(receive_currencies);    // out: AccountCurrencies
 JSS(reference_level);       // out: TxQ
+JSS(refresh_interval);      // in: UNL
 JSS(refresh_interval_min);  // out: ValidatorSites
 JSS(regular_seed);          // in/out: LedgerEntry
+JSS(remaining);             // out: ValidatorList
 JSS(remote);                // out: Logic.h
 JSS(request);               // RPC
 JSS(requested);             // out: Manifest
@@ -472,6 +478,7 @@ JSS(seq);                       // in: LedgerEntry;
                                 // out: NetworkOPs, RPCSub, AccountOffers,
                                 //      ValidatorList, ValidatorInfo, Manifest
 JSS(seqNum);                    // out: LedgerToJson
+JSS(sequence);                  // in: UNL
 JSS(sequence_count);            // out: AccountInfo
 JSS(server_domain);             // out: NetworkOPs
 JSS(server_state);              // out: NetworkOPs

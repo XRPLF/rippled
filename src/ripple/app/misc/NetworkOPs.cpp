@@ -427,6 +427,11 @@ public:
     setMode(OperatingMode om) override;
 
     bool
+    isFunctionallyBlocked() override
+    {
+        return isAmendmentBlocked() || isExpiredValidatorList();
+    }
+    bool
     isAmendmentBlocked() override
     {
         return amendmentBlocked_;
@@ -447,6 +452,18 @@ public:
     clearAmendmentWarned() override
     {
         amendmentWarned_ = false;
+    }
+    bool
+    isExpiredValidatorList() override
+    {
+        return expiredValidatorList_;
+    }
+    void
+    setExpiredValidatorList() override;
+    void
+    clearExpiredValidatorList() override
+    {
+        expiredValidatorList_ = false;
     }
     void
     consensusViewChange() override;
@@ -720,6 +737,7 @@ private:
     std::atomic<bool> needNetworkLedger_{false};
     std::atomic<bool> amendmentBlocked_{false};
     std::atomic<bool> amendmentWarned_{false};
+    std::atomic<bool> expiredValidatorList_{false};
 
     ClosureCounter<void, boost::system::error_code const&> waitHandlerCounter_;
     boost::asio::steady_timer heartbeatTimer_;
@@ -1561,6 +1579,13 @@ NetworkOPsImp::setAmendmentBlocked()
     setMode(OperatingMode::TRACKING);
 }
 
+void
+NetworkOPsImp::setExpiredValidatorList()
+{
+    expiredValidatorList_ = true;
+    setMode(OperatingMode::TRACKING);
+}
+
 bool
 NetworkOPsImp::checkLastClosedLedger(
     const Overlay::PeerSequence& peerList,
@@ -1752,7 +1777,11 @@ NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
     if (prevLedger->rules().enabled(featureNegativeUNL))
         app_.validators().setNegativeUNL(prevLedger->negativeUNL());
     TrustChanges const changes = app_.validators().updateTrusted(
-        app_.getValidations().getCurrentNodeIDs());
+        app_.getValidations().getCurrentNodeIDs(),
+        closingInfo.parentCloseTime,
+        *this,
+        app_.overlay(),
+        app_.getHashRouter());
 
     if (!changes.added.empty() || !changes.removed.empty())
         app_.getValidations().trustChanged(changes.added, changes.removed);
@@ -2154,7 +2183,7 @@ NetworkOPsImp::setMode(OperatingMode om)
             om = OperatingMode::CONNECTED;
     }
 
-    if ((om > OperatingMode::TRACKING) && amendmentBlocked_)
+    if ((om > OperatingMode::TRACKING) && isFunctionallyBlocked())
         om = OperatingMode::TRACKING;
 
     if (mMode == om)
@@ -2504,6 +2533,15 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             w[jss::message] =
                 "This server is amendment blocked, and must be updated to be "
                 "able to stay in sync with the network.";
+        }
+        if (isExpiredValidatorList())
+        {
+            Json::Value& w = warnings.append(Json::objectValue);
+            w[jss::id] = warnRPC_EXPIRED_VALIDATOR_LIST;
+            w[jss::message] =
+                "This server has an expired validator list. validators.txt "
+                "may be incorrectly configured or some [validator_list_sites] "
+                "may be unreachable.";
         }
         if (admin && isAmendmentWarned())
         {
