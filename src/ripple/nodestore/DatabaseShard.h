@@ -78,13 +78,13 @@ public:
     virtual boost::optional<std::uint32_t>
     prepareLedger(std::uint32_t validLedgerSeq) = 0;
 
-    /** Prepare a shard index to be imported into the database
+    /** Prepare one or more shard indexes to be imported into the database
 
-        @param shardIndex Shard index to be prepared for import
-        @return true if shard index successfully prepared for import
+        @param shardIndexes Shard indexes to be prepared for import
+        @return true if all shard indexes successfully prepared for import
     */
     virtual bool
-    prepareShard(std::uint32_t shardIndex) = 0;
+    prepareShards(std::vector<std::uint32_t> const& shardIndexes) = 0;
 
     /** Remove a previously prepared shard index for import
 

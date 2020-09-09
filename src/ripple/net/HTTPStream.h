@@ -38,24 +38,14 @@ public:
 
     virtual ~HTTPStream() = default;
 
-    template <class T>
-    static std::unique_ptr<HTTPStream>
-    makeUnique(
-        Config const& config,
-        boost::asio::io_service::strand& strand,
-        beast::Journal j)
-    {
-        return std::make_unique<T>(config, strand, j);
-    }
-
     [[nodiscard]] virtual boost::asio::ip::tcp::socket&
     getStream() = 0;
 
     [[nodiscard]] virtual bool
     connect(
         std::string& errorOut,
-        std::string const host,
-        std::string const port,
+        std::string const& host,
+        std::string const& port,
         boost::asio::yield_context& yield) = 0;
 
     virtual void
@@ -68,7 +58,13 @@ public:
     asyncRead(
         boost::beast::flat_buffer& buf,
         parser& p,
-        bool readSome,
+        boost::asio::yield_context& yield,
+        boost::system::error_code& ec) = 0;
+
+    virtual void
+    asyncReadSome(
+        boost::beast::flat_buffer& buf,
+        parser& p,
         boost::asio::yield_context& yield,
         boost::system::error_code& ec) = 0;
 };
@@ -89,8 +85,8 @@ public:
     bool
     connect(
         std::string& errorOut,
-        std::string const host,
-        std::string const port,
+        std::string const& host,
+        std::string const& port,
         boost::asio::yield_context& yield) override;
 
     void
@@ -103,7 +99,13 @@ public:
     asyncRead(
         boost::beast::flat_buffer& buf,
         parser& p,
-        bool readSome,
+        boost::asio::yield_context& yield,
+        boost::system::error_code& ec) override;
+
+    void
+    asyncReadSome(
+        boost::beast::flat_buffer& buf,
+        parser& p,
         boost::asio::yield_context& yield,
         boost::system::error_code& ec) override;
 
@@ -117,10 +119,7 @@ private:
 class RawStream : public HTTPStream
 {
 public:
-    RawStream(
-        Config const& config,
-        boost::asio::io_service::strand& strand,
-        beast::Journal j);
+    RawStream(boost::asio::io_service::strand& strand);
 
     virtual ~RawStream() = default;
 
@@ -130,8 +129,8 @@ public:
     bool
     connect(
         std::string& errorOut,
-        std::string const host,
-        std::string const port,
+        std::string const& host,
+        std::string const& port,
         boost::asio::yield_context& yield) override;
 
     void
@@ -144,7 +143,13 @@ public:
     asyncRead(
         boost::beast::flat_buffer& buf,
         parser& p,
-        bool readSome,
+        boost::asio::yield_context& yield,
+        boost::system::error_code& ec) override;
+
+    void
+    asyncReadSome(
+        boost::beast::flat_buffer& buf,
+        parser& p,
         boost::asio::yield_context& yield,
         boost::system::error_code& ec) override;
 

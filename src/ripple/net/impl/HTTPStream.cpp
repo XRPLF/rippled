@@ -40,8 +40,8 @@ SSLStream::getStream()
 bool
 SSLStream::connect(
     std::string& errorOut,
-    std::string const host,
-    std::string const port,
+    std::string const& host,
+    std::string const& port,
     boost::asio::yield_context& yield)
 {
     using namespace boost::asio;
@@ -49,8 +49,10 @@ SSLStream::connect(
 
     boost::system::error_code ec;
 
-    auto fail = [&errorOut](std::string const& errorIn) {
-        errorOut = errorIn;
+    auto fail = [&errorOut, &ec](
+                    std::string const& errorIn,
+                    std::string const& message = "") {
+        errorOut = errorIn + ": " + (message.empty() ? ec.message() : message);
         return false;
     };
 
@@ -65,7 +67,7 @@ SSLStream::connect(
     }
     catch (std::exception const& e)
     {
-        return fail(std::string("exception: ") + e.what());
+        return fail("exception", e.what());
     }
 
     ec = ssl_ctx_.preConnectVerify(*stream_, host);
@@ -101,21 +103,23 @@ void
 SSLStream::asyncRead(
     boost::beast::flat_buffer& buf,
     parser& p,
-    bool readSome,
     boost::asio::yield_context& yield,
     boost::system::error_code& ec)
 {
-    if (readSome)
-        boost::beast::http::async_read_some(*stream_, buf, p, yield[ec]);
-    else
-        boost::beast::http::async_read(*stream_, buf, p, yield[ec]);
+    boost::beast::http::async_read(*stream_, buf, p, yield[ec]);
 }
 
-RawStream::RawStream(
-    Config const& config,
-    boost::asio::io_service::strand& strand,
-    beast::Journal j)
-    : strand_(strand)
+void
+SSLStream::asyncReadSome(
+    boost::beast::flat_buffer& buf,
+    parser& p,
+    boost::asio::yield_context& yield,
+    boost::system::error_code& ec)
+{
+    boost::beast::http::async_read_some(*stream_, buf, p, yield[ec]);
+}
+
+RawStream::RawStream(boost::asio::io_service::strand& strand) : strand_(strand)
 {
 }
 
@@ -129,8 +133,8 @@ RawStream::getStream()
 bool
 RawStream::connect(
     std::string& errorOut,
-    std::string const host,
-    std::string const port,
+    std::string const& host,
+    std::string const& port,
     boost::asio::yield_context& yield)
 {
     using namespace boost::asio;
@@ -138,8 +142,10 @@ RawStream::connect(
 
     boost::system::error_code ec;
 
-    auto fail = [&errorOut](std::string const& errorIn) {
-        errorOut = errorIn;
+    auto fail = [&errorOut, &ec](
+                    std::string const& errorIn,
+                    std::string const& message = "") {
+        errorOut = errorIn + ": " + (message.empty() ? ec.message() : message);
         return false;
     };
 
@@ -154,7 +160,7 @@ RawStream::connect(
     }
     catch (std::exception const& e)
     {
-        return fail(std::string("exception: ") + e.what());
+        return fail("exception", e.what());
     }
 
     boost::asio::async_connect(
@@ -178,14 +184,20 @@ void
 RawStream::asyncRead(
     boost::beast::flat_buffer& buf,
     parser& p,
-    bool readSome,
     boost::asio::yield_context& yield,
     boost::system::error_code& ec)
 {
-    if (readSome)
-        boost::beast::http::async_read_some(*stream_, buf, p, yield[ec]);
-    else
-        boost::beast::http::async_read(*stream_, buf, p, yield[ec]);
+    boost::beast::http::async_read(*stream_, buf, p, yield[ec]);
+}
+
+void
+RawStream::asyncReadSome(
+    boost::beast::flat_buffer& buf,
+    parser& p,
+    boost::asio::yield_context& yield,
+    boost::system::error_code& ec)
+{
+    boost::beast::http::async_read_some(*stream_, buf, p, yield[ec]);
 }
 
 }  // namespace ripple

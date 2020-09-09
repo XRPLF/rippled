@@ -86,6 +86,19 @@ DatabaseCon::~DatabaseCon()
     if (checkpointer_)
     {
         checkpointers.erase(checkpointer_->id());
+
+        std::weak_ptr<Checkpointer> wk(checkpointer_);
+        checkpointer_.reset();
+
+        // The references to our Checkpointer held by 'checkpointer_' and
+        // 'checkpointers' have been removed, so if the use count is nonzero, a
+        // checkpoint is currently in progress. Wait for it to end, otherwise
+        // creating a new DatabaseCon to the same database may fail due to the
+        // database being locked by our (now old) Checkpointer.
+        while (wk.use_count())
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
     }
 }
 

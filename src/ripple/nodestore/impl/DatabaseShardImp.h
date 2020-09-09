@@ -55,7 +55,7 @@ public:
     prepareLedger(std::uint32_t validLedgerSeq) override;
 
     bool
-    prepareShard(std::uint32_t shardIndex) override;
+    prepareShards(std::vector<std::uint32_t> const& shardIndexes) override;
 
     void
     removePreShard(std::uint32_t shardIndex) override;

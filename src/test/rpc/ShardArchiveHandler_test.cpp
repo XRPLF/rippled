@@ -24,6 +24,7 @@
 #include <ripple/nodestore/impl/DecodedBlob.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/ShardArchiveHandler.h>
+#include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TrustedPublisherServer.h>
 #include <test/jtx/envconfig.h>
@@ -49,9 +50,9 @@ class ShardArchiveHandler_test : public beast::unit_test::suite
     }
 
 public:
-    // Test the shard downloading module by initiating
-    // and completing a download and verifying the
-    // contents of the state database.
+    // Test the shard downloading module by queueing
+    // a download and verifying the contents of the
+    // state database.
     void
     testSingleDownloadAndStateDB()
     {
@@ -98,9 +99,9 @@ public:
         handler->release();
     }
 
-    // Test the shard downloading module by initiating
-    // and completing three downloads and verifying
-    // the contents of the state database.
+    // Test the shard downloading module by queueing
+    // three downloads and verifying the contents of
+    // the state database.
     void
     testDownloadsAndStateDB()
     {
@@ -414,6 +415,251 @@ public:
         BEAST_EXPECT(!boost::filesystem::exists(stateDir));
     }
 
+    // Ensure that downloads fail when the shard
+    // database cannot store any more shards
+    void
+    testShardCountFailure()
+    {
+        testcase("testShardCountFailure");
+        std::string capturedLogs;
+
+        {
+            beast::temp_dir tempDir;
+
+            auto c = jtx::envconfig();
+            auto& section = c->section(ConfigSection::shardDatabase());
+            section.set("path", tempDir.path());
+            section.set("max_historical_shards", "1");
+            section.set("ledgers_per_shard", "256");
+            section.set("earliest_seq", "257");
+            auto& sectionNode = c->section(ConfigSection::nodeDatabase());
+            sectionNode.set("earliest_seq", "257");
+            c->setupControl(true, true, true);
+
+            std::unique_ptr<Logs> logs(new CaptureLogs(&capturedLogs));
+            jtx::Env env(*this, std::move(c), std::move(logs));
+
+            std::uint8_t const numberOfDownloads = 10;
+
+            // Create some ledgers so that the ShardArchiveHandler
+            // can verify the last ledger hash for the shard
+            // downloads.
+            for (int i = 0; i < env.app().getShardStore()->ledgersPerShard() *
+                     (numberOfDownloads + 1);
+                 ++i)
+            {
+                env.close();
+            }
+
+            auto handler = env.app().getShardArchiveHandler();
+            BEAST_EXPECT(handler);
+            BEAST_EXPECT(
+                dynamic_cast<RPC::RecoveryHandler*>(handler) == nullptr);
+
+            auto server = createServer(env);
+            auto host = server->local_endpoint().address().to_string();
+            auto port = std::to_string(server->local_endpoint().port());
+            server->stop();
+
+            Downloads const dl = [count = numberOfDownloads, &host, &port] {
+                Downloads ret;
+
+                for (int i = 1; i <= count; ++i)
+                {
+                    ret.push_back(
+                        {i,
+                         (boost::format("https://%s:%d/%d.tar.lz4") % host %
+                          port % i)
+                             .str()});
+                }
+
+                return ret;
+            }();
+
+            for (auto const& entry : dl)
+            {
+                parsedURL url;
+                parseUrl(url, entry.second);
+                handler->add(entry.first, {url, entry.second});
+            }
+
+            BEAST_EXPECT(!handler->start());
+            auto stateDir = RPC::ShardArchiveHandler::getDownloadDirectory(
+                env.app().config());
+
+            handler->release();
+            BEAST_EXPECT(!boost::filesystem::exists(stateDir));
+        }
+
+        auto const expectedErrorMessage =
+            "shards 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 maximum number of historical "
+            "shards reached";
+        BEAST_EXPECT(
+            capturedLogs.find(expectedErrorMessage) != std::string::npos);
+
+        {
+            beast::temp_dir tempDir;
+
+            auto c = jtx::envconfig();
+            auto& section = c->section(ConfigSection::shardDatabase());
+            section.set("path", tempDir.path());
+            section.set("max_historical_shards", "0");
+            section.set("ledgers_per_shard", "256");
+            section.set("earliest_seq", "257");
+            auto& sectionNode = c->section(ConfigSection::nodeDatabase());
+            sectionNode.set("earliest_seq", "257");
+            c->setupControl(true, true, true);
+
+            std::unique_ptr<Logs> logs(new CaptureLogs(&capturedLogs));
+            jtx::Env env(*this, std::move(c), std::move(logs));
+
+            std::uint8_t const numberOfDownloads = 1;
+
+            // Create some ledgers so that the ShardArchiveHandler
+            // can verify the last ledger hash for the shard
+            // downloads.
+            for (int i = 0; i < env.app().getShardStore()->ledgersPerShard() *
+                     ((numberOfDownloads * 3) + 1);
+                 ++i)
+            {
+                env.close();
+            }
+
+            auto handler = env.app().getShardArchiveHandler();
+            BEAST_EXPECT(handler);
+            BEAST_EXPECT(
+                dynamic_cast<RPC::RecoveryHandler*>(handler) == nullptr);
+
+            auto server = createServer(env);
+            auto host = server->local_endpoint().address().to_string();
+            auto port = std::to_string(server->local_endpoint().port());
+            server->stop();
+
+            Downloads const dl = [count = numberOfDownloads, &host, &port] {
+                Downloads ret;
+
+                for (int i = 1; i <= count; ++i)
+                {
+                    ret.push_back(
+                        {i,
+                         (boost::format("https://%s:%d/%d.tar.lz4") % host %
+                          port % i)
+                             .str()});
+                }
+
+                return ret;
+            }();
+
+            for (auto const& entry : dl)
+            {
+                parsedURL url;
+                parseUrl(url, entry.second);
+                handler->add(entry.first, {url, entry.second});
+            }
+
+            BEAST_EXPECT(!handler->start());
+            auto stateDir = RPC::ShardArchiveHandler::getDownloadDirectory(
+                env.app().config());
+
+            handler->release();
+            BEAST_EXPECT(!boost::filesystem::exists(stateDir));
+        }
+
+        auto const expectedErrorMessage2 =
+            "shard 1 maximum number of historical shards reached";
+        BEAST_EXPECT(
+            capturedLogs.find(expectedErrorMessage2) != std::string::npos);
+    }
+
+    // Ensure that downloads fail when the shard
+    // database has already stored one of the
+    // queued shards
+    void
+    testRedundantShardFailure()
+    {
+        testcase("testRedundantShardFailure");
+        std::string capturedLogs;
+
+        {
+            beast::temp_dir tempDir;
+
+            auto c = jtx::envconfig();
+            auto& section = c->section(ConfigSection::shardDatabase());
+            section.set("path", tempDir.path());
+            section.set("max_historical_shards", "1");
+            section.set("ledgers_per_shard", "256");
+            section.set("earliest_seq", "257");
+            auto& sectionNode = c->section(ConfigSection::nodeDatabase());
+            sectionNode.set("earliest_seq", "257");
+            c->setupControl(true, true, true);
+
+            std::unique_ptr<Logs> logs(new CaptureLogs(&capturedLogs));
+            jtx::Env env(
+                *this,
+                std::move(c),
+                std::move(logs),
+                beast::severities::kDebug);
+
+            std::uint8_t const numberOfDownloads = 10;
+
+            // Create some ledgers so that the ShardArchiveHandler
+            // can verify the last ledger hash for the shard
+            // downloads.
+            for (int i = 0; i < env.app().getShardStore()->ledgersPerShard() *
+                     (numberOfDownloads + 1);
+                 ++i)
+            {
+                env.close();
+            }
+
+            env.app().getShardStore()->prepareShards({1});
+
+            auto handler = env.app().getShardArchiveHandler();
+            BEAST_EXPECT(handler);
+            BEAST_EXPECT(
+                dynamic_cast<RPC::RecoveryHandler*>(handler) == nullptr);
+
+            auto server = createServer(env);
+            auto host = server->local_endpoint().address().to_string();
+            auto port = std::to_string(server->local_endpoint().port());
+            server->stop();
+
+            Downloads const dl = [count = numberOfDownloads, &host, &port] {
+                Downloads ret;
+
+                for (int i = 1; i <= count; ++i)
+                {
+                    ret.push_back(
+                        {i,
+                         (boost::format("https://%s:%d/%d.tar.lz4") % host %
+                          port % i)
+                             .str()});
+                }
+
+                return ret;
+            }();
+
+            for (auto const& entry : dl)
+            {
+                parsedURL url;
+                parseUrl(url, entry.second);
+                handler->add(entry.first, {url, entry.second});
+            }
+
+            BEAST_EXPECT(!handler->start());
+            auto stateDir = RPC::ShardArchiveHandler::getDownloadDirectory(
+                env.app().config());
+
+            handler->release();
+            BEAST_EXPECT(!boost::filesystem::exists(stateDir));
+        }
+
+        auto const expectedErrorMessage =
+            "shard 1 is already queued for import";
+        BEAST_EXPECT(
+            capturedLogs.find(expectedErrorMessage) != std::string::npos);
+    }
+
     void
     run() override
     {
@@ -421,6 +667,8 @@ public:
         testDownloadsAndStateDB();
         testDownloadsAndFileSystem();
         testDownloadsAndRestart();
+        testShardCountFailure();
+        testRedundantShardFailure();
     }
 };
 
