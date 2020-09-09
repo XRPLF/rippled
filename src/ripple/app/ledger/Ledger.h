@@ -322,7 +322,7 @@ public:
     walkLedger(beast::Journal j) const;
 
     bool
-    assertSane(beast::Journal ledgerJ) const;
+    assertSensible(beast::Journal ledgerJ) const;
 
     void
     invariants() const;

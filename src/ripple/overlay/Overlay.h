@@ -120,11 +120,11 @@ public:
     virtual PeerSequence
     getActivePeers() const = 0;
 
-    /** Calls the checkSanity function on each peer
-        @param index the value to pass to the peer's checkSanity function
+    /** Calls the checkTracking function on each peer
+        @param index the value to pass to the peer's checkTracking function
     */
     virtual void
-    checkSanity(std::uint32_t index) = 0;
+    checkTracking(std::uint32_t index) = 0;
 
     /** Calls the check function on each peer
      */

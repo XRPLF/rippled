@@ -2041,9 +2041,9 @@ ApplicationImp::loadOldLedger(
             return false;
         }
 
-        if (!loadLedger->assertSane(journal("Ledger")))
+        if (!loadLedger->assertSensible(journal("Ledger")))
         {
-            JLOG(m_journal.fatal()) << "Ledger is not sane.";
+            JLOG(m_journal.fatal()) << "Ledger is not sensible.";
             assert(false);
             return false;
         }
