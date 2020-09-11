@@ -42,18 +42,9 @@ enum {
         reply */
     maxReplyNodes = 8192,
 
-    /** How often we check connections (seconds) */
-    checkSeconds = 32,
-
-    /** How often we latency/sendq probe connections */
-    timerSeconds = 8,
-
     /** How many timer intervals a sendq has to stay large before we disconnect
      */
     sendqIntervals = 4,
-
-    /** How many timer intervals we can go without a ping reply */
-    noPing = 10,
 
     /** How many messages on a send queue before we refuse queries */
     dropSendQueue = 192,
@@ -67,9 +58,6 @@ enum {
     /** How often we check for idle peers (seconds) */
     checkIdlePeers = 4,
 };
-
-/** The threshold above which we treat a peer connection as high latency */
-std::chrono::milliseconds constexpr peerHighLatency{300};
 
 }  // namespace Tuning
 
