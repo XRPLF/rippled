@@ -4163,6 +4163,7 @@ public:
         env.close();
         env.fund(XRP(10000), fiona);
         env.close();
+        checkMetrics(env, 0, 10, 0, 2, 256);
 
         // Close ledgers until the amendments show up.
         int i = 0;
@@ -4172,6 +4173,9 @@ public:
             if (!getMajorityAmendments(*env.closed()).empty())
                 break;
         }
+        auto expectedPerLedger =
+            ripple::detail::supportedAmendments().size() + 1;
+        checkMetrics(env, 0, 5 * expectedPerLedger, 0, expectedPerLedger, 256);
 
         // Now wait 2 weeks modulo 256 ledgers for the amendments to be
         // enabled.  Speed the process by closing ledgers every 80 minutes,
@@ -4183,7 +4187,13 @@ public:
 
         // We're very close to the flag ledger.  Fill the ledger.
         fillQueue(env, alice);
-        checkMetrics(env, 0, 195, 40, 39, 256);
+        checkMetrics(
+            env,
+            0,
+            5 * expectedPerLedger,
+            expectedPerLedger + 1,
+            expectedPerLedger,
+            256);
 
         // Fill everyone's queues.
         auto seqAlice = env.seq(alice);
@@ -4201,7 +4211,14 @@ public:
             env(noop(ellie), seq(seqEllie++), ter(terQUEUED));
             env(noop(fiona), seq(seqFiona++), ter(terQUEUED));
         }
-        checkMetrics(env, 60, 195, 40, 39, 256);
+        std::size_t expectedInQueue = 60;
+        checkMetrics(
+            env,
+            expectedInQueue,
+            5 * expectedPerLedger,
+            expectedPerLedger + 1,
+            expectedPerLedger,
+            256);
 
         // The next close should cause the in-ledger amendments to change.
         // Alice's queued transactions have a cached PreflightResult
@@ -4213,22 +4230,78 @@ public:
         // transactions, so we won't see any change in the transaction
         // outcomes.  But code coverage is affected.
         env.close(closeDuration);
-        checkMetrics(env, 19, 200, 41, 40, 256);
-        BEAST_EXPECT(env.seq(alice) == seqAlice - 3);
-        BEAST_EXPECT(env.seq(bob) == seqBob - 3);
-        BEAST_EXPECT(env.seq(carol) == seqCarol - 3);
-        BEAST_EXPECT(env.seq(daria) == seqDaria - 3);
-        BEAST_EXPECT(env.seq(ellie) == seqEllie - 3);
-        BEAST_EXPECT(env.seq(fiona) == seqFiona - 4);
+        expectedInQueue -= expectedPerLedger + 2;
+        ++expectedPerLedger;
+        checkMetrics(
+            env,
+            expectedInQueue,
+            5 * expectedPerLedger,
+            expectedPerLedger + 1,
+            expectedPerLedger,
+            256);
+        {
+            auto const expectedPerAccount = expectedInQueue / 6;
+            auto const expectedRemainder = expectedInQueue % 6;
+            BEAST_EXPECT(env.seq(alice) == seqAlice - expectedPerAccount);
+            BEAST_EXPECT(
+                env.seq(bob) ==
+                seqBob - expectedPerAccount - (expectedRemainder > 4 ? 1 : 0));
+            BEAST_EXPECT(
+                env.seq(carol) ==
+                seqCarol - expectedPerAccount -
+                    (expectedRemainder > 3 ? 1 : 0));
+            BEAST_EXPECT(
+                env.seq(daria) ==
+                seqDaria - expectedPerAccount -
+                    (expectedRemainder > 2 ? 1 : 0));
+            BEAST_EXPECT(
+                env.seq(ellie) ==
+                seqEllie - expectedPerAccount -
+                    (expectedRemainder > 1 ? 1 : 0));
+            BEAST_EXPECT(
+                env.seq(fiona) ==
+                seqFiona - expectedPerAccount -
+                    (expectedRemainder > 0 ? 1 : 0));
+        }
 
         env.close(closeDuration);
-        checkMetrics(env, 0, 205, 19, 41, 256);
-        BEAST_EXPECT(env.seq(alice) == seqAlice);
-        BEAST_EXPECT(env.seq(bob) == seqBob);
-        BEAST_EXPECT(env.seq(carol) == seqCarol);
-        BEAST_EXPECT(env.seq(daria) == seqDaria);
-        BEAST_EXPECT(env.seq(ellie) == seqEllie);
-        BEAST_EXPECT(env.seq(fiona) == seqFiona);
+        auto expectedInLedger = expectedInQueue;
+        expectedInQueue =
+            (expectedInQueue > expectedPerLedger + 2
+                 ? expectedInQueue - (expectedPerLedger + 2)
+                 : 0);
+        ++expectedPerLedger;
+        checkMetrics(
+            env,
+            0,
+            5 * expectedPerLedger,
+            expectedInLedger,
+            expectedPerLedger,
+            256);
+        {
+            auto const expectedPerAccount = expectedInQueue / 6;
+            auto const expectedRemainder = expectedInQueue % 6;
+            BEAST_EXPECT(env.seq(alice) == seqAlice - expectedPerAccount);
+            BEAST_EXPECT(
+                env.seq(bob) ==
+                seqBob - expectedPerAccount - (expectedRemainder > 4 ? 1 : 0));
+            BEAST_EXPECT(
+                env.seq(carol) ==
+                seqCarol - expectedPerAccount -
+                    (expectedRemainder > 3 ? 1 : 0));
+            BEAST_EXPECT(
+                env.seq(daria) ==
+                seqDaria - expectedPerAccount -
+                    (expectedRemainder > 2 ? 1 : 0));
+            BEAST_EXPECT(
+                env.seq(ellie) ==
+                seqEllie - expectedPerAccount -
+                    (expectedRemainder > 1 ? 1 : 0));
+            BEAST_EXPECT(
+                env.seq(fiona) ==
+                seqFiona - expectedPerAccount -
+                    (expectedRemainder > 0 ? 1 : 0));
+        }
     }
 
     void
