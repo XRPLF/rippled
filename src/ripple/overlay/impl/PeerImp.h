@@ -90,7 +90,7 @@ private:
     // These are up here to prevent warnings about order of initializations
     //
     OverlayImpl& overlay_;
-    bool const m_inbound;
+    bool const inbound_;
 
     // Protocol version to use for this link
     ProtocolVersion protocol_;
@@ -144,9 +144,6 @@ private:
     //
     // o name_
     // o last_status_
-    // o lastPingSeq_
-    // o lastPingTime_
-    // o no_ping_
     //
     // June 2019
 
@@ -163,7 +160,6 @@ private:
     std::queue<std::shared_ptr<Message>> send_queue_;
     bool gracefulClose_ = false;
     int large_sendq_ = 0;
-    int no_ping_ = 0;
     std::unique_ptr<LoadEvent> load_event_;
     // The highest sequence of each PublisherList that has
     // been sent to or received from this peer.
@@ -593,11 +589,12 @@ PeerImp::PeerImp(
     , timer_(waitable_timer{socket_.get_executor()})
     , remote_address_(slot->remote_endpoint())
     , overlay_(overlay)
-    , m_inbound(false)
+    , inbound_(false)
     , protocol_(protocol)
     , tracking_(Tracking::unknown)
     , trackingTime_(clock_type::now())
     , publicKey_(publicKey)
+    , lastPingTime_(clock_type::now())
     , creationTime_(clock_type::now())
     , usage_(usage)
     , fee_(Resource::feeLightPeer)

@@ -54,6 +54,14 @@ using namespace std::chrono_literals;
 
 namespace ripple {
 
+namespace {
+/** The threshold above which we treat a peer connection as high latency */
+std::chrono::milliseconds constexpr peerHighLatency{300};
+
+/** How often we PING the peer to check for latency and sendq probe */
+std::chrono::seconds constexpr peerTimerInterval{60};
+}  // namespace
+
 PeerImp::PeerImp(
     Application& app,
     id_t id,
@@ -78,11 +86,12 @@ PeerImp::PeerImp(
     , timer_(waitable_timer{socket_.get_executor()})
     , remote_address_(slot->remote_endpoint())
     , overlay_(overlay)
-    , m_inbound(true)
+    , inbound_(true)
     , protocol_(protocol)
     , tracking_(Tracking::unknown)
     , trackingTime_(clock_type::now())
     , publicKey_(publicKey)
+    , lastPingTime_(clock_type::now())
     , creationTime_(clock_type::now())
     , usage_(consumer)
     , fee_(Resource::feeLightPeer)
@@ -168,7 +177,7 @@ PeerImp::run()
             previousLedgerHash_ = *previous;
     }
 
-    if (m_inbound)
+    if (inbound_)
         doAccept();
     else
         doProtocolStart();
@@ -193,7 +202,7 @@ PeerImp::stop()
         // at a higher level, but inbound connections are more numerous and
         // uncontrolled so to prevent log flooding the severity is reduced.
         //
-        if (m_inbound)
+        if (inbound_)
         {
             JLOG(journal_.debug()) << "Stop";
         }
@@ -294,7 +303,7 @@ PeerImp::cluster() const
 std::string
 PeerImp::getVersion() const
 {
-    if (m_inbound)
+    if (inbound_)
         return headers_["User-Agent"].to_string();
     return headers_["Server"].to_string();
 }
@@ -307,7 +316,7 @@ PeerImp::json()
     ret[jss::public_key] = toBase58(TokenType::NodePublic, publicKey_);
     ret[jss::address] = remote_address_.to_string();
 
-    if (m_inbound)
+    if (inbound_)
         ret[jss::inbound] = true;
 
     if (cluster())
@@ -505,7 +514,7 @@ PeerImp::close()
         timer_.cancel(ec);
         socket_.close(ec);
         overlay_.incPeerDisconnect();
-        if (m_inbound)
+        if (inbound_)
         {
             JLOG(journal_.debug()) << "Closed";
         }
@@ -592,7 +601,7 @@ void
 PeerImp::setTimer()
 {
     error_code ec;
-    timer_.expires_from_now(std::chrono::seconds(Tuning::timerSeconds), ec);
+    timer_.expires_from_now(peerTimerInterval, ec);
 
     if (ec)
     {
@@ -645,49 +654,41 @@ PeerImp::onTimer(error_code const& ec)
         return;
     }
 
-    bool failedNoPing{false};
-    boost::optional<std::uint32_t> pingSeq;
-    // Operations on lastPingSeq_, lastPingTime_, no_ping_, and latency_
-    // must be guarded by recentLock_.
+    if (auto const t = tracking_.load(); !inbound_ && t != Tracking::converged)
     {
-        std::lock_guard sl(recentLock_);
-        if (no_ping_++ >= Tuning::noPing)
-        {
-            failedNoPing = true;
-        }
-        else if (!lastPingSeq_)
-        {
-            // Make the sequence unpredictable enough to prevent guessing
-            lastPingSeq_ = rand_int<std::uint32_t>();
-            lastPingTime_ = clock_type::now();
-            pingSeq = lastPingSeq_;
-        }
-        else
-        {
-            // We have an outstanding ping, raise latency
-            auto const minLatency =
-                std::chrono::duration_cast<std::chrono::milliseconds>(
-                    clock_type::now() - lastPingTime_);
+        clock_type::duration duration;
 
-            if (latency_ < minLatency)
-                latency_ = minLatency;
+        {
+            std::lock_guard sl(recentLock_);
+            duration = clock_type::now() - trackingTime_;
+        }
+
+        if ((t == Tracking::diverged &&
+             (duration > app_.config().MAX_DIVERGED_TIME)) ||
+            (t == Tracking::unknown &&
+             (duration > app_.config().MAX_UNKNOWN_TIME)))
+        {
+            overlay_.peerFinder().on_failure(slot_);
+            fail("Not useful");
+            return;
         }
     }
 
-    if (failedNoPing)
+    // Already waiting for PONG
+    if (lastPingSeq_)
     {
-        fail("No ping reply received");
+        fail("Ping Timeout");
         return;
     }
 
-    if (pingSeq)
-    {
-        protocol::TMPing message;
-        message.set_type(protocol::TMPing::ptPING);
-        message.set_seq(*pingSeq);
+    lastPingTime_ = clock_type::now();
+    lastPingSeq_ = rand_int<std::uint32_t>();
 
-        send(std::make_shared<Message>(message, protocol::mtPING));
-    }
+    protocol::TMPing message;
+    message.set_type(protocol::TMPing::ptPING);
+    message.set_seq(*lastPingSeq_);
+
+    send(std::make_shared<Message>(message, protocol::mtPING));
 
     setTimer();
 }
@@ -1043,31 +1044,25 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMPing> const& m)
         return;
     }
 
-    if (m->type() == protocol::TMPing::ptPONG)
+    if (m->type() == protocol::TMPing::ptPONG && m->has_seq())
     {
-        // Operations on lastPingSeq_, lastPingTime_, no_ping_, and latency_
-        // must be guarded by recentLock_.
-        std::lock_guard sl(recentLock_);
-
-        if (m->has_seq() && m->seq() == lastPingSeq_)
+        // Only reset the ping sequence if we actually received a
+        // PONG with the correct cookie. That way, any peers which
+        // respond with incorrect cookies will eventually time out.
+        if (m->seq() == lastPingSeq_)
         {
-            no_ping_ = 0;
-
-            // Only reset the ping sequence if we actually received a
-            // PONG with the correct cookie. That way, any peers which
-            // respond with incorrect cookies will eventually time out.
             lastPingSeq_.reset();
 
             // Update latency estimate
-            auto const estimate =
-                std::chrono::duration_cast<std::chrono::milliseconds>(
-                    clock_type::now() - lastPingTime_);
+            auto const rtt = std::chrono::round<std::chrono::milliseconds>(
+                clock_type::now() - lastPingTime_);
 
-            // Calculate the cumulative moving average of the latency:
+            std::lock_guard sl(recentLock_);
+
             if (latency_)
-                latency_ = (*latency_ * 7 + estimate) / 8;
+                latency_ = (*latency_ * 7 + rtt) / 8;
             else
-                latency_ = estimate;
+                latency_ = rtt;
         }
 
         return;
@@ -1871,46 +1866,6 @@ PeerImp::checkTracking(std::uint32_t seq1, std::uint32_t seq2)
 
         tracking_ = Tracking::diverged;
         trackingTime_ = clock_type::now();
-    }
-}
-
-// Should this connection be rejected
-// and considered a failure
-void
-PeerImp::check()
-{
-    if (m_inbound)
-        return;
-
-    auto const sanity = tracking_.load();
-
-    if (sanity == Tracking::converged)
-        return;
-
-    clock_type::duration duration;
-
-    {
-        std::lock_guard sl(recentLock_);
-        duration = clock_type::now() - trackingTime_;
-    }
-
-    bool reject = false;
-
-    if (sanity == Tracking::diverged)
-        reject = (duration > app_.config().MAX_DIVERGED_TIME);
-
-    if (sanity == Tracking::unknown)
-        reject = (duration > app_.config().MAX_UNKNOWN_TIME);
-
-    if (reject)
-    {
-        overlay_.peerFinder().on_failure(slot_);
-        post(
-            strand_,
-            std::bind(
-                (void (PeerImp::*)(std::string const&)) & PeerImp::fail,
-                shared_from_this(),
-                "Not useful"));
     }
 }
 
@@ -2988,7 +2943,7 @@ bool
 PeerImp::isHighLatency() const
 {
     std::lock_guard sl(recentLock_);
-    return latency_ >= Tuning::peerHighLatency;
+    return latency_ >= peerHighLatency;
 }
 
 void
