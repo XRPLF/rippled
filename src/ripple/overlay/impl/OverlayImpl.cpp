@@ -100,9 +100,6 @@ OverlayImpl::Timer::on_timer(error_code ec)
     overlay_.sendEndpoints();
     overlay_.autoConnect();
 
-    if ((++overlay_.timer_count_ % Tuning::checkSeconds) == 0)
-        overlay_.check();
-
     if ((overlay_.timer_count_ % Tuning::checkIdlePeers) == 0)
         overlay_.deleteIdlePeers();
 
@@ -1211,12 +1208,6 @@ OverlayImpl::checkTracking(std::uint32_t index)
 {
     for_each(
         [index](std::shared_ptr<PeerImp>&& sp) { sp->checkTracking(index); });
-}
-
-void
-OverlayImpl::check()
-{
-    for_each([](std::shared_ptr<PeerImp>&& sp) { sp->check(); });
 }
 
 std::shared_ptr<Peer>

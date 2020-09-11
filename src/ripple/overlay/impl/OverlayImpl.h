@@ -192,9 +192,6 @@ public:
     PeerSequence
     getActivePeers() const override;
 
-    void
-    check() override;
-
     void checkTracking(std::uint32_t) override;
 
     std::shared_ptr<Peer>
