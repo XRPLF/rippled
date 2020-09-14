@@ -20,9 +20,11 @@
 #ifndef RIPPLE_TEST_CSF_SCHEDULER_H_INCLUDED
 #define RIPPLE_TEST_CSF_SCHEDULER_H_INCLUDED
 
-#include <ripple/basics/qalloc.h>
 #include <ripple/beast/clock/manual_clock.h>
+
+#include <boost/container/pmr/monotonic_buffer_resource.hpp>
 #include <boost/intrusive/set.hpp>
+
 #include <type_traits>
 #include <utility>
 
@@ -109,8 +111,8 @@ private:
         using by_when_set = typename boost::intrusive::make_multiset<
             event,
             boost::intrusive::constant_time_size<false>>::type;
-
-        qalloc alloc_;
+        // alloc_ is owned by the scheduler
+        boost::container::pmr::monotonic_buffer_resource* alloc_;
         by_when_set by_when_;
 
     public:
@@ -120,7 +122,8 @@ private:
         queue_type&
         operator=(queue_type const&) = delete;
 
-        explicit queue_type(qalloc const& alloc);
+        explicit queue_type(
+            boost::container::pmr::monotonic_buffer_resource* alloc);
 
         ~queue_type();
 
@@ -141,7 +144,7 @@ private:
         erase(iterator iter);
     };
 
-    qalloc alloc_;
+    boost::container::pmr::monotonic_buffer_resource alloc_{256 * 1024};
     queue_type queue_;
 
     // Aged containers that rely on this clock take a non-const reference =(
@@ -153,10 +156,6 @@ public:
     operator=(Scheduler const&) = delete;
 
     Scheduler();
-
-    /** Return the allocator. */
-    qalloc const&
-    alloc() const;
 
     /** Return the clock. (aged_containers want a non-const ref =( */
     clock_type&
@@ -275,7 +274,9 @@ public:
 
 //------------------------------------------------------------------------------
 
-inline Scheduler::queue_type::queue_type(qalloc const& alloc) : alloc_(alloc)
+inline Scheduler::queue_type::queue_type(
+    boost::container::pmr::monotonic_buffer_resource* alloc)
+    : alloc_(alloc)
 {
 }
 
@@ -286,7 +287,7 @@ inline Scheduler::queue_type::~queue_type()
         auto e = &*iter;
         ++iter;
         e->~event();
-        alloc_.dealloc(e, 1);
+        alloc_->deallocate(e, sizeof(e));
     }
 }
 
@@ -314,7 +315,7 @@ Scheduler::queue_type::emplace(time_point when, Handler&& h) ->
     typename by_when_set::iterator
 {
     using event_type = event_impl<std::decay_t<Handler>>;
-    auto const p = alloc_.alloc<event_type>(1);
+    auto const p = alloc_->allocate(sizeof(event_type));
     auto& e = *new (p) event_type(when, std::forward<Handler>(h));
     return by_when_.insert(e);
 }
@@ -325,7 +326,7 @@ Scheduler::queue_type::erase(iterator iter) -> typename by_when_set::iterator
     auto& e = *iter;
     auto next = by_when_.erase(iter);
     e.~event();
-    alloc_.dealloc(&e, 1);
+    alloc_->deallocate(&e, sizeof(e));
     return next;
 }
 
@@ -349,14 +350,8 @@ private:
 };
 
 //------------------------------------------------------------------------------
-inline Scheduler::Scheduler() : queue_(alloc_)
+inline Scheduler::Scheduler() : queue_(&alloc_)
 {
-}
-
-inline qalloc const&
-Scheduler::alloc() const
-{
-    return alloc_;
 }
 
 inline auto

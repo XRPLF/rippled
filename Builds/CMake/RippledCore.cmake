@@ -722,7 +722,6 @@ target_sources (rippled PRIVATE
   src/test/basics/FeeUnits_test.cpp
   src/test/basics/hardened_hash_test.cpp
   src/test/basics/mulDiv_test.cpp
-  src/test/basics/qalloc_test.cpp
   src/test/basics/tagged_integer_test.cpp
   #[===============================[
      test sources:

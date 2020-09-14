@@ -47,7 +47,7 @@ public:
             sle0_ = *iter0_;
         if (iter1_ != end1)
         {
-            sle1_ = iter1_->second.second;
+            sle1_ = std::get<1>(iter1_->second);
             skip();
         }
     }
@@ -129,13 +129,14 @@ private:
         if (iter1_ == end1_)
             sle1_ = nullptr;
         else
-            sle1_ = iter1_->second.second;
+            sle1_ = std::get<1>(iter1_->second);
     }
 
     void
     skip()
     {
-        while (iter1_ != end1_ && iter1_->second.first == Action::erase &&
+        while (iter1_ != end1_ &&
+               std::get<0>(iter1_->second) == Action::erase &&
                sle0_->key() == sle1_->key())
         {
             inc1();
@@ -157,16 +158,16 @@ RawStateTable::apply(RawView& to) const
     for (auto const& elem : items_)
     {
         auto const& item = elem.second;
-        switch (item.first)
+        switch (std::get<0>(item))
         {
             case Action::erase:
-                to.rawErase(item.second);
+                to.rawErase(std::get<1>(item));
                 break;
             case Action::insert:
-                to.rawInsert(item.second);
+                to.rawInsert(std::get<1>(item));
                 break;
             case Action::replace:
-                to.rawReplace(item.second);
+                to.rawReplace(std::get<1>(item));
                 break;
         }
     }
@@ -180,9 +181,9 @@ RawStateTable::exists(ReadView const& base, Keylet const& k) const
     if (iter == items_.end())
         return base.exists(k);
     auto const& item = iter->second;
-    if (item.first == Action::erase)
+    if (std::get<0>(item) == Action::erase)
         return false;
-    if (!k.check(*item.second))
+    if (!k.check(*std::get<1>(item)))
         return false;
     return true;
 }
@@ -207,11 +208,12 @@ RawStateTable::succ(
         if (!next)
             break;
         iter = items_.find(*next);
-    } while (iter != items_.end() && iter->second.first == Action::erase);
+    } while (iter != items_.end() &&
+             std::get<0>(iter->second) == Action::erase);
     // Find non-deleted successor in our list
     for (iter = items_.upper_bound(key); iter != items_.end(); ++iter)
     {
-        if (iter->second.first != Action::erase)
+        if (std::get<0>(iter->second) != Action::erase)
         {
             // Found both, return the lower key
             if (!next || next > iter->first)
@@ -237,7 +239,7 @@ RawStateTable::erase(std::shared_ptr<SLE> const& sle)
     if (result.second)
         return;
     auto& item = result.first->second;
-    switch (item.first)
+    switch (std::get<0>(item))
     {
         case Action::erase:
             LogicError("RawStateTable::erase: already erased");
@@ -246,8 +248,8 @@ RawStateTable::erase(std::shared_ptr<SLE> const& sle)
             items_.erase(result.first);
             break;
         case Action::replace:
-            item.first = Action::erase;
-            item.second = sle;
+            std::get<0>(item) = Action::erase;
+            std::get<1>(item) = sle;
             break;
     }
 }
@@ -262,11 +264,11 @@ RawStateTable::insert(std::shared_ptr<SLE> const& sle)
     if (result.second)
         return;
     auto& item = result.first->second;
-    switch (item.first)
+    switch (std::get<0>(item))
     {
         case Action::erase:
-            item.first = Action::replace;
-            item.second = sle;
+            std::get<0>(item) = Action::replace;
+            std::get<1>(item) = sle;
             break;
         case Action::insert:
             LogicError("RawStateTable::insert: already inserted");
@@ -287,14 +289,14 @@ RawStateTable::replace(std::shared_ptr<SLE> const& sle)
     if (result.second)
         return;
     auto& item = result.first->second;
-    switch (item.first)
+    switch (std::get<0>(item))
     {
         case Action::erase:
             LogicError("RawStateTable::replace: was erased");
             break;
         case Action::insert:
         case Action::replace:
-            item.second = sle;
+            std::get<1>(item) = sle;
             break;
     }
 }
@@ -306,10 +308,10 @@ RawStateTable::read(ReadView const& base, Keylet const& k) const
     if (iter == items_.end())
         return base.read(k);
     auto const& item = iter->second;
-    if (item.first == Action::erase)
+    if (std::get<0>(item) == Action::erase)
         return nullptr;
     // Convert to SLE const
-    std::shared_ptr<SLE const> sle = item.second;
+    std::shared_ptr<SLE const> sle = std::get<1>(item);
     if (!k.check(*sle))
         return nullptr;
     return sle;

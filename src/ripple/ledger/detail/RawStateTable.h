@@ -20,9 +20,12 @@
 #ifndef RIPPLE_LEDGER_RAWSTATETABLE_H_INCLUDED
 #define RIPPLE_LEDGER_RAWSTATETABLE_H_INCLUDED
 
-#include <ripple/basics/qalloc.h>
 #include <ripple/ledger/RawView.h>
 #include <ripple/ledger/ReadView.h>
+
+#include <boost/container/pmr/monotonic_buffer_resource.hpp>
+#include <boost/container/pmr/polymorphic_allocator.hpp>
+
 #include <map>
 #include <utility>
 
@@ -35,8 +38,17 @@ class RawStateTable
 public:
     using key_type = ReadView::key_type;
 
-    RawStateTable() = default;
-    RawStateTable(RawStateTable const&) = default;
+    RawStateTable()
+        : monotonic_resource_{std::make_unique<
+              boost::container::pmr::monotonic_buffer_resource>(kilobytes(256))}
+        , items_{monotonic_resource_.get()} {};
+
+    RawStateTable(RawStateTable const& rhs)
+        : monotonic_resource_{std::make_unique<
+              boost::container::pmr::monotonic_buffer_resource>(kilobytes(256))}
+        , items_{rhs.items_, monotonic_resource_.get()}
+        , dropsDestroyed_{rhs.dropsDestroyed_} {};
+
     RawStateTable(RawStateTable&&) = default;
 
     RawStateTable&
@@ -89,15 +101,22 @@ private:
 
     class sles_iter_impl;
 
+    // Use the boost pmr functionality instead of the c++-17 standard pmr
+    // functions b/c clang does not support pmr yet (as-of 9/2020)
+    // N.B. boost::pmr could not handle std::pair. Changed to std::tuple.
     using items_t = std::map<
         key_type,
-        std::pair<Action, std::shared_ptr<SLE>>,
+        std::tuple<Action, std::shared_ptr<SLE>>,
         std::less<key_type>,
-        qalloc_type<
-            std::pair<key_type const, std::pair<Action, std::shared_ptr<SLE>>>,
-            false>>;
-
+        boost::container::pmr::polymorphic_allocator<std::pair<
+            const key_type,
+            std::tuple<Action, std::shared_ptr<SLE>>>>>;
+    // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
+    // easily moved.
+    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource>
+        monotonic_resource_;
     items_t items_;
+
     XRPAmount dropsDestroyed_{0};
 };
 

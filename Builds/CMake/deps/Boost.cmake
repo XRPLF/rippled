@@ -47,6 +47,7 @@ endif ()
 find_package (Boost 1.70 REQUIRED
   COMPONENTS
     chrono
+    container
     context
     coroutine
     date_time
@@ -69,6 +70,7 @@ target_link_libraries (ripple_boost
   INTERFACE
     Boost::boost
     Boost::chrono
+    Boost::container
     Boost::coroutine
     Boost::date_time
     Boost::filesystem
