@@ -17,9 +17,11 @@
 */
 //==============================================================================
 
+#include <ripple/basics/ByteUtilities.h>
 #include <ripple/beast/unit_test.h>
-#include <set>
 #include <test/csf/Scheduler.h>
+
+#include <set>
 
 namespace ripple {
 namespace test {

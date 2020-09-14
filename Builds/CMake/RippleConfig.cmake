@@ -15,6 +15,7 @@ endif ()
 find_dependency (Boost 1.70
   COMPONENTS
     chrono
+    container
     context
     coroutine
     date_time

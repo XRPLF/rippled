@@ -21,10 +21,13 @@
 #define RIPPLE_LEDGER_OPENVIEW_H_INCLUDED
 
 #include <ripple/basics/XRPAmount.h>
-#include <ripple/basics/qalloc.h>
 #include <ripple/ledger/RawView.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/detail/RawStateTable.h>
+
+#include <boost/container/pmr/monotonic_buffer_resource.hpp>
+#include <boost/container/pmr/polymorphic_allocator.hpp>
+
 #include <functional>
 #include <utility>
 
@@ -52,25 +55,43 @@ extern open_ledger_t const open_ledger;
 class OpenView final : public ReadView, public TxsRawView
 {
 private:
+    // Initial size for the monotonic_buffer_resource used for allocations
+    // The size was chosen from the old `qalloc` code (which this replaces).
+    // It is unclear how the size initially chosen in qalloc.
+    static constexpr size_t initialBufferSize = kilobytes(256);
+
     class txs_iter_impl;
 
+    struct txData
+    {
+        std::shared_ptr<Serializer const> txn;
+        std::shared_ptr<Serializer const> meta;
+
+        // Constructor needed for emplacement in std::map
+        txData(
+            std::shared_ptr<Serializer const> const& txn_,
+            std::shared_ptr<Serializer const> const& meta_)
+            : txn(txn_), meta(meta_)
+        {
+        }
+    };
+
     // List of tx, key order
+    // Use the boost pmr functionality instead of the c++-17 standard pmr
+    // functions b/c clang does not support pmr yet (as-of 9/2020)
     using txs_map = std::map<
         key_type,
-        std::pair<
-            std::shared_ptr<Serializer const>,
-            std::shared_ptr<Serializer const>>,
+        txData,
         std::less<key_type>,
-        qalloc_type<
-            std::pair<
-                key_type const,
-                std::pair<
-                    std::shared_ptr<Serializer const>,
-                    std::shared_ptr<Serializer const>>>,
-            false>>;
+        boost::container::pmr::polymorphic_allocator<
+            std::pair<key_type const, txData>>>;
 
-    Rules rules_;
+    // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
+    // easily moved.
+    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource>
+        monotonic_resource_;
     txs_map txs_;
+    Rules rules_;
     LedgerInfo info_;
     ReadView const* base_;
     detail::RawStateTable items_;
@@ -98,7 +119,7 @@ public:
         Since the SLEs are immutable, calls on the
         RawView interface cannot break invariants.
     */
-    OpenView(OpenView const&) = default;
+    OpenView(OpenView const&);
 
     /** Construct an open ledger view.
 
