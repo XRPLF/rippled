@@ -22,6 +22,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/beast/core/LexicalCast.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <boost/algorithm/string/case_conv.hpp>
@@ -33,6 +34,9 @@ namespace ripple {
 Json::Value
 doCanDelete(RPC::JsonContext& context)
 {
+    if (context.app.config().reporting())
+        return RPC::make_error(rpcREPORTING_UNSUPPORTED);
+
     if (!context.app.getSHAMapStore().advisoryDelete())
         return RPC::make_error(rpcNOT_ENABLED);
 

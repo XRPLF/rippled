@@ -21,6 +21,8 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
+#include <ripple/core/Pg.h>
+#include <ripple/json/json_reader.h>
 #include <ripple/json/json_value.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/RPCErr.h>
@@ -273,11 +275,263 @@ getLedgerRange(
     return LedgerRange{uLedgerMin, uLedgerMax};
 }
 
+enum class DataFormat { binary, expanded };
+std::variant<TxnsData, TxnsDataBinary>
+flatFetchTransactions(
+    RPC::Context& context,
+    std::vector<uint256>& nodestoreHashes,
+    std::vector<uint32_t>& ledgerSequences,
+    DataFormat format)
+{
+    std::variant<TxnsData, TxnsDataBinary> ret;
+    if (format == DataFormat::binary)
+        ret = TxnsDataBinary();
+    else
+        ret = TxnsData();
+
+    std::vector<
+        std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>>
+        txns = flatFetchTransactions(context.app, nodestoreHashes);
+    for (size_t i = 0; i < txns.size(); ++i)
+    {
+        auto& [txn, meta] = txns[i];
+        if (format == DataFormat::binary)
+        {
+            auto& transactions = std::get<TxnsDataBinary>(ret);
+            Serializer txnSer = txn->getSerializer();
+            Serializer metaSer = meta->getSerializer();
+            // SerialIter it(item->slice());
+            Blob txnBlob = txnSer.getData();
+            Blob metaBlob = metaSer.getData();
+            transactions.push_back(
+                std::make_tuple(txnBlob, metaBlob, ledgerSequences[i]));
+        }
+        else
+        {
+            auto& transactions = std::get<TxnsData>(ret);
+            std::string reason;
+            auto txnRet =
+                std::make_shared<Transaction>(txn, reason, context.app);
+            txnRet->setLedger(ledgerSequences[i]);
+            txnRet->setStatus(COMMITTED);
+            auto txMeta = std::make_shared<TxMeta>(
+                txnRet->getID(), ledgerSequences[i], *meta);
+            transactions.push_back(std::make_pair(txnRet, txMeta));
+        }
+    }
+    return ret;
+}
+
+std::pair<AccountTxResult, RPC::Status>
+processAccountTxStoredProcedureResult(
+    AccountTxArgs const& args,
+    Json::Value& result,
+    RPC::Context& context)
+{
+    AccountTxResult ret;
+    ret.limit = args.limit;
+
+    try
+    {
+        if (result.isMember("transactions"))
+        {
+            std::vector<uint256> nodestoreHashes;
+            std::vector<uint32_t> ledgerSequences;
+            for (auto& t : result["transactions"])
+            {
+                if (t.isMember("ledger_seq") && t.isMember("nodestore_hash"))
+                {
+                    uint32_t ledgerSequence = t["ledger_seq"].asUInt();
+                    std::string nodestoreHashHex =
+                        t["nodestore_hash"].asString();
+                    nodestoreHashHex.erase(0, 2);
+                    uint256 nodestoreHash;
+                    if (!nodestoreHash.parseHex(nodestoreHashHex))
+                        assert(false);
+
+                    if (nodestoreHash.isNonZero())
+                    {
+                        ledgerSequences.push_back(ledgerSequence);
+                        nodestoreHashes.push_back(nodestoreHash);
+                    }
+                    else
+                    {
+                        assert(false);
+                        return {ret, {rpcINTERNAL, "nodestoreHash is zero"}};
+                    }
+                }
+                else
+                {
+                    assert(false);
+                    return {ret, {rpcINTERNAL, "missing postgres fields"}};
+                }
+            }
+
+            assert(nodestoreHashes.size() == ledgerSequences.size());
+            ret.transactions = flatFetchTransactions(
+                context,
+                nodestoreHashes,
+                ledgerSequences,
+                args.binary ? DataFormat::binary : DataFormat::expanded);
+
+            JLOG(context.j.trace()) << __func__ << " : processed db results";
+
+            if (result.isMember("marker"))
+            {
+                auto& marker = result["marker"];
+                assert(marker.isMember("ledger"));
+                assert(marker.isMember("seq"));
+                ret.marker = {
+                    marker["ledger"].asUInt(), marker["seq"].asUInt()};
+            }
+            assert(result.isMember("ledger_index_min"));
+            assert(result.isMember("ledger_index_max"));
+            ret.ledgerRange = {
+                result["ledger_index_min"].asUInt(),
+                result["ledger_index_max"].asUInt()};
+            return {ret, rpcSUCCESS};
+        }
+        else if (result.isMember("error"))
+        {
+            JLOG(context.j.debug())
+                << __func__ << " : error = " << result["error"].asString();
+            return {
+                ret,
+                RPC::Status{rpcINVALID_PARAMS, result["error"].asString()}};
+        }
+        else
+        {
+            return {ret, {rpcINTERNAL, "unexpected Postgres response"}};
+        }
+    }
+    catch (std::exception& e)
+    {
+        JLOG(context.j.debug()) << __func__ << " : "
+                                << "Caught exception : " << e.what();
+        return {ret, {rpcINTERNAL, e.what()}};
+    }
+}
+
+std::pair<AccountTxResult, RPC::Status>
+doAccountTxStoredProcedure(AccountTxArgs const& args, RPC::Context& context)
+{
+#ifdef RIPPLED_REPORTING
+    pg_params dbParams;
+
+    char const*& command = dbParams.first;
+    std::vector<std::optional<std::string>>& values = dbParams.second;
+    command =
+        "SELECT account_tx($1::bytea, $2::bool, "
+        "$3::bigint, $4::bigint, $5::bigint, $6::bytea, "
+        "$7::bigint, $8::bool, $9::bigint, $10::bigint)";
+    values.resize(10);
+    values[0] = "\\x" + strHex(args.account);
+    values[1] = args.forward ? "true" : "false";
+
+    static std::uint32_t const page_length(200);
+    if (args.limit == 0 || args.limit > page_length)
+        values[2] = std::to_string(page_length);
+    else
+        values[2] = std::to_string(args.limit);
+
+    if (args.ledger)
+    {
+        if (auto range = std::get_if<LedgerRange>(&args.ledger.value()))
+        {
+            values[3] = std::to_string(range->min);
+            values[4] = std::to_string(range->max);
+        }
+        else if (auto hash = std::get_if<LedgerHash>(&args.ledger.value()))
+        {
+            values[5] = ("\\x" + strHex(*hash));
+        }
+        else if (
+            auto sequence = std::get_if<LedgerSequence>(&args.ledger.value()))
+        {
+            values[6] = std::to_string(*sequence);
+        }
+        else if (std::get_if<LedgerShortcut>(&args.ledger.value()))
+        {
+            // current, closed and validated are all treated as validated
+            values[7] = "true";
+        }
+        else
+        {
+            JLOG(context.j.error()) << "doAccountTxStoredProcedure - "
+                                    << "Error parsing ledger args";
+            return {};
+        }
+    }
+
+    if (args.marker)
+    {
+        values[8] = std::to_string(args.marker->ledgerSeq);
+        values[9] = std::to_string(args.marker->txnSeq);
+    }
+    for (size_t i = 0; i < values.size(); ++i)
+    {
+        JLOG(context.j.trace()) << "value " << std::to_string(i) << " = "
+                                << (values[i] ? values[i].value() : "null");
+    }
+
+    auto res = PgQuery(context.app.getPgPool())(dbParams);
+    if (!res)
+    {
+        JLOG(context.j.error())
+            << __func__ << " : Postgres response is null - account = "
+            << strHex(args.account);
+        assert(false);
+        return {{}, {rpcINTERNAL, "Postgres error"}};
+    }
+    else if (res.status() != PGRES_TUPLES_OK)
+    {
+        JLOG(context.j.error()) << __func__
+                                << " : Postgres response should have been "
+                                   "PGRES_TUPLES_OK but instead was "
+                                << res.status() << " - msg  = " << res.msg()
+                                << " - account = " << strHex(args.account);
+        assert(false);
+        return {{}, {rpcINTERNAL, "Postgres error"}};
+    }
+
+    JLOG(context.j.trace())
+        << __func__ << " Postgres result msg  : " << res.msg();
+    if (res.isNull() || res.ntuples() == 0)
+    {
+        JLOG(context.j.debug())
+            << __func__ << " : No data returned from Postgres : account = "
+            << strHex(args.account);
+
+        assert(false);
+        return {{}, {rpcINTERNAL, "Postgres error"}};
+    }
+
+    char const* resultStr = res.c_str();
+    JLOG(context.j.trace()) << __func__ << " : "
+                            << "postgres result = " << resultStr
+                            << " : account = " << strHex(args.account);
+
+    Json::Value v;
+    Json::Reader reader;
+    bool success = reader.parse(resultStr, resultStr + strlen(resultStr), v);
+    if (success)
+    {
+        return processAccountTxStoredProcedureResult(args, v, context);
+    }
+#endif
+    // This shouldn't happen. Postgres should return a parseable error
+    assert(false);
+    return {{}, {rpcINTERNAL, "Failed to deserialize Postgres result"}};
+}
+
 std::pair<AccountTxResult, RPC::Status>
 doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
 {
-    AccountTxResult result;
     context.loadType = Resource::feeMediumBurdenRPC;
+    if (context.app.config().reporting())
+        return doAccountTxStoredProcedure(args, context);
+
+    AccountTxResult result;
 
     auto lgrRange = getLedgerRange(context, args.ledger);
     if (auto stat = std::get_if<RPC::Status>(&lgrRange))
@@ -313,6 +567,7 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
     }
 
     result.limit = args.limit;
+    JLOG(context.j.debug()) << __func__ << " : finished";
 
     return {result, rpcSUCCESS};
 }
@@ -508,7 +763,11 @@ populateJsonResponse(
             response[jss::marker][jss::ledger] = result.marker->ledgerSeq;
             response[jss::marker][jss::seq] = result.marker->txnSeq;
         }
+        if (context.app.config().reporting())
+            response["used_postgres"] = true;
     }
+
+    JLOG(context.j.debug()) << __func__ << " : finished";
     return response;
 }
 
@@ -525,6 +784,9 @@ populateJsonResponse(
 Json::Value
 doAccountTxJson(RPC::JsonContext& context)
 {
+    if (!context.app.config().useTxTables())
+        return rpcError(rpcNOT_ENABLED);
+
     auto& params = context.params;
     AccountTxArgs args;
     Json::Value response;
@@ -572,6 +834,7 @@ doAccountTxJson(RPC::JsonContext& context)
     }
 
     auto res = doAccountTxHelp(context, args);
+    JLOG(context.j.debug()) << __func__ << " populating response";
     return populateJsonResponse(res, args, context);
 }
 
@@ -582,6 +845,13 @@ doAccountTxGrpc(
     RPC::GRPCContext<org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest>&
         context)
 {
+    if (!context.app.config().useTxTables())
+    {
+        return {
+            {},
+            {grpc::StatusCode::UNIMPLEMENTED, "Not enabled in configuration."}};
+    }
+
     // return values
     org::xrpl::rpc::v1::GetAccountTransactionHistoryResponse response;
     grpc::Status status = grpc::Status::OK;

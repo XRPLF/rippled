@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package org.xrpl.rpc.v1;
+option java_package = "org.xrpl.rpc.v1";
+option java_multiple_files = true;
+
+import "org/xrpl/rpc/v1/ledger.proto";
+
+// Get ledger objects for a specific ledger. You can iterate through several
+// calls to retrieve the entire contents of a single ledger version.
+message GetLedgerDataRequest
+{
+    // If set, only objects with a key greater than marker are returned.
+    // This can be used to pick up where a previous call left off.
+    // Set marker to the value of marker in the previous response.
+    bytes marker = 1;
+
+    LedgerSpecifier ledger = 2;
+
+    // If set, only objects with a key less than end_marker are returned
+    bytes end_marker = 3;
+
+    // If the request needs to be forwarded from a reporting node to a p2p node,
+    // the reporting node will set this field. Clients should not set this
+    // field.
+    string client_ip = 4;
+
+    // Identifying string. If user is set, client_ip is not set, and request is
+    // coming from a secure_gateway host, then the client is not subject to
+    // resource controls
+    string user = 6;
+}
+
+message GetLedgerDataResponse
+{
+    // Sequence of the ledger containing the returned ledger objects
+    uint32 ledger_index = 1;
+
+    // Hash of the ledger containing the returned ledger objects
+    bytes ledger_hash = 2;
+        
+    // Ledger objects
+    RawLedgerObjects ledger_objects = 3;
+
+    // Key to be passed into a subsequent call to continue iteration. If not
+    // set, there are no more objects left in the ledger, or no more objects
+    // with key less than end_marker (if end_marker was set in the request)
+    bytes marker = 4;
+
+    // True if request was exempt from resource controls
+    bool is_unlimited = 7;
+}
+

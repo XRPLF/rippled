@@ -26,6 +26,8 @@
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
+#include <ripple/rpc/GRPCHandlers.h>
+#include <ripple/rpc/impl/GRPCHelpers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
@@ -366,4 +368,48 @@ doLedgerEntry(RPC::JsonContext& context)
     return jvResult;
 }
 
+std::pair<org::xrpl::rpc::v1::GetLedgerEntryResponse, grpc::Status>
+doLedgerEntryGrpc(
+    RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& context)
+{
+    org::xrpl::rpc::v1::GetLedgerEntryRequest& request = context.params;
+    org::xrpl::rpc::v1::GetLedgerEntryResponse response;
+    grpc::Status status = grpc::Status::OK;
+
+    std::shared_ptr<ReadView const> ledger;
+    if (RPC::ledgerFromRequest(ledger, context))
+    {
+        grpc::Status errorStatus{
+            grpc::StatusCode::NOT_FOUND, "ledger not found"};
+        return {response, errorStatus};
+    }
+
+    std::string const& keyBytes = request.key();
+    auto key = uint256::fromVoid(keyBytes.data());
+    if (keyBytes.size() != key.size())
+    {
+        grpc::Status errorStatus{
+            grpc::StatusCode::INVALID_ARGUMENT, "index malformed"};
+        return {response, errorStatus};
+    }
+
+    auto const sleNode = ledger->read(keylet::unchecked(key));
+    if (!sleNode)
+    {
+        grpc::Status errorStatus{
+            grpc::StatusCode::NOT_FOUND, "object not found"};
+        return {response, errorStatus};
+    }
+    else
+    {
+        Serializer s;
+        sleNode->add(s);
+
+        auto& stateObject = *response.mutable_ledger_object();
+        stateObject.set_data(s.peekData().data(), s.getLength());
+        stateObject.set_key(request.key());
+        *(response.mutable_ledger()) = request.ledger();
+        return {response, status};
+    }
+}
 }  // namespace ripple

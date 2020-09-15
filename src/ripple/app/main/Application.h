@@ -62,6 +62,7 @@ class JobQueue;
 class InboundLedgers;
 class InboundTransactions;
 class AcceptedLedger;
+class Ledger;
 class LedgerMaster;
 class LoadManager;
 class ManifestCache;
@@ -72,6 +73,7 @@ class OrderBookDB;
 class Overlay;
 class PathRequests;
 class PendingSaves;
+class PgPool;
 class PublicKey;
 class SecretKey;
 class AccountIDCache;
@@ -86,6 +88,8 @@ class Cluster;
 
 class DatabaseCon;
 class SHAMapStore;
+
+class ReportingETL;
 
 using NodeCache = TaggedCache<SHAMapHash, Blob>;
 
@@ -237,8 +241,16 @@ public:
     virtual std::chrono::milliseconds
     getIOLatency() = 0;
 
+    virtual ReportingETL&
+    getReportingETL() = 0;
+
     virtual bool
     serverOkay(std::string& reason) = 0;
+
+#ifdef RIPPLED_REPORTING
+    virtual std::shared_ptr<PgPool> const&
+    getPgPool() = 0;
+#endif
 
     virtual beast::Journal
     journal(std::string const& name) = 0;

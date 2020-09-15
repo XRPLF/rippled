@@ -41,6 +41,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/core/Pg.h>
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Overlay.h>
@@ -51,6 +52,8 @@
 #include <ripple/resource/Fees.h>
 #include <algorithm>
 #include <cassert>
+#include <chrono>
+#include <cstdlib>
 #include <limits>
 #include <memory>
 #include <vector>
@@ -268,11 +271,24 @@ std::chrono::seconds
 LedgerMaster::getValidatedLedgerAge()
 {
     using namespace std::chrono_literals;
+
+#ifdef RIPPLED_REPORTING
+    if (app_.config().reporting())
+    {
+        auto age = PgQuery(app_.getPgPool())("SELECT age()");
+        if (!age || age.isNull())
+        {
+            JLOG(m_journal.debug()) << "No ledgers in database";
+            return weeks{2};
+        }
+        return std::chrono::seconds{age.asInt()};
+    }
+#endif
     std::chrono::seconds valClose{mValidLedgerSign.load()};
     if (valClose == 0s)
     {
         JLOG(m_journal.debug()) << "No validated ledger";
-        return NO_VALIDATED_LEDGER_AGE;
+        return weeks{2};
     }
 
     std::chrono::seconds ret = app_.timeKeeper().closeTime().time_since_epoch();
@@ -509,8 +525,9 @@ LedgerMaster::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 bool
 LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
 {
+    bool validated = ledger->info().validated;
     // Returns true if we already had the ledger
-    return mLedgerHistory.insert(std::move(ledger), false);
+    return mLedgerHistory.insert(std::move(ledger), validated);
 }
 
 /** Apply held transactions to the open ledger
@@ -609,6 +626,32 @@ LedgerMaster::getFullValidatedRange(
 bool
 LedgerMaster::getValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal)
 {
+    if (app_.config().reporting())
+    {
+        std::string res = getCompleteLedgers();
+        try
+        {
+            if (res == "empty" || res == "error" || res.empty())
+                return false;
+            else if (size_t delim = res.find('-'); delim != std::string::npos)
+            {
+                minVal = std::stol(res.substr(0, delim));
+                maxVal = std::stol(res.substr(delim + 1));
+            }
+            else
+            {
+                minVal = maxVal = std::stol(res);
+            }
+            return true;
+        }
+        catch (std::exception&)
+        {
+            JLOG(m_journal.error())
+                << __func__ << " : "
+                << "Error parsing result of getCompleteLedgers()";
+            return false;
+        }
+    }
     if (!getFullValidatedRange(minVal, maxVal))
         return false;
 
@@ -1527,7 +1570,26 @@ LedgerMaster::peekMutex()
 std::shared_ptr<ReadView const>
 LedgerMaster::getCurrentLedger()
 {
+    if (app_.config().reporting())
+    {
+        Throw<ReportingShouldProxy>();
+    }
     return app_.openLedger().current();
+}
+
+std::shared_ptr<Ledger const>
+LedgerMaster::getValidatedLedger()
+{
+#ifdef RIPPLED_REPORTING
+    if (app_.config().reporting())
+    {
+        auto seq = PgQuery(app_.getPgPool())("SELECT max_ledger()");
+        if (!seq || seq.isNull())
+            return {};
+        return getLedgerBySeq(seq.asInt());
+    }
+#endif
+    return mValidLedger.get();
 }
 
 Rules
@@ -1555,6 +1617,16 @@ LedgerMaster::getPublishedLedger()
 std::string
 LedgerMaster::getCompleteLedgers()
 {
+#ifdef RIPPLED_REPORTING
+    if (app_.config().reporting())
+    {
+        auto range = PgQuery(app_.getPgPool())("SELECT complete_ledgers()");
+        if (!range)
+            return "error";
+        return range.c_str();
+    }
+
+#endif
     std::lock_guard sl(mCompleteLock);
     return to_string(mCompleteLedgers);
 }
@@ -2231,6 +2303,21 @@ LedgerMaster::getFetchPackCacheSize() const
 boost::optional<LedgerIndex>
 LedgerMaster::minSqlSeq()
 {
+#ifdef RIPPLED_REPORTING
+    if (app_.config().reporting())
+    {
+        auto seq = PgQuery(app_.getPgPool())("SELECT min_ledger()");
+        if (!seq)
+        {
+            JLOG(m_journal.error())
+                << "Error querying minimum ledger sequence.";
+            return {};
+        }
+        if (seq.isNull())
+            return {};
+        return seq.asInt();
+    }
+#endif
     boost::optional<LedgerIndex> seq;
     auto db = app_.getLedgerDB().checkoutDb();
     *db << "SELECT MIN(LedgerSeq) FROM Ledgers", soci::into(seq);

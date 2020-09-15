@@ -73,16 +73,41 @@ public:
     store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
         override;
 
+    void
+    sync() override
+    {
+        writableBackend_->sync();
+    }
+
     bool
     storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override;
 
     void
     sweep() override;
 
+    Backend&
+    getBackend() override
+    {
+        return *writableBackend_;
+    }
+
 private:
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
     mutable std::mutex mutex_;
+
+    struct Backends
+    {
+        std::shared_ptr<Backend> const& writableBackend;
+        std::shared_ptr<Backend> const& archiveBackend;
+    };
+
+    Backends
+    getBackends() const
+    {
+        std::lock_guard lock(mutex_);
+        return Backends{writableBackend_, archiveBackend_};
+    }
 
     std::shared_ptr<NodeObject>
     fetchNodeObject(

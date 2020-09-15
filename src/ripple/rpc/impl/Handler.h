@@ -77,6 +77,22 @@ template <class T>
 error_code_i
 conditionMet(Condition condition_required, T& context)
 {
+    if (context.app.config().reporting())
+    {
+        if (condition_required == NEEDS_CURRENT_LEDGER)
+        {
+            return rpcNO_CURRENT;
+        }
+        else if (condition_required == NEEDS_CLOSED_LEDGER)
+        {
+            return rpcNO_CLOSED;
+        }
+        else
+        {
+            return rpcSUCCESS;
+        }
+    }
+
     if (context.app.getOPs().isAmendmentBlocked() &&
         (condition_required & NEEDS_CURRENT_LEDGER ||
          condition_required & NEEDS_CLOSED_LEDGER))

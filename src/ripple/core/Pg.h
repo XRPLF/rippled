@@ -17,11 +17,13 @@
 */
 //==============================================================================
 
+#ifdef RIPPLED_REPORTING
 #ifndef RIPPLE_CORE_PG_H_INCLUDED
 #define RIPPLE_CORE_PG_H_INCLUDED
 
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/basics/Log.h>
+#include <ripple/core/Stoppable.h>
 #include <ripple/protocol/Protocol.h>
 #include <boost/lexical_cast.hpp>
 #include <atomic>
@@ -97,6 +99,9 @@ class PgResult
     std::optional<std::pair<ExecStatusType, std::string>> error_;
 
 public:
+    /** Constructor for when the process is stopping.
+     *
+     */
     PgResult()
     {
     }
@@ -105,7 +110,7 @@ public:
      *
      * @param result Query result.
      */
-    PgResult(pg_result_type&& result) : result_(std::move(result))
+    explicit PgResult(pg_result_type&& result) : result_(std::move(result))
     {
     }
 
@@ -251,6 +256,8 @@ class Pg
 
     PgConfig const& config_;
     beast::Journal const j_;
+    bool& stop_;
+    std::mutex& mutex_;
 
     // The connection object must be freed using the libpq API PQfinish() call.
     pg_connection_type conn_{nullptr, [](PGconn* conn) { PQfinish(conn); }};
@@ -332,8 +339,14 @@ public:
      *
      * @param config Config parameters.
      * @param j Logger object.
+     * @param stop Reference to connection pool's stop flag.
+     * @param mutex Reference to connection pool's mutex.
      */
-    Pg(PgConfig const& config, beast::Journal const j) : config_(config), j_(j)
+    Pg(PgConfig const& config,
+       beast::Journal const j,
+       bool& stop,
+       std::mutex& mutex)
+        : config_(config), j_(j), stop_(stop), mutex_(mutex)
     {
     }
 };
@@ -349,8 +362,11 @@ public:
  * If none are available, a new connection is used (up to configured limit).
  * Idle connections are destroyed periodically after configurable
  * timeout duration.
+ *
+ * This should be stored as a shared pointer so PgQuery objects can safely
+ * outlive it.
  */
-class PgPool
+class PgPool : public Stoppable
 {
     friend class PgQuery;
 
@@ -393,8 +409,9 @@ public:
      *
      * @param pgConfig Postgres config.
      * @param j Logger object.
+     * @param parent Stoppable parent.
      */
-    PgPool(Section const& pgConfig, beast::Journal const j);
+    PgPool(Section const& pgConfig, Stoppable& parent, beast::Journal j);
 
     /** Initiate idle connection timer.
      *
@@ -404,9 +421,9 @@ public:
     void
     setup();
 
-    /** Prepare for process shutdown. */
+    /** Prepare for process shutdown. (Stoppable) */
     void
-    stop();
+    onStop() override;
 
     /** Disconnect idle postgres connections. */
     void
@@ -424,19 +441,20 @@ public:
 class PgQuery
 {
 private:
-    PgPool& pool_;
+    std::shared_ptr<PgPool> pool_;
     std::unique_ptr<Pg> pg_;
 
 public:
     PgQuery() = delete;
 
-    PgQuery(PgPool& pool) : pool_(pool), pg_(pool.checkout())
+    PgQuery(std::shared_ptr<PgPool> const& pool)
+        : pool_(pool), pg_(pool->checkout())
     {
     }
 
     ~PgQuery()
     {
-        pool_.checkin(pg_);
+        pool_->checkin(pg_);
     }
 
     /** Execute postgres query with parameters.
@@ -483,10 +501,11 @@ public:
  *
  * @param pgConfig Configuration for Postgres.
  * @param j Logger object.
+ * @param parent Stoppable parent object.
  * @return Postgres connection pool manager
  */
-std::unique_ptr<PgPool>
-make_PgPool(Section const& pgConfig, beast::Journal const j);
+std::shared_ptr<PgPool>
+make_PgPool(Section const& pgConfig, Stoppable& parent, beast::Journal j);
 
 /** Initialize the Postgres schema.
  *
@@ -496,8 +515,9 @@ make_PgPool(Section const& pgConfig, beast::Journal const j);
  * @param pool Postgres connection pool manager.
  */
 void
-initSchema(PgPool& pool);
+initSchema(std::shared_ptr<PgPool> const& pool);
 
 }  // namespace ripple
 
 #endif  // RIPPLE_CORE_PG_H_INCLUDED
+#endif  // RIPPLED_REPORTING

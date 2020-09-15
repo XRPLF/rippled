@@ -35,6 +35,9 @@ namespace ripple {
 Json::Value
 doPeerReservationsAdd(RPC::JsonContext& context)
 {
+    if (context.app.config().reporting())
+        return rpcError(rpcREPORTING_UNSUPPORTED);
+
     auto const& params = context.params;
 
     if (!params.isMember(jss::public_key))
@@ -88,6 +91,9 @@ doPeerReservationsAdd(RPC::JsonContext& context)
 Json::Value
 doPeerReservationsDel(RPC::JsonContext& context)
 {
+    if (context.app.config().reporting())
+        return rpcError(rpcREPORTING_UNSUPPORTED);
+
     auto const& params = context.params;
 
     // We repeat much of the parameter parsing from `doPeerReservationsAdd`.
@@ -115,6 +121,9 @@ doPeerReservationsDel(RPC::JsonContext& context)
 Json::Value
 doPeerReservationsList(RPC::JsonContext& context)
 {
+    if (context.app.config().reporting())
+        return rpcError(rpcREPORTING_UNSUPPORTED);
+
     auto const& reservations = context.app.peerReservations().list();
     // Enumerate the reservations in context.app.peerReservations()
     // as a Json::Value.

@@ -1939,7 +1939,7 @@ public:
                 env.app().config(),
                 feeTrack,
                 env.app().getTxQ(),
-                ledger);
+                env.app());
 
             BEAST_EXPECT(!RPC::contains_error(result));
             BEAST_EXPECT(
@@ -1960,7 +1960,7 @@ public:
                 env.app().config(),
                 feeTrack,
                 env.app().getTxQ(),
-                ledger);
+                env.app());
 
             BEAST_EXPECT(!RPC::contains_error(result));
             BEAST_EXPECT(
@@ -1979,7 +1979,7 @@ public:
                 env.app().config(),
                 feeTrack,
                 env.app().getTxQ(),
-                ledger);
+                env.app());
 
             BEAST_EXPECT(RPC::contains_error(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
@@ -2000,7 +2000,7 @@ public:
                 env.app().config(),
                 feeTrack,
                 env.app().getTxQ(),
-                ledger);
+                env.app());
 
             BEAST_EXPECT(RPC::contains_error(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
@@ -2019,7 +2019,7 @@ public:
                 env.app().config(),
                 feeTrack,
                 env.app().getTxQ(),
-                ledger);
+                env.app());
 
             BEAST_EXPECT(RPC::contains_error(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
@@ -2038,7 +2038,7 @@ public:
                 env.app().config(),
                 feeTrack,
                 env.app().getTxQ(),
-                ledger);
+                env.app());
 
             BEAST_EXPECT(RPC::contains_error(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
@@ -2073,7 +2073,7 @@ public:
                 env.app().config(),
                 feeTrackOuter,
                 env.app().getTxQ(),
-                env.current());
+                env.app());
 
             BEAST_EXPECT(!RPC::contains_error(result));
             BEAST_EXPECT(
@@ -2097,7 +2097,7 @@ public:
                 env.app().config(),
                 feeTrackOuter,
                 env.app().getTxQ(),
-                env.current());
+                env.app());
 
             BEAST_EXPECT(!RPC::contains_error(result));
             BEAST_EXPECT(
@@ -2127,7 +2127,7 @@ public:
                 env.app().config(),
                 feeTrackOuter,
                 env.app().getTxQ(),
-                env.current());
+                env.app());
 
             BEAST_EXPECT(!RPC::contains_error(result));
             BEAST_EXPECT(
@@ -2151,7 +2151,7 @@ public:
                 env.app().config(),
                 feeTrackOuter,
                 env.app().getTxQ(),
-                env.current());
+                env.app());
 
             BEAST_EXPECT(RPC::contains_error(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
@@ -2174,7 +2174,7 @@ public:
                 env.app().config(),
                 feeTrackOuter,
                 env.app().getTxQ(),
-                env.current());
+                env.app());
 
             BEAST_EXPECT(RPC::contains_error(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
@@ -2197,7 +2197,7 @@ public:
                 env.app().config(),
                 feeTrackOuter,
                 env.app().getTxQ(),
-                env.current());
+                env.app());
 
             BEAST_EXPECT(!RPC::contains_error(result));
             BEAST_EXPECT(
@@ -2221,7 +2221,7 @@ public:
                 env.app().config(),
                 feeTrackOuter,
                 env.app().getTxQ(),
-                env.current());
+                env.app());
 
             BEAST_EXPECT(RPC::contains_error(result));
         }
@@ -2242,7 +2242,7 @@ public:
                 env.app().config(),
                 feeTrackOuter,
                 env.app().getTxQ(),
-                env.current());
+                env.app());
 
             BEAST_EXPECT(RPC::contains_error(result));
         }
@@ -2264,7 +2264,7 @@ public:
                 env.app().config(),
                 feeTrackOuter,
                 env.app().getTxQ(),
-                env.current());
+                env.app());
 
             BEAST_EXPECT(RPC::contains_error(result));
         }

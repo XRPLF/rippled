@@ -86,6 +86,8 @@ JobQueue::addRefCountedJob(
     if (iter == m_jobData.end())
         return false;
 
+    JLOG(m_journal.debug())
+        << __func__ << " : Adding job : " << name << " : " << type;
     JobTypeData& data(iter->second);
 
     // FIXME: Workaround incorrect client shutdown ordering

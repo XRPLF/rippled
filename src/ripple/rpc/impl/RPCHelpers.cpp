@@ -186,9 +186,9 @@ getAccountObjects(
 namespace {
 
 bool
-isValidatedOld(LedgerMaster& ledgerMaster, bool standalone)
+isValidatedOld(LedgerMaster& ledgerMaster, bool standaloneOrReporting)
 {
-    if (standalone)
+    if (standaloneOrReporting)
         return false;
 
     return ledgerMaster.getValidatedLedgerAge() > Tuning::maxValidatedLedgerAge;
@@ -228,10 +228,12 @@ ledgerFromRequest(T& ledger, JsonContext& context)
 
     auto const index = indexValue.asString();
 
-    if (index.empty() || index == "current")
+    if (index == "current" ||
+        (index.empty() && !context.app.config().reporting()))
         return getLedger(ledger, LedgerShortcut::CURRENT, context);
 
-    if (index == "validated")
+    if (index == "validated" ||
+        (index.empty() && context.app.config().reporting()))
         return getLedger(ledger, LedgerShortcut::VALIDATED, context);
 
     if (index == "closed")
@@ -245,42 +247,78 @@ ledgerFromRequest(T& ledger, JsonContext& context)
 }
 }  // namespace
 
+template <class T, class R>
+Status
+ledgerFromRequest(T& ledger, GRPCContext<R>& context)
+{
+    R& request = context.params;
+    return ledgerFromSpecifier(ledger, request.ledger(), context);
+}
+
+// explicit instantiation of above function
+template Status
+ledgerFromRequest<>(
+    std::shared_ptr<ReadView const>&,
+    GRPCContext<org::xrpl::rpc::v1::GetAccountInfoRequest>&);
+
+// explicit instantiation of above function
+template Status
+ledgerFromRequest<>(
+    std::shared_ptr<ReadView const>&,
+    GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>&);
+
+// explicit instantiation of above function
+template Status
+ledgerFromRequest<>(
+    std::shared_ptr<ReadView const>&,
+    GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>&);
+
+// explicit instantiation of above function
+template Status
+ledgerFromRequest<>(
+    std::shared_ptr<ReadView const>&,
+    GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>&);
+
 template <class T>
 Status
-ledgerFromRequest(
+ledgerFromSpecifier(
     T& ledger,
-    GRPCContext<org::xrpl::rpc::v1::GetAccountInfoRequest>& context)
+    org::xrpl::rpc::v1::LedgerSpecifier const& specifier,
+    Context& context)
 {
     ledger.reset();
 
-    org::xrpl::rpc::v1::GetAccountInfoRequest& request = context.params;
-
     using LedgerCase = org::xrpl::rpc::v1::LedgerSpecifier::LedgerCase;
-    LedgerCase ledgerCase = request.ledger().ledger_case();
+    LedgerCase ledgerCase = specifier.ledger_case();
     switch (ledgerCase)
     {
         case LedgerCase::kHash: {
-            uint256 ledgerHash =
-                uint256::fromVoid(request.ledger().hash().data());
+            uint256 ledgerHash = uint256::fromVoid(specifier.hash().data());
             return getLedger(ledger, ledgerHash, context);
         }
         case LedgerCase::kSequence:
-            return getLedger(ledger, request.ledger().sequence(), context);
+            return getLedger(ledger, specifier.sequence(), context);
         case LedgerCase::kShortcut:
             [[fallthrough]];
         case LedgerCase::LEDGER_NOT_SET: {
-            auto const shortcut = request.ledger().shortcut();
+            auto const shortcut = specifier.shortcut();
+            // note, unspecified defaults to validated in reporting mode
             if (shortcut ==
-                org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_VALIDATED)
+                    org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_VALIDATED ||
+                (shortcut ==
+                     org::xrpl::rpc::v1::LedgerSpecifier::
+                         SHORTCUT_UNSPECIFIED &&
+                 context.app.config().reporting()))
+            {
                 return getLedger(ledger, LedgerShortcut::VALIDATED, context);
+            }
             else
             {
-                // note, if unspecified, defaults to current ledger
                 if (shortcut ==
-                        org::xrpl::rpc::v1::LedgerSpecifier::
-                            SHORTCUT_UNSPECIFIED ||
+                        org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CURRENT ||
                     shortcut ==
-                        org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CURRENT)
+                        org::xrpl::rpc::v1::LedgerSpecifier::
+                            SHORTCUT_UNSPECIFIED)
                 {
                     return getLedger(ledger, LedgerShortcut::CURRENT, context);
                 }
@@ -297,17 +335,9 @@ ledgerFromRequest(
     return Status::OK;
 }
 
-// explicit instantiation of above function
-template Status
-ledgerFromRequest<>(
-    std::shared_ptr<ReadView const>&,
-    GRPCContext<org::xrpl::rpc::v1::GetAccountInfoRequest>&);
-
+template <class T>
 Status
-getLedger(
-    std::shared_ptr<ReadView const>& ledger,
-    uint256 const& ledgerHash,
-    Context& context)
+getLedger(T& ledger, uint256 const& ledgerHash, Context& context)
 {
     ledger = context.ledgerMaster.getLedgerByHash(ledgerHash);
     if (ledger == nullptr)
@@ -322,6 +352,8 @@ getLedger(T& ledger, uint32_t ledgerIndex, Context& context)
     ledger = context.ledgerMaster.getLedgerBySeq(ledgerIndex);
     if (ledger == nullptr)
     {
+        if (context.app.config().reporting())
+            return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
         auto cur = context.ledgerMaster.getCurrentLedger();
         if (cur->info().seq == ledgerIndex)
         {
@@ -348,7 +380,10 @@ template <class T>
 Status
 getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
 {
-    if (isValidatedOld(context.ledgerMaster, context.app.config().standalone()))
+    if (isValidatedOld(
+            context.ledgerMaster,
+            context.app.config().standalone() ||
+                context.app.config().reporting()))
     {
         if (context.apiVersion == 1)
             return {rpcNO_NETWORK, "InsufficientNetworkMode"};
@@ -371,11 +406,18 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
     {
         if (shortcut == LedgerShortcut::CURRENT)
         {
+            if (context.app.config().reporting())
+                return {
+                    rpcLGR_NOT_FOUND,
+                    "Reporting does not track current ledger"};
             ledger = context.ledgerMaster.getCurrentLedger();
             assert(ledger->open());
         }
         else if (shortcut == LedgerShortcut::CLOSED)
         {
+            if (context.app.config().reporting())
+                return {
+                    rpcLGR_NOT_FOUND, "Reporting does not track closed ledger"};
             ledger = context.ledgerMaster.getClosedLedger();
             assert(!ledger->open());
         }
@@ -415,12 +457,18 @@ getLedger<>(
     LedgerShortcut shortcut,
     Context&);
 
+template Status
+getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context&);
+
 bool
 isValidated(
     LedgerMaster& ledgerMaster,
     ReadView const& ledger,
     Application& app)
 {
+    if (app.config().reporting())
+        return true;
+
     if (ledger.open())
         return false;
 

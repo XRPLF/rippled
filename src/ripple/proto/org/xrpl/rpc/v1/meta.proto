@@ -7,6 +7,32 @@ option java_multiple_files = true;
 import "org/xrpl/rpc/v1/ledger_objects.proto";
 import "org/xrpl/rpc/v1/common.proto";
 
+message SubmitMetadataRequest
+{
+
+    repeated AffectedNode affected_nodes = 1;
+    uint32 ledger_sequence = 2;
+}
+
+message SubmitMetadataResponse
+{
+    bool success = 1;
+
+    string msg = 2;
+}
+
+message PrepareLedgerRequest
+{
+    uint32 ledger_index = 1;
+}
+
+message PrepareLedgerResponse
+{
+    bool success = 1;
+
+    string msg = 2;
+}
+
 // Next field: 5
 message Meta
 {
