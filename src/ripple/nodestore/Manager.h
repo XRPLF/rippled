@@ -25,6 +25,7 @@
 #include <ripple/nodestore/Factory.h>
 
 namespace ripple {
+
 namespace NodeStore {
 
 /** Singleton for managing NodeStore factories and back ends. */

@@ -421,7 +421,7 @@ getCloseAgree(LedgerInfo const& info)
 }
 
 void
-addRaw(LedgerInfo const&, Serializer&);
+addRaw(LedgerInfo const&, Serializer&, bool includeHash = false);
 
 }  // namespace ripple
 

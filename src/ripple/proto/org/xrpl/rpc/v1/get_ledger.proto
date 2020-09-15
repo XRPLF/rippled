@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package org.xrpl.rpc.v1;
+option java_package = "org.xrpl.rpc.v1";
+option java_multiple_files = true;
+
+import "org/xrpl/rpc/v1/ledger.proto";
+
+message GetLedgerRequest
+{
+
+    LedgerSpecifier ledger = 1;
+
+    // If true, include transactions contained in this ledger
+    bool transactions = 2;
+
+    // If true and transactions, include full transactions and metadata
+    // If false and transactions, include only transaction hashes
+    bool expand = 3;
+
+    // If true, include state map difference between this ledger and the
+    // previous ledger. This includes all added, modified or deleted ledger
+    // objects
+    bool get_objects = 4;
+    
+    // If the request needs to be forwarded from a reporting node to a p2p node,
+    // the reporting node will set this field. Clients should not set this
+    // field.
+    string client_ip = 5;
+
+    // Identifying string. If user is set, client_ip is not set, and request is
+    // coming from a secure_gateway host, then the client is not subject to
+    // resource controls
+    string user = 6;
+}
+
+message GetLedgerResponse
+{
+    bytes ledger_header = 1;
+
+    oneof transactions
+    {
+        // Just the hashes
+        TransactionHashList hashes_list = 2;
+        
+        // Full transactions and metadata
+        TransactionAndMetadataList transactions_list = 3;
+    }
+
+    // True if the ledger has been validated
+    bool validated = 4;
+
+    // State map difference between this ledger and the previous ledger
+    RawLedgerObjects ledger_objects = 5;
+
+    // True if the skiplist object is included in ledger_objects
+    bool skiplist_included = 6;
+
+    // True if request was exempt from resource controls
+    bool is_unlimited = 7;
+}
+
+message TransactionHashList
+{
+    repeated bytes hashes = 1;
+}
+
+message TransactionAndMetadata
+{
+    bytes transaction_blob = 1;
+
+    bytes metadata_blob = 2;
+}
+
+message TransactionAndMetadataList
+{
+    repeated TransactionAndMetadata transactions = 1;
+}

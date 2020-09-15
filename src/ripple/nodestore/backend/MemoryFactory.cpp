@@ -147,6 +147,30 @@ public:
         return ok;
     }
 
+    bool
+    canFetchBatch() override
+    {
+        return false;
+    }
+
+    std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
+    fetchBatch(std::vector<uint256 const*> const& hashes) override
+    {
+        std::vector<std::shared_ptr<NodeObject>> results;
+        results.reserve(hashes.size());
+        for (auto const& h : hashes)
+        {
+            std::shared_ptr<NodeObject> nObj;
+            Status status = fetch(h->begin(), &nObj);
+            if (status != ok)
+                results.push_back({});
+            else
+                results.push_back(nObj);
+        }
+
+        return {results, ok};
+    }
+
     void
     store(std::shared_ptr<NodeObject> const& object) override
     {
@@ -160,6 +184,11 @@ public:
     {
         for (auto const& e : batch)
             store(e);
+    }
+
+    void
+    sync() override
+    {
     }
 
     void
@@ -190,6 +219,13 @@ public:
     fdRequired() const override
     {
         return 0;
+    }
+
+    Counters const&
+    counters() const override
+    {
+        static Counters counters;
+        return counters;
     }
 };
 

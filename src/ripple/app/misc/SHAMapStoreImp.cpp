@@ -22,6 +22,7 @@
 #include <ripple/app/misc/SHAMapStoreImp.h>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/core/Pg.h>
 #include <ripple/nodestore/impl/DatabaseRotatingImp.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -158,6 +159,7 @@ SHAMapStoreImp::SHAMapStoreImp(
     , canDelete_(std::numeric_limits<LedgerIndex>::max())
 {
     Config& config{app.config()};
+
     Section& section{config.section(ConfigSection::nodeDatabase())};
     if (section.empty())
     {
@@ -184,19 +186,12 @@ SHAMapStoreImp::SHAMapStoreImp(
 
     if (deleteInterval_)
     {
-        // Configuration that affects the behavior of online delete
-        get_if_exists(section, "delete_batch", deleteBatch_);
-        std::uint32_t temp;
-        if (get_if_exists(section, "back_off_milliseconds", temp) ||
-            // Included for backward compaibility with an undocumented setting
-            get_if_exists(section, "backOff", temp))
+        if (app_.config().reporting())
         {
-            backOff_ = std::chrono::milliseconds{temp};
+            Throw<std::runtime_error>(
+                "Reporting does not support online_delete. Remove "
+                "online_delete info from config");
         }
-        if (get_if_exists(section, "age_threshold_seconds", temp))
-            ageThreshold_ = std::chrono::seconds{temp};
-        if (get_if_exists(section, "recovery_wait_seconds", temp))
-            recoveryWaitTime_.emplace(std::chrono::seconds{temp});
 
         get_if_exists(section, "advisory_delete", advisoryDelete_);
 
@@ -231,6 +226,12 @@ SHAMapStoreImp::makeNodeStore(std::string const& name, std::int32_t readThreads)
     std::unique_ptr<NodeStore::Database> db;
     if (deleteInterval_)
     {
+        if (app_.config().reporting())
+        {
+            Throw<std::runtime_error>(
+                "Reporting does not support online_delete. Remove "
+                "online_delete info from config");
+        }
         SavedState state = state_db_.getState();
         auto writableBackend = makeBackendRotating(state.writableDb);
         auto archiveBackend = makeBackendRotating(state.archiveDb);
@@ -315,6 +316,13 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 void
 SHAMapStoreImp::run()
 {
+    if (app_.config().reporting())
+    {
+        assert(false);
+        Throw<std::runtime_error>(
+            "Reporting does not support online_delete. Remove "
+            "online_delete info from config");
+    }
     beast::setCurrentThreadName("SHAMapStore");
     LedgerIndex lastRotated = state_db_.getState().lastRotated;
     netOPs_ = &app_.getOPs();
@@ -323,7 +331,6 @@ SHAMapStoreImp::run()
     treeNodeCache_ = &(*app_.getNodeFamily().getTreeNodeCache(0));
     transactionDb_ = &app_.getTxnDB();
     ledgerDb_ = &app_.getLedgerDB();
-
     if (advisoryDelete_)
         canDelete_ = state_db_.getCanDelete();
 
@@ -648,6 +655,13 @@ SHAMapStoreImp::freshenCaches()
 void
 SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
 {
+    if (app_.config().reporting())
+    {
+        assert(false);
+        Throw<std::runtime_error>(
+            "Reporting does not support online_delete. Remove "
+            "online_delete info from config");
+    }
     // Do not allow ledgers to be acquired from the network
     // that are about to be deleted.
     minimumOnline_ = lastRotated + 1;

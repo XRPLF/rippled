@@ -73,25 +73,28 @@ getCountsJson(Application& app, int minObjectCount)
         ret[k] = v;
     }
 
-    int dbKB = getKBUsedAll(app.getLedgerDB().getSession());
-
-    if (dbKB > 0)
-        ret[jss::dbKBTotal] = dbKB;
-
-    dbKB = getKBUsedDB(app.getLedgerDB().getSession());
-
-    if (dbKB > 0)
-        ret[jss::dbKBLedger] = dbKB;
-
-    dbKB = getKBUsedDB(app.getTxnDB().getSession());
-
-    if (dbKB > 0)
-        ret[jss::dbKBTransaction] = dbKB;
-
+    if (!app.config().reporting() && app.config().useTxTables())
     {
-        std::size_t c = app.getOPs().getLocalTxCount();
-        if (c > 0)
-            ret[jss::local_txs] = static_cast<Json::UInt>(c);
+        int dbKB = getKBUsedAll(app.getLedgerDB().getSession());
+
+        if (dbKB > 0)
+            ret[jss::dbKBTotal] = dbKB;
+
+        dbKB = getKBUsedDB(app.getLedgerDB().getSession());
+
+        if (dbKB > 0)
+            ret[jss::dbKBLedger] = dbKB;
+
+        dbKB = getKBUsedDB(app.getTxnDB().getSession());
+
+        if (dbKB > 0)
+            ret[jss::dbKBTransaction] = dbKB;
+
+        {
+            std::size_t c = app.getOPs().getLocalTxCount();
+            if (c > 0)
+                ret[jss::local_txs] = static_cast<Json::UInt>(c);
+        }
     }
 
     ret[jss::write_load] = app.getNodeStore().getWriteLoad();
@@ -119,13 +122,6 @@ getCountsJson(Application& app, int minObjectCount)
     textTime(uptime, s, "second", 1s);
     ret[jss::uptime] = uptime;
 
-    ret[jss::node_writes] = std::to_string(app.getNodeStore().getStoreCount());
-    ret[jss::node_reads_total] = app.getNodeStore().getFetchTotalCount();
-    ret[jss::node_reads_hit] = app.getNodeStore().getFetchHitCount();
-    ret[jss::node_written_bytes] =
-        std::to_string(app.getNodeStore().getStoreSize());
-    ret[jss::node_read_bytes] = app.getNodeStore().getFetchSize();
-
     if (auto shardStore = app.getShardStore())
     {
         auto shardFamily{dynamic_cast<ShardFamily*>(app.getShardFamily())};
@@ -142,6 +138,10 @@ getCountsJson(Application& app, int minObjectCount)
         jv[jss::node_written_bytes] =
             std::to_string(shardStore->getStoreSize());
         jv[jss::node_read_bytes] = shardStore->getFetchSize();
+    }
+    else
+    {
+        app.getNodeStore().getCountsJson(ret);
     }
 
     return ret;

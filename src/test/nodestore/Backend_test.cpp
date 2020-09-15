@@ -22,10 +22,12 @@
 #include <ripple/nodestore/Manager.h>
 #include <ripple/unity/rocksdb.h>
 #include <algorithm>
+#include <memory>
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
 namespace ripple {
+
 namespace NodeStore {
 
 // Tests the Backend interface

@@ -19,6 +19,8 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/ValidatorList.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/rpc/Context.h>
 
 namespace ripple {
@@ -26,6 +28,9 @@ namespace ripple {
 Json::Value
 doValidators(RPC::JsonContext& context)
 {
+    if (context.app.config().reporting())
+        return rpcError(rpcREPORTING_UNSUPPORTED);
+
     return context.app.validators().getJson();
 }
 

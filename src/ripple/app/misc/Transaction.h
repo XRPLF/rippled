@@ -303,6 +303,58 @@ public:
     Json::Value
     getJson(JsonOptions options, bool binary = false) const;
 
+    // Information used to locate a transaction.
+    // Contains a nodestore hash and ledger sequence pair if the transaction was
+    // found. Otherwise, contains the range of ledgers present in the database
+    // at the time of search.
+    struct Locator
+    {
+        std::variant<std::pair<uint256, uint32_t>, ClosedInterval<uint32_t>>
+            locator;
+
+        // @return true if transaction was found, false otherwise
+        //
+        // Call this function first to determine the type of the contained info.
+        // Calling the wrong getter function will throw an exception.
+        // See documentation for the getter functions for more details
+        bool
+        isFound()
+        {
+            return std::holds_alternative<std::pair<uint256, uint32_t>>(
+                locator);
+        }
+
+        // @return key used to find transaction in nodestore
+        //
+        // Throws if isFound() returns false
+        uint256 const&
+        getNodestoreHash()
+        {
+            return std::get<std::pair<uint256, uint32_t>>(locator).first;
+        }
+
+        // @return sequence of ledger containing the transaction
+        //
+        // Throws is isFound() returns false
+        uint32_t
+        getLedgerSequence()
+        {
+            return std::get<std::pair<uint256, uint32_t>>(locator).second;
+        }
+
+        // @return range of ledgers searched
+        //
+        // Throws if isFound() returns true
+        ClosedInterval<uint32_t> const&
+        getLedgerRangeSearched()
+        {
+            return std::get<ClosedInterval<uint32_t>>(locator);
+        }
+    };
+
+    static Locator
+    locate(uint256 const& id, Application& app);
+
     static std::variant<
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>,
         TxSearched>

@@ -25,6 +25,7 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/shamap/Family.h>
+#include <memory>
 
 namespace ripple {
 namespace tests {

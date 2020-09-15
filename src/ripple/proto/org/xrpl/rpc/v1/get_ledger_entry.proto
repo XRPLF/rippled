@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package org.xrpl.rpc.v1;
+option java_package = "org.xrpl.rpc.v1";
+option java_multiple_files = true;
+
+import "org/xrpl/rpc/v1/ledger.proto";
+
+// Get a single ledger object
+message GetLedgerEntryRequest
+{
+    // Key of the desired object
+    bytes key = 1;
+
+    // Ledger containing the object
+    LedgerSpecifier ledger = 2;
+    
+    // If the request needs to be forwarded from a reporting node to a p2p node,
+    // the reporting node will set this field. Clients should not set this
+    // field.
+    string client_ip = 3;
+}
+
+message GetLedgerEntryResponse
+{
+    RawLedgerObject ledger_object = 1;
+
+    // Ledger containing the object. Will match the value specified in the
+    // request.
+    LedgerSpecifier ledger = 2;
+}

@@ -343,16 +343,16 @@ class DatabaseShard_test : public TestBase
 
         // verify the metadata/header info by serializing to json
         BEAST_EXPECT(
-            getJson(
-                LedgerFill{ledger, LedgerFill::full | LedgerFill::expand}) ==
-            getJson(
-                LedgerFill{*fetched, LedgerFill::full | LedgerFill::expand}));
+            getJson(LedgerFill{
+                ledger, nullptr, LedgerFill::full | LedgerFill::expand}) ==
+            getJson(LedgerFill{
+                *fetched, nullptr, LedgerFill::full | LedgerFill::expand}));
 
         BEAST_EXPECT(
-            getJson(
-                LedgerFill{ledger, LedgerFill::full | LedgerFill::binary}) ==
-            getJson(
-                LedgerFill{*fetched, LedgerFill::full | LedgerFill::binary}));
+            getJson(LedgerFill{
+                ledger, nullptr, LedgerFill::full | LedgerFill::binary}) ==
+            getJson(LedgerFill{
+                *fetched, nullptr, LedgerFill::full | LedgerFill::binary}));
 
         // walk shamap and validate each node
         auto fcompAcc = [&](SHAMapTreeNode& node) -> bool {

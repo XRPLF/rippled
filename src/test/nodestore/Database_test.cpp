@@ -27,7 +27,10 @@
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <memory>
+
 namespace ripple {
+
 namespace NodeStore {
 
 class Database_test : public TestBase
@@ -211,7 +214,7 @@ public:
             // Error: Mix safety_level and individual settings
             DatabaseCon::Setup::globalPragma.reset();
             auto const expected =
-                "Failed to initialize SQLite databases: "
+                "Failed to initialize SQL databases: "
                 "Configuration file may not define both \"safety_level\" and "
                 "\"journal_mode\"";
             bool found = false;
@@ -243,7 +246,7 @@ public:
             // Error: Mix safety_level and one setting (gotta catch 'em all)
             DatabaseCon::Setup::globalPragma.reset();
             auto const expected =
-                "Failed to initialize SQLite databases: Configuration file may "
+                "Failed to initialize SQL databases: Configuration file may "
                 "not define both \"safety_level\" and \"journal_mode\"";
             bool found = false;
 
@@ -272,7 +275,7 @@ public:
             // Error: Mix safety_level and one setting (gotta catch 'em all)
             DatabaseCon::Setup::globalPragma.reset();
             auto const expected =
-                "Failed to initialize SQLite databases: Configuration file may "
+                "Failed to initialize SQL databases: Configuration file may "
                 "not define both \"safety_level\" and \"synchronous\"";
             bool found = false;
 
@@ -301,7 +304,7 @@ public:
             // Error: Mix safety_level and one setting (gotta catch 'em all)
             DatabaseCon::Setup::globalPragma.reset();
             auto const expected =
-                "Failed to initialize SQLite databases: Configuration file may "
+                "Failed to initialize SQL databases: Configuration file may "
                 "not define both \"safety_level\" and \"temp_store\"";
             bool found = false;
 
@@ -330,7 +333,7 @@ public:
             // Error: Invalid value
             DatabaseCon::Setup::globalPragma.reset();
             auto const expected =
-                "Failed to initialize SQLite databases: Invalid safety_level "
+                "Failed to initialize SQL databases: Invalid safety_level "
                 "value: slow";
             bool found = false;
 
@@ -358,7 +361,7 @@ public:
             // Error: Invalid value
             DatabaseCon::Setup::globalPragma.reset();
             auto const expected =
-                "Failed to initialize SQLite databases: Invalid journal_mode "
+                "Failed to initialize SQL databases: Invalid journal_mode "
                 "value: fast";
             bool found = false;
 
@@ -386,7 +389,7 @@ public:
             // Error: Invalid value
             DatabaseCon::Setup::globalPragma.reset();
             auto const expected =
-                "Failed to initialize SQLite databases: Invalid synchronous "
+                "Failed to initialize SQL databases: Invalid synchronous "
                 "value: instant";
             bool found = false;
 
@@ -414,7 +417,7 @@ public:
             // Error: Invalid value
             DatabaseCon::Setup::globalPragma.reset();
             auto const expected =
-                "Failed to initialize SQLite databases: Invalid temp_store "
+                "Failed to initialize SQL databases: Invalid temp_store "
                 "value: network";
             bool found = false;
 

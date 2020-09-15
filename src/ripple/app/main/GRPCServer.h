@@ -86,6 +86,8 @@ private:
 
     std::string serverAddress_;
 
+    std::vector<boost::asio::ip::address> secureGatewayIPs_;
+
     beast::Journal journal_;
 
     // typedef for function to bind a listener
@@ -108,6 +110,13 @@ private:
         RPC::GRPCContext<Request>&)>;
     // This implementation is currently limited to v1 of the API
     static unsigned constexpr apiVersion = 1;
+
+    template <class Request, class Response>
+    using Forward = std::function<grpc::Status(
+        org::xrpl::rpc::v1::XRPLedgerAPIService::Stub*,
+        grpc::ClientContext*,
+        Request,
+        Response*)>;
 
 public:
     explicit GRPCServerImpl(Application& app);
@@ -165,9 +174,6 @@ private:
         // What we get from the client.
         Request request_;
 
-        // What we send back to the client.
-        Response reply_;
-
         // The means to get back to the client.
         grpc::ServerAsyncResponseWriter<Response> responder_;
 
@@ -177,11 +183,16 @@ private:
         // Function that processes a request
         Handler<Request, Response> handler_;
 
+        // Function to call to forward to another server
+        Forward<Request, Response> forward_;
+
         // Condition required for this RPC
         RPC::Condition requiredCondition_;
 
         // Load type for this RPC
         Resource::Charge loadType_;
+
+        std::vector<boost::asio::ip::address> const& secureGatewayIPs_;
 
     public:
         virtual ~CallData() = default;
@@ -195,8 +206,10 @@ private:
             Application& app,
             BindListener<Request, Response> bindListener,
             Handler<Request, Response> handler,
+            Forward<Request, Response> forward,
             RPC::Condition requiredCondition,
-            Resource::Charge loadType);
+            Resource::Charge loadType,
+            std::vector<boost::asio::ip::address> const& secureGatewayIPs);
 
         CallData(const CallData&) = delete;
 
@@ -221,15 +234,61 @@ private:
         Resource::Charge
         getLoadType();
 
-        // return the Role required for this RPC
-        // for now, we are only supporting RPC's that require Role::USER for
-        // gRPC
+        // return the Role used for this RPC
         Role
-        getRole();
+        getRole(bool isUnlimited);
 
         // register endpoint with ResourceManager and return usage
         Resource::Consumer
         getUsage();
+
+        // Returns the ip of the client
+        // Empty optional if there was an error decoding the client ip
+        std::optional<boost::asio::ip::address>
+        getClientIpAddress();
+
+        // Returns the endpoint of the client.
+        // Empty optional if there was an error decoding the client
+        // endpoint
+        std::optional<boost::asio::ip::tcp::endpoint>
+        getClientEndpoint();
+
+        // If the request was proxied through
+        // another rippled node, returns the ip of the originating client.
+        // Empty optional if request was not proxied or there was an error
+        // decoding the client ip
+        std::optional<boost::asio::ip::address>
+        getProxiedClientIpAddress();
+
+        // If the request was proxied through
+        // another rippled node, returns the endpoint of the originating client.
+        // Empty optional if request was not proxied or there was an error
+        // decoding the client endpoint
+        std::optional<boost::asio::ip::tcp::endpoint>
+        getProxiedClientEndpoint();
+
+        // Returns the user specified in the request. Empty optional if no user
+        // was specified
+        std::optional<std::string>
+        getUser();
+
+        // Sets is_unlimited in response to value of clientIsUnlimited
+        // Does nothing if is_unlimited is not a field of the response
+        void
+        setIsUnlimited(Response& response, bool isUnlimited);
+
+        // True if the client is exempt from resource controls
+        bool
+        clientIsUnlimited();
+
+        // True if the request was proxied through another rippled node prior
+        // to arriving here
+        bool
+        wasForwarded();
+
+        // forward request to a p2p node
+        void
+        forwardToP2p(RPC::GRPCContext<Request>& context);
 
     };  // CallData
 

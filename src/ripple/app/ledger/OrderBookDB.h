@@ -24,6 +24,7 @@
 #include <ripple/app/ledger/BookListeners.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/OrderBook.h>
+#include <ripple/beast/utility/Journal.h>
 #include <mutex>
 
 namespace ripple {

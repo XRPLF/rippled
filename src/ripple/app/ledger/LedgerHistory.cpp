@@ -346,8 +346,8 @@ LedgerHistory::handleMismatch(
 
     if (auto stream = j_.debug())
     {
-        stream << "Built: " << getJson(*builtLedger);
-        stream << "Valid: " << getJson(*validLedger);
+        stream << "Built: " << getJson({*builtLedger, {}});
+        stream << "Valid: " << getJson({*validLedger, {}});
         stream << "Consensus: " << consensus;
     }
 
@@ -391,8 +391,8 @@ LedgerHistory::handleMismatch(
         JLOG(j_.error()) << "MISMATCH with " << builtTx.size() << " built and "
                          << validTx.size() << " valid transactions.";
 
-    JLOG(j_.error()) << "built\n" << getJson(*builtLedger);
-    JLOG(j_.error()) << "valid\n" << getJson(*validLedger);
+    JLOG(j_.error()) << "built\n" << getJson({*builtLedger, {}});
+    JLOG(j_.error()) << "valid\n" << getJson({*validLedger, {}});
 
     // Log all differences between built and valid ledgers
     auto b = builtTx.begin();
