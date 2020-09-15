@@ -74,8 +74,7 @@ public:
 
     AcceptedLedger(
         std::shared_ptr<ReadView const> const& ledger,
-        AccountIDCache const& accountCache,
-        Logs& logs);
+        Application& app);
 
 private:
     void insert(AcceptedLedgerTx::ref);

@@ -17,11 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/core/TimeKeeper.h>
+#include <ripple/net/RPCErr.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/Overlay.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 
@@ -30,6 +31,9 @@ namespace ripple {
 Json::Value
 doPeers(RPC::JsonContext& context)
 {
+    if (context.app.config().reporting())
+        return rpcError(rpcREPORTING_UNSUPPORTED);
+
     Json::Value jvResult(Json::objectValue);
 
     jvResult[jss::peers] = context.app.overlay().json();

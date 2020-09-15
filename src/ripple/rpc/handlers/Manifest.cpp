@@ -20,6 +20,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/base64.h>
 #include <ripple/json/json_value.h>
+#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
@@ -28,6 +29,9 @@ namespace ripple {
 Json::Value
 doManifest(RPC::JsonContext& context)
 {
+    if (context.app.config().reporting())
+        return rpcError(rpcREPORTING_UNSUPPORTED);
+
     auto& params = context.params;
 
     if (!params.isMember(jss::public_key))

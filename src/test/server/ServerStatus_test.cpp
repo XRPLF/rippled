@@ -80,7 +80,7 @@ class ServerStatus_test : public beast::unit_test::suite,
             // failure test, this endpoint should never be used
             (*p)["server"].append("port_alt");
             (*p)["port_alt"].set("ip", getEnvLocalhostAddr());
-            (*p)["port_alt"].set("port", "8099");
+            (*p)["port_alt"].set("port", "7099");
             (*p)["port_alt"].set("protocol", "http");
             (*p)["port_alt"].set("admin", getEnvLocalhostAddr());
         }

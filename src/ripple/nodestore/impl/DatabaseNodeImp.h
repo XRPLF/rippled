@@ -43,8 +43,41 @@ public:
         Section const& config,
         beast::Journal j)
         : Database(name, parent, scheduler, readThreads, config, j)
+        , cache_(nullptr)
         , backend_(std::move(backend))
     {
+        std::optional<int> cacheSize, cacheAge;
+        if (config.exists("cache_size"))
+        {
+            cacheSize = get<int>(config, "cache_size");
+            if (cacheSize.value() < 0)
+            {
+                Throw<std::runtime_error>(
+                    "Specified negative value for cache_size");
+            }
+        }
+        if (config.exists("cache_age"))
+        {
+            cacheAge = get<int>(config, "cache_age");
+            if (cacheAge.value() < 0)
+            {
+                Throw<std::runtime_error>(
+                    "Specified negative value for cache_age");
+            }
+        }
+        if (cacheSize || cacheAge)
+        {
+            if (!cacheSize || *cacheSize == 0)
+                cacheSize = 16384;
+            if (!cacheAge || *cacheAge == 0)
+                cacheAge = 5;
+            cache_ = std::make_shared<TaggedCache<uint256, NodeObject>>(
+                name,
+                cacheSize.value(),
+                std::chrono::minutes{cacheAge.value()},
+                stopwatch(),
+                j);
+        }
         assert(backend_);
         setParent(parent);
     }
@@ -82,6 +115,14 @@ public:
         // only one database
         return true;
     }
+    void
+    sync() override
+    {
+        backend_->sync();
+    }
+
+    std::vector<std::shared_ptr<NodeObject>>
+    fetchBatch(std::vector<uint256> const& hashes);
 
     bool
     storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override
@@ -92,7 +133,16 @@ public:
     void
     sweep() override;
 
+    Backend&
+    getBackend() override
+    {
+        return *backend_;
+    };
+
 private:
+    // Cache for database objects. This cache is not always initialized. Check
+    // for null before using.
+    std::shared_ptr<TaggedCache<uint256, NodeObject>> cache_;
     // Persistent key/value storage
     std::shared_ptr<Backend> backend_;
 

@@ -37,7 +37,7 @@ doLedgerAccept(RPC::JsonContext& context)
     std::unique_lock lock{context.app.getMasterMutex()};
     Json::Value jvResult;
 
-    if (!context.app.config().standalone())
+    if (!context.app.config().standalone() || context.app.config().reporting())
     {
         jvResult[jss::error] = "notStandAlone";
     }

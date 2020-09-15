@@ -128,6 +128,9 @@ public:
     virtual bool
     isSameDB(std::uint32_t s1, std::uint32_t s2) = 0;
 
+    virtual void
+    sync() = 0;
+
     /** Fetch a node object.
         If the object is known to be not in the database, isn't found in the
         database during the fetch, or failed to load correctly during the fetch,
@@ -175,9 +178,12 @@ public:
     virtual void
     sweep() = 0;
 
-    /** Gather statistics pertaining to read and write activities.
+    virtual Backend&
+    getBackend() = 0;
 
-        @return The total read and written bytes.
+    /** Gather statistics pertaining to read and write activities.
+     *
+     * @param obj Json object reference into which to place counters.
      */
     std::uint64_t
     getStoreCount() const
@@ -208,6 +214,9 @@ public:
     {
         return fetchSz_;
     }
+
+    void
+    getCountsJson(Json::Value& obj);
 
     /** Returns the number of file descriptors the database expects to need */
     int
@@ -261,10 +270,20 @@ protected:
     bool
     storeLedger(Ledger const& srcLedger, std::shared_ptr<Backend> dstBackend);
 
+    void
+    updateFetchMetrics(uint64_t fetches, uint64_t hits, uint64_t duration)
+    {
+        fetchTotalCount_ += fetches;
+        fetchHitCount_ += hits;
+        fetchDurationUs_ += duration;
+    }
+
 private:
     std::atomic<std::uint64_t> storeCount_{0};
     std::atomic<std::uint64_t> storeSz_{0};
     std::atomic<std::uint64_t> fetchTotalCount_{0};
+    std::atomic<std::uint64_t> fetchDurationUs_{0};
+    std::atomic<std::uint64_t> storeDurationUs_{0};
 
     std::mutex readLock_;
     std::condition_variable readCondVar_;

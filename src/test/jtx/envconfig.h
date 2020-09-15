@@ -119,6 +119,18 @@ port_increment(std::unique_ptr<Config>, int);
 /// @param cfg config instance to be modified
 std::unique_ptr<Config> addGrpcConfig(std::unique_ptr<Config>);
 
+/// @brief add a grpc address, port and secure_gateway to config
+///
+/// This is intended for use with envconfig, for tests that require a grpc
+/// server. If this function is not called, grpc server will not start
+///
+///
+/// @param cfg config instance to be modified
+std::unique_ptr<Config>
+addGrpcConfigWithSecureGateway(
+    std::unique_ptr<Config>,
+    std::string const& secureGateway);
+
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

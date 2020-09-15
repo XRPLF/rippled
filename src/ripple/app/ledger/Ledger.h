@@ -151,6 +151,12 @@ public:
         return info_;
     }
 
+    void
+    setLedgerInfo(LedgerInfo const& info)
+    {
+        info_ = info;
+    }
+
     Fees const&
     fees() const override
     {
@@ -165,6 +171,9 @@ public:
 
     bool
     exists(Keylet const& k) const override;
+
+    bool
+    exists(uint256 const& key) const;
 
     boost::optional<uint256>
     succ(uint256 const& key, boost::optional<uint256> const& last = boost::none)
@@ -212,6 +221,9 @@ public:
     rawInsert(std::shared_ptr<SLE> const& sle) override;
 
     void
+    rawErase(uint256 const& key);
+
+    void
     rawReplace(std::shared_ptr<SLE> const& sle) override;
 
     void
@@ -230,6 +242,19 @@ public:
         std::shared_ptr<Serializer const> const& txn,
         std::shared_ptr<Serializer const> const& metaData) override;
 
+    // Insert the transaction, and return the hash of the SHAMap leaf node
+    // holding the transaction. The hash can be used to fetch the transaction
+    // directly, instead of traversing the SHAMap
+    // @param key transaction ID
+    // @param txn transaction
+    // @param metaData transaction metadata
+    // @return hash of SHAMap leaf node that holds the transaction
+    uint256
+    rawTxInsertWithHash(
+        uint256 const& key,
+        std::shared_ptr<Serializer const> const& txn,
+        std::shared_ptr<Serializer const> const& metaData);
+
     //--------------------------------------------------------------------------
 
     void
@@ -246,7 +271,7 @@ public:
         Config const& config);
 
     void
-    setImmutable(Config const& config);
+    setImmutable(Config const& config, bool rehash = true);
 
     bool
     isImmutable() const
@@ -363,15 +388,15 @@ public:
     bool
     isVotingLedger() const;
 
+    std::shared_ptr<SLE>
+    peek(Keylet const& k) const;
+
 private:
     class sles_iter_impl;
     class txs_iter_impl;
 
     bool
     setup(Config const& config);
-
-    std::shared_ptr<SLE>
-    peek(Keylet const& k) const;
 
     bool mImmutable;
 
@@ -431,6 +456,36 @@ getHashesByIndex(
 
 extern std::map<std::uint32_t, std::pair<uint256, uint256>>
 getHashesByIndex(std::uint32_t minSeq, std::uint32_t maxSeq, Application& app);
+
+// Fetch the ledger with the highest sequence contained in the database
+extern std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
+getLatestLedger(Application& app);
+
+// *** Reporting Mode Only ***
+// Fetch all of the transactions contained in ledger from the nodestore.
+// The transactions are fetched directly as a batch, instead of traversing the
+// transaction SHAMap. Fetching directly is significantly faster than
+// traversing, as there are less database reads, and all of the reads can
+// executed concurrently. This function only works in reporting mode.
+// @param ledger the ledger for which to fetch the contained transactions
+// @param app reference to the Application
+// @return vector of (transaction, metadata) pairs
+extern std::vector<
+    std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>>
+flatFetchTransactions(ReadView const& ledger, Application& app);
+
+// *** Reporting Mode Only ***
+// For each nodestore hash, fetch the transaction.
+// The transactions are fetched directly as a batch, instead of traversing the
+// transaction SHAMap. Fetching directly is significantly faster than
+// traversing, as there are less database reads, and all of the reads can
+// executed concurrently. This function only works in reporting mode.
+// @param nodestoreHashes hashes of the transactions to fetch
+// @param app reference to the Application
+// @return vector of (transaction, metadata) pairs
+extern std::vector<
+    std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>>
+flatFetchTransactions(Application& app, std::vector<uint256>& nodestoreHashes);
 
 /** Deserialize a SHAMapItem containing a single STTx
 

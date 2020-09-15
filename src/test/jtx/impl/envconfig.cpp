@@ -26,9 +26,9 @@ namespace test {
 
 int port_base = 8000;
 void
-incPorts()
+incPorts(int times)
 {
-    port_base += 3;
+    port_base += (4 * times);
 }
 
 std::atomic<bool> envUseIPv4{false};
@@ -115,6 +115,18 @@ addGrpcConfig(std::unique_ptr<Config> cfg)
     std::string port_grpc = std::to_string(port_base + 3);
     (*cfg)["port_grpc"].set("ip", getEnvLocalhostAddr());
     (*cfg)["port_grpc"].set("port", port_grpc);
+    return cfg;
+}
+
+std::unique_ptr<Config>
+addGrpcConfigWithSecureGateway(
+    std::unique_ptr<Config> cfg,
+    std::string const& secureGateway)
+{
+    std::string port_grpc = std::to_string(port_base + 3);
+    (*cfg)["port_grpc"].set("ip", getEnvLocalhostAddr());
+    (*cfg)["port_grpc"].set("port", port_grpc);
+    (*cfg)["port_grpc"].set("secure_gateway", secureGateway);
     return cfg;
 }
 

@@ -139,6 +139,7 @@ testing and running.
 * `-Dsan=thread` to enable the thread sanitizer with clang
 * `-Dsan=address` to enable the address sanitizer with clang
 * `-Dstatic=ON` to enable static linking library dependencies
+* `-Dreporting=ON` to build code neccessary for reporting mode (defaults to OFF)
 
 Several other infrequently used options are available - run `ccmake` or
 `cmake-gui` for a list of all options.
