@@ -32,6 +32,10 @@ SHAMap::SHAMap(SHAMapType t, Family& f)
     root_ = std::make_shared<SHAMapInnerNode>(seq_);
 }
 
+// The `hash` parameter is unused. It is part of the interface so it's clear
+// from the parameters that this is the constructor to use when the hash is
+// known. The fact that the parameter is unused is an implementation detail that
+// should not change the interface.
 SHAMap::SHAMap(SHAMapType t, uint256 const& hash, Family& f)
     : f_(f)
     , journal_(f.journal())
