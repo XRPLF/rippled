@@ -109,7 +109,7 @@ public:
     Json::Value
     getJson() const
     {
-        return ripple::getJson(*ledger_);
+        return ripple::getJson({*ledger_, {}});
     }
 
     /** The ledger instance.

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#ifdef RIPPLED_REPORTING
 // Need raw socket manipulation to determine if postgres socket IPv4 or 6.
 #if defined(_WIN32)
 #include <winsock2.h>
@@ -30,6 +31,7 @@
 
 #include <ripple/basics/contract.h>
 #include <ripple/core/Pg.h>
+#include <boost/asio/ssl/detail/openssl_init.hpp>
 #include <boost/format.hpp>
 #include <algorithm>
 #include <array>
@@ -124,6 +126,11 @@ Pg::query(char const* command, std::size_t nParams, char const* const* values)
     // Connect then submit query.
     while (true)
     {
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            if (stop_)
+                return PgResult();
+        }
         try
         {
             connect();
@@ -176,8 +183,9 @@ Pg::query(char const* command, std::size_t nParams, char const* const* values)
                << ", number of tuples: " << PQntuples(ret.get())
                << ", number of fields: " << PQnfields(ret.get());
             JLOG(j_.error()) << ss.str();
+            PgResult retRes(ret.get(), conn_.get());
             disconnect();
-            return PgResult(ret.get(), conn_.get());
+            return retRes;
         }
     }
 
@@ -185,7 +193,7 @@ Pg::query(char const* command, std::size_t nParams, char const* const* values)
 }
 
 static pg_formatted_params
-formatParams(pg_params const& dbParams, beast::Journal const j)
+formatParams(pg_params const& dbParams, beast::Journal const& j)
 {
     std::vector<std::optional<std::string>> const& values = dbParams.second;
     /* Convert vector to C-style array of C-strings for postgres API.
@@ -252,6 +260,7 @@ Pg::bulkInsert(char const* table, std::string const& records)
         std::stringstream ss;
         ss << "bulkInsert to " << table
            << ". PQputCopyData error: " << PQerrorMessage(conn_.get());
+        disconnect();
         Throw<std::runtime_error>(ss.str());
     }
 
@@ -260,6 +269,7 @@ Pg::bulkInsert(char const* table, std::string const& records)
         std::stringstream ss;
         ss << "bulkInsert to " << table
            << ". PQputCopyEnd error: " << PQerrorMessage(conn_.get());
+        disconnect();
         Throw<std::runtime_error>(ss.str());
     }
 
@@ -273,6 +283,7 @@ Pg::bulkInsert(char const* table, std::string const& records)
         std::stringstream ss;
         ss << "bulkInsert to " << table
            << ". PQputCopyEnd status not PGRES_COMMAND_OK: " << status;
+        disconnect();
         Throw<std::runtime_error>(ss.str());
     }
 }
@@ -285,11 +296,14 @@ Pg::clear()
 
     // The result object must be freed using the libpq API PQclear() call.
     pg_result_type res{nullptr, [](PGresult* result) { PQclear(result); }};
-    while (true)
+
+    // Consume results until no more, or until the connection is severed.
+    do
     {
         res.reset(PQgetResult(conn_.get()));
         if (!res)
             break;
+
         // Pending bulk copy operations may leave the connection in such a
         // state that it must be disconnected.
         switch (PQresultStatus(res.get()))
@@ -303,15 +317,23 @@ Pg::clear()
                 conn_.reset();
             default:;
         }
-    }
+    } while (res && conn_);
 
     return conn_ != nullptr;
 }
 
 //-----------------------------------------------------------------------------
 
-PgPool::PgPool(Section const& pgConfig, beast::Journal const j) : j_(j)
+PgPool::PgPool(Section const& pgConfig, Stoppable& parent, beast::Journal j)
+    : Stoppable("PgPool", parent), j_(j)
 {
+    // Make sure that boost::asio initializes the SSL library.
+    {
+        static boost::asio::ssl::detail::openssl_init<true> initSsl;
+    }
+    // Don't have postgres client initialize SSL.
+    PQinitOpenSSL(0, 0);
+
     /*
     Connect to postgres to create low level connection parameters
     with optional caching of network address info for subsequent connections.
@@ -479,12 +501,14 @@ PgPool::setup()
 }
 
 void
-PgPool::stop()
+PgPool::onStop()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     stop_ = true;
     cond_.notify_all();
     idle_.clear();
+    stopped();
+    JLOG(j_.info()) << "stopped";
 }
 
 void
@@ -498,9 +522,9 @@ PgPool::idleSweeper()
         {
             auto const found =
                 idle_.upper_bound(clock_type::now() - config_.timeout);
-            for (auto it = idle_.begin(); it != found; ++it)
+            for (auto it = idle_.begin(); it != found;)
             {
-                idle_.erase(it);
+                it = idle_.erase(it);
                 --connections_;
             }
         }
@@ -516,13 +540,13 @@ PgPool::idleSweeper()
 std::unique_ptr<Pg>
 PgPool::checkout()
 {
-    if (stop_)
-        return {};
-
     std::unique_ptr<Pg> ret;
     std::unique_lock<std::mutex> lock(mutex_);
     do
     {
+        if (stop_)
+            return {};
+
         // If there is a connection in the pool, return the most recent.
         if (idle_.size())
         {
@@ -534,7 +558,7 @@ PgPool::checkout()
         else if (connections_ < config_.max_connections)
         {
             ++connections_;
-            ret = std::make_unique<Pg>(config_, j_);
+            ret = std::make_unique<Pg>(config_, j_, stop_, mutex_);
         }
         // Otherwise, wait until a connection becomes available or we stop.
         else
@@ -570,10 +594,10 @@ PgPool::checkin(std::unique_ptr<Pg>& pg)
 
 //-----------------------------------------------------------------------------
 
-std::unique_ptr<PgPool>
-make_PgPool(Section const& pgConfig, beast::Journal const j)
+std::shared_ptr<PgPool>
+make_PgPool(Section const& pgConfig, Stoppable& parent, beast::Journal j)
 {
-    auto ret = std::make_unique<PgPool>(pgConfig, j);
+    auto ret = std::make_shared<PgPool>(pgConfig, parent, j);
     ret->setup();
     return ret;
 }
@@ -1301,7 +1325,7 @@ std::array<char const*, LATEST_SCHEMA_VERSION> upgrade_schemata = {
  */
 void
 applySchema(
-    PgPool& pool,
+    std::shared_ptr<PgPool> const& pool,
     char const* schema,
     std::uint32_t currentVersion,
     std::uint32_t schemaVersion)
@@ -1337,7 +1361,7 @@ applySchema(
 }
 
 void
-initSchema(PgPool& pool)
+initSchema(std::shared_ptr<PgPool> const& pool)
 {
     // Figure out what schema version, if any, is already installed.
     auto res = PgQuery(pool)({version_query, {}});
@@ -1394,3 +1418,4 @@ initSchema(PgPool& pool)
 }
 
 }  // namespace ripple
+#endif

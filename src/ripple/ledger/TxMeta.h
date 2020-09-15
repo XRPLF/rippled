@@ -55,7 +55,7 @@ public:
         return mTransactionID;
     }
     std::uint32_t
-    getLgrSeq()
+    getLgrSeq() const
     {
         return mLedger;
     }

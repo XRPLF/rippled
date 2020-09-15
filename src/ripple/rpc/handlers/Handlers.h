@@ -37,10 +37,6 @@ doAccountObjects(RPC::JsonContext&);
 Json::Value
 doAccountOffers(RPC::JsonContext&);
 Json::Value
-doAccountTxSwitch(RPC::JsonContext&);
-Json::Value
-doAccountTxOld(RPC::JsonContext&);
-Json::Value
 doAccountTxJson(RPC::JsonContext&);
 Json::Value
 doBookOffers(RPC::JsonContext&);

@@ -10,6 +10,7 @@ import "org/xrpl/rpc/v1/amount.proto";
 // Next field: 1
 message GetFeeRequest
 {
+    string client_ip = 1;
 }
 
 // Response to a GetFee RPC

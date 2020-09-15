@@ -29,6 +29,8 @@ message GetAccountInfoRequest
     bool queue = 4;
 
     bool signer_lists = 5;
+
+    string client_ip = 6;
 }
 
 // Response to GetAccountInfo RPC

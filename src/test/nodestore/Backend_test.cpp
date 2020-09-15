@@ -26,6 +26,7 @@
 #include <test/unit_test/SuiteJournal.h>
 
 namespace ripple {
+
 namespace NodeStore {
 
 // Tests the Backend interface

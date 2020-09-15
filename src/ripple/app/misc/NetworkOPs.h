@@ -319,6 +319,11 @@ public:
         TER terResult) = 0;
     virtual void
     pubValidation(std::shared_ptr<STValidation> const& val) = 0;
+
+    virtual void
+    forwardProposedTransaction(Json::Value const& jvObj) = 0;
+    virtual void
+    forwardProposedAccountTransaction(Json::Value const& jvObj) = 0;
 };
 
 //------------------------------------------------------------------------------

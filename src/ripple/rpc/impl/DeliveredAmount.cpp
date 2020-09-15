@@ -119,10 +119,20 @@ canHaveDeliveredAmount(
 {
     // These lambdas are used to compute the values lazily
     auto const getFix1623Enabled = [&context]() -> bool {
-        auto const view = context.app.openLedger().current();
-        if (!view)
-            return false;
-        return view->rules().enabled(fix1623);
+        if (context.app.config().reporting())
+        {
+            auto const view = context.ledgerMaster.getValidatedLedger();
+            if (!view)
+                return false;
+            return view->rules().enabled(fix1623);
+        }
+        else
+        {
+            auto const view = context.app.openLedger().current();
+            if (!view)
+                return false;
+            return view->rules().enabled(fix1623);
+        }
     };
 
     return canHaveDeliveredAmountHelp(
@@ -205,12 +215,22 @@ insertDeliveredAmount(
     std::shared_ptr<Transaction> const& transaction,
     TxMeta const& transactionMeta)
 {
-    auto const serializedTx = transaction->getSTransaction();
-    if (canHaveDeliveredAmount(context, serializedTx, transactionMeta))
+    insertDeliveredAmount(
+        meta, context, transaction->getSTransaction(), transactionMeta);
+}
+
+void
+insertDeliveredAmount(
+    Json::Value& meta,
+    RPC::JsonContext const& context,
+    std::shared_ptr<STTx const> const& transaction,
+    TxMeta const& transactionMeta)
+{
+    if (canHaveDeliveredAmount(context, transaction, transactionMeta))
     {
         auto amt = getDeliveredAmount(
-            context, serializedTx, transactionMeta, [&transaction]() {
-                return transaction->getLedger();
+            context, transaction, transactionMeta, [&transactionMeta]() {
+                return transactionMeta.getLgrSeq();
             });
 
         if (amt)

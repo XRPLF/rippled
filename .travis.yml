@@ -95,6 +95,13 @@ matrix:
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
         - BUILD_TYPE=Debug
+    - <<: *linux
+      compiler: clang-8
+      name: reporting, clang-8, debug
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - BUILD_TYPE=Debug
+        - CMAKE_ADD="-Dreporting=ON"
     # coverage builds
     - <<: *linux
       if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_cov/
