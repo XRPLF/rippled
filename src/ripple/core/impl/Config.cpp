@@ -19,8 +19,8 @@
 
 #include <ripple/basics/FileUtilities.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/contract.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/basics/contract.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
