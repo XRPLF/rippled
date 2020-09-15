@@ -390,8 +390,8 @@ matrix:
         - mkdir -p build.ms && cd build.ms
         - cmake -G Ninja ${CMAKE_EXTRA_ARGS} -DCMAKE_BUILD_TYPE=${BLD_CONFIG} ..
         - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel --verbose
-        # override num procs to force single unit test job
-        - export NUM_PROCESSORS=1
+        # override num procs to force fewer unit test jobs
+        - export NUM_PROCESSORS=2
         - travis_wait ${MAX_TIME_MIN} ./rippled.exe --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
     - <<: *windows-bld
       name: windows, release
@@ -404,8 +404,8 @@ matrix:
         - cmake -G "Visual Studio 15 2017 Win64" ${CMAKE_EXTRA_ARGS} ..
         - export DESTDIR=${PWD}/_installed_
         - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel --verbose --config ${BLD_CONFIG} --target install
-        # override num procs to force single unit test job
-        - export NUM_PROCESSORS=1
+        # override num procs to force fewer unit test jobs
+        - export NUM_PROCESSORS=2
         - >-
           travis_wait ${MAX_TIME_MIN} "./_installed_/Program Files/rippled/bin/rippled.exe" --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
     - <<: *windows-bld
@@ -438,8 +438,7 @@ cache:
     - $CACHE_DIR
 
 before_install:
-  # NUM_PROCESSORS was set to 1 due to problems in parallel launch of unit tests on Mac platform
-  - if [ "$(uname)" = "Darwin" ] ; then export NUM_PROCESSORS=1; else export NUM_PROCESSORS=$(nproc); fi
+  - export NUM_PROCESSORS=$(nproc)
   - echo "NUM PROC is ${NUM_PROCESSORS}"
   - if [ "$(uname)" = "Linux" ] ; then docker pull ${DOCKER_IMAGE}; fi
   - if [ "${MATRIX_EVAL}" != "" ] ; then eval "${MATRIX_EVAL}"; fi
