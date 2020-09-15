@@ -35,3 +35,20 @@ message LedgerRange
     uint32 ledger_index_max = 2;
 };
 
+
+// Next field: 3
+message RawLedgerObject
+{
+    // Raw data of the ledger object. In GetLedgerResponse and
+    // GetLedgerDiffResponse, data will be empty if the object was deleted.
+    bytes data = 1;
+
+    // Key of the ledger object
+    bytes key = 2;
+}
+
+message RawLedgerObjects
+{
+    repeated RawLedgerObject objects = 1;
+}
+

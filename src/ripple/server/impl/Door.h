@@ -99,6 +99,9 @@ private:
     bool ssl_;
     bool plain_;
 
+    void
+    reOpen();
+
 public:
     Door(
         Handler& handler,
@@ -221,6 +224,63 @@ Door<Handler>::Detector::do_detect(boost::asio::yield_context do_yield)
 //------------------------------------------------------------------------------
 
 template <class Handler>
+void
+Door<Handler>::reOpen()
+{
+    error_code ec;
+
+    if (acceptor_.is_open())
+    {
+        acceptor_.close(ec);
+        if (ec)
+        {
+            std::stringstream ss;
+            ss << "Can't close acceptor: " << port_.name << ", "
+               << ec.message();
+            JLOG(j_.error()) << ss.str();
+            Throw<std::runtime_error>(ss.str());
+        }
+    }
+
+    endpoint_type const local_address = endpoint_type(port_.ip, port_.port);
+
+    acceptor_.open(local_address.protocol(), ec);
+    if (ec)
+    {
+        JLOG(j_.error()) << "Open port '" << port_.name
+                         << "' failed:" << ec.message();
+        Throw<std::exception>();
+    }
+
+    acceptor_.set_option(
+        boost::asio::ip::tcp::acceptor::reuse_address(true), ec);
+    if (ec)
+    {
+        JLOG(j_.error()) << "Option for port '" << port_.name
+                         << "' failed:" << ec.message();
+        Throw<std::exception>();
+    }
+
+    acceptor_.bind(local_address, ec);
+    if (ec)
+    {
+        JLOG(j_.error()) << "Bind port '" << port_.name
+                         << "' failed:" << ec.message();
+        Throw<std::exception>();
+    }
+
+    acceptor_.listen(boost::asio::socket_base::max_connections, ec);
+    if (ec)
+    {
+        JLOG(j_.error()) << "Listen on port '" << port_.name
+                         << "' failed:" << ec.message();
+        Throw<std::exception>();
+    }
+
+    JLOG(j_.info()) << "Opened " << port_;
+}
+
+template <class Handler>
 Door<Handler>::Door(
     Handler& handler,
     boost::asio::io_context& io_context,
@@ -240,43 +300,7 @@ Door<Handler>::Door(
           port_.protocol.count("http") > 0 || port_.protocol.count("ws") > 0 ||
           port_.protocol.count("ws2"))
 {
-    error_code ec;
-    endpoint_type const local_address = endpoint_type(port.ip, port.port);
-
-    acceptor_.open(local_address.protocol(), ec);
-    if (ec)
-    {
-        JLOG(j_.error()) << "Open port '" << port.name
-                         << "' failed:" << ec.message();
-        Throw<std::exception>();
-    }
-
-    acceptor_.set_option(
-        boost::asio::ip::tcp::acceptor::reuse_address(true), ec);
-    if (ec)
-    {
-        JLOG(j_.error()) << "Option for port '" << port.name
-                         << "' failed:" << ec.message();
-        Throw<std::exception>();
-    }
-
-    acceptor_.bind(local_address, ec);
-    if (ec)
-    {
-        JLOG(j_.error()) << "Bind port '" << port.name
-                         << "' failed:" << ec.message();
-        Throw<std::exception>();
-    }
-
-    acceptor_.listen(boost::asio::socket_base::max_connections, ec);
-    if (ec)
-    {
-        JLOG(j_.error()) << "Listen on port '" << port.name
-                         << "' failed:" << ec.message();
-        Throw<std::exception>();
-    }
-
-    JLOG(j_.info()) << "Opened " << port;
+    reOpen();
 }
 
 template <class Handler>
@@ -348,14 +372,18 @@ Door<Handler>::do_accept(boost::asio::yield_context do_yield)
         stream_type stream(ioc_);
         socket_type& socket = stream.socket();
         acceptor_.async_accept(socket, remote_address, do_yield[ec]);
-        if (ec && ec != boost::asio::error::operation_aborted)
-        {
-            JLOG(j_.error()) << "accept: " << ec.message();
-        }
-        if (ec == boost::asio::error::operation_aborted)
-            break;
         if (ec)
+        {
+            if (ec == boost::asio::error::operation_aborted)
+                break;
+            JLOG(j_.error()) << "accept: " << ec.message();
+            if (ec == boost::asio::error::no_descriptors)
+            {
+                JLOG(j_.info()) << "re-opening acceptor";
+                reOpen();
+            }
             continue;
+        }
 
         if (ssl_ && plain_)
         {

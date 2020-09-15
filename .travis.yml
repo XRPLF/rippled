@@ -95,6 +95,13 @@ matrix:
       env:
         - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
         - BUILD_TYPE=Debug
+    - <<: *linux
+      compiler: clang-8
+      name: reporting, clang-8, debug
+      env:
+        - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - BUILD_TYPE=Debug
+        - CMAKE_ADD="-Dreporting=ON"
     # coverage builds
     - <<: *linux
       if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_linux/ OR commit_message =~ /travis_run_cov/
@@ -423,8 +430,6 @@ before_cache:
   - cd ${TRAVIS_HOME}
   - if [ -f cache_ignore.tar ] ; then $SUDO tar xvf cache_ignore.tar; fi
   - cd ${TRAVIS_BUILD_DIR}
-  # Display what changed in the cache before updating the cache
-  - find $CACHE_DIR -mmin -30 -ls
 
 cache:
   timeout: 900

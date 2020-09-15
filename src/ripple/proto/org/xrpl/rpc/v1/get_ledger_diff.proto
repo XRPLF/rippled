@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package org.xrpl.rpc.v1;
+option java_package = "org.xrpl.rpc.v1";
+option java_multiple_files = true;
+
+import "org/xrpl/rpc/v1/ledger.proto";
+
+
+// Get the state map difference between the two specified ledgers
+message GetLedgerDiffRequest
+{
+    LedgerSpecifier base_ledger = 1;
+
+    LedgerSpecifier desired_ledger = 2;
+
+    // If true, include the full ledger object. If false, only keys are included.
+    bool include_blobs = 3;
+
+    // If the request needs to be forwarded from a reporting node to a p2p node,
+    // the reporting node will set this field. Clients should not set this
+    // field.
+    string client_ip = 4;
+}
+
+message GetLedgerDiffResponse
+{
+    // All ledger objects that were added, modified or deleted between
+    // base_ledger and desired_ledger
+    RawLedgerObjects ledger_objects = 1;
+}
+

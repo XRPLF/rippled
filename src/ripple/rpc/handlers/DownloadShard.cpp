@@ -48,6 +48,9 @@ namespace ripple {
 Json::Value
 doDownloadShard(RPC::JsonContext& context)
 {
+    if (context.app.config().reporting())
+        return rpcError(rpcREPORTING_UNSUPPORTED);
+
     if (context.role != Role::ADMIN)
         return rpcError(rpcNO_PERMISSION);
 

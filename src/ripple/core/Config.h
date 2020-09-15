@@ -102,6 +102,12 @@ private:
     */
     bool RUN_STANDALONE = false;
 
+    bool RUN_REPORTING = false;
+
+    bool REPORTING_READ_ONLY = false;
+
+    bool USE_TX_TABLES = true;
+
     /** Determines if the server will sign a tx, given an account's secret seed.
 
         In the past, this was allowed, but this functionality can have security
@@ -230,6 +236,7 @@ public:
         bool bQuiet,
         bool bSilent,
         bool bStandalone);
+
     void
     setupControl(bool bQuiet, bool bSilent, bool bStandalone);
 
@@ -255,6 +262,29 @@ public:
     standalone() const
     {
         return RUN_STANDALONE;
+    }
+    bool
+    reporting() const
+    {
+        return RUN_REPORTING;
+    }
+
+    bool
+    useTxTables() const
+    {
+        return USE_TX_TABLES;
+    }
+
+    bool
+    reportingReadOnly() const
+    {
+        return REPORTING_READ_ONLY;
+    }
+
+    void
+    setReportingReadOnly(bool b)
+    {
+        REPORTING_READ_ONLY = b;
     }
 
     bool

@@ -37,6 +37,7 @@
 #include <ripple/app/misc/ValidatorKeys.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/misc/impl/AccountTxPaging.h>
+#include <ripple/app/reporting/ReportingETL.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/UptimeClock.h>
@@ -52,13 +53,16 @@
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/json/to_string.h>
+#include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/STParsedJSON.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/DeliveredAmount.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/steady_timer.hpp>
 
@@ -521,6 +525,11 @@ public:
         TER terResult) override;
     void
     pubValidation(std::shared_ptr<STValidation> const& val) override;
+
+    void
+    forwardProposedTransaction(Json::Value const& jvObj) override;
+    void
+    forwardProposedAccountTransaction(Json::Value const& jvObj) override;
 
     //--------------------------------------------------------------------------
     //
@@ -1666,7 +1675,7 @@ NetworkOPsImp::checkLastClosedLedger(
     }
 
     JLOG(m_journal.warn()) << "We are not running on the consensus ledger";
-    JLOG(m_journal.info()) << "Our LCL: " << getJson(*ourClosed);
+    JLOG(m_journal.info()) << "Our LCL: " << getJson({*ourClosed, {}});
     JLOG(m_journal.info()) << "Net LCL " << closedLedger;
 
     if ((mMode == OperatingMode::TRACKING) || (mMode == OperatingMode::FULL))
@@ -2569,8 +2578,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     if (!app_.config().SERVER_DOMAIN.empty())
         info[jss::server_domain] = app_.config().SERVER_DOMAIN;
 
-    if (auto const netid = app_.overlay().networkID())
-        info[jss::network_id] = static_cast<Json::UInt>(*netid);
+    if (!app_.config().reporting())
+        if (auto const netid = app_.overlay().networkID())
+            info[jss::network_id] = static_cast<Json::UInt>(*netid);
 
     info[jss::build_version] = BuildInfo::getVersionString();
 
@@ -2646,6 +2656,13 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     if (counters)
     {
         info[jss::counters] = app_.getPerfLog().countersJson();
+
+        Json::Value nodestore(Json::objectValue);
+        if (app_.getShardStore())
+            app_.getShardStore()->getCountsJson(nodestore);
+        else
+            app_.getNodeStore().getCountsJson(nodestore);
+        info[jss::counters][jss::nodestore] = nodestore;
         info[jss::current_activities] = app_.getPerfLog().currentJson();
     }
 
@@ -2662,7 +2679,8 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     if (fp != 0)
         info[jss::fetch_pack] = Json::UInt(fp);
 
-    info[jss::peers] = Json::UInt(app_.overlay().size());
+    if (!app_.config().reporting())
+        info[jss::peers] = Json::UInt(app_.overlay().size());
 
     Json::Value lastClose = Json::objectValue;
     lastClose[jss::proposers] = Json::UInt(mConsensus.prevProposers());
@@ -2685,77 +2703,82 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     if (admin)
         info[jss::load] = m_job_queue.getJson();
 
-    auto const escalationMetrics =
-        app_.getTxQ().getMetrics(*app_.openLedger().current());
-
-    auto const loadFactorServer = app_.getFeeTrack().getLoadFactor();
-    auto const loadBaseServer = app_.getFeeTrack().getLoadBase();
-    /* Scale the escalated fee level to unitless "load factor".
-       In practice, this just strips the units, but it will continue
-       to work correctly if either base value ever changes. */
-    auto const loadFactorFeeEscalation =
-        mulDiv(
-            escalationMetrics.openLedgerFeeLevel,
-            loadBaseServer,
-            escalationMetrics.referenceFeeLevel)
-            .second;
-
-    auto const loadFactor = std::max(
-        safe_cast<std::uint64_t>(loadFactorServer), loadFactorFeeEscalation);
-
-    if (!human)
+    if (!app_.config().reporting())
     {
-        info[jss::load_base] = loadBaseServer;
-        info[jss::load_factor] = trunc32(loadFactor);
-        info[jss::load_factor_server] = loadFactorServer;
+        auto const escalationMetrics =
+            app_.getTxQ().getMetrics(*app_.openLedger().current());
 
-        /* Json::Value doesn't support uint64, so clamp to max
-            uint32 value. This is mostly theoretical, since there
-            probably isn't enough extant XRP to drive the factor
-            that high.
-        */
-        info[jss::load_factor_fee_escalation] =
-            escalationMetrics.openLedgerFeeLevel.jsonClipped();
-        info[jss::load_factor_fee_queue] =
-            escalationMetrics.minProcessingFeeLevel.jsonClipped();
-        info[jss::load_factor_fee_reference] =
-            escalationMetrics.referenceFeeLevel.jsonClipped();
-    }
-    else
-    {
-        info[jss::load_factor] =
-            static_cast<double>(loadFactor) / loadBaseServer;
+        auto const loadFactorServer = app_.getFeeTrack().getLoadFactor();
+        auto const loadBaseServer = app_.getFeeTrack().getLoadBase();
+        /* Scale the escalated fee level to unitless "load factor".
+           In practice, this just strips the units, but it will continue
+           to work correctly if either base value ever changes. */
+        auto const loadFactorFeeEscalation =
+            mulDiv(
+                escalationMetrics.openLedgerFeeLevel,
+                loadBaseServer,
+                escalationMetrics.referenceFeeLevel)
+                .second;
 
-        if (loadFactorServer != loadFactor)
-            info[jss::load_factor_server] =
-                static_cast<double>(loadFactorServer) / loadBaseServer;
+        auto const loadFactor = std::max(
+            safe_cast<std::uint64_t>(loadFactorServer),
+            loadFactorFeeEscalation);
 
-        if (admin)
+        if (!human)
         {
-            std::uint32_t fee = app_.getFeeTrack().getLocalFee();
-            if (fee != loadBaseServer)
-                info[jss::load_factor_local] =
-                    static_cast<double>(fee) / loadBaseServer;
-            fee = app_.getFeeTrack().getRemoteFee();
-            if (fee != loadBaseServer)
-                info[jss::load_factor_net] =
-                    static_cast<double>(fee) / loadBaseServer;
-            fee = app_.getFeeTrack().getClusterFee();
-            if (fee != loadBaseServer)
-                info[jss::load_factor_cluster] =
-                    static_cast<double>(fee) / loadBaseServer;
-        }
-        if (escalationMetrics.openLedgerFeeLevel !=
-                escalationMetrics.referenceFeeLevel &&
-            (admin || loadFactorFeeEscalation != loadFactor))
+            info[jss::load_base] = loadBaseServer;
+            info[jss::load_factor] = trunc32(loadFactor);
+            info[jss::load_factor_server] = loadFactorServer;
+
+            /* Json::Value doesn't support uint64, so clamp to max
+                uint32 value. This is mostly theoretical, since there
+                probably isn't enough extant XRP to drive the factor
+                that high.
+            */
             info[jss::load_factor_fee_escalation] =
-                escalationMetrics.openLedgerFeeLevel.decimalFromReference(
-                    escalationMetrics.referenceFeeLevel);
-        if (escalationMetrics.minProcessingFeeLevel !=
-            escalationMetrics.referenceFeeLevel)
+                escalationMetrics.openLedgerFeeLevel.jsonClipped();
             info[jss::load_factor_fee_queue] =
-                escalationMetrics.minProcessingFeeLevel.decimalFromReference(
-                    escalationMetrics.referenceFeeLevel);
+                escalationMetrics.minProcessingFeeLevel.jsonClipped();
+            info[jss::load_factor_fee_reference] =
+                escalationMetrics.referenceFeeLevel.jsonClipped();
+        }
+        else
+        {
+            info[jss::load_factor] =
+                static_cast<double>(loadFactor) / loadBaseServer;
+
+            if (loadFactorServer != loadFactor)
+                info[jss::load_factor_server] =
+                    static_cast<double>(loadFactorServer) / loadBaseServer;
+
+            if (admin)
+            {
+                std::uint32_t fee = app_.getFeeTrack().getLocalFee();
+                if (fee != loadBaseServer)
+                    info[jss::load_factor_local] =
+                        static_cast<double>(fee) / loadBaseServer;
+                fee = app_.getFeeTrack().getRemoteFee();
+                if (fee != loadBaseServer)
+                    info[jss::load_factor_net] =
+                        static_cast<double>(fee) / loadBaseServer;
+                fee = app_.getFeeTrack().getClusterFee();
+                if (fee != loadBaseServer)
+                    info[jss::load_factor_cluster] =
+                        static_cast<double>(fee) / loadBaseServer;
+            }
+            if (escalationMetrics.openLedgerFeeLevel !=
+                    escalationMetrics.referenceFeeLevel &&
+                (admin || loadFactorFeeEscalation != loadFactor))
+                info[jss::load_factor_fee_escalation] =
+                    escalationMetrics.openLedgerFeeLevel.decimalFromReference(
+                        escalationMetrics.referenceFeeLevel);
+            if (escalationMetrics.minProcessingFeeLevel !=
+                escalationMetrics.referenceFeeLevel)
+                info[jss::load_factor_fee_queue] =
+                    escalationMetrics.minProcessingFeeLevel
+                        .decimalFromReference(
+                            escalationMetrics.referenceFeeLevel);
+        }
     }
 
     bool valid = false;
@@ -2763,7 +2786,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     if (lpClosed)
         valid = true;
-    else
+    else if (!app_.config().reporting())
         lpClosed = m_ledgerMaster.getClosedLedger();
 
     if (lpClosed)
@@ -2833,12 +2856,19 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     std::tie(info[jss::state_accounting], info[jss::server_state_duration_us]) =
         accounting_.json();
     info[jss::uptime] = UptimeClock::now().time_since_epoch().count();
-    info[jss::jq_trans_overflow] =
-        std::to_string(app_.overlay().getJqTransOverflow());
-    info[jss::peer_disconnects] =
-        std::to_string(app_.overlay().getPeerDisconnect());
-    info[jss::peer_disconnects_resources] =
-        std::to_string(app_.overlay().getPeerDisconnectCharges());
+    if (!app_.config().reporting())
+    {
+        info[jss::jq_trans_overflow] =
+            std::to_string(app_.overlay().getJqTransOverflow());
+        info[jss::peer_disconnects] =
+            std::to_string(app_.overlay().getPeerDisconnect());
+        info[jss::peer_disconnects_resources] =
+            std::to_string(app_.overlay().getPeerDisconnectCharges());
+    }
+    else
+    {
+        info["reporting"] = app_.getReportingETL().getInfo();
+    }
 
     return info;
 }
@@ -2889,6 +2919,123 @@ NetworkOPsImp::pubProposedTransaction(
 }
 
 void
+NetworkOPsImp::forwardProposedTransaction(Json::Value const& jvObj)
+{
+    // reporting does not forward validated transactions
+    // validated transactions will be published to the proper streams when the
+    // etl process writes a validated ledger
+    if (jvObj[jss::validated].asBool())
+        return;
+    {
+        std::lock_guard sl(mSubLock);
+
+        auto it = mStreamMaps[sRTTransactions].begin();
+        while (it != mStreamMaps[sRTTransactions].end())
+        {
+            InfoSub::pointer p = it->second.lock();
+
+            if (p)
+            {
+                p->send(jvObj, true);
+                ++it;
+            }
+            else
+            {
+                it = mStreamMaps[sRTTransactions].erase(it);
+            }
+        }
+    }
+
+    forwardProposedAccountTransaction(jvObj);
+}
+
+static void
+getAccounts(Json::Value const& jvObj, std::vector<AccountID>& accounts)
+{
+    for (auto& jv : jvObj)
+    {
+        if (jv.isObject())
+        {
+            getAccounts(jv, accounts);
+        }
+        else if (jv.isString())
+        {
+            auto account = RPC::accountFromStringStrict(jv.asString());
+            if (account)
+                accounts.push_back(*account);
+        }
+    }
+}
+
+void
+NetworkOPsImp::forwardProposedAccountTransaction(Json::Value const& jvObj)
+{
+    hash_set<InfoSub::pointer> notify;
+    int iProposed = 0;
+    // check if there are any subscribers before attempting to parse the JSON
+    {
+        std::lock_guard sl(mSubLock);
+
+        if (mSubRTAccount.empty())
+            return;
+    }
+
+    // parse the JSON outside of the lock
+    std::vector<AccountID> accounts;
+    if (jvObj.isMember(jss::transaction))
+    {
+        try
+        {
+            getAccounts(jvObj[jss::transaction], accounts);
+        }
+        catch (...)
+        {
+            JLOG(m_journal.debug())
+                << __func__ << " : "
+                << "error parsing json for accounts affected";
+            return;
+        }
+    }
+    {
+        std::lock_guard sl(mSubLock);
+
+        if (!mSubRTAccount.empty())
+        {
+            for (auto const& affectedAccount : accounts)
+            {
+                auto simiIt = mSubRTAccount.find(affectedAccount);
+                if (simiIt != mSubRTAccount.end())
+                {
+                    auto it = simiIt->second.begin();
+
+                    while (it != simiIt->second.end())
+                    {
+                        InfoSub::pointer p = it->second.lock();
+
+                        if (p)
+                        {
+                            notify.insert(p);
+                            ++it;
+                            ++iProposed;
+                        }
+                        else
+                            it = simiIt->second.erase(it);
+                    }
+                }
+            }
+        }
+    }
+    JLOG(m_journal.trace()) << "forwardProposedAccountTransaction:"
+                            << " iProposed=" << iProposed;
+
+    if (!notify.empty())
+    {
+        for (InfoSub::ref isrListener : notify)
+            isrListener->send(jvObj, true);
+    }
+}
+
+void
 NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
 {
     // Ledgers are published only when they acquire sufficient validations
@@ -2898,13 +3045,14 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
         app_.getAcceptedLedgerCache().fetch(lpAccepted->info().hash);
     if (!alpAccepted)
     {
-        alpAccepted = std::make_shared<AcceptedLedger>(
-            lpAccepted, app_.accountIDCache(), app_.logs());
+        alpAccepted = std::make_shared<AcceptedLedger>(lpAccepted, app_);
         app_.getAcceptedLedgerCache().canonicalize_replace_client(
             lpAccepted->info().hash, alpAccepted);
     }
 
     {
+        JLOG(m_journal.debug())
+            << "Publishing ledger = " << lpAccepted->info().seq;
         std::lock_guard sl(mSubLock);
 
         if (!mStreamMaps[sLedger].empty())
@@ -2938,6 +3086,10 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
                 InfoSub::pointer p = it->second.lock();
                 if (p)
                 {
+                    JLOG(m_journal.debug())
+                        << "Publishing ledger = " << lpAccepted->info().seq
+                        << " : consumer = " << p->getConsumer()
+                        << " : obj = " << jvObj;
                     p->send(jvObj, true);
                     ++it;
                 }
@@ -2959,6 +3111,8 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
 void
 NetworkOPsImp::reportFeeChange()
 {
+    if (app_.config().reporting())
+        return;
     ServerFeeSummary f{
         app_.openLedger().current()->fees().base,
         app_.getTxQ().getMetrics(*app_.openLedger().current()),

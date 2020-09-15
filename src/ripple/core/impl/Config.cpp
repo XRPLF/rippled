@@ -284,6 +284,11 @@ Config::setup(
 
     // Update default values
     load();
+    if (exists("reporting"))
+    {
+        RUN_REPORTING = true;
+        RUN_STANDALONE = true;
+    }
     {
         // load() may have set a new value for the dataDir
         std::string const dbPath(legacy("database_path"));
@@ -309,6 +314,10 @@ Config::setup(
 
     if (RUN_STANDALONE)
         LEDGER_HISTORY = 0;
+
+    std::string ledgerTxDbType;
+    Section ledgerTxTablesSection = section("ledger_tx_tables");
+    get_if_exists(ledgerTxTablesSection, "use_tx_tables", USE_TX_TABLES);
 }
 
 void

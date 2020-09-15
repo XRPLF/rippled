@@ -21,6 +21,8 @@
 #define RIPPLE_NODESTORE_BACKEND_H_INCLUDED
 
 #include <ripple/nodestore/Types.h>
+#include <atomic>
+#include <cstdint>
 
 namespace ripple {
 namespace NodeStore {
@@ -37,6 +39,15 @@ namespace NodeStore {
 class Backend
 {
 public:
+    struct Counters
+    {
+        std::atomic<std::uint64_t> writeDurationUs{0};
+        std::atomic<std::uint64_t> writeRetries{0};
+        std::atomic<std::uint64_t> writesDelayed{0};
+        std::atomic<std::uint64_t> readRetries{0};
+        std::atomic<std::uint64_t> readErrors{0};
+    };
+
     /** Destroy the backend.
 
         All open files are closed and flushed. If there are batched writes
@@ -80,6 +91,14 @@ public:
     virtual Status
     fetch(void const* key, std::shared_ptr<NodeObject>* pObject) = 0;
 
+    /** Return `true` if batch fetches are optimized. */
+    virtual bool
+    canFetchBatch() = 0;
+
+    /** Fetch a batch synchronously. */
+    virtual std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
+    fetchBatch(std::vector<uint256 const*> const& hashes) = 0;
+
     /** Store a single object.
         Depending on the implementation this may happen immediately
         or deferred using a scheduled task.
@@ -95,6 +114,9 @@ public:
     */
     virtual void
     storeBatch(Batch const& batch) = 0;
+
+    virtual void
+    sync() = 0;
 
     /** Visit every object in the database
         This is usually called during import.
@@ -120,6 +142,9 @@ public:
     /** Returns the number of file descriptors the backend expects to need. */
     virtual int
     fdRequired() const = 0;
+
+    virtual Counters const&
+    counters() const = 0;
 
     /** Returns true if the backend uses permanent storage. */
     bool

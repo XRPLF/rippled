@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/ledger/AcceptedLedger.h>
+#include <ripple/app/main/Application.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>
 
@@ -25,15 +26,25 @@ namespace ripple {
 
 AcceptedLedger::AcceptedLedger(
     std::shared_ptr<ReadView const> const& ledger,
-    AccountIDCache const& accountCache,
-    Logs& logs)
+    Application& app)
     : mLedger(ledger)
 {
-    for (auto const& item : ledger->txs)
-    {
-        insert(std::make_shared<AcceptedLedgerTx>(
-            ledger, item.first, item.second, accountCache, logs));
-    }
+    auto insertAll = [&](auto const& txns) {
+        for (auto const& item : txns)
+        {
+            insert(std::make_shared<AcceptedLedgerTx>(
+                ledger,
+                item.first,
+                item.second,
+                app.accountIDCache(),
+                app.logs()));
+        }
+    };
+
+    if (app.config().reporting())
+        insertAll(flatFetchTransactions(*ledger, app));
+    else
+        insertAll(ledger->txs);
 }
 
 void

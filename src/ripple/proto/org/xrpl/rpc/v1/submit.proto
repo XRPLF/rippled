@@ -14,6 +14,8 @@ message SubmitTransactionRequest
     bytes signed_transaction = 1;
 
     bool fail_hard = 2;
+
+    string client_ip = 3;
 }
 
 // A response when a signed transaction is submitted to the ledger.

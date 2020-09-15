@@ -95,7 +95,7 @@ Handler const handlerArray[]{
      byRef(&doLedgerCleaner),
      Role::ADMIN,
      NEEDS_NETWORK_CONNECTION},
-    {"ledger_closed", byRef(&doLedgerClosed), Role::USER, NO_CONDITION},
+    {"ledger_closed", byRef(&doLedgerClosed), Role::USER, NEEDS_CLOSED_LEDGER},
     {"ledger_current",
      byRef(&doLedgerCurrent),
      Role::USER,
@@ -155,7 +155,6 @@ Handler const handlerArray[]{
      NO_CONDITION},
     {"validator_info", byRef(&doValidatorInfo), Role::ADMIN, NO_CONDITION},
     {"wallet_propose", byRef(&doWalletPropose), Role::ADMIN, NO_CONDITION},
-
     // Evented methods
     {"subscribe", byRef(&doSubscribe), Role::USER, NO_CONDITION},
     {"unsubscribe", byRef(&doUnsubscribe), Role::USER, NO_CONDITION},

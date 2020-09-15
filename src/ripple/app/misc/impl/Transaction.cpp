@@ -25,6 +25,8 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/core/Pg.h>
+#include <ripple/json/json_reader.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
@@ -125,6 +127,82 @@ Transaction::load(
     using op = boost::optional<ClosedInterval<uint32_t>>;
 
     return load(id, app, op{range}, ec);
+}
+
+Transaction::Locator
+Transaction::locate(uint256 const& id, Application& app)
+{
+#ifdef RIPPLED_REPORTING
+    auto baseCmd = boost::format(R"(SELECT tx('%s');)");
+
+    std::string txHash = "\\x" + strHex(id);
+    std::string sql = boost::str(baseCmd % txHash);
+
+    auto res = PgQuery(app.getPgPool())(sql.data());
+
+    if (!res)
+    {
+        JLOG(app.journal("Transaction").error())
+            << __func__
+            << " : Postgres response is null - tx ID = " << strHex(id);
+        assert(false);
+        return {};
+    }
+    else if (res.status() != PGRES_TUPLES_OK)
+    {
+        JLOG(app.journal("Transaction").error())
+            << __func__
+            << " : Postgres response should have been "
+               "PGRES_TUPLES_OK but instead was "
+            << res.status() << " - msg  = " << res.msg()
+            << " - tx ID = " << strHex(id);
+        assert(false);
+        return {};
+    }
+
+    JLOG(app.journal("Transaction").trace())
+        << __func__ << " Postgres result msg  : " << res.msg();
+    if (res.isNull() || res.ntuples() == 0)
+    {
+        JLOG(app.journal("Transaction").debug())
+            << __func__
+            << " : No data returned from Postgres : tx ID = " << strHex(id);
+        // This shouldn't happen
+        assert(false);
+        return {};
+    }
+
+    char const* resultStr = res.c_str();
+    JLOG(app.journal("Transaction").debug())
+        << "postgres result = " << resultStr;
+
+    Json::Value v;
+    Json::Reader reader;
+    bool success = reader.parse(resultStr, resultStr + strlen(resultStr), v);
+    if (success)
+    {
+        if (v.isMember("nodestore_hash") && v.isMember("ledger_seq"))
+        {
+            uint256 nodestoreHash;
+            if (!nodestoreHash.parseHex(
+                    v["nodestore_hash"].asString().substr(2)))
+                assert(false);
+            uint32_t ledgerSeq = v["ledger_seq"].asUInt();
+            if (nodestoreHash.isNonZero())
+                return {std::make_pair(nodestoreHash, ledgerSeq)};
+        }
+        if (v.isMember("min_seq") && v.isMember("max_seq"))
+        {
+            return {ClosedInterval<uint32_t>(
+                v["min_seq"].asUInt(), v["max_seq"].asUInt())};
+        }
+    }
+#endif
+    // Shouldn' happen. Postgres should return the ledger range searched if
+    // the transaction was not found
+    assert(false);
+    Throw<std::runtime_error>(
+        "Transaction::Locate - Invalid Postgres response");
 }
 
 std::variant<

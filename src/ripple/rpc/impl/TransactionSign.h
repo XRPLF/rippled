@@ -69,7 +69,7 @@ checkFee(
     Config const& config,
     LoadFeeTrack const& feeTrack,
     TxQ const& txQ,
-    std::shared_ptr<OpenView const> const& ledger);
+    Application const& app);
 
 // Return a std::function<> that calls NetworkOPs::processTransaction.
 using ProcessTransactionFn = std::function<void(

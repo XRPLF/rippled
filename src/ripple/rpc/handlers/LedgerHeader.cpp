@@ -44,7 +44,7 @@ doLedgerHeader(RPC::JsonContext& context)
 
     // This information isn't verified: they should only use it if they trust
     // us.
-    addJson(jvResult, {*lpLedger, 0});
+    addJson(jvResult, {*lpLedger, &context, 0});
 
     return jvResult;
 }
