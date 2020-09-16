@@ -382,10 +382,13 @@ template <bool IsParent>
 void
 multi_runner_base<IsParent>::add_failures(std::size_t failures)
 {
-    results results;
-    results.failed += failures;
-    add(results);
-    any_failed(failures != 0);
+    if (failures != 0)
+    {
+        results results;
+        results.failed = failures;
+        add(results);
+        any_failed(true);
+    }
 }
 
 template <bool IsParent>

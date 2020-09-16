@@ -271,8 +271,8 @@ runUnitTests(
         multi_runner_child child_runner{num_jobs, quiet, log};
         child_runner.arg(argument);
         multi_selector pred(pattern);
-        auto const any_failed =
-            child_runner.run_multi(pred) || anyMissing(child_runner, pred);
+        auto any_failed = child_runner.run_multi(pred);
+        any_failed = anyMissing(child_runner, pred) || any_failed;
 
         if (any_failed)
             return EXIT_FAILURE;
