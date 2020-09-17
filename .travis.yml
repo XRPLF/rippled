@@ -438,9 +438,7 @@ cache:
     - $CACHE_DIR
 
 before_install:
-  # NUM_PROCESSORS was restricted due to problems in parallel launch of
-  # unit tests on Mac platform
-  - if [ "$(uname)" = "Darwin" ] ; then export NUM_PROCESSORS=2; else export NUM_PROCESSORS=$(nproc); fi
+  - export NUM_PROCESSORS=$(nproc)
   - echo "NUM PROC is ${NUM_PROCESSORS}"
   - if [ "$(uname)" = "Linux" ] ; then docker pull ${DOCKER_IMAGE}; fi
   - if [ "${MATRIX_EVAL}" != "" ] ; then eval "${MATRIX_EVAL}"; fi
