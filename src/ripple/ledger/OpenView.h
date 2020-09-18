@@ -57,21 +57,29 @@ class OpenView final : public ReadView, public TxsRawView
 private:
     class txs_iter_impl;
 
+    struct txData
+    {
+        std::shared_ptr<Serializer const> txn;
+        std::shared_ptr<Serializer const> meta;
+
+        // Constructor needed for emplacement in std::map
+        txData(
+            std::shared_ptr<Serializer const> const& txn_,
+            std::shared_ptr<Serializer const> const& meta_)
+            : txn(txn_), meta(meta_)
+        {
+        }
+    };
+
     // List of tx, key order
     // Use the boost pmr functionality instead of the c++-17 standard pmr
     // functions b/c clang does not support pmr yet (as-of 9/2020)
-    // N.B. boost::pmr could not handle std::pair. Changed to std::tuple.
     using txs_map = std::map<
         key_type,
-        std::tuple<
-            std::shared_ptr<Serializer const>,
-            std::shared_ptr<Serializer const>>,
+        txData,
         std::less<key_type>,
-        boost::container::pmr::polymorphic_allocator<std::pair<
-            key_type const,
-            std::tuple<
-                std::shared_ptr<Serializer const>,
-                std::shared_ptr<Serializer const>>>>>;
+        boost::container::pmr::polymorphic_allocator<
+            std::pair<key_type const, txData>>>;
 
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.

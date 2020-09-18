@@ -60,12 +60,12 @@ public:
     {
         value_type result;
         {
-            SerialIter sit(std::get<0>(iter_->second)->slice());
+            SerialIter sit(iter_->second.txn->slice());
             result.first = std::make_shared<STTx const>(sit);
         }
         if (metadata_)
         {
-            SerialIter sit(std::get<1>(iter_->second)->slice());
+            SerialIter sit(iter_->second.meta->slice());
             result.second = std::make_shared<STObject const>(sit, sfMetadata);
         }
         return result;
@@ -130,8 +130,7 @@ OpenView::apply(TxsRawView& to) const
 {
     items_.apply(to);
     for (auto const& item : txs_)
-        to.rawTxInsert(
-            item.first, std::get<0>(item.second), std::get<1>(item.second));
+        to.rawTxInsert(item.first, item.second.txn, item.second.meta);
 }
 
 //---
@@ -217,12 +216,11 @@ OpenView::txRead(key_type const& key) const -> tx_type
     if (iter == txs_.end())
         return base_->txRead(key);
     auto const& item = iter->second;
-    auto stx =
-        std::make_shared<STTx const>(SerialIter{std::get<0>(item)->slice()});
+    auto stx = std::make_shared<STTx const>(SerialIter{item.txn->slice()});
     decltype(tx_type::second) sto;
-    if (std::get<1>(item))
+    if (item.meta)
         sto = std::make_shared<STObject const>(
-            SerialIter{std::get<1>(item)->slice()}, sfMetadata);
+            SerialIter{item.meta->slice()}, sfMetadata);
     else
         sto = nullptr;
     return {std::move(stx), std::move(sto)};
@@ -264,7 +262,10 @@ OpenView::rawTxInsert(
     std::shared_ptr<Serializer const> const& txn,
     std::shared_ptr<Serializer const> const& metaData)
 {
-    auto const result = txs_.emplace(key, std::make_pair(txn, metaData));
+    auto const result = txs_.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(key),
+        std::forward_as_tuple(txn, metaData));
     if (!result.second)
         LogicError("rawTxInsert: duplicate TX id" + to_string(key));
 }

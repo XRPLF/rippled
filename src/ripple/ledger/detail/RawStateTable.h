@@ -101,16 +101,26 @@ private:
 
     class sles_iter_impl;
 
+    struct sleAction
+    {
+        Action action;
+        std::shared_ptr<SLE> sle;
+
+        // Constructor needed for emplacement in std::map
+        sleAction(Action action_, std::shared_ptr<SLE> const& sle_)
+            : action(action_), sle(sle_)
+        {
+        }
+    };
+
     // Use the boost pmr functionality instead of the c++-17 standard pmr
     // functions b/c clang does not support pmr yet (as-of 9/2020)
-    // N.B. boost::pmr could not handle std::pair. Changed to std::tuple.
     using items_t = std::map<
         key_type,
-        std::tuple<Action, std::shared_ptr<SLE>>,
+        sleAction,
         std::less<key_type>,
-        boost::container::pmr::polymorphic_allocator<std::pair<
-            const key_type,
-            std::tuple<Action, std::shared_ptr<SLE>>>>>;
+        boost::container::pmr::polymorphic_allocator<
+            std::pair<const key_type, sleAction>>>;
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.
     std::unique_ptr<boost::container::pmr::monotonic_buffer_resource>
