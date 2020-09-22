@@ -249,7 +249,7 @@ public:
         uint256 const hash(ripple::sha512Half(123456789));
         getLedger->set_ledgerhash(hash.begin(), hash.size());
         getLedger->set_ledgerseq(123456789);
-        ripple::SHAMapNodeID sha(hash.data(), hash.size());
+        ripple::SHAMapNodeID sha(17, hash);
         getLedger->add_nodeids(sha.getRawString());
         getLedger->set_requestcookie(123456789);
         getLedger->set_querytype(protocol::qtINDIRECT);
@@ -309,7 +309,7 @@ public:
             uint256 hash(ripple::sha512Half(i));
             auto object = getObject->add_objects();
             object->set_hash(hash.data(), hash.size());
-            ripple::SHAMapNodeID sha(hash.data(), hash.size());
+            ripple::SHAMapNodeID sha(i % 55, hash);
             object->set_nodeid(sha.getRawString());
             object->set_index("");
             object->set_data("");

@@ -29,8 +29,6 @@
 #include <ripple/shamap/SHAMapAddNode.h>
 #include <ripple/shamap/SHAMapItem.h>
 #include <ripple/shamap/SHAMapMissingNode.h>
-#include <ripple/shamap/SHAMapNodeID.h>
-#include <ripple/shamap/SHAMapSyncFilter.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
 #include <ripple/shamap/TreeNodeCache.h>
 #include <cassert>
@@ -39,18 +37,35 @@
 
 namespace ripple {
 
-enum class SHAMapState {
-    Modifying = 0,  // Objects can be added and removed (like an open ledger)
-    Immutable = 1,  // Map cannot be changed (like a closed ledger)
-    Synching = 2,   // Map's hash is locked in, valid nodes can be added (like a
-                    // peer's closing ledger)
-    Floating = 3,   // Map is free to change hash (like a synching open ledger)
-    Invalid =
-        4,  // Map is known not to be valid (usually synching a corrupt ledger)
-};
+class SHAMapNodeID;
+class SHAMapSyncFilter;
 
-/** Function object which handles missing nodes. */
-using MissingNodeHandler = std::function<void(std::uint32_t refNum)>;
+/** Describes the current state of a given SHAMap */
+enum class SHAMapState {
+    /** The map is in flux and objects can be added and removed.
+
+        Example: map underlying the open ledger.
+     */
+    Modifying = 0,
+
+    /** The map is set in stone and cannot be changed.
+
+        Example: a map underlying a given closed ledger.
+     */
+    Immutable = 1,
+
+    /** The map's hash is fixed but valid nodes may be missing and can be added.
+
+        Example: a map that's syncing a given peer's closing ledger.
+     */
+    Synching = 2,
+
+    /** The map is known to not be valid.
+
+        Example: usually synching a corrupt ledger.
+     */
+    Invalid = 3,
+};
 
 /** A SHAMap is both a radix tree with a fan-out of 16 and a Merkle tree.
 
@@ -61,11 +76,11 @@ using MissingNodeHandler = std::function<void(std::uint32_t refNum)>;
       2. A node with only one child is merged with that child
          (the "merge property")
 
-    These properties in a significantly smaller memory footprint for a radix
-   tree.
+    These properties result in a significantly smaller memory footprint for
+    a radix tree.
 
-    And a fan-out of 16 means that each node in the tree has at most 16
-   children. See https://en.wikipedia.org/wiki/Radix_tree
+    A fan-out of 16 means that each node in the tree has at most 16
+    children. See https://en.wikipedia.org/wiki/Radix_tree
 
     A Merkle tree is a tree where each non-leaf node is labelled with the hash
     of the combined labels of its children nodes.
@@ -89,6 +104,12 @@ private:
     bool full_ = false;   // Map is believed complete in database
 
 public:
+    /** Each non-leaf node has 16 children (the 'radix tree' part of the map) */
+    static inline constexpr unsigned int branchFactor = 16;
+
+    /** The depth of the hash map: data is only present in the leaves */
+    static inline constexpr unsigned int leafDepth = 64;
+
     using DeltaItem = std::pair<
         std::shared_ptr<SHAMapItem const>,
         std::shared_ptr<SHAMapItem const>>;
@@ -499,8 +520,7 @@ SHAMap::setImmutable()
 inline bool
 SHAMap::isSynching() const
 {
-    return (state_ == SHAMapState::Floating) ||
-        (state_ == SHAMapState::Synching);
+    return state_ == SHAMapState::Synching;
 }
 
 inline void

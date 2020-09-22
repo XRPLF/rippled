@@ -2794,12 +2794,12 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
           (reply.nodes().size() < Tuning::maxReplyNodes));
          ++i)
     {
-        SHAMapNodeID mn(packet.nodeids(i).data(), packet.nodeids(i).size());
+        auto const mn = deserializeSHAMapNodeID(packet.nodeids(i));
 
-        if (!mn.isValid())
+        if (!mn)
         {
             JLOG(p_journal_.warn()) << "GetLedger: Invalid node " << logMe;
-            charge(Resource::feeInvalidRequest);
+            charge(Resource::feeBadData);
             return;
         }
 
@@ -2808,7 +2808,7 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
 
         try
         {
-            if (map->getNodeFat(mn, nodeIDs, rawNodes, fatLeaves, depth))
+            if (map->getNodeFat(*mn, nodeIDs, rawNodes, fatLeaves, depth))
             {
                 assert(nodeIDs.size() == rawNodes.size());
                 JLOG(p_journal_.trace()) << "GetLedger: getNodeFat got "
@@ -2821,10 +2821,8 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
                      nodeIDIterator != nodeIDs.end();
                      ++nodeIDIterator, ++rawNodeIterator)
                 {
-                    Serializer nID(33);
-                    nodeIDIterator->addIDRaw(nID);
                     protocol::TMLedgerNode* node = reply.add_nodes();
-                    node->set_nodeid(nID.getDataPtr(), nID.getLength());
+                    node->set_nodeid(nodeIDIterator->getRawString());
                     node->set_nodedata(
                         &rawNodeIterator->front(), rawNodeIterator->size());
                 }
@@ -2852,7 +2850,7 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
                 info += ", no hash specified";
 
             JLOG(p_journal_.warn())
-                << "getNodeFat( " << mn << ") throws exception: " << info;
+                << "getNodeFat( " << *mn << ") throws exception: " << info;
         }
     }
 

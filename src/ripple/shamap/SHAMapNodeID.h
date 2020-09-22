@@ -21,159 +21,129 @@
 #define RIPPLE_SHAMAP_SHAMAPNODEID_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/protocol/Serializer.h>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <tuple>
 
 namespace ripple {
 
-// Identifies a node in a half-SHA512 (256 bit) hash map
+/** Identifies a node inside a SHAMap */
 class SHAMapNodeID
 {
 private:
-    uint256 mNodeID;
-    int mDepth;
+    uint256 id_;
+    unsigned int depth_ = 0;
 
 public:
-    SHAMapNodeID();
-    SHAMapNodeID(int depth, uint256 const& hash);
-    SHAMapNodeID(void const* ptr, int len);
+    SHAMapNodeID() = default;
+    SHAMapNodeID(SHAMapNodeID const& other) = default;
+    SHAMapNodeID(unsigned int depth, uint256 const& hash);
+
+    SHAMapNodeID& operator=(SHAMapNodeID const& other) = default;
 
     bool
-    isValid() const;
-    bool
-    isRoot() const;
+    isRoot() const
+    {
+        return depth_ == 0;
+    }
 
-    // Convert to/from wire format (256-bit nodeID, 1-byte depth)
-    void
-    addIDRaw(Serializer& s) const;
+    // Get the wire format (256-bit nodeID, 1-byte depth)
     std::string
     getRawString() const;
 
-    bool
-    operator==(const SHAMapNodeID& n) const;
-    bool
-    operator!=(const SHAMapNodeID& n) const;
-
-    bool
-    operator<(const SHAMapNodeID& n) const;
-    bool
-    operator>(const SHAMapNodeID& n) const;
-    bool
-    operator<=(const SHAMapNodeID& n) const;
-    bool
-    operator>=(const SHAMapNodeID& n) const;
-
-    std::string
-    getString() const;
-    void
-    dump(beast::Journal journal) const;
-
-    // Only used by SHAMap and SHAMapTreeNode
+    unsigned int
+    getDepth() const
+    {
+        return depth_;
+    }
 
     uint256 const&
-    getNodeID() const;
+    getNodeID() const
+    {
+        return id_;
+    }
+
     SHAMapNodeID
-    getChildNodeID(int m) const;
-    int
-    selectBranch(uint256 const& hash) const;
-    int
-    getDepth() const;
+    getChildNodeID(unsigned int m) const;
+
+    // FIXME-C++20: use spaceship and operator synthesis
+    /** Comparison operators */
     bool
-    has_common_prefix(SHAMapNodeID const& other) const;
+    operator<(SHAMapNodeID const& n) const
+    {
+        return std::tie(depth_, id_) < std::tie(n.depth_, n.id_);
+    }
 
-private:
-    static uint256 const&
-    Masks(int depth);
+    bool
+    operator>(SHAMapNodeID const& n) const
+    {
+        return n < *this;
+    }
 
-    friend std::ostream&
-    operator<<(std::ostream& out, SHAMapNodeID const& node);
+    bool
+    operator<=(SHAMapNodeID const& n) const
+    {
+        return !(n < *this);
+    }
 
-private:  // Currently unused
-    SHAMapNodeID
-    getParentNodeID() const;
+    bool
+    operator>=(SHAMapNodeID const& n) const
+    {
+        return !(*this < n);
+    }
+
+    bool
+    operator==(SHAMapNodeID const& n) const
+    {
+        return (depth_ == n.depth_) && (id_ == n.id_);
+    }
+
+    bool
+    operator!=(SHAMapNodeID const& n) const
+    {
+        return !(*this == n);
+    }
 };
 
-//------------------------------------------------------------------------------
-
-inline SHAMapNodeID::SHAMapNodeID() : mDepth(0)
+inline std::string
+to_string(SHAMapNodeID const& node)
 {
-}
+    if (node.isRoot())
+        return "NodeID(root)";
 
-inline int
-SHAMapNodeID::getDepth() const
-{
-    return mDepth;
-}
-
-inline uint256 const&
-SHAMapNodeID::getNodeID() const
-{
-    return mNodeID;
-}
-
-inline bool
-SHAMapNodeID::isValid() const
-{
-    return (mDepth >= 0) && (mDepth <= 64);
-}
-
-inline bool
-SHAMapNodeID::isRoot() const
-{
-    return mDepth == 0;
-}
-
-inline SHAMapNodeID
-SHAMapNodeID::getParentNodeID() const
-{
-    assert(mDepth);
-    return SHAMapNodeID(mDepth - 1, mNodeID & Masks(mDepth - 1));
-}
-
-inline bool
-SHAMapNodeID::operator<(const SHAMapNodeID& n) const
-{
-    return std::tie(mDepth, mNodeID) < std::tie(n.mDepth, n.mNodeID);
-}
-
-inline bool
-SHAMapNodeID::operator>(const SHAMapNodeID& n) const
-{
-    return n < *this;
-}
-
-inline bool
-SHAMapNodeID::operator<=(const SHAMapNodeID& n) const
-{
-    return !(n < *this);
-}
-
-inline bool
-SHAMapNodeID::operator>=(const SHAMapNodeID& n) const
-{
-    return !(*this < n);
-}
-
-inline bool
-SHAMapNodeID::operator==(const SHAMapNodeID& n) const
-{
-    return (mDepth == n.mDepth) && (mNodeID == n.mNodeID);
-}
-
-inline bool
-SHAMapNodeID::operator!=(const SHAMapNodeID& n) const
-{
-    return !(*this == n);
+    return "NodeID(" + std::to_string(node.getDepth()) + "," +
+        to_string(node.getNodeID()) + ")";
 }
 
 inline std::ostream&
 operator<<(std::ostream& out, SHAMapNodeID const& node)
 {
-    return out << node.getString();
+    return out << to_string(node);
 }
+
+/** Return an object representing a serialized SHAMap Node ID
+ *
+ * @param s A string of bytes
+ * @param data a non-null pointer to a buffer of @param size bytes.
+ * @param size the size, in bytes, of the buffer pointed to by @param data.
+ * @return A seated optional if the buffer contained a serialized SHAMap
+ *         node ID and an unseated optional otherwise.
+ */
+/** @{ */
+[[nodiscard]] std::optional<SHAMapNodeID>
+deserializeSHAMapNodeID(void const* data, std::size_t size);
+
+[[nodiscard]] inline std::optional<SHAMapNodeID>
+deserializeSHAMapNodeID(std::string const& s)
+{
+    return deserializeSHAMapNodeID(s.data(), s.size());
+}
+/** @} */
+
+/** Returns the branch that would contain the given hash */
+[[nodiscard]] unsigned int
+selectBranch(SHAMapNodeID const& id, uint256 const& hash);
 
 }  // namespace ripple
 
