@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <ripple/basics/random.h>
-#include <ripple/nodestore/Database.h>
 #include <ripple/shamap/SHAMap.h>
+#include <ripple/shamap/SHAMapSyncFilter.h>
 
 namespace ripple {
 
@@ -459,7 +459,7 @@ SHAMap::getNodeFat(
 
     while (node && node->isInner() && (nodeID.getDepth() < wanted.getDepth()))
     {
-        int branch = nodeID.selectBranch(wanted.getNodeID());
+        int branch = selectBranch(nodeID, wanted.getNodeID());
         auto inner = static_cast<SHAMapInnerNode*>(node);
         if (inner->isEmptyBranch(branch))
             return false;
@@ -595,7 +595,6 @@ SHAMap::addKnownNode(
     Slice const& rawNode,
     SHAMapSyncFilter* filter)
 {
-    // return value: true=okay, false=error
     assert(!node.isRoot());
 
     if (!isSynching())
@@ -613,7 +612,7 @@ SHAMap::addKnownNode(
            !static_cast<SHAMapInnerNode*>(iNode)->isFullBelow(generation) &&
            (iNodeID.getDepth() < node.getDepth()))
     {
-        int branch = iNodeID.selectBranch(node.getNodeID());
+        int branch = selectBranch(iNodeID, node.getNodeID());
         assert(branch >= 0);
         auto inner = static_cast<SHAMapInnerNode*>(iNode);
         if (inner->isEmptyBranch(branch))
@@ -765,7 +764,7 @@ SHAMap::hasInnerNode(
 
     while (node->isInner() && (nodeID.getDepth() < targetNodeID.getDepth()))
     {
-        int branch = nodeID.selectBranch(targetNodeID.getNodeID());
+        int branch = selectBranch(nodeID, targetNodeID.getNodeID());
         auto inner = static_cast<SHAMapInnerNode*>(node);
         if (inner->isEmptyBranch(branch))
             return false;
@@ -790,7 +789,7 @@ SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const
 
     do
     {
-        int branch = nodeID.selectBranch(tag);
+        int branch = selectBranch(nodeID, tag);
         auto inner = static_cast<SHAMapInnerNode*>(node);
         if (inner->isEmptyBranch(branch))
             return false;  // Dead end, node must not be here

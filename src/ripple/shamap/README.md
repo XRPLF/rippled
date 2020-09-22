@@ -184,9 +184,9 @@ by 4 bits, and then packed in sequence into a `uint256` (such that the longest
 path possible has 256 / 4 = 64 steps). The high 4 bits of the first byte
 identify which child of the root is chosen, the lower 4 bits of the first byte
 identify the child of that node, and so on. The `SHAMapNodeID` identifying the
-root node has an ID of 0 and a depth of 0. See `SHAMapNodeID::selectBranch` for
-details of how a `SHAMapNodeID` selects a "branch" (child) by indexing into its
-path with its depth.
+root node has an ID of 0 and a depth of 0. See `selectBranch` for details of
+how we use a `SHAMapNodeID` to select a "branch" (child) by indexing into a
+path at a given depth.
 
 While the current node is an inner node, traversing down the trie from the root
 continues, unless the path indicates a child that does not exist.  And in this
