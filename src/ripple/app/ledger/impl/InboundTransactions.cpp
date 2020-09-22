@@ -159,15 +159,21 @@ public:
         std::list<Blob> nodeData;
         for (auto const& node : packet.nodes())
         {
-            if (!node.has_nodeid() || !node.has_nodedata() ||
-                (node.nodeid().size() != 33))
+            if (!node.has_nodeid() || !node.has_nodedata())
             {
                 peer->charge(Resource::feeInvalidRequest);
                 return;
             }
 
-            nodeIDs.emplace_back(
-                node.nodeid().data(), static_cast<int>(node.nodeid().size()));
+            auto const id = deserializeSHAMapNodeID(node.nodeid());
+
+            if (!id)
+            {
+                peer->charge(Resource::feeBadData);
+                return;
+            }
+
+            nodeIDs.emplace_back(*id);
             nodeData.emplace_back(
                 node.nodedata().begin(), node.nodedata().end());
         }

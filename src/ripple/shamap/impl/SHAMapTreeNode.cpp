@@ -491,12 +491,7 @@ SHAMapInnerNode::getBranchCount() const
 std::string
 SHAMapAbstractNode::getString(const SHAMapNodeID& id) const
 {
-    std::string ret = "NodeID(";
-    ret += beast::lexicalCastThrow<std::string>(id.getDepth());
-    ret += ",";
-    ret += to_string(id.getNodeID());
-    ret += ")";
-    return ret;
+    return to_string(id);
 }
 
 std::string
@@ -507,8 +502,8 @@ SHAMapInnerNode::getString(const SHAMapNodeID& id) const
     {
         if (!isEmptyBranch(i))
         {
-            ret += "\nb";
-            ret += beast::lexicalCastThrow<std::string>(i);
+            ret += "\n";
+            ret += std::to_string(i);
             ret += " = ";
             ret += to_string(mHashes[i]);
         }
