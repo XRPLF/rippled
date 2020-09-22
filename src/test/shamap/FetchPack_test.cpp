@@ -25,6 +25,7 @@
 #include <ripple/beast/xor_shift_engine.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/shamap/SHAMap.h>
+#include <ripple/shamap/SHAMapSyncFilter.h>
 #include <functional>
 #include <stdexcept>
 #include <test/shamap/common.h>
