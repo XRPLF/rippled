@@ -1,0 +1,7 @@
+<map id="ripple::SSLStream" name="ripple::SSLStream">
+<area shape="rect" id="node1" title=" " alt="" coords="32,273,169,300"/>
+<area shape="rect" id="node2" href="$classripple_1_1HTTPStream.html" title=" " alt="" coords="5,184,153,211"/>
+<area shape="rect" id="node3" href="$classripple_1_1HTTPClientSSLContext.html" title=" " alt="" coords="178,184,391,211"/>
+<area shape="rect" id="node4" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="229,95,340,121"/>
+<area shape="rect" id="node5" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="211,5,358,32"/>
+</map>

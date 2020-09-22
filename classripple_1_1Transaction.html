@@ -156,6 +156,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a558d1bbd1d28d49f5cf3848ad582b949"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a2dea333f991d4452e3b438605763a1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#a8a2dea333f991d4452e3b438605763a1">getLedger</a> () const</td></tr>
 <tr class="separator:a8a2dea333f991d4452e3b438605763a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abfe601e05e0cb3e3ae0d19a9fa25462d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#abfe601e05e0cb3e3ae0d19a9fa25462d">isValidated</a> () const</td></tr>
+<tr class="separator:abfe601e05e0cb3e3ae0d19a9fa25462d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a84fe55e044f419eb77ce0447b447d7c7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a2e97c395a5e1ef4ed1052299e0e60843">TransStatus</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#a84fe55e044f419eb77ce0447b447d7c7">getStatus</a> () const</td></tr>
 <tr class="separator:a84fe55e044f419eb77ce0447b447d7c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a36da6548fa80b2295a448da42fa4d643"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#a36da6548fa80b2295a448da42fa4d643">getResult</a> ()</td></tr>
@@ -216,15 +218,15 @@ Static Public Member Functions</h2></td></tr>
 <tr class="separator:a0e007f454719831e6885ef33158dc0f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9d9dd8c919e755ebf57e2586f3f86a1"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#a2e97c395a5e1ef4ed1052299e0e60843">TransStatus</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#ab9d9dd8c919e755ebf57e2586f3f86a1">sqlTransactionStatus</a> (boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;status)</td></tr>
 <tr class="separator:ab9d9dd8c919e755ebf57e2586f3f86a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad42a988ab1ac2b0c5c26c1702cb38521"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">pointer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#ad42a988ab1ac2b0c5c26c1702cb38521">load</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;id, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> &amp;ec)</td></tr>
-<tr class="separator:ad42a988ab1ac2b0c5c26c1702cb38521"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a52f94de90b5ce9e2a35c26c1dd0b2fa1"><td class="memItemLeft" align="right" valign="top">static boost::variant&lt; <a class="el" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">Transaction::pointer</a>, bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#a52f94de90b5ce9e2a35c26c1dd0b2fa1">load</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;id, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ClosedInterval</a>&lt; uint32_t &gt; const &amp;<a class="el" href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">range</a>, <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> &amp;ec)</td></tr>
-<tr class="separator:a52f94de90b5ce9e2a35c26c1dd0b2fa1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7ac314a4b698a354aeca6e01b11727df"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> &gt; &gt;, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#a7ac314a4b698a354aeca6e01b11727df">load</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;id, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> &amp;ec)</td></tr>
+<tr class="separator:a7ac314a4b698a354aeca6e01b11727df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef98143f190976c94bc64767c632f71a"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> &gt; &gt;, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#aef98143f190976c94bc64767c632f71a">load</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;id, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ClosedInterval</a>&lt; uint32_t &gt; const &amp;<a class="el" href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">range</a>, <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> &amp;ec)</td></tr>
+<tr class="separator:aef98143f190976c94bc64767c632f71a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
-<tr class="memitem:a15cda21a815ea699a4450856c94b44bb"><td class="memItemLeft" align="right" valign="top">static boost::variant&lt; <a class="el" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">Transaction::pointer</a>, bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#a15cda21a815ea699a4450856c94b44bb">load</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;id, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, boost::optional&lt; <a class="el" href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ClosedInterval</a>&lt; uint32_t &gt;&gt; const &amp;<a class="el" href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">range</a>, <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> &amp;ec)</td></tr>
-<tr class="separator:a15cda21a815ea699a4450856c94b44bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5e4540293b10b7f48aee802865a2b70"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> &gt; &gt;, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transaction.html#ae5e4540293b10b7f48aee802865a2b70">load</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;id, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, boost::optional&lt; <a class="el" href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ClosedInterval</a>&lt; uint32_t &gt;&gt; const &amp;<a class="el" href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">range</a>, <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> &amp;ec)</td></tr>
+<tr class="separator:ae5e4540293b10b7f48aee802865a2b70"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a741285b9c90fcfd9d0087d3c17f75cfe"><td class="memItemLeft" align="right" valign="top">static Counter &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CountedObject.html#a741285b9c90fcfd9d0087d3c17f75cfe">getCounter</a> () noexcept</td></tr>
 <tr class="separator:a741285b9c90fcfd9d0087d3c17f75cfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -254,7 +256,7 @@ Private Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00057">57</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00060">60</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="ab9691bbf2e54050d728dc25baf1d48a0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab9691bbf2e54050d728dc25baf1d48a0">&#9670;&nbsp;</a></span>pointer</h2>
@@ -268,7 +270,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00067">67</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00070">70</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -284,7 +286,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00068">68</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00071">71</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -357,7 +359,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00062">62</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00065">65</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -454,7 +456,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00086">86</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00089">89</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -473,7 +475,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00092">92</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00095">95</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -492,7 +494,26 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00098">98</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00101">101</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+
+</div>
+</div>
+<a id="abfe601e05e0cb3e3ae0d19a9fa25462d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abfe601e05e0cb3e3ae0d19a9fa25462d">&#9670;&nbsp;</a></span>isValidated()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::Transaction::isValidated </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00107">107</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -511,7 +532,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00104">104</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00113">113</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -530,7 +551,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00110">110</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00119">119</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -550,7 +571,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00116">116</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00125">125</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -600,7 +621,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00125">125</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00134">134</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -620,7 +641,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00131">131</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00140">140</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -641,7 +662,7 @@ Private Attributes</h2></td></tr>
 
 <p>Set this flag once added to a batch. </p>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00140">140</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00149">149</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -663,7 +684,7 @@ Private Attributes</h2></td></tr>
 <p>Detect if transaction is being batched. </p>
 <dl class="section return"><dt>Returns</dt><dd>Whether transaction is being applied within a batch. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00151">151</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00160">160</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -684,7 +705,7 @@ Private Attributes</h2></td></tr>
 
 <p>Indicate that transaction application has been attempted. </p>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00160">160</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00169">169</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -706,7 +727,7 @@ Private Attributes</h2></td></tr>
 <p>getSubmitResult Return submit result </p>
 <dl class="section return"><dt>Returns</dt><dd><a class="el" href="structripple_1_1Transaction_1_1SubmitResult.html">SubmitResult</a> struct </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00200">200</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00209">209</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -727,7 +748,7 @@ Private Attributes</h2></td></tr>
 
 <p>clearSubmitResult Clear all flags in <a class="el" href="structripple_1_1Transaction_1_1SubmitResult.html">SubmitResult</a> </p>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00209">209</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00218">218</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -748,7 +769,7 @@ Private Attributes</h2></td></tr>
 
 <p>setApplied Set this flag once was applied to open ledger </p>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00218">218</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00227">227</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -769,7 +790,7 @@ Private Attributes</h2></td></tr>
 
 <p>setQueued Set this flag once was put into heldtxns queue </p>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00227">227</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00236">236</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -790,7 +811,7 @@ Private Attributes</h2></td></tr>
 
 <p>setBroadcast Set this flag once was broadcasted via network </p>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00236">236</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00245">245</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -811,7 +832,7 @@ Private Attributes</h2></td></tr>
 
 <p>setKept Set this flag once was put to localtxns queue </p>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00245">245</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00254">254</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -833,7 +854,7 @@ Private Attributes</h2></td></tr>
 <p>getCurrentLedgerState Get current ledger state of transaction </p>
 <dl class="section return"><dt>Returns</dt><dd>Current ledger state </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00277">277</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00286">286</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -886,7 +907,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00290">290</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00299">299</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -916,12 +937,12 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00192">192</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00213">213</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ad42a988ab1ac2b0c5c26c1702cb38521"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad42a988ab1ac2b0c5c26c1702cb38521">&#9670;&nbsp;</a></span>load() <span class="overload">[1/3]</span></h2>
+<a id="a7ac314a4b698a354aeca6e01b11727df"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ac314a4b698a354aeca6e01b11727df">&#9670;&nbsp;</a></span>load() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -930,7 +951,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">Transaction::pointer</a> ripple::Transaction::load </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> &gt; &gt;, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a> &gt; ripple::Transaction::load </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
           <td class="paramname"><em>id</em>, </td>
@@ -960,12 +981,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00109">109</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00111">111</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a52f94de90b5ce9e2a35c26c1dd0b2fa1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a52f94de90b5ce9e2a35c26c1dd0b2fa1">&#9670;&nbsp;</a></span>load() <span class="overload">[2/3]</span></h2>
+<a id="aef98143f190976c94bc64767c632f71a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef98143f190976c94bc64767c632f71a">&#9670;&nbsp;</a></span>load() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -974,7 +995,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::variant&lt; <a class="el" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">Transaction::pointer</a>, bool &gt; ripple::Transaction::load </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> &gt; &gt;, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a> &gt; ripple::Transaction::load </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
           <td class="paramname"><em>id</em>, </td>
@@ -1010,12 +1031,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00115">115</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00119">119</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a15cda21a815ea699a4450856c94b44bb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a15cda21a815ea699a4450856c94b44bb">&#9670;&nbsp;</a></span>load() <span class="overload">[3/3]</span></h2>
+<a id="ae5e4540293b10b7f48aee802865a2b70"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5e4540293b10b7f48aee802865a2b70">&#9670;&nbsp;</a></span>load() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1024,7 +1045,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::variant&lt; <a class="el" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">Transaction::pointer</a>, bool &gt; ripple::Transaction::load </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> &gt; &gt;, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a> &gt; ripple::Transaction::load </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
           <td class="paramname"><em>id</em>, </td>
@@ -1060,7 +1081,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00127">127</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8cpp_source.html#l00133">133</a> of file <a class="el" href="Transaction_8cpp_source.html">Transaction.cpp</a>.</p>
 
 </div>
 </div>
@@ -1109,7 +1130,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00321">321</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00336">336</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1133,7 +1154,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00323">323</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00338">338</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1157,7 +1178,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00324">324</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00339">339</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1181,7 +1202,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00325">325</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00340">340</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1205,7 +1226,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00326">326</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00341">341</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1231,7 +1252,7 @@ Private Attributes</h2></td></tr>
 
 <p>different ways for transaction to be accepted </p>
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00329">329</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00344">344</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1255,7 +1276,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00331">331</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00346">346</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1279,7 +1300,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00333">333</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00348">348</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1303,7 +1324,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00334">334</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00349">349</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>
@@ -1327,7 +1348,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00335">335</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Transaction_8h_source.html#l00350">350</a> of file <a class="el" href="Transaction_8h_source.html">Transaction.h</a>.</p>
 
 </div>
 </div>

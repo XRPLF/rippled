@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1HTTPClientSSLContext.html" title=" " alt="" coords="5,5,219,32"/>
+<area shape="rect" id="node1" href="$classripple_1_1HTTPDownloader.html" title="Provides an asynchronous HTTP[S] file downloader." alt="" coords="5,5,184,32"/>
+<area shape="rect" id="node2" href="$classripple_1_1DatabaseDownloader.html" title=" " alt="" coords="232,5,439,32"/>
 </map>

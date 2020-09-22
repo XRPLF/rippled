@@ -1474,517 +1474,519 @@ $(function() {
 <div class="line"><a name="l01403"></a><span class="lineno"> 1403</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a0c7c6832985a1f59cf817340b9ff2de2">populateSourceTag</a>(to, from);</div>
 <div class="line"><a name="l01404"></a><span class="lineno"> 1404</span>&#160; </div>
 <div class="line"><a name="l01405"></a><span class="lineno"> 1405</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a9991b755ccd2c079633c0a8f158aa3bf">populateDestinationTag</a>(to, from);</div>
-<div class="line"><a name="l01406"></a><span class="lineno"> 1406</span>&#160;}</div>
-<div class="line"><a name="l01407"></a><span class="lineno"> 1407</span>&#160; </div>
-<div class="line"><a name="l01408"></a><span class="lineno"> 1408</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l01409"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a8f503c2d5cce84434d69cdf109579603"> 1409</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(org::xrpl::rpc::v1::DirectoryNode&amp; to, <a class="code" href="classripple_1_1STObject.html">STObject</a> <span class="keyword">const</span>&amp; from)</div>
-<div class="line"><a name="l01410"></a><span class="lineno"> 1410</span>&#160;{</div>
-<div class="line"><a name="l01411"></a><span class="lineno"> 1411</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a6cffc5f8f72a66083d7de5e7fe4a888a">populateFlags</a>(to, from);</div>
-<div class="line"><a name="l01412"></a><span class="lineno"> 1412</span>&#160; </div>
-<div class="line"><a name="l01413"></a><span class="lineno"> 1413</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a34f0cd0596aa22049fd9f12aeed99fca">populateRootIndex</a>(to, from);</div>
+<div class="line"><a name="l01406"></a><span class="lineno"> 1406</span>&#160; </div>
+<div class="line"><a name="l01407"></a><span class="lineno"> 1407</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a69fcce513015587eb8ed50ae6c41ffef">populateDestinationNode</a>(to, from);</div>
+<div class="line"><a name="l01408"></a><span class="lineno"> 1408</span>&#160;}</div>
+<div class="line"><a name="l01409"></a><span class="lineno"> 1409</span>&#160; </div>
+<div class="line"><a name="l01410"></a><span class="lineno"> 1410</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l01411"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a8f503c2d5cce84434d69cdf109579603"> 1411</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(org::xrpl::rpc::v1::DirectoryNode&amp; to, <a class="code" href="classripple_1_1STObject.html">STObject</a> <span class="keyword">const</span>&amp; from)</div>
+<div class="line"><a name="l01412"></a><span class="lineno"> 1412</span>&#160;{</div>
+<div class="line"><a name="l01413"></a><span class="lineno"> 1413</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a6cffc5f8f72a66083d7de5e7fe4a888a">populateFlags</a>(to, from);</div>
 <div class="line"><a name="l01414"></a><span class="lineno"> 1414</span>&#160; </div>
-<div class="line"><a name="l01415"></a><span class="lineno"> 1415</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a25d216384b7009eb4f70d838450a0ab4">populateIndexes</a>(to, from);</div>
+<div class="line"><a name="l01415"></a><span class="lineno"> 1415</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a34f0cd0596aa22049fd9f12aeed99fca">populateRootIndex</a>(to, from);</div>
 <div class="line"><a name="l01416"></a><span class="lineno"> 1416</span>&#160; </div>
-<div class="line"><a name="l01417"></a><span class="lineno"> 1417</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a7b890a3a06537800927745c50ea00b21">populateIndexNext</a>(to, from);</div>
+<div class="line"><a name="l01417"></a><span class="lineno"> 1417</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a25d216384b7009eb4f70d838450a0ab4">populateIndexes</a>(to, from);</div>
 <div class="line"><a name="l01418"></a><span class="lineno"> 1418</span>&#160; </div>
-<div class="line"><a name="l01419"></a><span class="lineno"> 1419</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a29e7da98b81b54791653de197531b435">populateIndexPrevious</a>(to, from);</div>
+<div class="line"><a name="l01419"></a><span class="lineno"> 1419</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a7b890a3a06537800927745c50ea00b21">populateIndexNext</a>(to, from);</div>
 <div class="line"><a name="l01420"></a><span class="lineno"> 1420</span>&#160; </div>
-<div class="line"><a name="l01421"></a><span class="lineno"> 1421</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a05d1a31b6ded04e1faab8125454334e0">populateTakerPaysIssuer</a>(to, from);</div>
+<div class="line"><a name="l01421"></a><span class="lineno"> 1421</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a29e7da98b81b54791653de197531b435">populateIndexPrevious</a>(to, from);</div>
 <div class="line"><a name="l01422"></a><span class="lineno"> 1422</span>&#160; </div>
-<div class="line"><a name="l01423"></a><span class="lineno"> 1423</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a299309fed377f37a1ca9c61fc71acfa0">populateTakerPaysCurrency</a>(to, from);</div>
+<div class="line"><a name="l01423"></a><span class="lineno"> 1423</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a05d1a31b6ded04e1faab8125454334e0">populateTakerPaysIssuer</a>(to, from);</div>
 <div class="line"><a name="l01424"></a><span class="lineno"> 1424</span>&#160; </div>
-<div class="line"><a name="l01425"></a><span class="lineno"> 1425</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a19a4b1939f13bea9af58e6ec3bc081bc">populateTakerGetsCurrency</a>(to, from);</div>
+<div class="line"><a name="l01425"></a><span class="lineno"> 1425</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a299309fed377f37a1ca9c61fc71acfa0">populateTakerPaysCurrency</a>(to, from);</div>
 <div class="line"><a name="l01426"></a><span class="lineno"> 1426</span>&#160; </div>
-<div class="line"><a name="l01427"></a><span class="lineno"> 1427</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ade22313bdebf2330c0b7c36a9e9d98fd">populateTakerGetsIssuer</a>(to, from);</div>
-<div class="line"><a name="l01428"></a><span class="lineno"> 1428</span>&#160;}</div>
-<div class="line"><a name="l01429"></a><span class="lineno"> 1429</span>&#160; </div>
-<div class="line"><a name="l01430"></a><span class="lineno"> 1430</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l01431"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#ac0e0355e92fa74b21f7f8788846b17f4"> 1431</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(org::xrpl::rpc::v1::Offer&amp; to, <a class="code" href="classripple_1_1STObject.html">STObject</a> <span class="keyword">const</span>&amp; from)</div>
-<div class="line"><a name="l01432"></a><span class="lineno"> 1432</span>&#160;{</div>
-<div class="line"><a name="l01433"></a><span class="lineno"> 1433</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ab1412d6200d23e5381128ee686df6692">populateAccount</a>(to, from);</div>
-<div class="line"><a name="l01434"></a><span class="lineno"> 1434</span>&#160; </div>
-<div class="line"><a name="l01435"></a><span class="lineno"> 1435</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#aaa61915ee1911e7f3649cae76ff2e23b">populateSequence</a>(to, from);</div>
+<div class="line"><a name="l01427"></a><span class="lineno"> 1427</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a19a4b1939f13bea9af58e6ec3bc081bc">populateTakerGetsCurrency</a>(to, from);</div>
+<div class="line"><a name="l01428"></a><span class="lineno"> 1428</span>&#160; </div>
+<div class="line"><a name="l01429"></a><span class="lineno"> 1429</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ade22313bdebf2330c0b7c36a9e9d98fd">populateTakerGetsIssuer</a>(to, from);</div>
+<div class="line"><a name="l01430"></a><span class="lineno"> 1430</span>&#160;}</div>
+<div class="line"><a name="l01431"></a><span class="lineno"> 1431</span>&#160; </div>
+<div class="line"><a name="l01432"></a><span class="lineno"> 1432</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l01433"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#ac0e0355e92fa74b21f7f8788846b17f4"> 1433</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(org::xrpl::rpc::v1::Offer&amp; to, <a class="code" href="classripple_1_1STObject.html">STObject</a> <span class="keyword">const</span>&amp; from)</div>
+<div class="line"><a name="l01434"></a><span class="lineno"> 1434</span>&#160;{</div>
+<div class="line"><a name="l01435"></a><span class="lineno"> 1435</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ab1412d6200d23e5381128ee686df6692">populateAccount</a>(to, from);</div>
 <div class="line"><a name="l01436"></a><span class="lineno"> 1436</span>&#160; </div>
-<div class="line"><a name="l01437"></a><span class="lineno"> 1437</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a6cffc5f8f72a66083d7de5e7fe4a888a">populateFlags</a>(to, from);</div>
+<div class="line"><a name="l01437"></a><span class="lineno"> 1437</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#aaa61915ee1911e7f3649cae76ff2e23b">populateSequence</a>(to, from);</div>
 <div class="line"><a name="l01438"></a><span class="lineno"> 1438</span>&#160; </div>
-<div class="line"><a name="l01439"></a><span class="lineno"> 1439</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#adc3cc8acd3a49ef6f2940201fb15edb5">populateTakerPays</a>(to, from);</div>
+<div class="line"><a name="l01439"></a><span class="lineno"> 1439</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a6cffc5f8f72a66083d7de5e7fe4a888a">populateFlags</a>(to, from);</div>
 <div class="line"><a name="l01440"></a><span class="lineno"> 1440</span>&#160; </div>
-<div class="line"><a name="l01441"></a><span class="lineno"> 1441</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a06519c4331b56712f8888362da8182b9">populateTakerGets</a>(to, from);</div>
+<div class="line"><a name="l01441"></a><span class="lineno"> 1441</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#adc3cc8acd3a49ef6f2940201fb15edb5">populateTakerPays</a>(to, from);</div>
 <div class="line"><a name="l01442"></a><span class="lineno"> 1442</span>&#160; </div>
-<div class="line"><a name="l01443"></a><span class="lineno"> 1443</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ae3af2a34976f06da81ffaa5f92aae6b6">populateBookDirectory</a>(to, from);</div>
+<div class="line"><a name="l01443"></a><span class="lineno"> 1443</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a06519c4331b56712f8888362da8182b9">populateTakerGets</a>(to, from);</div>
 <div class="line"><a name="l01444"></a><span class="lineno"> 1444</span>&#160; </div>
-<div class="line"><a name="l01445"></a><span class="lineno"> 1445</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ad92a01e26fefd1741e2ee8284e926740">populateBookNode</a>(to, from);</div>
-<div class="line"><a name="l01446"></a><span class="lineno"> 1446</span>&#160;}</div>
-<div class="line"><a name="l01447"></a><span class="lineno"> 1447</span>&#160; </div>
-<div class="line"><a name="l01448"></a><span class="lineno"> 1448</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l01449"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a94461c38e950f64284298e9af319d8ee"> 1449</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(org::xrpl::rpc::v1::RippleState&amp; to, <a class="code" href="classripple_1_1STObject.html">STObject</a> <span class="keyword">const</span>&amp; from)</div>
-<div class="line"><a name="l01450"></a><span class="lineno"> 1450</span>&#160;{</div>
-<div class="line"><a name="l01451"></a><span class="lineno"> 1451</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ae1f106a5dd06bf8338063092a37ef369">populateBalance</a>(to, from);</div>
-<div class="line"><a name="l01452"></a><span class="lineno"> 1452</span>&#160; </div>
-<div class="line"><a name="l01453"></a><span class="lineno"> 1453</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a6cffc5f8f72a66083d7de5e7fe4a888a">populateFlags</a>(to, from);</div>
+<div class="line"><a name="l01445"></a><span class="lineno"> 1445</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ae3af2a34976f06da81ffaa5f92aae6b6">populateBookDirectory</a>(to, from);</div>
+<div class="line"><a name="l01446"></a><span class="lineno"> 1446</span>&#160; </div>
+<div class="line"><a name="l01447"></a><span class="lineno"> 1447</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ad92a01e26fefd1741e2ee8284e926740">populateBookNode</a>(to, from);</div>
+<div class="line"><a name="l01448"></a><span class="lineno"> 1448</span>&#160;}</div>
+<div class="line"><a name="l01449"></a><span class="lineno"> 1449</span>&#160; </div>
+<div class="line"><a name="l01450"></a><span class="lineno"> 1450</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l01451"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a94461c38e950f64284298e9af319d8ee"> 1451</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(org::xrpl::rpc::v1::RippleState&amp; to, <a class="code" href="classripple_1_1STObject.html">STObject</a> <span class="keyword">const</span>&amp; from)</div>
+<div class="line"><a name="l01452"></a><span class="lineno"> 1452</span>&#160;{</div>
+<div class="line"><a name="l01453"></a><span class="lineno"> 1453</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ae1f106a5dd06bf8338063092a37ef369">populateBalance</a>(to, from);</div>
 <div class="line"><a name="l01454"></a><span class="lineno"> 1454</span>&#160; </div>
-<div class="line"><a name="l01455"></a><span class="lineno"> 1455</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a4fae478ae9145681b0c4465e69c97b36">populateLowNode</a>(to, from);</div>
+<div class="line"><a name="l01455"></a><span class="lineno"> 1455</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a6cffc5f8f72a66083d7de5e7fe4a888a">populateFlags</a>(to, from);</div>
 <div class="line"><a name="l01456"></a><span class="lineno"> 1456</span>&#160; </div>
-<div class="line"><a name="l01457"></a><span class="lineno"> 1457</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a285a79068e7326e76cabafcc14576526">populateHighNode</a>(to, from);</div>
+<div class="line"><a name="l01457"></a><span class="lineno"> 1457</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a4fae478ae9145681b0c4465e69c97b36">populateLowNode</a>(to, from);</div>
 <div class="line"><a name="l01458"></a><span class="lineno"> 1458</span>&#160; </div>
-<div class="line"><a name="l01459"></a><span class="lineno"> 1459</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ad9141a046451feb8a410313d77c5e33c">populateLowQualityIn</a>(to, from);</div>
+<div class="line"><a name="l01459"></a><span class="lineno"> 1459</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a285a79068e7326e76cabafcc14576526">populateHighNode</a>(to, from);</div>
 <div class="line"><a name="l01460"></a><span class="lineno"> 1460</span>&#160; </div>
-<div class="line"><a name="l01461"></a><span class="lineno"> 1461</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a22f364d70d337c81c466442b56488f92">populateLowQualityOut</a>(to, from);</div>
+<div class="line"><a name="l01461"></a><span class="lineno"> 1461</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ad9141a046451feb8a410313d77c5e33c">populateLowQualityIn</a>(to, from);</div>
 <div class="line"><a name="l01462"></a><span class="lineno"> 1462</span>&#160; </div>
-<div class="line"><a name="l01463"></a><span class="lineno"> 1463</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a35aa403b1136e6a4bd81cdf03a42d70c">populateHighQualityIn</a>(to, from);</div>
+<div class="line"><a name="l01463"></a><span class="lineno"> 1463</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a22f364d70d337c81c466442b56488f92">populateLowQualityOut</a>(to, from);</div>
 <div class="line"><a name="l01464"></a><span class="lineno"> 1464</span>&#160; </div>
-<div class="line"><a name="l01465"></a><span class="lineno"> 1465</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ae3517f0362b5b3fc860ddebc9a48a98a">populateHighQualityOut</a>(to, from);</div>
+<div class="line"><a name="l01465"></a><span class="lineno"> 1465</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a35aa403b1136e6a4bd81cdf03a42d70c">populateHighQualityIn</a>(to, from);</div>
 <div class="line"><a name="l01466"></a><span class="lineno"> 1466</span>&#160; </div>
-<div class="line"><a name="l01467"></a><span class="lineno"> 1467</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a24b7917ca7e72f5211a2e3f6bde9ee05">populatePreviousTransactionID</a>(to, from);</div>
+<div class="line"><a name="l01467"></a><span class="lineno"> 1467</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ae3517f0362b5b3fc860ddebc9a48a98a">populateHighQualityOut</a>(to, from);</div>
 <div class="line"><a name="l01468"></a><span class="lineno"> 1468</span>&#160; </div>
-<div class="line"><a name="l01469"></a><span class="lineno"> 1469</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ae9d55ccaa6177e771834b1f241506e2a">populatePreviousTransactionLedgerSequence</a>(to, from);</div>
-<div class="line"><a name="l01470"></a><span class="lineno"> 1470</span>&#160;}</div>
-<div class="line"><a name="l01471"></a><span class="lineno"> 1471</span>&#160; </div>
-<div class="line"><a name="l01472"></a><span class="lineno"> 1472</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l01473"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#ae15c5132f1f622a9af59d0a553b5c192"> 1473</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(org::xrpl::rpc::v1::SignerList&amp; to, <a class="code" href="classripple_1_1STObject.html">STObject</a> <span class="keyword">const</span>&amp; from)</div>
-<div class="line"><a name="l01474"></a><span class="lineno"> 1474</span>&#160;{</div>
-<div class="line"><a name="l01475"></a><span class="lineno"> 1475</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a6cffc5f8f72a66083d7de5e7fe4a888a">populateFlags</a>(to, from);</div>
-<div class="line"><a name="l01476"></a><span class="lineno"> 1476</span>&#160; </div>
-<div class="line"><a name="l01477"></a><span class="lineno"> 1477</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a24b7917ca7e72f5211a2e3f6bde9ee05">populatePreviousTransactionID</a>(to, from);</div>
+<div class="line"><a name="l01469"></a><span class="lineno"> 1469</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a24b7917ca7e72f5211a2e3f6bde9ee05">populatePreviousTransactionID</a>(to, from);</div>
+<div class="line"><a name="l01470"></a><span class="lineno"> 1470</span>&#160; </div>
+<div class="line"><a name="l01471"></a><span class="lineno"> 1471</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ae9d55ccaa6177e771834b1f241506e2a">populatePreviousTransactionLedgerSequence</a>(to, from);</div>
+<div class="line"><a name="l01472"></a><span class="lineno"> 1472</span>&#160;}</div>
+<div class="line"><a name="l01473"></a><span class="lineno"> 1473</span>&#160; </div>
+<div class="line"><a name="l01474"></a><span class="lineno"> 1474</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l01475"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#ae15c5132f1f622a9af59d0a553b5c192"> 1475</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(org::xrpl::rpc::v1::SignerList&amp; to, <a class="code" href="classripple_1_1STObject.html">STObject</a> <span class="keyword">const</span>&amp; from)</div>
+<div class="line"><a name="l01476"></a><span class="lineno"> 1476</span>&#160;{</div>
+<div class="line"><a name="l01477"></a><span class="lineno"> 1477</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a6cffc5f8f72a66083d7de5e7fe4a888a">populateFlags</a>(to, from);</div>
 <div class="line"><a name="l01478"></a><span class="lineno"> 1478</span>&#160; </div>
-<div class="line"><a name="l01479"></a><span class="lineno"> 1479</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ae9d55ccaa6177e771834b1f241506e2a">populatePreviousTransactionLedgerSequence</a>(to, from);</div>
+<div class="line"><a name="l01479"></a><span class="lineno"> 1479</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a24b7917ca7e72f5211a2e3f6bde9ee05">populatePreviousTransactionID</a>(to, from);</div>
 <div class="line"><a name="l01480"></a><span class="lineno"> 1480</span>&#160; </div>
-<div class="line"><a name="l01481"></a><span class="lineno"> 1481</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ab333a54dc23cdfba7c9761348e6df088">populateOwnerNode</a>(to, from);</div>
+<div class="line"><a name="l01481"></a><span class="lineno"> 1481</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ae9d55ccaa6177e771834b1f241506e2a">populatePreviousTransactionLedgerSequence</a>(to, from);</div>
 <div class="line"><a name="l01482"></a><span class="lineno"> 1482</span>&#160; </div>
-<div class="line"><a name="l01483"></a><span class="lineno"> 1483</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#af1477db46865b3593888c4923ce93213">populateSignerEntries</a>(to, from);</div>
+<div class="line"><a name="l01483"></a><span class="lineno"> 1483</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ab333a54dc23cdfba7c9761348e6df088">populateOwnerNode</a>(to, from);</div>
 <div class="line"><a name="l01484"></a><span class="lineno"> 1484</span>&#160; </div>
-<div class="line"><a name="l01485"></a><span class="lineno"> 1485</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a7e9609127a1d0400f54f58629e7e476f">populateSignerQuorum</a>(to, from);</div>
+<div class="line"><a name="l01485"></a><span class="lineno"> 1485</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#af1477db46865b3593888c4923ce93213">populateSignerEntries</a>(to, from);</div>
 <div class="line"><a name="l01486"></a><span class="lineno"> 1486</span>&#160; </div>
-<div class="line"><a name="l01487"></a><span class="lineno"> 1487</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a33e77f9f48a8060c8f9f63ce6aea91b5">populateSignerListID</a>(to, from);</div>
-<div class="line"><a name="l01488"></a><span class="lineno"> 1488</span>&#160;}</div>
-<div class="line"><a name="l01489"></a><span class="lineno"> 1489</span>&#160; </div>
-<div class="line"><a name="l01490"></a><span class="lineno"> 1490</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l01491"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#ab7a91e1c2c53db22648556fef2becaf3"> 1491</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(org::xrpl::rpc::v1::NegativeUNL&amp; to, <a class="code" href="classripple_1_1STObject.html">STObject</a> <span class="keyword">const</span>&amp; from)</div>
-<div class="line"><a name="l01492"></a><span class="lineno"> 1492</span>&#160;{</div>
-<div class="line"><a name="l01493"></a><span class="lineno"> 1493</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a4f9b85ba42e192724de3872f63a798ef">populateDisabledValidators</a>(to, from);</div>
-<div class="line"><a name="l01494"></a><span class="lineno"> 1494</span>&#160; </div>
-<div class="line"><a name="l01495"></a><span class="lineno"> 1495</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ac86c57b9a10795c15390865b2077cd17">populateValidatorToDisable</a>(to, from);</div>
+<div class="line"><a name="l01487"></a><span class="lineno"> 1487</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a7e9609127a1d0400f54f58629e7e476f">populateSignerQuorum</a>(to, from);</div>
+<div class="line"><a name="l01488"></a><span class="lineno"> 1488</span>&#160; </div>
+<div class="line"><a name="l01489"></a><span class="lineno"> 1489</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a33e77f9f48a8060c8f9f63ce6aea91b5">populateSignerListID</a>(to, from);</div>
+<div class="line"><a name="l01490"></a><span class="lineno"> 1490</span>&#160;}</div>
+<div class="line"><a name="l01491"></a><span class="lineno"> 1491</span>&#160; </div>
+<div class="line"><a name="l01492"></a><span class="lineno"> 1492</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l01493"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#ab7a91e1c2c53db22648556fef2becaf3"> 1493</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(org::xrpl::rpc::v1::NegativeUNL&amp; to, <a class="code" href="classripple_1_1STObject.html">STObject</a> <span class="keyword">const</span>&amp; from)</div>
+<div class="line"><a name="l01494"></a><span class="lineno"> 1494</span>&#160;{</div>
+<div class="line"><a name="l01495"></a><span class="lineno"> 1495</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a4f9b85ba42e192724de3872f63a798ef">populateDisabledValidators</a>(to, from);</div>
 <div class="line"><a name="l01496"></a><span class="lineno"> 1496</span>&#160; </div>
-<div class="line"><a name="l01497"></a><span class="lineno"> 1497</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a9a5315d9eea0a060b40dd9487540f0bf">populateValidatorToReEnable</a>(to, from);</div>
+<div class="line"><a name="l01497"></a><span class="lineno"> 1497</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ac86c57b9a10795c15390865b2077cd17">populateValidatorToDisable</a>(to, from);</div>
 <div class="line"><a name="l01498"></a><span class="lineno"> 1498</span>&#160; </div>
-<div class="line"><a name="l01499"></a><span class="lineno"> 1499</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a6cffc5f8f72a66083d7de5e7fe4a888a">populateFlags</a>(to, from);</div>
-<div class="line"><a name="l01500"></a><span class="lineno"> 1500</span>&#160;}</div>
-<div class="line"><a name="l01501"></a><span class="lineno"> 1501</span>&#160; </div>
-<div class="line"><a name="l01502"></a><span class="lineno"> 1502</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l01503"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#af3cca0d480c14f9e02b9c5f5433d4d22"> 1503</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(org::xrpl::rpc::v1::TicketObject&amp; to, <a class="code" href="classripple_1_1STObject.html">STObject</a> <span class="keyword">const</span>&amp; from)</div>
-<div class="line"><a name="l01504"></a><span class="lineno"> 1504</span>&#160;{</div>
-<div class="line"><a name="l01505"></a><span class="lineno"> 1505</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ab1412d6200d23e5381128ee686df6692">populateAccount</a>(to, from);</div>
-<div class="line"><a name="l01506"></a><span class="lineno"> 1506</span>&#160; </div>
-<div class="line"><a name="l01507"></a><span class="lineno"> 1507</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a6cffc5f8f72a66083d7de5e7fe4a888a">populateFlags</a>(to, from);</div>
+<div class="line"><a name="l01499"></a><span class="lineno"> 1499</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a9a5315d9eea0a060b40dd9487540f0bf">populateValidatorToReEnable</a>(to, from);</div>
+<div class="line"><a name="l01500"></a><span class="lineno"> 1500</span>&#160; </div>
+<div class="line"><a name="l01501"></a><span class="lineno"> 1501</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a6cffc5f8f72a66083d7de5e7fe4a888a">populateFlags</a>(to, from);</div>
+<div class="line"><a name="l01502"></a><span class="lineno"> 1502</span>&#160;}</div>
+<div class="line"><a name="l01503"></a><span class="lineno"> 1503</span>&#160; </div>
+<div class="line"><a name="l01504"></a><span class="lineno"> 1504</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l01505"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#af3cca0d480c14f9e02b9c5f5433d4d22"> 1505</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(org::xrpl::rpc::v1::TicketObject&amp; to, <a class="code" href="classripple_1_1STObject.html">STObject</a> <span class="keyword">const</span>&amp; from)</div>
+<div class="line"><a name="l01506"></a><span class="lineno"> 1506</span>&#160;{</div>
+<div class="line"><a name="l01507"></a><span class="lineno"> 1507</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ab1412d6200d23e5381128ee686df6692">populateAccount</a>(to, from);</div>
 <div class="line"><a name="l01508"></a><span class="lineno"> 1508</span>&#160; </div>
-<div class="line"><a name="l01509"></a><span class="lineno"> 1509</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ab333a54dc23cdfba7c9761348e6df088">populateOwnerNode</a>(to, from);</div>
+<div class="line"><a name="l01509"></a><span class="lineno"> 1509</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a6cffc5f8f72a66083d7de5e7fe4a888a">populateFlags</a>(to, from);</div>
 <div class="line"><a name="l01510"></a><span class="lineno"> 1510</span>&#160; </div>
-<div class="line"><a name="l01511"></a><span class="lineno"> 1511</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a24b7917ca7e72f5211a2e3f6bde9ee05">populatePreviousTransactionID</a>(to, from);</div>
+<div class="line"><a name="l01511"></a><span class="lineno"> 1511</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ab333a54dc23cdfba7c9761348e6df088">populateOwnerNode</a>(to, from);</div>
 <div class="line"><a name="l01512"></a><span class="lineno"> 1512</span>&#160; </div>
-<div class="line"><a name="l01513"></a><span class="lineno"> 1513</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ae9d55ccaa6177e771834b1f241506e2a">populatePreviousTransactionLedgerSequence</a>(to, from);</div>
+<div class="line"><a name="l01513"></a><span class="lineno"> 1513</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a24b7917ca7e72f5211a2e3f6bde9ee05">populatePreviousTransactionID</a>(to, from);</div>
 <div class="line"><a name="l01514"></a><span class="lineno"> 1514</span>&#160; </div>
-<div class="line"><a name="l01515"></a><span class="lineno"> 1515</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ab9274c17d901d7e736075b8ad0d737f4">populateTicketSequence</a>(to, from);</div>
-<div class="line"><a name="l01516"></a><span class="lineno"> 1516</span>&#160;}</div>
-<div class="line"><a name="l01517"></a><span class="lineno"> 1517</span>&#160; </div>
-<div class="line"><a name="l01518"></a><span class="lineno"> 1518</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l01519"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a7ce9fc965a23b7792c90839bdd6be461"> 1519</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a7ce9fc965a23b7792c90839bdd6be461">setLedgerEntryType</a>(</div>
-<div class="line"><a name="l01520"></a><span class="lineno"> 1520</span>&#160;    org::xrpl::rpc::v1::AffectedNode&amp; proto,</div>
-<div class="line"><a name="l01521"></a><span class="lineno"> 1521</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> lgrType)</div>
-<div class="line"><a name="l01522"></a><span class="lineno"> 1522</span>&#160;{</div>
-<div class="line"><a name="l01523"></a><span class="lineno"> 1523</span>&#160;    <span class="keywordflow">switch</span> (lgrType)</div>
-<div class="line"><a name="l01524"></a><span class="lineno"> 1524</span>&#160;    {</div>
-<div class="line"><a name="l01525"></a><span class="lineno"> 1525</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bac03405d2da6d19e17f321a6b7f7a412e">ltACCOUNT_ROOT</a>:</div>
-<div class="line"><a name="l01526"></a><span class="lineno"> 1526</span>&#160;            proto.set_ledger_entry_type(</div>
-<div class="line"><a name="l01527"></a><span class="lineno"> 1527</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_ACCOUNT_ROOT);</div>
-<div class="line"><a name="l01528"></a><span class="lineno"> 1528</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01529"></a><span class="lineno"> 1529</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba1ca6f5da9e86f814af3d6f8b3631ebe8">ltDIR_NODE</a>:</div>
-<div class="line"><a name="l01530"></a><span class="lineno"> 1530</span>&#160;            proto.set_ledger_entry_type(</div>
-<div class="line"><a name="l01531"></a><span class="lineno"> 1531</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_DIRECTORY_NODE);</div>
-<div class="line"><a name="l01532"></a><span class="lineno"> 1532</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01533"></a><span class="lineno"> 1533</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba0dca36851b869200981387f3b9f5cdee">ltRIPPLE_STATE</a>:</div>
-<div class="line"><a name="l01534"></a><span class="lineno"> 1534</span>&#160;            proto.set_ledger_entry_type(</div>
-<div class="line"><a name="l01535"></a><span class="lineno"> 1535</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_RIPPLE_STATE);</div>
-<div class="line"><a name="l01536"></a><span class="lineno"> 1536</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01537"></a><span class="lineno"> 1537</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba2bde6c0c7901419859841372fa9557ec">ltSIGNER_LIST</a>:</div>
-<div class="line"><a name="l01538"></a><span class="lineno"> 1538</span>&#160;            proto.set_ledger_entry_type(</div>
-<div class="line"><a name="l01539"></a><span class="lineno"> 1539</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_SIGNER_LIST);</div>
-<div class="line"><a name="l01540"></a><span class="lineno"> 1540</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01541"></a><span class="lineno"> 1541</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba8a24a7b08fcdd8a76109f80f056a176d">ltOFFER</a>:</div>
-<div class="line"><a name="l01542"></a><span class="lineno"> 1542</span>&#160;            proto.set_ledger_entry_type(</div>
-<div class="line"><a name="l01543"></a><span class="lineno"> 1543</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_OFFER);</div>
-<div class="line"><a name="l01544"></a><span class="lineno"> 1544</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01545"></a><span class="lineno"> 1545</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba28ea965d2d2217a099fc54c86f1097c6">ltLEDGER_HASHES</a>:</div>
-<div class="line"><a name="l01546"></a><span class="lineno"> 1546</span>&#160;            proto.set_ledger_entry_type(</div>
-<div class="line"><a name="l01547"></a><span class="lineno"> 1547</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_LEDGER_HASHES);</div>
-<div class="line"><a name="l01548"></a><span class="lineno"> 1548</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01549"></a><span class="lineno"> 1549</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bad6de7354457bdcd9f882a430fe90157b">ltAMENDMENTS</a>:</div>
-<div class="line"><a name="l01550"></a><span class="lineno"> 1550</span>&#160;            proto.set_ledger_entry_type(</div>
-<div class="line"><a name="l01551"></a><span class="lineno"> 1551</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_AMENDMENTS);</div>
-<div class="line"><a name="l01552"></a><span class="lineno"> 1552</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01553"></a><span class="lineno"> 1553</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba7dc6fea6d4468e63ed4789f0ae421fda">ltFEE_SETTINGS</a>:</div>
-<div class="line"><a name="l01554"></a><span class="lineno"> 1554</span>&#160;            proto.set_ledger_entry_type(</div>
-<div class="line"><a name="l01555"></a><span class="lineno"> 1555</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_FEE_SETTINGS);</div>
-<div class="line"><a name="l01556"></a><span class="lineno"> 1556</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01557"></a><span class="lineno"> 1557</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba5df3cc4f053931df9fc48283f5a02e27">ltESCROW</a>:</div>
-<div class="line"><a name="l01558"></a><span class="lineno"> 1558</span>&#160;            proto.set_ledger_entry_type(</div>
-<div class="line"><a name="l01559"></a><span class="lineno"> 1559</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_ESCROW);</div>
-<div class="line"><a name="l01560"></a><span class="lineno"> 1560</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01561"></a><span class="lineno"> 1561</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba9e06c2e5bc18cc01158409a566acd2fd">ltPAYCHAN</a>:</div>
-<div class="line"><a name="l01562"></a><span class="lineno"> 1562</span>&#160;            proto.set_ledger_entry_type(</div>
-<div class="line"><a name="l01563"></a><span class="lineno"> 1563</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_PAY_CHANNEL);</div>
-<div class="line"><a name="l01564"></a><span class="lineno"> 1564</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01565"></a><span class="lineno"> 1565</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bad7915d2d8a69386a38eebd7b859dcb6d">ltCHECK</a>:</div>
-<div class="line"><a name="l01566"></a><span class="lineno"> 1566</span>&#160;            proto.set_ledger_entry_type(</div>
-<div class="line"><a name="l01567"></a><span class="lineno"> 1567</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_CHECK);</div>
-<div class="line"><a name="l01568"></a><span class="lineno"> 1568</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01569"></a><span class="lineno"> 1569</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bad4c4cc29cde0b459bc454c5e70f2b3ac">ltDEPOSIT_PREAUTH</a>:</div>
-<div class="line"><a name="l01570"></a><span class="lineno"> 1570</span>&#160;            proto.set_ledger_entry_type(</div>
-<div class="line"><a name="l01571"></a><span class="lineno"> 1571</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_DEPOSIT_PREAUTH);</div>
-<div class="line"><a name="l01572"></a><span class="lineno"> 1572</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01573"></a><span class="lineno"> 1573</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba228bf5e19d8a076bf0b39a8555c66a04">ltNEGATIVE_UNL</a>:</div>
-<div class="line"><a name="l01574"></a><span class="lineno"> 1574</span>&#160;            proto.set_ledger_entry_type(</div>
-<div class="line"><a name="l01575"></a><span class="lineno"> 1575</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_NEGATIVE_UNL);</div>
-<div class="line"><a name="l01576"></a><span class="lineno"> 1576</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01577"></a><span class="lineno"> 1577</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07baa28c736ec52242ffe39aaa030db1accd">ltTICKET</a>:</div>
-<div class="line"><a name="l01578"></a><span class="lineno"> 1578</span>&#160;            proto.set_ledger_entry_type(</div>
-<div class="line"><a name="l01579"></a><span class="lineno"> 1579</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_TICKET);</div>
-<div class="line"><a name="l01580"></a><span class="lineno"> 1580</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01581"></a><span class="lineno"> 1581</span>&#160;    }</div>
-<div class="line"><a name="l01582"></a><span class="lineno"> 1582</span>&#160;}</div>
-<div class="line"><a name="l01583"></a><span class="lineno"> 1583</span>&#160; </div>
-<div class="line"><a name="l01584"></a><span class="lineno"> 1584</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
-<div class="line"><a name="l01585"></a><span class="lineno"> 1585</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l01586"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a66670846353c5ea0cf9c9ff6f8fbd293"> 1586</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(T&amp; to, <a class="code" href="classripple_1_1STObject.html">STObject</a>&amp; from, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> type)</div>
-<div class="line"><a name="l01587"></a><span class="lineno"> 1587</span>&#160;{</div>
-<div class="line"><a name="l01588"></a><span class="lineno"> 1588</span>&#160;    <span class="keywordflow">switch</span> (type)</div>
-<div class="line"><a name="l01589"></a><span class="lineno"> 1589</span>&#160;    {</div>
-<div class="line"><a name="l01590"></a><span class="lineno"> 1590</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bac03405d2da6d19e17f321a6b7f7a412e">ltACCOUNT_ROOT</a>:</div>
-<div class="line"><a name="l01591"></a><span class="lineno"> 1591</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_account_root(), from);</div>
-<div class="line"><a name="l01592"></a><span class="lineno"> 1592</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01593"></a><span class="lineno"> 1593</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bad6de7354457bdcd9f882a430fe90157b">ltAMENDMENTS</a>:</div>
-<div class="line"><a name="l01594"></a><span class="lineno"> 1594</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_amendments(), from);</div>
-<div class="line"><a name="l01595"></a><span class="lineno"> 1595</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01596"></a><span class="lineno"> 1596</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba1ca6f5da9e86f814af3d6f8b3631ebe8">ltDIR_NODE</a>:</div>
-<div class="line"><a name="l01597"></a><span class="lineno"> 1597</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_directory_node(), from);</div>
-<div class="line"><a name="l01598"></a><span class="lineno"> 1598</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01599"></a><span class="lineno"> 1599</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba0dca36851b869200981387f3b9f5cdee">ltRIPPLE_STATE</a>:</div>
-<div class="line"><a name="l01600"></a><span class="lineno"> 1600</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_ripple_state(), from);</div>
-<div class="line"><a name="l01601"></a><span class="lineno"> 1601</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01602"></a><span class="lineno"> 1602</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba2bde6c0c7901419859841372fa9557ec">ltSIGNER_LIST</a>:</div>
-<div class="line"><a name="l01603"></a><span class="lineno"> 1603</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_signer_list(), from);</div>
-<div class="line"><a name="l01604"></a><span class="lineno"> 1604</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01605"></a><span class="lineno"> 1605</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba8a24a7b08fcdd8a76109f80f056a176d">ltOFFER</a>:</div>
-<div class="line"><a name="l01606"></a><span class="lineno"> 1606</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_offer(), from);</div>
-<div class="line"><a name="l01607"></a><span class="lineno"> 1607</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01608"></a><span class="lineno"> 1608</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba28ea965d2d2217a099fc54c86f1097c6">ltLEDGER_HASHES</a>:</div>
-<div class="line"><a name="l01609"></a><span class="lineno"> 1609</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_ledger_hashes(), from);</div>
-<div class="line"><a name="l01610"></a><span class="lineno"> 1610</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01611"></a><span class="lineno"> 1611</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba7dc6fea6d4468e63ed4789f0ae421fda">ltFEE_SETTINGS</a>:</div>
-<div class="line"><a name="l01612"></a><span class="lineno"> 1612</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_fee_settings(), from);</div>
-<div class="line"><a name="l01613"></a><span class="lineno"> 1613</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01614"></a><span class="lineno"> 1614</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba5df3cc4f053931df9fc48283f5a02e27">ltESCROW</a>:</div>
-<div class="line"><a name="l01615"></a><span class="lineno"> 1615</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_escrow(), from);</div>
-<div class="line"><a name="l01616"></a><span class="lineno"> 1616</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01617"></a><span class="lineno"> 1617</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba9e06c2e5bc18cc01158409a566acd2fd">ltPAYCHAN</a>:</div>
-<div class="line"><a name="l01618"></a><span class="lineno"> 1618</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_pay_channel(), from);</div>
-<div class="line"><a name="l01619"></a><span class="lineno"> 1619</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01620"></a><span class="lineno"> 1620</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bad7915d2d8a69386a38eebd7b859dcb6d">ltCHECK</a>:</div>
-<div class="line"><a name="l01621"></a><span class="lineno"> 1621</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_check(), from);</div>
-<div class="line"><a name="l01622"></a><span class="lineno"> 1622</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01623"></a><span class="lineno"> 1623</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bad4c4cc29cde0b459bc454c5e70f2b3ac">ltDEPOSIT_PREAUTH</a>:</div>
-<div class="line"><a name="l01624"></a><span class="lineno"> 1624</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_deposit_preauth(), from);</div>
-<div class="line"><a name="l01625"></a><span class="lineno"> 1625</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01626"></a><span class="lineno"> 1626</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba228bf5e19d8a076bf0b39a8555c66a04">ltNEGATIVE_UNL</a>:</div>
-<div class="line"><a name="l01627"></a><span class="lineno"> 1627</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_negative_unl(), from);</div>
-<div class="line"><a name="l01628"></a><span class="lineno"> 1628</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01629"></a><span class="lineno"> 1629</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07baa28c736ec52242ffe39aaa030db1accd">ltTICKET</a>:</div>
-<div class="line"><a name="l01630"></a><span class="lineno"> 1630</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_ticket(), from);</div>
-<div class="line"><a name="l01631"></a><span class="lineno"> 1631</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01632"></a><span class="lineno"> 1632</span>&#160;    }</div>
-<div class="line"><a name="l01633"></a><span class="lineno"> 1633</span>&#160;}</div>
-<div class="line"><a name="l01634"></a><span class="lineno"> 1634</span>&#160; </div>
-<div class="line"><a name="l01635"></a><span class="lineno"> 1635</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
-<div class="line"><a name="l01636"></a><span class="lineno"> 1636</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l01637"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a43b4642a9423050609a09d1fe70c6921"> 1637</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a43b4642a9423050609a09d1fe70c6921">populateFields</a>(</div>
-<div class="line"><a name="l01638"></a><span class="lineno"> 1638</span>&#160;    T <span class="keyword">const</span>&amp; getProto,</div>
-<div class="line"><a name="l01639"></a><span class="lineno"> 1639</span>&#160;    <a class="code" href="classripple_1_1STObject.html">STObject</a>&amp; obj,</div>
-<div class="line"><a name="l01640"></a><span class="lineno"> 1640</span>&#160;    <a class="code" href="classripple_1_1SField.html">SField</a> <span class="keyword">const</span>&amp; field,</div>
-<div class="line"><a name="l01641"></a><span class="lineno"> 1641</span>&#160;    uint16_t lgrType)</div>
-<div class="line"><a name="l01642"></a><span class="lineno"> 1642</span>&#160;{</div>
-<div class="line"><a name="l01643"></a><span class="lineno"> 1643</span>&#160;    <span class="comment">// final fields</span></div>
-<div class="line"><a name="l01644"></a><span class="lineno"> 1644</span>&#160;    <span class="keywordflow">if</span> (obj.<a class="code" href="classripple_1_1STObject.html#aaf5d617701ac3afc4ad6a13862459692">isFieldPresent</a>(field))</div>
-<div class="line"><a name="l01645"></a><span class="lineno"> 1645</span>&#160;    {</div>
-<div class="line"><a name="l01646"></a><span class="lineno"> 1646</span>&#160;        <a class="code" href="classripple_1_1STObject.html">STObject</a>&amp; data = obj.<a class="code" href="classripple_1_1STObject.html#a891022e663d5546377f401a53141786f">getField</a>(field).<a class="code" href="classripple_1_1STBase.html#a5e2b3d13d27e01946bbee9e50ec8833d">downcast</a>&lt;<a class="code" href="classripple_1_1STObject.html">STObject</a>&gt;();</div>
-<div class="line"><a name="l01647"></a><span class="lineno"> 1647</span>&#160; </div>
-<div class="line"><a name="l01648"></a><span class="lineno"> 1648</span>&#160;        <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*getProto(), data, lgrType);</div>
-<div class="line"><a name="l01649"></a><span class="lineno"> 1649</span>&#160;    }</div>
-<div class="line"><a name="l01650"></a><span class="lineno"> 1650</span>&#160;}</div>
-<div class="line"><a name="l01651"></a><span class="lineno"> 1651</span>&#160; </div>
-<div class="line"><a name="l01652"></a><span class="lineno"> 1652</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
-<div class="line"><a name="l01653"></a><span class="lineno"> 1653</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l01654"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a4ca37dbf9669511c0e6ed157fe9c80ad"> 1654</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a4ca37dbf9669511c0e6ed157fe9c80ad">populateFinalFields</a>(T <span class="keyword">const</span>&amp; getProto, <a class="code" href="classripple_1_1STObject.html">STObject</a>&amp; obj, uint16_t lgrType)</div>
-<div class="line"><a name="l01655"></a><span class="lineno"> 1655</span>&#160;{</div>
-<div class="line"><a name="l01656"></a><span class="lineno"> 1656</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a43b4642a9423050609a09d1fe70c6921">populateFields</a>(getProto, obj, <a class="code" href="namespaceripple.html#a97106dd9790795c6202aa5e4d95b3f7d">sfFinalFields</a>, lgrType);</div>
-<div class="line"><a name="l01657"></a><span class="lineno"> 1657</span>&#160;}</div>
-<div class="line"><a name="l01658"></a><span class="lineno"> 1658</span>&#160; </div>
-<div class="line"><a name="l01659"></a><span class="lineno"> 1659</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
-<div class="line"><a name="l01660"></a><span class="lineno"> 1660</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l01661"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#af13816ad8293ef8f25ec26be1395a4eb"> 1661</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#af13816ad8293ef8f25ec26be1395a4eb">populatePreviousFields</a>(T <span class="keyword">const</span>&amp; getProto, <a class="code" href="classripple_1_1STObject.html">STObject</a>&amp; obj, uint16_t lgrType)</div>
-<div class="line"><a name="l01662"></a><span class="lineno"> 1662</span>&#160;{</div>
-<div class="line"><a name="l01663"></a><span class="lineno"> 1663</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a43b4642a9423050609a09d1fe70c6921">populateFields</a>(getProto, obj, <a class="code" href="namespaceripple.html#ab81d634185168f1fa7f144dd18c31089">sfPreviousFields</a>, lgrType);</div>
-<div class="line"><a name="l01664"></a><span class="lineno"> 1664</span>&#160;}</div>
-<div class="line"><a name="l01665"></a><span class="lineno"> 1665</span>&#160; </div>
-<div class="line"><a name="l01666"></a><span class="lineno"> 1666</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
-<div class="line"><a name="l01667"></a><span class="lineno"> 1667</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l01668"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#af06b63daf42b07dd9c20cc3d7280a079"> 1668</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#af06b63daf42b07dd9c20cc3d7280a079">populateNewFields</a>(T <span class="keyword">const</span>&amp; getProto, <a class="code" href="classripple_1_1STObject.html">STObject</a>&amp; obj, uint16_t lgrType)</div>
-<div class="line"><a name="l01669"></a><span class="lineno"> 1669</span>&#160;{</div>
-<div class="line"><a name="l01670"></a><span class="lineno"> 1670</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a43b4642a9423050609a09d1fe70c6921">populateFields</a>(getProto, obj, <a class="code" href="namespaceripple.html#aac1bba296382f51cbea52bf57a68f0bc">sfNewFields</a>, lgrType);</div>
-<div class="line"><a name="l01671"></a><span class="lineno"> 1671</span>&#160;}</div>
-<div class="line"><a name="l01672"></a><span class="lineno"> 1672</span>&#160; </div>
-<div class="line"><a name="l01673"></a><span class="lineno"> 1673</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l01674"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a2030aec27ebda627d1fe11ff5f4409df"> 1674</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(org::xrpl::rpc::v1::Meta&amp; to, <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;TxMeta&gt;</a> <span class="keyword">const</span>&amp; from)</div>
-<div class="line"><a name="l01675"></a><span class="lineno"> 1675</span>&#160;{</div>
-<div class="line"><a name="l01676"></a><span class="lineno"> 1676</span>&#160;    to.set_transaction_index(from-&gt;getIndex());</div>
-<div class="line"><a name="l01677"></a><span class="lineno"> 1677</span>&#160; </div>
-<div class="line"><a name="l01678"></a><span class="lineno"> 1678</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_transaction_result(), from-&gt;getResultTER());</div>
-<div class="line"><a name="l01679"></a><span class="lineno"> 1679</span>&#160;    to.mutable_transaction_result()-&gt;set_result(</div>
-<div class="line"><a name="l01680"></a><span class="lineno"> 1680</span>&#160;        <a class="code" href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">transToken</a>(from-&gt;getResultTER()));</div>
-<div class="line"><a name="l01681"></a><span class="lineno"> 1681</span>&#160; </div>
-<div class="line"><a name="l01682"></a><span class="lineno"> 1682</span>&#160;    <span class="keywordflow">if</span> (from-&gt;hasDeliveredAmount())</div>
-<div class="line"><a name="l01683"></a><span class="lineno"> 1683</span>&#160;        <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_delivered_amount(), from-&gt;getDeliveredAmount());</div>
-<div class="line"><a name="l01684"></a><span class="lineno"> 1684</span>&#160; </div>
-<div class="line"><a name="l01685"></a><span class="lineno"> 1685</span>&#160;    <a class="code" href="classripple_1_1STArray.html">STArray</a>&amp; nodes = from-&gt;getNodes();</div>
-<div class="line"><a name="l01686"></a><span class="lineno"> 1686</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> it = nodes.<a class="code" href="classripple_1_1STArray.html#a66725b497316717cd17cdad5645f6c18">begin</a>(); it != nodes.<a class="code" href="classripple_1_1STArray.html#a0a783ca92264f290814ea939d873e7ba">end</a>(); ++it)</div>
-<div class="line"><a name="l01687"></a><span class="lineno"> 1687</span>&#160;    {</div>
-<div class="line"><a name="l01688"></a><span class="lineno"> 1688</span>&#160;        <a class="code" href="classripple_1_1STObject.html">STObject</a>&amp; obj = *it;</div>
-<div class="line"><a name="l01689"></a><span class="lineno"> 1689</span>&#160;        org::xrpl::rpc::v1::AffectedNode* node = to.add_affected_nodes();</div>
-<div class="line"><a name="l01690"></a><span class="lineno"> 1690</span>&#160; </div>
-<div class="line"><a name="l01691"></a><span class="lineno"> 1691</span>&#160;        <span class="comment">// ledger index</span></div>
-<div class="line"><a name="l01692"></a><span class="lineno"> 1692</span>&#160;        <a class="code" href="classripple_1_1base__uint.html">uint256</a> ledgerIndex = obj.<a class="code" href="classripple_1_1STObject.html#af89b6c7fd94c998549037d0c44a068a1">getFieldH256</a>(<a class="code" href="namespaceripple.html#a17145516373f1353a9b93ae587194e6a">sfLedgerIndex</a>);</div>
-<div class="line"><a name="l01693"></a><span class="lineno"> 1693</span>&#160;        node-&gt;set_ledger_index(ledgerIndex.<a class="code" href="classripple_1_1base__uint.html#a5342507fe2fb5ac55d578e7e98863f70">data</a>(), ledgerIndex.<a class="code" href="classripple_1_1base__uint.html#adbe18ef92b677603e8539b3a77c064b0">size</a>());</div>
-<div class="line"><a name="l01694"></a><span class="lineno"> 1694</span>&#160; </div>
-<div class="line"><a name="l01695"></a><span class="lineno"> 1695</span>&#160;        <span class="comment">// ledger entry type</span></div>
-<div class="line"><a name="l01696"></a><span class="lineno"> 1696</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> lgrType = obj.<a class="code" href="classripple_1_1STObject.html#a42d3da94cee3e6f575350094476140ce">getFieldU16</a>(<a class="code" href="namespaceripple.html#a17d40ddaaa1efdd012235e36224df2e8">sfLedgerEntryType</a>);</div>
-<div class="line"><a name="l01697"></a><span class="lineno"> 1697</span>&#160;        <a class="code" href="namespaceripple_1_1RPC.html#a7ce9fc965a23b7792c90839bdd6be461">setLedgerEntryType</a>(*node, lgrType);</div>
-<div class="line"><a name="l01698"></a><span class="lineno"> 1698</span>&#160; </div>
-<div class="line"><a name="l01699"></a><span class="lineno"> 1699</span>&#160;        <span class="comment">// modified node</span></div>
-<div class="line"><a name="l01700"></a><span class="lineno"> 1700</span>&#160;        <span class="keywordflow">if</span> (obj.<a class="code" href="classripple_1_1STBase.html#a48097bca334d2f32a1d7861b59ae2e30">getFName</a>() == <a class="code" href="namespaceripple.html#a28444af630ffe05b75075785343b45c0">sfModifiedNode</a>)</div>
-<div class="line"><a name="l01701"></a><span class="lineno"> 1701</span>&#160;        {</div>
-<div class="line"><a name="l01702"></a><span class="lineno"> 1702</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a4ca37dbf9669511c0e6ed157fe9c80ad">populateFinalFields</a>(</div>
-<div class="line"><a name="l01703"></a><span class="lineno"> 1703</span>&#160;                [&amp;node]() {</div>
-<div class="line"><a name="l01704"></a><span class="lineno"> 1704</span>&#160;                    <span class="keywordflow">return</span> node-&gt;mutable_modified_node()</div>
-<div class="line"><a name="l01705"></a><span class="lineno"> 1705</span>&#160;                        -&gt;mutable_final_fields();</div>
-<div class="line"><a name="l01706"></a><span class="lineno"> 1706</span>&#160;                },</div>
-<div class="line"><a name="l01707"></a><span class="lineno"> 1707</span>&#160;                obj,</div>
-<div class="line"><a name="l01708"></a><span class="lineno"> 1708</span>&#160;                lgrType);</div>
-<div class="line"><a name="l01709"></a><span class="lineno"> 1709</span>&#160; </div>
-<div class="line"><a name="l01710"></a><span class="lineno"> 1710</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#af13816ad8293ef8f25ec26be1395a4eb">populatePreviousFields</a>(</div>
-<div class="line"><a name="l01711"></a><span class="lineno"> 1711</span>&#160;                [&amp;node]() {</div>
-<div class="line"><a name="l01712"></a><span class="lineno"> 1712</span>&#160;                    <span class="keywordflow">return</span> node-&gt;mutable_modified_node()</div>
-<div class="line"><a name="l01713"></a><span class="lineno"> 1713</span>&#160;                        -&gt;mutable_previous_fields();</div>
-<div class="line"><a name="l01714"></a><span class="lineno"> 1714</span>&#160;                },</div>
-<div class="line"><a name="l01715"></a><span class="lineno"> 1715</span>&#160;                obj,</div>
-<div class="line"><a name="l01716"></a><span class="lineno"> 1716</span>&#160;                lgrType);</div>
-<div class="line"><a name="l01717"></a><span class="lineno"> 1717</span>&#160; </div>
-<div class="line"><a name="l01718"></a><span class="lineno"> 1718</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a24b7917ca7e72f5211a2e3f6bde9ee05">populatePreviousTransactionID</a>(*node-&gt;mutable_modified_node(), obj);</div>
+<div class="line"><a name="l01515"></a><span class="lineno"> 1515</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ae9d55ccaa6177e771834b1f241506e2a">populatePreviousTransactionLedgerSequence</a>(to, from);</div>
+<div class="line"><a name="l01516"></a><span class="lineno"> 1516</span>&#160; </div>
+<div class="line"><a name="l01517"></a><span class="lineno"> 1517</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ab9274c17d901d7e736075b8ad0d737f4">populateTicketSequence</a>(to, from);</div>
+<div class="line"><a name="l01518"></a><span class="lineno"> 1518</span>&#160;}</div>
+<div class="line"><a name="l01519"></a><span class="lineno"> 1519</span>&#160; </div>
+<div class="line"><a name="l01520"></a><span class="lineno"> 1520</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l01521"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a7ce9fc965a23b7792c90839bdd6be461"> 1521</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a7ce9fc965a23b7792c90839bdd6be461">setLedgerEntryType</a>(</div>
+<div class="line"><a name="l01522"></a><span class="lineno"> 1522</span>&#160;    org::xrpl::rpc::v1::AffectedNode&amp; proto,</div>
+<div class="line"><a name="l01523"></a><span class="lineno"> 1523</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> lgrType)</div>
+<div class="line"><a name="l01524"></a><span class="lineno"> 1524</span>&#160;{</div>
+<div class="line"><a name="l01525"></a><span class="lineno"> 1525</span>&#160;    <span class="keywordflow">switch</span> (lgrType)</div>
+<div class="line"><a name="l01526"></a><span class="lineno"> 1526</span>&#160;    {</div>
+<div class="line"><a name="l01527"></a><span class="lineno"> 1527</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bac03405d2da6d19e17f321a6b7f7a412e">ltACCOUNT_ROOT</a>:</div>
+<div class="line"><a name="l01528"></a><span class="lineno"> 1528</span>&#160;            proto.set_ledger_entry_type(</div>
+<div class="line"><a name="l01529"></a><span class="lineno"> 1529</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_ACCOUNT_ROOT);</div>
+<div class="line"><a name="l01530"></a><span class="lineno"> 1530</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01531"></a><span class="lineno"> 1531</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba1ca6f5da9e86f814af3d6f8b3631ebe8">ltDIR_NODE</a>:</div>
+<div class="line"><a name="l01532"></a><span class="lineno"> 1532</span>&#160;            proto.set_ledger_entry_type(</div>
+<div class="line"><a name="l01533"></a><span class="lineno"> 1533</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_DIRECTORY_NODE);</div>
+<div class="line"><a name="l01534"></a><span class="lineno"> 1534</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01535"></a><span class="lineno"> 1535</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba0dca36851b869200981387f3b9f5cdee">ltRIPPLE_STATE</a>:</div>
+<div class="line"><a name="l01536"></a><span class="lineno"> 1536</span>&#160;            proto.set_ledger_entry_type(</div>
+<div class="line"><a name="l01537"></a><span class="lineno"> 1537</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_RIPPLE_STATE);</div>
+<div class="line"><a name="l01538"></a><span class="lineno"> 1538</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01539"></a><span class="lineno"> 1539</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba2bde6c0c7901419859841372fa9557ec">ltSIGNER_LIST</a>:</div>
+<div class="line"><a name="l01540"></a><span class="lineno"> 1540</span>&#160;            proto.set_ledger_entry_type(</div>
+<div class="line"><a name="l01541"></a><span class="lineno"> 1541</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_SIGNER_LIST);</div>
+<div class="line"><a name="l01542"></a><span class="lineno"> 1542</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01543"></a><span class="lineno"> 1543</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba8a24a7b08fcdd8a76109f80f056a176d">ltOFFER</a>:</div>
+<div class="line"><a name="l01544"></a><span class="lineno"> 1544</span>&#160;            proto.set_ledger_entry_type(</div>
+<div class="line"><a name="l01545"></a><span class="lineno"> 1545</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_OFFER);</div>
+<div class="line"><a name="l01546"></a><span class="lineno"> 1546</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01547"></a><span class="lineno"> 1547</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba28ea965d2d2217a099fc54c86f1097c6">ltLEDGER_HASHES</a>:</div>
+<div class="line"><a name="l01548"></a><span class="lineno"> 1548</span>&#160;            proto.set_ledger_entry_type(</div>
+<div class="line"><a name="l01549"></a><span class="lineno"> 1549</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_LEDGER_HASHES);</div>
+<div class="line"><a name="l01550"></a><span class="lineno"> 1550</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01551"></a><span class="lineno"> 1551</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bad6de7354457bdcd9f882a430fe90157b">ltAMENDMENTS</a>:</div>
+<div class="line"><a name="l01552"></a><span class="lineno"> 1552</span>&#160;            proto.set_ledger_entry_type(</div>
+<div class="line"><a name="l01553"></a><span class="lineno"> 1553</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_AMENDMENTS);</div>
+<div class="line"><a name="l01554"></a><span class="lineno"> 1554</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01555"></a><span class="lineno"> 1555</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba7dc6fea6d4468e63ed4789f0ae421fda">ltFEE_SETTINGS</a>:</div>
+<div class="line"><a name="l01556"></a><span class="lineno"> 1556</span>&#160;            proto.set_ledger_entry_type(</div>
+<div class="line"><a name="l01557"></a><span class="lineno"> 1557</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_FEE_SETTINGS);</div>
+<div class="line"><a name="l01558"></a><span class="lineno"> 1558</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01559"></a><span class="lineno"> 1559</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba5df3cc4f053931df9fc48283f5a02e27">ltESCROW</a>:</div>
+<div class="line"><a name="l01560"></a><span class="lineno"> 1560</span>&#160;            proto.set_ledger_entry_type(</div>
+<div class="line"><a name="l01561"></a><span class="lineno"> 1561</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_ESCROW);</div>
+<div class="line"><a name="l01562"></a><span class="lineno"> 1562</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01563"></a><span class="lineno"> 1563</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba9e06c2e5bc18cc01158409a566acd2fd">ltPAYCHAN</a>:</div>
+<div class="line"><a name="l01564"></a><span class="lineno"> 1564</span>&#160;            proto.set_ledger_entry_type(</div>
+<div class="line"><a name="l01565"></a><span class="lineno"> 1565</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_PAY_CHANNEL);</div>
+<div class="line"><a name="l01566"></a><span class="lineno"> 1566</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01567"></a><span class="lineno"> 1567</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bad7915d2d8a69386a38eebd7b859dcb6d">ltCHECK</a>:</div>
+<div class="line"><a name="l01568"></a><span class="lineno"> 1568</span>&#160;            proto.set_ledger_entry_type(</div>
+<div class="line"><a name="l01569"></a><span class="lineno"> 1569</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_CHECK);</div>
+<div class="line"><a name="l01570"></a><span class="lineno"> 1570</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01571"></a><span class="lineno"> 1571</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bad4c4cc29cde0b459bc454c5e70f2b3ac">ltDEPOSIT_PREAUTH</a>:</div>
+<div class="line"><a name="l01572"></a><span class="lineno"> 1572</span>&#160;            proto.set_ledger_entry_type(</div>
+<div class="line"><a name="l01573"></a><span class="lineno"> 1573</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_DEPOSIT_PREAUTH);</div>
+<div class="line"><a name="l01574"></a><span class="lineno"> 1574</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01575"></a><span class="lineno"> 1575</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba228bf5e19d8a076bf0b39a8555c66a04">ltNEGATIVE_UNL</a>:</div>
+<div class="line"><a name="l01576"></a><span class="lineno"> 1576</span>&#160;            proto.set_ledger_entry_type(</div>
+<div class="line"><a name="l01577"></a><span class="lineno"> 1577</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_NEGATIVE_UNL);</div>
+<div class="line"><a name="l01578"></a><span class="lineno"> 1578</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01579"></a><span class="lineno"> 1579</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07baa28c736ec52242ffe39aaa030db1accd">ltTICKET</a>:</div>
+<div class="line"><a name="l01580"></a><span class="lineno"> 1580</span>&#160;            proto.set_ledger_entry_type(</div>
+<div class="line"><a name="l01581"></a><span class="lineno"> 1581</span>&#160;                org::xrpl::rpc::v1::LEDGER_ENTRY_TYPE_TICKET);</div>
+<div class="line"><a name="l01582"></a><span class="lineno"> 1582</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01583"></a><span class="lineno"> 1583</span>&#160;    }</div>
+<div class="line"><a name="l01584"></a><span class="lineno"> 1584</span>&#160;}</div>
+<div class="line"><a name="l01585"></a><span class="lineno"> 1585</span>&#160; </div>
+<div class="line"><a name="l01586"></a><span class="lineno"> 1586</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
+<div class="line"><a name="l01587"></a><span class="lineno"> 1587</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l01588"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a66670846353c5ea0cf9c9ff6f8fbd293"> 1588</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(T&amp; to, <a class="code" href="classripple_1_1STObject.html">STObject</a>&amp; from, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> type)</div>
+<div class="line"><a name="l01589"></a><span class="lineno"> 1589</span>&#160;{</div>
+<div class="line"><a name="l01590"></a><span class="lineno"> 1590</span>&#160;    <span class="keywordflow">switch</span> (type)</div>
+<div class="line"><a name="l01591"></a><span class="lineno"> 1591</span>&#160;    {</div>
+<div class="line"><a name="l01592"></a><span class="lineno"> 1592</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bac03405d2da6d19e17f321a6b7f7a412e">ltACCOUNT_ROOT</a>:</div>
+<div class="line"><a name="l01593"></a><span class="lineno"> 1593</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_account_root(), from);</div>
+<div class="line"><a name="l01594"></a><span class="lineno"> 1594</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01595"></a><span class="lineno"> 1595</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bad6de7354457bdcd9f882a430fe90157b">ltAMENDMENTS</a>:</div>
+<div class="line"><a name="l01596"></a><span class="lineno"> 1596</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_amendments(), from);</div>
+<div class="line"><a name="l01597"></a><span class="lineno"> 1597</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01598"></a><span class="lineno"> 1598</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba1ca6f5da9e86f814af3d6f8b3631ebe8">ltDIR_NODE</a>:</div>
+<div class="line"><a name="l01599"></a><span class="lineno"> 1599</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_directory_node(), from);</div>
+<div class="line"><a name="l01600"></a><span class="lineno"> 1600</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01601"></a><span class="lineno"> 1601</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba0dca36851b869200981387f3b9f5cdee">ltRIPPLE_STATE</a>:</div>
+<div class="line"><a name="l01602"></a><span class="lineno"> 1602</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_ripple_state(), from);</div>
+<div class="line"><a name="l01603"></a><span class="lineno"> 1603</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01604"></a><span class="lineno"> 1604</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba2bde6c0c7901419859841372fa9557ec">ltSIGNER_LIST</a>:</div>
+<div class="line"><a name="l01605"></a><span class="lineno"> 1605</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_signer_list(), from);</div>
+<div class="line"><a name="l01606"></a><span class="lineno"> 1606</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01607"></a><span class="lineno"> 1607</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba8a24a7b08fcdd8a76109f80f056a176d">ltOFFER</a>:</div>
+<div class="line"><a name="l01608"></a><span class="lineno"> 1608</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_offer(), from);</div>
+<div class="line"><a name="l01609"></a><span class="lineno"> 1609</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01610"></a><span class="lineno"> 1610</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba28ea965d2d2217a099fc54c86f1097c6">ltLEDGER_HASHES</a>:</div>
+<div class="line"><a name="l01611"></a><span class="lineno"> 1611</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_ledger_hashes(), from);</div>
+<div class="line"><a name="l01612"></a><span class="lineno"> 1612</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01613"></a><span class="lineno"> 1613</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba7dc6fea6d4468e63ed4789f0ae421fda">ltFEE_SETTINGS</a>:</div>
+<div class="line"><a name="l01614"></a><span class="lineno"> 1614</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_fee_settings(), from);</div>
+<div class="line"><a name="l01615"></a><span class="lineno"> 1615</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01616"></a><span class="lineno"> 1616</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba5df3cc4f053931df9fc48283f5a02e27">ltESCROW</a>:</div>
+<div class="line"><a name="l01617"></a><span class="lineno"> 1617</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_escrow(), from);</div>
+<div class="line"><a name="l01618"></a><span class="lineno"> 1618</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01619"></a><span class="lineno"> 1619</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba9e06c2e5bc18cc01158409a566acd2fd">ltPAYCHAN</a>:</div>
+<div class="line"><a name="l01620"></a><span class="lineno"> 1620</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_pay_channel(), from);</div>
+<div class="line"><a name="l01621"></a><span class="lineno"> 1621</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01622"></a><span class="lineno"> 1622</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bad7915d2d8a69386a38eebd7b859dcb6d">ltCHECK</a>:</div>
+<div class="line"><a name="l01623"></a><span class="lineno"> 1623</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_check(), from);</div>
+<div class="line"><a name="l01624"></a><span class="lineno"> 1624</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01625"></a><span class="lineno"> 1625</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07bad4c4cc29cde0b459bc454c5e70f2b3ac">ltDEPOSIT_PREAUTH</a>:</div>
+<div class="line"><a name="l01626"></a><span class="lineno"> 1626</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_deposit_preauth(), from);</div>
+<div class="line"><a name="l01627"></a><span class="lineno"> 1627</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01628"></a><span class="lineno"> 1628</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07ba228bf5e19d8a076bf0b39a8555c66a04">ltNEGATIVE_UNL</a>:</div>
+<div class="line"><a name="l01629"></a><span class="lineno"> 1629</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_negative_unl(), from);</div>
+<div class="line"><a name="l01630"></a><span class="lineno"> 1630</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01631"></a><span class="lineno"> 1631</span>&#160;        <span class="keywordflow">case</span> <a class="code" href="namespaceripple.html#af6e0324b257fc9992b83ecf827c2a07baa28c736ec52242ffe39aaa030db1accd">ltTICKET</a>:</div>
+<div class="line"><a name="l01632"></a><span class="lineno"> 1632</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">RPC::convert</a>(*to.mutable_ticket(), from);</div>
+<div class="line"><a name="l01633"></a><span class="lineno"> 1633</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01634"></a><span class="lineno"> 1634</span>&#160;    }</div>
+<div class="line"><a name="l01635"></a><span class="lineno"> 1635</span>&#160;}</div>
+<div class="line"><a name="l01636"></a><span class="lineno"> 1636</span>&#160; </div>
+<div class="line"><a name="l01637"></a><span class="lineno"> 1637</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
+<div class="line"><a name="l01638"></a><span class="lineno"> 1638</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l01639"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a43b4642a9423050609a09d1fe70c6921"> 1639</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a43b4642a9423050609a09d1fe70c6921">populateFields</a>(</div>
+<div class="line"><a name="l01640"></a><span class="lineno"> 1640</span>&#160;    T <span class="keyword">const</span>&amp; getProto,</div>
+<div class="line"><a name="l01641"></a><span class="lineno"> 1641</span>&#160;    <a class="code" href="classripple_1_1STObject.html">STObject</a>&amp; obj,</div>
+<div class="line"><a name="l01642"></a><span class="lineno"> 1642</span>&#160;    <a class="code" href="classripple_1_1SField.html">SField</a> <span class="keyword">const</span>&amp; field,</div>
+<div class="line"><a name="l01643"></a><span class="lineno"> 1643</span>&#160;    uint16_t lgrType)</div>
+<div class="line"><a name="l01644"></a><span class="lineno"> 1644</span>&#160;{</div>
+<div class="line"><a name="l01645"></a><span class="lineno"> 1645</span>&#160;    <span class="comment">// final fields</span></div>
+<div class="line"><a name="l01646"></a><span class="lineno"> 1646</span>&#160;    <span class="keywordflow">if</span> (obj.<a class="code" href="classripple_1_1STObject.html#aaf5d617701ac3afc4ad6a13862459692">isFieldPresent</a>(field))</div>
+<div class="line"><a name="l01647"></a><span class="lineno"> 1647</span>&#160;    {</div>
+<div class="line"><a name="l01648"></a><span class="lineno"> 1648</span>&#160;        <a class="code" href="classripple_1_1STObject.html">STObject</a>&amp; data = obj.<a class="code" href="classripple_1_1STObject.html#a891022e663d5546377f401a53141786f">getField</a>(field).<a class="code" href="classripple_1_1STBase.html#a5e2b3d13d27e01946bbee9e50ec8833d">downcast</a>&lt;<a class="code" href="classripple_1_1STObject.html">STObject</a>&gt;();</div>
+<div class="line"><a name="l01649"></a><span class="lineno"> 1649</span>&#160; </div>
+<div class="line"><a name="l01650"></a><span class="lineno"> 1650</span>&#160;        <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*getProto(), data, lgrType);</div>
+<div class="line"><a name="l01651"></a><span class="lineno"> 1651</span>&#160;    }</div>
+<div class="line"><a name="l01652"></a><span class="lineno"> 1652</span>&#160;}</div>
+<div class="line"><a name="l01653"></a><span class="lineno"> 1653</span>&#160; </div>
+<div class="line"><a name="l01654"></a><span class="lineno"> 1654</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
+<div class="line"><a name="l01655"></a><span class="lineno"> 1655</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l01656"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a4ca37dbf9669511c0e6ed157fe9c80ad"> 1656</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a4ca37dbf9669511c0e6ed157fe9c80ad">populateFinalFields</a>(T <span class="keyword">const</span>&amp; getProto, <a class="code" href="classripple_1_1STObject.html">STObject</a>&amp; obj, uint16_t lgrType)</div>
+<div class="line"><a name="l01657"></a><span class="lineno"> 1657</span>&#160;{</div>
+<div class="line"><a name="l01658"></a><span class="lineno"> 1658</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a43b4642a9423050609a09d1fe70c6921">populateFields</a>(getProto, obj, <a class="code" href="namespaceripple.html#a97106dd9790795c6202aa5e4d95b3f7d">sfFinalFields</a>, lgrType);</div>
+<div class="line"><a name="l01659"></a><span class="lineno"> 1659</span>&#160;}</div>
+<div class="line"><a name="l01660"></a><span class="lineno"> 1660</span>&#160; </div>
+<div class="line"><a name="l01661"></a><span class="lineno"> 1661</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
+<div class="line"><a name="l01662"></a><span class="lineno"> 1662</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l01663"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#af13816ad8293ef8f25ec26be1395a4eb"> 1663</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#af13816ad8293ef8f25ec26be1395a4eb">populatePreviousFields</a>(T <span class="keyword">const</span>&amp; getProto, <a class="code" href="classripple_1_1STObject.html">STObject</a>&amp; obj, uint16_t lgrType)</div>
+<div class="line"><a name="l01664"></a><span class="lineno"> 1664</span>&#160;{</div>
+<div class="line"><a name="l01665"></a><span class="lineno"> 1665</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a43b4642a9423050609a09d1fe70c6921">populateFields</a>(getProto, obj, <a class="code" href="namespaceripple.html#ab81d634185168f1fa7f144dd18c31089">sfPreviousFields</a>, lgrType);</div>
+<div class="line"><a name="l01666"></a><span class="lineno"> 1666</span>&#160;}</div>
+<div class="line"><a name="l01667"></a><span class="lineno"> 1667</span>&#160; </div>
+<div class="line"><a name="l01668"></a><span class="lineno"> 1668</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">class</span> T&gt;</div>
+<div class="line"><a name="l01669"></a><span class="lineno"> 1669</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l01670"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#af06b63daf42b07dd9c20cc3d7280a079"> 1670</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#af06b63daf42b07dd9c20cc3d7280a079">populateNewFields</a>(T <span class="keyword">const</span>&amp; getProto, <a class="code" href="classripple_1_1STObject.html">STObject</a>&amp; obj, uint16_t lgrType)</div>
+<div class="line"><a name="l01671"></a><span class="lineno"> 1671</span>&#160;{</div>
+<div class="line"><a name="l01672"></a><span class="lineno"> 1672</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a43b4642a9423050609a09d1fe70c6921">populateFields</a>(getProto, obj, <a class="code" href="namespaceripple.html#aac1bba296382f51cbea52bf57a68f0bc">sfNewFields</a>, lgrType);</div>
+<div class="line"><a name="l01673"></a><span class="lineno"> 1673</span>&#160;}</div>
+<div class="line"><a name="l01674"></a><span class="lineno"> 1674</span>&#160; </div>
+<div class="line"><a name="l01675"></a><span class="lineno"> 1675</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l01676"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a2030aec27ebda627d1fe11ff5f4409df"> 1676</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(org::xrpl::rpc::v1::Meta&amp; to, <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;TxMeta&gt;</a> <span class="keyword">const</span>&amp; from)</div>
+<div class="line"><a name="l01677"></a><span class="lineno"> 1677</span>&#160;{</div>
+<div class="line"><a name="l01678"></a><span class="lineno"> 1678</span>&#160;    to.set_transaction_index(from-&gt;getIndex());</div>
+<div class="line"><a name="l01679"></a><span class="lineno"> 1679</span>&#160; </div>
+<div class="line"><a name="l01680"></a><span class="lineno"> 1680</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_transaction_result(), from-&gt;getResultTER());</div>
+<div class="line"><a name="l01681"></a><span class="lineno"> 1681</span>&#160;    to.mutable_transaction_result()-&gt;set_result(</div>
+<div class="line"><a name="l01682"></a><span class="lineno"> 1682</span>&#160;        <a class="code" href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">transToken</a>(from-&gt;getResultTER()));</div>
+<div class="line"><a name="l01683"></a><span class="lineno"> 1683</span>&#160; </div>
+<div class="line"><a name="l01684"></a><span class="lineno"> 1684</span>&#160;    <span class="keywordflow">if</span> (from-&gt;hasDeliveredAmount())</div>
+<div class="line"><a name="l01685"></a><span class="lineno"> 1685</span>&#160;        <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_delivered_amount(), from-&gt;getDeliveredAmount());</div>
+<div class="line"><a name="l01686"></a><span class="lineno"> 1686</span>&#160; </div>
+<div class="line"><a name="l01687"></a><span class="lineno"> 1687</span>&#160;    <a class="code" href="classripple_1_1STArray.html">STArray</a>&amp; nodes = from-&gt;getNodes();</div>
+<div class="line"><a name="l01688"></a><span class="lineno"> 1688</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span> it = nodes.<a class="code" href="classripple_1_1STArray.html#a66725b497316717cd17cdad5645f6c18">begin</a>(); it != nodes.<a class="code" href="classripple_1_1STArray.html#a0a783ca92264f290814ea939d873e7ba">end</a>(); ++it)</div>
+<div class="line"><a name="l01689"></a><span class="lineno"> 1689</span>&#160;    {</div>
+<div class="line"><a name="l01690"></a><span class="lineno"> 1690</span>&#160;        <a class="code" href="classripple_1_1STObject.html">STObject</a>&amp; obj = *it;</div>
+<div class="line"><a name="l01691"></a><span class="lineno"> 1691</span>&#160;        org::xrpl::rpc::v1::AffectedNode* node = to.add_affected_nodes();</div>
+<div class="line"><a name="l01692"></a><span class="lineno"> 1692</span>&#160; </div>
+<div class="line"><a name="l01693"></a><span class="lineno"> 1693</span>&#160;        <span class="comment">// ledger index</span></div>
+<div class="line"><a name="l01694"></a><span class="lineno"> 1694</span>&#160;        <a class="code" href="classripple_1_1base__uint.html">uint256</a> ledgerIndex = obj.<a class="code" href="classripple_1_1STObject.html#af89b6c7fd94c998549037d0c44a068a1">getFieldH256</a>(<a class="code" href="namespaceripple.html#a17145516373f1353a9b93ae587194e6a">sfLedgerIndex</a>);</div>
+<div class="line"><a name="l01695"></a><span class="lineno"> 1695</span>&#160;        node-&gt;set_ledger_index(ledgerIndex.<a class="code" href="classripple_1_1base__uint.html#a5342507fe2fb5ac55d578e7e98863f70">data</a>(), ledgerIndex.<a class="code" href="classripple_1_1base__uint.html#adbe18ef92b677603e8539b3a77c064b0">size</a>());</div>
+<div class="line"><a name="l01696"></a><span class="lineno"> 1696</span>&#160; </div>
+<div class="line"><a name="l01697"></a><span class="lineno"> 1697</span>&#160;        <span class="comment">// ledger entry type</span></div>
+<div class="line"><a name="l01698"></a><span class="lineno"> 1698</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> lgrType = obj.<a class="code" href="classripple_1_1STObject.html#a42d3da94cee3e6f575350094476140ce">getFieldU16</a>(<a class="code" href="namespaceripple.html#a17d40ddaaa1efdd012235e36224df2e8">sfLedgerEntryType</a>);</div>
+<div class="line"><a name="l01699"></a><span class="lineno"> 1699</span>&#160;        <a class="code" href="namespaceripple_1_1RPC.html#a7ce9fc965a23b7792c90839bdd6be461">setLedgerEntryType</a>(*node, lgrType);</div>
+<div class="line"><a name="l01700"></a><span class="lineno"> 1700</span>&#160; </div>
+<div class="line"><a name="l01701"></a><span class="lineno"> 1701</span>&#160;        <span class="comment">// modified node</span></div>
+<div class="line"><a name="l01702"></a><span class="lineno"> 1702</span>&#160;        <span class="keywordflow">if</span> (obj.<a class="code" href="classripple_1_1STBase.html#a48097bca334d2f32a1d7861b59ae2e30">getFName</a>() == <a class="code" href="namespaceripple.html#a28444af630ffe05b75075785343b45c0">sfModifiedNode</a>)</div>
+<div class="line"><a name="l01703"></a><span class="lineno"> 1703</span>&#160;        {</div>
+<div class="line"><a name="l01704"></a><span class="lineno"> 1704</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a4ca37dbf9669511c0e6ed157fe9c80ad">populateFinalFields</a>(</div>
+<div class="line"><a name="l01705"></a><span class="lineno"> 1705</span>&#160;                [&amp;node]() {</div>
+<div class="line"><a name="l01706"></a><span class="lineno"> 1706</span>&#160;                    <span class="keywordflow">return</span> node-&gt;mutable_modified_node()</div>
+<div class="line"><a name="l01707"></a><span class="lineno"> 1707</span>&#160;                        -&gt;mutable_final_fields();</div>
+<div class="line"><a name="l01708"></a><span class="lineno"> 1708</span>&#160;                },</div>
+<div class="line"><a name="l01709"></a><span class="lineno"> 1709</span>&#160;                obj,</div>
+<div class="line"><a name="l01710"></a><span class="lineno"> 1710</span>&#160;                lgrType);</div>
+<div class="line"><a name="l01711"></a><span class="lineno"> 1711</span>&#160; </div>
+<div class="line"><a name="l01712"></a><span class="lineno"> 1712</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#af13816ad8293ef8f25ec26be1395a4eb">populatePreviousFields</a>(</div>
+<div class="line"><a name="l01713"></a><span class="lineno"> 1713</span>&#160;                [&amp;node]() {</div>
+<div class="line"><a name="l01714"></a><span class="lineno"> 1714</span>&#160;                    <span class="keywordflow">return</span> node-&gt;mutable_modified_node()</div>
+<div class="line"><a name="l01715"></a><span class="lineno"> 1715</span>&#160;                        -&gt;mutable_previous_fields();</div>
+<div class="line"><a name="l01716"></a><span class="lineno"> 1716</span>&#160;                },</div>
+<div class="line"><a name="l01717"></a><span class="lineno"> 1717</span>&#160;                obj,</div>
+<div class="line"><a name="l01718"></a><span class="lineno"> 1718</span>&#160;                lgrType);</div>
 <div class="line"><a name="l01719"></a><span class="lineno"> 1719</span>&#160; </div>
-<div class="line"><a name="l01720"></a><span class="lineno"> 1720</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#ae9d55ccaa6177e771834b1f241506e2a">populatePreviousTransactionLedgerSequence</a>(</div>
-<div class="line"><a name="l01721"></a><span class="lineno"> 1721</span>&#160;                *node-&gt;mutable_modified_node(), obj);</div>
-<div class="line"><a name="l01722"></a><span class="lineno"> 1722</span>&#160;        }</div>
-<div class="line"><a name="l01723"></a><span class="lineno"> 1723</span>&#160;        <span class="comment">// created node</span></div>
-<div class="line"><a name="l01724"></a><span class="lineno"> 1724</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (obj.<a class="code" href="classripple_1_1STBase.html#a48097bca334d2f32a1d7861b59ae2e30">getFName</a>() == <a class="code" href="namespaceripple.html#ad505bb1ea237080dcb947ec5a48b8aba">sfCreatedNode</a>)</div>
-<div class="line"><a name="l01725"></a><span class="lineno"> 1725</span>&#160;        {</div>
-<div class="line"><a name="l01726"></a><span class="lineno"> 1726</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#af06b63daf42b07dd9c20cc3d7280a079">populateNewFields</a>(</div>
-<div class="line"><a name="l01727"></a><span class="lineno"> 1727</span>&#160;                [&amp;node]() {</div>
-<div class="line"><a name="l01728"></a><span class="lineno"> 1728</span>&#160;                    <span class="keywordflow">return</span> node-&gt;mutable_created_node()-&gt;mutable_new_fields();</div>
-<div class="line"><a name="l01729"></a><span class="lineno"> 1729</span>&#160;                },</div>
-<div class="line"><a name="l01730"></a><span class="lineno"> 1730</span>&#160;                obj,</div>
-<div class="line"><a name="l01731"></a><span class="lineno"> 1731</span>&#160;                lgrType);</div>
-<div class="line"><a name="l01732"></a><span class="lineno"> 1732</span>&#160;        }</div>
-<div class="line"><a name="l01733"></a><span class="lineno"> 1733</span>&#160;        <span class="comment">// deleted node</span></div>
-<div class="line"><a name="l01734"></a><span class="lineno"> 1734</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (obj.<a class="code" href="classripple_1_1STBase.html#a48097bca334d2f32a1d7861b59ae2e30">getFName</a>() == <a class="code" href="namespaceripple.html#a738f8b07410bfb3ca6f9c097de3a8832">sfDeletedNode</a>)</div>
-<div class="line"><a name="l01735"></a><span class="lineno"> 1735</span>&#160;        {</div>
-<div class="line"><a name="l01736"></a><span class="lineno"> 1736</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a4ca37dbf9669511c0e6ed157fe9c80ad">populateFinalFields</a>(</div>
-<div class="line"><a name="l01737"></a><span class="lineno"> 1737</span>&#160;                [&amp;node]() {</div>
-<div class="line"><a name="l01738"></a><span class="lineno"> 1738</span>&#160;                    <span class="keywordflow">return</span> node-&gt;mutable_deleted_node()-&gt;mutable_final_fields();</div>
-<div class="line"><a name="l01739"></a><span class="lineno"> 1739</span>&#160;                },</div>
-<div class="line"><a name="l01740"></a><span class="lineno"> 1740</span>&#160;                obj,</div>
-<div class="line"><a name="l01741"></a><span class="lineno"> 1741</span>&#160;                lgrType);</div>
-<div class="line"><a name="l01742"></a><span class="lineno"> 1742</span>&#160;        }</div>
-<div class="line"><a name="l01743"></a><span class="lineno"> 1743</span>&#160;    }</div>
-<div class="line"><a name="l01744"></a><span class="lineno"> 1744</span>&#160;}</div>
-<div class="line"><a name="l01745"></a><span class="lineno"> 1745</span>&#160; </div>
-<div class="line"><a name="l01746"></a><span class="lineno"> 1746</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l01747"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a8b34b93dd6a97ab6151bb3da6696244f"> 1747</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(</div>
-<div class="line"><a name="l01748"></a><span class="lineno"> 1748</span>&#160;    org::xrpl::rpc::v1::QueueData&amp; to,</div>
-<div class="line"><a name="l01749"></a><span class="lineno"> 1749</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;TxQ::TxDetails&gt;</a> <span class="keyword">const</span>&amp; from)</div>
-<div class="line"><a name="l01750"></a><span class="lineno"> 1750</span>&#160;{</div>
-<div class="line"><a name="l01751"></a><span class="lineno"> 1751</span>&#160;    <span class="keywordflow">if</span> (!from.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/empty.html">empty</a>())</div>
-<div class="line"><a name="l01752"></a><span class="lineno"> 1752</span>&#160;    {</div>
-<div class="line"><a name="l01753"></a><span class="lineno"> 1753</span>&#160;        to.set_txn_count(from.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>());</div>
-<div class="line"><a name="l01754"></a><span class="lineno"> 1754</span>&#160; </div>
-<div class="line"><a name="l01755"></a><span class="lineno"> 1755</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seqCount = 0;</div>
-<div class="line"><a name="l01756"></a><span class="lineno"> 1756</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ticketCount = 0;</div>
-<div class="line"><a name="l01757"></a><span class="lineno"> 1757</span>&#160;        boost::optional&lt;std::uint32_t&gt; lowestSeq;</div>
-<div class="line"><a name="l01758"></a><span class="lineno"> 1758</span>&#160;        boost::optional&lt;std::uint32_t&gt; highestSeq;</div>
-<div class="line"><a name="l01759"></a><span class="lineno"> 1759</span>&#160;        boost::optional&lt;std::uint32_t&gt; lowestTicket;</div>
-<div class="line"><a name="l01760"></a><span class="lineno"> 1760</span>&#160;        boost::optional&lt;std::uint32_t&gt; highestTicket;</div>
-<div class="line"><a name="l01761"></a><span class="lineno"> 1761</span>&#160;        <span class="keywordtype">bool</span> anyAuthChanged = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l01762"></a><span class="lineno"> 1762</span>&#160;        <a class="code" href="classripple_1_1XRPAmount.html">XRPAmount</a> totalSpend(0);</div>
-<div class="line"><a name="l01763"></a><span class="lineno"> 1763</span>&#160; </div>
-<div class="line"><a name="l01764"></a><span class="lineno"> 1764</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; tx : from)</div>
-<div class="line"><a name="l01765"></a><span class="lineno"> 1765</span>&#160;        {</div>
-<div class="line"><a name="l01766"></a><span class="lineno"> 1766</span>&#160;            org::xrpl::rpc::v1::QueuedTransaction&amp; qt = *to.add_transactions();</div>
-<div class="line"><a name="l01767"></a><span class="lineno"> 1767</span>&#160; </div>
-<div class="line"><a name="l01768"></a><span class="lineno"> 1768</span>&#160;            <span class="keywordflow">if</span> (tx.seqProxy.isSeq())</div>
-<div class="line"><a name="l01769"></a><span class="lineno"> 1769</span>&#160;            {</div>
-<div class="line"><a name="l01770"></a><span class="lineno"> 1770</span>&#160;                qt.mutable_sequence()-&gt;set_value(tx.seqProxy.value());</div>
-<div class="line"><a name="l01771"></a><span class="lineno"> 1771</span>&#160;                ++seqCount;</div>
-<div class="line"><a name="l01772"></a><span class="lineno"> 1772</span>&#160;                <span class="keywordflow">if</span> (!lowestSeq)</div>
-<div class="line"><a name="l01773"></a><span class="lineno"> 1773</span>&#160;                    lowestSeq = tx.seqProxy.value();</div>
-<div class="line"><a name="l01774"></a><span class="lineno"> 1774</span>&#160;                highestSeq = tx.seqProxy.value();</div>
-<div class="line"><a name="l01775"></a><span class="lineno"> 1775</span>&#160;            }</div>
-<div class="line"><a name="l01776"></a><span class="lineno"> 1776</span>&#160;            <span class="keywordflow">else</span></div>
-<div class="line"><a name="l01777"></a><span class="lineno"> 1777</span>&#160;            {</div>
-<div class="line"><a name="l01778"></a><span class="lineno"> 1778</span>&#160;                qt.mutable_ticket()-&gt;set_value(tx.seqProxy.value());</div>
-<div class="line"><a name="l01779"></a><span class="lineno"> 1779</span>&#160;                ++ticketCount;</div>
-<div class="line"><a name="l01780"></a><span class="lineno"> 1780</span>&#160;                <span class="keywordflow">if</span> (!lowestTicket)</div>
-<div class="line"><a name="l01781"></a><span class="lineno"> 1781</span>&#160;                    lowestTicket = tx.seqProxy.value();</div>
-<div class="line"><a name="l01782"></a><span class="lineno"> 1782</span>&#160;                highestTicket = tx.seqProxy.value();</div>
-<div class="line"><a name="l01783"></a><span class="lineno"> 1783</span>&#160;            }</div>
-<div class="line"><a name="l01784"></a><span class="lineno"> 1784</span>&#160; </div>
-<div class="line"><a name="l01785"></a><span class="lineno"> 1785</span>&#160;            qt.set_fee_level(tx.feeLevel.fee());</div>
-<div class="line"><a name="l01786"></a><span class="lineno"> 1786</span>&#160;            <span class="keywordflow">if</span> (tx.lastValid)</div>
-<div class="line"><a name="l01787"></a><span class="lineno"> 1787</span>&#160;                qt.mutable_last_ledger_sequence()-&gt;set_value(*tx.lastValid);</div>
-<div class="line"><a name="l01788"></a><span class="lineno"> 1788</span>&#160; </div>
-<div class="line"><a name="l01789"></a><span class="lineno"> 1789</span>&#160;            qt.mutable_fee()-&gt;set_drops(tx.consequences.fee().drops());</div>
-<div class="line"><a name="l01790"></a><span class="lineno"> 1790</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> spend =</div>
-<div class="line"><a name="l01791"></a><span class="lineno"> 1791</span>&#160;                tx.consequences.potentialSpend() + tx.consequences.fee();</div>
-<div class="line"><a name="l01792"></a><span class="lineno"> 1792</span>&#160;            qt.mutable_max_spend_drops()-&gt;set_drops(spend.drops());</div>
-<div class="line"><a name="l01793"></a><span class="lineno"> 1793</span>&#160;            totalSpend += spend;</div>
-<div class="line"><a name="l01794"></a><span class="lineno"> 1794</span>&#160;            <span class="keywordtype">bool</span> <span class="keyword">const</span> authChanged = tx.consequences.isBlocker();</div>
-<div class="line"><a name="l01795"></a><span class="lineno"> 1795</span>&#160;            <span class="keywordflow">if</span> (authChanged)</div>
-<div class="line"><a name="l01796"></a><span class="lineno"> 1796</span>&#160;                anyAuthChanged = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l01797"></a><span class="lineno"> 1797</span>&#160;            qt.set_auth_change(authChanged);</div>
-<div class="line"><a name="l01798"></a><span class="lineno"> 1798</span>&#160;        }</div>
-<div class="line"><a name="l01799"></a><span class="lineno"> 1799</span>&#160; </div>
-<div class="line"><a name="l01800"></a><span class="lineno"> 1800</span>&#160;        <span class="keywordflow">if</span> (seqCount)</div>
-<div class="line"><a name="l01801"></a><span class="lineno"> 1801</span>&#160;            to.set_sequence_count(seqCount);</div>
-<div class="line"><a name="l01802"></a><span class="lineno"> 1802</span>&#160;        <span class="keywordflow">if</span> (ticketCount)</div>
-<div class="line"><a name="l01803"></a><span class="lineno"> 1803</span>&#160;            to.set_ticket_count(ticketCount);</div>
-<div class="line"><a name="l01804"></a><span class="lineno"> 1804</span>&#160;        <span class="keywordflow">if</span> (lowestSeq)</div>
-<div class="line"><a name="l01805"></a><span class="lineno"> 1805</span>&#160;            to.set_lowest_sequence(*lowestSeq);</div>
-<div class="line"><a name="l01806"></a><span class="lineno"> 1806</span>&#160;        <span class="keywordflow">if</span> (highestSeq)</div>
-<div class="line"><a name="l01807"></a><span class="lineno"> 1807</span>&#160;            to.set_highest_sequence(*highestSeq);</div>
-<div class="line"><a name="l01808"></a><span class="lineno"> 1808</span>&#160;        <span class="keywordflow">if</span> (lowestTicket)</div>
-<div class="line"><a name="l01809"></a><span class="lineno"> 1809</span>&#160;            to.set_lowest_ticket(*lowestTicket);</div>
-<div class="line"><a name="l01810"></a><span class="lineno"> 1810</span>&#160;        <span class="keywordflow">if</span> (highestTicket)</div>
-<div class="line"><a name="l01811"></a><span class="lineno"> 1811</span>&#160;            to.set_highest_ticket(*highestTicket);</div>
-<div class="line"><a name="l01812"></a><span class="lineno"> 1812</span>&#160; </div>
-<div class="line"><a name="l01813"></a><span class="lineno"> 1813</span>&#160;        to.set_auth_change_queued(anyAuthChanged);</div>
-<div class="line"><a name="l01814"></a><span class="lineno"> 1814</span>&#160;        to.mutable_max_spend_drops_total()-&gt;set_drops(totalSpend.<a class="code" href="classripple_1_1XRPAmount.html#a8a65b5528d6021159c5b8772aa86cfc1">drops</a>());</div>
-<div class="line"><a name="l01815"></a><span class="lineno"> 1815</span>&#160;    }</div>
-<div class="line"><a name="l01816"></a><span class="lineno"> 1816</span>&#160;}</div>
-<div class="line"><a name="l01817"></a><span class="lineno"> 1817</span>&#160; </div>
-<div class="line"><a name="l01818"></a><span class="lineno"> 1818</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l01819"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#af3b46991ad0f71d918001fe34f4828ba"> 1819</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(</div>
-<div class="line"><a name="l01820"></a><span class="lineno"> 1820</span>&#160;    org::xrpl::rpc::v1::Transaction&amp; to,</div>
-<div class="line"><a name="l01821"></a><span class="lineno"> 1821</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; from)</div>
-<div class="line"><a name="l01822"></a><span class="lineno"> 1822</span>&#160;{</div>
-<div class="line"><a name="l01823"></a><span class="lineno"> 1823</span>&#160;    <a class="code" href="classripple_1_1STObject.html">STObject</a> <span class="keyword">const</span>&amp; fromObj = *from;</div>
-<div class="line"><a name="l01824"></a><span class="lineno"> 1824</span>&#160; </div>
-<div class="line"><a name="l01825"></a><span class="lineno"> 1825</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ab1412d6200d23e5381128ee686df6692">populateAccount</a>(to, fromObj);</div>
+<div class="line"><a name="l01720"></a><span class="lineno"> 1720</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a24b7917ca7e72f5211a2e3f6bde9ee05">populatePreviousTransactionID</a>(*node-&gt;mutable_modified_node(), obj);</div>
+<div class="line"><a name="l01721"></a><span class="lineno"> 1721</span>&#160; </div>
+<div class="line"><a name="l01722"></a><span class="lineno"> 1722</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#ae9d55ccaa6177e771834b1f241506e2a">populatePreviousTransactionLedgerSequence</a>(</div>
+<div class="line"><a name="l01723"></a><span class="lineno"> 1723</span>&#160;                *node-&gt;mutable_modified_node(), obj);</div>
+<div class="line"><a name="l01724"></a><span class="lineno"> 1724</span>&#160;        }</div>
+<div class="line"><a name="l01725"></a><span class="lineno"> 1725</span>&#160;        <span class="comment">// created node</span></div>
+<div class="line"><a name="l01726"></a><span class="lineno"> 1726</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (obj.<a class="code" href="classripple_1_1STBase.html#a48097bca334d2f32a1d7861b59ae2e30">getFName</a>() == <a class="code" href="namespaceripple.html#ad505bb1ea237080dcb947ec5a48b8aba">sfCreatedNode</a>)</div>
+<div class="line"><a name="l01727"></a><span class="lineno"> 1727</span>&#160;        {</div>
+<div class="line"><a name="l01728"></a><span class="lineno"> 1728</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#af06b63daf42b07dd9c20cc3d7280a079">populateNewFields</a>(</div>
+<div class="line"><a name="l01729"></a><span class="lineno"> 1729</span>&#160;                [&amp;node]() {</div>
+<div class="line"><a name="l01730"></a><span class="lineno"> 1730</span>&#160;                    <span class="keywordflow">return</span> node-&gt;mutable_created_node()-&gt;mutable_new_fields();</div>
+<div class="line"><a name="l01731"></a><span class="lineno"> 1731</span>&#160;                },</div>
+<div class="line"><a name="l01732"></a><span class="lineno"> 1732</span>&#160;                obj,</div>
+<div class="line"><a name="l01733"></a><span class="lineno"> 1733</span>&#160;                lgrType);</div>
+<div class="line"><a name="l01734"></a><span class="lineno"> 1734</span>&#160;        }</div>
+<div class="line"><a name="l01735"></a><span class="lineno"> 1735</span>&#160;        <span class="comment">// deleted node</span></div>
+<div class="line"><a name="l01736"></a><span class="lineno"> 1736</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (obj.<a class="code" href="classripple_1_1STBase.html#a48097bca334d2f32a1d7861b59ae2e30">getFName</a>() == <a class="code" href="namespaceripple.html#a738f8b07410bfb3ca6f9c097de3a8832">sfDeletedNode</a>)</div>
+<div class="line"><a name="l01737"></a><span class="lineno"> 1737</span>&#160;        {</div>
+<div class="line"><a name="l01738"></a><span class="lineno"> 1738</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a4ca37dbf9669511c0e6ed157fe9c80ad">populateFinalFields</a>(</div>
+<div class="line"><a name="l01739"></a><span class="lineno"> 1739</span>&#160;                [&amp;node]() {</div>
+<div class="line"><a name="l01740"></a><span class="lineno"> 1740</span>&#160;                    <span class="keywordflow">return</span> node-&gt;mutable_deleted_node()-&gt;mutable_final_fields();</div>
+<div class="line"><a name="l01741"></a><span class="lineno"> 1741</span>&#160;                },</div>
+<div class="line"><a name="l01742"></a><span class="lineno"> 1742</span>&#160;                obj,</div>
+<div class="line"><a name="l01743"></a><span class="lineno"> 1743</span>&#160;                lgrType);</div>
+<div class="line"><a name="l01744"></a><span class="lineno"> 1744</span>&#160;        }</div>
+<div class="line"><a name="l01745"></a><span class="lineno"> 1745</span>&#160;    }</div>
+<div class="line"><a name="l01746"></a><span class="lineno"> 1746</span>&#160;}</div>
+<div class="line"><a name="l01747"></a><span class="lineno"> 1747</span>&#160; </div>
+<div class="line"><a name="l01748"></a><span class="lineno"> 1748</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l01749"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#a8b34b93dd6a97ab6151bb3da6696244f"> 1749</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(</div>
+<div class="line"><a name="l01750"></a><span class="lineno"> 1750</span>&#160;    org::xrpl::rpc::v1::QueueData&amp; to,</div>
+<div class="line"><a name="l01751"></a><span class="lineno"> 1751</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;TxQ::TxDetails&gt;</a> <span class="keyword">const</span>&amp; from)</div>
+<div class="line"><a name="l01752"></a><span class="lineno"> 1752</span>&#160;{</div>
+<div class="line"><a name="l01753"></a><span class="lineno"> 1753</span>&#160;    <span class="keywordflow">if</span> (!from.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/empty.html">empty</a>())</div>
+<div class="line"><a name="l01754"></a><span class="lineno"> 1754</span>&#160;    {</div>
+<div class="line"><a name="l01755"></a><span class="lineno"> 1755</span>&#160;        to.set_txn_count(from.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>());</div>
+<div class="line"><a name="l01756"></a><span class="lineno"> 1756</span>&#160; </div>
+<div class="line"><a name="l01757"></a><span class="lineno"> 1757</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seqCount = 0;</div>
+<div class="line"><a name="l01758"></a><span class="lineno"> 1758</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ticketCount = 0;</div>
+<div class="line"><a name="l01759"></a><span class="lineno"> 1759</span>&#160;        boost::optional&lt;std::uint32_t&gt; lowestSeq;</div>
+<div class="line"><a name="l01760"></a><span class="lineno"> 1760</span>&#160;        boost::optional&lt;std::uint32_t&gt; highestSeq;</div>
+<div class="line"><a name="l01761"></a><span class="lineno"> 1761</span>&#160;        boost::optional&lt;std::uint32_t&gt; lowestTicket;</div>
+<div class="line"><a name="l01762"></a><span class="lineno"> 1762</span>&#160;        boost::optional&lt;std::uint32_t&gt; highestTicket;</div>
+<div class="line"><a name="l01763"></a><span class="lineno"> 1763</span>&#160;        <span class="keywordtype">bool</span> anyAuthChanged = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l01764"></a><span class="lineno"> 1764</span>&#160;        <a class="code" href="classripple_1_1XRPAmount.html">XRPAmount</a> totalSpend(0);</div>
+<div class="line"><a name="l01765"></a><span class="lineno"> 1765</span>&#160; </div>
+<div class="line"><a name="l01766"></a><span class="lineno"> 1766</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; tx : from)</div>
+<div class="line"><a name="l01767"></a><span class="lineno"> 1767</span>&#160;        {</div>
+<div class="line"><a name="l01768"></a><span class="lineno"> 1768</span>&#160;            org::xrpl::rpc::v1::QueuedTransaction&amp; qt = *to.add_transactions();</div>
+<div class="line"><a name="l01769"></a><span class="lineno"> 1769</span>&#160; </div>
+<div class="line"><a name="l01770"></a><span class="lineno"> 1770</span>&#160;            <span class="keywordflow">if</span> (tx.seqProxy.isSeq())</div>
+<div class="line"><a name="l01771"></a><span class="lineno"> 1771</span>&#160;            {</div>
+<div class="line"><a name="l01772"></a><span class="lineno"> 1772</span>&#160;                qt.mutable_sequence()-&gt;set_value(tx.seqProxy.value());</div>
+<div class="line"><a name="l01773"></a><span class="lineno"> 1773</span>&#160;                ++seqCount;</div>
+<div class="line"><a name="l01774"></a><span class="lineno"> 1774</span>&#160;                <span class="keywordflow">if</span> (!lowestSeq)</div>
+<div class="line"><a name="l01775"></a><span class="lineno"> 1775</span>&#160;                    lowestSeq = tx.seqProxy.value();</div>
+<div class="line"><a name="l01776"></a><span class="lineno"> 1776</span>&#160;                highestSeq = tx.seqProxy.value();</div>
+<div class="line"><a name="l01777"></a><span class="lineno"> 1777</span>&#160;            }</div>
+<div class="line"><a name="l01778"></a><span class="lineno"> 1778</span>&#160;            <span class="keywordflow">else</span></div>
+<div class="line"><a name="l01779"></a><span class="lineno"> 1779</span>&#160;            {</div>
+<div class="line"><a name="l01780"></a><span class="lineno"> 1780</span>&#160;                qt.mutable_ticket()-&gt;set_value(tx.seqProxy.value());</div>
+<div class="line"><a name="l01781"></a><span class="lineno"> 1781</span>&#160;                ++ticketCount;</div>
+<div class="line"><a name="l01782"></a><span class="lineno"> 1782</span>&#160;                <span class="keywordflow">if</span> (!lowestTicket)</div>
+<div class="line"><a name="l01783"></a><span class="lineno"> 1783</span>&#160;                    lowestTicket = tx.seqProxy.value();</div>
+<div class="line"><a name="l01784"></a><span class="lineno"> 1784</span>&#160;                highestTicket = tx.seqProxy.value();</div>
+<div class="line"><a name="l01785"></a><span class="lineno"> 1785</span>&#160;            }</div>
+<div class="line"><a name="l01786"></a><span class="lineno"> 1786</span>&#160; </div>
+<div class="line"><a name="l01787"></a><span class="lineno"> 1787</span>&#160;            qt.set_fee_level(tx.feeLevel.fee());</div>
+<div class="line"><a name="l01788"></a><span class="lineno"> 1788</span>&#160;            <span class="keywordflow">if</span> (tx.lastValid)</div>
+<div class="line"><a name="l01789"></a><span class="lineno"> 1789</span>&#160;                qt.mutable_last_ledger_sequence()-&gt;set_value(*tx.lastValid);</div>
+<div class="line"><a name="l01790"></a><span class="lineno"> 1790</span>&#160; </div>
+<div class="line"><a name="l01791"></a><span class="lineno"> 1791</span>&#160;            qt.mutable_fee()-&gt;set_drops(tx.consequences.fee().drops());</div>
+<div class="line"><a name="l01792"></a><span class="lineno"> 1792</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> spend =</div>
+<div class="line"><a name="l01793"></a><span class="lineno"> 1793</span>&#160;                tx.consequences.potentialSpend() + tx.consequences.fee();</div>
+<div class="line"><a name="l01794"></a><span class="lineno"> 1794</span>&#160;            qt.mutable_max_spend_drops()-&gt;set_drops(spend.drops());</div>
+<div class="line"><a name="l01795"></a><span class="lineno"> 1795</span>&#160;            totalSpend += spend;</div>
+<div class="line"><a name="l01796"></a><span class="lineno"> 1796</span>&#160;            <span class="keywordtype">bool</span> <span class="keyword">const</span> authChanged = tx.consequences.isBlocker();</div>
+<div class="line"><a name="l01797"></a><span class="lineno"> 1797</span>&#160;            <span class="keywordflow">if</span> (authChanged)</div>
+<div class="line"><a name="l01798"></a><span class="lineno"> 1798</span>&#160;                anyAuthChanged = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l01799"></a><span class="lineno"> 1799</span>&#160;            qt.set_auth_change(authChanged);</div>
+<div class="line"><a name="l01800"></a><span class="lineno"> 1800</span>&#160;        }</div>
+<div class="line"><a name="l01801"></a><span class="lineno"> 1801</span>&#160; </div>
+<div class="line"><a name="l01802"></a><span class="lineno"> 1802</span>&#160;        <span class="keywordflow">if</span> (seqCount)</div>
+<div class="line"><a name="l01803"></a><span class="lineno"> 1803</span>&#160;            to.set_sequence_count(seqCount);</div>
+<div class="line"><a name="l01804"></a><span class="lineno"> 1804</span>&#160;        <span class="keywordflow">if</span> (ticketCount)</div>
+<div class="line"><a name="l01805"></a><span class="lineno"> 1805</span>&#160;            to.set_ticket_count(ticketCount);</div>
+<div class="line"><a name="l01806"></a><span class="lineno"> 1806</span>&#160;        <span class="keywordflow">if</span> (lowestSeq)</div>
+<div class="line"><a name="l01807"></a><span class="lineno"> 1807</span>&#160;            to.set_lowest_sequence(*lowestSeq);</div>
+<div class="line"><a name="l01808"></a><span class="lineno"> 1808</span>&#160;        <span class="keywordflow">if</span> (highestSeq)</div>
+<div class="line"><a name="l01809"></a><span class="lineno"> 1809</span>&#160;            to.set_highest_sequence(*highestSeq);</div>
+<div class="line"><a name="l01810"></a><span class="lineno"> 1810</span>&#160;        <span class="keywordflow">if</span> (lowestTicket)</div>
+<div class="line"><a name="l01811"></a><span class="lineno"> 1811</span>&#160;            to.set_lowest_ticket(*lowestTicket);</div>
+<div class="line"><a name="l01812"></a><span class="lineno"> 1812</span>&#160;        <span class="keywordflow">if</span> (highestTicket)</div>
+<div class="line"><a name="l01813"></a><span class="lineno"> 1813</span>&#160;            to.set_highest_ticket(*highestTicket);</div>
+<div class="line"><a name="l01814"></a><span class="lineno"> 1814</span>&#160; </div>
+<div class="line"><a name="l01815"></a><span class="lineno"> 1815</span>&#160;        to.set_auth_change_queued(anyAuthChanged);</div>
+<div class="line"><a name="l01816"></a><span class="lineno"> 1816</span>&#160;        to.mutable_max_spend_drops_total()-&gt;set_drops(totalSpend.<a class="code" href="classripple_1_1XRPAmount.html#a8a65b5528d6021159c5b8772aa86cfc1">drops</a>());</div>
+<div class="line"><a name="l01817"></a><span class="lineno"> 1817</span>&#160;    }</div>
+<div class="line"><a name="l01818"></a><span class="lineno"> 1818</span>&#160;}</div>
+<div class="line"><a name="l01819"></a><span class="lineno"> 1819</span>&#160; </div>
+<div class="line"><a name="l01820"></a><span class="lineno"> 1820</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l01821"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#af3b46991ad0f71d918001fe34f4828ba"> 1821</a></span>&#160;<a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(</div>
+<div class="line"><a name="l01822"></a><span class="lineno"> 1822</span>&#160;    org::xrpl::rpc::v1::Transaction&amp; to,</div>
+<div class="line"><a name="l01823"></a><span class="lineno"> 1823</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; from)</div>
+<div class="line"><a name="l01824"></a><span class="lineno"> 1824</span>&#160;{</div>
+<div class="line"><a name="l01825"></a><span class="lineno"> 1825</span>&#160;    <a class="code" href="classripple_1_1STObject.html">STObject</a> <span class="keyword">const</span>&amp; fromObj = *from;</div>
 <div class="line"><a name="l01826"></a><span class="lineno"> 1826</span>&#160; </div>
-<div class="line"><a name="l01827"></a><span class="lineno"> 1827</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a80b17c7a1a60fc0825a59ea4eb1290f4">populateFee</a>(to, fromObj);</div>
+<div class="line"><a name="l01827"></a><span class="lineno"> 1827</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ab1412d6200d23e5381128ee686df6692">populateAccount</a>(to, fromObj);</div>
 <div class="line"><a name="l01828"></a><span class="lineno"> 1828</span>&#160; </div>
-<div class="line"><a name="l01829"></a><span class="lineno"> 1829</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#aaa61915ee1911e7f3649cae76ff2e23b">populateSequence</a>(to, fromObj);</div>
+<div class="line"><a name="l01829"></a><span class="lineno"> 1829</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a80b17c7a1a60fc0825a59ea4eb1290f4">populateFee</a>(to, fromObj);</div>
 <div class="line"><a name="l01830"></a><span class="lineno"> 1830</span>&#160; </div>
-<div class="line"><a name="l01831"></a><span class="lineno"> 1831</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ab1e52e7b7de38567ffa25be68d60f18d">populateSigningPublicKey</a>(to, fromObj);</div>
+<div class="line"><a name="l01831"></a><span class="lineno"> 1831</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#aaa61915ee1911e7f3649cae76ff2e23b">populateSequence</a>(to, fromObj);</div>
 <div class="line"><a name="l01832"></a><span class="lineno"> 1832</span>&#160; </div>
-<div class="line"><a name="l01833"></a><span class="lineno"> 1833</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a757151260853a67694f7969d41b68df6">populateTransactionSignature</a>(to, fromObj);</div>
+<div class="line"><a name="l01833"></a><span class="lineno"> 1833</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ab1e52e7b7de38567ffa25be68d60f18d">populateSigningPublicKey</a>(to, fromObj);</div>
 <div class="line"><a name="l01834"></a><span class="lineno"> 1834</span>&#160; </div>
-<div class="line"><a name="l01835"></a><span class="lineno"> 1835</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a6cffc5f8f72a66083d7de5e7fe4a888a">populateFlags</a>(to, fromObj);</div>
+<div class="line"><a name="l01835"></a><span class="lineno"> 1835</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a757151260853a67694f7969d41b68df6">populateTransactionSignature</a>(to, fromObj);</div>
 <div class="line"><a name="l01836"></a><span class="lineno"> 1836</span>&#160; </div>
-<div class="line"><a name="l01837"></a><span class="lineno"> 1837</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ac50f2a8f7acb93bbaf5a0851afbe82a1">populateLastLedgerSequence</a>(to, fromObj);</div>
+<div class="line"><a name="l01837"></a><span class="lineno"> 1837</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a6cffc5f8f72a66083d7de5e7fe4a888a">populateFlags</a>(to, fromObj);</div>
 <div class="line"><a name="l01838"></a><span class="lineno"> 1838</span>&#160; </div>
-<div class="line"><a name="l01839"></a><span class="lineno"> 1839</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a0c7c6832985a1f59cf817340b9ff2de2">populateSourceTag</a>(to, fromObj);</div>
+<div class="line"><a name="l01839"></a><span class="lineno"> 1839</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ac50f2a8f7acb93bbaf5a0851afbe82a1">populateLastLedgerSequence</a>(to, fromObj);</div>
 <div class="line"><a name="l01840"></a><span class="lineno"> 1840</span>&#160; </div>
-<div class="line"><a name="l01841"></a><span class="lineno"> 1841</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a268047c36b879c6e299819f3909f8699">populateAccountTransactionID</a>(to, fromObj);</div>
+<div class="line"><a name="l01841"></a><span class="lineno"> 1841</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a0c7c6832985a1f59cf817340b9ff2de2">populateSourceTag</a>(to, fromObj);</div>
 <div class="line"><a name="l01842"></a><span class="lineno"> 1842</span>&#160; </div>
-<div class="line"><a name="l01843"></a><span class="lineno"> 1843</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#afb4ba84786ff82b61afda10fde145a3c">populateMemos</a>(to, fromObj);</div>
+<div class="line"><a name="l01843"></a><span class="lineno"> 1843</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a268047c36b879c6e299819f3909f8699">populateAccountTransactionID</a>(to, fromObj);</div>
 <div class="line"><a name="l01844"></a><span class="lineno"> 1844</span>&#160; </div>
-<div class="line"><a name="l01845"></a><span class="lineno"> 1845</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a669182c07100c1f2398af5084c28b8cb">populateSigners</a>(to, fromObj);</div>
+<div class="line"><a name="l01845"></a><span class="lineno"> 1845</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#afb4ba84786ff82b61afda10fde145a3c">populateMemos</a>(to, fromObj);</div>
 <div class="line"><a name="l01846"></a><span class="lineno"> 1846</span>&#160; </div>
-<div class="line"><a name="l01847"></a><span class="lineno"> 1847</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ab9274c17d901d7e736075b8ad0d737f4">populateTicketSequence</a>(to, fromObj);</div>
+<div class="line"><a name="l01847"></a><span class="lineno"> 1847</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a669182c07100c1f2398af5084c28b8cb">populateSigners</a>(to, fromObj);</div>
 <div class="line"><a name="l01848"></a><span class="lineno"> 1848</span>&#160; </div>
-<div class="line"><a name="l01849"></a><span class="lineno"> 1849</span>&#160;    <span class="keyword">auto</span> type = safe_cast&lt;TxType&gt;(fromObj.<a class="code" href="classripple_1_1STObject.html#a42d3da94cee3e6f575350094476140ce">getFieldU16</a>(<a class="code" href="namespaceripple.html#a5396a36da2559608d709b9ef190537d1">sfTransactionType</a>));</div>
+<div class="line"><a name="l01849"></a><span class="lineno"> 1849</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#ab9274c17d901d7e736075b8ad0d737f4">populateTicketSequence</a>(to, fromObj);</div>
 <div class="line"><a name="l01850"></a><span class="lineno"> 1850</span>&#160; </div>
-<div class="line"><a name="l01851"></a><span class="lineno"> 1851</span>&#160;    <span class="keywordflow">switch</span> (type)</div>
-<div class="line"><a name="l01852"></a><span class="lineno"> 1852</span>&#160;    {</div>
-<div class="line"><a name="l01853"></a><span class="lineno"> 1853</span>&#160;        <span class="keywordflow">case</span> TxType::ttPAYMENT:</div>
-<div class="line"><a name="l01854"></a><span class="lineno"> 1854</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_payment(), fromObj);</div>
-<div class="line"><a name="l01855"></a><span class="lineno"> 1855</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01856"></a><span class="lineno"> 1856</span>&#160;        <span class="keywordflow">case</span> TxType::ttESCROW_CREATE:</div>
-<div class="line"><a name="l01857"></a><span class="lineno"> 1857</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_escrow_create(), fromObj);</div>
-<div class="line"><a name="l01858"></a><span class="lineno"> 1858</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01859"></a><span class="lineno"> 1859</span>&#160;        <span class="keywordflow">case</span> TxType::ttESCROW_FINISH:</div>
-<div class="line"><a name="l01860"></a><span class="lineno"> 1860</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_escrow_finish(), fromObj);</div>
-<div class="line"><a name="l01861"></a><span class="lineno"> 1861</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01862"></a><span class="lineno"> 1862</span>&#160;        <span class="keywordflow">case</span> TxType::ttACCOUNT_SET:</div>
-<div class="line"><a name="l01863"></a><span class="lineno"> 1863</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_account_set(), fromObj);</div>
-<div class="line"><a name="l01864"></a><span class="lineno"> 1864</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01865"></a><span class="lineno"> 1865</span>&#160;        <span class="keywordflow">case</span> TxType::ttESCROW_CANCEL:</div>
-<div class="line"><a name="l01866"></a><span class="lineno"> 1866</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_escrow_cancel(), fromObj);</div>
-<div class="line"><a name="l01867"></a><span class="lineno"> 1867</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01868"></a><span class="lineno"> 1868</span>&#160;        <span class="keywordflow">case</span> TxType::ttREGULAR_KEY_SET:</div>
-<div class="line"><a name="l01869"></a><span class="lineno"> 1869</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_set_regular_key(), fromObj);</div>
-<div class="line"><a name="l01870"></a><span class="lineno"> 1870</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01871"></a><span class="lineno"> 1871</span>&#160;        <span class="keywordflow">case</span> TxType::ttOFFER_CREATE:</div>
-<div class="line"><a name="l01872"></a><span class="lineno"> 1872</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_offer_create(), fromObj);</div>
-<div class="line"><a name="l01873"></a><span class="lineno"> 1873</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01874"></a><span class="lineno"> 1874</span>&#160;        <span class="keywordflow">case</span> TxType::ttOFFER_CANCEL:</div>
-<div class="line"><a name="l01875"></a><span class="lineno"> 1875</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_offer_cancel(), fromObj);</div>
-<div class="line"><a name="l01876"></a><span class="lineno"> 1876</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01877"></a><span class="lineno"> 1877</span>&#160;        <span class="keywordflow">case</span> TxType::ttSIGNER_LIST_SET:</div>
-<div class="line"><a name="l01878"></a><span class="lineno"> 1878</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_signer_list_set(), fromObj);</div>
-<div class="line"><a name="l01879"></a><span class="lineno"> 1879</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01880"></a><span class="lineno"> 1880</span>&#160;        <span class="keywordflow">case</span> TxType::ttPAYCHAN_CREATE:</div>
-<div class="line"><a name="l01881"></a><span class="lineno"> 1881</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_payment_channel_create(), fromObj);</div>
-<div class="line"><a name="l01882"></a><span class="lineno"> 1882</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01883"></a><span class="lineno"> 1883</span>&#160;        <span class="keywordflow">case</span> TxType::ttPAYCHAN_FUND:</div>
-<div class="line"><a name="l01884"></a><span class="lineno"> 1884</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_payment_channel_fund(), fromObj);</div>
-<div class="line"><a name="l01885"></a><span class="lineno"> 1885</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01886"></a><span class="lineno"> 1886</span>&#160;        <span class="keywordflow">case</span> TxType::ttPAYCHAN_CLAIM:</div>
-<div class="line"><a name="l01887"></a><span class="lineno"> 1887</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_payment_channel_claim(), fromObj);</div>
-<div class="line"><a name="l01888"></a><span class="lineno"> 1888</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01889"></a><span class="lineno"> 1889</span>&#160;        <span class="keywordflow">case</span> TxType::ttCHECK_CREATE:</div>
-<div class="line"><a name="l01890"></a><span class="lineno"> 1890</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_check_create(), fromObj);</div>
-<div class="line"><a name="l01891"></a><span class="lineno"> 1891</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01892"></a><span class="lineno"> 1892</span>&#160;        <span class="keywordflow">case</span> TxType::ttCHECK_CASH:</div>
-<div class="line"><a name="l01893"></a><span class="lineno"> 1893</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_check_cash(), fromObj);</div>
-<div class="line"><a name="l01894"></a><span class="lineno"> 1894</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01895"></a><span class="lineno"> 1895</span>&#160;        <span class="keywordflow">case</span> TxType::ttCHECK_CANCEL:</div>
-<div class="line"><a name="l01896"></a><span class="lineno"> 1896</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_check_cancel(), fromObj);</div>
-<div class="line"><a name="l01897"></a><span class="lineno"> 1897</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01898"></a><span class="lineno"> 1898</span>&#160;        <span class="keywordflow">case</span> TxType::ttDEPOSIT_PREAUTH:</div>
-<div class="line"><a name="l01899"></a><span class="lineno"> 1899</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_deposit_preauth(), fromObj);</div>
-<div class="line"><a name="l01900"></a><span class="lineno"> 1900</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01901"></a><span class="lineno"> 1901</span>&#160;        <span class="keywordflow">case</span> TxType::ttTRUST_SET:</div>
-<div class="line"><a name="l01902"></a><span class="lineno"> 1902</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_trust_set(), fromObj);</div>
-<div class="line"><a name="l01903"></a><span class="lineno"> 1903</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01904"></a><span class="lineno"> 1904</span>&#160;        <span class="keywordflow">case</span> TxType::ttACCOUNT_DELETE:</div>
-<div class="line"><a name="l01905"></a><span class="lineno"> 1905</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_account_delete(), fromObj);</div>
-<div class="line"><a name="l01906"></a><span class="lineno"> 1906</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01907"></a><span class="lineno"> 1907</span>&#160;        <span class="keywordflow">case</span> TxType::ttTICKET_CREATE:</div>
-<div class="line"><a name="l01908"></a><span class="lineno"> 1908</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_ticket_create(), fromObj);</div>
-<div class="line"><a name="l01909"></a><span class="lineno"> 1909</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01910"></a><span class="lineno"> 1910</span>&#160;        <span class="keywordflow">default</span>:</div>
+<div class="line"><a name="l01851"></a><span class="lineno"> 1851</span>&#160;    <span class="keyword">auto</span> type = safe_cast&lt;TxType&gt;(fromObj.<a class="code" href="classripple_1_1STObject.html#a42d3da94cee3e6f575350094476140ce">getFieldU16</a>(<a class="code" href="namespaceripple.html#a5396a36da2559608d709b9ef190537d1">sfTransactionType</a>));</div>
+<div class="line"><a name="l01852"></a><span class="lineno"> 1852</span>&#160; </div>
+<div class="line"><a name="l01853"></a><span class="lineno"> 1853</span>&#160;    <span class="keywordflow">switch</span> (type)</div>
+<div class="line"><a name="l01854"></a><span class="lineno"> 1854</span>&#160;    {</div>
+<div class="line"><a name="l01855"></a><span class="lineno"> 1855</span>&#160;        <span class="keywordflow">case</span> TxType::ttPAYMENT:</div>
+<div class="line"><a name="l01856"></a><span class="lineno"> 1856</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_payment(), fromObj);</div>
+<div class="line"><a name="l01857"></a><span class="lineno"> 1857</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01858"></a><span class="lineno"> 1858</span>&#160;        <span class="keywordflow">case</span> TxType::ttESCROW_CREATE:</div>
+<div class="line"><a name="l01859"></a><span class="lineno"> 1859</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_escrow_create(), fromObj);</div>
+<div class="line"><a name="l01860"></a><span class="lineno"> 1860</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01861"></a><span class="lineno"> 1861</span>&#160;        <span class="keywordflow">case</span> TxType::ttESCROW_FINISH:</div>
+<div class="line"><a name="l01862"></a><span class="lineno"> 1862</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_escrow_finish(), fromObj);</div>
+<div class="line"><a name="l01863"></a><span class="lineno"> 1863</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01864"></a><span class="lineno"> 1864</span>&#160;        <span class="keywordflow">case</span> TxType::ttACCOUNT_SET:</div>
+<div class="line"><a name="l01865"></a><span class="lineno"> 1865</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_account_set(), fromObj);</div>
+<div class="line"><a name="l01866"></a><span class="lineno"> 1866</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01867"></a><span class="lineno"> 1867</span>&#160;        <span class="keywordflow">case</span> TxType::ttESCROW_CANCEL:</div>
+<div class="line"><a name="l01868"></a><span class="lineno"> 1868</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_escrow_cancel(), fromObj);</div>
+<div class="line"><a name="l01869"></a><span class="lineno"> 1869</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01870"></a><span class="lineno"> 1870</span>&#160;        <span class="keywordflow">case</span> TxType::ttREGULAR_KEY_SET:</div>
+<div class="line"><a name="l01871"></a><span class="lineno"> 1871</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_set_regular_key(), fromObj);</div>
+<div class="line"><a name="l01872"></a><span class="lineno"> 1872</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01873"></a><span class="lineno"> 1873</span>&#160;        <span class="keywordflow">case</span> TxType::ttOFFER_CREATE:</div>
+<div class="line"><a name="l01874"></a><span class="lineno"> 1874</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_offer_create(), fromObj);</div>
+<div class="line"><a name="l01875"></a><span class="lineno"> 1875</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01876"></a><span class="lineno"> 1876</span>&#160;        <span class="keywordflow">case</span> TxType::ttOFFER_CANCEL:</div>
+<div class="line"><a name="l01877"></a><span class="lineno"> 1877</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_offer_cancel(), fromObj);</div>
+<div class="line"><a name="l01878"></a><span class="lineno"> 1878</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01879"></a><span class="lineno"> 1879</span>&#160;        <span class="keywordflow">case</span> TxType::ttSIGNER_LIST_SET:</div>
+<div class="line"><a name="l01880"></a><span class="lineno"> 1880</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_signer_list_set(), fromObj);</div>
+<div class="line"><a name="l01881"></a><span class="lineno"> 1881</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01882"></a><span class="lineno"> 1882</span>&#160;        <span class="keywordflow">case</span> TxType::ttPAYCHAN_CREATE:</div>
+<div class="line"><a name="l01883"></a><span class="lineno"> 1883</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_payment_channel_create(), fromObj);</div>
+<div class="line"><a name="l01884"></a><span class="lineno"> 1884</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01885"></a><span class="lineno"> 1885</span>&#160;        <span class="keywordflow">case</span> TxType::ttPAYCHAN_FUND:</div>
+<div class="line"><a name="l01886"></a><span class="lineno"> 1886</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_payment_channel_fund(), fromObj);</div>
+<div class="line"><a name="l01887"></a><span class="lineno"> 1887</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01888"></a><span class="lineno"> 1888</span>&#160;        <span class="keywordflow">case</span> TxType::ttPAYCHAN_CLAIM:</div>
+<div class="line"><a name="l01889"></a><span class="lineno"> 1889</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_payment_channel_claim(), fromObj);</div>
+<div class="line"><a name="l01890"></a><span class="lineno"> 1890</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01891"></a><span class="lineno"> 1891</span>&#160;        <span class="keywordflow">case</span> TxType::ttCHECK_CREATE:</div>
+<div class="line"><a name="l01892"></a><span class="lineno"> 1892</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_check_create(), fromObj);</div>
+<div class="line"><a name="l01893"></a><span class="lineno"> 1893</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01894"></a><span class="lineno"> 1894</span>&#160;        <span class="keywordflow">case</span> TxType::ttCHECK_CASH:</div>
+<div class="line"><a name="l01895"></a><span class="lineno"> 1895</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_check_cash(), fromObj);</div>
+<div class="line"><a name="l01896"></a><span class="lineno"> 1896</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01897"></a><span class="lineno"> 1897</span>&#160;        <span class="keywordflow">case</span> TxType::ttCHECK_CANCEL:</div>
+<div class="line"><a name="l01898"></a><span class="lineno"> 1898</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_check_cancel(), fromObj);</div>
+<div class="line"><a name="l01899"></a><span class="lineno"> 1899</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01900"></a><span class="lineno"> 1900</span>&#160;        <span class="keywordflow">case</span> TxType::ttDEPOSIT_PREAUTH:</div>
+<div class="line"><a name="l01901"></a><span class="lineno"> 1901</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_deposit_preauth(), fromObj);</div>
+<div class="line"><a name="l01902"></a><span class="lineno"> 1902</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01903"></a><span class="lineno"> 1903</span>&#160;        <span class="keywordflow">case</span> TxType::ttTRUST_SET:</div>
+<div class="line"><a name="l01904"></a><span class="lineno"> 1904</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_trust_set(), fromObj);</div>
+<div class="line"><a name="l01905"></a><span class="lineno"> 1905</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01906"></a><span class="lineno"> 1906</span>&#160;        <span class="keywordflow">case</span> TxType::ttACCOUNT_DELETE:</div>
+<div class="line"><a name="l01907"></a><span class="lineno"> 1907</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_account_delete(), fromObj);</div>
+<div class="line"><a name="l01908"></a><span class="lineno"> 1908</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01909"></a><span class="lineno"> 1909</span>&#160;        <span class="keywordflow">case</span> TxType::ttTICKET_CREATE:</div>
+<div class="line"><a name="l01910"></a><span class="lineno"> 1910</span>&#160;            <a class="code" href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">convert</a>(*to.mutable_ticket_create(), fromObj);</div>
 <div class="line"><a name="l01911"></a><span class="lineno"> 1911</span>&#160;            <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l01912"></a><span class="lineno"> 1912</span>&#160;    }</div>
-<div class="line"><a name="l01913"></a><span class="lineno"> 1913</span>&#160;}</div>
-<div class="line"><a name="l01914"></a><span class="lineno"> 1914</span>&#160; </div>
-<div class="line"><a name="l01915"></a><span class="lineno"> 1915</span>&#160;}  <span class="comment">// namespace RPC</span></div>
-<div class="line"><a name="l01916"></a><span class="lineno"> 1916</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l01912"></a><span class="lineno"> 1912</span>&#160;        <span class="keywordflow">default</span>:</div>
+<div class="line"><a name="l01913"></a><span class="lineno"> 1913</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l01914"></a><span class="lineno"> 1914</span>&#160;    }</div>
+<div class="line"><a name="l01915"></a><span class="lineno"> 1915</span>&#160;}</div>
+<div class="line"><a name="l01916"></a><span class="lineno"> 1916</span>&#160; </div>
+<div class="line"><a name="l01917"></a><span class="lineno"> 1917</span>&#160;}  <span class="comment">// namespace RPC</span></div>
+<div class="line"><a name="l01918"></a><span class="lineno"> 1918</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a299309fed377f37a1ca9c61fc71acfa0"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a299309fed377f37a1ca9c61fc71acfa0">ripple::RPC::populateTakerPaysCurrency</a></div><div class="ttdeci">void populateTakerPaysCurrency(T &amp;to, STObject const &amp;from)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l00799">GRPCHelpers.cpp:799</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a12eba2deac62df885d4bdf56fc46621e"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a12eba2deac62df885d4bdf56fc46621e">ripple::RPC::populatePaymentChannelSignature</a></div><div class="ttdeci">void populatePaymentChannelSignature(T &amp;to, STObject const &amp;from)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l00380">GRPCHelpers.cpp:380</a></div></div>
@@ -2052,7 +2054,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a875ae996b37ed036597d70628ae053e3"><div class="ttname"><a href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">ripple::transToken</a></div><div class="ttdeci">std::string transToken(TER code)</div><div class="ttdef"><b>Definition:</b> <a href="TER_8cpp_source.html#l00196">TER.cpp:196</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a736464d568cbf248573adea588f132b8"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a736464d568cbf248573adea588f132b8">ripple::RPC::populateOwner</a></div><div class="ttdeci">void populateOwner(T &amp;to, STObject const &amp;from)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l00325">GRPCHelpers.cpp:325</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a3a106d06697572c1bf86f7f862b616ef"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a3a106d06697572c1bf86f7f862b616ef">ripple::RPC::populateClearFlag</a></div><div class="ttdeci">void populateClearFlag(T &amp;to, STObject const &amp;from)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l00153">GRPCHelpers.cpp:153</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a43b4642a9423050609a09d1fe70c6921"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a43b4642a9423050609a09d1fe70c6921">ripple::RPC::populateFields</a></div><div class="ttdeci">void populateFields(T const &amp;getProto, STObject &amp;obj, SField const &amp;field, uint16_t lgrType)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l01637">GRPCHelpers.cpp:1637</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_a43b4642a9423050609a09d1fe70c6921"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a43b4642a9423050609a09d1fe70c6921">ripple::RPC::populateFields</a></div><div class="ttdeci">void populateFields(T const &amp;getProto, STObject &amp;obj, SField const &amp;field, uint16_t lgrType)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l01639">GRPCHelpers.cpp:1639</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a221b8842b32410a31cbc579739ebad82"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a221b8842b32410a31cbc579739ebad82">ripple::RPC::populateFulfillment</a></div><div class="ttdeci">void populateFulfillment(T &amp;to, STObject const &amp;from)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l00356">GRPCHelpers.cpp:356</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a5ef6a636e530a885438b45616c84296d"><div class="ttname"><a href="namespaceripple.html#a5ef6a636e530a885438b45616c84296d">ripple::sfUnauthorize</a></div><div class="ttdeci">const SF_Account sfUnauthorize(access, STI_ACCOUNT, 6, &quot;Unauthorize&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00486">SField.h:486</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a3834d69e819a33820d3525d76e3a998f"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a3834d69e819a33820d3525d76e3a998f">ripple::RPC::populateMajorities</a></div><div class="ttdeci">void populateMajorities(T &amp;to, STObject const &amp;from)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l00947">GRPCHelpers.cpp:947</a></div></div>
@@ -2114,7 +2116,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a5ee84a90839e78820c2a0498852fa048"><div class="ttname"><a href="namespaceripple.html#a5ee84a90839e78820c2a0498852fa048">ripple::sfLastLedgerSequence</a></div><div class="ttdeci">const SF_U32 sfLastLedgerSequence(access, STI_UINT32, 27, &quot;LastLedgerSequence&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00380">SField.h:380</a></div></div>
 <div class="ttc" id="aclassripple_1_1STArray_html_a66725b497316717cd17cdad5645f6c18"><div class="ttname"><a href="classripple_1_1STArray.html#a66725b497316717cd17cdad5645f6c18">ripple::STArray::begin</a></div><div class="ttdeci">iterator begin()</div><div class="ttdef"><b>Definition:</b> <a href="STArray_8h_source.html#l00114">STArray.h:114</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a32840c14368a6aec04452d1d98fb0ef1"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a32840c14368a6aec04452d1d98fb0ef1">ripple::RPC::convert</a></div><div class="ttdeci">void convert(org::xrpl::rpc::v1::TransactionResult &amp;to, TER from)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l00961">GRPCHelpers.cpp:961</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_af06b63daf42b07dd9c20cc3d7280a079"><div class="ttname"><a href="namespaceripple_1_1RPC.html#af06b63daf42b07dd9c20cc3d7280a079">ripple::RPC::populateNewFields</a></div><div class="ttdeci">void populateNewFields(T const &amp;getProto, STObject &amp;obj, uint16_t lgrType)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l01668">GRPCHelpers.cpp:1668</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_af06b63daf42b07dd9c20cc3d7280a079"><div class="ttname"><a href="namespaceripple_1_1RPC.html#af06b63daf42b07dd9c20cc3d7280a079">ripple::RPC::populateNewFields</a></div><div class="ttdeci">void populateNewFields(T const &amp;getProto, STObject &amp;obj, uint16_t lgrType)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l01670">GRPCHelpers.cpp:1670</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a9991b755ccd2c079633c0a8f158aa3bf"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a9991b755ccd2c079633c0a8f158aa3bf">ripple::RPC::populateDestinationTag</a></div><div class="ttdeci">void populateDestinationTag(T &amp;to, STObject const &amp;from)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l00291">GRPCHelpers.cpp:291</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a35aa403b1136e6a4bd81cdf03a42d70c"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a35aa403b1136e6a4bd81cdf03a42d70c">ripple::RPC::populateHighQualityIn</a></div><div class="ttdeci">void populateHighQualityIn(T &amp;to, STObject const &amp;from)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l00699">GRPCHelpers.cpp:699</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ab58c0b15520d1efd36a12c6e671f3b34"><div class="ttname"><a href="namespaceripple.html#ab58c0b15520d1efd36a12c6e671f3b34">ripple::sfOwner</a></div><div class="ttdeci">const SF_Account sfOwner(access, STI_ACCOUNT, 2, &quot;Owner&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00482">SField.h:482</a></div></div>
@@ -2129,7 +2131,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a6876042e8ba024aff79bc8c36c7f62c8"><div class="ttname"><a href="namespaceripple.html#a6876042e8ba024aff79bc8c36c7f62c8">ripple::sfAmendment</a></div><div class="ttdeci">const SF_U256 sfAmendment(access, STI_HASH256, 19, &quot;Amendment&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00433">SField.h:433</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a95e9ade48f35063e88e1bdc506b08dbe"><div class="ttname"><a href="namespaceripple.html#a95e9ade48f35063e88e1bdc506b08dbe">ripple::sfSignerListID</a></div><div class="ttdeci">const SF_U32 sfSignerListID(access, STI_UINT32, 38, &quot;SignerListID&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00391">SField.h:391</a></div></div>
 <div class="ttc" id="aclassripple_1_1TERSubset_html"><div class="ttname"><a href="classripple_1_1TERSubset.html">ripple::TERSubset</a></div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00326">TER.h:326</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a7ce9fc965a23b7792c90839bdd6be461"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a7ce9fc965a23b7792c90839bdd6be461">ripple::RPC::setLedgerEntryType</a></div><div class="ttdeci">void setLedgerEntryType(org::xrpl::rpc::v1::AffectedNode &amp;proto, std::uint16_t lgrType)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l01519">GRPCHelpers.cpp:1519</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_a7ce9fc965a23b7792c90839bdd6be461"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a7ce9fc965a23b7792c90839bdd6be461">ripple::RPC::setLedgerEntryType</a></div><div class="ttdeci">void setLedgerEntryType(org::xrpl::rpc::v1::AffectedNode &amp;proto, std::uint16_t lgrType)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l01521">GRPCHelpers.cpp:1521</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aab5e6b50155a0dd57f64daeddffef7ef"><div class="ttname"><a href="namespaceripple.html#aab5e6b50155a0dd57f64daeddffef7ef">ripple::sfDestinationNode</a></div><div class="ttdeci">const SF_U64 sfDestinationNode(access, STI_UINT64, 9, &quot;DestinationNode&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00405">SField.h:405</a></div></div>
 <div class="ttc" id="anamespaceripple_html_acb15ad0445814241454117ffa40887ef"><div class="ttname"><a href="namespaceripple.html#acb15ad0445814241454117ffa40887ef">ripple::isTefFailure</a></div><div class="ttdeci">bool isTefFailure(TER x)</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00568">TER.h:568</a></div></div>
 <div class="ttc" id="aclassripple_1_1STArray_html"><div class="ttname"><a href="classripple_1_1STArray.html">ripple::STArray</a></div><div class="ttdef"><b>Definition:</b> <a href="STArray_8h_source.html#l00028">STArray.h:28</a></div></div>
@@ -2138,7 +2140,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1STPathElement_html_a2138297b94e90c22f4dc58e4b57dd41b"><div class="ttname"><a href="classripple_1_1STPathElement.html#a2138297b94e90c22f4dc58e4b57dd41b">ripple::STPathElement::getAccountID</a></div><div class="ttdeci">AccountID const  &amp; getAccountID() const</div><div class="ttdef"><b>Definition:</b> <a href="STPathSet_8h_source.html#l00171">STPathSet.h:171</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aed4b0eb12189fe44deffb512a93423f6"><div class="ttname"><a href="namespaceripple.html#aed4b0eb12189fe44deffb512a93423f6">ripple::sfTxnSignature</a></div><div class="ttdeci">const SF_Blob sfTxnSignature(access, STI_VL, 4, &quot;TxnSignature&quot;, SField::sMD_Default, SField::notSigning)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00461">SField.h:461</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a5396a36da2559608d709b9ef190537d1"><div class="ttname"><a href="namespaceripple.html#a5396a36da2559608d709b9ef190537d1">ripple::sfTransactionType</a></div><div class="ttdeci">const SF_U16 sfTransactionType(access, STI_UINT16, 2, &quot;TransactionType&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00347">SField.h:347</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_af13816ad8293ef8f25ec26be1395a4eb"><div class="ttname"><a href="namespaceripple_1_1RPC.html#af13816ad8293ef8f25ec26be1395a4eb">ripple::RPC::populatePreviousFields</a></div><div class="ttdeci">void populatePreviousFields(T const &amp;getProto, STObject &amp;obj, uint16_t lgrType)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l01661">GRPCHelpers.cpp:1661</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_af13816ad8293ef8f25ec26be1395a4eb"><div class="ttname"><a href="namespaceripple_1_1RPC.html#af13816ad8293ef8f25ec26be1395a4eb">ripple::RPC::populatePreviousFields</a></div><div class="ttdeci">void populatePreviousFields(T const &amp;getProto, STObject &amp;obj, uint16_t lgrType)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l01663">GRPCHelpers.cpp:1663</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_ac7e007e9361eb6f00a020086b5706efb"><div class="ttname"><a href="namespaceripple_1_1RPC.html#ac7e007e9361eb6f00a020086b5706efb">ripple::RPC::populateTransferRate</a></div><div class="ttdeci">void populateTransferRate(T &amp;to, STObject const &amp;from)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l00193">GRPCHelpers.cpp:193</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ac07aad796b465989ac66dd4702216fa3"><div class="ttname"><a href="namespaceripple.html#ac07aad796b465989ac66dd4702216fa3">ripple::sfReferenceFeeUnits</a></div><div class="ttdeci">const SF_U32 sfReferenceFeeUnits(access, STI_UINT32, 30, &quot;ReferenceFeeUnits&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00383">SField.h:383</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_ae9d55ccaa6177e771834b1f241506e2a"><div class="ttname"><a href="namespaceripple_1_1RPC.html#ae9d55ccaa6177e771834b1f241506e2a">ripple::RPC::populatePreviousTransactionLedgerSequence</a></div><div class="ttdeci">void populatePreviousTransactionLedgerSequence(T &amp;to, STObject const &amp;from)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l00639">GRPCHelpers.cpp:639</a></div></div>
@@ -2203,7 +2205,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a33e77f9f48a8060c8f9f63ce6aea91b5"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a33e77f9f48a8060c8f9f63ce6aea91b5">ripple::RPC::populateSignerListID</a></div><div class="ttdeci">void populateSignerListID(T &amp;to, STObject const &amp;from)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l00743">GRPCHelpers.cpp:743</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_ae3517f0362b5b3fc860ddebc9a48a98a"><div class="ttname"><a href="namespaceripple_1_1RPC.html#ae3517f0362b5b3fc860ddebc9a48a98a">ripple::RPC::populateHighQualityOut</a></div><div class="ttdeci">void populateHighQualityOut(T &amp;to, STObject const &amp;from)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l00709">GRPCHelpers.cpp:709</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a1ca4787ab5ad78320b9703f95f48db32"><div class="ttname"><a href="namespaceripple.html#a1ca4787ab5ad78320b9703f95f48db32">ripple::isTelLocal</a></div><div class="ttdeci">bool isTelLocal(TER x)</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00556">TER.h:556</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a4ca37dbf9669511c0e6ed157fe9c80ad"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a4ca37dbf9669511c0e6ed157fe9c80ad">ripple::RPC::populateFinalFields</a></div><div class="ttdeci">void populateFinalFields(T const &amp;getProto, STObject &amp;obj, uint16_t lgrType)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l01654">GRPCHelpers.cpp:1654</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_a4ca37dbf9669511c0e6ed157fe9c80ad"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a4ca37dbf9669511c0e6ed157fe9c80ad">ripple::RPC::populateFinalFields</a></div><div class="ttdeci">void populateFinalFields(T const &amp;getProto, STObject &amp;obj, uint16_t lgrType)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l01656">GRPCHelpers.cpp:1656</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a29e7da98b81b54791653de197531b435"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a29e7da98b81b54791653de197531b435">ripple::RPC::populateIndexPrevious</a></div><div class="ttdeci">void populateIndexPrevious(T &amp;to, STObject const &amp;from)</div><div class="ttdef"><b>Definition:</b> <a href="GRPCHelpers_8cpp_source.html#l00791">GRPCHelpers.cpp:791</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a04dddc8c51c1dfe87b0ae135383e2b96"><div class="ttname"><a href="namespaceripple.html#a04dddc8c51c1dfe87b0ae135383e2b96">ripple::sfClearFlag</a></div><div class="ttdeci">const SF_U32 sfClearFlag(access, STI_UINT32, 34, &quot;ClearFlag&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00387">SField.h:387</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ac89bfba202785ba7a8f1f93e32607a7c"><div class="ttname"><a href="namespaceripple.html#ac89bfba202785ba7a8f1f93e32607a7c">ripple::sfCondition</a></div><div class="ttdeci">const SF_Blob sfCondition(access, STI_VL, 17, &quot;Condition&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00474">SField.h:474</a></div></div>

@@ -67,7 +67,7 @@ $(function() {
 <div class="contents">
 <div class="textblock"><h1><a class="anchor" id="autotoc_md157"></a>
 Overview</h1>
-<p>This document describes mechanics of the <code>SSLHTTPDownloader</code>, a class that performs the task of downloading shards from remote web servers via SSL HTTP. The downloader utilizes a strand (<code>boost::asio::io_service::strand</code>) to ensure that downloads are never executed concurrently. Hence, if a download is in progress when another download is initiated, the second download will be queued and invoked only when the first download is completed.</p>
+<p>This document describes mechanics of the <code>HTTPDownloader</code>, a class that performs the task of downloading shards from remote web servers via HTTP. The downloader utilizes a strand (<code>boost::asio::io_service::strand</code>) to ensure that downloads are never executed concurrently. Hence, if a download is in progress when another download is initiated, the second download will be queued and invoked only when the first download is completed.</p>
 <h1><a class="anchor" id="autotoc_md158"></a>
 Motivation</h1>
 <p>In March 2020 the downloader was modified to include some key features:</p>
@@ -80,11 +80,11 @@ Motivation</h1>
 Classes</h1>
 <p>Much of the shard downloading process concerns the following classes:</p>
 <ul>
-<li><p class="startli"><code>SSLHTTPDownloader</code></p>
-<p class="startli">This is a generic class designed for serially executing downloads via HTTP SSL.</p>
+<li><p class="startli"><code>HTTPDownloader</code></p>
+<p class="startli">This is a generic class designed for serially executing downloads via HTTP.</p>
 </li>
 <li><p class="startli"><code>ShardArchiveHandler</code></p>
-<p class="startli">This class uses the <code>SSLHTTPDownloader</code> to fetch shards from remote web servers. Additionally, the archive handler performs sanity checks on the downloaded files and imports the validated files into the local shard store.</p>
+<p class="startli">This class uses the <code>HTTPDownloader</code> to fetch shards from remote web servers. Additionally, the archive handler performs validity checks on the downloaded files and imports the validated files into the local shard store.</p>
 <p class="startli">The <code>ShardArchiveHandler</code> exposes a simple public interface:</p>
 </li>
 </ul>
@@ -101,7 +101,7 @@ Classes</h1>
 <div class="line">  /** Starts downloading and importing archives. */</div>
 <div class="line">  bool</div>
 <div class="line">  start();</div>
-</div><!-- fragment --><p>When a client submits a <code>download_shard</code> command via the RPC interface, each of the requested files is registered with the handler via the <code>add</code> method. After all the files have been registered, the handler's <code>start</code> method is invoked, which in turn creates an instance of the <code>SSLHTTPDownloader</code> and begins the first download. When the download is completed, the downloader invokes the handler's <code>complete</code> method, which will initiate the download of the next file, or simply return if there are no more downloads to process. When <code>complete</code> is invoked with no remaining files to be downloaded, the handler and downloader are not destroyed automatically, but persist for the duration of the application to assist with graceful shutdowns by <code>Stoppable</code>.</p>
+</div><!-- fragment --><p>When a client submits a <code>download_shard</code> command via the RPC interface, each of the requested files is registered with the handler via the <code>add</code> method. After all the files have been registered, the handler's <code>start</code> method is invoked, which in turn creates an instance of the <code>HTTPDownloader</code> and begins the first download. When the download is completed, the downloader invokes the handler's <code>complete</code> method, which will initiate the download of the next file, or simply return if there are no more downloads to process. When <code>complete</code> is invoked with no remaining files to be downloaded, the handler and downloader are not destroyed automatically, but persist for the duration of the application to assist with graceful shutdowns by <code>Stoppable</code>.</p>
 <ul>
 <li><p class="startli"><code>DatabaseBody</code></p>
 <p class="startli">This class defines a custom message body type, allowing an <code><a href="http::response_parser">http::response_parser</a></code> to write to an SQLite database rather than to a flat file. This class is discussed in further detail in the Recovery section.</p>
@@ -112,14 +112,11 @@ Graceful Shutdowns &amp; Recovery</h1>
 <p>This section describes in greater detail how the shutdown and recovery features of the downloader are implemented in C++ using the <code><a class="el" href="namespaceboost_1_1asio.html">boost::asio</a></code> framework.</p>
 <h4><a class="anchor" id="autotoc_md161"></a>
 Member Variables:</h4>
-<p>The variables shown here are members of the <code>SSLHTTPDownloader</code> class and will be used in the following code examples.</p>
+<p>The variables shown here are members of the <code>HTTPDownloader</code> class and will be used in the following code examples.</p>
 <div class="fragment"><div class="line"> {c++}</div>
-<div class="line">using boost::asio::ssl::stream;</div>
-<div class="line">using boost::asio::ip::tcp::socket;</div>
-<div class="line"> </div>
-<div class="line">stream&lt;socket&gt;          stream_;</div>
-<div class="line">std::condition_variable c_;</div>
-<div class="line">std::atomic&lt;bool&gt;       cancelDownloads_;</div>
+<div class="line">std::unique_ptr&lt;HTTPStream&gt; stream_;</div>
+<div class="line">std::condition_variable     c_;</div>
+<div class="line">std::atomic&lt;bool&gt;           cancelDownloads_;</div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md162"></a>
 Graceful Shutdowns</h2>
 <h4><a class="anchor" id="autotoc_md163"></a>
@@ -139,10 +136,10 @@ Thread 1:</h4>
 <div class="line"> </div>
 <div class="line">    stopped();</div>
 <div class="line">}</div>
-</div><!-- fragment --><p>Inside of <code>SSLHTTPDownloader::onStop()</code>, if a download is currently in progress, the <code>cancelDownloads_</code> member variable is set and the thread waits for the download to stop:</p>
+</div><!-- fragment --><p>Inside of <code>HTTPDownloader::onStop()</code>, if a download is currently in progress, the <code>cancelDownloads_</code> member variable is set and the thread waits for the download to stop:</p>
 <div class="fragment"><div class="line"> {c++}</div>
 <div class="line">void</div>
-<div class="line">SSLHTTPDownloader::onStop()</div>
+<div class="line">HTTPDownloader::onStop()</div>
 <div class="line">{</div>
 <div class="line">    std::unique_lock lock(m_);</div>
 <div class="line"> </div>
@@ -162,7 +159,7 @@ Thread 1:</h4>
 Thread 2:</h4>
 <p>The graceful shutdown is realized when the thread executing the download polls <code>cancelDownloads_</code> after this variable has been set to <code>true</code>. Polling occurs while the file is being downloaded, in between calls to <code>async_read_some()</code>. The stop takes effect when the socket is closed and the handler function ( <code>do_session()</code> ) is exited.</p>
 <div class="fragment"><div class="line"> {c++}</div>
-<div class="line">void SSLHTTPDownloader::do_session()</div>
+<div class="line">void HTTPDownloader::do_session()</div>
 <div class="line">{</div>
 <div class="line"> </div>
 <div class="line">   // (Connection initialization logic) . . .</div>
@@ -184,7 +181,7 @@ Recovery</h2>
 <p>Persisting the current state of both the archive handler and the downloader is achieved by leveraging an SQLite database rather than flat files, as the database protects against data corruption that could result from a system crash.</p>
 <h4><a class="anchor" id="autotoc_md166"></a>
 ShardArchiveHandler</h4>
-<p>Although <code>SSLHTTPDownloader</code> is a generic class that could be used to download a variety of file types, currently it is used exclusively by the <code>ShardArchiveHandler</code> to download shards. In order to provide resilience, the <code>ShardArchiveHandler</code> will use an SQLite database to preserve its current state whenever there are active, paused, or queued downloads. The <code>shard_db</code> section in the configuration file allows users to specify the location of the database to use for this purpose.</p>
+<p>Although <code>HTTPDownloader</code> is a generic class that could be used to download a variety of file types, currently it is used exclusively by the <code>ShardArchiveHandler</code> to download shards. In order to provide resilience, the <code>ShardArchiveHandler</code> will use an SQLite database to preserve its current state whenever there are active, paused, or queued downloads. The <code>shard_db</code> section in the configuration file allows users to specify the location of the database to use for this purpose.</p>
 <h5>SQLite Table Format</h5>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -197,8 +194,8 @@ ShardArchiveHandler</h4>
 <td class="markdownTableBodyCenter">5 </td><td class="markdownTableBodyCenter">https://example.com/5.tar.lz4  </td></tr>
 </table>
 <h4><a class="anchor" id="autotoc_md167"></a>
-SSLHTTPDownloader</h4>
-<p>While the archive handler maintains a list of all partial and queued downloads, the <code>SSLHTTPDownloader</code> stores the raw bytes of the file currently being downloaded. The partially downloaded file will be represented as one or more <code>BLOB</code> entries in an SQLite database. As the maximum size of a <code>BLOB</code> entry is currently limited to roughly 2.1 GB, a 5 GB shard file for instance will occupy three database entries upon completion.</p>
+HTTPDownloader</h4>
+<p>While the archive handler maintains a list of all partial and queued downloads, the <code>HTTPDownloader</code> stores the raw bytes of the file currently being downloaded. The partially downloaded file will be represented as one or more <code>BLOB</code> entries in an SQLite database. As the maximum size of a <code>BLOB</code> entry is currently limited to roughly 2.1 GB, a 5 GB shard file for instance will occupy three database entries upon completion.</p>
 <h5>SQLite Table Format</h5>
 <p>Since downloads execute serially by design, the entries in this table always correspond to the contents of a single file.</p>
 <table class="markdownTable">
@@ -225,7 +222,7 @@ Config File Entry</h4>
 <div class="line">max_historical_shards=50</div>
 </div><!-- fragment --><h4><a class="anchor" id="autotoc_md169"></a>
 Resuming Partial Downloads</h4>
-<p>When resuming downloads after a shutdown, crash, or other interruption, the <code>SSLHTTPDownloader</code> will utilize the <code>range</code> field of the HTTP header to download only the remainder of the partially downloaded file.</p>
+<p>When resuming downloads after a shutdown, crash, or other interruption, the <code>HTTPDownloader</code> will utilize the <code>range</code> field of the HTTP header to download only the remainder of the partially downloaded file.</p>
 <div class="fragment"><div class="line"> {C++}</div>
 <div class="line">auto downloaded = getPartialFileSize();</div>
 <div class="line">auto total = getTotalFileSize();</div>
@@ -255,7 +252,7 @@ Resuming Partial Downloads</h4>
 <div class="line">}</div>
 </div><!-- fragment --><h4><a class="anchor" id="autotoc_md170"></a>
 DatabaseBody</h4>
-<p>Previously, the <code>SSLHTTPDownloader</code> leveraged an <code><a href="http::response_parser">http::response_parser</a></code> instantiated with an <code><a href="http::file_body">http::file_body</a></code>. The <code>file_body</code> class declares a nested type, <code>reader</code>, which does the task of writing HTTP message payloads (constituting a requested file) to the filesystem. In order for the <code><a href="http::response_parser">http::response_parser</a></code> to interface with the database, we implement a custom body type that declares a nested <code>reader</code> type which has been outfitted to persist octects received from the remote host to a local SQLite database. The code snippet below illustrates the customization points available to user-defined body types:</p>
+<p>Previously, the <code>HTTPDownloader</code> leveraged an <code><a href="http::response_parser">http::response_parser</a></code> instantiated with an <code><a href="http::file_body">http::file_body</a></code>. The <code>file_body</code> class declares a nested type, <code>reader</code>, which does the task of writing HTTP message payloads (constituting a requested file) to the filesystem. In order for the <code><a href="http::response_parser">http::response_parser</a></code> to interface with the database, we implement a custom body type that declares a nested <code>reader</code> type which has been outfitted to persist octects received from the remote host to a local SQLite database. The code snippet below illustrates the customization points available to user-defined body types:</p>
 <div class="fragment"><div class="line"> {C++}</div>
 <div class="line">/// Defines a Body type</div>
 <div class="line">struct body</div>
@@ -263,7 +260,8 @@ DatabaseBody</h4>
 <div class="line">    /// This determines the return type of the `message::body` member function</div>
 <div class="line">    using value_type = ...;</div>
 <div class="line"> </div>
-<div class="line">    /// An optional function, returns the body&#39;s payload size (which may be zero)</div>
+<div class="line">    /** An optional function, returns the body&#39;s payload size (which may be</div>
+<div class="line">     *  zero) */</div>
 <div class="line">    static</div>
 <div class="line">    std::uint64_t</div>
 <div class="line">    size(value_type const&amp; v);</div>

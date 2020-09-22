@@ -117,11 +117,11 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a04af1b6c74bd0a521ccb40026a83d201"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0d0e60c26fcefb409c8c61c48545c3ac"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionMaster.html#a0d0e60c26fcefb409c8c61c48545c3ac">fetch_from_cache</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;)</td></tr>
 <tr class="separator:a0d0e60c26fcefb409c8c61c48545c3ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a86f65e1813f15b8cd82f9b776845194f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionMaster.html#a86f65e1813f15b8cd82f9b776845194f">fetch</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;, <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> &amp;ec)</td></tr>
-<tr class="separator:a86f65e1813f15b8cd82f9b776845194f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adc1ff57559570c3bcadc0c3831b1e6bb"><td class="memItemLeft" align="right" valign="top">boost::variant&lt; <a class="el" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">Transaction::pointer</a>, bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionMaster.html#adc1ff57559570c3bcadc0c3831b1e6bb">fetch</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;, <a class="el" href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ClosedInterval</a>&lt; uint32_t &gt; const &amp;<a class="el" href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">range</a>, <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> &amp;ec)</td></tr>
-<tr class="memdesc:adc1ff57559570c3bcadc0c3831b1e6bb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fetch transaction from the cache or database.  <a href="classripple_1_1TransactionMaster.html#adc1ff57559570c3bcadc0c3831b1e6bb">More...</a><br /></td></tr>
-<tr class="separator:adc1ff57559570c3bcadc0c3831b1e6bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a895c798b0ba232520d1285ca06eee923"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> &gt; &gt;, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionMaster.html#a895c798b0ba232520d1285ca06eee923">fetch</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;, <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> &amp;ec)</td></tr>
+<tr class="separator:a895c798b0ba232520d1285ca06eee923"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a977772a4a08b7f7f16e872392493d403"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> &gt; &gt;, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionMaster.html#a977772a4a08b7f7f16e872392493d403">fetch</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;, <a class="el" href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ClosedInterval</a>&lt; uint32_t &gt; const &amp;<a class="el" href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">range</a>, <a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> &amp;ec)</td></tr>
+<tr class="memdesc:a977772a4a08b7f7f16e872392493d403"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fetch transaction from the cache or database.  <a href="classripple_1_1TransactionMaster.html#a977772a4a08b7f7f16e872392493d403">More...</a><br /></td></tr>
+<tr class="separator:a977772a4a08b7f7f16e872392493d403"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a25ec22bbc4c4943e49614df7dd57aa23"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionMaster.html#a25ec22bbc4c4943e49614df7dd57aa23">fetch</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> &gt; const &amp;item, <a class="el" href="classripple_1_1SHAMapAbstractNode.html#a6cdeae87f96a46b976f2e70e985d4b0f">SHAMapTreeNode::TNType</a> type, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uCommitLedger)</td></tr>
 <tr class="separator:a25ec22bbc4c4943e49614df7dd57aa23"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f89069c62a078affbaad8fabb41d563"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionMaster.html#a2f89069c62a078affbaad8fabb41d563">inLedger</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledger)</td></tr>
@@ -237,14 +237,14 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a86f65e1813f15b8cd82f9b776845194f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a86f65e1813f15b8cd82f9b776845194f">&#9670;&nbsp;</a></span>fetch() <span class="overload">[1/3]</span></h2>
+<a id="a895c798b0ba232520d1285ca06eee923"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a895c798b0ba232520d1285ca06eee923">&#9670;&nbsp;</a></span>fetch() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt; ripple::TransactionMaster::fetch </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> &gt; &gt;, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a> &gt; ripple::TransactionMaster::fetch </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
           <td class="paramname"><em>txnID</em>, </td>
@@ -263,18 +263,18 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00058">58</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00060">60</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
 
 </div>
 </div>
-<a id="adc1ff57559570c3bcadc0c3831b1e6bb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adc1ff57559570c3bcadc0c3831b1e6bb">&#9670;&nbsp;</a></span>fetch() <span class="overload">[2/3]</span></h2>
+<a id="a977772a4a08b7f7f16e872392493d403"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a977772a4a08b7f7f16e872392493d403">&#9670;&nbsp;</a></span>fetch() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">boost::variant&lt; <a class="el" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">Transaction::pointer</a>, bool &gt; ripple::TransactionMaster::fetch </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> &gt; &gt;, <a class="el" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a> &gt; ripple::TransactionMaster::fetch </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
           <td class="paramname"><em>txnID</em>, </td>
@@ -300,9 +300,9 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Fetch transaction from the cache or database. </p>
-<dl class="section return"><dt>Returns</dt><dd>A boost::variant that contains either a shared_pointer to the retrieved transaction or a bool indicating whether or not the all ledgers in the provided range were present in the database while the search was conducted. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>A <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a> that contains either a pair of shared_pointer to the retrieved transaction and its metadata or an enum indicating whether or not the all ledgers in the provided range were present in the database while the search was conducted. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00076">76</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00084">84</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -338,7 +338,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00098">98</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00109">109</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -388,7 +388,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00132">132</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00143">143</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -408,7 +408,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00145">145</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00156">156</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -427,7 +427,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00151">151</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00162">162</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -452,7 +452,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionMaster_8h_source.html#l00085">85</a> of file <a class="el" href="TransactionMaster_8h_source.html">TransactionMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionMaster_8h_source.html#l00089">89</a> of file <a class="el" href="TransactionMaster_8h_source.html">TransactionMaster.h</a>.</p>
 
 </div>
 </div>
@@ -476,7 +476,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionMaster_8h_source.html#l00086">86</a> of file <a class="el" href="TransactionMaster_8h_source.html">TransactionMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionMaster_8h_source.html#l00090">90</a> of file <a class="el" href="TransactionMaster_8h_source.html">TransactionMaster.h</a>.</p>
 
 </div>
 </div>

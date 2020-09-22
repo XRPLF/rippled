@@ -1,0 +1,4 @@
+<map id="ripple::HTTPDownloader" name="ripple::HTTPDownloader">
+<area shape="rect" id="node1" title="Provides an asynchronous HTTP[S] file downloader." alt="" coords="19,5,198,32"/>
+<area shape="rect" id="node2" href="$classripple_1_1DatabaseDownloader.html" title=" " alt="" coords="5,80,212,107"/>
+</map>

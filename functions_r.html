@@ -165,6 +165,9 @@ $(function() {
 <li>RawStateTable()
 : <a class="el" href="classripple_1_1detail_1_1RawStateTable.html#a89a491487c97490b311e6d548878f7bc">ripple::detail::RawStateTable</a>
 </li>
+<li>RawStream()
+: <a class="el" href="classripple_1_1RawStream.html#a884ef1fa62d4f8d584d2cfede140233d">ripple::RawStream</a>
+</li>
 <li>rawTxInsert()
 : <a class="el" href="classripple_1_1Ledger.html#a0432690b8a2af03cd14cf6c07561ea53">ripple::Ledger</a>
 , <a class="el" href="classripple_1_1OpenView.html#ab230a32cbeedf37d8b30bbec8a91961d">ripple::OpenView</a>
@@ -186,7 +189,7 @@ $(function() {
 <li>rbegin()
 : <a class="el" href="classbeast_1_1detail_1_1aged__ordered__container_1_1chronological__t.html#a7cd9fe281492dd48946bc48af2d0c1e7">beast::detail::aged_ordered_container&lt; IsMulti, IsMap, Key, T, Clock, Compare, Allocator &gt;::chronological_t</a>
 , <a class="el" href="classbeast_1_1detail_1_1aged__ordered__container.html#a2840b54ac1e03ae24f7bd58c18428745">beast::detail::aged_ordered_container&lt; IsMulti, IsMap, Key, T, Clock, Compare, Allocator &gt;</a>
-, <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1chronological__t.html#a9167378c867309082e1d2d7ad9f0989b">beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::chronological_t</a>
+, <a class="el" href="classbeast_1_1detail_1_1aged__unordered__container_1_1chronological__t.html#a63ad9c008d0cbe7b16a6109e6d337c96">beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::chronological_t</a>
 , <a class="el" href="classripple_1_1PeerFinder_1_1detail_1_1LivecacheBase_1_1Hop.html#aade9275f27bccc6520220a1d5485671a">ripple::PeerFinder::detail::LivecacheBase::Hop&lt; IsConst &gt;</a>
 , <a class="el" href="classripple_1_1PeerFinder_1_1Livecache_1_1hops__t.html#a8a0ede499daeab0988e2e808c536b7b4">ripple::PeerFinder::Livecache&lt; Allocator &gt;::hops_t</a>
 </li>
@@ -243,7 +246,7 @@ $(function() {
 <li>read_buf_
 : <a class="el" href="classripple_1_1BaseHTTPPeer.html#a7337bff6a1b56f3465c9dd293c6378ec">ripple::BaseHTTPPeer&lt; Handler, Impl &gt;</a>
 , <a class="el" href="classripple_1_1ConnectAttempt.html#ac28902665c0db123ffba1bc05cfe439c">ripple::ConnectAttempt</a>
-, <a class="el" href="classripple_1_1SSLHTTPDownloader.html#aca648df73c16d9b54a0d0b726cc48628">ripple::SSLHTTPDownloader</a>
+, <a class="el" href="classripple_1_1HTTPDownloader.html#a0b6a52c13975227deeea4ef70abc8be7">ripple::HTTPDownloader</a>
 </li>
 <li>read_buffer_
 : <a class="el" href="classripple_1_1PeerImp.html#af1b47f2938308431523fa640dbb94610">ripple::PeerImp</a>
@@ -715,6 +718,7 @@ $(function() {
 , <a class="el" href="classripple_1_1BaseWSPeer.html#aa4d378cf640b42d55b0dba41193a8ec4">ripple::BaseWSPeer&lt; Handler, Impl &gt;</a>
 , <a class="el" href="classripple_1_1HTTPClient.html#a6655540e8a9d9255e16358b8edfeb9a5">ripple::HTTPClient</a>
 , <a class="el" href="classripple_1_1HTTPClientImp.html#a1173a644fb33f4e4d74259edd7dff376">ripple::HTTPClientImp</a>
+, <a class="el" href="classripple_1_1HTTPStream.html#adaedf72be1e41c7baad6422bd4c4b965">ripple::HTTPStream</a>
 </li>
 <li>Request()
 : <a class="el" href="structripple_1_1RPC_1_1Request.html#a1bb1813baac74d8882154cc0cb528b87">ripple::RPC::Request</a>
@@ -1223,7 +1227,7 @@ $(function() {
 , <a class="el" href="classripple_1_1ReadView.html#aaf2fa03be723bb78d8bdf41614a75a30">ripple::ReadView</a>
 </li>
 <li>Rules()
-: <a class="el" href="classripple_1_1Rules.html#a01a609c0047b4c2b95bc18b7d5f67e26">ripple::Rules</a>
+: <a class="el" href="classripple_1_1Rules.html#a375ab968a4a8bf1e04e1041809170232">ripple::Rules</a>
 </li>
 <li>rules_
 : <a class="el" href="classripple_1_1AmendmentSet.html#a8f1040cb22455e44304a0ec2d0b8d8ed">ripple::AmendmentSet</a>
@@ -1283,7 +1287,6 @@ $(function() {
 , <a class="el" href="classripple_1_1FileUtilities__test.html#aa1b2698cec02912b9a7286f12a758bcf">ripple::FileUtilities_test</a>
 , <a class="el" href="classripple_1_1Freeze__test.html#acae03d4044d6cc33d128962edfcdbe77">ripple::Freeze_test</a>
 , <a class="el" href="classripple_1_1GetCounts__test.html#a5130e9630360215fc24bc57d54d83390">ripple::GetCounts_test</a>
-, <a class="el" href="classripple_1_1GRPCServer.html#a16c279ab651b80ecdb25865c09bfc10a">ripple::GRPCServer</a>
 , <a class="el" href="classripple_1_1hardened__hash__test.html#ad8d4a0d65deb7684f2833784693410dd">ripple::hardened_hash_test</a>
 , <a class="el" href="classripple_1_1InnerObjectFormatsParsedJSON__test.html#a5a87eb11cc7496947f492df0690ce022">ripple::InnerObjectFormatsParsedJSON_test</a>
 , <a class="el" href="classripple_1_1InnerObjectFormatsSerializer__test.html#a2a56e8c9b2722b75b90505a38cb1e810">ripple::InnerObjectFormatsSerializer_test</a>
@@ -1292,6 +1295,7 @@ $(function() {
 , <a class="el" href="classripple_1_1Issue__test.html#ab7f4799b2245b9485243e2f0a58eb9ec">ripple::Issue_test</a>
 , <a class="el" href="structripple_1_1json__value__test.html#ae697fda7c48716e893171ef536bbf9f7">ripple::json_value_test</a>
 , <a class="el" href="classripple_1_1KeyCache__test.html#ac70741753afa2cdc404aebed08b691f2">ripple::KeyCache_test</a>
+, <a class="el" href="classripple_1_1KnownFormatToGRPC__test.html#a25b1ac3feb8e9fcf0931b99f8f1f5f4a">ripple::KnownFormatToGRPC_test</a>
 , <a class="el" href="classripple_1_1LedgerClosed__test.html#a0a67e5e963b71cd8637c88ed0f67832d">ripple::LedgerClosed_test</a>
 , <a class="el" href="classripple_1_1LedgerData__test.html#ab780ad06dffbc53a2222d7fb446ed541">ripple::LedgerData_test</a>
 , <a class="el" href="classripple_1_1LedgerLoad__test.html#a33d469934cf1d84a6222c1a70aacb40f">ripple::LedgerLoad_test</a>
@@ -1467,7 +1471,7 @@ $(function() {
 , <a class="el" href="classripple_1_1test_1_1WSClient__test.html#aaca8e8e3540eeb40dd1c7454f02ecca7">ripple::test::WSClient_test</a>
 , <a class="el" href="classripple_1_1tests_1_1cluster__test.html#a4a3bf6ddbee28f9706d9f4e0ae58c70f">ripple::tests::cluster_test</a>
 , <a class="el" href="classripple_1_1tests_1_1FetchPack__test.html#ab489ad431b56ac98a9298d3b093bf20c">ripple::tests::FetchPack_test</a>
-, <a class="el" href="classripple_1_1tests_1_1SHAMap__test.html#a16276cc3cbae0341de86b9642064caa5">ripple::tests::SHAMap_test</a>
+, <a class="el" href="classripple_1_1tests_1_1SHAMap__test.html#a01e6fa673aed8fcb6cc6cfba738f3440">ripple::tests::SHAMap_test</a>
 , <a class="el" href="classripple_1_1tests_1_1SHAMapSync__test.html#aaa54cd3a34629232204777d3e28a5fa9">ripple::tests::SHAMapSync_test</a>
 , <a class="el" href="classripple_1_1Ticket__test.html#aeefd4a6fb9e1f90c7e2b3fbae03718eb">ripple::Ticket_test</a>
 , <a class="el" href="classripple_1_1TimeKeeper.html#a79cf5f1ce3f70b37e695547dddfc36cc">ripple::TimeKeeper</a>

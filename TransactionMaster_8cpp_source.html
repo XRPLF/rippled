@@ -125,135 +125,148 @@ $(function() {
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classripple_1_1TransactionMaster.html#adcb8bd073a18a4fd83491f3cc2743592">mCache</a>.fetch(txnID);</div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;}</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Transaction&gt;</a></div>
-<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="classripple_1_1TransactionMaster.html#a86f65e1813f15b8cd82f9b776845194f">   58</a></span>&#160;<a class="code" href="classripple_1_1TransactionMaster.html#a86f65e1813f15b8cd82f9b776845194f">TransactionMaster::fetch</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; txnID, <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a>&amp; ec)</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;{</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keyword">auto</span> txn = <a class="code" href="classripple_1_1TransactionMaster.html#a0d0e60c26fcefb409c8c61c48545c3ac">fetch_from_cache</a>(txnID);</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keywordflow">if</span> (txn)</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="keywordflow">return</span> txn;</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt;</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;std::shared_ptr&lt;Transaction&gt;</a>, <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;TxMeta&gt;</a>&gt;,</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a>&gt;</div>
+<div class="line"><a name="l00060"></a><span class="lineno"><a class="line" href="classripple_1_1TransactionMaster.html#a895c798b0ba232520d1285ca06eee923">   60</a></span>&#160;<a class="code" href="classripple_1_1TransactionMaster.html#a895c798b0ba232520d1285ca06eee923">TransactionMaster::fetch</a>(<a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; txnID, <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a>&amp; ec)</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;{</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keyword">using</span> TxPair =</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;std::shared_ptr&lt;Transaction&gt;</a>, <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;TxMeta&gt;</a>&gt;;</div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    txn = <a class="code" href="classripple_1_1Transaction.html#ad42a988ab1ac2b0c5c26c1702cb38521">Transaction::load</a>(txnID, <a class="code" href="classripple_1_1TransactionMaster.html#a733f6ca8abe71da1b9bb423fe030b9a3">mApp</a>, ec);</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keywordflow">if</span> (!txn)</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="keywordflow">return</span> txn;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> txn = <a class="code" href="classripple_1_1TransactionMaster.html#a0d0e60c26fcefb409c8c61c48545c3ac">fetch_from_cache</a>(txnID); txn &amp;&amp; !txn-&gt;isValidated())</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>{std::move(txn), <span class="keyword">nullptr</span>};</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keyword">auto</span> v = <a class="code" href="classripple_1_1Transaction.html#a7ac314a4b698a354aeca6e01b11727df">Transaction::load</a>(txnID, <a class="code" href="classripple_1_1TransactionMaster.html#a733f6ca8abe71da1b9bb423fe030b9a3">mApp</a>, ec);</div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <a class="code" href="classripple_1_1TransactionMaster.html#adcb8bd073a18a4fd83491f3cc2743592">mCache</a>.canonicalize_replace_client(txnID, txn);</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keywordflow">return</span> txn;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;}</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keywordflow">if</span> (std::holds_alternative&lt;TxSearched&gt;(v))</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="keywordflow">return</span> v;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keyword">auto</span> [txn, txnMeta] = std::get&lt;TxPair&gt;(v);</div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;boost::variant&lt;Transaction::pointer, bool&gt;</div>
-<div class="line"><a name="l00076"></a><span class="lineno"><a class="line" href="classripple_1_1TransactionMaster.html#adc1ff57559570c3bcadc0c3831b1e6bb">   76</a></span>&#160;<a class="code" href="classripple_1_1TransactionMaster.html#a86f65e1813f15b8cd82f9b776845194f">TransactionMaster::fetch</a>(</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; txnID,</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <a class="code" href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ClosedInterval&lt;uint32_t&gt;</a> <span class="keyword">const</span>&amp; <a class="code" href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">range</a>,</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a>&amp; ec)</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;{</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keyword">using</span> pointer = <a class="code" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">Transaction::pointer</a>;</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keyword">auto</span> txn = <a class="code" href="classripple_1_1TransactionMaster.html#adcb8bd073a18a4fd83491f3cc2743592">mCache</a>.fetch(txnID);</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keywordflow">if</span> (txn)</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <span class="keywordflow">return</span> txn;</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    boost::variant&lt;Transaction::pointer, bool&gt; v =</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        <a class="code" href="classripple_1_1Transaction.html#ad42a988ab1ac2b0c5c26c1702cb38521">Transaction::load</a>(txnID, <a class="code" href="classripple_1_1TransactionMaster.html#a733f6ca8abe71da1b9bb423fe030b9a3">mApp</a>, <a class="code" href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">range</a>, ec);</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keywordflow">if</span> (v.which() == 0 &amp;&amp; boost::get&lt;pointer&gt;(v))</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        <a class="code" href="classripple_1_1TransactionMaster.html#adcb8bd073a18a4fd83491f3cc2743592">mCache</a>.canonicalize_replace_client(txnID, boost::get&lt;pointer&gt;(v));</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="keywordflow">return</span> v;</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;}</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keywordflow">if</span> (txn)</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <a class="code" href="classripple_1_1TransactionMaster.html#adcb8bd073a18a4fd83491f3cc2743592">mCache</a>.canonicalize_replace_client(txnID, txn);</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>{std::move(txn), std::move(txnMeta)};</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;}</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt;</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;std::shared_ptr&lt;Transaction&gt;</a>, <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;TxMeta&gt;</a>&gt;,</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">TxSearched</a>&gt;</div>
+<div class="line"><a name="l00084"></a><span class="lineno"><a class="line" href="classripple_1_1TransactionMaster.html#a977772a4a08b7f7f16e872392493d403">   84</a></span>&#160;<a class="code" href="classripple_1_1TransactionMaster.html#a895c798b0ba232520d1285ca06eee923">TransactionMaster::fetch</a>(</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; txnID,</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <a class="code" href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ClosedInterval&lt;uint32_t&gt;</a> <span class="keyword">const</span>&amp; <a class="code" href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">range</a>,</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <a class="code" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a>&amp; ec)</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;{</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keyword">using</span> TxPair =</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;std::shared_ptr&lt;Transaction&gt;</a>, <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;TxMeta&gt;</a>&gt;;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keywordflow">if</span> (<span class="keyword">auto</span> txn = <a class="code" href="classripple_1_1TransactionMaster.html#a0d0e60c26fcefb409c8c61c48545c3ac">fetch_from_cache</a>(txnID); txn &amp;&amp; !txn-&gt;isValidated())</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>{std::move(txn), <span class="keyword">nullptr</span>};</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keyword">auto</span> v = <a class="code" href="classripple_1_1Transaction.html#a7ac314a4b698a354aeca6e01b11727df">Transaction::load</a>(txnID, <a class="code" href="classripple_1_1TransactionMaster.html#a733f6ca8abe71da1b9bb423fe030b9a3">mApp</a>, <a class="code" href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">range</a>, ec);</div>
 <div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160; </div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a></div>
-<div class="line"><a name="l00098"></a><span class="lineno"><a class="line" href="classripple_1_1TransactionMaster.html#a25ec22bbc4c4943e49614df7dd57aa23">   98</a></span>&#160;<a class="code" href="classripple_1_1TransactionMaster.html#a86f65e1813f15b8cd82f9b776845194f">TransactionMaster::fetch</a>(</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SHAMapItem&gt;</a> <span class="keyword">const</span>&amp; item,</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <a class="code" href="classripple_1_1SHAMapAbstractNode.html#a6cdeae87f96a46b976f2e70e985d4b0f">SHAMapTreeNode::TNType</a> type,</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uCommitLedger)</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;{</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> txn;</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="keyword">auto</span> iTx = <a class="code" href="classripple_1_1TransactionMaster.html#a0d0e60c26fcefb409c8c61c48545c3ac">fetch_from_cache</a>(item-&gt;key());</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keywordflow">if</span> (!iTx)</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    {</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        <span class="keywordflow">if</span> (type == <a class="code" href="classripple_1_1SHAMapAbstractNode.html#a6cdeae87f96a46b976f2e70e985d4b0fa1b3c155717a3a38e221227adfca005a7">SHAMapTreeNode::tnTRANSACTION_NM</a>)</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        {</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;            <a class="code" href="classripple_1_1SerialIter.html">SerialIter</a> sit(item-&gt;slice());</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;            txn = std::make_shared&lt;STTx const&gt;(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/ref.html">std::ref</a>(sit));</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        }</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (type == <a class="code" href="classripple_1_1SHAMapAbstractNode.html#a6cdeae87f96a46b976f2e70e985d4b0fa1df3b78277a42252737ee96a727d4735">SHAMapTreeNode::tnTRANSACTION_MD</a>)</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        {</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            <span class="keyword">auto</span> blob = <a class="code" href="classripple_1_1SerialIter.html">SerialIter</a>{item-&gt;data(), item-&gt;size()}.getVL();</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            txn = std::make_shared&lt;STTx const&gt;(</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;                <a class="code" href="classripple_1_1SerialIter.html">SerialIter</a>{blob.data(), blob.size()});</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        }</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    }</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    {</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        <span class="keywordflow">if</span> (uCommitLedger)</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            iTx-&gt;setStatus(<a class="code" href="namespaceripple.html#a2e97c395a5e1ef4ed1052299e0e60843af49424fb5e4ca3c93b65833c02fcfb07">COMMITTED</a>, uCommitLedger);</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        txn = iTx-&gt;getSTransaction();</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    }</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <span class="keywordflow">return</span> txn;</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;}</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160; </div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00132"></a><span class="lineno"><a class="line" href="classripple_1_1TransactionMaster.html#adfb688396e9aed123c909f739e44a0cf">  132</a></span>&#160;<a class="code" href="classripple_1_1TransactionMaster.html#adfb688396e9aed123c909f739e44a0cf">TransactionMaster::canonicalize</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Transaction&gt;</a>* pTransaction)</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;{</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> tid = (*pTransaction)-&gt;getID();</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    <span class="keywordflow">if</span> (tid != beast::zero)</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    {</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;        <span class="keyword">auto</span> txn = *pTransaction;</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;        <span class="comment">// VFALCO NOTE canonicalize can change the value of txn!</span></div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;        <a class="code" href="classripple_1_1TransactionMaster.html#adcb8bd073a18a4fd83491f3cc2743592">mCache</a>.canonicalize_replace_client(tid, txn);</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;        *pTransaction = txn;</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;    }</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;}</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160; </div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;<span class="keywordtype">void</span></div>
-<div class="line"><a name="l00145"></a><span class="lineno"><a class="line" href="classripple_1_1TransactionMaster.html#a7e29535a5d6512408ea86b5c5611540a">  145</a></span>&#160;<a class="code" href="classripple_1_1TransactionMaster.html#a7e29535a5d6512408ea86b5c5611540a">TransactionMaster::sweep</a>(<span class="keywordtype">void</span>)</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;{</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    <a class="code" href="classripple_1_1TransactionMaster.html#adcb8bd073a18a4fd83491f3cc2743592">mCache</a>.sweep();</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;}</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160; </div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;<a class="code" href="classripple_1_1TaggedCache.html">TaggedCache&lt;uint256, Transaction&gt;</a>&amp;</div>
-<div class="line"><a name="l00151"></a><span class="lineno"><a class="line" href="classripple_1_1TransactionMaster.html#afc49cdcfe8a4b06993b76d0e803aeb19">  151</a></span>&#160;<a class="code" href="classripple_1_1TransactionMaster.html#afc49cdcfe8a4b06993b76d0e803aeb19">TransactionMaster::getCache</a>()</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;{</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classripple_1_1TransactionMaster.html#adcb8bd073a18a4fd83491f3cc2743592">mCache</a>;</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;}</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160; </div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keywordflow">if</span> (std::holds_alternative&lt;TxSearched&gt;(v))</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        <span class="keywordflow">return</span> v;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <span class="keyword">auto</span> [txn, txnMeta] = std::get&lt;TxPair&gt;(v);</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="keywordflow">if</span> (txn)</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        <a class="code" href="classripple_1_1TransactionMaster.html#adcb8bd073a18a4fd83491f3cc2743592">mCache</a>.canonicalize_replace_client(txnID, txn);</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keywordflow">return</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>{std::move(txn), std::move(txnMeta)};</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;}</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a></div>
+<div class="line"><a name="l00109"></a><span class="lineno"><a class="line" href="classripple_1_1TransactionMaster.html#a25ec22bbc4c4943e49614df7dd57aa23">  109</a></span>&#160;<a class="code" href="classripple_1_1TransactionMaster.html#a895c798b0ba232520d1285ca06eee923">TransactionMaster::fetch</a>(</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SHAMapItem&gt;</a> <span class="keyword">const</span>&amp; item,</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <a class="code" href="classripple_1_1SHAMapAbstractNode.html#a6cdeae87f96a46b976f2e70e985d4b0f">SHAMapTreeNode::TNType</a> type,</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uCommitLedger)</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;{</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> txn;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <span class="keyword">auto</span> iTx = <a class="code" href="classripple_1_1TransactionMaster.html#a0d0e60c26fcefb409c8c61c48545c3ac">fetch_from_cache</a>(item-&gt;key());</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160; </div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <span class="keywordflow">if</span> (!iTx)</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    {</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        <span class="keywordflow">if</span> (type == <a class="code" href="classripple_1_1SHAMapAbstractNode.html#a6cdeae87f96a46b976f2e70e985d4b0fa1b3c155717a3a38e221227adfca005a7">SHAMapTreeNode::tnTRANSACTION_NM</a>)</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        {</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            <a class="code" href="classripple_1_1SerialIter.html">SerialIter</a> sit(item-&gt;slice());</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            txn = std::make_shared&lt;STTx const&gt;(<a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/functional/ref.html">std::ref</a>(sit));</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        }</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (type == <a class="code" href="classripple_1_1SHAMapAbstractNode.html#a6cdeae87f96a46b976f2e70e985d4b0fa1df3b78277a42252737ee96a727d4735">SHAMapTreeNode::tnTRANSACTION_MD</a>)</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        {</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;            <span class="keyword">auto</span> blob = <a class="code" href="classripple_1_1SerialIter.html">SerialIter</a>{item-&gt;data(), item-&gt;size()}.getVL();</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            txn = std::make_shared&lt;STTx const&gt;(</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;                <a class="code" href="classripple_1_1SerialIter.html">SerialIter</a>{blob.data(), blob.size()});</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        }</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    }</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    {</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        <span class="keywordflow">if</span> (uCommitLedger)</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;            iTx-&gt;setStatus(<a class="code" href="namespaceripple.html#a2e97c395a5e1ef4ed1052299e0e60843af49424fb5e4ca3c93b65833c02fcfb07">COMMITTED</a>, uCommitLedger);</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160; </div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;        txn = iTx-&gt;getSTransaction();</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    }</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160; </div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    <span class="keywordflow">return</span> txn;</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;}</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160; </div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00143"></a><span class="lineno"><a class="line" href="classripple_1_1TransactionMaster.html#adfb688396e9aed123c909f739e44a0cf">  143</a></span>&#160;<a class="code" href="classripple_1_1TransactionMaster.html#adfb688396e9aed123c909f739e44a0cf">TransactionMaster::canonicalize</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Transaction&gt;</a>* pTransaction)</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;{</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <a class="code" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> tid = (*pTransaction)-&gt;getID();</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    <span class="keywordflow">if</span> (tid != beast::zero)</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;    {</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;        <span class="keyword">auto</span> txn = *pTransaction;</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        <span class="comment">// VFALCO NOTE canonicalize can change the value of txn!</span></div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        <a class="code" href="classripple_1_1TransactionMaster.html#adcb8bd073a18a4fd83491f3cc2743592">mCache</a>.canonicalize_replace_client(tid, txn);</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        *pTransaction = txn;</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    }</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;}</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160; </div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;<span class="keywordtype">void</span></div>
+<div class="line"><a name="l00156"></a><span class="lineno"><a class="line" href="classripple_1_1TransactionMaster.html#a7e29535a5d6512408ea86b5c5611540a">  156</a></span>&#160;<a class="code" href="classripple_1_1TransactionMaster.html#a7e29535a5d6512408ea86b5c5611540a">TransactionMaster::sweep</a>(<span class="keywordtype">void</span>)</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;{</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    <a class="code" href="classripple_1_1TransactionMaster.html#adcb8bd073a18a4fd83491f3cc2743592">mCache</a>.sweep();</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;}</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160; </div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;<a class="code" href="classripple_1_1TaggedCache.html">TaggedCache&lt;uint256, Transaction&gt;</a>&amp;</div>
+<div class="line"><a name="l00162"></a><span class="lineno"><a class="line" href="classripple_1_1TransactionMaster.html#afc49cdcfe8a4b06993b76d0e803aeb19">  162</a></span>&#160;<a class="code" href="classripple_1_1TransactionMaster.html#afc49cdcfe8a4b06993b76d0e803aeb19">TransactionMaster::getCache</a>()</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;{</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classripple_1_1TransactionMaster.html#adcb8bd073a18a4fd83491f3cc2743592">mCache</a>;</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;}</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160; </div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="anamespaceripple_html_a2e97c395a5e1ef4ed1052299e0e60843af49424fb5e4ca3c93b65833c02fcfb07"><div class="ttname"><a href="namespaceripple.html#a2e97c395a5e1ef4ed1052299e0e60843af49424fb5e4ca3c93b65833c02fcfb07">ripple::COMMITTED</a></div><div class="ttdeci">@ COMMITTED</div><div class="ttdef"><b>Definition:</b> <a href="Transaction_8h_source.html#l00048">Transaction.h:48</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a2e97c395a5e1ef4ed1052299e0e60843af49424fb5e4ca3c93b65833c02fcfb07"><div class="ttname"><a href="namespaceripple.html#a2e97c395a5e1ef4ed1052299e0e60843af49424fb5e4ca3c93b65833c02fcfb07">ripple::COMMITTED</a></div><div class="ttdeci">@ COMMITTED</div><div class="ttdef"><b>Definition:</b> <a href="Transaction_8h_source.html#l00049">Transaction.h:49</a></div></div>
 <div class="ttc" id="aclassripple_1_1Application_html"><div class="ttname"><a href="classripple_1_1Application.html">ripple::Application</a></div><div class="ttdef"><b>Definition:</b> <a href="Application_8h_source.html#l00097">Application.h:97</a></div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt; Transaction &gt;</a></div></div>
 <div class="ttc" id="aclassripple_1_1TaggedCache_html"><div class="ttname"><a href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a></div><div class="ttdoc">Map/cache combination.</div><div class="ttdef"><b>Definition:</b> <a href="TaggedCache_8h_source.html#l00052">TaggedCache.h:52</a></div></div>
-<div class="ttc" id="aclassripple_1_1TransactionMaster_html_a7e29535a5d6512408ea86b5c5611540a"><div class="ttname"><a href="classripple_1_1TransactionMaster.html#a7e29535a5d6512408ea86b5c5611540a">ripple::TransactionMaster::sweep</a></div><div class="ttdeci">void sweep(void)</div><div class="ttdef"><b>Definition:</b> <a href="TransactionMaster_8cpp_source.html#l00145">TransactionMaster.cpp:145</a></div></div>
+<div class="ttc" id="aclassripple_1_1TransactionMaster_html_a7e29535a5d6512408ea86b5c5611540a"><div class="ttname"><a href="classripple_1_1TransactionMaster.html#a7e29535a5d6512408ea86b5c5611540a">ripple::TransactionMaster::sweep</a></div><div class="ttdeci">void sweep(void)</div><div class="ttdef"><b>Definition:</b> <a href="TransactionMaster_8cpp_source.html#l00156">TransactionMaster.cpp:156</a></div></div>
 <div class="ttc" id="aclassripple_1_1SHAMapAbstractNode_html_a6cdeae87f96a46b976f2e70e985d4b0fa1b3c155717a3a38e221227adfca005a7"><div class="ttname"><a href="classripple_1_1SHAMapAbstractNode.html#a6cdeae87f96a46b976f2e70e985d4b0fa1b3c155717a3a38e221227adfca005a7">ripple::SHAMapAbstractNode::tnTRANSACTION_NM</a></div><div class="ttdeci">@ tnTRANSACTION_NM</div><div class="ttdef"><b>Definition:</b> <a href="SHAMapTreeNode_8h_source.html#l00128">SHAMapTreeNode.h:128</a></div></div>
-<div class="ttc" id="aclassripple_1_1Transaction_html_ad42a988ab1ac2b0c5c26c1702cb38521"><div class="ttname"><a href="classripple_1_1Transaction.html#ad42a988ab1ac2b0c5c26c1702cb38521">ripple::Transaction::load</a></div><div class="ttdeci">static pointer load(uint256 const &amp;id, Application &amp;app, error_code_i &amp;ec)</div><div class="ttdef"><b>Definition:</b> <a href="Transaction_8cpp_source.html#l00109">Transaction.cpp:109</a></div></div>
-<div class="ttc" id="aclassripple_1_1TransactionMaster_html_a86f65e1813f15b8cd82f9b776845194f"><div class="ttname"><a href="classripple_1_1TransactionMaster.html#a86f65e1813f15b8cd82f9b776845194f">ripple::TransactionMaster::fetch</a></div><div class="ttdeci">std::shared_ptr&lt; Transaction &gt; fetch(uint256 const &amp;, error_code_i &amp;ec)</div><div class="ttdef"><b>Definition:</b> <a href="TransactionMaster_8cpp_source.html#l00058">TransactionMaster.cpp:58</a></div></div>
+<div class="ttc" id="apair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a7ffb3f54d739bb8f967d695f08fb66cc"><div class="ttname"><a href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cc">ripple::TxSearched</a></div><div class="ttdeci">TxSearched</div><div class="ttdef"><b>Definition:</b> <a href="Transaction_8h_source.html#l00056">Transaction.h:56</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ac70521ab6e1277870a9e400e7a08e937"><div class="ttname"><a href="namespaceripple.html#ac70521ab6e1277870a9e400e7a08e937">ripple::stopwatch</a></div><div class="ttdeci">Stopwatch &amp; stopwatch()</div><div class="ttdoc">Returns an instance of a wall clock.</div><div class="ttdef"><b>Definition:</b> <a href="chrono_8h_source.html#l00086">chrono.h:86</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">ripple::error_code_i</a></div><div class="ttdeci">error_code_i</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00040">ErrorCodes.h:40</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 256 &gt;</a></div></div>
-<div class="ttc" id="aclassripple_1_1TransactionMaster_html_adcb8bd073a18a4fd83491f3cc2743592"><div class="ttname"><a href="classripple_1_1TransactionMaster.html#adcb8bd073a18a4fd83491f3cc2743592">ripple::TransactionMaster::mCache</a></div><div class="ttdeci">TaggedCache&lt; uint256, Transaction &gt; mCache</div><div class="ttdef"><b>Definition:</b> <a href="TransactionMaster_8h_source.html#l00086">TransactionMaster.h:86</a></div></div>
+<div class="ttc" id="aclassripple_1_1TransactionMaster_html_adcb8bd073a18a4fd83491f3cc2743592"><div class="ttname"><a href="classripple_1_1TransactionMaster.html#adcb8bd073a18a4fd83491f3cc2743592">ripple::TransactionMaster::mCache</a></div><div class="ttdeci">TaggedCache&lt; uint256, Transaction &gt; mCache</div><div class="ttdef"><b>Definition:</b> <a href="TransactionMaster_8h_source.html#l00090">TransactionMaster.h:90</a></div></div>
 <div class="ttc" id="aclassripple_1_1TransactionMaster_html_a0d0e60c26fcefb409c8c61c48545c3ac"><div class="ttname"><a href="classripple_1_1TransactionMaster.html#a0d0e60c26fcefb409c8c61c48545c3ac">ripple::TransactionMaster::fetch_from_cache</a></div><div class="ttdeci">std::shared_ptr&lt; Transaction &gt; fetch_from_cache(uint256 const &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="TransactionMaster_8cpp_source.html#l00052">TransactionMaster.cpp:52</a></div></div>
 <div class="ttc" id="aclassripple_1_1TransactionMaster_html_a7c5e45d1c5e268c7a9bfa22b00adb324"><div class="ttname"><a href="classripple_1_1TransactionMaster.html#a7c5e45d1c5e268c7a9bfa22b00adb324">ripple::TransactionMaster::TransactionMaster</a></div><div class="ttdeci">TransactionMaster(Application &amp;app)</div><div class="ttdef"><b>Definition:</b> <a href="TransactionMaster_8cpp_source.html#l00028">TransactionMaster.cpp:28</a></div></div>
 <div class="ttc" id="aclassripple_1_1SerialIter_html"><div class="ttname"><a href="classripple_1_1SerialIter.html">ripple::SerialIter</a></div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8h_source.html#l00308">Serializer.h:308</a></div></div>
-<div class="ttc" id="aclassripple_1_1TransactionMaster_html_afc49cdcfe8a4b06993b76d0e803aeb19"><div class="ttname"><a href="classripple_1_1TransactionMaster.html#afc49cdcfe8a4b06993b76d0e803aeb19">ripple::TransactionMaster::getCache</a></div><div class="ttdeci">TaggedCache&lt; uint256, Transaction &gt; &amp; getCache()</div><div class="ttdef"><b>Definition:</b> <a href="TransactionMaster_8cpp_source.html#l00151">TransactionMaster.cpp:151</a></div></div>
+<div class="ttc" id="aclassripple_1_1TransactionMaster_html_afc49cdcfe8a4b06993b76d0e803aeb19"><div class="ttname"><a href="classripple_1_1TransactionMaster.html#afc49cdcfe8a4b06993b76d0e803aeb19">ripple::TransactionMaster::getCache</a></div><div class="ttdeci">TaggedCache&lt; uint256, Transaction &gt; &amp; getCache()</div><div class="ttdef"><b>Definition:</b> <a href="TransactionMaster_8cpp_source.html#l00162">TransactionMaster.cpp:162</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a718d6c3cd459b4d24d7bc790905c57f2"><div class="ttname"><a href="namespaceripple.html#a718d6c3cd459b4d24d7bc790905c57f2">ripple::range</a></div><div class="ttdeci">ClosedInterval&lt; T &gt; range(T low, T high)</div><div class="ttdoc">Create a closed range interval.</div><div class="ttdef"><b>Definition:</b> <a href="RangeSet_8h_source.html#l00053">RangeSet.h:53</a></div></div>
 <div class="ttc" id="aclassripple_1_1SHAMapAbstractNode_html_a6cdeae87f96a46b976f2e70e985d4b0f"><div class="ttname"><a href="classripple_1_1SHAMapAbstractNode.html#a6cdeae87f96a46b976f2e70e985d4b0f">ripple::SHAMapAbstractNode::TNType</a></div><div class="ttdeci">TNType</div><div class="ttdef"><b>Definition:</b> <a href="SHAMapTreeNode_8h_source.html#l00125">SHAMapTreeNode.h:125</a></div></div>
 <div class="ttc" id="aclassripple_1_1TransactionMaster_html_a2f89069c62a078affbaad8fabb41d563"><div class="ttname"><a href="classripple_1_1TransactionMaster.html#a2f89069c62a078affbaad8fabb41d563">ripple::TransactionMaster::inLedger</a></div><div class="ttdeci">bool inLedger(uint256 const &amp;hash, std::uint32_t ledger)</div><div class="ttdef"><b>Definition:</b> <a href="TransactionMaster_8cpp_source.html#l00040">TransactionMaster.cpp:40</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1TransactionMaster_html_adfb688396e9aed123c909f739e44a0cf"><div class="ttname"><a href="classripple_1_1TransactionMaster.html#adfb688396e9aed123c909f739e44a0cf">ripple::TransactionMaster::canonicalize</a></div><div class="ttdeci">void canonicalize(std::shared_ptr&lt; Transaction &gt; *pTransaction)</div><div class="ttdef"><b>Definition:</b> <a href="TransactionMaster_8cpp_source.html#l00132">TransactionMaster.cpp:132</a></div></div>
+<div class="ttc" id="aclassripple_1_1Transaction_html_a7ac314a4b698a354aeca6e01b11727df"><div class="ttname"><a href="classripple_1_1Transaction.html#a7ac314a4b698a354aeca6e01b11727df">ripple::Transaction::load</a></div><div class="ttdeci">static std::variant&lt; std::pair&lt; std::shared_ptr&lt; Transaction &gt;, std::shared_ptr&lt; TxMeta &gt; &gt;, TxSearched &gt; load(uint256 const &amp;id, Application &amp;app, error_code_i &amp;ec)</div><div class="ttdef"><b>Definition:</b> <a href="Transaction_8cpp_source.html#l00111">Transaction.cpp:111</a></div></div>
+<div class="ttc" id="aclassripple_1_1TransactionMaster_html_adfb688396e9aed123c909f739e44a0cf"><div class="ttname"><a href="classripple_1_1TransactionMaster.html#adfb688396e9aed123c909f739e44a0cf">ripple::TransactionMaster::canonicalize</a></div><div class="ttdeci">void canonicalize(std::shared_ptr&lt; Transaction &gt; *pTransaction)</div><div class="ttdef"><b>Definition:</b> <a href="TransactionMaster_8cpp_source.html#l00143">TransactionMaster.cpp:143</a></div></div>
 <div class="ttc" id="anamespacestd_html"><div class="ttname"><a href="namespacestd.html">std</a></div><div class="ttdoc">STL namespace.</div></div>
-<div class="ttc" id="aclassripple_1_1Transaction_html_ab9691bbf2e54050d728dc25baf1d48a0"><div class="ttname"><a href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">ripple::Transaction::pointer</a></div><div class="ttdeci">std::shared_ptr&lt; Transaction &gt; pointer</div><div class="ttdef"><b>Definition:</b> <a href="Transaction_8h_source.html#l00067">Transaction.h:67</a></div></div>
 <div class="ttc" id="aclassripple_1_1SHAMapAbstractNode_html_a6cdeae87f96a46b976f2e70e985d4b0fa1df3b78277a42252737ee96a727d4735"><div class="ttname"><a href="classripple_1_1SHAMapAbstractNode.html#a6cdeae87f96a46b976f2e70e985d4b0fa1df3b78277a42252737ee96a727d4735">ripple::SHAMapAbstractNode::tnTRANSACTION_MD</a></div><div class="ttdeci">@ tnTRANSACTION_MD</div><div class="ttdef"><b>Definition:</b> <a href="SHAMapTreeNode_8h_source.html#l00129">SHAMapTreeNode.h:129</a></div></div>
-<div class="ttc" id="aclassripple_1_1TransactionMaster_html_a733f6ca8abe71da1b9bb423fe030b9a3"><div class="ttname"><a href="classripple_1_1TransactionMaster.html#a733f6ca8abe71da1b9bb423fe030b9a3">ripple::TransactionMaster::mApp</a></div><div class="ttdeci">Application &amp; mApp</div><div class="ttdef"><b>Definition:</b> <a href="TransactionMaster_8h_source.html#l00085">TransactionMaster.h:85</a></div></div>
+<div class="ttc" id="aclassripple_1_1TransactionMaster_html_a895c798b0ba232520d1285ca06eee923"><div class="ttname"><a href="classripple_1_1TransactionMaster.html#a895c798b0ba232520d1285ca06eee923">ripple::TransactionMaster::fetch</a></div><div class="ttdeci">std::variant&lt; std::pair&lt; std::shared_ptr&lt; Transaction &gt;, std::shared_ptr&lt; TxMeta &gt; &gt;, TxSearched &gt; fetch(uint256 const &amp;, error_code_i &amp;ec)</div><div class="ttdef"><b>Definition:</b> <a href="TransactionMaster_8cpp_source.html#l00060">TransactionMaster.cpp:60</a></div></div>
+<div class="ttc" id="aclassripple_1_1TransactionMaster_html_a733f6ca8abe71da1b9bb423fe030b9a3"><div class="ttname"><a href="classripple_1_1TransactionMaster.html#a733f6ca8abe71da1b9bb423fe030b9a3">ripple::TransactionMaster::mApp</a></div><div class="ttdeci">Application &amp; mApp</div><div class="ttdef"><b>Definition:</b> <a href="TransactionMaster_8h_source.html#l00089">TransactionMaster.h:89</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a79dcedfb918a7b371ab7797ae9d9bf23"><div class="ttname"><a href="namespaceripple.html#a79dcedfb918a7b371ab7797ae9d9bf23">ripple::ClosedInterval</a></div><div class="ttdeci">boost::icl::closed_interval&lt; T &gt; ClosedInterval</div><div class="ttdoc">A closed interval over the domain T.</div><div class="ttdef"><b>Definition:</b> <a href="RangeSet_8h_source.html#l00044">RangeSet.h:44</a></div></div>
 <div class="ttc" id="aref_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/functional/ref.html">std::ref</a></div><div class="ttdeci">T ref(T... args)</div></div>
+<div class="ttc" id="avariant_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">
