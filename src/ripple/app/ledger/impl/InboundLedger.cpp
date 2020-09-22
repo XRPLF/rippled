@@ -947,14 +947,20 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
     {
         for (auto const& node : packet.nodes())
         {
-            SHAMapNodeID const nodeID(
-                node.nodeid().data(), node.nodeid().size());
-            if (nodeID.isRoot())
+            auto const nodeID = deserializeSHAMapNodeID(node.nodeid());
+
+            if (!nodeID)
+            {
+                san.incInvalid();
+                return;
+            }
+
+            if (nodeID->isRoot())
                 san += map.addRootNode(
                     rootHash, makeSlice(node.nodedata()), filter.get());
             else
                 san += map.addKnownNode(
-                    nodeID, makeSlice(node.nodedata()), filter.get());
+                    *nodeID, makeSlice(node.nodedata()), filter.get());
 
             if (!san.isGood())
             {
