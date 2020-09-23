@@ -362,7 +362,50 @@ Config::loadFromString(std::string const& fileContents)
         PEER_PRIVATE = beast::lexicalCastThrow<bool>(strTemp);
 
     if (getSingleSection(secConfig, SECTION_PEERS_MAX, strTemp, j_))
+    {
         PEERS_MAX = beast::lexicalCastThrow<std::size_t>(strTemp);
+        legacyPeersMax_ = true;
+    }
+    else
+    {
+        std::optional<int> peers_in_max{};
+        if (getSingleSection(secConfig, SECTION_PEERS_IN_MAX, strTemp, j_))
+        {
+            peers_in_max = beast::lexicalCastThrow<std::size_t>(strTemp);
+            if (*peers_in_max > 1000)
+                Throw<std::runtime_error>(
+                    "Invalid value specified in [" SECTION_PEERS_IN_MAX
+                    "] section; the value must be less or equal than 1000");
+        }
+
+        std::optional<int> peers_out_max{};
+        if (getSingleSection(secConfig, SECTION_PEERS_OUT_MAX, strTemp, j_))
+        {
+            peers_out_max = beast::lexicalCastThrow<std::size_t>(strTemp);
+            if (*peers_out_max < 10 || *peers_out_max > 1000)
+                Throw<std::runtime_error>(
+                    "Invalid value specified in [" SECTION_PEERS_OUT_MAX
+                    "] section; the value must be in range 10-1000");
+        }
+
+        // if one section is configured then the other must be configured too
+        if ((peers_in_max && !peers_out_max) ||
+            (peers_out_max && !peers_in_max))
+            Throw<std::runtime_error>("Both sections [" SECTION_PEERS_IN_MAX
+                                      "]"
+                                      "and [" SECTION_PEERS_OUT_MAX
+                                      "] must be configured");
+        // if none is configured then we assume the legacy path
+        if (!peers_in_max && !peers_out_max)
+        {
+            legacyPeersMax_ = true;
+        }
+        else
+        {
+            PEERS_IN_MAX = *peers_in_max;
+            PEERS_OUT_MAX = *peers_out_max;
+        }
+    }
 
     if (getSingleSection(secConfig, SECTION_NODE_SIZE, strTemp, j_))
     {

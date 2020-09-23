@@ -499,37 +499,11 @@ OverlayImpl::checkStopped()
 void
 OverlayImpl::onPrepare()
 {
-    PeerFinder::Config config;
-
-    if (app_.config().PEERS_MAX != 0)
-        config.maxPeers = app_.config().PEERS_MAX;
-
-    config.outPeers = config.calcOutPeers();
-
-    auto const port = serverHandler_.setup().overlay.port;
-
-    config.peerPrivate = app_.config().PEER_PRIVATE;
-
-    // Servers with peer privacy don't want to allow incoming connections
-    config.wantIncoming = (!config.peerPrivate) && (port != 0);
-
-    // This will cause servers configured as validators to request that
-    // peers they connect to never report their IP address. We set this
-    // after we set the 'wantIncoming' because we want a "soft" version
-    // of peer privacy unless the operator explicitly asks for it.
-    if (!app_.getValidationPublicKey().empty())
-        config.peerPrivate = true;
-
-    // if it's a private peer or we are running as standalone
-    // automatic connections would defeat the purpose.
-    config.autoConnect =
-        !app_.config().standalone() && !app_.config().PEER_PRIVATE;
-    config.listeningPort = port;
-    config.features = "";
-    config.ipLimit = setup_.ipLimit;
-
-    // Enforce business rules
-    config.applyTuning();
+    PeerFinder::Config config = PeerFinder::Config::makeConfig(
+        app_.config(),
+        serverHandler_.setup().overlay.port,
+        !app_.getValidationPublicKey().empty(),
+        setup_.ipLimit);
 
     m_peerFinder->setConfig(config);
 

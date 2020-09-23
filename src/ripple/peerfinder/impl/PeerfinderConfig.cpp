@@ -25,7 +25,9 @@ namespace PeerFinder {
 
 Config::Config()
     : maxPeers(Tuning::defaultMaxPeers)
+    , legacyConfig(false)
     , outPeers(calcOutPeers())
+    , inPeers(0)
     , wantIncoming(true)
     , autoConnect(true)
     , listeningPort(0)
@@ -33,21 +35,28 @@ Config::Config()
 {
 }
 
-double
+std::size_t
 Config::calcOutPeers() const
 {
-    return std::max(
-        maxPeers * Tuning::outPercent * 0.01, double(Tuning::minOutCount));
+    return std::round(std::max(
+        maxPeers * Tuning::outPercent * 0.01, double(Tuning::minOutCount)));
 }
 
 void
 Config::applyTuning()
 {
-    if (maxPeers < Tuning::minOutCount)
-        maxPeers = Tuning::minOutCount;
-    outPeers = calcOutPeers();
+    if (legacyConfig)
+    {
+        if (maxPeers < Tuning::minOutCount)
+            maxPeers = Tuning::minOutCount;
+        outPeers = calcOutPeers();
 
-    auto const inPeers = maxPeers - outPeers;
+        inPeers = maxPeers - outPeers;
+    }
+    else
+    {
+        maxPeers = 0;
+    }
 
     if (ipLimit == 0)
     {
@@ -76,6 +85,54 @@ Config::onWrite(beast::PropertyStream::Map& map)
     map["port"] = listeningPort;
     map["features"] = features;
     map["ip_limit"] = ipLimit;
+}
+
+Config
+Config::makeConfig(
+    ripple::Config const& cfg,
+    std::uint16_t port,
+    bool validationPublicKey,
+    int ipLimit)
+{
+    PeerFinder::Config config;
+
+    config.legacyConfig = cfg.legacyPeersMax_;
+    if (config.legacyConfig)
+    {
+        if (cfg.PEERS_MAX != 0)
+            config.maxPeers = cfg.PEERS_MAX;
+
+        config.outPeers = config.calcOutPeers();
+    }
+    else
+    {
+        config.outPeers = cfg.PEERS_OUT_MAX;
+        config.inPeers = cfg.PEERS_IN_MAX;
+    }
+
+    config.peerPrivate = cfg.PEER_PRIVATE;
+
+    // Servers with peer privacy don't want to allow incoming connections
+    config.wantIncoming = (!config.peerPrivate) && (port != 0);
+
+    // This will cause servers configured as validators to request that
+    // peers they connect to never report their IP address. We set this
+    // after we set the 'wantIncoming' because we want a "soft" version
+    // of peer privacy unless the operator explicitly asks for it.
+    if (validationPublicKey)
+        config.peerPrivate = true;
+
+    // if it's a private peer or we are running as standalone
+    // automatic connections would defeat the purpose.
+    config.autoConnect = !cfg.standalone() && !cfg.PEER_PRIVATE;
+    config.listeningPort = port;
+    config.features = "";
+    config.ipLimit = ipLimit;
+
+    // Enforce business rules
+    config.applyTuning();
+
+    return config;
 }
 
 }  // namespace PeerFinder

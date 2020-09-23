@@ -20,6 +20,7 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/core/Config.h>
 #include <ripple/peerfinder/impl/Logic.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
@@ -157,10 +158,129 @@ public:
     }
 
     void
+    test_config()
+    {
+        // if peers_max is configured then peers_in_max and peers_out_max are
+        // ignored
+        auto run = [&](std::string const& test,
+                       std::optional<std::uint16_t> maxPeers,
+                       std::optional<std::uint16_t> maxIn,
+                       std::optional<std::uint16_t> maxOut,
+                       std::uint16_t port,
+                       std::uint16_t expectOut,
+                       std::uint16_t expectIn,
+                       std::uint16_t expectIpLimit) {
+            ripple::Config c;
+
+            testcase(test);
+
+            std::string toLoad = "";
+            int max = 0;
+            if (maxPeers)
+            {
+                max = maxPeers.value();
+                toLoad += "[peers_max]\n" + std::to_string(max) + "\n" +
+                    "[peers_in_max]\n" + std::to_string(*maxIn) + "\n" +
+                    "[peers_out_max]\n" + std::to_string(*maxOut) + "\n";
+            }
+            else if (maxIn && maxOut)
+            {
+                toLoad += "[peers_in_max]\n" + std::to_string(*maxIn) + "\n" +
+                    "[peers_out_max]\n" + std::to_string(*maxOut) + "\n";
+            }
+
+            c.loadFromString(toLoad);
+            BEAST_EXPECT(
+                (c.legacyPeersMax_ && c.PEERS_MAX == max &&
+                 c.PEERS_IN_MAX == 0 && c.PEERS_OUT_MAX == 0) ||
+                (!c.legacyPeersMax_ && c.PEERS_IN_MAX == *maxIn &&
+                 c.PEERS_OUT_MAX == *maxOut));
+
+            Config config = Config::makeConfig(c, port, false, 0);
+
+            Counts counts;
+            counts.onConfig(config);
+            BEAST_EXPECT(
+                counts.out_max() == expectOut &&
+                counts.inboundSlots() == expectIn &&
+                config.ipLimit == expectIpLimit);
+        };
+
+        // if max_peers == 0 => maxPeers = 21,
+        //   else if max_peers < 10 => maxPeers = 10 else maxPeers = max_peers
+        // expectOut => if legacy => max(0.15 * maxPeers, 10),
+        //   if legacy && !wantIncoming => maxPeers else max_out_peers
+        // expectIn => if legacy && wantIncoming => maxPeers - outPeers
+        //   else if !wantIncoming => 0 else max_in_peers
+        // ipLimit => if expectIn <= 21 => 2 else 2 + min(5, expectIn/21)
+        // ipLimit = max(1, min(ipLimit, expectIn/2))
+
+        // legacy test with max_peers
+        run("legacy no config", {}, {}, {}, 4000, 10, 11, 2);
+        run("legacy max_peers 0", 0, 100, 10, 4000, 10, 11, 2);
+        run("legacy max_peers 5", 5, 100, 10, 4000, 10, 0, 1);
+        run("legacy max_peers 20", 20, 100, 10, 4000, 10, 10, 2);
+        run("legacy max_peers 100", 100, 100, 10, 4000, 15, 85, 6);
+        run("legacy max_peers 20, private", 20, 100, 10, 0, 20, 0, 2);
+
+        // test with max_in_peers and max_out_peers
+        run("new in 100/out 10", {}, 100, 10, 4000, 10, 100, 6);
+        run("new in 0/out 10", {}, 0, 10, 4000, 10, 0, 1);
+        run("new in 100/out 10, private", {}, 100, 10, 0, 10, 0, 6);
+    }
+
+    void
+    test_invalid_config()
+    {
+        testcase("invalid config");
+
+        auto run = [&](std::string const& toLoad) {
+            ripple::Config c;
+            try
+            {
+                c.loadFromString(toLoad);
+                fail();
+            }
+            catch (...)
+            {
+                pass();
+            }
+        };
+        run(R"rippleConfig(
+[peers_in_max]
+100
+)rippleConfig");
+        run(R"rippleConfig(
+[peers_out_max]
+100
+)rippleConfig");
+        run(R"rippleConfig(
+[peers_in_max]
+100
+[peers_out_max]
+5
+)rippleConfig");
+        run(R"rippleConfig(
+[peers_in_max]
+1001
+[peers_out_max]
+10
+)rippleConfig");
+        run(R"rippleConfig(
+[peers_in_max]
+10
+[peers_out_max]
+1001
+)rippleConfig");
+    }
+
+    void
     run() override
     {
         test_backoff1();
         test_backoff2();
+        test_config();
+        test_invalid_config();
     }
 };
 

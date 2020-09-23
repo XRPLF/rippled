@@ -22,6 +22,7 @@
 
 #include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/utility/PropertyStream.h>
+#include <ripple/core/Config.h>
 #include <ripple/core/Stoppable.h>
 #include <ripple/peerfinder/Slot.h>
 #include <boost/asio/ip/tcp.hpp>
@@ -45,17 +46,20 @@ struct Config
     */
     int maxPeers;
 
+    /** Legacy config if peers_max is set. */
+    bool legacyConfig;
+
     /** The number of automatic outbound connections to maintain.
         Outbound connections are only maintained if autoConnect
-        is `true`. The value can be fractional; The decision to round up
-        or down will be made using a per-process pseudorandom number and
-        a probability proportional to the fractional part.
-        Example:
-            If outPeers is 9.3, then 30% of nodes will maintain 9 outbound
-            connections, while 70% of nodes will maintain 10 outbound
-            connections.
+        is `true`.
     */
-    double outPeers;
+    int outPeers;
+
+    /** The number of automatic inbound connections to maintain.
+        Inbound connections are only maintained if wantIncoming
+        is `true`.
+    */
+    int inPeers;
 
     /** `true` if we want our IP address kept private. */
     bool peerPrivate = true;
@@ -81,7 +85,7 @@ struct Config
     Config();
 
     /** Returns a suitable value for outPeers according to the rules. */
-    double
+    std::size_t
     calcOutPeers() const;
 
     /** Adjusts the values so they follow the business rules. */
@@ -91,6 +95,20 @@ struct Config
     /** Write the configuration into a property stream */
     void
     onWrite(beast::PropertyStream::Map& map);
+
+    /** Make PeerFinder::Config from configuration parameters
+     * @param config server's configuration
+     * @param port server's listening port
+     * @param validationPublicKey true if validation public key is not empty
+     * @param ipLimit limit of incoming connections per IP
+     * @return PeerFinder::Config
+     */
+    static Config
+    makeConfig(
+        ripple::Config const& config,
+        std::uint16_t port,
+        bool validationPublicKey,
+        int ipLimit);
 };
 
 //------------------------------------------------------------------------------
