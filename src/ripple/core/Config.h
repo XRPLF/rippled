@@ -143,7 +143,14 @@ public:
 
     // True to ask peers not to relay current IP.
     bool PEER_PRIVATE = false;
+    // peers_max is a legacy configuration, which is going to be replaced
+    // with individual inbound peers peers_in_max and outbound peers
+    // peers_out_max configuration. for now we support both the legacy and
+    // the new configuration. if peers_max is configured then peers_in_max and
+    // peers_out_max are ignored.
     std::size_t PEERS_MAX = 0;
+    std::size_t PEERS_OUT_MAX = 0;
+    std::size_t PEERS_IN_MAX = 0;
 
     std::chrono::seconds WEBSOCKET_PING_FREQ = std::chrono::minutes{5};
 

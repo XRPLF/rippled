@@ -48,8 +48,6 @@ public:
         , m_acceptCount(0)
         , m_closingCount(0)
     {
-        m_roundingThreshold =
-            std::generate_canonical<double, 10>(default_prng());
     }
 
     //--------------------------------------------------------------------------
@@ -136,28 +134,9 @@ public:
     void
     onConfig(Config const& config)
     {
-        // Calculate the number of outbound peers we want. If we dont want or
-        // can't accept incoming, this will simply be equal to maxPeers.
-        // Otherwise we calculate a fractional amount based on percentages and
-        // pseudo-randomly round up or down.
-        //
+        m_out_max = config.outPeers;
         if (config.wantIncoming)
-        {
-            // Round outPeers upwards using a Bernoulli distribution
-            m_out_max = std::floor(config.outPeers);
-            if (m_roundingThreshold < (config.outPeers - m_out_max))
-                ++m_out_max;
-        }
-        else
-        {
-            m_out_max = config.maxPeers;
-        }
-
-        // Calculate the largest number of inbound connections we could take.
-        if (config.maxPeers >= m_out_max)
-            m_in_max = config.maxPeers - m_out_max;
-        else
-            m_in_max = 0;
+            m_in_max = config.inPeers;
     }
 
     /** Returns the number of accepted connections that haven't handshaked. */
@@ -350,13 +329,6 @@ private:
 
     // Number of connections that are gracefully closing.
     int m_closingCount;
-
-    /** Fractional threshold below which we round down.
-        This is used to round the value of Config::outPeers up or down in
-        such a way that the network-wide average number of outgoing
-        connections approximates the recommended, fractional value.
-    */
-    double m_roundingThreshold;
 };
 
 }  // namespace PeerFinder
