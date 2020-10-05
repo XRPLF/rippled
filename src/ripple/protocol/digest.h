@@ -21,21 +21,20 @@
 #define RIPPLE_PROTOCOL_DIGEST_H_INCLUDED
 
 #include <ripple/basics/base_uint.h>
-#include <ripple/beast/crypto/ripemd.h>
-#include <ripple/beast/crypto/sha2.h>
-#include <ripple/beast/hash/endian.h>
+#include <ripple/crypto/secure_erase.h>
+#include <boost/endian/conversion.hpp>
 #include <algorithm>
 #include <array>
 
 namespace ripple {
 
-/*  Message digest functions used in the Ripple Protocol
+/** Message digest functions used in the codebase
 
-    Modeled to meet the requirements of `Hasher` in the
-    `hash_append` interface, currently in proposal:
+    @note These are modeled to meet the requirements of `Hasher` in the
+          `hash_append` interface, discussed in proposal:
 
-    N3980 "Types Don't Know #"
-    http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3980.html
+          N3980 "Types Don't Know #"
+          http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3980.html
 */
 
 //------------------------------------------------------------------------------
@@ -47,7 +46,7 @@ namespace ripple {
 struct openssl_ripemd160_hasher
 {
 public:
-    static beast::endian const endian = beast::endian::native;
+    static constexpr auto const endian = boost::endian::order::native;
 
     using result_type = std::array<std::uint8_t, 20>;
 
@@ -69,7 +68,7 @@ private:
 struct openssl_sha512_hasher
 {
 public:
-    static beast::endian const endian = beast::endian::native;
+    static constexpr auto const endian = boost::endian::order::native;
 
     using result_type = std::array<std::uint8_t, 64>;
 
@@ -91,7 +90,7 @@ private:
 struct openssl_sha256_hasher
 {
 public:
-    static beast::endian const endian = beast::endian::native;
+    static constexpr auto const endian = boost::endian::order::native;
 
     using result_type = std::array<std::uint8_t, 32>;
 
@@ -108,17 +107,9 @@ private:
 
 //------------------------------------------------------------------------------
 
-// Aliases to choose the correct digest implementation
-
-#if USE_BEAST_HASHER
-using ripemd160_hasher = beast::ripemd160_hasher;
-using sha256_hasher = beast::sha256_hasher;
-using sha512_hasher = beast::sha512_hasher;
-#else
 using ripemd160_hasher = openssl_ripemd160_hasher;
 using sha256_hasher = openssl_sha256_hasher;
 using sha512_hasher = openssl_sha512_hasher;
-#endif
 
 //------------------------------------------------------------------------------
 
@@ -143,7 +134,7 @@ private:
     sha256_hasher h_;
 
 public:
-    static beast::endian const endian = beast::endian::native;
+    static constexpr auto const endian = boost::endian::order::native;
 
     using result_type = std::array<std::uint8_t, 20>;
 
@@ -178,7 +169,7 @@ private:
     sha512_hasher h_;
 
 public:
-    static beast::endian const endian = beast::endian::big;
+    static constexpr auto const endian = boost::endian::order::big;
 
     using result_type = uint256;
 
@@ -196,9 +187,7 @@ public:
     explicit operator result_type() noexcept
     {
         auto const digest = sha512_hasher::result_type(h_);
-        result_type result;
-        std::copy(digest.begin(), digest.begin() + 32, result.begin());
-        return result;
+        return result_type::fromVoid(digest.data());
     }
 
 private:

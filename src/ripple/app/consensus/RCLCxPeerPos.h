@@ -113,12 +113,6 @@ private:
             Slice const& signature,
             uint256 const& suppress,
             Proposal&& proposal);
-
-        static char const*
-        getCountedObjectName()
-        {
-            return "RCLCxPeerPos::Data";
-        }
     };
 
     std::shared_ptr<Data> data_;

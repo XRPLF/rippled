@@ -454,30 +454,24 @@ class TrustAndBalance_test : public beast::unit_test::suite
         jvs[jss::streams].append("transactions");
         BEAST_EXPECT(wsc->invoke("subscribe", jvs)[jss::status] == "success");
 
+        char const* invoiceid =
+            "243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89";
+
         Json::Value jv;
         auto tx = env.jt(
             pay(env.master, alice, XRP(10000)),
-            json(sfInvoiceID.fieldName, "DEADBEEF"));
+            json(sfInvoiceID.fieldName, invoiceid));
         jv[jss::tx_blob] = strHex(tx.stx->getSerializer().slice());
         auto jrr = wsc->invoke("submit", jv)[jss::result];
         BEAST_EXPECT(jrr[jss::status] == "success");
-        BEAST_EXPECT(
-            jrr[jss::tx_json][sfInvoiceID.fieldName] ==
-            "0000000000000000"
-            "0000000000000000"
-            "0000000000000000"
-            "00000000DEADBEEF");
+        BEAST_EXPECT(jrr[jss::tx_json][sfInvoiceID.fieldName] == invoiceid);
         env.close();
 
         using namespace std::chrono_literals;
-        BEAST_EXPECT(wsc->findMsg(2s, [](auto const& jval) {
+        BEAST_EXPECT(wsc->findMsg(2s, [invoiceid](auto const& jval) {
             auto const& t = jval[jss::transaction];
             return t[jss::TransactionType] == jss::Payment &&
-                t[sfInvoiceID.fieldName] ==
-                "0000000000000000"
-                "0000000000000000"
-                "0000000000000000"
-                "00000000DEADBEEF";
+                t[sfInvoiceID.fieldName] == invoiceid;
         }));
 
         BEAST_EXPECT(wsc->invoke("unsubscribe", jv)[jss::status] == "success");

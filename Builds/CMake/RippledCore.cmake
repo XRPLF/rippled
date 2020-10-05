@@ -272,19 +272,6 @@ install (
   DESTINATION include/ripple/beast/core)
 install (
   FILES
-    src/ripple/beast/crypto/detail/mac_facade.h
-    src/ripple/beast/crypto/detail/ripemd_context.h
-    src/ripple/beast/crypto/detail/sha2_context.h
-    src/ripple/beast/crypto/ripemd.h
-    src/ripple/beast/crypto/sha2.h
-  DESTINATION include/ripple/beast/crypto)
-install (
-  FILES
-    src/ripple/beast/cxx17/type_traits.h
-  DESTINATION include/ripple/beast/cxx17)
-install (
-  FILES
-    src/ripple/beast/hash/endian.h
     src/ripple/beast/hash/hash_append.h
     src/ripple/beast/hash/meta.h
     src/ripple/beast/hash/uhash.h
@@ -896,7 +883,6 @@ target_sources (rippled PRIVATE
   src/test/protocol/Seed_test.cpp
   src/test/protocol/SeqProxy_test.cpp
   src/test/protocol/TER_test.cpp
-  src/test/protocol/digest_test.cpp
   src/test/protocol/types_test.cpp
   #[===============================[
      test sources:

@@ -249,10 +249,10 @@ class LedgerRPC_test : public beast::unit_test::suite
 
         Env env{*this, envconfig(no_admin)};
 
-        env.close();
+        //        env.close();
 
         Json::Value jvParams;
-        jvParams[jss::ledger_index] = 3u;
+        jvParams[jss::ledger_index] = 1u;
         jvParams[jss::full] = true;
         auto const jrr =
             env.rpc("json", "ledger", to_string(jvParams))[jss::result];
@@ -1345,9 +1345,8 @@ class LedgerRPC_test : public beast::unit_test::suite
                 "json",
                 "ledger",
                 boost::lexical_cast<std::string>(jvParams))[jss::result];
-            BEAST_EXPECT(jrr.isMember(jss::ledger));
-            BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
-            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "3");
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message] == "ledgerHashMalformed");
 
             // request with non-string ledger_hash
             jvParams[jss::ledger_hash] = 2;

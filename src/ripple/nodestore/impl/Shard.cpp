@@ -666,7 +666,7 @@ Shard::finalize(
             if (!sHash)
                 return fail("missing LastLedgerHash");
 
-            if (!hash.SetHexExact(*sHash) || hash.isZero())
+            if (!hash.parseHex(*sHash) || hash.isZero())
                 return fail("invalid LastLedgerHash");
 
             if (blobPresent != soci::i_ok)
@@ -1154,7 +1154,7 @@ Shard::storeSQLite(
                     session
                         << (STTx::getMetaSQLInsertReplaceHeader() +
                             item.first->getMetaSQL(
-                                ledgerSeq, sqlEscape(s.modData())) +
+                                ledgerSeq, sqlBlobLiteral(s.modData())) +
                             ';');
                 }
             }

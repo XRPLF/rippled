@@ -21,6 +21,7 @@
 #define RIPPLE_BASICS_COUNTEDOBJECT_H_INCLUDED
 
 #include <atomic>
+#include <beast/type_name.h>
 #include <string>
 #include <utility>
 #include <vector>
@@ -45,47 +46,60 @@ public:
 
         @internal
     */
-    class CounterBase
+    class Counter
     {
     public:
-        CounterBase() noexcept;
+        Counter(std::string name) noexcept : name_(std::move(name)), count_(0)
+        {
+            // Insert ourselves at the front of the lock-free linked list
+            CountedObjects& instance = CountedObjects::getInstance();
+            Counter* head;
 
-        virtual ~CounterBase() noexcept;
+            do
+            {
+                head = instance.m_head.load();
+                next_ = head;
+            } while (instance.m_head.exchange(this) != head);
+
+            ++instance.m_count;
+        }
+
+        ~Counter() noexcept = default;
 
         int
         increment() noexcept
         {
-            return ++m_count;
+            return ++count_;
         }
 
         int
         decrement() noexcept
         {
-            return --m_count;
+            return --count_;
         }
 
         int
         getCount() const noexcept
         {
-            return m_count.load();
+            return count_.load();
         }
 
-        CounterBase*
+        Counter*
         getNext() const noexcept
         {
-            return m_next;
+            return next_;
         }
 
-        virtual char const*
-        getName() const = 0;
+        std::string const&
+        getName() const noexcept
+        {
+            return name_;
+        }
 
     private:
-        virtual void
-        checkPureVirtual() const = 0;
-
-    protected:
-        std::atomic<int> m_count;
-        CounterBase* m_next;
+        std::string const name_;
+        std::atomic<int> count_;
+        Counter* next_;
     };
 
 private:
@@ -94,7 +108,7 @@ private:
 
 private:
     std::atomic<int> m_count;
-    std::atomic<CounterBase*> m_head;
+    std::atomic<Counter*> m_head;
 };
 
 //------------------------------------------------------------------------------
@@ -109,6 +123,14 @@ private:
 template <class Object>
 class CountedObject
 {
+private:
+    static auto&
+    getCounter() noexcept
+    {
+        static CountedObjects::Counter c{beast::type_name<Object>()};
+        return c;
+    }
+
 public:
     CountedObject() noexcept
     {
@@ -126,35 +148,6 @@ public:
     ~CountedObject() noexcept
     {
         getCounter().decrement();
-    }
-
-private:
-    class Counter : public CountedObjects::CounterBase
-    {
-    public:
-        Counter() noexcept
-        {
-        }
-
-        char const*
-        getName() const override
-        {
-            return Object::getCountedObjectName();
-        }
-
-        void
-        checkPureVirtual() const override
-        {
-        }
-    };
-
-private:
-    static Counter&
-    getCounter() noexcept
-    {
-        static_assert(std::is_nothrow_constructible<Counter>{}, "");
-        static Counter c;
-        return c;
     }
 };
 

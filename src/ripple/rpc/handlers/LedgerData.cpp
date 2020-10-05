@@ -55,7 +55,7 @@ doLedgerData(RPC::JsonContext& context)
     if (isMarker)
     {
         Json::Value const& jMarker = params[jss::marker];
-        if (!(jMarker.isString() && key.SetHex(jMarker.asString())))
+        if (!(jMarker.isString() && key.parseHex(jMarker.asString())))
             return RPC::expected_field_error(jss::marker, "valid");
     }
 

@@ -21,7 +21,7 @@
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/hardened_hash.h>
 #include <ripple/beast/unit_test.h>
-#include <boost/algorithm/string.hpp>
+#include <boost/endian/conversion.hpp>
 #include <complex>
 
 #include <type_traits>
@@ -34,9 +34,10 @@ namespace test {
 template <std::size_t Bits>
 struct nonhash
 {
+    static constexpr auto const endian = boost::endian::order::big;
     static constexpr std::size_t WIDTH = Bits / 8;
+
     std::array<std::uint8_t, WIDTH> data_;
-    static beast::endian const endian = beast::endian::big;
 
     nonhash() = default;
 
@@ -62,6 +63,8 @@ struct base_uint_test : beast::unit_test::suite
     void
     run() override
     {
+        testcase("base_uint: general purpose tests");
+
         static_assert(
             !std::is_constructible<test96, std::complex<double>>::value, "");
         static_assert(
@@ -151,59 +154,47 @@ struct base_uint_test : beast::unit_test::suite
 
         BEAST_EXPECT(uset.size() == 4);
 
-        // SetHex tests...
-        test96 fromHex;
-        BEAST_EXPECT(fromHex.SetHexExact(to_string(u)));
-        BEAST_EXPECT(fromHex == u);
-        fromHex = z;
+        test96 tmp;
+        BEAST_EXPECT(tmp.parseHex(to_string(u)));
+        BEAST_EXPECT(tmp == u);
+        tmp = z;
 
         // fails with extra char
-        BEAST_EXPECT(!fromHex.SetHexExact("A" + to_string(u)));
-        fromHex = z;
+        BEAST_EXPECT(!tmp.parseHex("A" + to_string(u)));
+        tmp = z;
 
         // fails with extra char at end
-        BEAST_EXPECT(!fromHex.SetHexExact(to_string(u) + "A"));
-        // NOTE: the value fromHex is actually correctly parsed
-        // in this case, but that is an implementation detail and
-        // not guaranteed, thus we don't check the value here.
-        fromHex = z;
+        BEAST_EXPECT(!tmp.parseHex(to_string(u) + "A"));
 
-        BEAST_EXPECT(fromHex.SetHex(to_string(u)));
-        BEAST_EXPECT(fromHex == u);
-        fromHex = z;
+        // fails with a non-hex character at some point in the string:
+        tmp = z;
 
-        // leading space/0x allowed if not strict
-        BEAST_EXPECT(fromHex.SetHex("  0x" + to_string(u)));
-        BEAST_EXPECT(fromHex == u);
-        fromHex = z;
+        for (std::size_t i = 0; i != 24; ++i)
+        {
+            std::string x = to_string(z);
+            x[i] = ('G' + (i % 10));
+            BEAST_EXPECT(!tmp.parseHex(x));
+        }
 
-        // other leading chars also allowed (ignored)
-        BEAST_EXPECT(fromHex.SetHex("FEFEFE" + to_string(u)));
-        BEAST_EXPECT(fromHex == u);
-        fromHex = z;
+        // Walking 1s:
+        for (std::size_t i = 0; i != 24; ++i)
+        {
+            std::string s1 = "000000000000000000000000";
+            s1[i] = '1';
 
-        // invalid hex chars should fail (0 replaced with Z here)
-        BEAST_EXPECT(!fromHex.SetHex(
-            boost::algorithm::replace_all_copy(to_string(u), "0", "Z")));
-        fromHex = z;
+            BEAST_EXPECT(tmp.parseHex(s1));
+            BEAST_EXPECT(to_string(tmp) == s1);
+        }
 
-        BEAST_EXPECT(fromHex.SetHex(to_string(u), true));
-        BEAST_EXPECT(fromHex == u);
-        fromHex = z;
+        // Walking 0s:
+        for (std::size_t i = 0; i != 24; ++i)
+        {
+            std::string s1 = "111111111111111111111111";
+            s1[i] = '0';
 
-        // strict mode fails with leading chars
-        BEAST_EXPECT(!fromHex.SetHex("  0x" + to_string(u), true));
-        fromHex = z;
-
-        // SetHex ignores extra leading hexits, so the parsed value
-        // is still correct for the following case (strict or non-strict)
-        BEAST_EXPECT(fromHex.SetHex("DEAD" + to_string(u), true));
-        BEAST_EXPECT(fromHex == u);
-        fromHex = z;
-
-        BEAST_EXPECT(fromHex.SetHex("DEAD" + to_string(u), false));
-        BEAST_EXPECT(fromHex == u);
-        fromHex = z;
+            BEAST_EXPECT(tmp.parseHex(s1));
+            BEAST_EXPECT(to_string(tmp) == s1);
+        }
     }
 };
 

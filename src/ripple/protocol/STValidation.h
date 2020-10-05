@@ -43,12 +43,6 @@ constexpr std::uint32_t vfFullyCanonicalSig = 0x80000000;
 class STValidation final : public STObject, public CountedObject<STValidation>
 {
 public:
-    static char const*
-    getCountedObjectName()
-    {
-        return "STValidation";
-    }
-
     /** Construct a STValidation from a peer.
 
         Construct a STValidation from serialized data previously shared by a

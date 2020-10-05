@@ -18,37 +18,30 @@
 //==============================================================================
 
 #include <ripple/basics/strHex.h>
-#include <algorithm>
-#include <string>
+#include <array>
 
 namespace ripple {
 
 int
 charUnHex(unsigned char c)
 {
-    struct HexTab
-    {
-        int hex[256];
+    static constexpr std::array<int, 256> const xtab = []() {
+        std::array<int, 256> t{};
 
-        HexTab()
-        {
-            std::fill(std::begin(hex), std::end(hex), -1);
-            for (int i = 0; i < 10; ++i)
-                hex['0' + i] = i;
-            for (int i = 0; i < 6; ++i)
-            {
-                hex['A' + i] = 10 + i;
-                hex['a' + i] = 10 + i;
-            }
-        }
-        int
-        operator[](unsigned char c) const
-        {
-            return hex[c];
-        }
-    };
+        for (auto& x : t)
+            x = -1;
 
-    static HexTab xtab;
+        for (int i = 0; i < 10; ++i)
+            t['0' + i] = i;
+
+        for (int i = 0; i < 6; ++i)
+        {
+            t['A' + i] = 10 + i;
+            t['a' + i] = 10 + i;
+        }
+
+        return t;
+    }();
 
     return xtab[c];
 }

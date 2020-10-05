@@ -802,7 +802,7 @@ public:
                     "issuer" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
                     "value" : "1000"
                 },
-                "HighNode" : "0000000000000000",
+                "HighNode" : "0",
                 "HighQualityIn" : 2000,
                 "HighQualityOut" : 1400000000,
                 "LedgerEntryType" : "RippleState",
@@ -811,7 +811,7 @@ public:
                     "issuer" : "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn",
                     "value" : "0"
                 },
-                "LowNode" : "0000000000000000"
+                "LowNode" : "0"
             })",
             jv);
 
@@ -847,14 +847,14 @@ public:
                     "issuer" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
                     "value" : "1000"
                 },
-                "HighNode" : "0000000000000000",
+                "HighNode" : "0",
                 "LedgerEntryType" : "RippleState",
                 "LowLimit" : {
                     "currency" : "USD",
                     "issuer" : "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn",
                     "value" : "1000"
                 },
-                "LowNode" : "0000000000000000"
+                "LowNode" : "0"
             })",
             jv);
 
@@ -900,7 +900,7 @@ public:
                     "issuer" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
                     "value" : "0"
                 },
-                "HighNode" : "0000000000000000",
+                "HighNode" : "0",
                 "LedgerEntryType" : "RippleState",
                 "LowLimit" :
                 {
@@ -908,7 +908,7 @@ public:
                     "issuer" : "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn",
                     "value" : "0"
                 },
-                "LowNode" : "0000000000000000"
+                "LowNode" : "0"
             })",
             jv);
 

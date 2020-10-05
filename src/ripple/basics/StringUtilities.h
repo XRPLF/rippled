@@ -30,42 +30,19 @@
 #include <string>
 
 namespace ripple {
-inline static std::string
-sqlEscape(std::string const& strSrc)
-{
-    static boost::format f("X'%s'");
-    return str(boost::format(f) % strHex(strSrc));
-}
 
-inline static std::string
-sqlEscape(Blob const& vecSrc)
-{
-    size_t size = vecSrc.size();
+/** Format arbitrary binary data as an SQLite "blob literal".
 
-    if (size == 0)
-        return "X''";
+    In SQLite, blob literals must be encoded when used in a query. Per
+    https://sqlite.org/lang_expr.html#literal_values_constants_ they are
+    encoded as string literals containing hexadecimal data and preceded
+    by a single 'X' character.
 
-    std::string j(size * 2 + 3, 0);
-
-    unsigned char* oPtr = reinterpret_cast<unsigned char*>(&*j.begin());
-    const unsigned char* iPtr = &vecSrc[0];
-
-    *oPtr++ = 'X';
-    *oPtr++ = '\'';
-
-    for (int i = size; i != 0; --i)
-    {
-        unsigned char c = *iPtr++;
-        *oPtr++ = charHex(c >> 4);
-        *oPtr++ = charHex(c & 15);
-    }
-
-    *oPtr++ = '\'';
-    return j;
-}
-
-uint64_t
-uintFromHex(std::string const& strSrc);
+    @param blob An arbitrary blob of binary data
+    @return The input, encoded as a blob literal.
+ */
+std::string
+sqlBlobLiteral(Blob const& blob);
 
 template <class Iterator>
 boost::optional<Blob>

@@ -258,11 +258,11 @@ public:
         env.fund(XRP(10000), alice);
         auto jt = noop(alice);
 
-        uint256 somehash = from_hex_text<uint256>(
-            "9633ec8af54f16b5286db1d7b519ef49eefc050c0c8ac4384f1d88acd1bfdf05");
-        jt[sfWalletLocator.fieldName] = to_string(somehash);
+        std::string const locator =
+            "9633EC8AF54F16B5286DB1D7B519EF49EEFC050C0C8AC4384F1D88ACD1BFDF05";
+        jt[sfWalletLocator.fieldName] = locator;
         env(jt);
-        BEAST_EXPECT((*env.le(alice))[sfWalletLocator] == somehash);
+        BEAST_EXPECT(to_string((*env.le(alice))[sfWalletLocator]) == locator);
 
         jt[sfWalletLocator.fieldName] = "";
         env(jt);
@@ -280,11 +280,10 @@ public:
         env.fund(XRP(10000), alice);
         auto jt = noop(alice);
 
-        uint128 somehash =
-            from_hex_text<uint128>("fff680681c2f5e6095324e2e08838f221a72ab4f");
-        jt[sfEmailHash.fieldName] = to_string(somehash);
+        std::string const mh("5F31A79367DC3137FADA860C05742EE6");
+        jt[sfEmailHash.fieldName] = mh;
         env(jt);
-        BEAST_EXPECT((*env.le(alice))[sfEmailHash] == somehash);
+        BEAST_EXPECT(to_string((*env.le(alice))[sfEmailHash]) == mh);
 
         jt[sfEmailHash.fieldName] = "";
         env(jt);

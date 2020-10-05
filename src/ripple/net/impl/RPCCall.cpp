@@ -818,7 +818,7 @@ private:
         {
             // verify the channel id is a valid 256 bit number
             uint256 channelId;
-            if (!channelId.SetHexExact(jvParams[index].asString()))
+            if (!channelId.parseHex(jvParams[index].asString()))
                 return rpcError(rpcCHANNEL_MALFORMED);
             jvRequest[jss::channel_id] = to_string(channelId);
             index++;
@@ -850,7 +850,7 @@ private:
         {
             // verify the channel id is a valid 256 bit number
             uint256 channelId;
-            if (!channelId.SetHexExact(jvParams[1u].asString()))
+            if (!channelId.parseHex(jvParams[1u].asString()))
                 return rpcError(rpcCHANNEL_MALFORMED);
         }
         jvRequest[jss::channel_id] = jvParams[1u].asString();

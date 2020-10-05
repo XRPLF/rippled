@@ -48,12 +48,6 @@ enum NodeObjectType : std::uint32_t {
 class NodeObject : public CountedObject<NodeObject>
 {
 public:
-    static char const*
-    getCountedObjectName()
-    {
-        return "NodeObject";
-    }
-
     static constexpr std::size_t keyBytes = 32;
 
 private:

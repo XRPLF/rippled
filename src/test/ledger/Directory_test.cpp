@@ -326,11 +326,11 @@ struct Directory_test : public beast::unit_test::suite
         env.close();
 
         uint256 base;
-        base.SetHex(
+        (void)base.parseHex(
             "fb71c9aa3310141da4b01d6c744a98286af2d72ab5448d5adc0910ca0c910880");
 
         uint256 item;
-        item.SetHex(
+        (void)item.parseHex(
             "bad0f021aa3b2f6754a8fe82a5779730aa0bbbab82f17201ef24900efc2c7312");
 
         {

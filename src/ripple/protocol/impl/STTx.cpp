@@ -259,7 +259,7 @@ STTx::getMetaSQL(
 {
     static boost::format bfTrans(
         "('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
-    std::string rTxn = sqlEscape(rawTxn.peekData());
+    std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
 
     auto format = TxFormats::getInstance().findByType(tx_type_);
     assert(format != nullptr);
