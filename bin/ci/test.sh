@@ -24,7 +24,6 @@ declare -a manual_tests=(
   'ripple.consensus.ByzantineFailureSim'
   'ripple.consensus.DistributedValidators'
   'ripple.consensus.ScaleFreeSim'
-  'ripple.ripple_data.digest'
   'ripple.tx.CrossingLimits'
   'ripple.tx.FindOversizeCross'
   'ripple.tx.Offer_manual'

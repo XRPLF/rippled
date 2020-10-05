@@ -165,7 +165,7 @@ parseLedgerArgs(Json::Value const& params)
         }
 
         LedgerHash hash;
-        if (!hash.SetHex(hashValue.asString()))
+        if (!hash.parseHex(hashValue.asString()))
         {
             RPC::Status status{rpcINVALID_PARAMS, "ledgerHashMalformed"};
             status.inject(response);

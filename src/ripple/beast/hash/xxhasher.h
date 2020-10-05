@@ -20,8 +20,8 @@
 #ifndef BEAST_HASH_XXHASHER_H_INCLUDED
 #define BEAST_HASH_XXHASHER_H_INCLUDED
 
-#include <ripple/beast/hash/endian.h>
 #include <ripple/beast/hash/impl/xxhash.h>
+#include <boost/endian/conversion.hpp>
 #include <cstddef>
 #include <type_traits>
 
@@ -38,7 +38,7 @@ private:
 public:
     using result_type = std::size_t;
 
-    static beast::endian const endian = beast::endian::native;
+    static constexpr auto const endian = boost::endian::order::native;
 
     xxhasher() noexcept
     {

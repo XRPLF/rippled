@@ -34,10 +34,10 @@ static char const* bobs_account_objects[] = {
     R"json({
   "Account" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
   "BookDirectory" : "50AD0A9E54D2B381288D535EB724E4275FFBF41580D28A925D038D7EA4C68000",
-  "BookNode" : "0000000000000000",
+  "BookNode" : "0",
   "Flags" : 65536,
   "LedgerEntryType" : "Offer",
-  "OwnerNode" : "0000000000000000",
+  "OwnerNode" : "0",
   "Sequence" : 6,
   "TakerGets" : {
     "currency" : "USD",
@@ -59,14 +59,14 @@ static char const* bobs_account_objects[] = {
         "issuer" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
         "value" : "1000"
     },
-    "HighNode" : "0000000000000000",
+    "HighNode" : "0",
     "LedgerEntryType" : "RippleState",
     "LowLimit" : {
         "currency" : "USD",
         "issuer" : "r9cZvwKU3zzuZK9JFovGg1JC5n7QiqNL8L",
         "value" : "0"
     },
-    "LowNode" : "0000000000000000",
+    "LowNode" : "0",
     "index" : "D13183BCFFC9AAC9F96AEBB5F66E4A652AD1F5D10273AEB615478302BEBFD4A4"
 })json",
     R"json({
@@ -81,23 +81,23 @@ static char const* bobs_account_objects[] = {
         "issuer" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
         "value" : "1000"
     },
-    "HighNode" : "0000000000000000",
+    "HighNode" : "0",
     "LedgerEntryType" : "RippleState",
     "LowLimit" : {
         "currency" : "USD",
         "issuer" : "r32rQHyesiTtdWFU7UJVtff4nCR5SHCbJW",
         "value" : "0"
     },
-    "LowNode" : "0000000000000000",
+    "LowNode" : "0",
     "index" : "D89BC239086183EB9458C396E643795C1134963E6550E682A190A5F021766D43"
 })json",
     R"json({
     "Account" : "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK",
     "BookDirectory" : "B025997A323F5C3E03DDF1334471F5984ABDE31C59D463525D038D7EA4C68000",
-    "BookNode" : "0000000000000000",
+    "BookNode" : "0",
     "Flags" : 65536,
     "LedgerEntryType" : "Offer",
-    "OwnerNode" : "0000000000000000",
+    "OwnerNode" : "0",
     "Sequence" : 7,
     "TakerGets" : {
         "currency" : "USD",
@@ -287,9 +287,6 @@ public:
                 auto& aobj = resp[jss::result][jss::account_objects][i];
                 aobj.removeMember("PreviousTxnID");
                 aobj.removeMember("PreviousTxnLgrSeq");
-
-                if (aobj != bobj[i])
-                    std::cout << "Fail at " << i << ": " << aobj << std::endl;
                 BEAST_EXPECT(aobj == bobj[i]);
             }
         }

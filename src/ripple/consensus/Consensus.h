@@ -738,8 +738,7 @@ Consensus<Adaptor>::peerProposalInternal(
 
     if (deadNodes_.find(peerID) != deadNodes_.end())
     {
-        using std::to_string;
-        JLOG(j_.info()) << "Position from dead node: " << to_string(peerID);
+        JLOG(j_.info()) << "Position from dead node: " << peerID;
         return false;
     }
 
@@ -758,9 +757,7 @@ Consensus<Adaptor>::peerProposalInternal(
 
         if (newPeerProp.isBowOut())
         {
-            using std::to_string;
-
-            JLOG(j_.info()) << "Peer bows out: " << to_string(peerID);
+            JLOG(j_.info()) << "Peer " << peerID << " bows out";
             if (result_)
             {
                 for (auto& it : result_->disputes)
@@ -1559,10 +1556,7 @@ Consensus<Adaptor>::haveConsensus()
         }
         else
         {
-            using std::to_string;
-
-            JLOG(j_.debug()) << to_string(nodeId) << " has "
-                             << to_string(peerProp.position());
+            JLOG(j_.debug()) << nodeId << " has " << peerProp.position();
             ++disagree;
         }
     }

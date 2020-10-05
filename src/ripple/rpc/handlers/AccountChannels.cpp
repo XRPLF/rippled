@@ -121,7 +121,7 @@ doAccountChannels(RPC::JsonContext& context)
         if (!marker.isString())
             return RPC::expected_field_error(jss::marker, "string");
 
-        if (!startAfter.SetHex(marker.asString()))
+        if (!startAfter.parseHex(marker.asString()))
         {
             return rpcError(rpcINVALID_PARAMS);
         }

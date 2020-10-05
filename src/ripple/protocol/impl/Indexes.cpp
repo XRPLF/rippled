@@ -96,8 +96,13 @@ getBookBase(Book const& book)
 uint256
 getQualityNext(uint256 const& uBase)
 {
-    static uint256 const uNext(from_hex_text<uint256>("10000000000000000"));
-    return uBase + uNext;
+    static uint256 const nextq = []() {
+        uint256 x;
+        (void)x.parseHex(
+            "0000000000000000000000000000000000000000000000010000000000000000");
+        return x;
+    }();
+    return uBase + nextq;
 }
 
 std::uint64_t

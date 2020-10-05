@@ -40,12 +40,6 @@ class PathRequest;
 class InfoSub : public CountedObject<InfoSub>
 {
 public:
-    static char const*
-    getCountedObjectName()
-    {
-        return "InfoSub";
-    }
-
     using pointer = std::shared_ptr<InfoSub>;
 
     // VFALCO TODO Standardize on the names of weak / strong pointer type

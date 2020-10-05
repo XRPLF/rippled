@@ -45,14 +45,6 @@ template <class T>
 boost::optional<T>
 parseBase58(TokenType type, std::string const& s);
 
-template <class T>
-boost::optional<T>
-parseHex(std::string const& s);
-
-template <class T>
-boost::optional<T>
-parseHexOrBase58(std::string const& s);
-
 /** Encode data in Base58Check format using XRPL alphabet
 
     For details on the format see

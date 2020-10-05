@@ -20,7 +20,6 @@
 #ifndef RIPPLE_BASICS_RANDOM_H_INCLUDED
 #define RIPPLE_BASICS_RANDOM_H_INCLUDED
 
-#include <ripple/beast/cxx17/type_traits.h>  // <type_traits>
 #include <ripple/beast/xor_shift_engine.h>
 #include <cassert>
 #include <cstddef>
@@ -29,6 +28,7 @@
 #include <limits>
 #include <mutex>
 #include <random>
+#include <type_traits>
 
 namespace ripple {
 

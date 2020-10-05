@@ -45,16 +45,6 @@ public:
     {
     }
 
-    STBitString(SField const& n, const char* v) : STBase(n)
-    {
-        value_.SetHex(v);
-    }
-
-    STBitString(SField const& n, std::string const& v) : STBase(n)
-    {
-        value_.SetHex(v);
-    }
-
     STBitString(SerialIter& sit, SField const& name)
         : STBitString(name, sit.getBitString<Bits>())
     {

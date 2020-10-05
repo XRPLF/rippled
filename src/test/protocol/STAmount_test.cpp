@@ -306,9 +306,6 @@ public:
         const std::string cur = "015841551A748AD2C1F76FF6ECB0CCCD00000000";
         unexpected(!to_currency(c, cur), "create custom currency");
         unexpected(to_string(c) != cur, "check custom currency");
-        unexpected(
-            c != Currency(from_hex_text<Currency>(cur)),
-            "check custom currency");
     }
 
     //--------------------------------------------------------------------------

@@ -57,7 +57,11 @@ doTransactionEntry(RPC::JsonContext& context)
         uint256 uTransID;
         // XXX Relying on trusted WSS client. Would be better to have a strict
         // routine, returning success or failure.
-        uTransID.SetHex(context.params[jss::tx_hash].asString());
+        if (!uTransID.parseHex(context.params[jss::tx_hash].asString()))
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return jvResult;
+        }
 
         auto [sttx, stobj] = lpLedger->txRead(uTransID);
         if (!sttx)
