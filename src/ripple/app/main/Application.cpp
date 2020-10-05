@@ -1878,7 +1878,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
 
             uint256 uIndex;
 
-            if (!uIndex.SetHex(entry[jss::index].asString()))
+            if (!uIndex.parseHex(entry[jss::index].asString()))
             {
                 JLOG(m_journal.fatal()) << "Invalid entry in ledger";
                 return nullptr;
@@ -1940,7 +1940,7 @@ ApplicationImp::loadOldLedger(
         {
             uint256 hash;
 
-            if (hash.SetHex(ledgerID))
+            if (hash.parseHex(ledgerID))
             {
                 loadLedger = loadByHash(hash, *this);
 

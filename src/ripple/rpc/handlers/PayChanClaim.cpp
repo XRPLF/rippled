@@ -60,7 +60,7 @@ doChannelAuthorize(RPC::JsonContext& context)
         return result;
 
     uint256 channelId;
-    if (!channelId.SetHexExact(params[jss::channel_id].asString()))
+    if (!channelId.parseHex(params[jss::channel_id].asString()))
         return rpcError(rpcCHANNEL_MALFORMED);
 
     boost::optional<std::uint64_t> const optDrops =
@@ -122,7 +122,7 @@ doChannelVerify(RPC::JsonContext& context)
     }
 
     uint256 channelId;
-    if (!channelId.SetHexExact(params[jss::channel_id].asString()))
+    if (!channelId.parseHex(params[jss::channel_id].asString()))
         return rpcError(rpcCHANNEL_MALFORMED);
 
     boost::optional<std::uint64_t> const optDrops =

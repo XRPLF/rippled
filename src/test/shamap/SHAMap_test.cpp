@@ -143,15 +143,15 @@ public:
 
         // h3 and h4 differ only in the leaf, same terminal node (level 19)
         uint256 h1, h2, h3, h4, h5;
-        h1.SetHex(
+        (void)h1.parseHex(
             "092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
-        h2.SetHex(
+        (void)h2.parseHex(
             "436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
-        h3.SetHex(
+        (void)h3.parseHex(
             "b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
-        h4.SetHex(
+        (void)h4.parseHex(
             "b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
-        h5.SetHex(
+        (void)h5.parseHex(
             "a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 
         SHAMap sMap(SHAMapType::FREE, f);
@@ -223,54 +223,54 @@ public:
             testcase("build/tear unbacked");
         {
             std::vector<uint256> keys(8);
-            keys[0].SetHex(
+            (void)keys[0].parseHex(
                 "b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6c"
                 "a8");
-            keys[1].SetHex(
+            (void)keys[1].parseHex(
                 "b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6c"
                 "a8");
-            keys[2].SetHex(
+            (void)keys[2].parseHex(
                 "b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6c"
                 "a8");
-            keys[3].SetHex(
+            (void)keys[3].parseHex(
                 "b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6c"
                 "a8");
-            keys[4].SetHex(
+            (void)keys[4].parseHex(
                 "b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6c"
                 "a8");
-            keys[5].SetHex(
+            (void)keys[5].parseHex(
                 "b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6c"
                 "a8");
-            keys[6].SetHex(
+            (void)keys[6].parseHex(
                 "f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6c"
                 "a8");
-            keys[7].SetHex(
+            (void)keys[7].parseHex(
                 "292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6c"
                 "a8");
 
             std::vector<uint256> hashes(8);
-            hashes[0].SetHex(
+            (void)hashes[0].parseHex(
                 "B7387CFEA0465759ADC718E8C42B52D2309D179B326E239EB5075C64B6281F"
                 "7F");
-            hashes[1].SetHex(
+            (void)hashes[1].parseHex(
                 "FBC195A9592A54AB44010274163CB6BA95F497EC5BA0A8831845467FB2ECE2"
                 "66");
-            hashes[2].SetHex(
+            (void)hashes[2].parseHex(
                 "4E7D2684B65DFD48937FFB775E20175C43AF0C94066F7D5679F51AE756795B"
                 "75");
-            hashes[3].SetHex(
+            (void)hashes[3].parseHex(
                 "7A2F312EB203695FFD164E038E281839EEF06A1B99BFC263F3CECC6C74F93E"
                 "07");
-            hashes[4].SetHex(
+            (void)hashes[4].parseHex(
                 "395A6691A372387A703FB0F2C6D2C405DAF307D0817F8F0E207596462B0E3A"
                 "3E");
-            hashes[5].SetHex(
+            (void)hashes[5].parseHex(
                 "D044C0A696DE3169CC70AE216A1564D69DE96582865796142CE7D98A84D9DD"
                 "E4");
-            hashes[6].SetHex(
+            (void)hashes[6].parseHex(
                 "76DCC77C4027309B5A91AD164083264D70B77B5E43E08AEDA5EBF943611436"
                 "15");
-            hashes[7].SetHex(
+            (void)hashes[7].parseHex(
                 "DF4220E93ADC6F5569063A01B4DC79F8DB9553B6A3222ADE23DEA02BBE7230"
                 "E5");
 
@@ -302,28 +302,28 @@ public:
 
         {
             std::vector<uint256> keys(8);
-            keys[0].SetHex(
+            (void)keys[0].parseHex(
                 "f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6c"
                 "a8");
-            keys[1].SetHex(
+            (void)keys[1].parseHex(
                 "b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6c"
                 "a8");
-            keys[2].SetHex(
+            (void)keys[2].parseHex(
                 "b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6c"
                 "a8");
-            keys[3].SetHex(
+            (void)keys[3].parseHex(
                 "b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6c"
                 "a8");
-            keys[4].SetHex(
+            (void)keys[4].parseHex(
                 "b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6c"
                 "a8");
-            keys[5].SetHex(
+            (void)keys[5].parseHex(
                 "b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6c"
                 "a8");
-            keys[6].SetHex(
+            (void)keys[6].parseHex(
                 "b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6c"
                 "a8");
-            keys[7].SetHex(
+            (void)keys[7].parseHex(
                 "292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6c"
                 "a8");
 

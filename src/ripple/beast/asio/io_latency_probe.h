@@ -22,7 +22,6 @@
 
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/io_service.hpp>
-#include <boost/config.hpp>
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
@@ -137,12 +136,7 @@ private:
         }
 
         if (wait)
-#ifdef BOOST_NO_CXX11_LAMBDAS
-            while (m_count != 0)
-                m_cond.wait(lock);
-#else
             m_cond.wait(lock, [this] { return this->m_count == 0; });
-#endif
     }
 
     void

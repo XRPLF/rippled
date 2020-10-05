@@ -61,12 +61,6 @@ class Transaction : public std::enable_shared_from_this<Transaction>,
                     public CountedObject<Transaction>
 {
 public:
-    static char const*
-    getCountedObjectName()
-    {
-        return "Transaction";
-    }
-
     using pointer = std::shared_ptr<Transaction>;
     using ref = const pointer&;
 

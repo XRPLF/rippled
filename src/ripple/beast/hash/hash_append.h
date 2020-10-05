@@ -21,9 +21,9 @@
 #ifndef BEAST_HASH_HASH_APPEND_H_INCLUDED
 #define BEAST_HASH_HASH_APPEND_H_INCLUDED
 
-#include <ripple/beast/hash/endian.h>
 #include <ripple/beast/hash/meta.h>
 #include <boost/container/flat_set.hpp>
+#include <boost/endian/conversion.hpp>
 #include <array>
 #include <chrono>
 #include <cstdint>
@@ -77,7 +77,10 @@ inline void
 maybe_reverse_bytes(T& t, Hasher&)
 {
     maybe_reverse_bytes(
-        t, std::integral_constant<bool, Hasher::endian != endian::native>{});
+        t,
+        std::integral_constant<
+            bool,
+            Hasher::endian != boost::endian::order::native>{});
 }
 
 }  // namespace detail
@@ -182,7 +185,8 @@ struct is_contiguously_hashable
     : public std::integral_constant<
           bool,
           is_uniquely_represented<T>::value &&
-              (sizeof(T) == 1 || HashAlgorithm::endian == endian::native)>
+              (sizeof(T) == 1 ||
+               HashAlgorithm::endian == boost::endian::order::native)>
 {
     explicit is_contiguously_hashable() = default;
 };
@@ -192,7 +196,8 @@ struct is_contiguously_hashable<T[N], HashAlgorithm>
     : public std::integral_constant<
           bool,
           is_uniquely_represented<T[N]>::value &&
-              (sizeof(T) == 1 || HashAlgorithm::endian == endian::native)>
+              (sizeof(T) == 1 ||
+               HashAlgorithm::endian == boost::endian::order::native)>
 {
     explicit is_contiguously_hashable() = default;
 };

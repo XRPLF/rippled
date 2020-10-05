@@ -260,12 +260,6 @@ public:
         using std::runtime_error::runtime_error;
     };
 
-    static char const*
-    getCountedObjectName()
-    {
-        return "STObject";
-    }
-
     STObject(STObject&&);
     STObject(STObject const&) = default;
     STObject(const SOTemplate& type, SField const& name);

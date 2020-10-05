@@ -66,7 +66,7 @@ class TransactionEntry_test : public beast::unit_test::suite
             auto const result =
                 env.client().invoke("transaction_entry", params)[jss::result];
             BEAST_EXPECT(!result[jss::ledger_hash].asString().empty());
-            BEAST_EXPECT(result[jss::error] == "transactionNotFound");
+            BEAST_EXPECT(result[jss::error] == "malformedRequest");
             BEAST_EXPECT(result[jss::status] == "error");
         }
 

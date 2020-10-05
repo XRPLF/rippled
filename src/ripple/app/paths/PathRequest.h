@@ -49,12 +49,6 @@ class PathRequest : public std::enable_shared_from_this<PathRequest>,
                     public CountedObject<PathRequest>
 {
 public:
-    static char const*
-    getCountedObjectName()
-    {
-        return "PathRequest";
-    }
-
     using wptr = std::weak_ptr<PathRequest>;
     using pointer = std::shared_ptr<PathRequest>;
     using ref = const pointer&;
@@ -112,8 +106,6 @@ public:
 private:
     bool
     isValid(std::shared_ptr<RippleLineCache> const& crCache);
-    void
-    setValid();
 
     std::unique_ptr<Pathfinder> const&
     getPathFinder(

@@ -57,29 +57,6 @@ template <>
 boost::optional<AccountID>
 parseBase58(std::string const& s);
 
-// Compatibility with legacy code
-bool
-deprecatedParseBase58(AccountID& account, Json::Value const& jv);
-
-/** Parse AccountID from hexadecimal string
-
-    If the string is not exactly 40
-    hex digits, boost::none is returned.
-
-    @return boost::none if a parse error occurs
-*/
-template <>
-boost::optional<AccountID>
-parseHex(std::string const& s);
-
-/** Parse AccountID from hex or checked base58 string.
-
-    @return boost::none if a parse error occurs
-*/
-template <>
-boost::optional<AccountID>
-parseHexOrBase58(std::string const& s);
-
 /** Compute AccountID from public key.
 
     The account ID is computed as the 160-bit hash of the

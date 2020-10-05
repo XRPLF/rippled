@@ -139,7 +139,9 @@ doAccountLines(RPC::JsonContext& context)
         if (!marker.isString())
             return RPC::expected_field_error(jss::marker, "string");
 
-        startAfter.SetHex(marker.asString());
+        if (!startAfter.parseHex(marker.asString()))
+            return rpcError(rpcINVALID_PARAMS);
+
         auto const sleLine = ledger->read({ltRIPPLE_STATE, startAfter});
 
         if (!sleLine)

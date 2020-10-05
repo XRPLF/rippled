@@ -327,7 +327,9 @@ Env::sign_and_submit(JTx const& jt, Json::Value params)
         params[jss::tx_json] = jt.jv;
         jr = client().invoke("submit", params);
     }
-    txid_.SetHex(jr[jss::result][jss::tx_json][jss::hash].asString());
+
+    if (!txid_.parseHex(jr[jss::result][jss::tx_json][jss::hash].asString()))
+        txid_.zero();
 
     std::tie(ter_, didApply) = parseResult(jr);
 

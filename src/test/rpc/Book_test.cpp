@@ -1054,10 +1054,10 @@ public:
         BEAST_EXPECT(
             jrOffer[sfBookDirectory.fieldName] ==
             getBookDir(env, XRP, USD.issue()));
-        BEAST_EXPECT(jrOffer[sfBookNode.fieldName] == "0000000000000000");
+        BEAST_EXPECT(jrOffer[sfBookNode.fieldName] == "0");
         BEAST_EXPECT(jrOffer[jss::Flags] == 0);
         BEAST_EXPECT(jrOffer[sfLedgerEntryType.fieldName] == jss::Offer);
-        BEAST_EXPECT(jrOffer[sfOwnerNode.fieldName] == "0000000000000000");
+        BEAST_EXPECT(jrOffer[sfOwnerNode.fieldName] == "0");
         BEAST_EXPECT(jrOffer[sfSequence.fieldName] == 5);
         BEAST_EXPECT(
             jrOffer[jss::TakerGets] ==
@@ -1110,10 +1110,10 @@ public:
         BEAST_EXPECT(
             jrNextOffer[sfBookDirectory.fieldName] ==
             getBookDir(env, XRP, USD.issue()));
-        BEAST_EXPECT(jrNextOffer[sfBookNode.fieldName] == "0000000000000000");
+        BEAST_EXPECT(jrNextOffer[sfBookNode.fieldName] == "0");
         BEAST_EXPECT(jrNextOffer[jss::Flags] == 0);
         BEAST_EXPECT(jrNextOffer[sfLedgerEntryType.fieldName] == jss::Offer);
-        BEAST_EXPECT(jrNextOffer[sfOwnerNode.fieldName] == "0000000000000000");
+        BEAST_EXPECT(jrNextOffer[sfOwnerNode.fieldName] == "0");
         BEAST_EXPECT(jrNextOffer[sfSequence.fieldName] == 5);
         BEAST_EXPECT(
             jrNextOffer[jss::TakerGets] ==

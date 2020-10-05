@@ -38,12 +38,6 @@ class InboundLedger final : public PeerSet,
 public:
     using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
 
-    static char const*
-    getCountedObjectName()
-    {
-        return "InboundLedger";
-    }
-
     using PeerDataPairType =
         std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>;
 

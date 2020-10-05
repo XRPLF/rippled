@@ -480,13 +480,13 @@ Value::asString() const
             return value_.bool_ ? "true" : "false";
 
         case intValue:
-            return beast::lexicalCastThrow<std::string>(value_.int_);
+            return std::to_string(value_.int_);
 
         case uintValue:
-            return beast::lexicalCastThrow<std::string>(value_.uint_);
+            return std::to_string(value_.uint_);
 
         case realValue:
-            return beast::lexicalCastThrow<std::string>(value_.real_);
+            return std::to_string(value_.real_);
 
         case arrayValue:
         case objectValue:
