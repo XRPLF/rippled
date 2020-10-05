@@ -74,7 +74,7 @@ std::string
 AcceptedLedgerTx::getEscMeta() const
 {
     assert(!mRawMeta.empty());
-    return sqlEscape(mRawMeta);
+    return sqlBlobLiteral(mRawMeta);
 }
 
 void

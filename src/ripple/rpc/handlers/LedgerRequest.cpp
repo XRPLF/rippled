@@ -55,7 +55,7 @@ doLedgerRequest(RPC::JsonContext& context)
     if (hasHash)
     {
         auto const& jsonHash = context.params[jss::ledger_hash];
-        if (!jsonHash.isString() || !ledgerHash.SetHex(jsonHash.asString()))
+        if (!jsonHash.isString() || !ledgerHash.parseHex(jsonHash.asString()))
             return RPC::invalid_field_error(jss::ledger_hash);
     }
     else

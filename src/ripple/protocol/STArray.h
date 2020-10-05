@@ -33,12 +33,6 @@ private:
     list_type v_;
 
 public:
-    static char const*
-    getCountedObjectName()
-    {
-        return "STArray";
-    }
-
     using size_type = list_type::size_type;
     using iterator = list_type::iterator;
     using const_iterator = list_type::const_iterator;

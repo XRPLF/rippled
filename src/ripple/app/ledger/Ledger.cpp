@@ -1173,13 +1173,13 @@ loadLedgerHelper(std::string const& sqlSuffix, Application& app, bool acquire)
 
     uint256 prevHash{}, accountHash{}, transHash{};
     if (sLedgerHash)
-        ledgerHash.SetHexExact(*sLedgerHash);
+        (void)ledgerHash.parseHex(*sLedgerHash);
     if (sPrevHash)
-        prevHash.SetHexExact(*sPrevHash);
+        (void)prevHash.parseHex(*sPrevHash);
     if (sAccountHash)
-        accountHash.SetHexExact(*sAccountHash);
+        (void)accountHash.parseHex(*sAccountHash);
     if (sTransHash)
-        transHash.SetHexExact(*sTransHash);
+        (void)transHash.parseHex(*sTransHash);
 
     using time_point = NetClock::time_point;
     using duration = NetClock::duration;
@@ -1266,7 +1266,7 @@ getHashByIndex(std::uint32_t ledgerIndex, Application& app)
 
     std::string sql =
         "SELECT LedgerHash FROM Ledgers INDEXED BY SeqLedger WHERE LedgerSeq='";
-    sql.append(beast::lexicalCastThrow<std::string>(ledgerIndex));
+    sql.append(std::to_string(ledgerIndex));
     sql.append("';");
 
     std::string hash;
@@ -1284,7 +1284,7 @@ getHashByIndex(std::uint32_t ledgerIndex, Application& app)
             return ret;
     }
 
-    ret.SetHexExact(hash);
+    (void)ret.parseHex(hash);
     return ret;
 }
 
@@ -1310,10 +1310,7 @@ getHashesByIndex(
         return false;
     }
 
-    ledgerHash.SetHexExact(*lhO);
-    parentHash.SetHexExact(*phO);
-
-    return true;
+    return ledgerHash.parseHex(*lhO) && parentHash.parseHex(*phO);
 }
 
 std::map<std::uint32_t, std::pair<uint256, uint256>>
@@ -1323,9 +1320,9 @@ getHashesByIndex(std::uint32_t minSeq, std::uint32_t maxSeq, Application& app)
 
     std::string sql =
         "SELECT LedgerSeq,LedgerHash,PrevHash FROM Ledgers WHERE LedgerSeq >= ";
-    sql.append(beast::lexicalCastThrow<std::string>(minSeq));
+    sql.append(std::to_string(minSeq));
     sql.append(" AND LedgerSeq <= ");
-    sql.append(beast::lexicalCastThrow<std::string>(maxSeq));
+    sql.append(std::to_string(maxSeq));
     sql.append(";");
 
     auto db = app.getLedgerDB().checkoutDb();
@@ -1341,9 +1338,9 @@ getHashesByIndex(std::uint32_t minSeq, std::uint32_t maxSeq, Application& app)
     {
         std::pair<uint256, uint256>& hashes =
             ret[rangeCheckedCast<std::uint32_t>(ls)];
-        hashes.first.SetHexExact(lh);
+        (void)hashes.first.parseHex(lh);
         if (ph)
-            hashes.second.SetHexExact(*ph);
+            (void)hashes.second.parseHex(*ph);
         else
             hashes.second.zero();
         if (!ph)

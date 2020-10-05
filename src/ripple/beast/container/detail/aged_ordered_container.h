@@ -25,7 +25,6 @@
 #include <ripple/beast/container/detail/aged_associative_container.h>
 #include <ripple/beast/container/detail/aged_container_iterator.h>
 #include <ripple/beast/container/detail/empty_base_optimization.h>
-#include <ripple/beast/cxx17/type_traits.h>  // <type_traits>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/set.hpp>
 #include <boost/version.hpp>
@@ -34,6 +33,7 @@
 #include <initializer_list>
 #include <iterator>
 #include <memory>
+#include <type_traits>
 #include <utility>
 
 namespace beast {

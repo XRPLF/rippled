@@ -36,16 +36,6 @@ STBase::STBase(SField const& n) : fName(&n)
 STBase&
 STBase::operator=(const STBase& t)
 {
-    if ((t.fName != fName) && fName->isUseful() && t.fName->isUseful())
-    {
-        // VFALCO We shouldn't be logging at this low a level
-        /*
-        WriteLog ((t.getSType () == STI_AMOUNT) ? lsTRACE : lsWARNING, STBase)
-        // This is common for amounts
-                << "Caution: " << t.fName->getName () << " not replacing " <<
-        fName->getName ();
-        */
-    }
     if (!fName->isUseful())
         fName = t.fName;
     return *this;
@@ -110,12 +100,7 @@ bool
 STBase::isEquivalent(const STBase& t) const
 {
     assert(getSType() == STI_NOTPRESENT);
-    if (t.getSType() == STI_NOTPRESENT)
-        return true;
-    // VFALCO We shouldn't be logging at this low a level
-    // WriteLog (lsDEBUG, STBase) << "notEquiv " << getFullText() << " not
-    // STI_NOTPRESENT";
-    return false;
+    return t.getSType() == STI_NOTPRESENT;
 }
 
 bool

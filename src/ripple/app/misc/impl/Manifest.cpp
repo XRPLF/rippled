@@ -22,12 +22,12 @@
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/base64.h>
 #include <ripple/basics/contract.h>
-#include <ripple/beast/rfc2616.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/Sign.h>
 #include <boost/algorithm/clamp.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/regex.hpp>
 #include <numeric>
 #include <stdexcept>
@@ -235,7 +235,7 @@ loadValidatorToken(std::vector<std::string> const& blob)
             }));
 
         for (auto const& line : blob)
-            tokenStr += beast::rfc2616::trim(line);
+            tokenStr += boost::algorithm::trim_copy(line);
 
         tokenStr = base64_decode(tokenStr);
 
@@ -506,7 +506,7 @@ ManifestCache::load(
             }));
 
         for (auto const& line : configRevocation)
-            revocationStr += beast::rfc2616::trim(line);
+            revocationStr += boost::algorithm::trim_copy(line);
 
         auto mo = deserializeManifest(base64_decode(revocationStr));
 

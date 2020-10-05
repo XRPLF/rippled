@@ -26,7 +26,6 @@
 #include <ripple/app/paths/Pathfinder.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>
-#include <ripple/beast/cxx17/type_traits.h>  // <type_traits>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/core/Config.h>
 #include <ripple/json/json_value.h>
@@ -50,6 +49,7 @@
 #include <test/jtx/tags.h>
 #include <test/unit_test/SuiteJournal.h>
 #include <tuple>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>

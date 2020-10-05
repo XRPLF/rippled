@@ -60,8 +60,7 @@ doFeature(RPC::JsonContext& context)
 
     auto feature = table.find(context.params[jss::feature].asString());
 
-    if (!feature &&
-        !feature.SetHexExact(context.params[jss::feature].asString()))
+    if (!feature && !feature.parseHex(context.params[jss::feature].asString()))
         return rpcError(rpcBAD_FEATURE);
 
     if (context.params.isMember(jss::vetoed))

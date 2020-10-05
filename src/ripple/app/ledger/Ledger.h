@@ -80,12 +80,6 @@ class Ledger final : public std::enable_shared_from_this<Ledger>,
                      public CountedObject<Ledger>
 {
 public:
-    static char const*
-    getCountedObjectName()
-    {
-        return "Ledger";
-    }
-
     Ledger(Ledger const&) = delete;
     Ledger&
     operator=(Ledger const&) = delete;

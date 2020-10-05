@@ -134,13 +134,13 @@ doAccountObjects(RPC::JsonContext& context)
         if (!std::getline(ss, s, ','))
             return RPC::invalid_field_error(jss::marker);
 
-        if (!dirIndex.SetHex(s))
+        if (!dirIndex.parseHex(s))
             return RPC::invalid_field_error(jss::marker);
 
         if (!std::getline(ss, s, ','))
             return RPC::invalid_field_error(jss::marker);
 
-        if (!entryIndex.SetHex(s))
+        if (!entryIndex.parseHex(s))
             return RPC::invalid_field_error(jss::marker);
     }
 

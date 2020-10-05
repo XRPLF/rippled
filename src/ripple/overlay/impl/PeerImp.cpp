@@ -129,7 +129,7 @@ PeerImp::run()
     auto parseLedgerHash =
         [](std::string const& value) -> boost::optional<uint256> {
         uint256 ret;
-        if (ret.SetHexExact(value))
+        if (ret.parseHex(value))
             return {ret};
 
         auto const s = base64_decode(value);

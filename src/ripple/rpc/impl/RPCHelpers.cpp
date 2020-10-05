@@ -221,7 +221,7 @@ ledgerFromRequest(T& ledger, JsonContext& context)
             return {rpcINVALID_PARAMS, "ledgerHashNotString"};
 
         uint256 ledgerHash;
-        if (!ledgerHash.SetHex(hashValue.asString()))
+        if (!ledgerHash.parseHex(hashValue.asString()))
             return {rpcINVALID_PARAMS, "ledgerHashMalformed"};
         return getLedger(ledger, ledgerHash, context);
     }
@@ -646,7 +646,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
     {
         uint128 s;
 
-        if (s.SetHexExact(fieldContents))
+        if (s.parseHex(fieldContents))
             seed.emplace(Slice(s.data(), s.size()));
     }
 
