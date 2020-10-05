@@ -61,12 +61,6 @@ private:
     class Entry : public CountedObject<Entry>
     {
     public:
-        static char const*
-        getCountedObjectName()
-        {
-            return "HashRouterEntry";
-        }
-
         Entry()
         {
         }

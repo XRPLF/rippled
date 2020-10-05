@@ -26,29 +26,21 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
-#include <cstdarg>
 
 namespace ripple {
 
-uint64_t
-uintFromHex(std::string const& strSrc)
+std::string
+sqlBlobLiteral(Blob const& blob)
 {
-    uint64_t uValue(0);
+    std::string j;
 
-    if (strSrc.size() > 16)
-        Throw<std::invalid_argument>("overlong 64-bit value");
+    j.reserve(blob.size() * 2 + 3);
+    j.push_back('X');
+    j.push_back('\'');
+    boost::algorithm::hex(blob.begin(), blob.end(), std::back_inserter(j));
+    j.push_back('\'');
 
-    for (auto c : strSrc)
-    {
-        int ret = charUnHex(c);
-
-        if (ret == -1)
-            Throw<std::invalid_argument>("invalid hex digit");
-
-        uValue = (uValue << 4) | ret;
-    }
-
-    return uValue;
+    return j;
 }
 
 bool

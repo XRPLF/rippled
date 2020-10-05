@@ -37,6 +37,7 @@
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/impl/STVar.h>
 #include <cassert>
+#include <charconv>
 #include <memory>
 
 namespace ripple {
@@ -403,8 +404,17 @@ parseLeaf(
             {
                 if (value.isString())
                 {
-                    ret = detail::make_stvar<STUInt64>(
-                        field, uintFromHex(value.asString()));
+                    auto const str = value.asString();
+
+                    std::uint64_t val;
+
+                    auto [p, ec] = std::from_chars(
+                        str.data(), str.data() + str.size(), val, 16);
+
+                    if (ec != std::errc() || (p != str.data() + str.size()))
+                        Throw<std::invalid_argument>("invalid data");
+
+                    ret = detail::make_stvar<STUInt64>(field, val);
                 }
                 else if (value.isInt())
                 {
@@ -430,71 +440,77 @@ parseLeaf(
 
             break;
 
-        case STI_HASH128:
-            try
+        case STI_HASH128: {
+            if (!value.isString())
             {
-                if (value.isString())
-                {
-                    ret =
-                        detail::make_stvar<STHash128>(field, value.asString());
-                }
-                else
-                {
-                    error = bad_type(json_name, fieldName);
-                    return ret;
-                }
-            }
-            catch (std::exception const&)
-            {
-                error = invalid_data(json_name, fieldName);
+                error = bad_type(json_name, fieldName);
                 return ret;
             }
 
-            break;
+            uint128 num;
 
-        case STI_HASH160:
-            try
+            if (auto const s = value.asString(); !num.parseHex(s))
             {
-                if (value.isString())
+                if (!s.empty())
                 {
-                    ret =
-                        detail::make_stvar<STHash160>(field, value.asString());
-                }
-                else
-                {
-                    error = bad_type(json_name, fieldName);
+                    error = invalid_data(json_name, fieldName);
                     return ret;
                 }
+
+                num.zero();
             }
-            catch (std::exception const&)
+
+            ret = detail::make_stvar<STHash128>(field, num);
+            break;
+        }
+
+        case STI_HASH160: {
+            if (!value.isString())
             {
-                error = invalid_data(json_name, fieldName);
+                error = bad_type(json_name, fieldName);
                 return ret;
             }
 
-            break;
+            uint160 num;
 
-        case STI_HASH256:
-            try
+            if (auto const s = value.asString(); !num.parseHex(s))
             {
-                if (value.isString())
+                if (!s.empty())
                 {
-                    ret =
-                        detail::make_stvar<STHash256>(field, value.asString());
-                }
-                else
-                {
-                    error = bad_type(json_name, fieldName);
+                    error = invalid_data(json_name, fieldName);
                     return ret;
                 }
+
+                num.zero();
             }
-            catch (std::exception const&)
+
+            ret = detail::make_stvar<STHash160>(field, num);
+            break;
+        }
+
+        case STI_HASH256: {
+            if (!value.isString())
             {
-                error = invalid_data(json_name, fieldName);
+                error = bad_type(json_name, fieldName);
                 return ret;
             }
 
+            uint256 num;
+
+            if (auto const s = value.asString(); !num.parseHex(s))
+            {
+                if (!s.empty())
+                {
+                    error = invalid_data(json_name, fieldName);
+                    return ret;
+                }
+
+                num.zero();
+            }
+
+            ret = detail::make_stvar<STHash256>(field, num);
             break;
+        }
 
         case STI_VL:
             if (!value.isString())
@@ -550,7 +566,8 @@ parseLeaf(
                 for (Json::UInt i = 0; value.isValidIndex(i); ++i)
                 {
                     uint256 s;
-                    s.SetHex(value[i].asString());
+                    if (!s.parseHex(value[i].asString()))
+                        Throw<std::invalid_argument>("invalid data");
                     tail.push_back(s);
                 }
                 ret = detail::make_stvar<STVector256>(std::move(tail));
@@ -623,7 +640,7 @@ parseLeaf(
 
                             // If we have what looks like a 160-bit hex value,
                             // we set it, otherwise, we assume it's an AccountID
-                            if (!uAccount.SetHexExact(account.asString()))
+                            if (!uAccount.parseHex(account.asString()))
                             {
                                 auto const a =
                                     parseBase58<AccountID>(account.asString());
@@ -649,7 +666,7 @@ parseLeaf(
 
                             hasCurrency = true;
 
-                            if (!uCurrency.SetHexExact(currency.asString()))
+                            if (!uCurrency.parseHex(currency.asString()))
                             {
                                 if (!to_currency(
                                         uCurrency, currency.asString()))
@@ -670,7 +687,7 @@ parseLeaf(
                                 return ret;
                             }
 
-                            if (!uIssuer.SetHexExact(issuer.asString()))
+                            if (!uIssuer.parseHex(issuer.asString()))
                             {
                                 auto const a =
                                     parseBase58<AccountID>(issuer.asString());
@@ -711,14 +728,14 @@ parseLeaf(
 
             try
             {
-                // VFALCO This needs careful auditing
-                auto const account = parseHexOrBase58<AccountID>(strValue);
-                if (!account)
-                {
-                    error = invalid_data(json_name, fieldName);
-                    return ret;
-                }
-                ret = detail::make_stvar<STAccount>(field, *account);
+                if (AccountID account; account.parseHex(strValue))
+                    return detail::make_stvar<STAccount>(field, account);
+
+                if (auto result = parseBase58<AccountID>(strValue))
+                    return detail::make_stvar<STAccount>(field, *result);
+
+                error = invalid_data(json_name, fieldName);
+                return ret;
             }
             catch (std::exception const&)
             {

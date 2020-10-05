@@ -34,15 +34,8 @@ class TransactionAcquire final
       public CountedObject<TransactionAcquire>
 {
 public:
-    static char const*
-    getCountedObjectName()
-    {
-        return "TransactionAcquire";
-    }
-
     using pointer = std::shared_ptr<TransactionAcquire>;
 
-public:
     TransactionAcquire(Application& app, uint256 const& hash);
     ~TransactionAcquire() = default;
 

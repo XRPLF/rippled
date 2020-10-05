@@ -56,8 +56,19 @@ struct is_contiguous_container<
 
 }  // namespace detail
 
-// This class stores its values internally in big-endian form
+/** Integers of any length that is a multiple of 32-bits
 
+    @note This class stores its values internally in big-endian
+          form and that internal representation is part of the
+          binary protocol of the XRP Ledger and cannot be changed
+          arbitrarily without causing breakage.
+
+          @tparam Bits The number of bits this integer should have; must
+                       be at least 64 and a multiple of 32.
+          @tparam Tag An arbitrary type that functions as a tag and allows
+                      the instantiation of "distinct" types that the same
+                      number of bits.
+ */
 template <std::size_t Bits, class Tag = void>
 class base_uint
 {
@@ -362,99 +373,53 @@ public:
     }
 
     /** Parse a hex string into a base_uint
-        The string must contain exactly bytes * 2 hex characters and must not
-        have any leading or trailing whitespace.
-    */
-    bool
-    SetHexExact(const char* psz)
+
+        The input must be precisely `2 * bytes` hexadecimal characters
+        long, with one exception: the value '0'.
+
+        @param sv A null-terminated string of hexadecimal characters
+        @return true if the input was parsed properly; false otherwise.
+     */
+    [[nodiscard]] bool
+    parseHex(std::string_view sv)
     {
-        unsigned char* pOut = begin();
-
-        for (int i = 0; i < sizeof(data_); ++i)
+        if (sv == "0")
         {
-            auto hi = charUnHex(*psz++);
-            if (hi == -1)
-                return false;
-
-            auto lo = charUnHex(*psz++);
-            if (lo == -1)
-                return false;
-
-            *pOut++ = (hi << 4) | lo;
+            zero();
+            return true;
         }
 
-        // We've consumed exactly as many bytes as we needed at this point
-        // so we should be at the end of the string.
-        return (*psz == 0);
-    }
+        if (sv.size() != bytes * 2)
+            return false;
 
-    /** Parse a hex string into a base_uint
-        The input can be:
-            - shorter than the full hex representation by not including leading
-              zeroes.
-            - longer than the full hex representation in which case leading
-              bytes are discarded.
+        auto out = data();
 
-        When finished parsing, the string must be fully consumed with only a
-        null terminator remaining.
+        auto in = sv.begin();
 
-        When bStrict is false, the parsing is done in non-strict mode, and, if
-        present, leading whitespace and the 0x prefix will be skipped.
-    */
-    bool
-    SetHex(const char* psz, bool bStrict = false)
-    {
-        // Find beginning.
-        auto pBegin = reinterpret_cast<const unsigned char*>(psz);
-        // skip leading spaces
-        if (!bStrict)
-            while (isspace(*pBegin))
-                pBegin++;
-
-        // skip 0x
-        if (!bStrict && pBegin[0] == '0' && tolower(pBegin[1]) == 'x')
-            pBegin += 2;
-
-        // Find end.
-        auto pEnd = pBegin;
-        while (charUnHex(*pEnd) != -1)
-            pEnd++;
-
-        // Take only last digits of over long string.
-        if ((unsigned int)(pEnd - pBegin) > 2 * size())
-            pBegin = pEnd - 2 * size();
-
-        unsigned char* pOut = end() - ((pEnd - pBegin + 1) / 2);
-
-        *this = beast::zero;
-
-        if ((pEnd - pBegin) & 1)
-            *pOut++ = charUnHex(*pBegin++);
-
-        while (pBegin != pEnd)
+        while (in != sv.end())
         {
-            auto cHigh = charUnHex(*pBegin++);
-            auto cLow = pBegin == pEnd ? 0 : charUnHex(*pBegin++);
+            auto const hi = charUnHex(*in++);
+            auto const lo = charUnHex(*in++);
 
-            if (cHigh == -1 || cLow == -1)
+            if (hi == -1 || lo == -1)
                 return false;
 
-            *pOut++ = (cHigh << 4) | cLow;
+            *out++ = static_cast<std::uint8_t>((hi << 4) + lo);
         }
 
-        return !*pEnd;
+        return true;
     }
 
-    bool
-    SetHex(std::string const& str, bool bStrict = false)
+    [[nodiscard]] bool
+    parseHex(const char* str)
     {
-        return SetHex(str.c_str(), bStrict);
+        return parseHex(std::string_view{str});
     }
 
-    bool
-    SetHexExact(std::string const& str)
+    [[nodiscard]] bool
+    parseHex(std::string const& str)
     {
-        return SetHexExact(str.c_str());
+        return parseHex(std::string_view{str});
     }
 
     constexpr static std::size_t
@@ -600,31 +565,6 @@ inline std::string
 to_string(base_uint<Bits, Tag> const& a)
 {
     return strHex(a.cbegin(), a.cend());
-}
-
-// Function templates that return a base_uint given text in hexadecimal.
-// Invoke like:
-//   auto i = from_hex_text<uint256>("AAAAA");
-template <typename T>
-auto
-from_hex_text(char const* text) -> std::enable_if_t<
-    std::is_same<T, base_uint<T::bytes * 8, typename T::tag_type>>::value,
-    T>
-{
-    T ret;
-    ret.SetHex(text);
-    return ret;
-}
-
-template <typename T>
-auto
-from_hex_text(std::string const& text) -> std::enable_if_t<
-    std::is_same<T, base_uint<T::bytes * 8, typename T::tag_type>>::value,
-    T>
-{
-    T ret;
-    ret.SetHex(text);
-    return ret;
 }
 
 template <std::size_t Bits, class Tag>

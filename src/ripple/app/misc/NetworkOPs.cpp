@@ -2229,8 +2229,7 @@ NetworkOPsImp::transactionsSQL(
             boost::format("SELECT %s FROM AccountTransactions "
                           "WHERE Account = '%s' %s %s LIMIT %u, %u;") %
             selection % app_.accountIDCache().toBase58(account) % maxClause %
-            minClause % beast::lexicalCastThrow<std::string>(offset) %
-            beast::lexicalCastThrow<std::string>(numberOfResults));
+            minClause % offset % numberOfResults);
     else
         sql = boost::str(
             boost::format(
@@ -2244,8 +2243,7 @@ NetworkOPsImp::transactionsSQL(
             selection % app_.accountIDCache().toBase58(account) % maxClause %
             minClause % (descending ? "DESC" : "ASC") %
             (descending ? "DESC" : "ASC") % (descending ? "DESC" : "ASC") %
-            beast::lexicalCastThrow<std::string>(offset) %
-            beast::lexicalCastThrow<std::string>(numberOfResults));
+            offset % numberOfResults);
     JLOG(m_journal.trace()) << "txSQL query: " << sql;
     return sql;
 }

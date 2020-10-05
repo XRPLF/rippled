@@ -376,8 +376,7 @@ public:
                 {
                     // Uh oh, corrupted data!
                     JLOG(m_journal.fatal())
-                        << "Corrupt NodeObject #"
-                        << from_hex_text<uint256>(it->key().data());
+                        << "Corrupt NodeObject #" << it->key().ToString(true);
                 }
             }
             else

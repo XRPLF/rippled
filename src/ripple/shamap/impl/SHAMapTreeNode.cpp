@@ -513,7 +513,7 @@ SHAMapTreeNode::getString(const SHAMapNodeID& id) const
     ret += "\n  Hash=";
     ret += to_string(mHash);
     ret += "/";
-    ret += beast::lexicalCast<std::string>(mItem->size());
+    ret += std::to_string(mItem->size());
     return ret;
 }
 

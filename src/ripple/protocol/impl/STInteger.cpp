@@ -25,6 +25,7 @@
 #include <ripple/protocol/STInteger.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/TxFormats.h>
+#include <charconv>
 
 namespace ripple {
 
@@ -56,7 +57,7 @@ STUInt8::getText() const
             << "Unknown result code in metadata: " << value_;
     }
 
-    return beast::lexicalCastThrow<std::string>(value_);
+    return std::to_string(value_);
 }
 
 template <>
@@ -113,7 +114,7 @@ STUInt16::getText() const
             return item->getName();
     }
 
-    return beast::lexicalCastThrow<std::string>(value_);
+    return std::to_string(value_);
 }
 
 template <>
@@ -159,7 +160,7 @@ template <>
 std::string
 STUInt32::getText() const
 {
-    return beast::lexicalCastThrow<std::string>(value_);
+    return std::to_string(value_);
 }
 
 template <>
@@ -187,13 +188,17 @@ template <>
 std::string
 STUInt64::getText() const
 {
-    return beast::lexicalCastThrow<std::string>(value_);
+    return std::to_string(value_);
 }
 
 template <>
 Json::Value STUInt64::getJson(JsonOptions) const
 {
-    return strHex(value_);
+    std::string str(16, 0);
+    auto ret = std::to_chars(str.data(), str.data() + str.size(), value_, 16);
+    assert(ret.ec == std::errc());
+    str.resize(std::distance(str.data(), ret.ptr));
+    return str;
 }
 
 }  // namespace ripple

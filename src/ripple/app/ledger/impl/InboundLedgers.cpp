@@ -309,8 +309,7 @@ public:
             for (auto const& it : mRecentFailures)
             {
                 if (it.second > 1)
-                    ret[beast::lexicalCastThrow<std::string>(it.second)]
-                       [jss::failed] = true;
+                    ret[std::to_string(it.second)][jss::failed] = true;
                 else
                     ret[to_string(it.first)][jss::failed] = true;
             }

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/basics/StringUtilities.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
@@ -73,18 +74,11 @@ public:
         env.trust(bob["USD"](TestData::fund), alice);
         env.close();
 
-        auto toBinary = [](std::string const& text) {
-            std::string binary;
-            for (size_t i = 0; i < text.size(); ++i)
-            {
-                unsigned int c = charUnHex(text[i]);
-                c = c << 4;
-                ++i;
-                c = c | charUnHex(text[i]);
-                binary.push_back(c);
-            }
-
-            return binary;
+        auto toBinary = [this](std::string const& text) {
+            auto blob = strUnHex(text);
+            BEAST_EXPECT(blob);
+            return std::string{
+                reinterpret_cast<char const*>(blob->data()), blob->size()};
         };
 
         // use a websocket client to fill transaction blobs

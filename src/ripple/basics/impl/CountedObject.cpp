@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/CountedObject.h>
+#include <algorithm>
 #include <type_traits>
 
 namespace ripple {
@@ -41,53 +42,17 @@ CountedObjects::getCounts(int minimumThreshold) const
 
     // When other operations are concurrent, the count
     // might be temporarily less than the actual count.
-    int const count = m_count.load();
+    counts.reserve(m_count.load());
 
-    counts.reserve(count);
-
-    CounterBase* counter = m_head.load();
-
-    while (counter != nullptr)
+    for (auto* ctr = m_head.load(); ctr != nullptr; ctr = ctr->getNext())
     {
-        if (counter->getCount() >= minimumThreshold)
-        {
-            Entry entry;
-
-            entry.first = counter->getName();
-            entry.second = counter->getCount();
-
-            counts.push_back(entry);
-        }
-
-        counter = counter->getNext();
+        if (ctr->getCount() >= minimumThreshold)
+            counts.emplace_back(ctr->getName(), ctr->getCount());
     }
 
+    std::sort(counts.begin(), counts.end());
+
     return counts;
-}
-
-//------------------------------------------------------------------------------
-
-CountedObjects::CounterBase::CounterBase() noexcept : m_count(0)
-{
-    // Insert ourselves at the front of the lock-free linked list
-
-    CountedObjects& instance = CountedObjects::getInstance();
-    CounterBase* head;
-
-    do
-    {
-        head = instance.m_head.load();
-        m_next = head;
-    } while (instance.m_head.exchange(this) != head);
-
-    ++instance.m_count;
-}
-
-CountedObjects::CounterBase::~CounterBase() noexcept
-{
-    // VFALCO NOTE If the counters are destroyed before the singleton,
-    //             undefined behavior will result if the singleton's member
-    //             functions are called.
 }
 
 }  // namespace ripple

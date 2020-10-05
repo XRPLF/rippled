@@ -602,14 +602,29 @@ public:
         std::uint32_t sequence = 0;
 
         // public key with invalid type
-        auto const ret = strUnHex(
-            "9930E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD02"
-            "0");
-        auto const badKey = Slice{ret->data(), ret->size()};
+        std::array<std::uint8_t, 33> const badKey{
+            0x99, 0x30, 0xE7, 0xFC, 0x9D, 0x56, 0xBB, 0x25, 0xD6, 0x89, 0x3B,
+            0xA3, 0xF3, 0x17, 0xAE, 0x5B, 0xCF, 0x33, 0xB3, 0x29, 0x1B, 0xD6,
+            0x3D, 0xB3, 0x26, 0x54, 0xA3, 0x13, 0x22, 0x2F, 0x7F, 0xD0, 0x20};
 
-        // short public key
-        auto const retShort = strUnHex("0330");
-        auto const shortKey = Slice{retShort->data(), retShort->size()};
+        // Short public key:
+        std::array<std::uint8_t, 16> const shortKey{
+            0x03,
+            0x30,
+            0xE7,
+            0xFC,
+            0x9D,
+            0x56,
+            0xBB,
+            0x25,
+            0xD6,
+            0x89,
+            0x3B,
+            0xA3,
+            0xF3,
+            0x17,
+            0xAE,
+            0x5B};
 
         auto toString = [](STObject const& st) {
             Serializer s;
@@ -749,13 +764,13 @@ public:
                     {
                         // reject invalid public key type
                         auto badSt = st;
-                        badSt[sfPublicKey] = badKey;
+                        badSt[sfPublicKey] = makeSlice(badKey);
                         BEAST_EXPECT(!deserializeManifest(toString(badSt)));
                     }
                     {
                         // reject short public key
                         auto badSt = st;
-                        badSt[sfPublicKey] = shortKey;
+                        badSt[sfPublicKey] = makeSlice(shortKey);
                         BEAST_EXPECT(!deserializeManifest(toString(badSt)));
                     }
                     {
@@ -767,13 +782,13 @@ public:
                     {
                         // reject invalid signing public key type
                         auto badSt = st;
-                        badSt[sfSigningPubKey] = badKey;
+                        badSt[sfSigningPubKey] = makeSlice(badKey);
                         BEAST_EXPECT(!deserializeManifest(toString(badSt)));
                     }
                     {
                         // reject short signing public key
                         auto badSt = st;
-                        badSt[sfSigningPubKey] = shortKey;
+                        badSt[sfSigningPubKey] = makeSlice(shortKey);
                         BEAST_EXPECT(!deserializeManifest(toString(badSt)));
                     }
                     {

@@ -101,7 +101,9 @@ doAccountOffers(RPC::JsonContext& context)
         if (!marker.isString())
             return RPC::expected_field_error(jss::marker, "string");
 
-        startAfter.SetHex(marker.asString());
+        if (!startAfter.parseHex(marker.asString()))
+            return rpcError(rpcINVALID_PARAMS);
+
         auto const sleOffer = ledger->read({ltOFFER, startAfter});
 
         if (!sleOffer || accountID != sleOffer->getAccountID(sfAccount))

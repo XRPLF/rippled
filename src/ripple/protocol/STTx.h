@@ -42,12 +42,6 @@ enum TxnSql : char {
 class STTx final : public STObject, public CountedObject<STTx>
 {
 public:
-    static char const*
-    getCountedObjectName()
-    {
-        return "STTx";
-    }
-
     static std::size_t const minMultiSigners = 1;
     static std::size_t const maxMultiSigners = 8;
 

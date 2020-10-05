@@ -141,10 +141,6 @@ public:
     ReadViewFwdRange&
     operator=(ReadViewFwdRange const&) = default;
 
-    // VFALCO Otherwise causes errors on clang
-    // private:
-    //    friend class ReadView;
-
     explicit ReadViewFwdRange(ReadView const& view) : view_(&view)
     {
     }

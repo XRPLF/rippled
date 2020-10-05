@@ -298,13 +298,11 @@ verify(
 NodeID
 calcNodeID(PublicKey const& pk)
 {
+    static_assert(NodeID::bytes == sizeof(ripesha_hasher::result_type));
+
     ripesha_hasher h;
     h(pk.data(), pk.size());
-    auto const digest = static_cast<ripesha_hasher::result_type>(h);
-    static_assert(NodeID::bytes == sizeof(ripesha_hasher::result_type), "");
-    NodeID result;
-    std::memcpy(result.data(), digest.data(), digest.size());
-    return result;
+    return NodeID{static_cast<ripesha_hasher::result_type>(h)};
 }
 
 }  // namespace ripple

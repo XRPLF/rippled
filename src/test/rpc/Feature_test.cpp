@@ -129,7 +129,7 @@ class Feature_test : public beast::unit_test::suite
              ++it)
         {
             uint256 id;
-            id.SetHexExact(it.key().asString().c_str());
+            (void)id.parseHex(it.key().asString().c_str());
             if (!BEAST_EXPECT((*it).isMember(jss::name)))
                 return;
             bool expectEnabled = env.app().getAmendmentTable().isEnabled(id);

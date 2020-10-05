@@ -38,20 +38,6 @@ namespace ripple {
 // }
 
 static bool
-isHexTxID(std::string const& txid)
-{
-    if (txid.size() != 64)
-        return false;
-
-    auto const ret =
-        std::find_if(txid.begin(), txid.end(), [](std::string::value_type c) {
-            return !std::isxdigit(static_cast<unsigned char>(c));
-        });
-
-    return (ret == txid.end());
-}
-
-static bool
 isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, uint256 const& hash)
 {
     if (!ledgerMaster.haveLedger(seq))
@@ -326,12 +312,10 @@ doTxJson(RPC::JsonContext& context)
     if (!context.params.isMember(jss::transaction))
         return rpcError(rpcINVALID_PARAMS);
 
-    std::string txHash = context.params[jss::transaction].asString();
-    if (!isHexTxID(txHash))
-        return rpcError(rpcNOT_IMPL);
-
     TxArgs args;
-    args.hash = from_hex_text<uint256>(txHash);
+
+    if (!args.hash.parseHex(context.params[jss::transaction].asString()))
+        return rpcError(rpcNOT_IMPL);
 
     args.binary = context.params.isMember(jss::binary) &&
         context.params[jss::binary].asBool();
