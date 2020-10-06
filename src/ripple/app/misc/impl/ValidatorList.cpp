@@ -804,6 +804,7 @@ ValidatorList::applyListsAndBroadcast(
         bool good = true;
         for (auto const& [pubKey, listCollection] : publisherLists_)
         {
+            (void)pubKey;
             if (listCollection.status != PublisherStatus::available)
             {
                 good = false;
@@ -1379,6 +1380,7 @@ ValidatorList::expires(ValidatorList::shared_lock const&) const
     boost::optional<TimeKeeper::time_point> res{boost::none};
     for (auto const& [pubKey, collection] : publisherLists_)
     {
+        (void)pubKey;
         // Unfetched
         auto const& current = collection.current;
         if (current.expiration == TimeKeeper::time_point{})
@@ -1390,6 +1392,7 @@ ValidatorList::expires(ValidatorList::shared_lock const&) const
         auto chainedExpiration = current.expiration;
         for (auto const& [sequence, check] : collection.remaining)
         {
+            (void)sequence;
             if (check.effective <= chainedExpiration)
                 chainedExpiration = check.expiration;
             else
@@ -1503,6 +1506,7 @@ ValidatorList::getJson() const
         {
             using namespace std::chrono_literals;
 
+            (void)sequence;
             Json::Value& r = remaining.append(Json::objectValue);
             appendList(future, r);
             // Race conditions can happen, so make this check "fuzzy"
