@@ -912,7 +912,10 @@ private:
 
         BEAST_EXPECT(!trustedKeys->trustedPublisher(publisherPublic));
         for (auto const& [num, list] : lists)
+        {
+            (void)num;
             expectUntrusted(list);
+        }
 
         checkAvailable(trustedKeys, hexPublic, manifest2, 0, {});
     }
