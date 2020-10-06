@@ -510,7 +510,8 @@ buildValidatorListMessage(
 {
     assert(messages.empty());
     protocol::TMValidatorListCollection msg;
-    msg.set_version(rawVersion);
+    auto const version = rawVersion < 2 ? 2 : rawVersion;
+    msg.set_version(version);
     msg.set_manifest(rawManifest);
 
     for (auto const& [sequence, blobInfo] : blobInfos)
