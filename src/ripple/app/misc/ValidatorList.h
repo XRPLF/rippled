@@ -304,12 +304,14 @@ public:
         explicit MessageWithHash() = default;
         explicit MessageWithHash(
             std::shared_ptr<Message> const& message_,
-            uint256 hash_)
-            : message(message_), hash(hash_)
+            uint256 hash_,
+            std::size_t num_)
+            : message(message_), hash(hash_), numVLs(num_)
         {
         }
         std::shared_ptr<Message> message;
         uint256 hash;
+        std::size_t numVLs = 0;
     };
 
     /** Load configured trusted keys.
@@ -361,7 +363,7 @@ public:
         HashRouter& hashRouter,
         beast::Journal const j);
 
-    [[nodiscard]] static std::size_t
+    [[nodiscard]] static std::pair<std::size_t, std::size_t>
     buildValidatorListMessages(
         std::size_t messageVersion,
         std::uint64_t peerSequence,

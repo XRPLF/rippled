@@ -2214,6 +2214,14 @@ private:
                 }
                 BEAST_EXPECT(msgIter == expectedInfo.end());
             };
+        auto verifyBuildMessages =
+            [this](
+                std::pair<std::size_t, std::size_t> const& result,
+                std::size_t expectedSequence,
+                std::size_t expectedSize) {
+                BEAST_EXPECT(result.first == expectedSequence);
+                BEAST_EXPECT(result.second == expectedSize);
+            };
 
         std::string const manifest = "This is not a manifest";
         std::uint32_t const version = 2;
@@ -2248,9 +2256,10 @@ private:
         // Version 1
 
         // This peer has a VL ahead of our "current"
-        BEAST_EXPECT(
+        verifyBuildMessages(
             ValidatorList::buildValidatorListMessages(
-                1, 8, maxSequence, version, manifest, blobInfos, messages) ==
+                1, 8, maxSequence, version, manifest, blobInfos, messages),
+            0,
             0);
         BEAST_EXPECT(messages.size() == 0);
 
@@ -2259,18 +2268,20 @@ private:
         // situation is contrived for this test and should never happen in
         // real code.
         messages.emplace_back();
-        BEAST_EXPECT(
+        verifyBuildMessages(
             ValidatorList::buildValidatorListMessages(
-                1, 3, maxSequence, version, manifest, blobInfos, messages) ==
-            5);
+                1, 3, maxSequence, version, manifest, blobInfos, messages),
+            5,
+            0);
         BEAST_EXPECT(messages.size() == 1 && !messages.front().message);
 
         // Generate a version 1 message
         messages.clear();
-        BEAST_EXPECT(
+        verifyBuildMessages(
             ValidatorList::buildValidatorListMessages(
-                1, 3, maxSequence, version, manifest, blobInfos, messages) ==
-            5);
+                1, 3, maxSequence, version, manifest, blobInfos, messages),
+            5,
+            1);
         if (BEAST_EXPECT(messages.size() == 1) &&
             BEAST_EXPECT(messages.front().message))
         {
@@ -2300,7 +2311,7 @@ private:
         messages.clear();
 
         // This peer has a VL ahead of us.
-        BEAST_EXPECT(
+        verifyBuildMessages(
             ValidatorList::buildValidatorListMessages(
                 2,
                 maxSequence * 2,
@@ -2308,7 +2319,9 @@ private:
                 version,
                 manifest,
                 blobInfos,
-                messages) == 0);
+                messages),
+            0,
+            0);
         BEAST_EXPECT(messages.size() == 0);
 
         // Don't repeat the work if messages is populated, even though the
@@ -2316,18 +2329,20 @@ private:
         // situation is contrived for this test and should never happen in
         // real code.
         messages.emplace_back();
-        BEAST_EXPECT(
+        verifyBuildMessages(
             ValidatorList::buildValidatorListMessages(
-                2, 3, maxSequence, version, manifest, blobInfos, messages) ==
-            maxSequence);
+                2, 3, maxSequence, version, manifest, blobInfos, messages),
+            maxSequence,
+            0);
         BEAST_EXPECT(messages.size() == 1 && !messages.front().message);
 
         // Generate a version 2 message. Don't send the current
         messages.clear();
-        BEAST_EXPECT(
+        verifyBuildMessages(
             ValidatorList::buildValidatorListMessages(
-                2, 5, maxSequence, version, manifest, blobInfos, messages) ==
-            maxSequence);
+                2, 5, maxSequence, version, manifest, blobInfos, messages),
+            maxSequence,
+            4);
         verifyMessage(
             version, manifest, blobInfos, messages, {{372, {6, 7, 10, 12}}});
 
@@ -2335,45 +2350,30 @@ private:
 
         // Version 1 messages don't split, they just abort.
         messages.clear();
-        BEAST_EXPECT(
+        verifyBuildMessages(
             ValidatorList::buildValidatorListMessages(
-                1,
-                3,
-                maxSequence,
-                version,
-                manifest,
-                blobInfos,
-                messages,
-                50) == 5);
+                1, 3, maxSequence, version, manifest, blobInfos, messages, 50),
+            5,
+            0);
         BEAST_EXPECT(messages.size() == 1 && !messages.front().message);
 
         // version 2 messages will split, but only if the individual blobs
         // fit within a message. Try a limit that's too small.
         messages.clear();
-        BEAST_EXPECT(
+        verifyBuildMessages(
             ValidatorList::buildValidatorListMessages(
-                2,
-                5,
-                maxSequence,
-                version,
-                manifest,
-                blobInfos,
-                messages,
-                107) == maxSequence);
+                2, 5, maxSequence, version, manifest, blobInfos, messages, 107),
+            maxSequence,
+            0);
         BEAST_EXPECT(messages.size() == 1 && !messages.front().message);
 
         // Set a limit that should give two messages
         messages.clear();
-        BEAST_EXPECT(
+        verifyBuildMessages(
             ValidatorList::buildValidatorListMessages(
-                2,
-                5,
-                maxSequence,
-                version,
-                manifest,
-                blobInfos,
-                messages,
-                300) == maxSequence);
+                2, 5, maxSequence, version, manifest, blobInfos, messages, 300),
+            maxSequence,
+            4);
         verifyMessage(
             version,
             manifest,
@@ -2384,16 +2384,11 @@ private:
         // Set a limit between the size of the two earlier messages so one
         // will split and the other won't
         messages.clear();
-        BEAST_EXPECT(
+        verifyBuildMessages(
             ValidatorList::buildValidatorListMessages(
-                2,
-                5,
-                maxSequence,
-                version,
-                manifest,
-                blobInfos,
-                messages,
-                200) == maxSequence);
+                2, 5, maxSequence, version, manifest, blobInfos, messages, 200),
+            maxSequence,
+            4);
         verifyMessage(
             version,
             manifest,
@@ -2403,16 +2398,11 @@ private:
 
         // Set a limit so that all the VLs are sent individually
         messages.clear();
-        BEAST_EXPECT(
+        verifyBuildMessages(
             ValidatorList::buildValidatorListMessages(
-                2,
-                5,
-                maxSequence,
-                version,
-                manifest,
-                blobInfos,
-                messages,
-                150) == maxSequence);
+                2, 5, maxSequence, version, manifest, blobInfos, messages, 150),
+            maxSequence,
+            4);
         verifyMessage(
             version,
             manifest,
@@ -2422,16 +2412,11 @@ private:
 
         // Set a limit so not all of the VLs are sent
         messages.clear();
-        BEAST_EXPECT(
+        verifyBuildMessages(
             ValidatorList::buildValidatorListMessages(
-                2,
-                5,
-                maxSequence,
-                version,
-                manifest,
-                blobInfos,
-                messages,
-                108) == maxSequence);
+                2, 5, maxSequence, version, manifest, blobInfos, messages, 108),
+            maxSequence,
+            2);
         verifyMessage(
             version, manifest, blobInfos, messages, {{108, {6}}, {108, {7}}});
     }

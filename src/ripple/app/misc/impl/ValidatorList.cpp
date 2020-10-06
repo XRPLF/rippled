@@ -36,6 +36,7 @@
 
 #include <cmath>
 #include <mutex>
+#include <numeric>
 #include <shared_mutex>
 
 namespace ripple {
@@ -389,7 +390,7 @@ ValidatorList::parseBlobs(protocol::TMValidatorListCollection const& body)
     return result;
 }
 
-void
+std::size_t
 splitMessageParts(
     std::vector<ValidatorList::MessageWithHash>& messages,
     protocol::TMValidatorListCollection const& largeMsg,
@@ -397,7 +398,7 @@ splitMessageParts(
     std::size_t begin,
     std::size_t end);
 
-void
+std::size_t
 splitMessage(
     std::vector<ValidatorList::MessageWithHash>& messages,
     protocol::TMValidatorListCollection const& largeMsg,
@@ -409,15 +410,15 @@ splitMessage(
         end = largeMsg.blobs_size();
     assert(begin < end);
     if (end <= begin)
-        return;
+        return 0;
 
     auto mid = (begin + end) / 2;
     // The parts function will do range checking
-    splitMessageParts(messages, largeMsg, maxSize, begin, mid);
-    splitMessageParts(messages, largeMsg, maxSize, mid, end);
+    return splitMessageParts(messages, largeMsg, maxSize, begin, mid) +
+        splitMessageParts(messages, largeMsg, maxSize, mid, end);
 }
 
-void
+std::size_t
 splitMessageParts(
     std::vector<ValidatorList::MessageWithHash>& messages,
     protocol::TMValidatorListCollection const& largeMsg,
@@ -426,7 +427,7 @@ splitMessageParts(
     std::size_t end)
 {
     if (end <= begin)
-        return;
+        return 0;
     if (end - begin == 1)
     {
         protocol::TMValidatorList smallMsg;
@@ -444,7 +445,10 @@ splitMessageParts(
             std::make_shared<Message>(smallMsg, protocol::mtVALIDATORLIST);
 
         if (message->getBuffer(compression::Compressed::Off).size() <= maxSize)
-            messages.emplace_back(message, sha512Half(smallMsg));
+        {
+            messages.emplace_back(message, sha512Half(smallMsg), 1);
+            return messages.back().numVLs;
+        }
     }
     else
     {
@@ -465,15 +469,20 @@ splitMessageParts(
             // free up the message space
             message.reset();
             smallMsg.reset();
-            splitMessage(messages, largeMsg, maxSize, begin, end);
+            return splitMessage(messages, largeMsg, maxSize, begin, end);
         }
         else
-            messages.emplace_back(message, sha512Half(*smallMsg));
+        {
+            messages.emplace_back(
+                message, sha512Half(*smallMsg), smallMsg->blobs_size());
+            return messages.back().numVLs;
+        }
     }
+    return 0;
 }
 
 // Build a v1 protocol message using only the current VL
-void
+std::size_t
 buildValidatorListMessage(
     std::vector<ValidatorList::MessageWithHash>& messages,
     std::uint32_t rawVersion,
@@ -494,12 +503,16 @@ buildValidatorListMessage(
 
     auto message = std::make_shared<Message>(msg, protocol::mtVALIDATORLIST);
     if (message->getBuffer(compression::Compressed::Off).size() <= maxSize)
-        messages.emplace_back(message, sha512Half(msg));
+    {
+        messages.emplace_back(message, sha512Half(msg), 1);
+        return 1;
+    }
+    return 0;
 }
 
 // Build a v2 protocol message using all the VLs with sequence larger than the
 // peer's
-void
+std::size_t
 buildValidatorListMessage(
     std::vector<ValidatorList::MessageWithHash>& messages,
     std::uint64_t peerSequence,
@@ -531,15 +544,18 @@ buildValidatorListMessage(
     {
         // throw away the Message and split into smaller messages
         message.reset();
-        splitMessage(messages, msg, maxSize);
+        return splitMessage(messages, msg, maxSize);
     }
     else
-        messages.emplace_back(message, sha512Half(msg));
+    {
+        messages.emplace_back(message, sha512Half(msg), msg.blobs_size());
+        return messages.back().numVLs;
+    }
 }
 
 [[nodiscard]]
 // static
-std::size_t
+std::pair<std::size_t, std::size_t>
 ValidatorList::buildValidatorListMessages(
     std::size_t messageVersion,
     std::uint64_t peerSequence,
@@ -552,12 +568,19 @@ ValidatorList::buildValidatorListMessages(
 {
     assert(!blobInfos.empty());
     auto const& [currentSeq, currentBlob] = *blobInfos.begin();
+    auto numVLs = std::accumulate(
+        messages.begin(),
+        messages.end(),
+        0,
+        [](std::size_t total, MessageWithHash const& m) {
+            return total + m.numVLs;
+        });
     if (messageVersion == 2 && peerSequence < maxSequence)
     {
         // Version 2
         if (messages.empty())
         {
-            buildValidatorListMessage(
+            numVLs = buildValidatorListMessage(
                 messages,
                 peerSequence,
                 rawVersion,
@@ -571,14 +594,14 @@ ValidatorList::buildValidatorListMessages(
         }
 
         // Don't send it next time.
-        return maxSequence;
+        return {maxSequence, numVLs};
     }
     else if (messageVersion == 1 && peerSequence < currentSeq)
     {
         // Version 1
         if (messages.empty())
         {
-            buildValidatorListMessage(
+            numVLs = buildValidatorListMessage(
                 messages,
                 rawVersion,
                 currentBlob.manifest ? *currentBlob.manifest : rawManifest,
@@ -591,9 +614,9 @@ ValidatorList::buildValidatorListMessages(
         }
 
         // Don't send it next time.
-        return currentSeq;
+        return {currentSeq, numVLs};
     }
-    return 0;
+    return {0, 0};
 }
 
 // static
@@ -617,7 +640,7 @@ ValidatorList::sendValidatorList(
                                                                           : 0;
     if (!messageVersion)
         return;
-    auto const newPeerSequence = buildValidatorListMessages(
+    auto const [newPeerSequence, numVLs] = buildValidatorListMessages(
         messageVersion,
         peerSequence,
         maxSequence,
@@ -646,19 +669,24 @@ ValidatorList::sendValidatorList(
         assert(sent || messages.size() == 1);
         if (sent)
         {
-            if (messages.size() > 1)
+            if (messageVersion > 1)
                 JLOG(j.debug())
-                    << "Sent " << messages.size() << " validator lists for "
-                    << strHex(publisherKey) << " with sequence range "
-                    << peerSequence << ", " << maxSequence << " to "
-                    << peer.getRemoteAddress().to_string() << " (" << peer.id()
-                    << ")";
+                    << "Sent " << messages.size()
+                    << " validator list collection(s) containing " << numVLs
+                    << " validator list(s) for " << strHex(publisherKey)
+                    << " with sequence range " << peerSequence << ", "
+                    << newPeerSequence << " to "
+                    << peer.getRemoteAddress().to_string() << " [" << peer.id()
+                    << "]";
             else
+            {
+                assert(numVLs == 1);
                 JLOG(j.debug())
                     << "Sent validator list for " << strHex(publisherKey)
                     << " with sequence " << newPeerSequence << " to "
-                    << peer.getRemoteAddress().to_string() << " (" << peer.id()
-                    << ")";
+                    << peer.getRemoteAddress().to_string() << " [" << peer.id()
+                    << "]";
+            }
         }
     }
 }

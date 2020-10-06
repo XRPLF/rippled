@@ -1885,7 +1885,7 @@ PeerImp::onValidatorListMessage(
     if (!app_.getHashRouter().addSuppressionPeer(hash, id_))
     {
         JLOG(p_journal_.debug())
-            << messageType << ": received duplicate validator list ";
+            << messageType << ": received duplicate " << messageType;
         // Charging this fee here won't hurt the peer in the normal
         // course of operation (ie. refresh every 5 minutes), but
         // will add up if the peer is misbehaving.
