@@ -414,8 +414,9 @@ splitMessage(
 
     auto mid = (begin + end) / 2;
     // The parts function will do range checking
-    return splitMessageParts(messages, largeMsg, maxSize, begin, mid) +
-        splitMessageParts(messages, largeMsg, maxSize, mid, end);
+    // Use two separate calls to ensure deterministic order
+    auto result = splitMessageParts(messages, largeMsg, maxSize, begin, mid);
+    return result + splitMessageParts(messages, largeMsg, maxSize, mid, end);
 }
 
 std::size_t
