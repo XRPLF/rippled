@@ -37,15 +37,21 @@ class RawStateTable
 {
 public:
     using key_type = ReadView::key_type;
+    // Initial size for the monotonic_buffer_resource used for allocations
+    // The size was chosen from the old `qalloc` code (which this replaces).
+    // It is unclear how the size initially chosen in qalloc.
+    static constexpr size_t initialBufferSize = kilobytes(256);
 
     RawStateTable()
         : monotonic_resource_{std::make_unique<
-              boost::container::pmr::monotonic_buffer_resource>(kilobytes(256))}
+              boost::container::pmr::monotonic_buffer_resource>(
+              initialBufferSize)}
         , items_{monotonic_resource_.get()} {};
 
     RawStateTable(RawStateTable const& rhs)
         : monotonic_resource_{std::make_unique<
-              boost::container::pmr::monotonic_buffer_resource>(kilobytes(256))}
+              boost::container::pmr::monotonic_buffer_resource>(
+              initialBufferSize)}
         , items_{rhs.items_, monotonic_resource_.get()}
         , dropsDestroyed_{rhs.dropsDestroyed_} {};
 

@@ -55,6 +55,11 @@ extern open_ledger_t const open_ledger;
 class OpenView final : public ReadView, public TxsRawView
 {
 private:
+    // Initial size for the monotonic_buffer_resource used for allocations
+    // The size was chosen from the old `qalloc` code (which this replaces).
+    // It is unclear how the size initially chosen in qalloc.
+    static constexpr size_t initialBufferSize = kilobytes(256);
+
     class txs_iter_impl;
 
     struct txData

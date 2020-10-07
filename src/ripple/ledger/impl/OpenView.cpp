@@ -78,7 +78,7 @@ OpenView::OpenView(OpenView const& rhs)
     : ReadView(rhs)
     , TxsRawView(rhs)
     , monotonic_resource_{std::make_unique<
-          boost::container::pmr::monotonic_buffer_resource>(kilobytes(256))}
+          boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{rhs.txs_, monotonic_resource_.get()}
     , rules_{rhs.rules_}
     , info_{rhs.info_}
@@ -93,7 +93,7 @@ OpenView::OpenView(
     Rules const& rules,
     std::shared_ptr<void const> hold)
     : monotonic_resource_{std::make_unique<
-          boost::container::pmr::monotonic_buffer_resource>(kilobytes(256))}
+          boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{monotonic_resource_.get()}
     , rules_(rules)
     , info_(base->info())
@@ -109,7 +109,7 @@ OpenView::OpenView(
 
 OpenView::OpenView(ReadView const* base, std::shared_ptr<void const> hold)
     : monotonic_resource_{std::make_unique<
-          boost::container::pmr::monotonic_buffer_resource>(kilobytes(256))}
+          boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{monotonic_resource_.get()}
     , rules_(base->rules())
     , info_(base->info())

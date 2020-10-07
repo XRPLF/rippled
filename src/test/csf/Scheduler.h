@@ -20,6 +20,7 @@
 #ifndef RIPPLE_TEST_CSF_SCHEDULER_H_INCLUDED
 #define RIPPLE_TEST_CSF_SCHEDULER_H_INCLUDED
 
+#include <ripple/basics/ByteUtilities.h>
 #include <ripple/beast/clock/manual_clock.h>
 
 #include <boost/container/pmr/monotonic_buffer_resource.hpp>
@@ -144,7 +145,7 @@ private:
         erase(iterator iter);
     };
 
-    boost::container::pmr::monotonic_buffer_resource alloc_{256 * 1024};
+    boost::container::pmr::monotonic_buffer_resource alloc_{kilobytes(256)};
     queue_type queue_;
 
     // Aged containers that rely on this clock take a non-const reference =(
