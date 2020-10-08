@@ -38,7 +38,7 @@ namespace ripple {
 
 namespace test {
 
-class TxQ_test : public beast::unit_test::suite
+class TxQ1_test : public beast::unit_test::suite
 {
     void
     checkMetrics(
@@ -2320,7 +2320,7 @@ public:
             cancelOffer[jss::Account] = alice.human();
             cancelOffer[jss::OfferSequence] = 3;
             cancelOffer[jss::TransactionType] = jss::OfferCancel;
-            auto const jtx = env.jt(cancelOffer, seq(1), fee(10));
+            auto const jtx = env.jt(cancelOffer, seq(5), fee(10));
             auto const pf = preflight(
                 env.app(),
                 env.current()->rules(),
@@ -4531,6 +4531,120 @@ public:
     }
 
     void
+    testCancelQueuedOffers()
+    {
+        testcase("Cancel queued offers");
+        using namespace jtx;
+
+        Account const alice("alice");
+        auto gw = Account("gw");
+        auto USD = gw["USD"];
+
+        auto cfg = makeConfig(
+            {{"minimum_txn_in_ledger_standalone", "5"},
+             {"ledgers_in_queue", "5"},
+             {"maximum_txn_per_account", "30"},
+             {"minimum_queue_size", "50"}});
+
+        Env env(
+            *this, std::move(cfg), supported_amendments() | featureTicketBatch);
+
+        // The noripple is to reduce the number of transactions required to
+        // fund the accounts.  There is no rippling in this test.
+        env.fund(XRP(100000), noripple(alice));
+        env.close();
+
+        {
+            // ------- Sequence-based transactions -------
+            fillQueue(env, alice);
+
+            // Alice creates a couple offers
+            auto const aliceSeq = env.seq(alice);
+            env(offer(alice, USD(1000), XRP(1000)), ter(terQUEUED));
+
+            env(offer(alice, USD(1000), XRP(1001)),
+                seq(aliceSeq + 1),
+                ter(terQUEUED));
+
+            // Alice creates transactions that cancel the first set of
+            // offers, one through another offer, and one cancel
+            env(offer(alice, USD(1000), XRP(1002)),
+                seq(aliceSeq + 2),
+                json(jss::OfferSequence, aliceSeq),
+                ter(terQUEUED));
+
+            env(offer_cancel(alice, aliceSeq + 1),
+                seq(aliceSeq + 3),
+                ter(terQUEUED));
+
+            env.close();
+
+            checkMetrics(env, 0, 50, 4, 6, 256);
+        }
+
+        {
+            // ------- Ticket-based transactions -------
+
+            // Alice creates some tickets
+            auto const aliceTkt = env.seq(alice);
+            env(ticket::create(alice, 6));
+            env.close();
+
+            fillQueue(env, alice);
+
+            // Alice creates a couple offers using tickets, consuming the
+            // tickets in reverse order
+            auto const aliceSeq = env.seq(alice);
+            env(offer(alice, USD(1000), XRP(1000)),
+                ticket::use(aliceTkt + 4),
+                ter(terQUEUED));
+
+            env(offer(alice, USD(1000), XRP(1001)),
+                ticket::use(aliceTkt + 3),
+                ter(terQUEUED));
+
+            // Alice creates a couple more transactions that cancel the first
+            // set of offers, also in reverse order. This allows Alice to submit
+            // a tx with a lower ticket value than the offer it's cancelling.
+            // These transactions succeed because Ticket ordering is arbitrary
+            // and it's up to the user to ensure they don't step on their own
+            // feet.
+            env(offer(alice, USD(1000), XRP(1002)),
+                ticket::use(aliceTkt + 2),
+                json(jss::OfferSequence, aliceTkt + 4),
+                ter(terQUEUED));
+
+            env(offer_cancel(alice, aliceTkt + 3),
+                ticket::use(aliceTkt + 1),
+                ter(terQUEUED));
+
+            // Create a couple more offers using sequences
+            env(offer(alice, USD(1000), XRP(1000)), ter(terQUEUED));
+
+            env(offer(alice, USD(1000), XRP(1001)),
+                seq(aliceSeq + 1),
+                ter(terQUEUED));
+
+            // And try to cancel those using tickets
+            env(offer(alice, USD(1000), XRP(1002)),
+                ticket::use(aliceTkt + 5),
+                json(jss::OfferSequence, aliceSeq),
+                ter(terQUEUED));
+
+            env(offer_cancel(alice, aliceSeq + 1),
+                ticket::use(aliceTkt + 6),
+                ter(terQUEUED));
+
+            env.close();
+
+            // The ticket transactions that didn't succeed or get queued succeed
+            // this time because the tickets got consumed when the offers came
+            // out of the queue
+            checkMetrics(env, 0, 50, 8, 7, 256);
+        }
+    }
+
+    void
     run() override
     {
         testQueueSeq();
@@ -4550,6 +4664,11 @@ public:
         testBlockersTicket();
         testInFlightBalance();
         testConsequences();
+    }
+
+    void
+    run2()
+    {
         testAcctInQueueButEmpty();
         testRPC();
         testExpirationReplacement();
@@ -4564,10 +4683,21 @@ public:
         testInLedgerTicket();
         testReexecutePreflight();
         testQueueFullDropPenalty();
+        testCancelQueuedOffers();
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(TxQ, app, ripple, 1);
+class TxQ2_test : public TxQ1_test
+{
+    void
+    run() override
+    {
+        run2();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_PRIO(TxQ1, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(TxQ2, app, ripple, 1);
 
 }  // namespace test
 }  // namespace ripple
