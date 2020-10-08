@@ -40,8 +40,7 @@ CancelOffer::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    auto const seq = ctx.tx.getFieldU32(sfOfferSequence);
-    if (!seq)
+    if (!ctx.tx[sfOfferSequence])
     {
         JLOG(ctx.j.trace()) << "CancelOffer::preflight: missing sequence";
         return temBAD_SEQUENCE;
