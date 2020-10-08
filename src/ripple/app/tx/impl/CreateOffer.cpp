@@ -75,9 +75,8 @@ CreateOffer::preflight(PreflightContext const& ctx)
         return temBAD_EXPIRATION;
     }
 
-    bool const bHaveCancel(tx.isFieldPresent(sfOfferSequence));
-
-    if (bHaveCancel && (tx.getFieldU32(sfOfferSequence) == 0))
+    if (auto const cancelSequence = tx[~sfOfferSequence];
+        cancelSequence && *cancelSequence == 0)
     {
         JLOG(j.debug()) << "Malformed offer: bad cancel sequence";
         return temBAD_SEQUENCE;

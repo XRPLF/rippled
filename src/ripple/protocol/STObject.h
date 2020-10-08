@@ -477,31 +477,35 @@ public:
     const STArray&
     getFieldArray(SField const& field) const;
 
-    /** Return the value of a field.
-
-        Throws:
-
-            STObject::FieldErr if the field is
-            not present.
+    /** Get the value of a field.
+        @param A TypedField built from an SField value representing the desired
+            object field. In typical use, the TypedField will be implicitly
+            constructed.
+        @return The value of the specified field.
+        @throws STObject::FieldErr if the field is not present.
     */
     template <class T>
     typename T::value_type
     operator[](TypedField<T> const& f) const;
 
-    /** Return the value of a field as boost::optional
+    /** Get the value of a field as boost::optional
 
-        @return boost::none if the field is not present.
+        @param An OptionaledField built from an SField value representing the
+           desired object field. In typical use, the OptionaledField will be
+           constructed by using the ~ operator on an SField.
+        @return boost::none if the field is not present, else the value of the
+           specified field.
     */
     template <class T>
     boost::optional<std::decay_t<typename T::value_type>>
     operator[](OptionaledField<T> const& of) const;
 
-    /** Return a modifiable field value.
-
-        Throws:
-
-            STObject::FieldErr if the field is
-            not present.
+    /** Get a modifiable field value.
+        @param A TypedField built from an SField value representing the desired
+            object field. In typical use, the TypedField will be implicitly
+            constructed.
+        @return A modifiable reference to the value of the specified field.
+        @throws STObject::FieldErr if the field is not present.
     */
     template <class T>
     ValueProxy<T>
@@ -509,12 +513,63 @@ public:
 
     /** Return a modifiable field value as boost::optional
 
-        The return value equals boost::none if the
-        field is not present.
+        @param An OptionaledField built from an SField value representing the
+            desired object field. In typical use, the OptionaledField will be
+            constructed by using the ~ operator on an SField.
+        @return Transparent proxy object to an `optional` holding a modifiable
+            reference to the value of the specified field. Returns boost::none
+            if the field is not present.
     */
     template <class T>
     OptionalProxy<T>
     operator[](OptionaledField<T> const& of);
+
+    /** Get the value of a field.
+        @param A TypedField built from an SField value representing the desired
+            object field. In typical use, the TypedField will be implicitly
+            constructed.
+        @return The value of the specified field.
+        @throws STObject::FieldErr if the field is not present.
+    */
+    template <class T>
+    typename T::value_type
+    at(TypedField<T> const& f) const;
+
+    /** Get the value of a field as boost::optional
+
+        @param An OptionaledField built from an SField value representing the
+           desired object field. In typical use, the OptionaledField will be
+           constructed by using the ~ operator on an SField.
+        @return boost::none if the field is not present, else the value of the
+           specified field.
+    */
+    template <class T>
+    boost::optional<std::decay_t<typename T::value_type>>
+    at(OptionaledField<T> const& of) const;
+
+    /** Get a modifiable field value.
+        @param A TypedField built from an SField value representing the desired
+            object field. In typical use, the TypedField will be implicitly
+            constructed.
+        @return A modifiable reference to the value of the specified field.
+        @throws STObject::FieldErr if the field is not present.
+    */
+    template <class T>
+    ValueProxy<T>
+    at(TypedField<T> const& f);
+
+    /** Return a modifiable field value as boost::optional
+
+        @param An OptionaledField built from an SField value representing the
+            desired object field. In typical use, the OptionaledField will be
+            constructed by using the ~ operator on an SField.
+        @return Transparent proxy object to an `optional` holding a modifiable
+            reference to the value of the specified field. Returns boost::none
+            if the field is not present.
+    */
+    template <class T>
+    OptionalProxy<T>
+    at(OptionaledField<T> const& of);
 
     /** Set a field.
         if the field already exists, it is replaced.
@@ -927,6 +982,34 @@ template <class T>
 typename T::value_type
 STObject::operator[](TypedField<T> const& f) const
 {
+    return at(f);
+}
+
+template <class T>
+boost::optional<std::decay_t<typename T::value_type>>
+STObject::operator[](OptionaledField<T> const& of) const
+{
+    return at(of);
+}
+
+template <class T>
+inline auto
+STObject::operator[](TypedField<T> const& f) -> ValueProxy<T>
+{
+    return at(f);
+}
+
+template <class T>
+inline auto
+STObject::operator[](OptionaledField<T> const& of) -> OptionalProxy<T>
+{
+    return at(of);
+}
+
+template <class T>
+typename T::value_type
+STObject::at(TypedField<T> const& f) const
+{
     auto const b = peekAtPField(f);
     if (!b)
         // This is a free object (no constraints)
@@ -951,7 +1034,7 @@ STObject::operator[](TypedField<T> const& f) const
 
 template <class T>
 boost::optional<std::decay_t<typename T::value_type>>
-STObject::operator[](OptionaledField<T> const& of) const
+STObject::at(OptionaledField<T> const& of) const
 {
     auto const b = peekAtPField(*of.f);
     if (!b)
@@ -971,14 +1054,14 @@ STObject::operator[](OptionaledField<T> const& of) const
 
 template <class T>
 inline auto
-STObject::operator[](TypedField<T> const& f) -> ValueProxy<T>
+STObject::at(TypedField<T> const& f) -> ValueProxy<T>
 {
     return ValueProxy<T>(this, &f);
 }
 
 template <class T>
 inline auto
-STObject::operator[](OptionaledField<T> const& of) -> OptionalProxy<T>
+STObject::at(OptionaledField<T> const& of) -> OptionalProxy<T>
 {
     return OptionalProxy<T>(this, of.f);
 }

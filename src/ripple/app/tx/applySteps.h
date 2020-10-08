@@ -284,29 +284,6 @@ preclaim(
     Application& app,
     OpenView const& view);
 
-// There are two special entry points that are only intended for use by the
-// TxQ.  To help enforce that this class contains the two functions as
-// static members.
-class ForTxQ
-{
-private:
-    friend TxQ;
-
-    // This entry point runs all of the preclaim checks with the lone exception
-    // of verifying Sequence or Ticket validity.  This allows the TxQ to
-    // perform its own similar checks without needing to construct a bogus view.
-    static PreclaimResult
-    preclaimWithoutSeqCheck(
-        PreflightResult const& preflightResult,
-        Application& app,
-        OpenView const& view);
-
-    // Checks the sequence number explicitly.  Used by the TxQ in the case
-    // where the preclaim sequence number check was skipped earlier.
-    static TER
-    seqCheck(OpenView& view, STTx const& tx, beast::Journal j);
-};
-
 /** Compute only the expected base fee for a transaction.
 
     Base fees are transaction specific, so any calculation

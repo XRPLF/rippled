@@ -1120,6 +1120,14 @@ TxQ::apply(
                 std::min(balance - std::min(balance, reserve), potentialSpend);
             assert(potentialTotalSpend > XRPAmount{0});
             sleBump->setFieldAmount(sfBalance, balance - potentialTotalSpend);
+            // The transaction's sequence/ticket will be valid when the other
+            // transactions in the queue have been processed. If the tx has a
+            // sequence, set the account to match it. If it has a ticket, use
+            // the next queueable sequence, which is the closest approximation
+            // to the most successful case.
+            sleBump->at(sfSequence) = txSeqProx.isSeq()
+                ? txSeqProx.value()
+                : nextQueuableSeqImpl(sleAccount, lock).value();
         }
     }
 
@@ -1134,8 +1142,8 @@ TxQ::apply(
     // Note that earlier code has already verified that the sequence/ticket
     // is valid.  So we use a special entry point that runs all of the
     // preclaim checks with the exception of the sequence check.
-    auto const pcresult = ForTxQ::preclaimWithoutSeqCheck(
-        pfresult, app, multiTxn ? multiTxn->openView : view);
+    auto const pcresult =
+        preclaim(pfresult, app, multiTxn ? multiTxn->openView : view);
     if (!pcresult.likelyToClaimFee)
         return {pcresult.ter, false};
 

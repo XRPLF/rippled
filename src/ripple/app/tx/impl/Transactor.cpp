@@ -247,7 +247,7 @@ Transactor::checkSeqProxy(
     {
         JLOG(j.trace())
             << "applyTransaction: delay: source account does not exist "
-            << toBase58(tx.getAccountID(sfAccount));
+            << toBase58(id);
         return terNO_ACCOUNT;
     }
 
@@ -305,7 +305,7 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.trace())
             << "applyTransaction: delay: source account does not exist "
-            << toBase58(ctx.tx.getAccountID(sfAccount));
+            << toBase58(id);
         return terNO_ACCOUNT;
     }
 
