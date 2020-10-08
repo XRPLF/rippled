@@ -164,8 +164,7 @@ transResults()
         MAKE_ERROR(terPRE_SEQ,                "Missing/inapplicable prior transaction."),
         MAKE_ERROR(terOWNERS,                 "Non-zero owner count."),
         MAKE_ERROR(terQUEUED,                 "Held until escalated fee drops."),
-        {terPRE_TICKET, {"terPRE_TICKET", "Ticket is not yet in ledger."}},
-
+        MAKE_ERROR(terPRE_TICKET,             "Ticket is not yet in ledger."),
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),
     };
     // clang-format on
