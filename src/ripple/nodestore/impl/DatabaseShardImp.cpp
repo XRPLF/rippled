@@ -939,6 +939,9 @@ DatabaseShardImp::import(Database& source)
                             true,
                             boost::none);
                         success = true;
+
+                        if (shardIndex < shardBoundaryIndex())
+                            ++numHistShards;
                     }
                     catch (std::exception const& e)
                     {
@@ -1457,10 +1460,20 @@ DatabaseShardImp::setFileStats()
     fdRequired_ = sumFd;
     avgShardFileSz_ = (numShards == 0 ? fileSz_ : fileSz_ / numShards);
 
+    if (!canAdd_)
+        return;
+
     if (auto const count = numHistoricalShards(lock);
         count >= maxHistoricalShards_)
     {
-        JLOG(j_.warn()) << "maximum number of historical shards reached";
+        if (maxHistoricalShards_)
+        {
+            // In order to avoid excessive output, don't produce
+            // this warning if the server isn't configured to
+            // store historical shards.
+            JLOG(j_.warn()) << "maximum number of historical shards reached";
+        }
+
         canAdd_ = false;
     }
     else if (!sufficientStorage(
@@ -1470,6 +1483,8 @@ DatabaseShardImp::setFileStats()
     {
         JLOG(j_.warn())
             << "maximum shard store size exceeds available storage space";
+
+        canAdd_ = false;
     }
 }
 
@@ -1609,14 +1624,17 @@ DatabaseShardImp::removeFailedShard(std::shared_ptr<Shard>& shard)
 std::uint32_t
 DatabaseShardImp::shardBoundaryIndex() const
 {
+    auto const validIndex = app_.getLedgerMaster().getValidLedgerIndex();
+
+    if (validIndex < earliestLedgerSeq())
+        return 0;
+
     // Shards with an index earlier than the recent shard boundary index
     // are considered historical. The three shards at or later than
     // this index consist of the two most recently validated shards
     // and the shard still in the process of being built by live
     // transactions.
-    return NodeStore::seqToShardIndex(
-               app_.getLedgerMaster().getValidLedgerIndex(), ledgersPerShard_) -
-        1;
+    return seqToShardIndex(validIndex) - 1;
 }
 
 std::uint32_t
