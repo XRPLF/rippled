@@ -470,8 +470,17 @@ PeerImp::hasLedger(uint256 const& hash, std::uint32_t seq) const
             return true;
     }
 
-    return seq >= app_.getNodeStore().earliestLedgerSeq() &&
-        hasShard(NodeStore::seqToShardIndex(seq));
+    if (seq >= app_.getNodeStore().earliestLedgerSeq())
+    {
+        std::lock_guard lock{shardInfoMutex_};
+        auto const it{shardInfos_.find(publicKey_)};
+        if (it != shardInfos_.end())
+        {
+            auto const shardIndex{app_.getNodeStore().seqToShardIndex(seq)};
+            return boost::icl::contains(it->second.finalized(), shardIndex);
+        }
+    }
+    return false;
 }
 
 void
@@ -481,16 +490,6 @@ PeerImp::ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const
 
     minSeq = minLedger_;
     maxSeq = maxLedger_;
-}
-
-bool
-PeerImp::hasShard(std::uint32_t shardIndex) const
-{
-    std::lock_guard l{shardInfoMutex_};
-    auto const it{shardInfo_.find(publicKey_)};
-    if (it != shardInfo_.end())
-        return boost::icl::contains(it->second.shardIndexes, shardIndex);
-    return false;
 }
 
 bool
@@ -575,23 +574,11 @@ PeerImp::fail(std::string const& name, error_code ec)
     close();
 }
 
-std::optional<RangeSet<std::uint32_t>>
-PeerImp::getShardIndexes() const
+hash_map<PublicKey, NodeStore::ShardInfo> const
+PeerImp::getPeerShardInfos() const
 {
     std::lock_guard l{shardInfoMutex_};
-    auto it{shardInfo_.find(publicKey_)};
-    if (it != shardInfo_.end())
-        return it->second.shardIndexes;
-    return std::nullopt;
-}
-
-std::optional<hash_map<PublicKey, PeerImp::ShardInfo>>
-PeerImp::getPeerShardInfo() const
-{
-    std::lock_guard l{shardInfoMutex_};
-    if (!shardInfo_.empty())
-        return shardInfo_;
-    return std::nullopt;
+    return shardInfos_;
 }
 
 void
@@ -845,9 +832,9 @@ PeerImp::doProtocolStart()
         send(m);
 
     // Request shard info from peer
-    protocol::TMGetPeerShardInfo tmGPS;
-    tmGPS.set_hops(0);
-    send(std::make_shared<Message>(tmGPS, protocol::mtGET_PEER_SHARD_INFO));
+    protocol::TMGetPeerShardInfoV2 tmGPS;
+    tmGPS.set_relays(0);
+    send(std::make_shared<Message>(tmGPS, protocol::mtGET_PEER_SHARD_INFO_V2));
 
     setTimer();
 }
@@ -1127,221 +1114,291 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMCluster> const& m)
 }
 
 void
-PeerImp::onMessage(std::shared_ptr<protocol::TMGetShardInfo> const& m)
-{
-    // DEPRECATED
-}
-
-void
-PeerImp::onMessage(std::shared_ptr<protocol::TMShardInfo> const& m)
-{
-    // DEPRECATED
-}
-
-void
 PeerImp::onMessage(std::shared_ptr<protocol::TMGetPeerShardInfo> const& m)
 {
-    auto badData = [&](std::string msg) {
-        fee_ = Resource::feeBadData;
-        JLOG(p_journal_.warn()) << msg;
-    };
-
-    if (m->hops() > csHopLimit)
-        return badData("Invalid hops: " + std::to_string(m->hops()));
-    if (m->peerchain_size() > csHopLimit)
-        return badData("Invalid peer chain");
-
-    // Reply with shard info we may have
-    if (auto shardStore = app_.getShardStore())
-    {
-        fee_ = Resource::feeLightPeer;
-        auto shards{shardStore->getCompleteShards()};
-        if (!shards.empty())
-        {
-            protocol::TMPeerShardInfo reply;
-            reply.set_shardindexes(shards);
-
-            if (m->has_lastlink())
-                reply.set_lastlink(true);
-
-            if (m->peerchain_size() > 0)
-            {
-                for (int i = 0; i < m->peerchain_size(); ++i)
-                {
-                    if (!publicKeyType(makeSlice(m->peerchain(i).nodepubkey())))
-                        return badData("Invalid peer chain public key");
-                }
-
-                *reply.mutable_peerchain() = m->peerchain();
-            }
-
-            send(std::make_shared<Message>(reply, protocol::mtPEER_SHARD_INFO));
-
-            JLOG(p_journal_.trace()) << "Sent shard indexes " << shards;
-        }
-    }
-
-    // Relay request to peers
-    if (m->hops() > 0)
-    {
-        fee_ = Resource::feeMediumBurdenPeer;
-
-        m->set_hops(m->hops() - 1);
-        if (m->hops() == 0)
-            m->set_lastlink(true);
-
-        m->add_peerchain()->set_nodepubkey(
-            publicKey_.data(), publicKey_.size());
-
-        overlay_.foreach(send_if_not(
-            std::make_shared<Message>(*m, protocol::mtGET_PEER_SHARD_INFO),
-            match_peer(this)));
-    }
+    // DEPRECATED
 }
 
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMPeerShardInfo> const& m)
 {
+    // DEPRECATED
+}
+
+void
+PeerImp::onMessage(std::shared_ptr<protocol::TMGetPeerShardInfoV2> const& m)
+{
     auto badData = [&](std::string msg) {
         fee_ = Resource::feeBadData;
         JLOG(p_journal_.warn()) << msg;
     };
 
-    if (m->shardindexes().empty())
-        return badData("Missing shard indexes");
-    if (m->peerchain_size() > csHopLimit)
-        return badData("Invalid peer chain");
-    if (m->has_nodepubkey() && !publicKeyType(makeSlice(m->nodepubkey())))
-        return badData("Invalid public key");
+    // Verify relays
+    if (m->relays() > relayLimit)
+        return badData("Invalid relays");
 
-    // Check if the message should be forwarded to another peer
-    if (m->peerchain_size() > 0)
+    // Verify peer chain
+    // The peer chain should not contain this node's public key
+    // nor the public key of the sending peer
+    std::set<PublicKey> pubKeyChain;
+    pubKeyChain.insert(app_.nodeIdentity().first);
+    pubKeyChain.insert(publicKey_);
+
+    auto const peerChainSz{m->peerchain_size()};
+    if (peerChainSz > 0)
     {
-        // Get the Public key of the last link in the peer chain
-        auto const s{
-            makeSlice(m->peerchain(m->peerchain_size() - 1).nodepubkey())};
-        if (!publicKeyType(s))
-            return badData("Invalid pubKey");
-        PublicKey peerPubKey(s);
+        if (peerChainSz > relayLimit)
+            return badData("Invalid peer chain size");
 
-        if (auto peer = overlay_.findPeerByPublicKey(peerPubKey))
+        if (peerChainSz + m->relays() > relayLimit)
+            return badData("Invalid relays and peer chain size");
+
+        for (int i = 0; i < peerChainSz; ++i)
         {
-            if (!m->has_nodepubkey())
-                m->set_nodepubkey(publicKey_.data(), publicKey_.size());
+            auto const slice{makeSlice(m->peerchain(i).publickey())};
 
-            if (!m->has_endpoint())
+            // Verify peer public key
+            if (!publicKeyType(slice))
+                return badData("Invalid peer public key");
+
+            // Verify peer public key is unique in the peer chain
+            if (!pubKeyChain.emplace(slice).second)
+                return badData("Invalid peer public key");
+        }
+    }
+
+    // Reply with shard info this node may have
+    if (auto shardStore = app_.getShardStore())
+    {
+        auto reply{shardStore->getShardInfo()->makeMessage(app_)};
+        if (peerChainSz > 0)
+            *(reply.mutable_peerchain()) = m->peerchain();
+        send(std::make_shared<Message>(reply, protocol::mtPEER_SHARD_INFO_V2));
+    }
+
+    if (m->relays() == 0)
+        return;
+
+    // Charge originating peer a fee for requesting relays
+    if (peerChainSz == 0)
+        fee_ = Resource::feeMediumBurdenPeer;
+
+    // Add peer to the peer chain
+    m->add_peerchain()->set_publickey(publicKey_.data(), publicKey_.size());
+
+    // Relay the request to peers, exclude the peer chain
+    m->set_relays(m->relays() - 1);
+    overlay_.foreach(send_if_not(
+        std::make_shared<Message>(*m, protocol::mtGET_PEER_SHARD_INFO_V2),
+        [&](std::shared_ptr<Peer> const& peer) {
+            return pubKeyChain.find(peer->getNodePublic()) != pubKeyChain.end();
+        }));
+}
+
+void
+PeerImp::onMessage(std::shared_ptr<protocol::TMPeerShardInfoV2> const& m)
+{
+    // Find the earliest and latest shard indexes
+    auto const& db{app_.getNodeStore()};
+    auto const earliestShardIndex{db.earliestShardIndex()};
+    auto const latestShardIndex{[&]() -> std::optional<std::uint32_t> {
+        auto const curLedgerSeq{app_.getLedgerMaster().getCurrentLedgerIndex()};
+        if (curLedgerSeq >= db.earliestLedgerSeq())
+            return db.seqToShardIndex(curLedgerSeq);
+        return std::nullopt;
+    }()};
+
+    auto badData = [&](std::string msg) {
+        fee_ = Resource::feeBadData;
+        JLOG(p_journal_.warn()) << msg;
+    };
+
+    // Used to create a digest and verify the message signature
+    Serializer s;
+    s.add32(HashPrefix::shardInfo);
+
+    // Verify message creation time
+    NodeStore::ShardInfo shardInfo;
+    {
+        auto const timestamp{
+            NetClock::time_point{std::chrono::seconds{m->timestamp()}}};
+        auto const now{app_.timeKeeper().now()};
+        if (timestamp > (now + 5s))
+            return badData("Invalid timestamp");
+
+        // Check if stale
+        using namespace std::chrono_literals;
+        if (timestamp < (now - 5min))
+            return badData("Stale timestamp");
+
+        s.add32(m->timestamp());
+        shardInfo.setMsgTimestamp(timestamp);
+    }
+
+    // Verify incomplete shards
+    auto const numIncomplete{m->incomplete_size()};
+    if (numIncomplete > 0)
+    {
+        if (latestShardIndex && numIncomplete > *latestShardIndex)
+            return badData("Invalid number of incomplete shards");
+
+        // Verify each incomplete shard
+        for (int i = 0; i < numIncomplete; ++i)
+        {
+            auto const& incomplete{m->incomplete(i)};
+            auto const shardIndex{incomplete.shardindex()};
+
+            // Verify shard index
+            if (shardIndex < earliestShardIndex ||
+                (latestShardIndex && shardIndex > latestShardIndex))
             {
-                // Check if peer will share IP publicly
-                if (crawl())
-                    m->set_endpoint(remote_address_.address().to_string());
-                else
-                    m->set_endpoint("0");
+                return badData("Invalid incomplete shard index");
+            }
+            s.add32(shardIndex);
+
+            // Verify state
+            auto const state{static_cast<ShardState>(incomplete.state())};
+            switch (state)
+            {
+                // Incomplete states
+                case ShardState::acquire:
+                case ShardState::complete:
+                case ShardState::finalizing:
+                case ShardState::queued:
+                    break;
+
+                // case ShardState::finalized:
+                default:
+                    return badData("Invalid incomplete shard state");
+            };
+            s.add32(incomplete.state());
+
+            // Verify progress
+            std::uint32_t progress{0};
+            if (incomplete.has_progress())
+            {
+                progress = incomplete.progress();
+                if (progress < 1 || progress > 100)
+                    return badData("Invalid incomplete shard progress");
+                s.add32(progress);
             }
 
+            // Verify each incomplete shard is unique
+            if (!shardInfo.update(shardIndex, state, progress))
+                return badData("Invalid duplicate incomplete shards");
+        }
+    }
+
+    // Verify finalized shards
+    if (m->has_finalized())
+    {
+        auto const& str{m->finalized()};
+        if (str.empty())
+            return badData("Invalid finalized shards");
+
+        if (!shardInfo.setFinalizedFromString(str))
+            return badData("Invalid finalized shard indexes");
+
+        auto const& finalized{shardInfo.finalized()};
+        auto const numFinalized{boost::icl::length(finalized)};
+        if (numFinalized == 0 ||
+            boost::icl::first(finalized) < earliestShardIndex ||
+            (latestShardIndex &&
+             boost::icl::last(finalized) > latestShardIndex))
+        {
+            return badData("Invalid finalized shard indexes");
+        }
+
+        if (latestShardIndex &&
+            (numFinalized + numIncomplete) > *latestShardIndex)
+        {
+            return badData("Invalid number of finalized and incomplete shards");
+        }
+
+        s.addRaw(str.data(), str.size());
+    }
+
+    // Verify public key
+    auto slice{makeSlice(m->publickey())};
+    if (!publicKeyType(slice))
+        return badData("Invalid public key");
+
+    // Verify peer public key isn't this nodes's public key
+    PublicKey const publicKey(slice);
+    if (publicKey == app_.nodeIdentity().first)
+        return badData("Invalid public key");
+
+    // Verify signature
+    if (!verify(publicKey, s.slice(), makeSlice(m->signature()), false))
+        return badData("Invalid signature");
+
+    // Forward the message if a peer chain exists
+    auto const peerChainSz{m->peerchain_size()};
+    if (peerChainSz > 0)
+    {
+        // Verify peer chain
+        if (peerChainSz > relayLimit)
+            return badData("Invalid peer chain size");
+
+        // The peer chain should not contain this node's public key
+        // nor the public key of the sending peer
+        std::set<PublicKey> pubKeyChain;
+        pubKeyChain.insert(app_.nodeIdentity().first);
+        pubKeyChain.insert(publicKey_);
+
+        for (int i = 0; i < peerChainSz; ++i)
+        {
+            // Verify peer public key
+            slice = makeSlice(m->peerchain(i).publickey());
+            if (!publicKeyType(slice))
+                return badData("Invalid peer public key");
+
+            // Verify peer public key is unique in the peer chain
+            if (!pubKeyChain.emplace(slice).second)
+                return badData("Invalid peer public key");
+        }
+
+        // If last peer in the chain is connected, relay the message
+        PublicKey const peerPubKey(
+            makeSlice(m->peerchain(peerChainSz - 1).publickey()));
+        if (auto peer = overlay_.findPeerByPublicKey(peerPubKey))
+        {
             m->mutable_peerchain()->RemoveLast();
             peer->send(
-                std::make_shared<Message>(*m, protocol::mtPEER_SHARD_INFO));
-
+                std::make_shared<Message>(*m, protocol::mtPEER_SHARD_INFO_V2));
             JLOG(p_journal_.trace())
-                << "Relayed TMPeerShardInfo to peer with IP "
-                << remote_address_.address().to_string();
+                << "Relayed TMPeerShardInfoV2 from peer IP "
+                << remote_address_.address().to_string() << " to peer IP "
+                << peer->getRemoteAddress().to_string();
         }
         else
         {
             // Peer is no longer available so the relay ends
-            fee_ = Resource::feeUnwantedData;
-            JLOG(p_journal_.info()) << "Unable to route shard info";
-        }
-        return;
-    }
-
-    // Parse the shard indexes received in the shard info
-    RangeSet<std::uint32_t> shardIndexes;
-    {
-        if (!from_string(shardIndexes, m->shardindexes()))
-            return badData("Invalid shard indexes");
-
-        std::uint32_t earliestShard;
-        std::optional<std::uint32_t> latestShard;
-        {
-            auto const curLedgerSeq{
-                app_.getLedgerMaster().getCurrentLedgerIndex()};
-            if (auto shardStore = app_.getShardStore())
-            {
-                earliestShard = shardStore->earliestShardIndex();
-                if (curLedgerSeq >= shardStore->earliestLedgerSeq())
-                    latestShard = shardStore->seqToShardIndex(curLedgerSeq);
-            }
-            else
-            {
-                auto const earliestLedgerSeq{
-                    app_.getNodeStore().earliestLedgerSeq()};
-                earliestShard = NodeStore::seqToShardIndex(earliestLedgerSeq);
-                if (curLedgerSeq >= earliestLedgerSeq)
-                    latestShard = NodeStore::seqToShardIndex(curLedgerSeq);
-            }
-        }
-
-        if (boost::icl::first(shardIndexes) < earliestShard ||
-            (latestShard && boost::icl::last(shardIndexes) > latestShard))
-        {
-            return badData("Invalid shard indexes");
-        }
-    }
-
-    // Get the IP of the node reporting the shard info
-    beast::IP::Endpoint endpoint;
-    if (m->has_endpoint())
-    {
-        if (m->endpoint() != "0")
-        {
-            auto result =
-                beast::IP::Endpoint::from_string_checked(m->endpoint());
-            if (!result)
-                return badData("Invalid incoming endpoint: " + m->endpoint());
-            endpoint = std::move(*result);
-        }
-    }
-    else if (crawl())  // Check if peer will share IP publicly
-    {
-        endpoint = remote_address_;
-    }
-
-    // Get the Public key of the node reporting the shard info
-    PublicKey publicKey;
-    if (m->has_nodepubkey())
-        publicKey = PublicKey(makeSlice(m->nodepubkey()));
-    else
-        publicKey = publicKey_;
-
-    {
-        std::lock_guard l{shardInfoMutex_};
-        auto it{shardInfo_.find(publicKey)};
-        if (it != shardInfo_.end())
-        {
-            // Update the IP address for the node
-            it->second.endpoint = std::move(endpoint);
-
-            // Join the shard index range set
-            it->second.shardIndexes += shardIndexes;
-        }
-        else
-        {
-            // Add a new node
-            ShardInfo shardInfo;
-            shardInfo.endpoint = std::move(endpoint);
-            shardInfo.shardIndexes = std::move(shardIndexes);
-            shardInfo_.emplace(publicKey, std::move(shardInfo));
+            JLOG(p_journal_.info()) << "Unable to relay peer shard info";
         }
     }
 
     JLOG(p_journal_.trace())
-        << "Consumed TMPeerShardInfo originating from public key "
-        << toBase58(TokenType::NodePublic, publicKey) << " shard indexes "
-        << m->shardindexes();
+        << "Consumed TMPeerShardInfoV2 originating from public key "
+        << toBase58(TokenType::NodePublic, publicKey) << " finalized shards["
+        << ripple::to_string(shardInfo.finalized()) << "] incomplete shards["
+        << (shardInfo.incomplete().empty() ? "empty"
+                                           : shardInfo.incompleteToString())
+        << "]";
 
-    if (m->has_lastlink())
-        overlay_.lastLink(id_);
+    // Consume the message
+    {
+        std::lock_guard lock{shardInfoMutex_};
+        auto const it{shardInfos_.find(publicKey_)};
+        if (it == shardInfos_.end())
+            shardInfos_.emplace(publicKey, std::move(shardInfo));
+        else if (shardInfo.msgTimestamp() > it->second.msgTimestamp())
+            it->second = std::move(shardInfo);
+    }
+
+    // Notify overlay a reply was received from the last peer in this chain
+    if (peerChainSz == 0)
+        overlay_.endOfPeerChain(id_);
 }
 
 void

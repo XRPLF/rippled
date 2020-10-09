@@ -69,14 +69,6 @@ protocolMessageName(int type)
             return "ping";
         case protocol::mtCLUSTER:
             return "cluster";
-        case protocol::mtGET_SHARD_INFO:
-            return "get_shard_info";
-        case protocol::mtSHARD_INFO:
-            return "shard_info";
-        case protocol::mtGET_PEER_SHARD_INFO:
-            return "get_peer_shard_info";
-        case protocol::mtPEER_SHARD_INFO:
-            return "peer_shard_info";
         case protocol::mtENDPOINTS:
             return "endpoints";
         case protocol::mtTRANSACTION:
@@ -97,6 +89,10 @@ protocolMessageName(int type)
             return "validator_list_collection";
         case protocol::mtVALIDATION:
             return "validation";
+        case protocol::mtGET_PEER_SHARD_INFO:
+            return "get_peer_shard_info";
+        case protocol::mtPEER_SHARD_INFO:
+            return "peer_shard_info";
         case protocol::mtGET_OBJECTS:
             return "get_objects";
         case protocol::mtSQUELCH:
@@ -109,6 +105,10 @@ protocolMessageName(int type)
             return "replay_delta_request";
         case protocol::mtREPLAY_DELTA_RESPONSE:
             return "replay_delta_response";
+        case protocol::mtGET_PEER_SHARD_INFO_V2:
+            return "get_peer_shard_info_v2";
+        case protocol::mtPEER_SHARD_INFO_V2:
+            return "peer_shard_info_v2";
         default:
             break;
     }
@@ -401,22 +401,6 @@ invokeProtocolMessage(
             success =
                 detail::invoke<protocol::TMCluster>(*header, buffers, handler);
             break;
-        case protocol::mtGET_SHARD_INFO:
-            success = detail::invoke<protocol::TMGetShardInfo>(
-                *header, buffers, handler);
-            break;
-        case protocol::mtSHARD_INFO:
-            success = detail::invoke<protocol::TMShardInfo>(
-                *header, buffers, handler);
-            break;
-        case protocol::mtGET_PEER_SHARD_INFO:
-            success = detail::invoke<protocol::TMGetPeerShardInfo>(
-                *header, buffers, handler);
-            break;
-        case protocol::mtPEER_SHARD_INFO:
-            success = detail::invoke<protocol::TMPeerShardInfo>(
-                *header, buffers, handler);
-            break;
         case protocol::mtENDPOINTS:
             success = detail::invoke<protocol::TMEndpoints>(
                 *header, buffers, handler);
@@ -449,6 +433,14 @@ invokeProtocolMessage(
             success = detail::invoke<protocol::TMValidation>(
                 *header, buffers, handler);
             break;
+        case protocol::mtGET_PEER_SHARD_INFO:
+            success = detail::invoke<protocol::TMGetPeerShardInfo>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtPEER_SHARD_INFO:
+            success = detail::invoke<protocol::TMPeerShardInfo>(
+                *header, buffers, handler);
+            break;
         case protocol::mtVALIDATORLIST:
             success = detail::invoke<protocol::TMValidatorList>(
                 *header, buffers, handler);
@@ -479,6 +471,14 @@ invokeProtocolMessage(
             break;
         case protocol::mtREPLAY_DELTA_RESPONSE:
             success = detail::invoke<protocol::TMReplayDeltaResponse>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtGET_PEER_SHARD_INFO_V2:
+            success = detail::invoke<protocol::TMGetPeerShardInfoV2>(
+                *header, buffers, handler);
+            break;
+        case protocol::mtPEER_SHARD_INFO_V2:
+            success = detail::invoke<protocol::TMPeerShardInfoV2>(
                 *header, buffers, handler);
             break;
         default:

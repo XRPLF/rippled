@@ -56,9 +56,7 @@ Shard::Shard(
     , index_(index)
     , firstSeq_(db.firstLedgerSeq(index))
     , lastSeq_(std::max(firstSeq_, db.lastLedgerSeq(index)))
-    , maxLedgers_(
-          index == db.earliestShardIndex() ? lastSeq_ - firstSeq_ + 1
-                                           : db.ledgersPerShard())
+    , maxLedgers_(db.maxLedgers(index))
     , dir_((dir.empty() ? db.getRootDir() : dir) / std::to_string(index_))
 {
 }
@@ -146,7 +144,7 @@ bool
 Shard::tryClose()
 {
     // Keep database open if being acquired or finalized
-    if (state_ != final)
+    if (state_ != ShardState::finalized)
         return false;
 
     std::lock_guard lock(mutex_);
@@ -189,7 +187,7 @@ Shard::tryClose()
 std::optional<std::uint32_t>
 Shard::prepare()
 {
-    if (state_ != acquire)
+    if (state_ != ShardState::acquire)
     {
         JLOG(j_.warn()) << "shard " << index_
                         << " prepare called when not acquiring";
@@ -212,7 +210,7 @@ Shard::prepare()
 bool
 Shard::storeNodeObject(std::shared_ptr<NodeObject> const& nodeObject)
 {
-    if (state_ != acquire)
+    if (state_ != ShardState::acquire)
     {
         // The import node store case is an exception
         if (nodeObject->getHash() != finalKey)
@@ -296,7 +294,7 @@ Shard::storeLedger(
     std::shared_ptr<Ledger const> const& next)
 {
     StoreLedgerResult result;
-    if (state_ != acquire)
+    if (state_ != ShardState::acquire)
     {
         // Ignore residual calls from InboundLedgers
         JLOG(j_.trace()) << "shard " << index_ << ". Not acquiring";
@@ -418,20 +416,21 @@ Shard::storeLedger(
 bool
 Shard::setLedgerStored(std::shared_ptr<Ledger const> const& ledger)
 {
-    if (state_ != acquire)
+    if (state_ != ShardState::acquire)
     {
         // Ignore residual calls from InboundLedgers
         JLOG(j_.trace()) << "shard " << index_ << " not acquiring";
         return false;
     }
 
+    auto fail = [&](std::string const& msg) {
+        JLOG(j_.error()) << "shard " << index_ << ". " << msg;
+        return false;
+    };
+
     auto const ledgerSeq{ledger->info().seq};
     if (ledgerSeq < firstSeq_ || ledgerSeq > lastSeq_)
-    {
-        JLOG(j_.error()) << "shard " << index_ << " invalid ledger sequence "
-                         << ledgerSeq;
-        return false;
-    }
+        return fail("Invalid ledger sequence " + std::to_string(ledgerSeq));
 
     auto const scopedCount{makeBackendCount()};
     if (!scopedCount)
@@ -444,11 +443,8 @@ Shard::setLedgerStored(std::shared_ptr<Ledger const> const& ledger)
     {
         std::lock_guard lock(mutex_);
         if (!acquireInfo_)
-        {
-            JLOG(j_.error())
-                << "shard " << index_ << " missing acquire SQLite database";
-            return false;
-        }
+            return fail("Missing acquire SQLite database");
+
         if (boost::icl::contains(acquireInfo_->storedSeqs, ledgerSeq))
         {
             // Ignore redundant calls
@@ -459,7 +455,7 @@ Shard::setLedgerStored(std::shared_ptr<Ledger const> const& ledger)
     }
 
     if (!storeSQLite(ledger))
-        return false;
+        return fail("Failed to store ledger");
 
     std::lock_guard lock(mutex_);
 
@@ -491,15 +487,16 @@ Shard::setLedgerStored(std::shared_ptr<Ledger const> const& ledger)
     }
     catch (std::exception const& e)
     {
-        JLOG(j_.fatal()) << "shard " << index_
-                         << ". Exception caught in function " << __func__
-                         << ". Error: " << e.what();
         acquireInfo_->storedSeqs.erase(ledgerSeq);
-        return false;
+        return fail(
+            std::string(". Exception caught in function ") + __func__ +
+            ". Error: " + e.what());
     }
 
-    if (boost::icl::length(acquireInfo_->storedSeqs) >= maxLedgers_)
-        state_ = complete;
+    // Update progress
+    progress_ = boost::icl::length(acquireInfo_->storedSeqs);
+    if (progress_ == maxLedgers_)
+        state_ = ShardState::complete;
 
     setFileStats(lock);
     JLOG(j_.trace()) << "shard " << index_ << " stored ledger sequence "
@@ -512,7 +509,7 @@ Shard::containsLedger(std::uint32_t ledgerSeq) const
 {
     if (ledgerSeq < firstSeq_ || ledgerSeq > lastSeq_)
         return false;
-    if (state_ != acquire)
+    if (state_ != ShardState::acquire)
         return true;
 
     std::lock_guard lock(mutex_);
@@ -523,12 +520,6 @@ Shard::containsLedger(std::uint32_t ledgerSeq) const
         return false;
     }
     return boost::icl::contains(acquireInfo_->storedSeqs, ledgerSeq);
-}
-
-void
-Shard::sweep()
-{
-    // nothing to do
 }
 
 std::chrono::steady_clock::time_point
@@ -568,8 +559,6 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
     if (!scopedCount)
         return false;
 
-    state_ = finalizing;
-
     uint256 hash{0};
     std::uint32_t ledgerSeq{0};
     auto fail = [&](std::string const& msg) {
@@ -579,12 +568,17 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
                          << (ledgerSeq == 0 ? ""
                                             : ". Ledger sequence " +
                                      std::to_string(ledgerSeq));
-        state_ = finalizing;
+        state_ = ShardState::finalizing;
+        progress_ = 0;
+        busy_ = false;
         return false;
     };
 
     try
     {
+        state_ = ShardState::finalizing;
+        progress_ = 0;
+
         // Check if a final key has been stored
         if (std::shared_ptr<NodeObject> nodeObject;
             backend_->fetch(finalKey.data(), &nodeObject) == Status::ok)
@@ -716,6 +710,10 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
 
         hash = ledger->info().parentHash;
         next = std::move(ledger);
+
+        // Update progress
+        progress_ = maxLedgers_ - (ledgerSeq - firstSeq_);
+
         --ledgerSeq;
 
         fullBelowCache->reset();
@@ -802,7 +800,9 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
 
         // Re-open deterministic shard
         if (!open(lock))
-            return false;
+            return fail("failed to open");
+
+        assert(state_ == ShardState::finalized);
 
         // Allow all other threads work with the shard
         busy_ = false;
@@ -829,7 +829,8 @@ Shard::open(std::lock_guard<std::mutex> const& lock)
         txSQLiteDB_.reset();
         acquireInfo_.reset();
 
-        state_ = acquire;
+        state_ = ShardState::acquire;
+        progress_ = 0;
 
         if (!preexist)
             remove_all(dir_);
@@ -841,18 +842,19 @@ Shard::open(std::lock_guard<std::mutex> const& lock)
         return false;
     };
     auto createAcquireInfo = [this, &config]() {
-        acquireInfo_ = std::make_unique<AcquireInfo>();
-
         DatabaseCon::Setup setup;
         setup.startUp = config.standalone() ? config.LOAD : config.START_UP;
         setup.standAlone = config.standalone();
         setup.dataDir = dir_;
         setup.useGlobalPragma = true;
 
+        acquireInfo_ = std::make_unique<AcquireInfo>();
         acquireInfo_->SQLiteDB = makeAcquireDB(
             setup,
             DatabaseCon::CheckpointerSetup{&app_.getJobQueue(), &app_.logs()});
-        state_ = acquire;
+
+        state_ = ShardState::acquire;
+        progress_ = 0;
     };
 
     try
@@ -890,14 +892,14 @@ Shard::open(std::lock_guard<std::mutex> const& lock)
                 }
 
                 // Check if backend is complete
-                if (boost::icl::length(storedSeqs) == maxLedgers_)
-                    state_ = complete;
+                progress_ = boost::icl::length(storedSeqs);
+                if (progress_ == maxLedgers_)
+                    state_ = ShardState::complete;
             }
         }
         else
         {
-            // A shard that is final or its backend is complete
-            // and ready to be finalized
+            // A shard with a finalized or complete state
             std::shared_ptr<NodeObject> nodeObject;
             if (backend_->fetch(finalKey.data(), &nodeObject) != Status::ok)
             {
@@ -920,10 +922,12 @@ Shard::open(std::lock_guard<std::mutex> const& lock)
             if (exists(dir_ / LgrDBName) && exists(dir_ / TxDBName))
             {
                 lastAccess_ = std::chrono::steady_clock::now();
-                state_ = final;
+                state_ = ShardState::finalized;
             }
             else
-                state_ = complete;
+                state_ = ShardState::complete;
+
+            progress_ = maxLedgers_;
         }
     }
     catch (std::exception const& e)
@@ -949,7 +953,7 @@ Shard::initSQLite(std::lock_guard<std::mutex> const&)
         setup.startUp = config.standalone() ? config.LOAD : config.START_UP;
         setup.standAlone = config.standalone();
         setup.dataDir = dir_;
-        setup.useGlobalPragma = (state_ != complete);
+        setup.useGlobalPragma = (state_ != ShardState::complete);
         return setup;
     }();
 
@@ -961,21 +965,48 @@ Shard::initSQLite(std::lock_guard<std::mutex> const&)
         if (txSQLiteDB_)
             txSQLiteDB_.reset();
 
-        if (state_ == final)
+        switch (state_)
         {
-            auto [lgr, tx] = makeShardCompleteLedgerDBs(config, setup);
-            txSQLiteDB_ = std::move(tx);
-            lgrSQLiteDB_ = std::move(lgr);
-        }
-        else
-        {
-            auto [lgr, tx] = makeShardIncompleteLedgerDBs(
-                config,
-                setup,
-                DatabaseCon::CheckpointerSetup{
-                    &app_.getJobQueue(), &app_.logs()});
-            txSQLiteDB_ = std::move(tx);
-            lgrSQLiteDB_ = std::move(lgr);
+            case ShardState::complete:
+            case ShardState::finalizing:
+            case ShardState::finalized: {
+                auto [lgr, tx] = makeShardCompleteLedgerDBs(config, setup);
+
+                lgrSQLiteDB_ = std::move(lgr);
+                lgrSQLiteDB_->getSession() << boost::str(
+                    boost::format("PRAGMA cache_size=-%d;") %
+                    kilobytes(config.getValueFor(
+                        SizedItem::lgrDBCache, std::nullopt)));
+
+                txSQLiteDB_ = std::move(tx);
+                txSQLiteDB_->getSession() << boost::str(
+                    boost::format("PRAGMA cache_size=-%d;") %
+                    kilobytes(config.getValueFor(
+                        SizedItem::txnDBCache, std::nullopt)));
+                break;
+            }
+
+            // case ShardState::acquire:
+            // case ShardState::queued:
+            default: {
+                // Incomplete shards use a Write Ahead Log for performance
+                auto [lgr, tx] = makeShardIncompleteLedgerDBs(
+                    config,
+                    setup,
+                    DatabaseCon::CheckpointerSetup{
+                        &app_.getJobQueue(), &app_.logs()});
+
+                lgrSQLiteDB_ = std::move(lgr);
+                lgrSQLiteDB_->getSession() << boost::str(
+                    boost::format("PRAGMA cache_size=-%d;") %
+                    kilobytes(config.getValueFor(SizedItem::lgrDBCache)));
+
+                txSQLiteDB_ = std::move(tx);
+                txSQLiteDB_->getSession() << boost::str(
+                    boost::format("PRAGMA cache_size=-%d;") %
+                    kilobytes(config.getValueFor(SizedItem::txnDBCache)));
+                break;
+            }
         }
     }
     catch (std::exception const& e)
@@ -1200,7 +1231,7 @@ Shard::makeBackendCount()
         if (!open(lock))
             return {nullptr};
     }
-    else if (state_ == final)
+    else if (state_ == ShardState::finalized)
         lastAccess_ = std::chrono::steady_clock::now();
 
     return Shard::Count(&backendCount_);

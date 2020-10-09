@@ -54,7 +54,7 @@ public:
     [[nodiscard]] bool
     init() override;
 
-    [[nodiscard]] std::optional<std::uint32_t>
+    std::optional<std::uint32_t>
     prepareLedger(std::uint32_t validLedgerSeq) override;
 
     bool
@@ -76,43 +76,11 @@ public:
     void
     setStored(std::shared_ptr<Ledger const> const& ledger) override;
 
-    std::string
-    getCompleteShards() override;
+    std::unique_ptr<ShardInfo>
+    getShardInfo() const override;
 
-    std::uint32_t
-    ledgersPerShard() const override
-    {
-        return ledgersPerShard_;
-    }
-
-    std::uint32_t
-    earliestShardIndex() const override
-    {
-        return earliestShardIndex_;
-    }
-
-    std::uint32_t
-    seqToShardIndex(std::uint32_t ledgerSeq) const override
-    {
-        assert(ledgerSeq >= earliestLedgerSeq());
-        return NodeStore::seqToShardIndex(ledgerSeq, ledgersPerShard_);
-    }
-
-    std::uint32_t
-    firstLedgerSeq(std::uint32_t shardIndex) const override
-    {
-        assert(shardIndex >= earliestShardIndex_);
-        if (shardIndex <= earliestShardIndex_)
-            return earliestLedgerSeq();
-        return 1 + (shardIndex * ledgersPerShard_);
-    }
-
-    std::uint32_t
-    lastLedgerSeq(std::uint32_t shardIndex) const override
-    {
-        assert(shardIndex >= earliestShardIndex_);
-        return (shardIndex + 1) * ledgersPerShard_;
-    }
+    size_t
+    getNumTasks() const override;
 
     boost::filesystem::path const&
     getRootDir() const override
@@ -268,9 +236,6 @@ private:
     // If new shards can be stored
     bool canAdd_{true};
 
-    // Complete shard indexes
-    std::string status_;
-
     // The name associated with the backend used with the shard store
     std::string backendName_;
 
@@ -282,14 +247,6 @@ private:
 
     // Storage space utilized by the shard store (in bytes)
     std::uint64_t fileSz_{0};
-
-    // Each shard stores 16384 ledgers. The earliest shard may store
-    // less if the earliest ledger sequence truncates its beginning.
-    // The value should only be altered for unit tests.
-    std::uint32_t ledgersPerShard_ = ledgersPerShardDefault;
-
-    // The earliest shard index
-    std::uint32_t earliestShardIndex_;
 
     // Average storage space required by a shard (in bytes)
     std::uint64_t avgShardFileSz_;
@@ -348,16 +305,11 @@ private:
         bool writeSQLite,
         std::optional<uint256> const& expectedHash);
 
-    // Set storage and file descriptor usage stats
+    // Update storage and file descriptor usage stats
     void
-    setFileStats();
+    updateFileStats();
 
-    // Update status string
-    // Lock must be held
-    void
-    updateStatus(std::lock_guard<std::mutex> const&);
-
-    // Returns true if the filesystem has enough storage
+    // Returns true if the file system has enough storage
     // available to hold the specified number of shards.
     // The value of pathDesignation determines whether
     // the shard(s) in question are historical and thus
@@ -406,9 +358,6 @@ private:
     boost::filesystem::path
     chooseHistoricalPath(std::lock_guard<std::mutex> const&) const;
 
-    bool
-    checkHistoricalPaths() const;
-
     /**
      * @brief iterateShardsForward Visits all shards starting from given
      *        in ascending order and calls given callback function to each
@@ -436,6 +385,16 @@ private:
     iterateShardsBack(
         std::optional<std::uint32_t> maxShardIndex,
         std::function<bool(Shard& shard)> const& visit);
+
+    bool
+    checkHistoricalPaths(std::lock_guard<std::mutex> const&) const;
+
+    std::unique_ptr<ShardInfo>
+    getShardInfo(std::lock_guard<std::mutex> const&) const;
+
+    // Update peers with the status of every complete and incomplete shard
+    void
+    updatePeers(std::lock_guard<std::mutex> const& lock) const;
 };
 
 }  // namespace NodeStore
