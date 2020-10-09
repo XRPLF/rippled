@@ -32,8 +32,8 @@ namespace Resource {
 class Charge;
 }
 
-// Maximum hops to attempt when crawling shards. cs = crawl shards
-static constexpr std::uint32_t csHopLimit = 3;
+// Maximum hops to relay the peer shard info request
+static constexpr std::uint32_t relayLimit = 3;
 
 enum class ProtocolFeature {
     ValidatorListPropagation,
@@ -112,8 +112,6 @@ public:
     hasLedger(uint256 const& hash, std::uint32_t seq) const = 0;
     virtual void
     ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const = 0;
-    virtual bool
-    hasShard(std::uint32_t shardIndex) const = 0;
     virtual bool
     hasTxSet(uint256 const& hash) const = 0;
     virtual void

@@ -23,6 +23,7 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/rdb/RelationalDBInterface.h>
 #include <ripple/basics/BasicConfig.h>
+#include <ripple/basics/MathUtilities.h>
 #include <ripple/basics/RangeSet.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/NodeObject.h>
@@ -52,17 +53,19 @@ class DatabaseShard;
 class Shard final
 {
 public:
-    enum class State {
-        acquire,     // Being acquired
-        complete,    // Backend contains all ledgers but is not yet final
-        finalizing,  // Being finalized
-        final        // Database verified, shard is immutable
-    };
+    /// Copy constructor (disallowed)
+    Shard(Shard const&) = delete;
 
-    static constexpr State acquire = State::acquire;
-    static constexpr State complete = State::complete;
-    static constexpr State finalizing = State::finalizing;
-    static constexpr State final = State::final;
+    /// Move constructor (disallowed)
+    Shard(Shard&&) = delete;
+
+    // Copy assignment (disallowed)
+    Shard&
+    operator=(Shard const&) = delete;
+
+    // Move assignment (disallowed)
+    Shard&
+    operator=(Shard&&) = delete;
 
     Shard(
         Application& app,
@@ -102,7 +105,7 @@ public:
     /** Notify shard to prepare for shutdown.
      */
     void
-    stop()
+    stop() noexcept
     {
         stop_ = true;
     }
@@ -140,17 +143,14 @@ public:
     [[nodiscard]] bool
     containsLedger(std::uint32_t ledgerSeq) const;
 
-    void
-    sweep();
-
     [[nodiscard]] std::uint32_t
-    index() const
+    index() const noexcept
     {
         return index_;
     }
 
     [[nodiscard]] boost::filesystem::path const&
-    getDir() const
+    getDir() const noexcept
     {
         return dir_;
     }
@@ -164,10 +164,19 @@ public:
     [[nodiscard]] std::pair<std::uint64_t, std::uint32_t>
     getFileInfo() const;
 
-    [[nodiscard]] State
-    getState() const
+    [[nodiscard]] ShardState
+    getState() const noexcept
     {
         return state_;
+    }
+
+    /** Returns a percent signifying how complete
+        the current state of the shard is.
+     */
+    [[nodiscard]] std::uint32_t
+    getPercentProgress() const noexcept
+    {
+        return calculatePercent(progress_, maxLedgers_);
     }
 
     [[nodiscard]] std::int32_t
@@ -192,7 +201,7 @@ public:
     /** Enables removal of the shard directory on destruction.
      */
     void
-    removeOnDestroy()
+    removeOnDestroy() noexcept
     {
         removeOnDestroy_ = true;
     }
@@ -244,28 +253,28 @@ private:
     public:
         Count(Count const&) = delete;
         Count&
-        operator=(Count&&) = delete;
-        Count&
         operator=(Count const&) = delete;
+        Count&
+        operator=(Count&&) = delete;
 
-        Count(Count&& other) : counter_(other.counter_)
+        Count(Count&& other) noexcept : counter_(other.counter_)
         {
             other.counter_ = nullptr;
         }
 
-        Count(std::atomic<std::uint32_t>* counter) : counter_(counter)
+        Count(std::atomic<std::uint32_t>* counter) noexcept : counter_(counter)
         {
             if (counter_)
                 ++(*counter_);
         }
 
-        ~Count()
+        ~Count() noexcept
         {
             if (counter_)
                 --(*counter_);
         }
 
-        operator bool() const
+        operator bool() const noexcept
         {
             return counter_ != nullptr;
         }
@@ -322,7 +331,7 @@ private:
     std::unique_ptr<DatabaseCon> txSQLiteDB_;
 
     // Tracking information used only when acquiring a shard from the network.
-    // If the shard is final, this member will be null.
+    // If the shard is finalized, this member will be null.
     std::unique_ptr<AcquireInfo> acquireInfo_;
 
     // Older shard without an acquire database or final key
@@ -335,12 +344,16 @@ private:
     // Determines if the shard busy with replacing by deterministic one
     std::atomic<bool> busy_{false};
 
-    std::atomic<State> state_{State::acquire};
+    // State of the shard
+    std::atomic<ShardState> state_{ShardState::acquire};
+
+    // Number of ledgers processed for the current shard state
+    std::atomic<std::uint32_t> progress_{0};
 
     // Determines if the shard directory should be removed in the destructor
     std::atomic<bool> removeOnDestroy_{false};
 
-    // The time of the last access of a shard that has a final state
+    // The time of the last access of a shard with a finalized state
     std::chrono::steady_clock::time_point lastAccess_;
 
     // Open shard databases

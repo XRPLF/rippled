@@ -21,9 +21,9 @@
 #define RIPPLE_NODESTORE_DATABASESHARD_H_INCLUDED
 
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/basics/RangeSet.h>
-#include <ripple/core/DatabaseCon.h>
+#include <ripple/core/SociDB.h>
 #include <ripple/nodestore/Database.h>
+#include <ripple/nodestore/ShardInfo.h>
 #include <ripple/nodestore/Types.h>
 
 #include <memory>
@@ -57,7 +57,7 @@ public:
 
         @return `true` if the database initialized without error
     */
-    virtual bool
+    [[nodiscard]] virtual bool
     init() = 0;
 
     /** Prepare to store a new ledger in the shard being acquired
@@ -72,7 +72,7 @@ public:
                 between requests.
         @implNote adds a new writable shard if necessary
     */
-    virtual std::optional<std::uint32_t>
+    [[nodiscard]] virtual std::optional<std::uint32_t>
     prepareLedger(std::uint32_t validLedgerSeq) = 0;
 
     /** Prepare one or more shard indexes to be imported into the database
@@ -80,7 +80,7 @@ public:
         @param shardIndexes Shard indexes to be prepared for import
         @return true if all shard indexes successfully prepared for import
     */
-    virtual bool
+    [[nodiscard]] virtual bool
     prepareShards(std::vector<std::uint32_t> const& shardIndexes) = 0;
 
     /** Remove a previously prepared shard index for import
@@ -94,7 +94,7 @@ public:
 
         @return a string representing the shards prepared for import
     */
-    virtual std::string
+    [[nodiscard]] virtual std::string
     getPreShards() = 0;
 
     /** Import a shard from the shard archive handler into the
@@ -106,7 +106,7 @@ public:
         @return true If the shard was successfully imported
         @implNote if successful, srcDir is moved to the database directory
     */
-    virtual bool
+    [[nodiscard]] virtual bool
     importShard(
         std::uint32_t shardIndex,
         boost::filesystem::path const& srcDir) = 0;
@@ -117,7 +117,7 @@ public:
         @param seq The sequence of the ledger
         @return The ledger if found, nullptr otherwise
     */
-    virtual std::shared_ptr<Ledger>
+    [[nodiscard]] virtual std::shared_ptr<Ledger>
     fetchLedger(uint256 const& hash, std::uint32_t seq) = 0;
 
     /** Notifies the database that the given ledger has been
@@ -127,13 +127,6 @@ public:
     */
     virtual void
     setStored(std::shared_ptr<Ledger const> const& ledger) = 0;
-
-    /** Query which complete shards are stored
-
-        @return the indexes of complete shards
-    */
-    virtual std::string
-    getCompleteShards() = 0;
 
     /**
      * @brief callForLedgerSQL Checkouts ledger database for shard
@@ -231,43 +224,16 @@ public:
         std::function<bool(soci::session& session, std::uint32_t index)> const&
             callback) = 0;
 
-    /** @return The maximum number of ledgers stored in a shard
-     */
-    virtual std::uint32_t
-    ledgersPerShard() const = 0;
+    /** Query information about shards held
 
-    /** @return The earliest shard index
-     */
-    virtual std::uint32_t
-    earliestShardIndex() const = 0;
-
-    /** Calculates the shard index for a given ledger sequence
-
-        @param seq ledger sequence
-        @return The shard index of the ledger sequence
+        @return Information about shards held by this node
     */
-    virtual std::uint32_t
-    seqToShardIndex(std::uint32_t seq) const = 0;
-
-    /** Calculates the first ledger sequence for a given shard index
-
-        @param shardIndex The shard index considered
-        @return The first ledger sequence pertaining to the shard index
-    */
-    virtual std::uint32_t
-    firstLedgerSeq(std::uint32_t shardIndex) const = 0;
-
-    /** Calculates the last ledger sequence for a given shard index
-
-        @param shardIndex The shard index considered
-        @return The last ledger sequence pertaining to the shard index
-    */
-    virtual std::uint32_t
-    lastLedgerSeq(std::uint32_t shardIndex) const = 0;
+    [[nodiscard]] virtual std::unique_ptr<ShardInfo>
+    getShardInfo() const = 0;
 
     /** Returns the root database directory
      */
-    virtual boost::filesystem::path const&
+    [[nodiscard]] virtual boost::filesystem::path const&
     getRootDir() const = 0;
 
     virtual Json::Value
@@ -281,17 +247,11 @@ public:
     virtual std::optional<std::uint32_t>
     getDatabaseImportSequence() const = 0;
 
-    /** The number of ledgers in a shard */
-    static constexpr std::uint32_t ledgersPerShardDefault{16384u};
+    /** Returns the number of queued tasks
+     */
+    [[nodiscard]] virtual size_t
+    getNumTasks() const = 0;
 };
-
-constexpr std::uint32_t
-seqToShardIndex(
-    std::uint32_t ledgerSeq,
-    std::uint32_t ledgersPerShard = DatabaseShard::ledgersPerShardDefault)
-{
-    return (ledgerSeq - 1) / ledgersPerShard;
-}
 
 extern std::unique_ptr<DatabaseShard>
 make_ShardStore(

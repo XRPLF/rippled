@@ -44,6 +44,13 @@ TaskQueue::addTask(std::function<void()> task)
     workers_.addTask();
 }
 
+size_t
+TaskQueue::size() const
+{
+    std::lock_guard lock{mutex_};
+    return tasks_.size() + processing_;
+}
+
 void
 TaskQueue::processTask(int instance)
 {
@@ -51,13 +58,18 @@ TaskQueue::processTask(int instance)
 
     {
         std::lock_guard lock{mutex_};
-        assert(!tasks_.empty());
 
+        assert(!tasks_.empty());
         task = std::move(tasks_.front());
         tasks_.pop();
+
+        ++processing_;
     }
 
     task();
+
+    std::lock_guard lock{mutex_};
+    --processing_;
 }
 
 }  // namespace NodeStore
