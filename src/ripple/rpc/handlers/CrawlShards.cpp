@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
+#include <ripple/basics/RangeSet.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Overlay.h>
@@ -48,37 +49,23 @@ doCrawlShards(RPC::JsonContext& context)
     if (context.role != Role::ADMIN)
         return rpcError(rpcNO_PERMISSION);
 
-    std::uint32_t hops{0};
+    std::uint32_t relays{0};
     if (auto const& jv = context.params[jss::limit])
     {
         if (!(jv.isUInt() || (jv.isInt() && jv.asInt() >= 0)))
-        {
             return RPC::expected_field_error(jss::limit, "unsigned integer");
-        }
-
-        hops = std::min(jv.asUInt(), csHopLimit);
+        relays = std::min(jv.asUInt(), relayLimit);
+        context.loadType = Resource::feeHighBurdenRPC;
     }
+    else
+        context.loadType = Resource::feeMediumBurdenRPC;
 
-    bool const pubKey{
+    // Collect shard info from server and peers
+    bool const includePublicKey{
         context.params.isMember(jss::public_key) &&
         context.params[jss::public_key].asBool()};
-
-    // Collect shard info from peers connected to this server
-    Json::Value jvResult{context.app.overlay().crawlShards(pubKey, hops)};
-
-    // Collect shard info from this server
-    if (auto shardStore = context.app.getShardStore())
-    {
-        if (pubKey)
-            jvResult[jss::public_key] = toBase58(
-                TokenType::NodePublic, context.app.nodeIdentity().first);
-        jvResult[jss::complete_shards] = shardStore->getCompleteShards();
-    }
-
-    if (hops == 0)
-        context.loadType = Resource::feeMediumBurdenRPC;
-    else
-        context.loadType = Resource::feeHighBurdenRPC;
+    Json::Value jvResult{
+        context.app.overlay().crawlShards(includePublicKey, relays)};
 
     return jvResult;
 }

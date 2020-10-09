@@ -39,10 +39,10 @@ TrafficCount::categorize(
     if (type == protocol::mtENDPOINTS)
         return TrafficCount::category::overlay;
 
-    if ((type == protocol::mtGET_SHARD_INFO) ||
-        (type == protocol::mtSHARD_INFO) ||
-        (type == protocol::mtGET_PEER_SHARD_INFO) ||
-        (type == protocol::mtPEER_SHARD_INFO))
+    if ((type == protocol::mtGET_PEER_SHARD_INFO) ||
+        (type == protocol::mtPEER_SHARD_INFO) ||
+        (type == protocol::mtGET_PEER_SHARD_INFO_V2) ||
+        (type == protocol::mtPEER_SHARD_INFO_V2))
         return TrafficCount::category::shards;
 
     if (type == protocol::mtTRANSACTION)

@@ -521,6 +521,7 @@ target_sources (rippled PRIVATE
   src/ripple/nodestore/impl/ManagerImp.cpp
   src/ripple/nodestore/impl/NodeObject.cpp
   src/ripple/nodestore/impl/Shard.cpp
+  src/ripple/nodestore/impl/ShardInfo.cpp
   src/ripple/nodestore/impl/TaskQueue.cpp
   #[===============================[
      main sources:

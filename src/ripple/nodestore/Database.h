@@ -226,13 +226,78 @@ public:
     void
     onChildrenStopped() override;
 
+    /** @return The maximum number of ledgers stored in a shard
+     */
+    [[nodiscard]] std::uint32_t
+    ledgersPerShard() const noexcept
+    {
+        return ledgersPerShard_;
+    }
+
     /** @return The earliest ledger sequence allowed
      */
-    std::uint32_t
-    earliestLedgerSeq() const
+    [[nodiscard]] std::uint32_t
+    earliestLedgerSeq() const noexcept
     {
         return earliestLedgerSeq_;
     }
+
+    /** @return The earliest shard index
+     */
+    [[nodiscard]] std::uint32_t
+    earliestShardIndex() const noexcept
+    {
+        return earliestShardIndex_;
+    }
+
+    /** Calculates the first ledger sequence for a given shard index
+
+        @param shardIndex The shard index considered
+        @return The first ledger sequence pertaining to the shard index
+    */
+    [[nodiscard]] std::uint32_t
+    firstLedgerSeq(std::uint32_t shardIndex) const noexcept
+    {
+        assert(shardIndex >= earliestShardIndex_);
+        if (shardIndex <= earliestShardIndex_)
+            return earliestLedgerSeq_;
+        return 1 + (shardIndex * ledgersPerShard_);
+    }
+
+    /** Calculates the last ledger sequence for a given shard index
+
+        @param shardIndex The shard index considered
+        @return The last ledger sequence pertaining to the shard index
+    */
+    [[nodiscard]] std::uint32_t
+    lastLedgerSeq(std::uint32_t shardIndex) const noexcept
+    {
+        assert(shardIndex >= earliestShardIndex_);
+        return (shardIndex + 1) * ledgersPerShard_;
+    }
+
+    /** Calculates the shard index for a given ledger sequence
+
+        @param ledgerSeq ledger sequence
+        @return The shard index of the ledger sequence
+    */
+    [[nodiscard]] std::uint32_t
+    seqToShardIndex(std::uint32_t ledgerSeq) const noexcept
+    {
+        assert(ledgerSeq >= earliestLedgerSeq_);
+        return (ledgerSeq - 1) / ledgersPerShard_;
+    }
+
+    /** Calculates the maximum ledgers for a given shard index
+
+        @param shardIndex The shard index considered
+        @return The maximum ledgers pertaining to the shard index
+
+        @note The earliest shard may store less if the earliest ledger
+        sequence truncates its beginning
+    */
+    [[nodiscard]] std::uint32_t
+    maxLedgers(std::uint32_t shardIndex) const noexcept;
 
 protected:
     beast::Journal const j_;
@@ -241,6 +306,25 @@ protected:
 
     std::atomic<std::uint32_t> fetchHitCount_{0};
     std::atomic<std::uint32_t> fetchSz_{0};
+
+    // The default is DEFAULT_LEDGERS_PER_SHARD (16384) to match the XRP ledger
+    // network. Can be set through the configuration file using the
+    // 'ledgers_per_shard' field under the 'node_db' and 'shard_db' stanzas.
+    // If specified, the value must be a multiple of 256 and equally assigned
+    // in both stanzas. Only unit tests or alternate networks should change
+    // this value.
+    std::uint32_t const ledgersPerShard_;
+
+    // The default is XRP_LEDGER_EARLIEST_SEQ (32570) to match the XRP ledger
+    // network's earliest allowed ledger sequence. Can be set through the
+    // configuration file using the 'earliest_seq' field under the 'node_db'
+    // and 'shard_db' stanzas. If specified, the value must be greater than zero
+    // and equally assigned in both stanzas. Only unit tests or alternate
+    // networks should change this value.
+    std::uint32_t const earliestLedgerSeq_;
+
+    // The earliest shard index
+    std::uint32_t const earliestShardIndex_;
 
     void
     stopReadThreads();
@@ -292,10 +376,6 @@ private:
 
     std::vector<std::thread> readThreads_;
     bool readShut_{false};
-
-    // The default is 32570 to match the XRP ledger network's earliest
-    // allowed sequence. Alternate networks may set this value.
-    std::uint32_t const earliestLedgerSeq_;
 
     virtual std::shared_ptr<NodeObject>
     fetchNodeObject(

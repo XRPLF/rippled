@@ -117,8 +117,7 @@ private:
     std::atomic<uint64_t> peerDisconnects_{0};
     std::atomic<uint64_t> peerDisconnectsCharges_{0};
 
-    // Last time we crawled peers for shard info. 'cs' = crawl shards
-    std::atomic<std::chrono::seconds> csLast_{std::chrono::seconds{0}};
+    // 'cs' = crawl shards
     std::mutex csMutex_;
     std::condition_variable csCV_;
     // Peer IDs expecting to receive a last link notification
@@ -372,14 +371,14 @@ public:
     }
 
     Json::Value
-    crawlShards(bool pubKey, std::uint32_t hops) override;
+    crawlShards(bool includePublicKey, std::uint32_t relays) override;
 
-    /** Called when the last link from a peer chain is received.
+    /** Called when the reply from the last peer in a peer chain is received.
 
         @param id peer id that received the shard info.
     */
     void
-    lastLink(std::uint32_t id);
+    endOfPeerChain(std::uint32_t id);
 
     /** Updates message count for validator/peer. Sends TMSquelch if the number
      * of messages for N peers reaches threshold T. A message is counted
