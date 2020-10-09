@@ -159,13 +159,18 @@ public:
         beast::temp_dir tempDir;
 
         auto c = jtx::envconfig();
-        auto& section = c->section(ConfigSection::shardDatabase());
-        section.set("path", tempDir.path());
-        section.set("max_historical_shards", "20");
-        section.set("ledgers_per_shard", "256");
-        section.set("earliest_seq", "257");
-        auto& sectionNode = c->section(ConfigSection::nodeDatabase());
-        sectionNode.set("earliest_seq", "257");
+        {
+            auto& section{c->section(ConfigSection::shardDatabase())};
+            section.set("path", tempDir.path());
+            section.set("max_historical_shards", "20");
+            section.set("ledgers_per_shard", "256");
+            section.set("earliest_seq", "257");
+        }
+        {
+            auto& section{c->section(ConfigSection::nodeDatabase())};
+            section.set("ledgers_per_shard", "256");
+            section.set("earliest_seq", "257");
+        }
         c->setupControl(true, true, true);
 
         jtx::Env env(*this, std::move(c));
@@ -257,13 +262,18 @@ public:
 
         {
             auto c = jtx::envconfig();
-            auto& section = c->section(ConfigSection::shardDatabase());
-            section.set("path", tempDir.path());
-            section.set("max_historical_shards", "20");
-            section.set("ledgers_per_shard", "256");
-            section.set("earliest_seq", "257");
-            auto& sectionNode = c->section(ConfigSection::nodeDatabase());
-            sectionNode.set("earliest_seq", "257");
+            {
+                auto& section{c->section(ConfigSection::shardDatabase())};
+                section.set("path", tempDir.path());
+                section.set("max_historical_shards", "20");
+                section.set("ledgers_per_shard", "256");
+                section.set("earliest_seq", "257");
+            }
+            {
+                auto& section{c->section(ConfigSection::nodeDatabase())};
+                section.set("ledgers_per_shard", "256");
+                section.set("earliest_seq", "257");
+            }
             c->setupControl(true, true, true);
 
             jtx::Env env(*this, std::move(c));
@@ -354,19 +364,23 @@ public:
         }
 
         auto c = jtx::envconfig();
-        auto& section = c->section(ConfigSection::shardDatabase());
-        section.set("path", tempDir.path());
-        section.set("max_historical_shards", "20");
-        section.set("ledgers_per_shard", "256");
-        section.set("shard_verification_retry_interval", "1");
-        section.set("shard_verification_max_attempts", "10000");
-        section.set("earliest_seq", "257");
-        auto& sectionNode = c->section(ConfigSection::nodeDatabase());
-        sectionNode.set("earliest_seq", "257");
+        {
+            auto& section{c->section(ConfigSection::shardDatabase())};
+            section.set("path", tempDir.path());
+            section.set("max_historical_shards", "20");
+            section.set("shard_verification_retry_interval", "1");
+            section.set("shard_verification_max_attempts", "10000");
+            section.set("ledgers_per_shard", "256");
+            section.set("earliest_seq", "257");
+        }
+        {
+            auto& section{c->section(ConfigSection::nodeDatabase())};
+            section.set("ledgers_per_shard", "256");
+            section.set("earliest_seq", "257");
+        }
         c->setupControl(true, true, true);
 
         jtx::Env env(*this, std::move(c));
-
         std::uint8_t const numberOfDownloads = 10;
 
         // Create some ledgers so that the ShardArchiveHandler
@@ -422,13 +436,18 @@ public:
             beast::temp_dir tempDir;
 
             auto c = jtx::envconfig();
-            auto& section = c->section(ConfigSection::shardDatabase());
-            section.set("path", tempDir.path());
-            section.set("max_historical_shards", "1");
-            section.set("ledgers_per_shard", "256");
-            section.set("earliest_seq", "257");
-            auto& sectionNode = c->section(ConfigSection::nodeDatabase());
-            sectionNode.set("earliest_seq", "257");
+            {
+                auto& section{c->section(ConfigSection::shardDatabase())};
+                section.set("path", tempDir.path());
+                section.set("max_historical_shards", "1");
+                section.set("ledgers_per_shard", "256");
+                section.set("earliest_seq", "257");
+            }
+            {
+                auto& section{c->section(ConfigSection::nodeDatabase())};
+                section.set("ledgers_per_shard", "256");
+                section.set("earliest_seq", "257");
+            }
             c->setupControl(true, true, true);
 
             std::unique_ptr<Logs> logs(new CaptureLogs(&capturedLogs));
@@ -496,13 +515,18 @@ public:
             beast::temp_dir tempDir;
 
             auto c = jtx::envconfig();
-            auto& section = c->section(ConfigSection::shardDatabase());
-            section.set("path", tempDir.path());
-            section.set("max_historical_shards", "0");
-            section.set("ledgers_per_shard", "256");
-            section.set("earliest_seq", "257");
-            auto& sectionNode = c->section(ConfigSection::nodeDatabase());
-            sectionNode.set("earliest_seq", "257");
+            {
+                auto& section{c->section(ConfigSection::shardDatabase())};
+                section.set("path", tempDir.path());
+                section.set("max_historical_shards", "0");
+                section.set("ledgers_per_shard", "256");
+                section.set("earliest_seq", "257");
+            }
+            {
+                auto& section{c->section(ConfigSection::nodeDatabase())};
+                section.set("ledgers_per_shard", "256");
+                section.set("earliest_seq", "257");
+            }
             c->setupControl(true, true, true);
 
             std::unique_ptr<Logs> logs(new CaptureLogs(&capturedLogs));
@@ -579,13 +603,18 @@ public:
             beast::temp_dir tempDir;
 
             auto c = jtx::envconfig();
-            auto& section = c->section(ConfigSection::shardDatabase());
-            section.set("path", tempDir.path());
-            section.set("max_historical_shards", "1");
-            section.set("ledgers_per_shard", "256");
-            section.set("earliest_seq", "257");
-            auto& sectionNode = c->section(ConfigSection::nodeDatabase());
-            sectionNode.set("earliest_seq", "257");
+            {
+                auto& section{c->section(ConfigSection::shardDatabase())};
+                section.set("path", tempDir.path());
+                section.set("max_historical_shards", "1");
+                section.set("ledgers_per_shard", "256");
+                section.set("earliest_seq", "257");
+            }
+            {
+                auto& section{c->section(ConfigSection::nodeDatabase())};
+                section.set("ledgers_per_shard", "256");
+                section.set("earliest_seq", "257");
+            }
             c->setupControl(true, true, true);
 
             std::unique_ptr<Logs> logs(new CaptureLogs(&capturedLogs));
@@ -607,7 +636,7 @@ public:
                 env.close();
             }
 
-            env.app().getShardStore()->prepareShards({1});
+            BEAST_EXPECT(env.app().getShardStore()->prepareShards({1}));
 
             auto handler = env.app().getShardArchiveHandler();
             BEAST_EXPECT(handler);

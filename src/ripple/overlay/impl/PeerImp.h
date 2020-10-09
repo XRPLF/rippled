@@ -25,6 +25,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/RangeSet.h>
 #include <ripple/beast/utility/WrappedSink.h>
+#include <ripple/nodestore/ShardInfo.h>
 #include <ripple/overlay/Squelch.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
@@ -53,12 +54,6 @@ class PeerImp : public Peer,
 public:
     /** Whether the peer's view of the ledger converges or diverges from ours */
     enum class Tracking { diverged, unknown, converged };
-
-    struct ShardInfo
-    {
-        beast::IP::Endpoint endpoint;
-        RangeSet<std::uint32_t> shardIndexes;
-    };
 
 private:
     using clock_type = std::chrono::steady_clock;
@@ -166,8 +161,9 @@ private:
     // been sent to or received from this peer.
     hash_map<PublicKey, std::size_t> publisherListSequences_;
 
+    // Any known shard info from this peer and its sub peers
+    hash_map<PublicKey, NodeStore::ShardInfo> shardInfos_;
     std::mutex mutable shardInfoMutex_;
-    hash_map<PublicKey, ShardInfo> shardInfo_;
 
     Compressed compressionEnabled_ = Compressed::Off;
     // true if validation/proposal reduce-relay feature is enabled
@@ -376,9 +372,6 @@ public:
     ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const override;
 
     bool
-    hasShard(std::uint32_t shardIndex) const override;
-
-    bool
     hasTxSet(uint256 const& hash) const override;
 
     void
@@ -397,13 +390,9 @@ public:
     void
     fail(std::string const& reason);
 
-    /** Return a range set of known shard indexes from this peer. */
-    std::optional<RangeSet<std::uint32_t>>
-    getShardIndexes() const;
-
-    /** Return any known shard info from this peer and its sub peers. */
-    std::optional<hash_map<PublicKey, ShardInfo>>
-    getPeerShardInfo() const;
+    // Return any known shard info from this peer and its sub peers
+    [[nodiscard]] hash_map<PublicKey, NodeStore::ShardInfo> const
+    getPeerShardInfos() const;
 
     bool
     compressionEnabled() const override
@@ -498,13 +487,13 @@ public:
     void
     onMessage(std::shared_ptr<protocol::TMCluster> const& m);
     void
-    onMessage(std::shared_ptr<protocol::TMGetShardInfo> const& m);
-    void
-    onMessage(std::shared_ptr<protocol::TMShardInfo> const& m);
-    void
     onMessage(std::shared_ptr<protocol::TMGetPeerShardInfo> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMPeerShardInfo> const& m);
+    void
+    onMessage(std::shared_ptr<protocol::TMGetPeerShardInfoV2> const& m);
+    void
+    onMessage(std::shared_ptr<protocol::TMPeerShardInfoV2> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMEndpoints> const& m);
     void

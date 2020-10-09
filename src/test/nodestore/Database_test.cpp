@@ -566,9 +566,8 @@ public:
 
         if (type == "memory")
         {
-            // Earliest ledger sequence tests
+            // Verify default earliest ledger sequence
             {
-                // Verify default earliest ledger sequence
                 std::unique_ptr<Database> db =
                     Manager::instance().make_Database(
                         megabytes(4), scheduler, 2, nodeParams, journal_);
@@ -617,6 +616,49 @@ public:
                     std::strcmp(e.what(), "earliest_seq set more than once") ==
                     0);
             }
+
+            // Verify default ledgers per shard
+            {
+                std::unique_ptr<Database> db =
+                    Manager::instance().make_Database(
+                        megabytes(4),
+                        scheduler,
+                        2,
+                        nodeParams,
+                        journal_);
+                BEAST_EXPECT(
+                    db->ledgersPerShard() == DEFAULT_LEDGERS_PER_SHARD);
+            }
+
+            // Set an invalid ledgers per shard
+            try
+            {
+                nodeParams.set("ledgers_per_shard", "100");
+                std::unique_ptr<Database> db =
+                    Manager::instance().make_Database(
+                        megabytes(4),
+                        scheduler,
+                        2,
+                        nodeParams,
+                        journal_);
+            }
+            catch (std::runtime_error const& e)
+            {
+                BEAST_EXPECT(
+                    std::strcmp(e.what(), "Invalid ledgers_per_shard") == 0);
+            }
+
+            // Set a valid ledgers per shard
+            nodeParams.set("ledgers_per_shard", "256");
+            std::unique_ptr<Database> db = Manager::instance().make_Database(
+                megabytes(4),
+                scheduler,
+                2,
+                nodeParams,
+                journal_);
+
+            // Verify database uses the ledgers per shard
+            BEAST_EXPECT(db->ledgersPerShard() == 256);
         }
     }
 

@@ -98,18 +98,15 @@ template <class T>
 std::string
 to_string(RangeSet<T> const& rs)
 {
-    using ripple::to_string;
-
     if (rs.empty())
         return "empty";
-    std::string res = "";
+
+    std::string s;
     for (auto const& interval : rs)
-    {
-        if (!res.empty())
-            res += ",";
-        res += to_string(interval);
-    }
-    return res;
+        s += ripple::to_string(interval) + ",";
+    s.pop_back();
+
+    return s;
 }
 
 /** Convert the given styled string to a RangeSet.
@@ -122,13 +119,14 @@ to_string(RangeSet<T> const& rs)
     @return True on successfully converting styled string
 */
 template <class T>
-bool
+[[nodiscard]] bool
 from_string(RangeSet<T>& rs, std::string const& s)
 {
     std::vector<std::string> intervals;
     std::vector<std::string> tokens;
     bool result{true};
 
+    rs.clear();
     boost::split(tokens, s, boost::algorithm::is_any_of(","));
     for (auto const& t : tokens)
     {

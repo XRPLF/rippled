@@ -271,11 +271,6 @@ public:
     {
     }
     bool
-    hasShard(std::uint32_t shardIndex) const override
-    {
-        return false;
-    }
-    bool
     hasTxSet(uint256 const& hash) const override
     {
         return false;

@@ -681,98 +681,99 @@ OverlayImpl::reportTraffic(
 }
 
 Json::Value
-OverlayImpl::crawlShards(bool pubKey, std::uint32_t hops)
+OverlayImpl::crawlShards(bool includePublicKey, std::uint32_t relays)
 {
     using namespace std::chrono;
-    using namespace std::chrono_literals;
 
     Json::Value jv(Json::objectValue);
-    auto const numPeers{size()};
-    if (numPeers == 0)
+
+    // Add shard info from this server to json result
+    if (auto shardStore = app_.getShardStore())
+    {
+        if (includePublicKey)
+            jv[jss::public_key] =
+                toBase58(TokenType::NodePublic, app_.nodeIdentity().first);
+
+        auto const shardInfo{shardStore->getShardInfo()};
+        if (!shardInfo->finalized().empty())
+            jv[jss::complete_shards] = shardInfo->finalizedToString();
+        if (!shardInfo->incomplete().empty())
+            jv[jss::incomplete_shards] = shardInfo->incompleteToString();
+    }
+
+    if (relays == 0 || size() == 0)
         return jv;
 
-    // If greater than a hop away, we may need to gather or freshen data
-    if (hops > 0)
     {
-        // Prevent crawl spamming
-        clock_type::time_point const last(csLast_.load());
-        if ((clock_type::now() - last) > 60s)
+        protocol::TMGetPeerShardInfoV2 tmGPS;
+        tmGPS.set_relays(relays);
+
+        // Wait if a request is in progress
+        std::unique_lock<std::mutex> csLock{csMutex_};
+        if (!csIDs_.empty())
+            csCV_.wait(csLock);
+
         {
-            auto const timeout(seconds((hops * hops) * 10));
-            std::unique_lock<std::mutex> l{csMutex_};
+            std::lock_guard lock{mutex_};
+            for (auto const& id : ids_)
+                csIDs_.emplace(id.first);
+        }
 
-            // Check if already requested
-            if (csIDs_.empty())
-            {
-                {
-                    std::lock_guard lock{mutex_};
-                    for (auto& id : ids_)
-                        csIDs_.emplace(id.first);
-                }
+        // Request peer shard info
+        foreach(send_always(std::make_shared<Message>(
+            tmGPS, protocol::mtGET_PEER_SHARD_INFO_V2)));
 
-                // Relay request to active peers
-                protocol::TMGetPeerShardInfo tmGPS;
-                tmGPS.set_hops(hops);
-                foreach(send_always(std::make_shared<Message>(
-                    tmGPS, protocol::mtGET_PEER_SHARD_INFO)));
-
-                if (csCV_.wait_for(l, timeout) == std::cv_status::timeout)
-                {
-                    csIDs_.clear();
-                    csCV_.notify_all();
-                }
-                csLast_ = duration_cast<seconds>(
-                    clock_type::now().time_since_epoch());
-            }
-            else
-                csCV_.wait_for(l, timeout);
+        if (csCV_.wait_for(csLock, seconds(60)) == std::cv_status::timeout)
+        {
+            csIDs_.clear();
+            csCV_.notify_all();
         }
     }
 
-    // Combine the shard info from peers and their sub peers
-    hash_map<PublicKey, PeerImp::ShardInfo> peerShardInfo;
-    for_each([&](std::shared_ptr<PeerImp> const& peer) {
-        if (auto psi = peer->getPeerShardInfo())
+    // Combine shard info from peers
+    hash_map<PublicKey, NodeStore::ShardInfo> peerShardInfo;
+    for_each([&](std::shared_ptr<PeerImp>&& peer) {
+        auto const psi{peer->getPeerShardInfos()};
+        for (auto const& [publicKey, shardInfo] : psi)
         {
-            // e is non-const so it may be moved from
-            for (auto& e : *psi)
-            {
-                auto it{peerShardInfo.find(e.first)};
-                if (it != peerShardInfo.end())
-                    // The key exists so join the shard indexes.
-                    it->second.shardIndexes += e.second.shardIndexes;
-                else
-                    peerShardInfo.emplace(std::move(e));
-            }
+            auto const it{peerShardInfo.find(publicKey)};
+            if (it == peerShardInfo.end())
+                peerShardInfo.emplace(publicKey, shardInfo);
+            else if (shardInfo.msgTimestamp() > it->second.msgTimestamp())
+                it->second = shardInfo;
         }
     });
 
-    // Prepare json reply
-    auto& av = jv[jss::peers] = Json::Value(Json::arrayValue);
-    for (auto const& e : peerShardInfo)
+    // Add shard info to json result
+    if (!peerShardInfo.empty())
     {
-        auto& pv{av.append(Json::Value(Json::objectValue))};
-        if (pubKey)
-            pv[jss::public_key] = toBase58(TokenType::NodePublic, e.first);
+        auto& av = jv[jss::peers] = Json::Value(Json::arrayValue);
+        for (auto const& [publicKey, shardInfo] : peerShardInfo)
+        {
+            auto& pv{av.append(Json::Value(Json::objectValue))};
+            if (includePublicKey)
+            {
+                pv[jss::public_key] =
+                    toBase58(TokenType::NodePublic, publicKey);
+            }
 
-        auto const& address{e.second.endpoint.address()};
-        if (!address.is_unspecified())
-            pv[jss::ip] = address.to_string();
-
-        pv[jss::complete_shards] = to_string(e.second.shardIndexes);
+            if (!shardInfo.finalized().empty())
+                pv[jss::complete_shards] = shardInfo.finalizedToString();
+            if (!shardInfo.incomplete().empty())
+                pv[jss::incomplete_shards] = shardInfo.incompleteToString();
+        }
     }
 
     return jv;
 }
 
 void
-OverlayImpl::lastLink(std::uint32_t id)
+OverlayImpl::endOfPeerChain(std::uint32_t id)
 {
-    // Notify threads when every peer has received a last link.
-    // This doesn't account for every node that might reply but
-    // it is adequate.
-    std::lock_guard l{csMutex_};
-    if (csIDs_.erase(id) && csIDs_.empty())
+    // Notify threads if all peers have received a reply from all peer chains
+    std::lock_guard csLock{csMutex_};
+    csIDs_.erase(id);
+    if (csIDs_.empty())
         csCV_.notify_all();
 }
 
@@ -834,8 +835,16 @@ OverlayImpl::getOverlayInfo()
             pv[jss::complete_ledgers] =
                 std::to_string(minSeq) + "-" + std::to_string(maxSeq);
 
-        if (auto shardIndexes = sp->getShardIndexes())
-            pv[jss::complete_shards] = to_string(*shardIndexes);
+        auto const peerShardInfos{sp->getPeerShardInfos()};
+        auto const it{peerShardInfos.find(sp->getNodePublic())};
+        if (it != peerShardInfos.end())
+        {
+            auto const& shardInfo{it->second};
+            if (!shardInfo.finalized().empty())
+                pv[jss::complete_shards] = shardInfo.finalizedToString();
+            if (!shardInfo.incomplete().empty())
+                pv[jss::incomplete_shards] = shardInfo.incompleteToString();
+        }
     });
 
     return jv;

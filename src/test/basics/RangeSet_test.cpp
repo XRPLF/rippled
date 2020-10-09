@@ -96,22 +96,18 @@ public:
         BEAST_EXPECT(!from_string(set, "1,,2"));
         BEAST_EXPECT(boost::icl::length(set) == 0);
 
-        set.clear();
         BEAST_EXPECT(from_string(set, "1"));
         BEAST_EXPECT(boost::icl::length(set) == 1);
         BEAST_EXPECT(boost::icl::first(set) == 1);
 
-        set.clear();
         BEAST_EXPECT(from_string(set, "1,1"));
         BEAST_EXPECT(boost::icl::length(set) == 1);
         BEAST_EXPECT(boost::icl::first(set) == 1);
 
-        set.clear();
         BEAST_EXPECT(from_string(set, "1-1"));
         BEAST_EXPECT(boost::icl::length(set) == 1);
         BEAST_EXPECT(boost::icl::first(set) == 1);
 
-        set.clear();
         BEAST_EXPECT(from_string(set, "1,4-6"));
         BEAST_EXPECT(boost::icl::length(set) == 4);
         BEAST_EXPECT(boost::icl::first(set) == 1);
@@ -121,7 +117,6 @@ public:
         BEAST_EXPECT(boost::icl::contains(set, 5));
         BEAST_EXPECT(boost::icl::last(set) == 6);
 
-        set.clear();
         BEAST_EXPECT(from_string(set, "1-2,4-6"));
         BEAST_EXPECT(boost::icl::length(set) == 5);
         BEAST_EXPECT(boost::icl::first(set) == 1);
@@ -129,7 +124,6 @@ public:
         BEAST_EXPECT(boost::icl::contains(set, 4));
         BEAST_EXPECT(boost::icl::last(set) == 6);
 
-        set.clear();
         BEAST_EXPECT(from_string(set, "1-2,6"));
         BEAST_EXPECT(boost::icl::length(set) == 3);
         BEAST_EXPECT(boost::icl::first(set) == 1);
