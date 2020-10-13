@@ -91,8 +91,9 @@ PeerImp::PeerImp(
     , request_(std::move(request))
     , headers_(request_)
     , compressionEnabled_(
-          headers_["X-Offer-Compression"] == "lz4" ? Compressed::On
-                                                   : Compressed::Off)
+          headers_["X-Offer-Compression"] == "lz4" && app_.config().COMPRESSION
+              ? Compressed::On
+              : Compressed::Off)
 {
 }
 
