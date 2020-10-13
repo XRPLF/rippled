@@ -136,11 +136,16 @@ Shard::isOpen() const
 bool
 Shard::tryClose()
 {
-    // Keep database open if being acquired, finalized or in use
-    if (state_ != final || backendCount_ > 0)
+    // Keep database open if being acquired or finalized
+    if (state_ != final)
         return false;
 
     std::lock_guard lock(mutex_);
+
+    // Keep database open if in use
+    if (backendCount_ > 0)
+        return false;
+
     if (!backend_)
     {
         JLOG(j_.error()) << "shard " << index_ << " not initialized";
@@ -1381,21 +1386,19 @@ Shard::makeBackendCount()
     if (stop_)
         return {nullptr};
 
+    std::lock_guard lock(mutex_);
+    if (!backend_)
     {
-        std::lock_guard lock(mutex_);
-        if (!backend_)
-        {
-            JLOG(j_.error()) << "shard " << index_ << " not initialized";
-            return {nullptr};
-        }
-        if (!backend_->isOpen())
-        {
-            if (!open(lock))
-                return {nullptr};
-        }
-        else if (state_ == final)
-            lastAccess_ = std::chrono::steady_clock::now();
+        JLOG(j_.error()) << "shard " << index_ << " not initialized";
+        return {nullptr};
     }
+    if (!backend_->isOpen())
+    {
+        if (!open(lock))
+            return {nullptr};
+    }
+    else if (state_ == final)
+        lastAccess_ = std::chrono::steady_clock::now();
 
     return Shard::Count(&backendCount_);
 }
