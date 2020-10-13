@@ -265,7 +265,7 @@ DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
     }();
 
     if (!pathDesignation)
-        return false;
+        return boost::none;
 
     auto const needsHistoricalPath =
         *pathDesignation == PathDesignation::historical;
