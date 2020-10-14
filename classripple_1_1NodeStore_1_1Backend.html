@@ -98,6 +98,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a586356a9f6050201be9d184bc3fd2c83"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a586356a9f6050201be9d184bc3fd2c83">open</a> (bool createIfMissing=true)=0</td></tr>
 <tr class="memdesc:a586356a9f6050201be9d184bc3fd2c83"><td class="mdescLeft">&#160;</td><td class="mdescRight">Open the backend.  <a href="classripple_1_1NodeStore_1_1Backend.html#a586356a9f6050201be9d184bc3fd2c83">More...</a><br /></td></tr>
 <tr class="separator:a586356a9f6050201be9d184bc3fd2c83"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd6ac096e54166098107227a8d168044"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#acd6ac096e54166098107227a8d168044">isOpen</a> ()=0</td></tr>
+<tr class="memdesc:acd6ac096e54166098107227a8d168044"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true is the database is open.  <a href="classripple_1_1NodeStore_1_1Backend.html#acd6ac096e54166098107227a8d168044">More...</a><br /></td></tr>
+<tr class="separator:acd6ac096e54166098107227a8d168044"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b13f9a9bbf0bf6470648f4910a92dd0"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a6b13f9a9bbf0bf6470648f4910a92dd0">close</a> ()=0</td></tr>
 <tr class="memdesc:a6b13f9a9bbf0bf6470648f4910a92dd0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Close the backend.  <a href="classripple_1_1NodeStore_1_1Backend.html#a6b13f9a9bbf0bf6470648f4910a92dd0">More...</a><br /></td></tr>
 <tr class="separator:a6b13f9a9bbf0bf6470648f4910a92dd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -234,6 +237,35 @@ Public Member Functions</h2></td></tr>
 </dl>
 
 <p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#a4e5920f4c51902aef93021277aa8ab37">ripple::NodeStore::MemoryBackend</a>, <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#a2160cbce008b1fd13e1797d81d989128">ripple::NodeStore::NuDBBackend</a>, and <a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a0b2c45caa5842849382a198b28687c8e">ripple::NodeStore::NullBackend</a>.</p>
+
+</div>
+</div>
+<a id="acd6ac096e54166098107227a8d168044"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd6ac096e54166098107227a8d168044">&#9670;&nbsp;</a></span>isOpen()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool ripple::NodeStore::Backend::isOpen </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns true is the database is open. </p>
+
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1NuDBBackend.html#acf5ab73b7ec283a9ee0b73462e1d8531">ripple::NodeStore::NuDBBackend</a>, <a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#ada78f1edc055747acbcd9b0da846d743">ripple::NodeStore::MemoryBackend</a>, and <a class="el" href="classripple_1_1NodeStore_1_1NullBackend.html#a06edcc6548cdcac4785c1de9c3a1662f">ripple::NodeStore::NullBackend</a>.</p>
 
 </div>
 </div>
@@ -618,7 +650,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns true if the backend uses permanent storage. </p>
 
-<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00129">129</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00134">134</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
 
 </div>
 </div>

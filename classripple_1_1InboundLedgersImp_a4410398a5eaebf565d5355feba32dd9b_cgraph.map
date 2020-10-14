@@ -9,5 +9,5 @@
 <area shape="rect" id="node8" href="$classripple_1_1base__uint.html#ad2bffc75e554b89befbb9388e07392c0" title=" " alt="" coords="271,369,409,411"/>
 <area shape="rect" id="node9" href="$classripple_1_1Stoppable.html#a836b8737444ef1133c3596e61010fa80" title="Returns true if the stoppable should stop." alt="" coords="270,435,410,476"/>
 <area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/ref.html#" title=" " alt="" coords="306,501,374,527"/>
-<area shape="rect" id="node11" href="$classripple_1_1NodeStore_1_1Database.html#aad7aa12d0cc01006120761d23312d428" title="Copies a ledger stored in a different database to this one." alt="" coords="255,552,425,593"/>
+<area shape="rect" id="node11" href="$classripple_1_1NodeStore_1_1Database.html#aad7aa12d0cc01006120761d23312d428" title="Store a ledger from a different database." alt="" coords="255,552,425,593"/>
 </map>

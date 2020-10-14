@@ -120,6 +120,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a4e5920f4c51902aef93021277aa8ab37"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#a4e5920f4c51902aef93021277aa8ab37">open</a> (bool createIfMissing) override</td></tr>
 <tr class="memdesc:a4e5920f4c51902aef93021277aa8ab37"><td class="mdescLeft">&#160;</td><td class="mdescRight">Open the backend.  <a href="classripple_1_1NodeStore_1_1MemoryBackend.html#a4e5920f4c51902aef93021277aa8ab37">More...</a><br /></td></tr>
 <tr class="separator:a4e5920f4c51902aef93021277aa8ab37"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ada78f1edc055747acbcd9b0da846d743"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#ada78f1edc055747acbcd9b0da846d743">isOpen</a> () override</td></tr>
+<tr class="memdesc:ada78f1edc055747acbcd9b0da846d743"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true is the database is open.  <a href="classripple_1_1NodeStore_1_1MemoryBackend.html#ada78f1edc055747acbcd9b0da846d743">More...</a><br /></td></tr>
+<tr class="separator:ada78f1edc055747acbcd9b0da846d743"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a629815bc2dfa046866f0b28dea0887"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1MemoryBackend.html#a0a629815bc2dfa046866f0b28dea0887">close</a> () override</td></tr>
 <tr class="memdesc:a0a629815bc2dfa046866f0b28dea0887"><td class="mdescLeft">&#160;</td><td class="mdescRight">Close the backend.  <a href="classripple_1_1NodeStore_1_1MemoryBackend.html#a0a629815bc2dfa046866f0b28dea0887">More...</a><br /></td></tr>
 <tr class="separator:a0a629815bc2dfa046866f0b28dea0887"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -340,6 +343,37 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="ada78f1edc055747acbcd9b0da846d743"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ada78f1edc055747acbcd9b0da846d743">&#9670;&nbsp;</a></span>isOpen()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::NodeStore::MemoryBackend::isOpen </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns true is the database is open. </p>
+
+<p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#acd6ac096e54166098107227a8d168044">ripple::NodeStore::Backend</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00118">118</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a0a629815bc2dfa046866f0b28dea0887"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0a629815bc2dfa046866f0b28dea0887">&#9670;&nbsp;</a></span>close()</h2>
 
@@ -368,7 +402,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a6b13f9a9bbf0bf6470648f4910a92dd0">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00118">118</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00124">124</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -419,7 +453,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a7d3224e43e89dc098962b986d70e9833">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00126">126</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00132">132</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -450,7 +484,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a26ec003b54dcceb03af5de57ddb5e545">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00144">144</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00150">150</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -492,7 +526,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ae5c85e156a44b8b13040ecafab65976a">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00150">150</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00156">156</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -531,7 +565,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a8862f8d96713c985c3169e57cbb260c2">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00157">157</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00163">163</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -564,7 +598,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#acb1f22b4101841e695477646c95376a7">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00165">165</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00171">171</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -598,7 +632,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a70721d2adc758a808d2536eee864df52">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00172">172</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00178">178</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -629,7 +663,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ac4d7008b7a616ce05568da3e96a204ec">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00180">180</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00186">186</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -660,7 +694,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a898be5251e9216eb21938e3083c2d1ef">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00186">186</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00192">192</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -691,7 +725,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#ad2c3057545b73aee8e671f127b0ae084">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00191">191</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00197">197</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -722,7 +756,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1NodeStore_1_1Backend.html#a915130d326c2e63209accb8af09cf8b4">ripple::NodeStore::Backend</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00196">196</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MemoryFactory_8cpp_source.html#l00202">202</a> of file <a class="el" href="MemoryFactory_8cpp_source.html">MemoryFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -751,7 +785,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns true if the backend uses permanent storage. </p>
 
-<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00129">129</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Backend_8h_source.html#l00134">134</a> of file <a class="el" href="Backend_8h_source.html">Backend.h</a>.</p>
 
 </div>
 </div>

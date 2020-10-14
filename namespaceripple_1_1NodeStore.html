@@ -193,6 +193,10 @@ Enumerations</h2></td></tr>
 <a class="el" href="namespaceripple_1_1NodeStore.html#ab026118fd22b5e7db14b5dea6938aaa8ac33a634d0db63027973fd6d4ac0b5433">asyncDivider</a> = 8
  }</td></tr>
 <tr class="separator:ab026118fd22b5e7db14b5dea6938aaa8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6334ed426a8dbe335761b9d81ab6f19f"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1NodeStore.html#a6334ed426a8dbe335761b9d81ab6f19f">FetchType</a> { <a class="el" href="namespaceripple_1_1NodeStore.html#a6334ed426a8dbe335761b9d81ab6f19fa1303c4f41a88e739bc859612321b189f">FetchType::synchronous</a>, 
+<a class="el" href="namespaceripple_1_1NodeStore.html#a6334ed426a8dbe335761b9d81ab6f19fa0df93e34273b367bb63bad28c94c78d5">FetchType::async</a>
+ }</td></tr>
+<tr class="separator:a6334ed426a8dbe335761b9d81ab6f19f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a462140731267cdb1df0c7759a9a31512"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom">{ <a class="el" href="namespaceripple_1_1NodeStore.html#a462140731267cdb1df0c7759a9a31512a3e7cbb590a2149da2328925f4ac5978a">batchWritePreallocationSize</a> = 256, 
 <a class="el" href="namespaceripple_1_1NodeStore.html#a462140731267cdb1df0c7759a9a31512a03b8818e1ee729cf3a62bf6697aff257">batchWriteLimitSize</a> = 65536
  }</td></tr>
@@ -211,8 +215,8 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a6b98af8d6a33587b4ad55e3bf079bcda"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1NodeStore.html#a6b98af8d6a33587b4ad55e3bf079bcda">seqToShardIndex</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledgersPerShard=<a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#a12b4f6e3c30bc8844edbf0fa421efc2f">DatabaseShard::ledgersPerShardDefault</a>)</td></tr>
-<tr class="separator:a6b98af8d6a33587b4ad55e3bf079bcda"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0db6f76260c2461d4ad9ba780aaba96b"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1NodeStore.html#a0db6f76260c2461d4ad9ba780aaba96b">seqToShardIndex</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledgerSeq, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledgersPerShard=<a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html#a12b4f6e3c30bc8844edbf0fa421efc2f">DatabaseShard::ledgersPerShardDefault</a>)</td></tr>
+<tr class="separator:a0db6f76260c2461d4ad9ba780aaba96b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6a86acbbdee7c4cf7f1884b4247c988a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html">DatabaseShard</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1NodeStore.html#a6a86acbbdee7c4cf7f1884b4247c988a">make_ShardStore</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="classripple_1_1Stoppable.html">Stoppable</a> &amp;parent, <a class="el" href="classripple_1_1NodeStore_1_1Scheduler.html">Scheduler</a> &amp;scheduler, int readThreads, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
 <tr class="separator:a6a86acbbdee7c4cf7f1884b4247c988a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a99882e6eee2e2b6a6afe6b988acdf07d"><td class="memTemplParams" colspan="2">template&lt;class BufferFactory &gt; </td></tr>
@@ -257,8 +261,8 @@ Functions</h2></td></tr>
 <tr class="separator:ae82addbe571f59dced0d5feba74aa653"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac4332188c6dfdf46e67d4ab18d65431d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1NodeStore.html#ac4332188c6dfdf46e67d4ab18d65431d">BEAST_DEFINE_TESTSUITE</a> (<a class="el" href="classripple_1_1NodeStore_1_1Database.html">Database</a>, NodeStore, ripple)</td></tr>
 <tr class="separator:ac4332188c6dfdf46e67d4ab18d65431d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad27b6f8a414f645f8c4cd733e1f60a96"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1NodeStore.html#ad27b6f8a414f645f8c4cd733e1f60a96">BEAST_DEFINE_TESTSUITE</a> (<a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html">DatabaseShard</a>, NodeStore, ripple)</td></tr>
-<tr class="separator:ad27b6f8a414f645f8c4cd733e1f60a96"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5e54bc50ed11e99d84f0371ae846226a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1NodeStore.html#a5e54bc50ed11e99d84f0371ae846226a">BEAST_DEFINE_TESTSUITE_MANUAL</a> (<a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html">DatabaseShard</a>, NodeStore, ripple)</td></tr>
+<tr class="separator:a5e54bc50ed11e99d84f0371ae846226a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af15359cec47ee39428997be4f439ab82"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, boost::beast::iless &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1NodeStore.html#af15359cec47ee39428997be4f439ab82">parse_args</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;s)</td></tr>
 <tr class="separator:af15359cec47ee39428997be4f439ab82"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abfa7777d2023a3f65fc6b4583c2faac6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1NodeStore.html#abfa7777d2023a3f65fc6b4583c2faac6">isSame</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; const &amp;lhs, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1NodeObject.html">NodeObject</a> &gt; const &amp;rhs)</td></tr>
@@ -353,6 +357,34 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="a6334ed426a8dbe335761b9d81ab6f19f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6334ed426a8dbe335761b9d81ab6f19f">&#9670;&nbsp;</a></span>FetchType</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="namespaceripple_1_1NodeStore.html#a6334ed426a8dbe335761b9d81ab6f19f">ripple::NodeStore::FetchType</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a6334ed426a8dbe335761b9d81ab6f19fa1303c4f41a88e739bc859612321b189f"></a>synchronous&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a6334ed426a8dbe335761b9d81ab6f19fa0df93e34273b367bb63bad28c94c78d5"></a>async&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="ripple_2nodestore_2Scheduler_8h_source.html#l00029">29</a> of file <a class="el" href="ripple_2nodestore_2Scheduler_8h_source.html">ripple/nodestore/Scheduler.h</a>.</p>
+
+</div>
+</div>
 <a id="a462140731267cdb1df0c7759a9a31512"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a462140731267cdb1df0c7759a9a31512">&#9670;&nbsp;</a></span>anonymous enum</h2>
 
@@ -399,8 +431,8 @@ Variables</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="a6b98af8d6a33587b4ad55e3bf079bcda"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6b98af8d6a33587b4ad55e3bf079bcda">&#9670;&nbsp;</a></span>seqToShardIndex()</h2>
+<a id="a0db6f76260c2461d4ad9ba780aaba96b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0db6f76260c2461d4ad9ba780aaba96b">&#9670;&nbsp;</a></span>seqToShardIndex()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -412,7 +444,7 @@ Variables</h2></td></tr>
           <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::NodeStore::seqToShardIndex </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
-          <td class="paramname"><em>seq</em>, </td>
+          <td class="paramname"><em>ledgerSeq</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -433,7 +465,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DatabaseShard_8h_source.html#l00190">190</a> of file <a class="el" href="DatabaseShard_8h_source.html">DatabaseShard.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseShard_8h_source.html#l00183">183</a> of file <a class="el" href="DatabaseShard_8h_source.html">DatabaseShard.h</a>.</p>
 
 </div>
 </div>
@@ -481,7 +513,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DatabaseShardImp_8cpp_source.html#l01948">1948</a> of file <a class="el" href="DatabaseShardImp_8cpp_source.html">DatabaseShardImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DatabaseShardImp_8cpp_source.html#l01886">1886</a> of file <a class="el" href="DatabaseShardImp_8cpp_source.html">DatabaseShardImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -885,7 +917,7 @@ template&lt;class T , std::enable_if_t&lt; std::is_same&lt; T, varint &gt;::valu
 </div>
 </div>
 <a id="a2f88bfc03df04e244cc4073a07268e8d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2f88bfc03df04e244cc4073a07268e8d">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[1/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f88bfc03df04e244cc4073a07268e8d">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -919,7 +951,7 @@ template&lt;class T , std::enable_if_t&lt; std::is_same&lt; T, varint &gt;::valu
 </div>
 </div>
 <a id="ae82addbe571f59dced0d5feba74aa653"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae82addbe571f59dced0d5feba74aa653">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[2/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae82addbe571f59dced0d5feba74aa653">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -953,7 +985,7 @@ template&lt;class T , std::enable_if_t&lt; std::is_same&lt; T, varint &gt;::valu
 </div>
 </div>
 <a id="ac4332188c6dfdf46e67d4ab18d65431d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac4332188c6dfdf46e67d4ab18d65431d">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[3/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac4332188c6dfdf46e67d4ab18d65431d">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -986,14 +1018,14 @@ template&lt;class T , std::enable_if_t&lt; std::is_same&lt; T, varint &gt;::valu
 
 </div>
 </div>
-<a id="ad27b6f8a414f645f8c4cd733e1f60a96"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad27b6f8a414f645f8c4cd733e1f60a96">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE() <span class="overload">[4/4]</span></h2>
+<a id="a5e54bc50ed11e99d84f0371ae846226a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5e54bc50ed11e99d84f0371ae846226a">&#9670;&nbsp;</a></span>BEAST_DEFINE_TESTSUITE_MANUAL()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">ripple::NodeStore::BEAST_DEFINE_TESTSUITE </td>
+          <td class="memname">ripple::NodeStore::BEAST_DEFINE_TESTSUITE_MANUAL </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseShard.html">DatabaseShard</a>&#160;</td>
           <td class="paramname">, </td>
@@ -1203,7 +1235,7 @@ template&lt;class Generator &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00350">350</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NuDBFactory_8cpp_source.html#l00356">356</a> of file <a class="el" href="NuDBFactory_8cpp_source.html">NuDBFactory.cpp</a>.</p>
 
 </div>
 </div>
@@ -1227,7 +1259,7 @@ template&lt;class Generator &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00139">139</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NullFactory_8cpp_source.html#l00145">145</a> of file <a class="el" href="NullFactory_8cpp_source.html">NullFactory.cpp</a>.</p>
 
 </div>
 </div>

@@ -1563,7 +1563,8 @@ Enumerations</h2></td></tr>
 <br />
 &#160;&#160;<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcbad57786faa593a26172cf6ce03a7558a8">SizedItem::hashNodeDBCache</a>, 
 <a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcbaed21e4d346721b8707d57bfa1c92f258">SizedItem::txnDBCache</a>, 
-<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcba9e9e534926f294eacc1b735a9da65965">SizedItem::lgrDBCache</a>
+<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcba9e9e534926f294eacc1b735a9da65965">SizedItem::lgrDBCache</a>, 
+<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcba1f6a5079a4330adbc050540a9e9b5bdf">SizedItem::openFinalLimit</a>
 <br />
  }</td></tr>
 <tr class="separator:a1b38e742ac7fe4c3a80a397e06b83dcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2774,6 +2775,9 @@ Functions</h2></td></tr>
 <tr class="separator:a4a0f163a7e357063a6b2993348d60c3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a123dbbb0bb7c71fa138ace0ab37842cd"><td class="memItemLeft" align="right" valign="top">boost::optional&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a123dbbb0bb7c71fa138ace0ab37842cd">to_uint64</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;s)</td></tr>
 <tr class="separator:a123dbbb0bb7c71fa138ace0ab37842cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab94edddae84fcd70e7261ecc19173b7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aab94edddae84fcd70e7261ecc19173b7">isProperlyFormedTomlDomain</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;domain)</td></tr>
+<tr class="memdesc:aab94edddae84fcd70e7261ecc19173b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determines if the given string looks like a TOML-file hosting domain.  <a href="namespaceripple.html#aab94edddae84fcd70e7261ecc19173b7">More...</a><br /></td></tr>
+<tr class="separator:aab94edddae84fcd70e7261ecc19173b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad6488df36aff40a7e8d36bba04633245"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
 <tr class="memitem:ad6488df36aff40a7e8d36bba04633245"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/is_arithmetic.html">std::is_arithmetic</a>&lt; T &gt;::value, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt;::type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad6488df36aff40a7e8d36bba04633245">to_string</a> (T t)</td></tr>
 <tr class="memdesc:ad6488df36aff40a7e8d36bba04633245"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="namespaceripple.html#a96888695e8d79474e080c334f149e30a">to_string()</a> generalizes <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a> to handle bools, chars, and strings.  <a href="namespaceripple.html#ad6488df36aff40a7e8d36bba04633245">More...</a><br /></td></tr>
@@ -3003,6 +3007,8 @@ Functions</h2></td></tr>
 <tr class="memitem:a276b9076d790b69ea4d9e13720a12ec8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a276b9076d790b69ea4d9e13720a12ec8">getCandidateLedger</a> (<a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> requested)</td></tr>
 <tr class="memdesc:a276b9076d790b69ea4d9e13720a12ec8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find a ledger index from which we could easily get the requested ledger.  <a href="namespaceripple.html#a276b9076d790b69ea4d9e13720a12ec8">More...</a><br /></td></tr>
 <tr class="separator:a276b9076d790b69ea4d9e13720a12ec8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a44bdb65cae71a71fa5c4acf5a795afd0"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1DatabaseDownloader.html">DatabaseDownloader</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a44bdb65cae71a71fa5c4acf5a795afd0">make_DatabaseDownloader</a> (boost::asio::io_service &amp;io_service, <a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="separator:a44bdb65cae71a71fa5c4acf5a795afd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3d2402219c73a313f9073212b2aefe16"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3d2402219c73a313f9073212b2aefe16">registerSSLCerts</a> (boost::asio::ssl::context &amp;, boost::system::error_code &amp;, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
 <tr class="memdesc:a3d2402219c73a313f9073212b2aefe16"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register default SSL certificates.  <a href="namespaceripple.html#a3d2402219c73a313f9073212b2aefe16">More...</a><br /></td></tr>
 <tr class="separator:a3d2402219c73a313f9073212b2aefe16"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -4029,8 +4035,8 @@ Variables</h2></td></tr>
 <tr class="memitem:a55bfc71b0bf18396dbf49bf88cf353f8"><td class="memItemLeft" align="right" valign="top">constexpr auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a55bfc71b0bf18396dbf49bf88cf353f8">decreaseLedgerTimeResolutionEvery</a> = 1</td></tr>
 <tr class="memdesc:a55bfc71b0bf18396dbf49bf88cf353f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">How often we decrease the close time resolution (in numbers of ledgers)  <a href="namespaceripple.html#a55bfc71b0bf18396dbf49bf88cf353f8">More...</a><br /></td></tr>
 <tr class="separator:a55bfc71b0bf18396dbf49bf88cf353f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8b4a4b75dc5ff3ab4d469f5d6c3d5dce"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcb">SizedItem</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt; int, 5 &gt; &gt;, 11 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a8b4a4b75dc5ff3ab4d469f5d6c3d5dce">sizedItems</a></td></tr>
-<tr class="separator:a8b4a4b75dc5ff3ab4d469f5d6c3d5dce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6a385d8a6bd6cf9e0d8a422fcd3b48a"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcb">SizedItem</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt; int, 5 &gt; &gt;, 12 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af6a385d8a6bd6cf9e0d8a422fcd3b48a">sizedItems</a></td></tr>
+<tr class="separator:af6a385d8a6bd6cf9e0d8a422fcd3b48a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2611245485e6cfe23d56f1fa608de87d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1CheckpointersCollection.html">CheckpointersCollection</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2611245485e6cfe23d56f1fa608de87d">checkpointers</a></td></tr>
 <tr class="separator:a2611245485e6cfe23d56f1fa608de87d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc9d4275055c64612390b7f6af828811"><td class="memItemLeft" align="right" valign="top">static uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#abc9d4275055c64612390b7f6af828811">SNTPQueryData</a> [48]</td></tr>
@@ -6824,6 +6830,7 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 <tr><td class="fieldname"><a id="a1b38e742ac7fe4c3a80a397e06b83dcbad57786faa593a26172cf6ce03a7558a8"></a>hashNodeDBCache&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a1b38e742ac7fe4c3a80a397e06b83dcbaed21e4d346721b8707d57bfa1c92f258"></a>txnDBCache&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a1b38e742ac7fe4c3a80a397e06b83dcba9e9e534926f294eacc1b735a9da65965"></a>lgrDBCache&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1b38e742ac7fe4c3a80a397e06b83dcba1f6a5079a4330adbc050540a9e9b5bdf"></a>openFinalLimit&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
 <p class="definition">Definition at line <a class="el" href="Config_8h_source.html#l00048">48</a> of file <a class="el" href="Config_8h_source.html">Config.h</a>.</p>
@@ -9301,7 +9308,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02221">2221</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02196">2196</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -9866,7 +9873,7 @@ template&lt;class Stream &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00161">161</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00140">140</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
 
 </div>
 </div>
@@ -9916,7 +9923,7 @@ template&lt;class Stream &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00175">175</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00154">154</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
 
 </div>
 </div>
@@ -9936,7 +9943,7 @@ template&lt;class Stream &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00244">244</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00223">223</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
 
 </div>
 </div>
@@ -10322,7 +10329,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l03905">3905</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l03909">3909</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -10364,7 +10371,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8cpp_source.html#l00777">777</a> of file <a class="el" href="SHAMapStoreImp_8cpp_source.html">SHAMapStoreImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMapStoreImp_8cpp_source.html#l00778">778</a> of file <a class="el" href="SHAMapStoreImp_8cpp_source.html">SHAMapStoreImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -17133,6 +17140,27 @@ template&lt;class Iterator &gt; </div>
 
 </div>
 </div>
+<a id="aab94edddae84fcd70e7261ecc19173b7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aab94edddae84fcd70e7261ecc19173b7">&#9670;&nbsp;</a></span>isProperlyFormedTomlDomain()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::isProperlyFormedTomlDomain </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>domain</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Determines if the given string looks like a TOML-file hosting domain. </p>
+<p>Do not use this function to determine if a particular string is a valid domain, as this function may reject domains that are otherwise valid and doesn't check whether the TLD is valid. </p>
+
+</div>
+</div>
 <a id="ad6488df36aff40a7e8d36bba04633245"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad6488df36aff40a7e8d36bba04633245">&#9670;&nbsp;</a></span>to_string() <span class="overload">[10/24]</span></h2>
 
@@ -17970,7 +17998,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00086">86</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00088">88</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
 
 </div>
 </div>
@@ -18000,7 +18028,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00134">134</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00136">136</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
 
 </div>
 </div>
@@ -18042,7 +18070,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00147">147</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00149">149</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
 
 </div>
 </div>
@@ -18070,7 +18098,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00182">182</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00184">184</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
 
 </div>
 </div>
@@ -20838,6 +20866,42 @@ template&lt;typename T &gt; </div>
 
 </div>
 </div>
+<a id="a44bdb65cae71a71fa5c4acf5a795afd0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a44bdb65cae71a71fa5c4acf5a795afd0">&#9670;&nbsp;</a></span>make_DatabaseDownloader()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1DatabaseDownloader.html">DatabaseDownloader</a> &gt; ripple::make_DatabaseDownloader </td>
+          <td>(</td>
+          <td class="paramtype">boost::asio::io_service &amp;&#160;</td>
+          <td class="paramname"><em>io_service</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Config.html">Config</a> const &amp;&#160;</td>
+          <td class="paramname"><em>config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="DatabaseDownloader_8cpp_source.html#l00025">25</a> of file <a class="el" href="DatabaseDownloader_8cpp_source.html">DatabaseDownloader.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a3d2402219c73a313f9073212b2aefe16"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3d2402219c73a313f9073212b2aefe16">&#9670;&nbsp;</a></span>registerSSLCerts()</h2>
 
@@ -21394,7 +21458,7 @@ template&lt;typename T &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Handshake_8cpp_source.html#l00152">152</a> of file <a class="el" href="Handshake_8cpp_source.html">Handshake.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Handshake_8cpp_source.html#l00155">155</a> of file <a class="el" href="Handshake_8cpp_source.html">Handshake.cpp</a>.</p>
 
 </div>
 </div>
@@ -21596,7 +21660,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l02565">2565</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l02572">2572</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -21646,7 +21710,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l02589">2589</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l02596">2596</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -28488,7 +28552,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="GetCounts_8cpp_source.html#l00154">154</a> of file <a class="el" href="GetCounts_8cpp_source.html">GetCounts.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="GetCounts_8cpp_source.html#l00156">156</a> of file <a class="el" href="GetCounts_8cpp_source.html">GetCounts.cpp</a>.</p>
 
 </div>
 </div>
@@ -34653,8 +34717,8 @@ template&lt;class Dest , class Src &gt; </div>
 
 </div>
 </div>
-<a id="a8b4a4b75dc5ff3ab4d469f5d6c3d5dce"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8b4a4b75dc5ff3ab4d469f5d6c3d5dce">&#9670;&nbsp;</a></span>sizedItems</h2>
+<a id="af6a385d8a6bd6cf9e0d8a422fcd3b48a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6a385d8a6bd6cf9e0d8a422fcd3b48a">&#9670;&nbsp;</a></span>sizedItems</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -34663,7 +34727,7 @@ template&lt;class Dest , class Src &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcb">SizedItem</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt;int, 5&gt; &gt;, 11&gt; ripple::sizedItems</td>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt;<a class="el" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcb">SizedItem</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt;int, 5&gt; &gt;, 12&gt; ripple::sizedItems</td>
         </tr>
       </table>
   </td>
@@ -34672,25 +34736,26 @@ template&lt;class Dest , class Src &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">{{</div>
-<div class="line">        </div>
-<div class="line">        </div>
-<div class="line">        </div>
-<div class="line">        </div>
-<div class="line">        {SizedItem::sweepInterval, {{10, 30, 60, 90, 120}}},</div>
-<div class="line">        {SizedItem::treeCacheSize, {{128000, 256000, 512000, 768000, 2048000}}},</div>
-<div class="line">        {SizedItem::treeCacheAge, {{30, 60, 90, 120, 900}}},</div>
-<div class="line">        {SizedItem::ledgerSize, {{32, 128, 256, 384, 768}}},</div>
-<div class="line">        {SizedItem::ledgerAge, {{30, 90, 180, 240, 900}}},</div>
-<div class="line">        {SizedItem::ledgerFetch, {{2, 3, 4, 5, 8}}},</div>
-<div class="line">        {SizedItem::nodeCacheSize, {{16384, 32768, 131072, 262144, 524288}}},</div>
-<div class="line">        {SizedItem::nodeCacheAge, {{60, 90, 120, 900, 1800}}},</div>
-<div class="line">        {SizedItem::hashNodeDBCache, {{4, 12, 24, 64, 128}}},</div>
-<div class="line">        {SizedItem::txnDBCache, {{4, 12, 24, 64, 128}}},</div>
-<div class="line">        {SizedItem::lgrDBCache, {{4, 8, 16, 32, 128}}},</div>
-<div class="line">    }}</div>
+<b>Initial value:</b><div class="fragment"><div class="line">{</div>
+<div class="line">        {</div>
+<div class="line">         </div>
+<div class="line">         </div>
+<div class="line">         </div>
+<div class="line">         {SizedItem::sweepInterval, {{10, 30, 60, 90, 120}}},</div>
+<div class="line">         {SizedItem::treeCacheSize,</div>
+<div class="line">          {{128000, 256000, 512000, 768000, 2048000}}},</div>
+<div class="line">         {SizedItem::treeCacheAge, {{30, 60, 90, 120, 900}}},</div>
+<div class="line">         {SizedItem::ledgerSize, {{32, 128, 256, 384, 768}}},</div>
+<div class="line">         {SizedItem::ledgerAge, {{30, 90, 180, 240, 900}}},</div>
+<div class="line">         {SizedItem::ledgerFetch, {{2, 3, 4, 5, 8}}},</div>
+<div class="line">         {SizedItem::nodeCacheSize, {{16384, 32768, 131072, 262144, 524288}}},</div>
+<div class="line">         {SizedItem::nodeCacheAge, {{60, 90, 120, 900, 1800}}},</div>
+<div class="line">         {SizedItem::hashNodeDBCache, {{4, 12, 24, 64, 128}}},</div>
+<div class="line">         {SizedItem::txnDBCache, {{4, 12, 24, 64, 128}}},</div>
+<div class="line">         {SizedItem::lgrDBCache, {{4, 8, 16, 32, 128}}},</div>
+<div class="line">         {SizedItem::openFinalLimit, {{8, 16, 32, 64, 128}}}}}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00043">43</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00044">44</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
 
 </div>
 </div>
@@ -39349,7 +39414,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SHAMap_8cpp_source.html#l00460">460</a> of file <a class="el" href="SHAMap_8cpp_source.html">SHAMap.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SHAMap_8cpp_source.html#l00461">461</a> of file <a class="el" href="SHAMap_8cpp_source.html">SHAMap.cpp</a>.</p>
 
 </div>
 </div>

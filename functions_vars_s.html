@@ -228,6 +228,9 @@ $(function() {
 , <a class="el" href="structripple_1_1short__read__test_1_1Server_1_1Acceptor.html#ae7f6fc88c3d516a40f7fceacd4d54dc2">ripple::short_read_test::Server::Acceptor</a>
 , <a class="el" href="structripple_1_1short__read__test_1_1Server_1_1Connection.html#aa785d573f69d4b921e0fc2b8e59b02bd">ripple::short_read_test::Server::Connection</a>
 </li>
+<li>SERVER_DOMAIN
+: <a class="el" href="classripple_1_1Config.html#aa131c01373dfc0db715eb3c94a1ff7ac">ripple::Config</a>
+</li>
 <li>serverAddress_
 : <a class="el" href="classripple_1_1GRPCServerImpl.html#a05f4db4c5bba612d816803b39a54de71">ripple::GRPCServerImpl</a>
 </li>
@@ -271,9 +274,6 @@ $(function() {
 <li>shade
 : <a class="el" href="classripple_1_1test_1_1MultiSign__test.html#a88301f74ce0eee56300eeabb897085de">ripple::test::MultiSign_test</a>
 </li>
-<li>shard
-: <a class="el" href="structripple_1_1NodeStore_1_1DatabaseShardImp_1_1ShardInfo.html#a0f8da542ecf331ef870f4c1f8fb43a25">ripple::NodeStore::DatabaseShardImp::ShardInfo</a>
-</li>
 <li>shardArchiveHandler_
 : <a class="el" href="classripple_1_1ApplicationImp.html#a7594ba1443abe9ccd88d889eb0d16793">ripple::ApplicationImp</a>
 </li>
@@ -290,7 +290,7 @@ $(function() {
 : <a class="el" href="classripple_1_1PeerImp.html#a4883ff4412cae3d60e2ab4ff5d35a905">ripple::PeerImp</a>
 </li>
 <li>shards_
-: <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#aaf231cc9d3a5c05fe195dc2bdda5c77f">ripple::NodeStore::DatabaseShardImp</a>
+: <a class="el" href="classripple_1_1NodeStore_1_1DatabaseShardImp.html#a2c6e27a7d19eb3fa712824228f211349">ripple::NodeStore::DatabaseShardImp</a>
 </li>
 <li>shardStore_
 : <a class="el" href="classripple_1_1ApplicationImp.html#ab34b75fdd879f1fef726db73b1d5e436">ripple::ApplicationImp</a>
@@ -389,6 +389,7 @@ $(function() {
 </li>
 <li>size
 : <a class="el" href="structripple_1_1KeyCache_1_1Stats.html#add99e15e9461cfb2b1917ebcd12b795e">ripple::KeyCache&lt; Key, Hash, KeyEqual, Mutex &gt;::Stats</a>
+, <a class="el" href="structripple_1_1NodeStore_1_1Shard_1_1StoreLedgerResult.html#a40a69205dd60a07ab9038c6da47bc387">ripple::NodeStore::Shard::StoreLedgerResult</a>
 , <a class="el" href="structripple_1_1TaggedCache_1_1Stats.html#abac5a34419b08141eef4267ada1a3f26">ripple::TaggedCache&lt; Key, T, Hash, KeyEqual, Mutex &gt;::Stats</a>
 , <a class="el" href="classripple_1_1unsigned__integer.html#a803c31b8f2e3e63390f64eb7c4d7ed34">ripple::unsigned_integer&lt; Bits, UInt &gt;</a>
 </li>
@@ -599,12 +600,12 @@ $(function() {
 </li>
 <li>state
 : <a class="el" href="structripple_1_1ConsensusResult.html#acaf3328683148dad2a2dca4bd50aba7f">ripple::ConsensusResult&lt; Traits &gt;</a>
-, <a class="el" href="structripple_1_1NodeStore_1_1DatabaseShardImp_1_1ShardInfo.html#adb45881527a8d6d1ea0afb52f88f82e4">ripple::NodeStore::DatabaseShardImp::ShardInfo</a>
 , <a class="el" href="structripple_1_1squelch_1_1Slot_1_1PeerInfo.html#a02af6e40aa54be20b2f9dfadcca52778">ripple::squelch::Slot&lt; clock_type &gt;::PeerInfo</a>
 </li>
 <li>state_
 : <a class="el" href="classbeast_1_1xxhasher.html#a5fbb2b4d1a32b8e7a481d5166225ff04">beast::xxhasher</a>
 , <a class="el" href="classripple_1_1detail_1_1LedgerCleanerImp.html#a60beb29c0533463cd182c98756c302c2">ripple::detail::LedgerCleanerImp</a>
+, <a class="el" href="classripple_1_1NodeStore_1_1Shard.html#abae93058c06449b76036bc40436af336">ripple::NodeStore::Shard</a>
 , <a class="el" href="classripple_1_1PeerImp.html#a293b43e702b7d95de90953ae834f6cf1">ripple::PeerImp</a>
 , <a class="el" href="classripple_1_1SHAMap.html#a50ed233b23a5065f500249cf23f1a183">ripple::SHAMap</a>
 , <a class="el" href="classripple_1_1squelch_1_1Slot.html#af711681eadd25b620c25604040f71a54">ripple::squelch::Slot&lt; clock_type &gt;</a>
@@ -645,6 +646,7 @@ $(function() {
 </li>
 <li>stop_
 : <a class="el" href="classbeast_1_1detail_1_1seconds__clock__thread.html#a67a7f36e6c06023e3a43f986c6b3b1b0">beast::detail::seconds_clock_thread</a>
+, <a class="el" href="classripple_1_1HTTPDownloader.html#a5f3895cd01a96c313cc00675417e6977">ripple::HTTPDownloader</a>
 , <a class="el" href="classripple_1_1LoadManager.html#a069e423a326a67e34a82861795f35fd2">ripple::LoadManager</a>
 , <a class="el" href="classripple_1_1NodeStore_1_1Shard.html#a46712a9ab9bf14b4cfda2f6528c73e3a">ripple::NodeStore::Shard</a>
 , <a class="el" href="classripple_1_1PeerFinder_1_1Checker.html#a352285b2339732d38138eb59c33bb9cc">ripple::PeerFinder::Checker&lt; Protocol &gt;</a>
@@ -669,13 +671,13 @@ $(function() {
 : <a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html#ae5faa973b34c76e125045048ff896274">ripple::test::jtx::Env</a>
 </li>
 <li>storeCount_
-: <a class="el" href="classripple_1_1NodeStore_1_1Database.html#a743a610ca48e4585fc4fecda6c52d311">ripple::NodeStore::Database</a>
+: <a class="el" href="classripple_1_1NodeStore_1_1Database.html#a4dc1dcc2a79b60c2c7de7f1bdf05cecf">ripple::NodeStore::Database</a>
 </li>
 <li>storedSeqs
 : <a class="el" href="structripple_1_1NodeStore_1_1Shard_1_1AcquireInfo.html#a94165cc019cf90d6e92b6958a5f6294d">ripple::NodeStore::Shard::AcquireInfo</a>
 </li>
 <li>storeSz_
-: <a class="el" href="classripple_1_1NodeStore_1_1Database.html#a5b5b290bf11d892a23a53e3e3beb2cfe">ripple::NodeStore::Database</a>
+: <a class="el" href="classripple_1_1NodeStore_1_1Database.html#a5dbc9808c511caeaaa7ce5c6b27276e6">ripple::NodeStore::Database</a>
 </li>
 <li>str
 : <a class="el" href="classripple_1_1test_1_1ClosureCounter__test_1_1TrackedString.html#aff0a73282a3722ce27d4e9a993966956">ripple::test::ClosureCounter_test::TrackedString</a>

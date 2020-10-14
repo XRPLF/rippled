@@ -116,7 +116,7 @@ Member Variables:</h4>
 <div class="fragment"><div class="line"> {c++}</div>
 <div class="line">std::unique_ptr&lt;HTTPStream&gt; stream_;</div>
 <div class="line">std::condition_variable     c_;</div>
-<div class="line">std::atomic&lt;bool&gt;           cancelDownloads_;</div>
+<div class="line">std::atomic&lt;bool&gt;           stop_;</div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md162"></a>
 Graceful Shutdowns</h2>
 <h4><a class="anchor" id="autotoc_md163"></a>
@@ -136,14 +136,14 @@ Thread 1:</h4>
 <div class="line"> </div>
 <div class="line">    stopped();</div>
 <div class="line">}</div>
-</div><!-- fragment --><p>Inside of <code>HTTPDownloader::onStop()</code>, if a download is currently in progress, the <code>cancelDownloads_</code> member variable is set and the thread waits for the download to stop:</p>
+</div><!-- fragment --><p>Inside of <code>HTTPDownloader::onStop()</code>, if a download is currently in progress, the <code>stop_</code> member variable is set and the thread waits for the download to stop:</p>
 <div class="fragment"><div class="line"> {c++}</div>
 <div class="line">void</div>
 <div class="line">HTTPDownloader::onStop()</div>
 <div class="line">{</div>
 <div class="line">    std::unique_lock lock(m_);</div>
 <div class="line"> </div>
-<div class="line">    cancelDownloads_ = true;</div>
+<div class="line">    stop_ = true;</div>
 <div class="line"> </div>
 <div class="line">    if(sessionActive_)</div>
 <div class="line">    {</div>
@@ -157,7 +157,7 @@ Thread 1:</h4>
 <div class="line">}</div>
 </div><!-- fragment --><h4><a class="anchor" id="autotoc_md164"></a>
 Thread 2:</h4>
-<p>The graceful shutdown is realized when the thread executing the download polls <code>cancelDownloads_</code> after this variable has been set to <code>true</code>. Polling occurs while the file is being downloaded, in between calls to <code>async_read_some()</code>. The stop takes effect when the socket is closed and the handler function ( <code>do_session()</code> ) is exited.</p>
+<p>The graceful shutdown is realized when the thread executing the download polls <code>stop_</code> after this variable has been set to <code>true</code>. Polling occurs while the file is being downloaded, in between calls to <code>async_read_some()</code>. The stop takes effect when the socket is closed and the handler function ( <code>do_session()</code> ) is exited.</p>
 <div class="fragment"><div class="line"> {c++}</div>
 <div class="line">void HTTPDownloader::do_session()</div>
 <div class="line">{</div>
@@ -166,7 +166,7 @@ Thread 2:</h4>
 <div class="line"> </div>
 <div class="line"> </div>
 <div class="line">   // (In between calls to async_read_some):</div>
-<div class="line">   if(cancelDownloads_.load())</div>
+<div class="line">   if(stop_.load())</div>
 <div class="line">   {</div>
 <div class="line">       close(p);</div>
 <div class="line">       return exit();</div>

@@ -219,9 +219,12 @@ $(function() {
 <div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;boost::optional&lt;std::uint64_t&gt;</div>
 <div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;<a class="code" href="namespaceripple.html#a123dbbb0bb7c71fa138ace0ab37842cd">to_uint64</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; s);</div>
 <div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160; </div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160; </div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;<span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;<a class="code" href="namespaceripple.html#aab94edddae84fcd70e7261ecc19173b7">isProperlyFormedTomlDomain</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; domain);</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160; </div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160; </div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="asstream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/sstream.html">sstream</a></div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
@@ -248,6 +251,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a8f2e6be0441a70c9387e5b54cbf04e9b"><div class="ttname"><a href="namespaceripple.html#a8f2e6be0441a70c9387e5b54cbf04e9b">ripple::charHex</a></div><div class="ttdeci">char charHex(unsigned int digit)</div><div class="ttdoc">Converts an integer to the corresponding hex digit.</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8h_source.html#l00041">strHex.h:41</a></div></div>
 <div class="ttc" id="astructripple_1_1parsedURL_html_abf3d08230b4c8b90ce9c6091c99552ff"><div class="ttname"><a href="structripple_1_1parsedURL.html#abf3d08230b4c8b90ce9c6091c99552ff">ripple::parsedURL::scheme</a></div><div class="ttdeci">std::string scheme</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8h_source.html#l00127">StringUtilities.h:127</a></div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aab94edddae84fcd70e7261ecc19173b7"><div class="ttname"><a href="namespaceripple.html#aab94edddae84fcd70e7261ecc19173b7">ripple::isProperlyFormedTomlDomain</a></div><div class="ttdeci">bool isProperlyFormedTomlDomain(std::string const &amp;domain)</div><div class="ttdoc">Determines if the given string looks like a TOML-file hosting domain.</div></div>
 <div class="ttc" id="anamespaceripple_html_a86e358ce3f06ff049af13c2342791cf8"><div class="ttname"><a href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">ripple::strHex</a></div><div class="ttdeci">std::string strHex(FwdIt begin, FwdIt end)</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8h_source.html#l00067">strHex.h:67</a></div></div>
 <div class="ttc" id="astructripple_1_1parsedURL_html_a6d796e85c96cc5060586ce806b288bcb"><div class="ttname"><a href="structripple_1_1parsedURL.html#a6d796e85c96cc5060586ce806b288bcb">ripple::parsedURL::domain</a></div><div class="ttdeci">std::string domain</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8h_source.html#l00130">StringUtilities.h:130</a></div></div>
 <div class="ttc" id="aend_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/end.html">std::string::cend</a></div><div class="ttdeci">T cend(T... args)</div></div>
