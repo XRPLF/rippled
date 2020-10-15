@@ -256,8 +256,10 @@ public:
         bool fatLeaves,
         std::uint32_t depth) const;
 
-    bool
-    getRootNode(Serializer& s, SHANodeFormat format) const;
+    /** Serializes the root in a format appropriate for sending over the wire */
+    void
+    serializeRoot(Serializer& s) const;
+
     std::vector<uint256>
     getNeededHashes(int max, SHAMapSyncFilter* filter);
     SHAMapAddNode

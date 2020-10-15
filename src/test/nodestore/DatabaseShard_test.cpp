@@ -285,7 +285,7 @@ class DatabaseShard_test : public TestBase
         // Store the state map
         auto visitAcc = [&](SHAMapAbstractNode& node) {
             Serializer s;
-            node.addRaw(s, snfPREFIX);
+            node.serializeWithPrefix(s);
             db.store(
                 node.getType() == SHAMapAbstractNode::TNType::tnINNER
                     ? hotUNKNOWN
@@ -313,7 +313,7 @@ class DatabaseShard_test : public TestBase
         // Store the transaction map
         auto visitTx = [&](SHAMapAbstractNode& node) {
             Serializer s;
-            node.addRaw(s, snfPREFIX);
+            node.serializeWithPrefix(s);
             db.store(
                 node.getType() == SHAMapAbstractNode::TNType::tnINNER
                     ? hotUNKNOWN
@@ -359,7 +359,7 @@ class DatabaseShard_test : public TestBase
         // walk shamap and validate each node
         auto fcompAcc = [&](SHAMapAbstractNode& node) -> bool {
             Serializer s;
-            node.addRaw(s, snfPREFIX);
+            node.serializeWithPrefix(s);
             auto nSrc{NodeObject::createObject(
                 node.getType() == SHAMapAbstractNode::TNType::tnINNER
                     ? hotUNKNOWN
@@ -383,7 +383,7 @@ class DatabaseShard_test : public TestBase
 
         auto fcompTx = [&](SHAMapAbstractNode& node) -> bool {
             Serializer s;
-            node.addRaw(s, snfPREFIX);
+            node.serializeWithPrefix(s);
             auto nSrc{NodeObject::createObject(
                 node.getType() == SHAMapAbstractNode::TNType::tnINNER
                     ? hotUNKNOWN

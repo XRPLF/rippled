@@ -31,6 +31,14 @@
 
 namespace ripple {
 
+// These are wire-protocol identifiers used during serialization to encode the
+// type of a node. They should not be arbitrarily be changed.
+static constexpr unsigned char const wireTypeTransaction = 0;
+static constexpr unsigned char const wireTypeAccountState = 1;
+static constexpr unsigned char const wireTypeInner = 2;
+static constexpr unsigned char const wireTypeCompressedInner = 3;
+static constexpr unsigned char const wireTypeTransactionWithMeta = 4;
+
 std::mutex SHAMapInnerNode::childLock;
 
 SHAMapAbstractNode::~SHAMapAbstractNode() = default;
@@ -235,19 +243,19 @@ SHAMapAbstractNode::makeFromWire(Slice rawNode)
 
     std::uint32_t const seq = 0;
 
-    if (type == 0)
+    if (type == wireTypeTransaction)
         return makeTransaction(rawNode, seq, hash, hashValid);
 
-    if (type == 1)
+    if (type == wireTypeAccountState)
         return makeAccountState(rawNode, seq, hash, hashValid);
 
-    if (type == 2)
+    if (type == wireTypeInner)
         return SHAMapInnerNode::makeFullInner(rawNode, seq, hash, hashValid);
 
-    if (type == 3)
+    if (type == wireTypeCompressedInner)
         return SHAMapInnerNode::makeCompressedInner(rawNode, seq);
 
-    if (type == 4)
+    if (type == wireTypeTransactionWithMeta)
         return makeTransactionWithMeta(rawNode, seq, hash, hashValid);
 
     Throw<std::runtime_error>(
@@ -351,112 +359,88 @@ SHAMapTreeNode::updateHash()
 }
 
 void
-SHAMapInnerNode::addRaw(Serializer& s, SHANodeFormat format) const
+SHAMapInnerNode::serializeForWire(Serializer& s) const
 {
-    assert((format == snfPREFIX) || (format == snfWIRE) || (format == snfHASH));
+    assert(mType == tnINNER);
+    assert(!isEmpty());
 
-    if (mType == tnERROR)
-        Throw<std::runtime_error>("invalid I node type");
-
-    if (format == snfHASH)
+    // If the node is sparse, then only send non-empty branches:
+    if (getBranchCount() < 12)
     {
-        s.addBitString(mHash.as_uint256());
-    }
-    else if (mType == tnINNER)
-    {
-        assert(!isEmpty());
-
-        if (format == snfPREFIX)
+        // compressed node
+        for (int i = 0; i < mHashes.size(); ++i)
         {
-            s.add32(HashPrefix::innerNode);
-
-            for (auto const& hh : mHashes)
-                s.addBitString(hh.as_uint256());
-        }
-        else  // format == snfWIRE
-        {
-            if (getBranchCount() < 12)
+            if (!isEmptyBranch(i))
             {
-                // compressed node
-                for (int i = 0; i < mHashes.size(); ++i)
-                    if (!isEmptyBranch(i))
-                    {
-                        s.addBitString(mHashes[i].as_uint256());
-                        s.add8(i);
-                    }
-
-                s.add8(3);
-            }
-            else
-            {
-                for (auto const& hh : mHashes)
-                    s.addBitString(hh.as_uint256());
-
-                s.add8(2);
+                s.addBitString(mHashes[i].as_uint256());
+                s.add8(i);
             }
         }
+
+        s.add8(wireTypeCompressedInner);
     }
     else
-        assert(false);
+    {
+        for (auto const& hh : mHashes)
+            s.addBitString(hh.as_uint256());
+
+        s.add8(wireTypeInner);
+    }
 }
 
 void
-SHAMapTreeNode::addRaw(Serializer& s, SHANodeFormat format) const
+SHAMapInnerNode::serializeWithPrefix(Serializer& s) const
 {
-    assert((format == snfPREFIX) || (format == snfWIRE) || (format == snfHASH));
+    assert(mType == tnINNER);
+    assert(!isEmpty());
 
-    if (mType == tnERROR)
-        Throw<std::runtime_error>("invalid I node type");
+    s.add32(HashPrefix::innerNode);
+    for (auto const& hh : mHashes)
+        s.addBitString(hh.as_uint256());
+}
 
-    if (format == snfHASH)
+void
+SHAMapTreeNode::serializeForWire(Serializer& s) const
+{
+    if (mType == tnACCOUNT_STATE)
     {
-        s.addBitString(mHash.as_uint256());
-    }
-    else if (mType == tnACCOUNT_STATE)
-    {
-        if (format == snfPREFIX)
-        {
-            s.add32(HashPrefix::leafNode);
-            s.addRaw(mItem->peekData());
-            s.addBitString(mItem->key());
-        }
-        else
-        {
-            s.addRaw(mItem->peekData());
-            s.addBitString(mItem->key());
-            s.add8(1);
-        }
+        s.addRaw(mItem->peekData());
+        s.addBitString(mItem->key());
+        s.add8(wireTypeAccountState);
     }
     else if (mType == tnTRANSACTION_NM)
     {
-        if (format == snfPREFIX)
-        {
-            s.add32(HashPrefix::transactionID);
-            s.addRaw(mItem->peekData());
-        }
-        else
-        {
-            s.addRaw(mItem->peekData());
-            s.add8(0);
-        }
+        s.addRaw(mItem->peekData());
+        s.add8(wireTypeTransaction);
     }
     else if (mType == tnTRANSACTION_MD)
     {
-        if (format == snfPREFIX)
-        {
-            s.add32(HashPrefix::txNode);
-            s.addRaw(mItem->peekData());
-            s.addBitString(mItem->key());
-        }
-        else
-        {
-            s.addRaw(mItem->peekData());
-            s.addBitString(mItem->key());
-            s.add8(4);
-        }
+        s.addRaw(mItem->peekData());
+        s.addBitString(mItem->key());
+        s.add8(wireTypeTransactionWithMeta);
     }
-    else
-        assert(false);
+}
+
+void
+SHAMapTreeNode::serializeWithPrefix(Serializer& s) const
+{
+    if (mType == tnACCOUNT_STATE)
+    {
+        s.add32(HashPrefix::leafNode);
+        s.addRaw(mItem->peekData());
+        s.addBitString(mItem->key());
+    }
+    else if (mType == tnTRANSACTION_NM)
+    {
+        s.add32(HashPrefix::transactionID);
+        s.addRaw(mItem->peekData());
+    }
+    else if (mType == tnTRANSACTION_MD)
+    {
+        s.add32(HashPrefix::txNode);
+        s.addRaw(mItem->peekData());
+        s.addBitString(mItem->key());
+    }
 }
 
 bool
