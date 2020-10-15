@@ -406,14 +406,12 @@ std::shared_ptr<Node>
 SHAMap::unshareNode(std::shared_ptr<Node> node, SHAMapNodeID const& nodeID)
 {
     // make sure the node is suitable for the intended operation (copy on write)
-    assert(node->isValid());
     assert(node->getSeq() <= seq_);
     if (node->getSeq() != seq_)
     {
         // have a CoW
         assert(state_ != SHAMapState::Immutable);
         node = std::static_pointer_cast<Node>(node->clone(seq_));
-        assert(node->isValid());
         if (nodeID.isRoot())
             root_ = node;
     }
@@ -772,13 +770,13 @@ SHAMap::addGiveItem(
 
         std::shared_ptr<SHAMapTreeNode> newNode =
             std::make_shared<SHAMapTreeNode>(std::move(item), type, seq_);
-        assert(newNode->isValid() && newNode->isLeaf());
+        assert(newNode->isLeaf());
         auto inner = std::static_pointer_cast<SHAMapInnerNode>(node);
         inner->setChild(b1, newNode);
 
         newNode =
             std::make_shared<SHAMapTreeNode>(std::move(otherItem), type, seq_);
-        assert(newNode->isValid() && newNode->isLeaf());
+        assert(newNode->isLeaf());
         inner->setChild(b2, newNode);
     }
 
@@ -907,7 +905,7 @@ SHAMap::writeNode(
     canonicalize(node->getNodeHash(), node);
 
     Serializer s;
-    node->addRaw(s, snfPREFIX);
+    node->serializeWithPrefix(s);
     f_.db().store(
         t,
         std::move(s.modData()),

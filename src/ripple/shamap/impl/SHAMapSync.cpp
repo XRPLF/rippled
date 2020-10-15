@@ -39,9 +39,6 @@ void
 SHAMap::visitNodes(
     std::function<bool(SHAMapAbstractNode&)> const& function) const
 {
-    // Visit every node in a SHAMap
-    assert(root_->isValid());
-
     if (!root_)
         return;
 
@@ -108,8 +105,6 @@ SHAMap::visitDifferences(
 {
     // Visit every node in this SHAMap that is not present
     // in the specified SHAMap
-    assert(root_->isValid());
-
     if (!root_)
         return;
 
@@ -320,7 +315,6 @@ SHAMap::gmn_ProcessDeferredReads(MissingNodes& mn)
 std::vector<std::pair<SHAMapNodeID, uint256>>
 SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
 {
-    assert(root_->isValid());
     assert(root_->getNodeHash().isNonZero());
     assert(max > 0);
 
@@ -493,7 +487,7 @@ SHAMap::getNodeFat(
         {
             // Add this node to the reply
             Serializer s;
-            node->addRaw(s, snfWIRE);
+            node->serializeForWire(s);
             nodeIDs.push_back(nodeID);
             rawNodes.push_back(std::move(s.modData()));
         }
@@ -527,7 +521,7 @@ SHAMap::getNodeFat(
                         {
                             // Just include this node
                             Serializer ns;
-                            childNode->addRaw(ns, snfWIRE);
+                            childNode->serializeForWire(ns);
                             nodeIDs.push_back(childID);
                             rawNodes.push_back(std::move(ns.modData()));
                         }
@@ -540,11 +534,10 @@ SHAMap::getNodeFat(
     return true;
 }
 
-bool
-SHAMap::getRootNode(Serializer& s, SHANodeFormat format) const
+void
+SHAMap::serializeRoot(Serializer& s) const
 {
-    root_->addRaw(s, format);
-    return true;
+    root_->serializeForWire(s);
 }
 
 SHAMapAddNode
@@ -563,7 +556,7 @@ SHAMap::addRootNode(
 
     assert(seq_ >= 1);
     auto node = SHAMapAbstractNode::makeFromWire(rootNode);
-    if (!node || !node->isValid() || node->getNodeHash() != hash)
+    if (!node || node->getNodeHash() != hash)
         return SHAMapAddNode::invalid();
 
     if (backed_)
@@ -577,7 +570,7 @@ SHAMap::addRootNode(
     if (filter)
     {
         Serializer s;
-        root_->addRaw(s, snfPREFIX);
+        root_->serializeWithPrefix(s);
         filter->gotNode(
             false,
             root_->getNodeHash(),
@@ -633,8 +626,7 @@ SHAMap::addKnownNode(
 
         if (iNode == nullptr)
         {
-            if (!newNode || !newNode->isValid() ||
-                childHash != newNode->getNodeHash())
+            if (!newNode || childHash != newNode->getNodeHash())
             {
                 JLOG(journal_.warn()) << "Corrupt node received";
                 return SHAMapAddNode::invalid();
@@ -665,7 +657,7 @@ SHAMap::addKnownNode(
             if (filter)
             {
                 Serializer s;
-                newNode->addRaw(s, snfPREFIX);
+                newNode->serializeWithPrefix(s);
                 filter->gotNode(
                     false,
                     childHash,
@@ -827,7 +819,7 @@ SHAMap::getFetchPack(
             if (includeLeaves || smn.isInner())
             {
                 Serializer s;
-                smn.addRaw(s, snfPREFIX);
+                smn.serializeWithPrefix(s);
                 func(smn.getNodeHash(), s.peekData());
 
                 if (--max <= 0)
