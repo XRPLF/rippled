@@ -2822,24 +2822,21 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
             {
                 // return account state root node if possible
                 Serializer rootNode(768);
-                if (stateMap.getRootNode(rootNode, snfWIRE))
+
+                stateMap.serializeRoot(rootNode);
+                reply.add_nodes()->set_nodedata(
+                    rootNode.getDataPtr(), rootNode.getLength());
+
+                if (ledger->info().txHash != beast::zero)
                 {
-                    reply.add_nodes()->set_nodedata(
-                        rootNode.getDataPtr(), rootNode.getLength());
-
-                    if (ledger->info().txHash != beast::zero)
+                    auto const& txMap = ledger->txMap();
+                    if (txMap.getHash() != beast::zero)
                     {
-                        auto const& txMap = ledger->txMap();
+                        rootNode.erase();
 
-                        if (txMap.getHash() != beast::zero)
-                        {
-                            rootNode.erase();
-
-                            if (txMap.getRootNode(rootNode, snfWIRE))
-                                reply.add_nodes()->set_nodedata(
-                                    rootNode.getDataPtr(),
-                                    rootNode.getLength());
-                        }
+                        txMap.serializeRoot(rootNode);
+                        reply.add_nodes()->set_nodedata(
+                            rootNode.getDataPtr(), rootNode.getLength());
                     }
                 }
             }

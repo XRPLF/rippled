@@ -254,7 +254,7 @@ public:
                     return;
 
                 s.erase();
-                newNode->addRaw(s, snfPREFIX);
+                newNode->serializeWithPrefix(s);
 
                 app_.getLedgerMaster().addFetchPack(
                     newNode->getNodeHash().as_uint256(),
