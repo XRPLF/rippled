@@ -32,12 +32,6 @@
 
 namespace ripple {
 
-enum SHANodeFormat {
-    snfPREFIX = 1,  // Form that hashes to its official hash
-    snfWIRE = 2,    // Compressed form used on the wire
-    snfHASH = 3,    // just the hash
-};
-
 // A SHAMapHash is the hash of a node in a SHAMap, and also the
 // type of the hash of the entire SHAMap.
 class SHAMapHash
@@ -123,7 +117,6 @@ class SHAMapAbstractNode
 {
 public:
     enum TNType {
-        tnERROR = 0,
         tnINNER = 1,
         tnTRANSACTION_NM = 2,  // transaction, no metadata
         tnTRANSACTION_MD = 3,  // transaction, with metadata
@@ -158,14 +151,19 @@ public:
     bool
     isInner() const;
     bool
-    isValid() const;
-    bool
     isInBounds(SHAMapNodeID const& id) const;
 
     virtual bool
     updateHash() = 0;
+
+    /** Serialize the node in a format appropriate for sending over the wire */
     virtual void
-    addRaw(Serializer&, SHANodeFormat format) const = 0;
+    serializeForWire(Serializer&) const = 0;
+
+    /** Serialize the node in a format appropriate for hashing */
+    virtual void
+    serializeWithPrefix(Serializer&) const = 0;
+
     virtual std::string
     getString(SHAMapNodeID const&) const;
     virtual std::shared_ptr<SHAMapAbstractNode>
@@ -248,8 +246,13 @@ public:
     updateHash() override;
     void
     updateHashDeep();
+
     void
-    addRaw(Serializer&, SHANodeFormat format) const override;
+    serializeForWire(Serializer&) const override;
+
+    void
+    serializeWithPrefix(Serializer&) const override;
+
     std::string
     getString(SHAMapNodeID const&) const override;
     uint256 const&
@@ -293,7 +296,11 @@ public:
     clone(std::uint32_t seq) const override;
 
     void
-    addRaw(Serializer&, SHANodeFormat format) const override;
+    serializeForWire(Serializer&) const override;
+
+    void
+    serializeWithPrefix(Serializer&) const override;
+
     uint256 const&
     key() const override;
     void
@@ -364,12 +371,6 @@ inline bool
 SHAMapAbstractNode::isInner() const
 {
     return mType == tnINNER;
-}
-
-inline bool
-SHAMapAbstractNode::isValid() const
-{
-    return mType != tnERROR;
 }
 
 inline bool
