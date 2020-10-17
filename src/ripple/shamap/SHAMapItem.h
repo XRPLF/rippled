@@ -21,6 +21,7 @@
 #define RIPPLE_SHAMAP_SHAMAPITEM_H_INCLUDED
 
 #include <ripple/basics/Blob.h>
+#include <ripple/basics/CountedObject.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/beast/utility/Journal.h>
@@ -31,7 +32,7 @@
 namespace ripple {
 
 // an item stored in a SHAMap
-class SHAMapItem
+class SHAMapItem : public CountedObject<SHAMapItem>
 {
 private:
     uint256 tag_;

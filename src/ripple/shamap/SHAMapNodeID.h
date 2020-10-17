@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SHAMAP_SHAMAPNODEID_H_INCLUDED
 #define RIPPLE_SHAMAP_SHAMAPNODEID_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/basics/base_uint.h>
 #include <optional>
 #include <ostream>
@@ -29,7 +30,7 @@
 namespace ripple {
 
 /** Identifies a node inside a SHAMap */
-class SHAMapNodeID
+class SHAMapNodeID : public CountedObject<SHAMapNodeID>
 {
 private:
     uint256 id_;
