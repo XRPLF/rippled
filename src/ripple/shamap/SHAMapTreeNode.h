@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SHAMAP_SHAMAPTREENODE_H_INCLUDED
 #define RIPPLE_SHAMAP_SHAMAPTREENODE_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/basics/TaggedCache.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/shamap/SHAMapItem.h>
@@ -202,7 +203,8 @@ private:
         bool hashValid);
 };
 
-class SHAMapInnerNode : public SHAMapAbstractNode
+class SHAMapInnerNode : public SHAMapAbstractNode,
+                        public CountedObject<SHAMapInnerNode>
 {
     std::array<SHAMapHash, 16> mHashes;
     std::shared_ptr<SHAMapAbstractNode> mChildren[16];
@@ -273,7 +275,8 @@ public:
 
 // SHAMapTreeNode represents a leaf, and may eventually be renamed to reflect
 // that.
-class SHAMapTreeNode : public SHAMapAbstractNode
+class SHAMapTreeNode : public SHAMapAbstractNode,
+                       public CountedObject<SHAMapTreeNode>
 {
 private:
     std::shared_ptr<SHAMapItem const> mItem;
