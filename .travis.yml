@@ -227,22 +227,10 @@ matrix:
         - NINJA_BUILD=false
     # misc alternative compilers
     - <<: *linux
-      compiler: gcc-7
-      name: gcc-7
-      env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
-        - BUILD_TYPE=Debug
-    - <<: *linux
       compiler: gcc-9
       name: gcc-9
       env:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
-        - BUILD_TYPE=Debug
-    - <<: *linux
-      compiler: clang-7
-      name: clang-7
-      env:
-        - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
         - BUILD_TYPE=Debug
     - <<: *linux
       compiler: clang-9
@@ -274,8 +262,8 @@ matrix:
       if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_mac/
       stage: build
       os: osx
-      osx_image: xcode10.3
-      name: xcode10, debug
+      osx_image: xcode11.2
+      name: xcode11.2, debug
       env:
         # put NIH in non-cache location since it seems to
         # cause failures when homebrew updates
@@ -313,7 +301,7 @@ matrix:
         - travis_wait ${MAX_TIME_MIN} cmake --build . --parallel --verbose
         - ./rippled --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS} ${TEST_EXTRA_ARGS}
     - <<: *macos
-      name: xcode10, release
+      name: xcode11.2, release
       before_script:
         - export BLD_CONFIG=Release
         - export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -Dassert=ON"
@@ -323,7 +311,7 @@ matrix:
         - export TEST_EXTRA_ARGS="--unittest-ipv6"
     - <<: *macos
       osx_image: xcode11.2
-      name: xcode11, debug
+      name: xcode11.2, debug
     # windows
     - &windows
       if: commit_message !~ /travis_run_/ OR commit_message =~ /travis_run_win/
