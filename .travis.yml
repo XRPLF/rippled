@@ -227,22 +227,10 @@ matrix:
         - NINJA_BUILD=false
     # misc alternative compilers
     - <<: *linux
-      compiler: gcc-7
-      name: gcc-7
-      env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
-        - BUILD_TYPE=Debug
-    - <<: *linux
       compiler: gcc-9
       name: gcc-9
       env:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
-        - BUILD_TYPE=Debug
-    - <<: *linux
-      compiler: clang-7
-      name: clang-7
-      env:
-        - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
         - BUILD_TYPE=Debug
     - <<: *linux
       compiler: clang-9
