@@ -25,6 +25,7 @@
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/overlay/Compression.h>
 #include <ripple/overlay/Message.h>
+#include <ripple/overlay/impl/Handshake.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/ZeroCopyStream.h>
 #include <ripple/protocol/HashPrefix.h>
@@ -112,7 +113,7 @@ public:
 
         BEAST_EXPECT(header);
 
-        if (header->algorithm == Algorithm::None)
+        if (!header || header->algorithm == Algorithm::None)
             return;
 
         std::vector<std::uint8_t> decompressed;
@@ -242,7 +243,7 @@ public:
         uint256 const hash(ripple::sha512Half(123456789));
         getLedger->set_ledgerhash(hash.begin(), hash.size());
         getLedger->set_ledgerseq(123456789);
-        ripple::SHAMapNodeID sha(17, hash);
+        ripple::SHAMapNodeID sha(64, hash);
         getLedger->add_nodeids(sha.getRawString());
         getLedger->set_requestcookie(123456789);
         getLedger->set_querytype(protocol::qtINDIRECT);
@@ -302,7 +303,7 @@ public:
             uint256 hash(ripple::sha512Half(i));
             auto object = getObject->add_objects();
             object->set_hash(hash.data(), hash.size());
-            ripple::SHAMapNodeID sha(i % 55, hash);
+            ripple::SHAMapNodeID sha(64, hash);
             object->set_nodeid(sha.getRawString());
             object->set_index("");
             object->set_data("");
@@ -459,13 +460,79 @@ public:
     }
 
     void
+    testHandshake()
+    {
+        testcase("Handshake");
+        auto getEnv = [&](bool enable) {
+            Config c;
+            std::stringstream str;
+            str << "[reduce_relay]\n"
+                << "vp_enable=1\n"
+                << "vp_squelch=1\n"
+                << "[compression]\n"
+                << enable << "\n";
+            c.loadFromString(str.str());
+            auto env = std::make_shared<jtx::Env>(*this);
+            env->app().config().COMPRESSION = c.COMPRESSION;
+            env->app().config().VP_REDUCE_RELAY_ENABLE =
+                c.VP_REDUCE_RELAY_ENABLE;
+            env->app().config().VP_REDUCE_RELAY_SQUELCH =
+                c.VP_REDUCE_RELAY_SQUELCH;
+            return env;
+        };
+        auto handshake = [&](int outboundEnable, int inboundEnable) {
+            beast::IP::Address addr =
+                boost::asio::ip::address::from_string("172.1.1.100");
+
+            auto env = getEnv(outboundEnable);
+            auto request = ripple::makeRequest(
+                true,
+                env->app().config().COMPRESSION,
+                env->app().config().VP_REDUCE_RELAY_ENABLE);
+            http_request_type http_request;
+            http_request.version(request.version());
+            http_request.base() = request.base();
+            // feature enabled on the peer's connection only if both sides are
+            // enabled
+            auto const peerEnabled = inboundEnable && outboundEnable;
+            // inbound is enabled if the request's header has the feature
+            // enabled and the peer's configuration is enabled
+            auto const inboundEnabled = peerFeatureEnabled(
+                http_request, FEATURE_COMPR, "lz4", inboundEnable);
+            BEAST_EXPECT(!(peerEnabled ^ inboundEnabled));
+
+            env.reset();
+            env = getEnv(inboundEnable);
+            auto http_resp = ripple::makeResponse(
+                true,
+                http_request,
+                addr,
+                addr,
+                uint256{1},
+                1,
+                {1, 0},
+                env->app());
+            // outbound is enabled if the response's header has the feature
+            // enabled and the peer's configuration is enabled
+            auto const outboundEnabled = peerFeatureEnabled(
+                http_resp, FEATURE_COMPR, "lz4", outboundEnable);
+            BEAST_EXPECT(!(peerEnabled ^ outboundEnabled));
+        };
+        handshake(1, 1);
+        handshake(1, 0);
+        handshake(0, 1);
+        handshake(0, 0);
+    }
+
+    void
     run() override
     {
         testProtocol();
+        testHandshake();
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(compression, ripple_data, ripple, 20);
+BEAST_DEFINE_TESTSUITE_MANUAL(compression, ripple_data, ripple);
 
 }  // namespace test
 }  // namespace ripple

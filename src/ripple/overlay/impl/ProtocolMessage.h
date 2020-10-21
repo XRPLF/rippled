@@ -31,6 +31,7 @@
 #include <cassert>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <type_traits>
 #include <vector>
 
@@ -124,15 +125,25 @@ buffersBegin(BufferSequence const& bufs)
         bufs);
 }
 
+template <typename BufferSequence>
+auto
+buffersEnd(BufferSequence const& bufs)
+{
+    return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::end(
+        bufs);
+}
+
 /** Parse a message header
  * @return a seated optional if the message header was successfully
  *         parsed. An unseated optional otherwise, in which case
  *         @param ec contains more information:
  *         - set to `errc::success` if not enough bytes were present
  *         - set to `errc::no_message` if a valid header was not present
+ *         @bufs - sequence of input buffers, can't be empty
+ *         @size input data size
  */
 template <class BufferSequence>
-boost::optional<MessageHeader>
+std::optional<MessageHeader>
 parseMessageHeader(
     boost::system::error_code& ec,
     BufferSequence const& bufs,
@@ -142,6 +153,7 @@ parseMessageHeader(
 
     MessageHeader hdr;
     auto iter = buffersBegin(bufs);
+    assert(iter != buffersEnd(bufs));
 
     // Check valid header compressed message:
     // - 4 bits are the compression algorithm, 1st bit is always set to 1
@@ -156,13 +168,13 @@ parseMessageHeader(
         if (size < hdr.header_size)
         {
             ec = make_error_code(boost::system::errc::success);
-            return boost::none;
+            return std::nullopt;
         }
 
         if (*iter & 0x0C)
         {
             ec = make_error_code(boost::system::errc::protocol_error);
-            return boost::none;
+            return std::nullopt;
         }
 
         hdr.algorithm = static_cast<compression::Algorithm>(*iter & 0xF0);
@@ -170,7 +182,7 @@ parseMessageHeader(
         if (hdr.algorithm != compression::Algorithm::LZ4)
         {
             ec = make_error_code(boost::system::errc::protocol_error);
-            return boost::none;
+            return std::nullopt;
         }
 
         for (int i = 0; i != 4; ++i)
@@ -200,7 +212,7 @@ parseMessageHeader(
         if (size < hdr.header_size)
         {
             ec = make_error_code(boost::system::errc::success);
-            return boost::none;
+            return std::nullopt;
         }
 
         hdr.algorithm = Algorithm::None;
@@ -218,7 +230,7 @@ parseMessageHeader(
     }
 
     ec = make_error_code(boost::system::errc::no_message);
-    return boost::none;
+    return std::nullopt;
 }
 
 template <
@@ -268,7 +280,13 @@ invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
     if (!m)
         return false;
 
-    handler.onMessageBegin(header.message_type, m, header.payload_wire_size);
+    using namespace ripple::compression;
+    handler.onMessageBegin(
+        header.message_type,
+        m,
+        header.payload_wire_size,
+        header.uncompressed_size,
+        header.algorithm != Algorithm::None);
     handler.onMessage(m);
     handler.onMessageEnd(header.message_type, m);
 

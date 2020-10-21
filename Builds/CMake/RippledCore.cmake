@@ -859,6 +859,7 @@ target_sources (rippled PRIVATE
   src/test/overlay/short_read_test.cpp
   src/test/overlay/compression_test.cpp
   src/test/overlay/reduce_relay_test.cpp
+  src/test/overlay/handshake_test.cpp
   #[===============================[
      test sources:
        subdir: peerfinder

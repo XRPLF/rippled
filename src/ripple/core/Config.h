@@ -191,10 +191,18 @@ public:
     std::size_t WORKERS = 0;
 
     // Reduce-relay - these parameters are experimental.
-    // Enable reduce-relay functionality
-    bool REDUCE_RELAY_ENABLE = false;
-    // Send squelch message to peers
-    bool REDUCE_RELAY_SQUELCH = false;
+    // Enable reduce-relay features
+    // Validation/proposal reduce-relay feature
+    bool VP_REDUCE_RELAY_ENABLE = false;
+    // Send squelch message to peers. Generally this config should
+    // have the same value as VP_REDUCE_RELAY_ENABLE. It can be
+    // used for testing the feature's function without
+    // affecting the message relaying. To use it for testing,
+    // set it to false and set VP_REDUCE_RELAY_ENABLE to true.
+    // Squelch messages will not be sent to the peers in this case.
+    // Set log level to debug so that the feature function can be
+    // analyzed.
+    bool VP_REDUCE_RELAY_SQUELCH = false;
 
     // These override the command line client settings
     boost::optional<beast::IP::Endpoint> rpc_ip;

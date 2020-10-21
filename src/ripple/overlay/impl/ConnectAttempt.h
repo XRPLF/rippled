@@ -104,10 +104,6 @@ private:
     onRead(error_code ec);
     void
     onShutdown(error_code ec);
-
-    static request_type
-    makeRequest(bool crawl, bool compressionEnabled);
-
     void
     processResponse();
 

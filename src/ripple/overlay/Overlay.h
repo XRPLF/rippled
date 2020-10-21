@@ -75,7 +75,7 @@ public:
         beast::IP::Address public_ip;
         int ipLimit = 0;
         std::uint32_t crawlOptions = 0;
-        boost::optional<std::uint32_t> networkID;
+        std::optional<std::uint32_t> networkID;
         bool vlEnabled = true;
     };
 
