@@ -2348,25 +2348,6 @@ private:
 
         // Test message splitting on size limits.
 
-        // Version 1 messages don't split, they just abort.
-        messages.clear();
-        verifyBuildMessages(
-            ValidatorList::buildValidatorListMessages(
-                1, 3, maxSequence, version, manifest, blobInfos, messages, 50),
-            5,
-            0);
-        BEAST_EXPECT(messages.size() == 1 && !messages.front().message);
-
-        // version 2 messages will split, but only if the individual blobs
-        // fit within a message. Try a limit that's too small.
-        messages.clear();
-        verifyBuildMessages(
-            ValidatorList::buildValidatorListMessages(
-                2, 5, maxSequence, version, manifest, blobInfos, messages, 107),
-            maxSequence,
-            0);
-        BEAST_EXPECT(messages.size() == 1 && !messages.front().message);
-
         // Set a limit that should give two messages
         messages.clear();
         verifyBuildMessages(
@@ -2410,15 +2391,20 @@ private:
             messages,
             {{108, {6}}, {108, {7}}, {110, {10}}, {110, {12}}});
 
-        // Set a limit so not all of the VLs are sent
+        // Set a limit smaller than some of the messages. Because single
+        // messages send regardless, they will all still be sent
         messages.clear();
         verifyBuildMessages(
             ValidatorList::buildValidatorListMessages(
                 2, 5, maxSequence, version, manifest, blobInfos, messages, 108),
             maxSequence,
-            2);
+            4);
         verifyMessage(
-            version, manifest, blobInfos, messages, {{108, {6}}, {108, {7}}});
+            version,
+            manifest,
+            blobInfos,
+            messages,
+            {{108, {6}}, {108, {7}}, {110, {10}}, {110, {12}}});
     }
 
 public:

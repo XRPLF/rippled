@@ -71,6 +71,12 @@ public:
     std::size_t
     getBufferSize();
 
+    static std::size_t
+    messageSize(::google::protobuf::Message const& message);
+
+    static std::size_t
+    totalSize(::google::protobuf::Message const& message);
+
     /** Retrieve the packed message data. If compressed message is requested but
      * the message is not compressible then the uncompressed buffer is returned.
      * @param compressed Request compressed (Compress::On) or

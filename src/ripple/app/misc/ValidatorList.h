@@ -801,6 +801,7 @@ private:
     buildFileData(
         std::string const& pubKey,
         PublisherListCollection const& pubCollection,
+        beast::Journal const j,
         boost::optional<std::uint32_t> forceVersion = {});
 
     template <class Hasher>

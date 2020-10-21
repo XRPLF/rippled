@@ -156,7 +156,6 @@ ValidatorList::load(
     JLOG(j_.debug()) << "Loading configured validator keys";
 
     count = 0;
-    PublicKey local;
     for (auto const& n : configKeys)
     {
         JLOG(j_.trace()) << "Processing '" << n << "'";
@@ -187,10 +186,7 @@ ValidatorList::load(
             JLOG(j_.warn()) << "Duplicate node identity: " << match[1];
             continue;
         }
-        auto [it, inserted] = publisherLists_.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(local),
-            std::forward_as_tuple());
+        auto [it, inserted] = publisherLists_.emplace();
         // Config listed keys never expire
         auto& current = it->second.current;
         if (inserted)
@@ -218,13 +214,14 @@ Json::Value
 ValidatorList::buildFileData(
     std::string const& pubKey,
     ValidatorList::PublisherListCollection const& pubCollection,
+    beast::Journal const j,
     boost::optional<std::uint32_t> forceVersion /* = {} */)
 {
     Json::Value value(Json::objectValue);
 
-    auto const effectiveVersion = forceVersion
-        ? *forceVersion
-        : (pubCollection.remaining.empty() ? pubCollection.rawVersion : 2);
+    assert(pubCollection.rawVersion == 2 || pubCollection.remaining.empty());
+    auto const effectiveVersion =
+        forceVersion ? *forceVersion : pubCollection.rawVersion;
 
     value[jss::manifest] = pubCollection.rawManifest;
     value[jss::version] = effectiveVersion;
@@ -267,6 +264,8 @@ ValidatorList::buildFileData(
             break;
         }
         default:
+            JLOG(j.trace())
+                << "Invalid VL version provided: " << effectiveVersion;
             value = Json::nullValue;
     }
 
@@ -286,7 +285,7 @@ ValidatorList::cacheValidatorFile(
     boost::system::error_code ec;
 
     Json::Value value =
-        buildFileData(strHex(pubKey), publisherLists_.at(pubKey));
+        buildFileData(strHex(pubKey), publisherLists_.at(pubKey), j_);
     // rippled should be the only process writing to this file, so
     // if it ever needs to be read, it is not expected to change externally, so
     // delay the refresh as long as possible: 24 hours. (See also
@@ -442,14 +441,15 @@ splitMessageParts(
         if (blob.has_manifest())
             smallMsg.set_manifest(blob.manifest());
 
-        auto message =
-            std::make_shared<Message>(smallMsg, protocol::mtVALIDATORLIST);
+        assert(
+            Message::totalSize(smallMsg) <= maxSize ||
+            maxSize < maximiumMessageSize);
 
-        if (message->getBuffer(compression::Compressed::Off).size() <= maxSize)
-        {
-            messages.emplace_back(message, sha512Half(smallMsg), 1);
-            return messages.back().numVLs;
-        }
+        messages.emplace_back(
+            std::make_shared<Message>(smallMsg, protocol::mtVALIDATORLIST),
+            sha512Half(smallMsg),
+            1);
+        return messages.back().numVLs;
     }
     else
     {
@@ -462,20 +462,20 @@ splitMessageParts(
         {
             *smallMsg->add_blobs() = largeMsg.blobs(i);
         }
-        auto message = std::make_shared<Message>(
-            *smallMsg, protocol::mtVALIDATORLISTCOLLECTION);
 
-        if (message->getBuffer(compression::Compressed::Off).size() > maxSize)
+        if (Message::totalSize(*smallMsg) > maxSize)
         {
             // free up the message space
-            message.reset();
             smallMsg.reset();
             return splitMessage(messages, largeMsg, maxSize, begin, end);
         }
         else
         {
             messages.emplace_back(
-                message, sha512Half(*smallMsg), smallMsg->blobs_size());
+                std::make_shared<Message>(
+                    *smallMsg, protocol::mtVALIDATORLISTCOLLECTION),
+                sha512Half(*smallMsg),
+                smallMsg->blobs_size());
             return messages.back().numVLs;
         }
     }
@@ -502,13 +502,12 @@ buildValidatorListMessage(
     // Override the version
     msg.set_version(version);
 
-    auto message = std::make_shared<Message>(msg, protocol::mtVALIDATORLIST);
-    if (message->getBuffer(compression::Compressed::Off).size() <= maxSize)
-    {
-        messages.emplace_back(message, sha512Half(msg), 1);
-        return 1;
-    }
-    return 0;
+    assert(Message::totalSize(msg) <= maxSize || maxSize < maximiumMessageSize);
+    messages.emplace_back(
+        std::make_shared<Message>(msg, protocol::mtVALIDATORLIST),
+        sha512Half(msg),
+        1);
+    return 1;
 }
 
 // Build a v2 protocol message using all the VLs with sequence larger than the
@@ -539,17 +538,17 @@ buildValidatorListMessage(
             blob.set_manifest(*blobInfo.manifest);
     }
     assert(msg.blobs_size() > 0);
-    auto message =
-        std::make_shared<Message>(msg, protocol::mtVALIDATORLISTCOLLECTION);
-    if (message->getBuffer(compression::Compressed::Off).size() > maxSize)
+    if (Message::totalSize(msg) > maxSize)
     {
-        // throw away the Message and split into smaller messages
-        message.reset();
+        // split into smaller messages
         return splitMessage(messages, msg, maxSize);
     }
     else
     {
-        messages.emplace_back(message, sha512Half(msg), msg.blobs_size());
+        messages.emplace_back(
+            std::make_shared<Message>(msg, protocol::mtVALIDATORLISTCOLLECTION),
+            sha512Half(msg),
+            msg.blobs_size());
         return messages.back().numVLs;
     }
 }
@@ -1054,9 +1053,6 @@ ValidatorList::applyList(
             ? PublisherStatus::available
             : PublisherStatus::expired;
     pubCollection.rawManifest = globalManifest;
-    // If this publisher has ever sent a more updated version than the one
-    // in this file, keep it. This scenario is unlikely, but legal.
-    pubCollection.rawVersion = std::max(pubCollection.rawVersion, version);
     if (!pubCollection.maxSequence || sequence > *pubCollection.maxSequence)
         pubCollection.maxSequence = sequence;
 
@@ -1132,6 +1128,16 @@ ValidatorList::applyList(
         // Standardize the list order by sorting
         std::sort(publisherList.begin(), publisherList.end());
     }
+    // If this publisher has ever sent a more updated version than the one
+    // in this file, keep it. This scenario is unlikely, but legal.
+    pubCollection.rawVersion = std::max(pubCollection.rawVersion, version);
+    if (!pubCollection.remaining.empty())
+    {
+        // If there are any pending VLs, then this collection must be at least
+        // version 2.
+        pubCollection.rawVersion = std::max(pubCollection.rawVersion, 2u);
+    }
+
     PublisherListStats const applyResult{
         result, pubKey, pubCollection.status, *pubCollection.maxSequence};
 
@@ -1602,7 +1608,7 @@ ValidatorList::for_each_available(
 
     for (auto const& [key, plCollection] : publisherLists_)
     {
-        if (plCollection.status != PublisherStatus::available)
+        if (plCollection.status != PublisherStatus::available || key.empty())
             continue;
         assert(plCollection.maxSequence);
         func(
@@ -1640,7 +1646,7 @@ ValidatorList::getAvailable(
         return {};
 
     Json::Value value =
-        buildFileData(std::string{pubKey}, iter->second, forceVersion);
+        buildFileData(std::string{pubKey}, iter->second, j_, forceVersion);
 
     return value;
 }
