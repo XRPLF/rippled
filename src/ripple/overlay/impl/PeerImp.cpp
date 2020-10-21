@@ -94,16 +94,20 @@ PeerImp::PeerImp(
     , publicKey_(publicKey)
     , lastPingTime_(clock_type::now())
     , creationTime_(clock_type::now())
+    , squelch_(app_.journal("Squelch"))
     , usage_(consumer)
     , fee_(Resource::feeLightPeer)
     , slot_(slot)
     , request_(std::move(request))
     , headers_(request_)
-    , compressionEnabled_(
-          headers_["X-Offer-Compression"] == "lz4" && app_.config().COMPRESSION
-              ? Compressed::On
-              : Compressed::Off)
+    , compressionEnabled_(enableCompression())
+    , vpReduceRelayEnabled_(enableVPReduceRelay())
 {
+    JLOG(journal_.debug()) << " compression enabled "
+                           << (compressionEnabled_ == Compressed::On)
+                           << " vp reduce-relay enabled "
+                           << vpReduceRelayEnabled_ << " on " << remote_address_
+                           << " " << id_;
 }
 
 PeerImp::~PeerImp()
@@ -742,36 +746,17 @@ PeerImp::doAccept()
     // XXX Set timer: connection idle (idle may vary depending on connection
     // type.)
 
-    auto write_buffer = [this, sharedValue]() {
-        auto buf = std::make_shared<boost::beast::multi_buffer>();
+    auto write_buffer = std::make_shared<boost::beast::multi_buffer>();
 
-        http_response_type resp;
-        resp.result(boost::beast::http::status::switching_protocols);
-        resp.version(request_.version());
-        resp.insert("Connection", "Upgrade");
-        resp.insert("Upgrade", to_string(protocol_));
-        resp.insert("Connect-As", "Peer");
-        resp.insert("Server", BuildInfo::getFullVersionString());
-        resp.insert(
-            "Crawl",
-            overlay_.peerFinder().config().peerPrivate ? "private" : "public");
-
-        if (request_["X-Offer-Compression"] == "lz4" &&
-            app_.config().COMPRESSION)
-            resp.insert("X-Offer-Compression", "lz4");
-
-        buildHandshake(
-            resp,
-            *sharedValue,
-            overlay_.setup().networkID,
-            overlay_.setup().public_ip,
-            remote_address_.address(),
-            app_);
-
-        boost::beast::ostream(*buf) << resp;
-
-        return buf;
-    }();
+    boost::beast::ostream(*write_buffer) << makeResponse(
+        !overlay_.peerFinder().config().peerPrivate,
+        request_,
+        overlay_.setup().public_ip,
+        remote_address_.address(),
+        *sharedValue,
+        overlay_.setup().networkID,
+        protocol_,
+        app_);
 
     // Write the whole buffer and only start protocol when that's done.
     boost::asio::async_write(
@@ -1564,10 +1549,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         // receives within IDLED seconds since the message has been relayed.
         // Wait WAIT_ON_BOOTUP time to let the server establish connections to
         // peers.
-        if (app_.config().REDUCE_RELAY_ENABLE && relayed &&
-            (stopwatch().now() - *relayed) < squelch::IDLED &&
-            squelch::epoch<std::chrono::minutes>(UptimeClock::now()) >
-                squelch::WAIT_ON_BOOTUP)
+        if (vpReduceRelayEnabled_ && relayed &&
+            (stopwatch().now() - *relayed) < reduce_relay::IDLED &&
+            reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
+                reduce_relay::WAIT_ON_BOOTUP)
             overlay_.updateSlotAndSquelch(
                 suppression, publicKey, id_, protocol::mtPROPOSE_LEDGER);
         JLOG(p_journal_.trace()) << "Proposal: duplicate";
@@ -2040,10 +2025,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             // peer receives within IDLED seconds since the message has been
             // relayed. Wait WAIT_ON_BOOTUP time to let the server establish
             // connections to peers.
-            if (app_.config().REDUCE_RELAY_ENABLE && (bool)relayed &&
-                (stopwatch().now() - *relayed) < squelch::IDLED &&
-                squelch::epoch<std::chrono::minutes>(UptimeClock::now()) >
-                    squelch::WAIT_ON_BOOTUP)
+            if (vpReduceRelayEnabled_ && (bool)relayed &&
+                (stopwatch().now() - *relayed) < reduce_relay::IDLED &&
+                reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
+                    reduce_relay::WAIT_ON_BOOTUP)
                 overlay_.updateSlotAndSquelch(
                     key, val->getSignerPublic(), id_, protocol::mtVALIDATION);
             JLOG(p_journal_.trace()) << "Validation: duplicate";
@@ -2258,7 +2243,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
     JLOG(p_journal_.debug())
         << "onMessage: TMSquelch " << slice << " " << id() << " " << duration;
 
-    squelch_.squelch(key, squelch, duration);
+    if (!squelch_.squelch(key, squelch, duration))
+        charge(Resource::feeBadData);
 }
 
 //--------------------------------------------------------------------------
@@ -2422,9 +2408,9 @@ PeerImp::checkPropose(
         // as part of the squelch logic.
         auto haveMessage = app_.overlay().relay(
             *packet, peerPos.suppressionID(), peerPos.publicKey());
-        if (app_.config().REDUCE_RELAY_ENABLE && !haveMessage.empty() &&
-            squelch::epoch<std::chrono::minutes>(UptimeClock::now()) >
-                squelch::WAIT_ON_BOOTUP)
+        if (vpReduceRelayEnabled_ && !haveMessage.empty() &&
+            reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
+                reduce_relay::WAIT_ON_BOOTUP)
             overlay_.updateSlotAndSquelch(
                 peerPos.suppressionID(),
                 peerPos.publicKey(),
@@ -2459,9 +2445,9 @@ PeerImp::checkValidation(
             // as part of the squelch logic.
             auto haveMessage =
                 overlay_.relay(*packet, suppression, val->getSignerPublic());
-            if (app_.config().REDUCE_RELAY_ENABLE && !haveMessage.empty() &&
-                squelch::epoch<std::chrono::minutes>(UptimeClock::now()) >
-                    squelch::WAIT_ON_BOOTUP)
+            if (vpReduceRelayEnabled_ && !haveMessage.empty() &&
+                reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
+                    reduce_relay::WAIT_ON_BOOTUP)
             {
                 overlay_.updateSlotAndSquelch(
                     suppression,

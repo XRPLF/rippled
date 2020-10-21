@@ -25,6 +25,7 @@
 #include <ripple/core/TimeKeeper.h>
 #include <ripple/overlay/Compression.h>
 #include <ripple/overlay/Message.h>
+#include <ripple/overlay/impl/Handshake.h>
 #include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/ZeroCopyStream.h>
 #include <ripple/protocol/HashPrefix.h>
@@ -112,7 +113,7 @@ public:
 
         BEAST_EXPECT(header);
 
-        if (header->algorithm == Algorithm::None)
+        if (!header || header->algorithm == Algorithm::None)
             return;
 
         std::vector<std::uint8_t> decompressed;
@@ -347,8 +348,6 @@ public:
     void
     testProtocol()
     {
-        testcase("Message Compression");
-
         auto thresh = beast::severities::Severity::kInfo;
         auto logs = std::make_unique<Logs>(thresh);
 
@@ -421,13 +420,64 @@ public:
     }
 
     void
+    testHandshake()
+    {
+        testcase("Handshake");
+        Config c;
+        auto handshake = [&](int reqComprEnable, int respComprEnable) {
+            std::stringstream str;
+            str << "[compression]\n" << reqComprEnable << "\n";
+            c.loadFromString(str.str());
+            jtx::Env env(*this);
+            env.app().config().COMPRESSION = respComprEnable;
+
+            beast::IP::Address addr =
+                boost::asio::ip::address::from_string("172.1.1.100");
+            auto request = ripple::makeRequest(true, c);
+            http_request_type http_request;
+            http_request.version(request.version());
+            http_request.base() = request.base();
+            auto on = [](auto header) {
+                auto field = header.find("X-Offer-Compression");
+                return field != header.end() &&
+                    field->value().to_string() == "1";
+            };
+            auto off = [](auto header) {
+                auto field = header.find("X-Offer-Compression");
+                return field == header.end() ||
+                    field->value().to_string() == "0" || field->value().empty();
+            };
+            BEAST_EXPECT(
+                (reqComprEnable && on(http_request)) ||
+                (!reqComprEnable && off(http_request)));
+            auto http_resp = ripple::makeResponse(
+                true,
+                http_request,
+                addr,
+                addr,
+                uint256{1},
+                1,
+                {1, 0},
+                env.app());
+            BEAST_EXPECT(
+                (reqComprEnable && respComprEnable && on(http_resp)) ||
+                ((!reqComprEnable || !respComprEnable) && off(http_resp)));
+        };
+        handshake(1, 1);
+        handshake(1, 0);
+        handshake(0, 1);
+        handshake(0, 0);
+    }
+
+    void
     run() override
     {
         testProtocol();
+        testHandshake();
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(compression, ripple_data, ripple, 20);
+BEAST_DEFINE_TESTSUITE_MANUAL(compression, ripple_data, ripple);
 
 }  // namespace test
 }  // namespace ripple

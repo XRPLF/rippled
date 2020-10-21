@@ -1366,7 +1366,7 @@ std::shared_ptr<Message>
 makeSquelchMessage(
     PublicKey const& validator,
     bool squelch,
-    uint64_t squelchDuration)
+    uint32_t squelchDuration)
 {
     protocol::TMSquelch m;
     m.set_squelch(squelch);
@@ -1380,7 +1380,7 @@ void
 OverlayImpl::unsquelch(PublicKey const& validator, Peer::id_t id) const
 {
     if (auto peer = findPeerByShortID(id);
-        peer && app_.config().REDUCE_RELAY_SQUELCH)
+        peer && app_.config().VP_REDUCE_RELAY_SQUELCH)
     {
         // optimize - multiple message with different
         // validator might be sent to the same peer
@@ -1396,7 +1396,7 @@ OverlayImpl::squelch(
     uint32_t squelchDuration) const
 {
     if (auto peer = findPeerByShortID(id);
-        peer && app_.config().REDUCE_RELAY_SQUELCH)
+        peer && app_.config().VP_REDUCE_RELAY_SQUELCH)
     {
         auto m = makeSquelchMessage(validator, true, squelchDuration);
         peer->send(m);

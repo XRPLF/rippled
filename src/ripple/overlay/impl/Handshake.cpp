@@ -23,6 +23,7 @@
 #include <ripple/basics/safe_cast.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/rfc2616.h>
+#include <ripple/overlay/ReduceRelayCommon.h>
 #include <ripple/overlay/impl/Handshake.h>
 #include <ripple/protocol/digest.h>
 #include <boost/regex.hpp>
@@ -48,7 +49,7 @@ namespace ripple {
           this topic, see https://github.com/openssl/openssl/issues/5509 and
           https://github.com/ripple/rippled/issues/2413.
 */
-static boost::optional<base_uint<512>>
+static std::optional<base_uint<512>>
 hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
 {
     constexpr std::size_t sslMinimumFinishedLength = 12;
@@ -57,7 +58,7 @@ hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
     size_t len = get(ssl, buf, sizeof(buf));
 
     if (len < sslMinimumFinishedLength)
-        return boost::none;
+        return std::nullopt;
 
     sha512_hasher h;
 
@@ -66,14 +67,14 @@ hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
     return cookie;
 }
 
-boost::optional<uint256>
+std::optional<uint256>
 makeSharedValue(stream_type& ssl, beast::Journal journal)
 {
     auto const cookie1 = hashLastMessage(ssl.native_handle(), SSL_get_finished);
     if (!cookie1)
     {
         JLOG(journal.error()) << "Cookie generation: local setup not complete";
-        return boost::none;
+        return std::nullopt;
     }
 
     auto const cookie2 =
@@ -81,7 +82,7 @@ makeSharedValue(stream_type& ssl, beast::Journal journal)
     if (!cookie2)
     {
         JLOG(journal.error()) << "Cookie generation: peer setup not complete";
-        return boost::none;
+        return std::nullopt;
     }
 
     auto const result = (*cookie1 ^ *cookie2);
@@ -92,7 +93,7 @@ makeSharedValue(stream_type& ssl, beast::Journal journal)
     {
         JLOG(journal.error())
             << "Cookie generation: identical finished messages";
-        return boost::none;
+        return std::nullopt;
     }
 
     return sha512Half(Slice(result.data(), result.size()));
@@ -102,7 +103,7 @@ void
 buildHandshake(
     boost::beast::http::fields& h,
     ripple::uint256 const& sharedValue,
-    boost::optional<std::uint32_t> networkID,
+    std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote_ip,
     Application& app)
@@ -155,7 +156,7 @@ PublicKey
 verifyHandshake(
     boost::beast::http::fields const& headers,
     ripple::uint256 const& sharedValue,
-    boost::optional<std::uint32_t> networkID,
+    std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote,
     Application& app)
@@ -289,6 +290,59 @@ verifyHandshake(
     }
 
     return publicKey;
+}
+
+auto
+makeRequest(bool crawl, Config const& config) -> request_type
+{
+    request_type m;
+    m.method(boost::beast::http::verb::get);
+    m.target("/");
+    m.version(11);
+    m.insert("User-Agent", BuildInfo::getFullVersionString());
+    m.insert("Upgrade", supportedProtocolVersions());
+    m.insert("Connection", "Upgrade");
+    m.insert("Connect-As", "Peer");
+    m.insert("Crawl", crawl ? "public" : "private");
+    if (config.COMPRESSION)
+        m.insert("X-Offer-Compression", "lz4");
+    if (auto reduceRelay =
+            reduce_relay::makeHeaderValue(config.VP_REDUCE_RELAY_ENABLE);
+        reduceRelay != "0")
+        m.insert("X-Offer-Reduce-Relay", reduceRelay);
+    return m;
+}
+
+http_response_type
+makeResponse(
+    bool crawl,
+    http_request_type const& req,
+    beast::IP::Address public_ip,
+    beast::IP::Address remote_ip,
+    uint256 const& sharedValue,
+    std::optional<std::uint32_t> networkID,
+    ProtocolVersion protocol,
+    Application& app)
+{
+    http_response_type resp;
+    resp.result(boost::beast::http::status::switching_protocols);
+    resp.version(req.version());
+    resp.insert("Connection", "Upgrade");
+    resp.insert("Upgrade", to_string(protocol));
+    resp.insert("Connect-As", "Peer");
+    resp.insert("Server", BuildInfo::getFullVersionString());
+    resp.insert("Crawl", crawl ? "public" : "private");
+    if (req["X-Offer-Compression"] == "lz4" && app.config().COMPRESSION)
+        resp.insert("X-Offer-Compression", "lz4");
+    if (auto reduceRelay = reduce_relay::makeHeaderValue(
+            req["X-Offer-Reduce-Relay"].to_string(),
+            app.config().VP_REDUCE_RELAY_ENABLE);
+        reduceRelay != "0")
+        resp.insert("X-Offer-Reduce-Relay", reduceRelay);
+
+    buildHandshake(resp, sharedValue, networkID, public_ip, remote_ip, app);
+
+    return resp;
 }
 
 }  // namespace ripple

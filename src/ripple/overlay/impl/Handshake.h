@@ -22,6 +22,7 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/overlay/impl/ProtocolVersion.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
@@ -30,14 +31,22 @@
 #include <boost/beast/ssl/ssl_stream.hpp>
 
 #include <boost/asio/ssl.hpp>
+#include <boost/beast/http/dynamic_body.hpp>
+#include <boost/beast/http/empty_body.hpp>
 #include <boost/beast/http/fields.hpp>
-#include <boost/optional.hpp>
+#include <optional>
 #include <utility>
 
 namespace ripple {
 
 using socket_type = boost::beast::tcp_stream;
 using stream_type = boost::beast::ssl_stream<socket_type>;
+using request_type =
+    boost::beast::http::request<boost::beast::http::empty_body>;
+using http_request_type =
+    boost::beast::http::request<boost::beast::http::dynamic_body>;
+using http_response_type =
+    boost::beast::http::response<boost::beast::http::dynamic_body>;
 
 /** Computes a shared value based on the SSL connection state.
 
@@ -48,7 +57,7 @@ using stream_type = boost::beast::ssl_stream<socket_type>;
     @param ssl the SSL/TLS connection state.
     @return A 256-bit value on success; an unseated optional otherwise.
 */
-boost::optional<uint256>
+std::optional<uint256>
 makeSharedValue(stream_type& ssl, beast::Journal journal);
 
 /** Insert fields headers necessary for upgrading the link to the peer protocol.
@@ -57,7 +66,7 @@ void
 buildHandshake(
     boost::beast::http::fields& h,
     uint256 const& sharedValue,
-    boost::optional<std::uint32_t> networkID,
+    std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote_ip,
     Application& app);
@@ -77,9 +86,41 @@ PublicKey
 verifyHandshake(
     boost::beast::http::fields const& headers,
     uint256 const& sharedValue,
-    boost::optional<std::uint32_t> networkID,
+    std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote,
+    Application& app);
+
+/** Make outbound http request
+
+   @param crawl if true then server's IP/Port are included in crawl
+   @param config server's configuration
+   @return http request with empty body
+ */
+request_type
+makeRequest(bool crawl, Config const& config);
+
+/** Make http response
+
+   @param crawl if true then server's IP/Port are included in crawl
+   @param req incoming http request
+   @param public_ip server's public IP
+   @param remote_ip peer's IP
+   @param sharedValue shared value based on the SSL connection state
+   @param networkID specifies what network we intend to connect to
+   @param version supported protocol version
+   @param app Application's reference to access some common properties
+   @return http response
+ */
+http_response_type
+makeResponse(
+    bool crawl,
+    http_request_type const& req,
+    beast::IP::Address public_ip,
+    beast::IP::Address remote_ip,
+    uint256 const& sharedValue,
+    std::optional<std::uint32_t> networkID,
+    ProtocolVersion version,
     Application& app);
 
 }  // namespace ripple

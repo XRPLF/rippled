@@ -523,8 +523,8 @@ Config::loadFromString(std::string const& fileContents)
     if (exists(SECTION_REDUCE_RELAY))
     {
         auto sec = section(SECTION_REDUCE_RELAY);
-        REDUCE_RELAY_ENABLE = sec.value_or("enable", false);
-        REDUCE_RELAY_SQUELCH = sec.value_or("squelch", false);
+        VP_REDUCE_RELAY_ENABLE = sec.value_or("vp_enable", false);
+        VP_REDUCE_RELAY_SQUELCH = sec.value_or("vp_squelch", false);
     }
 
     if (getSingleSection(secConfig, SECTION_MAX_TRANSACTIONS, strTemp, j_))

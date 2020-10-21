@@ -21,15 +21,17 @@
 #define RIPPLE_OVERLAY_SQUELCH_H_INCLUDED
 
 #include <ripple/basics/random.h>
-#include <ripple/overlay/SquelchCommon.h>
+#include <ripple/beast/utility/Journal.h>
+#include <ripple/overlay/ReduceRelayCommon.h>
 #include <ripple/protocol/PublicKey.h>
 
+#include <algorithm>
 #include <chrono>
 #include <functional>
 
 namespace ripple {
 
-namespace squelch {
+namespace reduce_relay {
 
 /** Maintains squelching of relaying messages from validators */
 template <typename clock_type>
@@ -38,16 +40,19 @@ class Squelch
     using time_point = typename clock_type::time_point;
 
 public:
-    Squelch() = default;
+    Squelch(beast::Journal journal) : journal_(journal)
+    {
+    }
     virtual ~Squelch() = default;
 
     /** Squelch/Unsquelch relaying for the validator
      * @param validator The validator's public key
      * @param squelch Squelch/unsquelch flag
-     * @param squelchDuration Squelch duration time if squelch is true
+     * @param squelchDuration Squelch duration in seconds if squelch is true
+     * @return false if invalid squelch duration
      */
-    void
-    squelch(PublicKey const& validator, bool squelch, uint64_t squelchDuration);
+    bool
+    squelch(PublicKey const& validator, bool squelch, uint32_t squelchDuration);
 
     /** Are the messages to this validator squelched
      * @param validator Validator's public key
@@ -56,37 +61,38 @@ public:
     bool
     isSquelched(PublicKey const& validator);
 
-    /** Get random squelch duration between MIN_UNSQUELCH_EXPIRE and
-     * MAX_UNSQUELCH_EXPIRE */
-    static seconds
-    getSquelchDuration();
-
 private:
     /** Maintains the list of squelched relaying to downstream peers.
      * Expiration time is included in the TMSquelch message. */
     hash_map<PublicKey, time_point> squelched_;
+    beast::Journal const journal_;
 };
 
 template <typename clock_type>
-void
+bool
 Squelch<clock_type>::squelch(
     PublicKey const& validator,
     bool squelch,
-    uint64_t squelchDuration)
+    uint32_t squelchDuration)
 {
     if (squelch)
     {
-        squelched_[validator] = [squelchDuration]() {
-            seconds duration = seconds(squelchDuration);
-            return clock_type::now() +
-                ((duration >= MIN_UNSQUELCH_EXPIRE &&
-                  duration <= MAX_UNSQUELCH_EXPIRE)
-                     ? duration
-                     : getSquelchDuration());
-        }();
+        auto duration = seconds(squelchDuration);
+        if (duration >= MIN_UNSQUELCH_EXPIRE &&
+            duration <= OVERALL_MAX_UNSQUELCH_EXPIRE)
+        {
+            squelched_[validator] = clock_type::now() + duration;
+            return true;
+        }
+        JLOG(journal_.error())
+            << "squelch: invalid squelch duration " << squelchDuration;
+        return false;
     }
-    else
-        squelched_.erase(validator);
+
+    // unsquelch if not squelch or invalid duration
+    squelched_.erase(validator);
+
+    return true;
 }
 
 template <typename clock_type>
@@ -106,16 +112,7 @@ Squelch<clock_type>::isSquelched(PublicKey const& validator)
     return false;
 }
 
-template <typename clock_type>
-seconds
-Squelch<clock_type>::getSquelchDuration()
-{
-    auto d = seconds(ripple::rand_int(
-        MIN_UNSQUELCH_EXPIRE.count(), MAX_UNSQUELCH_EXPIRE.count()));
-    return d;
-}
-
-}  // namespace squelch
+}  // namespace reduce_relay
 
 }  // namespace ripple
 

@@ -25,8 +25,8 @@
 #include <ripple/beast/container/aged_unordered_map.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/overlay/Peer.h>
+#include <ripple/overlay/ReduceRelayCommon.h>
 #include <ripple/overlay/Squelch.h>
-#include <ripple/overlay/SquelchCommon.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple.pb.h>
 
@@ -40,7 +40,7 @@
 
 namespace ripple {
 
-namespace squelch {
+namespace reduce_relay {
 
 template <typename clock_type>
 class Slots;
@@ -196,6 +196,13 @@ private:
      */
     void
     deleteIdlePeer(PublicKey const& validator);
+
+    /** Get random squelch duration between MIN_UNSQUELCH_EXPIRE and
+     * max(MAX_UNSQUELCH_EXPIRE, UNSQUELCH_EXPIRE_MULTIPLIER * npeers)
+     * @param npeers number of peers that can be squelched in the Slot
+     * MAX_UNSQUELCH_EXPIRE */
+    seconds
+    getSquelchDuration(std::size_t npeers);
 
 private:
     /** Reset counts of peers in Selected or Counting state */
@@ -366,12 +373,11 @@ Slot<clock_type>::update(
                 if (journal_.debug())
                     str << k << " ";
                 v.state = PeerState::Squelched;
-                auto duration = Squelch<clock_type>::getSquelchDuration();
+                seconds duration =
+                    getSquelchDuration(peers_.size() - MAX_SELECTED_PEERS);
                 v.expire = now + duration;
                 handler_.squelch(
-                    validator,
-                    k,
-                    duration_cast<milliseconds>(duration).count());
+                    validator, k, duration_cast<seconds>(duration).count());
             }
         }
         JLOG(journal_.debug()) << "update: squelching " << Slice(validator)
@@ -380,6 +386,22 @@ Slot<clock_type>::update(
         reachedThreshold_ = 0;
         state_ = SlotState::Selected;
     }
+}
+
+template <typename clock_type>
+seconds
+Slot<clock_type>::getSquelchDuration(std::size_t npeers)
+{
+    long const maxExpire = UNSQUELCH_EXPIRE_MULTIPLIER * npeers;
+    auto m = std::max(MAX_UNSQUELCH_EXPIRE.count(), maxExpire);
+    if (m > OVERALL_MAX_UNSQUELCH_EXPIRE.count())
+    {
+        m = OVERALL_MAX_UNSQUELCH_EXPIRE.count();
+        JLOG(journal_.warn())
+            << "getSquelchDuration: unexpected squelch duration " << npeers;
+    }
+    auto d = seconds(ripple::rand_int(MIN_UNSQUELCH_EXPIRE.count(), m));
+    return d;
 }
 
 template <typename clock_type>
@@ -531,7 +553,6 @@ public:
      * @param key Message's hash
      * @param validator Validator's public key
      * @param id Peer's id which received the message
-     * @param id Peer's pointer which received the message
      * @param type Received protocol message type
      */
     void
@@ -643,7 +664,7 @@ template <typename clock_type>
 bool
 Slots<clock_type>::addPeerMessage(uint256 const& key, id_t id)
 {
-    beast::expire(peersWithMessage_, squelch::IDLED);
+    beast::expire(peersWithMessage_, reduce_relay::IDLED);
 
     if (key.isNonZero())
     {
@@ -727,7 +748,7 @@ Slots<clock_type>::deleteIdlePeers()
     }
 }
 
-}  // namespace squelch
+}  // namespace reduce_relay
 
 }  // namespace ripple
 

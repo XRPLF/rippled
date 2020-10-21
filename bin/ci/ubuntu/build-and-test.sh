@@ -168,6 +168,7 @@ else
         'ripple.tx.OversizeMeta'
         'ripple.consensus.DistributedValidators'
         'ripple.app.NoRippleCheckLimits'
+        'ripple.ripple_data.compression'
         'ripple.NodeStore.Timing'
         'ripple.consensus.ByzantineFailureSim'
         'beast.chrono.abstract_clock'

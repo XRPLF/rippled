@@ -31,6 +31,7 @@
 #include <cassert>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <type_traits>
 #include <vector>
 
@@ -130,7 +131,7 @@ buffersBegin(BufferSequence const& bufs)
  *         - set to `errc::no_message` if a valid header was not present
  */
 template <class BufferSequence>
-boost::optional<MessageHeader>
+std::optional<MessageHeader>
 parseMessageHeader(
     boost::system::error_code& ec,
     BufferSequence const& bufs,
@@ -154,13 +155,13 @@ parseMessageHeader(
         if (size < hdr.header_size)
         {
             ec = make_error_code(boost::system::errc::success);
-            return boost::none;
+            return std::nullopt;
         }
 
         if (*iter & 0x0C)
         {
             ec = make_error_code(boost::system::errc::protocol_error);
-            return boost::none;
+            return std::nullopt;
         }
 
         hdr.algorithm = static_cast<compression::Algorithm>(*iter & 0xF0);
@@ -168,7 +169,7 @@ parseMessageHeader(
         if (hdr.algorithm != compression::Algorithm::LZ4)
         {
             ec = make_error_code(boost::system::errc::protocol_error);
-            return boost::none;
+            return std::nullopt;
         }
 
         for (int i = 0; i != 4; ++i)
@@ -198,7 +199,7 @@ parseMessageHeader(
         if (size < hdr.header_size)
         {
             ec = make_error_code(boost::system::errc::success);
-            return boost::none;
+            return std::nullopt;
         }
 
         hdr.algorithm = Algorithm::None;
@@ -216,7 +217,7 @@ parseMessageHeader(
     }
 
     ec = make_error_code(boost::system::errc::no_message);
-    return boost::none;
+    return std::nullopt;
 }
 
 template <

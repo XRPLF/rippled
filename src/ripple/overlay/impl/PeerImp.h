@@ -116,7 +116,7 @@ private:
     clock_type::time_point lastPingTime_;
     clock_type::time_point const creationTime_;
 
-    squelch::Squelch<UptimeClock> squelch_;
+    reduce_relay::Squelch<UptimeClock> squelch_;
 
     // Notes on thread locking:
     //
@@ -166,6 +166,10 @@ private:
     hash_map<PublicKey, ShardInfo> shardInfo_;
 
     Compressed compressionEnabled_ = Compressed::Off;
+
+    // true if validation/proposal reduce-relay feature is enabled
+    // on the peer.
+    bool vpReduceRelayEnabled_ = false;
 
     friend class OverlayImpl;
 
@@ -546,6 +550,24 @@ private:
 
     void
     getLedger(std::shared_ptr<protocol::TMGetLedger> const& packet);
+
+    compression::Compressed
+    enableCompression()
+    {
+        return (headers_["X-Offer-Compression"] == "lz4" &&
+                app_.config().COMPRESSION)
+            ? Compressed::On
+            : Compressed::Off;
+    }
+
+    bool
+    enableVPReduceRelay()
+    {
+        return reduce_relay::reduceRelayEnabled(
+                   headers_["X-Offer-Reduce-Relay"].to_string(),
+                   reduce_relay::ReduceRelayEnabled::ValidationProposal) &&
+            app_.config().VP_REDUCE_RELAY_ENABLE;
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -583,18 +605,22 @@ PeerImp::PeerImp(
     , publicKey_(publicKey)
     , lastPingTime_(clock_type::now())
     , creationTime_(clock_type::now())
+    , squelch_(app_.journal("Squelch"))
     , usage_(usage)
     , fee_(Resource::feeLightPeer)
     , slot_(std::move(slot))
     , response_(std::move(response))
     , headers_(response_)
-    , compressionEnabled_(
-          headers_["X-Offer-Compression"] == "lz4" && app_.config().COMPRESSION
-              ? Compressed::On
-              : Compressed::Off)
+    , compressionEnabled_(enableCompression())
+    , vpReduceRelayEnabled_(enableVPReduceRelay())
 {
     read_buffer_.commit(boost::asio::buffer_copy(
         read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
+    JLOG(journal_.debug()) << "compression enabled "
+                           << (compressionEnabled_ == Compressed::On)
+                           << " vp reduce-relay enabled "
+                           << vpReduceRelayEnabled_ << " on " << remote_address_
+                           << " " << id_;
 }
 
 template <class FwdIt, class>
