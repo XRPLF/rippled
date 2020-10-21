@@ -154,7 +154,7 @@ public:
     TrustedPublisherServer(
         boost::asio::io_context& ioc,
         std::vector<Validator> const& validators,
-        NetClock::time_point expiration,
+        NetClock::time_point validUntil,
         std::vector<
             std::pair<NetClock::time_point, NetClock::time_point>> const&
             futures,
@@ -181,7 +181,7 @@ public:
         auto const [data, blob] = [&]() {
             std::string data = "{\"sequence\":" + std::to_string(sequence) +
                 ",\"expiration\":" +
-                std::to_string(expiration.time_since_epoch().count()) +
+                std::to_string(validUntil.time_since_epoch().count()) +
                 ",\"validators\":[";
 
             for (auto const& val : validators)
@@ -693,7 +693,7 @@ inline std::shared_ptr<TrustedPublisherServer>
 make_TrustedPublisherServer(
     boost::asio::io_context& ioc,
     std::vector<TrustedPublisherServer::Validator> const& validators,
-    NetClock::time_point expiration,
+    NetClock::time_point validUntil,
     std::vector<std::pair<NetClock::time_point, NetClock::time_point>> futures,
     bool useSSL = false,
     int version = 1,
@@ -701,7 +701,7 @@ make_TrustedPublisherServer(
     int sequence = 1)
 {
     auto const r = std::make_shared<TrustedPublisherServer>(
-        ioc, validators, expiration, futures, useSSL, version, sequence);
+        ioc, validators, validUntil, futures, useSSL, version, sequence);
     if (immediateStart)
         r->start();
     return r;

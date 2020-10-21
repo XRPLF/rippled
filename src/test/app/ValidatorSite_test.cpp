@@ -413,7 +413,7 @@ public:
                 {{"/validators", "", ssl}, {"/redirect_once/302", "", ssl}});
             testFetchList(
                 {{"/validators2", "", ssl}, {"/redirect_once/302", "", ssl}});
-            // UNLs with a "gap" between expiration of one and effective of the
+            // UNLs with a "gap" between validUntil of one and validFrom of the
             // next
             testFetchList(
                 {{"/validators2",
@@ -549,7 +549,7 @@ public:
                   1,
                   0s,
                   -1s}});
-            // force an out-of-range expiration value
+            // force an out-of-range validUntil value
             testFetchList(
                 {{"/validators",
                   "1 invalid validator list(s)",
@@ -558,7 +558,7 @@ public:
                   true,
                   1,
                   std::chrono::seconds{Json::Value::maxInt + 1}}});
-            // force an out-of-range expiration value on the future list
+            // force an out-of-range validUntil value on the future list
             // The first list is accepted. The second fails. The parser
             // returns the "best" result, so this looks like a success.
             testFetchList(
@@ -570,7 +570,7 @@ public:
                   1,
                   std::chrono::seconds{Json::Value::maxInt - 300},
                   299s}});
-            // force an out-of-range effective value
+            // force an out-of-range validFrom value
             // The first list is accepted. The second fails. The parser
             // returns the "best" result, so this looks like a success.
             testFetchList(
@@ -582,7 +582,7 @@ public:
                   1,
                   std::chrono::seconds{Json::Value::maxInt - 300},
                   301s}});
-            // force an out-of-range expiration value on _both_ lists
+            // force an out-of-range validUntil value on _both_ lists
             testFetchList(
                 {{"/validators2",
                   "2 invalid validator list(s)",

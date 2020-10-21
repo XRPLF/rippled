@@ -213,11 +213,11 @@ public:
     virtual void
     clearAmendmentWarned() = 0;
     virtual bool
-    isExpiredValidatorList() = 0;
+    isUNLBlocked() = 0;
     virtual void
-    setExpiredValidatorList() = 0;
+    setUNLBlocked() = 0;
     virtual void
-    clearExpiredValidatorList() = 0;
+    clearUNLBlocked() = 0;
     virtual void
     consensusViewChange() = 0;
 

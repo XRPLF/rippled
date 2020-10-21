@@ -95,7 +95,7 @@ conditionMet(Condition condition_required, T& context)
         return rpcAMENDMENT_BLOCKED;
     }
 
-    if (context.app.getOPs().isExpiredValidatorList() &&
+    if (context.app.getOPs().isUNLBlocked() &&
         (condition_required & NEEDS_CURRENT_LEDGER ||
          condition_required & NEEDS_CLOSED_LEDGER))
     {

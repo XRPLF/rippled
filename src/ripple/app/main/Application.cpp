@@ -2140,7 +2140,7 @@ ApplicationImp::serverOkay(std::string& reason)
         return false;
     }
 
-    if (getOPs().isExpiredValidatorList())
+    if (getOPs().isUNLBlocked())
     {
         reason = "No valid validator list available";
         return false;

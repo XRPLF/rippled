@@ -61,7 +61,7 @@ enum class ListDisposition {
     /// List is expired, but has the largest non-pending sequence seen so far
     expired,
 
-    /// List will be effective in the future
+    /// List will be valid in the future
     pending,
 
     /// Same sequence as current list
@@ -138,12 +138,14 @@ struct ValidatorBlobInfo
     New lists are expected to include the following data:
 
     @li @c "blob": Base64-encoded JSON string containing a @c "sequence", @c
-        "expiration", and @c "validators" field. @c "expiration" contains the
-        Ripple timestamp (seconds since January 1st, 2000 (00:00 UTC)) for when
-        the list expires. @c "validators" contains an array of objects with a
-        @c "validation_public_key" and optional @c "manifest" field.
-        @c "validation_public_key" should be the hex-encoded master public key.
-        @c "manifest" should be the base64-encoded validator manifest.
+        "validFrom", @c "validUntil", and @c "validators" field. @c "validFrom"
+        contains the Ripple timestamp (seconds since January 1st, 2000 (00:00
+        UTC)) for when the list becomes valid. @c "validUntil" contains the
+        Ripple timestamp for when the list expires. @c "validators" contains
+        an array of objects with a @c "validation_public_key" and optional
+        @c "manifest" field. @c "validation_public_key" should be the
+        hex-encoded master public key. @c "manifest" should be the
+        base64-encoded validator manifest.
 
     @li @c "manifest": Base64-encoded serialization of a manifest containing the
         publisher's master and signing public keys.
@@ -174,8 +176,8 @@ class ValidatorList
         std::vector<PublicKey> list;
         std::vector<std::string> manifests;
         std::size_t sequence;
-        TimeKeeper::time_point expiration;
-        TimeKeeper::time_point effective;
+        TimeKeeper::time_point validFrom;
+        TimeKeeper::time_point validUntil;
         std::string siteUri;
         std::string rawBlob;
         std::string rawSignature;
@@ -615,7 +617,7 @@ public:
     /** Return the time when the validator list will expire
 
         @note This may be a time in the past if a published list has not
-        been updated since its expiration. It will be boost::none if any
+        been updated since its validUntil. It will be boost::none if any
         configured published list has not been fetched.
 
         @par Thread Safety

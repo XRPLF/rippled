@@ -194,7 +194,7 @@ ValidatorList::load(
         // Config listed keys never expire
         auto& current = it->second.current;
         if (inserted)
-            current.expiration = TimeKeeper::time_point::max();
+            current.validUntil = TimeKeeper::time_point::max();
         current.list.emplace_back(*id);
         it->second.status = PublisherStatus::available;
         ++count;
@@ -842,7 +842,7 @@ ValidatorList::applyListsAndBroadcast(
         }
         if (good)
         {
-            networkOPs.clearExpiredValidatorList();
+            networkOPs.clearUNLBlocked();
         }
     }
     bool broadcast = disposition <= ListDisposition::known_sequence;
@@ -920,7 +920,7 @@ ValidatorList::applyLists(
             assert(next == remaining.end() || next->first > iter->first);
             if (iter->first <= current.sequence ||
                 (next != remaining.end() &&
-                 next->second.effective <= iter->second.effective))
+                 next->second.validFrom <= iter->second.validFrom))
             {
                 iter = remaining.erase(iter);
             }
@@ -1084,9 +1084,9 @@ ValidatorList::applyList(
         auto& publisher = accepted ? pubCollection.current
                                    : pubCollection.remaining[sequence];
         publisher.sequence = sequence;
-        publisher.effective = TimeKeeper::time_point{TimeKeeper::duration{
+        publisher.validFrom = TimeKeeper::time_point{TimeKeeper::duration{
             list.isMember(jss::effective) ? list[jss::effective].asUInt() : 0}};
-        publisher.expiration = TimeKeeper::time_point{
+        publisher.validUntil = TimeKeeper::time_point{
             TimeKeeper::duration{list[jss::expiration].asUInt()}};
         publisher.siteUri = std::move(siteUri);
         publisher.rawBlob = blob;
@@ -1244,27 +1244,27 @@ ValidatorList::verify(
         list.isMember(jss::validators) && list[jss::validators].isArray())
     {
         auto const sequence = list[jss::sequence].asUInt();
-        auto const effective = TimeKeeper::time_point{TimeKeeper::duration{
+        auto const validFrom = TimeKeeper::time_point{TimeKeeper::duration{
             list.isMember(jss::effective) ? list[jss::effective].asUInt() : 0}};
-        auto const expiration = TimeKeeper::time_point{
+        auto const validUntil = TimeKeeper::time_point{
             TimeKeeper::duration{list[jss::expiration].asUInt()}};
         auto const now = timeKeeper_.now();
         auto const& listCollection = publisherLists_[pubKey];
-        if (expiration <= effective)
+        if (validUntil <= validFrom)
             return ListDisposition::invalid;
         else if (sequence < listCollection.current.sequence)
             return ListDisposition::stale;
         else if (sequence == listCollection.current.sequence)
             return ListDisposition::same_sequence;
-        else if (expiration <= now)
+        else if (validUntil <= now)
             return ListDisposition::expired;
-        else if (effective > now)
-            // Not yet effective. Return pending if one of the following is true
+        else if (validFrom > now)
+            // Not yet valid. Return pending if one of the following is true
             // * There's no maxSequence, indicating this is the first blob seen
             //   for this publisher
             // * The sequence is larger than the maxSequence, indicating this
             //   blob is new
-            // * There's no entry for this sequence AND this blob is effective
+            // * There's no entry for this sequence AND this blob is valid
             //   before the last blob, indicating blobs may be processing out of
             //    order. This may result in some duplicated processing, but
             //   prevents the risk of missing valid data. Else return
@@ -1272,9 +1272,9 @@ ValidatorList::verify(
             return !listCollection.maxSequence ||
                     sequence > *listCollection.maxSequence ||
                     (listCollection.remaining.count(sequence) == 0 &&
-                     effective < listCollection.remaining
+                     validFrom < listCollection.remaining
                                      .at(*listCollection.maxSequence)
-                                     .effective)
+                                     .validFrom)
                 ? ListDisposition::pending
                 : ListDisposition::known_sequence;
     }
@@ -1412,18 +1412,18 @@ ValidatorList::expires(ValidatorList::shared_lock const&) const
         (void)pubKey;
         // Unfetched
         auto const& current = collection.current;
-        if (current.expiration == TimeKeeper::time_point{})
+        if (current.validUntil == TimeKeeper::time_point{})
             return boost::none;
 
-        // Find the latest expiration in a chain where the next effective
-        // overlaps with the previous expiration. applyLists has already cleaned
-        // up the list so the effective dates are guaranteed increasing.
-        auto chainedExpiration = current.expiration;
+        // Find the latest validUntil in a chain where the next validFrom
+        // overlaps with the previous validUntil. applyLists has already cleaned
+        // up the list so the validFrom dates are guaranteed increasing.
+        auto chainedExpiration = current.validUntil;
         for (auto const& [sequence, check] : collection.remaining)
         {
             (void)sequence;
-            if (check.effective <= chainedExpiration)
-                chainedExpiration = check.expiration;
+            if (check.validFrom <= chainedExpiration)
+                chainedExpiration = check.validUntil;
             else
                 break;
         }
@@ -1507,14 +1507,14 @@ ValidatorList::getJson() const
         auto appendList = [](PublisherList const& publisherList,
                              Json::Value& target) {
             target[jss::uri] = publisherList.siteUri;
-            if (publisherList.expiration != TimeKeeper::time_point{})
+            if (publisherList.validUntil != TimeKeeper::time_point{})
             {
                 target[jss::seq] =
                     static_cast<Json::UInt>(publisherList.sequence);
-                target[jss::expiration] = to_string(publisherList.expiration);
+                target[jss::expiration] = to_string(publisherList.validUntil);
             }
-            if (publisherList.effective != TimeKeeper::time_point{})
-                target[jss::effective] = to_string(publisherList.effective);
+            if (publisherList.validFrom != TimeKeeper::time_point{})
+                target[jss::effective] = to_string(publisherList.validFrom);
             Json::Value& keys = (target[jss::list] = Json::arrayValue);
             for (auto const& key : publisherList.list)
             {
@@ -1524,7 +1524,7 @@ ValidatorList::getJson() const
         {
             auto const& current = pubCollection.current;
             appendList(current, curr);
-            if (current.expiration != TimeKeeper::time_point{})
+            if (current.validUntil != TimeKeeper::time_point{})
             {
                 curr[jss::version] = pubCollection.rawVersion;
             }
@@ -1539,7 +1539,7 @@ ValidatorList::getJson() const
             Json::Value& r = remaining.append(Json::objectValue);
             appendList(future, r);
             // Race conditions can happen, so make this check "fuzzy"
-            assert(future.effective > timeKeeper_.now() + 600s);
+            assert(future.validFrom > timeKeeper_.now() + 600s);
         }
         if (remaining.size())
             curr[jss::remaining] = std::move(remaining);
@@ -1725,17 +1725,18 @@ ValidatorList::updateTrusted(
     std::unique_lock lock{mutex_};
 
     // Rotate pending and remove expired published lists
+    bool good = true;
     for (auto& [pubKey, collection] : publisherLists_)
     {
         {
             auto& remaining = collection.remaining;
             auto const firstIter = remaining.begin();
             auto iter = firstIter;
-            if (iter != remaining.end() && iter->second.effective <= closeTime)
+            if (iter != remaining.end() && iter->second.validFrom <= closeTime)
             {
                 // Find the LAST candidate that is ready to go live.
                 for (auto next = std::next(iter); next != remaining.end() &&
-                     next->second.effective <= closeTime;
+                     next->second.validFrom <= closeTime;
                      ++iter, ++next)
                 {
                     assert(std::next(iter) == next);
@@ -1746,20 +1747,17 @@ ValidatorList::updateTrusted(
                 auto sequence = iter->first;
                 auto& candidate = iter->second;
                 auto& current = collection.current;
-                assert(candidate.effective <= closeTime);
+                assert(candidate.validFrom <= closeTime);
 
                 auto const oldList = current.list;
                 current = std::move(candidate);
                 if (collection.status != PublisherStatus::available)
-                {
                     collection.status = PublisherStatus::available;
-                    ops.clearExpiredValidatorList();
-                }
                 assert(current.sequence == sequence);
                 // If the list is expired, remove the validators so they don't
                 // get processed in. The expiration check below will do the rest
                 // of the work
-                if (current.expiration <= closeTime)
+                if (current.validUntil <= closeTime)
                     current.list.clear();
 
                 updatePublisherList(pubKey, current, oldList, lock);
@@ -1784,12 +1782,16 @@ ValidatorList::updateTrusted(
         }
         // Remove if expired
         if (collection.status == PublisherStatus::available &&
-            collection.current.expiration <= closeTime)
+            collection.current.validUntil <= closeTime)
         {
             removePublisherList(lock, pubKey, PublisherStatus::expired);
-            ops.setExpiredValidatorList();
+            ops.setUNLBlocked();
         }
+        if (collection.status != PublisherStatus::available)
+            good = false;
     }
+    if (good)
+        ops.clearUNLBlocked();
 
     TrustChanges trustChanges;
 
@@ -1866,7 +1868,7 @@ ValidatorList::updateTrusted(
     if (publisherLists_.size() && unlSize == 0)
     {
         // No validators. Lock down.
-        ops.setExpiredValidatorList();
+        ops.setUNLBlocked();
     }
 
     return trustChanges;

@@ -429,7 +429,7 @@ public:
     bool
     isFunctionallyBlocked() override
     {
-        return isAmendmentBlocked() || isExpiredValidatorList();
+        return isAmendmentBlocked() || isUNLBlocked();
     }
     bool
     isAmendmentBlocked() override
@@ -454,16 +454,16 @@ public:
         amendmentWarned_ = false;
     }
     bool
-    isExpiredValidatorList() override
+    isUNLBlocked() override
     {
-        return expiredValidatorList_;
+        return unlBlocked_;
     }
     void
-    setExpiredValidatorList() override;
+    setUNLBlocked() override;
     void
-    clearExpiredValidatorList() override
+    clearUNLBlocked() override
     {
-        expiredValidatorList_ = false;
+        unlBlocked_ = false;
     }
     void
     consensusViewChange() override;
@@ -737,7 +737,7 @@ private:
     std::atomic<bool> needNetworkLedger_{false};
     std::atomic<bool> amendmentBlocked_{false};
     std::atomic<bool> amendmentWarned_{false};
-    std::atomic<bool> expiredValidatorList_{false};
+    std::atomic<bool> unlBlocked_{false};
 
     ClosureCounter<void, boost::system::error_code const&> waitHandlerCounter_;
     boost::asio::steady_timer heartbeatTimer_;
@@ -1580,10 +1580,10 @@ NetworkOPsImp::setAmendmentBlocked()
 }
 
 void
-NetworkOPsImp::setExpiredValidatorList()
+NetworkOPsImp::setUNLBlocked()
 {
-    expiredValidatorList_ = true;
-    setMode(OperatingMode::TRACKING);
+    unlBlocked_ = true;
+    setMode(OperatingMode::CONNECTED);
 }
 
 bool
@@ -2183,7 +2183,9 @@ NetworkOPsImp::setMode(OperatingMode om)
             om = OperatingMode::CONNECTED;
     }
 
-    if ((om > OperatingMode::TRACKING) && isFunctionallyBlocked())
+    if ((om > OperatingMode::CONNECTED) && isUNLBlocked())
+        om = OperatingMode::CONNECTED;
+    else if ((om > OperatingMode::TRACKING) && isAmendmentBlocked())
         om = OperatingMode::TRACKING;
 
     if (mMode == om)
@@ -2534,7 +2536,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 "This server is amendment blocked, and must be updated to be "
                 "able to stay in sync with the network.";
         }
-        if (isExpiredValidatorList())
+        if (isUNLBlocked())
         {
             Json::Value& w = warnings.append(Json::objectValue);
             w[jss::id] = warnRPC_EXPIRED_VALIDATOR_LIST;

@@ -189,14 +189,14 @@ public:
         // Manage single-thread io_service for server.
         BasicApp worker{1};
         using namespace std::chrono_literals;
-        NetClock::time_point const expiration{3600s};
-        NetClock::time_point const effective2{expiration - 60s};
-        NetClock::time_point const expiration2{effective2 + 3600s};
+        NetClock::time_point const validUntil{3600s};
+        NetClock::time_point const validFrom2{validUntil - 60s};
+        NetClock::time_point const validUntil2{validFrom2 + 3600s};
         auto server = make_TrustedPublisherServer(
             worker.get_io_service(),
             validators,
-            expiration,
-            {{effective2, expiration2}},
+            validUntil,
+            {{validFrom2, validUntil2}},
             false,
             1,
             false);
@@ -372,20 +372,20 @@ public:
                 auto const jrr = env.rpc("server_info")[jss::result];
                 BEAST_EXPECT(
                     jrr[jss::info][jss::validator_list][jss::expiration] ==
-                    to_string(expiration));
+                    to_string(validUntil));
             }
             {
                 auto const jrr = env.rpc("server_state")[jss::result];
                 BEAST_EXPECT(
                     jrr[jss::state][jss::validator_list_expires].asUInt() ==
-                    expiration.time_since_epoch().count());
+                    validUntil.time_since_epoch().count());
             }
             {
                 auto const jrr = env.rpc("validators")[jss::result];
                 BEAST_EXPECT(jrr[jss::validation_quorum].asUInt() == 2);
                 BEAST_EXPECT(
                     jrr[jss::validator_list][jss::expiration] ==
-                    to_string(expiration));
+                    to_string(validUntil));
                 BEAST_EXPECT(jrr[jss::local_static_keys].size() == 0);
 
                 BEAST_EXPECT(
@@ -414,7 +414,7 @@ public:
                     BEAST_EXPECT(
                         jp[jss::pubkey_publisher] ==
                         strHex(server->publisherPublic()));
-                    BEAST_EXPECT(jp[jss::expiration] == to_string(expiration));
+                    BEAST_EXPECT(jp[jss::expiration] == to_string(validUntil));
                     BEAST_EXPECT(jp[jss::version] == 1);
                 }
                 auto jsk = jrr[jss::signing_keys];
@@ -474,20 +474,20 @@ public:
                 auto const jrr = env.rpc("server_info")[jss::result];
                 BEAST_EXPECT(
                     jrr[jss::info][jss::validator_list][jss::expiration] ==
-                    to_string(expiration2));
+                    to_string(validUntil2));
             }
             {
                 auto const jrr = env.rpc("server_state")[jss::result];
                 BEAST_EXPECT(
                     jrr[jss::state][jss::validator_list_expires].asUInt() ==
-                    expiration2.time_since_epoch().count());
+                    validUntil2.time_since_epoch().count());
             }
             {
                 auto const jrr = env.rpc("validators")[jss::result];
                 BEAST_EXPECT(jrr[jss::validation_quorum].asUInt() == 2);
                 BEAST_EXPECT(
                     jrr[jss::validator_list][jss::expiration] ==
-                    to_string(expiration2));
+                    to_string(validUntil2));
                 BEAST_EXPECT(jrr[jss::local_static_keys].size() == 0);
 
                 BEAST_EXPECT(
@@ -516,7 +516,7 @@ public:
                     BEAST_EXPECT(
                         jp[jss::pubkey_publisher] ==
                         strHex(server->publisherPublic()));
-                    BEAST_EXPECT(jp[jss::expiration] == to_string(expiration));
+                    BEAST_EXPECT(jp[jss::expiration] == to_string(validUntil));
                     BEAST_EXPECT(jp[jss::version] == 2);
                     if (BEAST_EXPECT(jp.isMember(jss::remaining)) &&
                         BEAST_EXPECT(jp[jss::remaining].isArray()) &&
@@ -535,9 +535,9 @@ public:
                         }
                         BEAST_EXPECT(r[jss::seq].asUInt() == 2);
                         BEAST_EXPECT(
-                            r[jss::effective] == to_string(effective2));
+                            r[jss::effective] == to_string(validFrom2));
                         BEAST_EXPECT(
-                            r[jss::expiration] == to_string(expiration2));
+                            r[jss::expiration] == to_string(validUntil2));
                     }
                 }
                 auto jsk = jrr[jss::signing_keys];

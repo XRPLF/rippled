@@ -129,13 +129,13 @@ private:
     makeList(
         std::vector<Validator> const& validators,
         std::size_t sequence,
-        std::size_t expiration,
-        boost::optional<std::size_t> effective = {})
+        std::size_t validUntil,
+        boost::optional<std::size_t> validFrom = {})
     {
         std::string data = "{\"sequence\":" + std::to_string(sequence) +
-            ",\"expiration\":" + std::to_string(expiration);
-        if (effective)
-            data += ",\"effective\":" + std::to_string(*effective);
+            ",\"expiration\":" + std::to_string(validUntil);
+        if (validFrom)
+            data += ",\"effective\":" + std::to_string(*validFrom);
         data += ",\"validators\":[";
 
         for (auto const& val : validators)
@@ -597,10 +597,10 @@ private:
             env.timeKeeper().now().time_since_epoch().count());
         auto const expiredSig = signList(expiredblob, pubSigningKeys1);
 
-        NetClock::time_point const expiration = env.timeKeeper().now() + 3600s;
+        NetClock::time_point const validUntil = env.timeKeeper().now() + 3600s;
         auto const sequence2 = 2;
         auto const blob2 = makeList(
-            lists.at(2), sequence2, expiration.time_since_epoch().count());
+            lists.at(2), sequence2, validUntil.time_since_epoch().count());
         auto const sig2 = signList(blob2, pubSigningKeys1);
 
         checkResult(
@@ -621,7 +621,7 @@ private:
         // Do not apply future lists, but process them
         auto const version2 = 2;
         auto const sequence7 = 7;
-        auto const effective7 = expiration - 60s;
+        auto const effective7 = validUntil - 60s;
         auto const expiration7 = effective7 + 3600s;
         auto const blob7 = makeList(
             lists.at(7),
@@ -731,7 +731,7 @@ private:
         // apply list with highest sequence number
         auto const sequence3 = 3;
         auto const blob3 = makeList(
-            lists.at(3), sequence3, expiration.time_since_epoch().count());
+            lists.at(3), sequence3, validUntil.time_since_epoch().count());
         auto const sig3 = signList(blob3, pubSigningKeys1);
 
         checkResult(
@@ -777,7 +777,7 @@ private:
 
         auto const sequence4 = 4;
         auto const blob4 = makeList(
-            lists.at(4), sequence4, expiration.time_since_epoch().count());
+            lists.at(4), sequence4, validUntil.time_since_epoch().count());
         auto const sig4 = signList(blob4, pubSigningKeys2);
 
         checkResult(
@@ -805,7 +805,7 @@ private:
 
         auto const sequence5 = 5;
         auto const blob5 = makeList(
-            lists.at(5), sequence5, expiration.time_since_epoch().count());
+            lists.at(5), sequence5, validUntil.time_since_epoch().count());
         auto const badSig = signList(blob5, pubSigningKeys1);
         checkResult(
             trustedKeys->applyLists(
@@ -873,7 +873,7 @@ private:
         checkAvailable(trustedKeys, hexPublic, manifest2, 2, {{blob8, sig8}});
 
         // resign the pending list with new key and validate it, but it's
-        // already effective Also try reprocessing the pending list with an
+        // already valid Also try reprocessing the pending list with an
         // explicit manifest
         // - it is still invalid
         auto const sig8_2 = signList(blob8, pubSigningKeys2);
@@ -900,7 +900,7 @@ private:
 
         auto const sequence9 = 9;
         auto const blob9 = makeList(
-            lists.at(9), sequence9, expiration.time_since_epoch().count());
+            lists.at(9), sequence9, validUntil.time_since_epoch().count());
         auto const sig9 = signList(blob9, signingKeysMax);
 
         checkResult(
@@ -968,9 +968,9 @@ private:
 
         // Process a list
         env.timeKeeper().set(env.timeKeeper().now() + 1s);
-        NetClock::time_point const expiration = env.timeKeeper().now() + 3600s;
+        NetClock::time_point const validUntil = env.timeKeeper().now() + 3600s;
         auto const blob =
-            makeList(list, 1, expiration.time_since_epoch().count());
+            makeList(list, 1, validUntil.time_since_epoch().count());
         auto const sig = signList(blob, pubSigningKeys1);
 
         {
@@ -1361,10 +1361,10 @@ private:
             auto const version = 1;
             auto const sequence = 1;
             using namespace std::chrono_literals;
-            NetClock::time_point const expiration =
+            NetClock::time_point const validUntil =
                 env.timeKeeper().now() + 60s;
             auto const blob =
-                makeList(list, sequence, expiration.time_since_epoch().count());
+                makeList(list, sequence, validUntil.time_since_epoch().count());
             auto const sig = signList(blob, pubSigningKeys);
 
             BEAST_EXPECT(
@@ -1388,7 +1388,7 @@ private:
             }
             BEAST_EXPECT(trustedKeys->quorum() == 2);
 
-            env.timeKeeper().set(expiration);
+            env.timeKeeper().set(validUntil);
             changes = trustedKeys->updateTrusted(
                 activeValidators,
                 env.timeKeeper().now(),
@@ -1571,10 +1571,10 @@ private:
                 auto const version = 1;
                 auto const sequence = 1;
                 using namespace std::chrono_literals;
-                NetClock::time_point const expiration =
+                NetClock::time_point const validUntil =
                     env.timeKeeper().now() + 3600s;
                 auto const blob = makeList(
-                    valKeys, sequence, expiration.time_since_epoch().count());
+                    valKeys, sequence, validUntil.time_since_epoch().count());
                 auto const sig = signList(blob, pubSigningKeys);
 
                 BEAST_EXPECT(
@@ -1752,8 +1752,8 @@ private:
                 trustedKeys->expires() &&
                 trustedKeys->expires().get() == prep1.expirations.back());
 
-            // Advance past the first list's LAST effective date. It remains
-            // the earliest expiration, while rotating in the second list
+            // Advance past the first list's LAST validFrom date. It remains
+            // the earliest validUntil, while rotating in the second list
             {
                 env.timeKeeper().set(prep1.expirations.front() - 1s);
                 auto changes = trustedKeys->updateTrusted(
@@ -1769,8 +1769,8 @@ private:
                 BEAST_EXPECT(changes.removed.empty());
             }
 
-            // Advance past the first list's LAST expiration, but it remains
-            // the earliest expiration, while being invalidated
+            // Advance past the first list's LAST validUntil, but it remains
+            // the earliest validUntil, while being invalidated
             {
                 env.timeKeeper().set(prep1.expirations.back() + 1s);
                 auto changes = trustedKeys->updateTrusted(
