@@ -128,7 +128,7 @@ public:
     std::shared_ptr<NodeObject>
     fetchNodeObject(
         uint256 const& hash,
-        std::uint32_t ledgerSeq,
+        std::uint32_t ledgerSeq = 0,
         FetchType fetchType = FetchType::synchronous);
 
     /** Fetch an object without waiting.
@@ -139,7 +139,8 @@ public:
 
         @note This can be called concurrently.
         @param hash The key of the object to retrieve
-        @param ledgerSeq The sequence of the ledger where the object is stored.
+        @param ledgerSeq The sequence of the ledger where the
+                object is stored, used by the shard store.
         @param nodeObject The object retrieved
         @return Whether the operation completed
     */
