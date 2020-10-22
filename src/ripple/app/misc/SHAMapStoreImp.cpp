@@ -302,8 +302,7 @@ SHAMapStoreImp::copyNode(
     SHAMapAbstractNode const& node)
 {
     // Copy a single record from node to dbRotating_
-    dbRotating_->fetchNodeObject(
-        node.getNodeHash().as_uint256(), node.getSeq());
+    dbRotating_->fetchNodeObject(node.getNodeHash().as_uint256());
     if (!(++nodeCount % checkHealthInterval_))
     {
         if (health())

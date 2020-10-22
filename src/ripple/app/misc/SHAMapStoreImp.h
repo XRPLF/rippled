@@ -211,7 +211,7 @@ private:
 
         for (auto const& key : cache.getKeys())
         {
-            dbRotating_->fetchNodeObject(key, 0);
+            dbRotating_->fetchNodeObject(key);
             if (!(++check % checkHealthInterval_) && health())
                 return true;
         }
