@@ -1154,7 +1154,9 @@ OverlayImpl::getActivePeers() const
 std::tuple<Overlay::PeerSequence, std::uint16_t, std::uint16_t>
 OverlayImpl::getActivePeers(std::set<Peer::id_t> const& toSkip) const
 {
-    auto ret = std::make_tuple<OverlayImpl::PeerSequence, std::uint16_t, std::uint16_t>({}, 0, 0);
+    auto ret = std::
+        make_tuple<OverlayImpl::PeerSequence, std::uint16_t, std::uint16_t>(
+            {}, 0, 0);
     std::lock_guard lock(mutex_);
     std::get<0>(ret).reserve(ids_.size() - toSkip.size());
 
@@ -1302,17 +1304,21 @@ OverlayImpl::relay(
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtTRANSACTION);
 
-    if (app_.config().TX_REDUCE_RELAY_ENABLE)
+    std::uint16_t nActivePeers = 0;
+
+    if (app_.config().TX_REDUCE_RELAY_ENABLE &&
+        (nActivePeers = size()) >= app_.config().TX_REDUCE_RELAY_MIN_PEERS)
     {
-        // get active peers seq excluding toSkip and a number of peers
+        // get active peers excluding toSkip and a number of peers
         // with the tx reduce-relay feature disabled, which are not in
         // toSkip and are in toSkip
-        auto [peers, disabledNotInSkip, disabledInSkip] = getActivePeers(toSkip);
+        auto [peers, disabledNotInSkip, disabledInSkip] =
+            getActivePeers(toSkip);
         auto const disabled = disabledNotInSkip + disabledInSkip;
 
         // select a fraction of all active peers with the feature enabled
         auto toRelay = static_cast<uint32_t>(
-            app_.config().TX_RELAY_TO_PEERS * (size() - disabled) / 100);
+            app_.config().TX_RELAY_TO_PEERS * (nActivePeers - disabled) / 100);
 
         txMetrics_.addMetrics(toRelay, toSkip.size(), disabled);
 
@@ -1322,10 +1328,9 @@ OverlayImpl::relay(
         if (toRelay > 0)
             std::shuffle(peers.begin(), peers.end(), default_prng());
 
-        JLOG(journal_.debug())
-            << "relaying tx, active peers " << peers.size() << " selected "
-            << toRelay << " skip " << toSkip.size() << " not enabled "
-            << disabled;
+        JLOG(journal_.debug()) << "relaying tx, active peers " << peers.size()
+                               << " selected " << toRelay << " skip "
+                               << toSkip.size() << " not enabled " << disabled;
 
         std::uint16_t selected = 0;
         for (auto it = peers.begin(); it != peers.end(); ++it)
