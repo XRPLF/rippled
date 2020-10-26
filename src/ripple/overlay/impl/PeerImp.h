@@ -502,7 +502,7 @@ private:
        @param m protocol message with transactions' hashes
      */
     void
-    haveTransactions(std::shared_ptr<protocol::TMHaveTransactions> const& m);
+    handleHaveTransactions(std::shared_ptr<protocol::TMHaveTransactions> const& m);
 
     // Check if reduce-relay feature is enabled and
     // reduce_relay::WAIT_ON_BOOTUP time passed since the start

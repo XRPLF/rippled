@@ -221,8 +221,9 @@ public:
     bool TX_REDUCE_RELAY_ENABLE = false;
     // Minimum peers a server should have before
     // selecting random peers
-    std::uint32_t TX_NUM_PEERS = 20;
-    // Percentage of peers to select from total peers
+    std::uint32_t TX_REDUCE_RELAY_MIN_PEERS = 20;
+    // Percentage of peers with the tx reduce-relay feature enabled
+    // to relay to out of total active peers
     std::uint32_t TX_RELAY_TO_PEERS = 25;
 
     // These override the command line client settings

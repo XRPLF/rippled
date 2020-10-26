@@ -642,11 +642,11 @@ Config::loadFromString(std::string const& fileContents)
         VP_REDUCE_RELAY_ENABLE = sec.value_or("vp_enable", false);
         TX_REDUCE_RELAY_ENABLE = sec.value_or("tx_enable", false);
         REDUCE_RELAY_SQUELCH = sec.value_or("vp_squelch", false);
-        TX_NUM_PEERS = sec.value_or("tx_num_peers", 20);
+        TX_REDUCE_RELAY_MIN_PEERS = sec.value_or("tx_num_peers", 20);
         TX_RELAY_TO_PEERS = sec.value_or("tx_relay_to_peers", 25);
-        if (TX_RELAY_TO_PEERS > 100 || TX_NUM_PEERS < 20 ||
-            static_cast<std::uint16_t>(100 * TX_NUM_PEERS / TX_RELAY_TO_PEERS) <
-                5)
+        if (TX_RELAY_TO_PEERS > 100 || TX_REDUCE_RELAY_MIN_PEERS < 20 ||
+            static_cast<std::uint16_t>(100 * TX_REDUCE_RELAY_MIN_PEERS / TX_RELAY_TO_PEERS) <
+            5)
             Throw<std::runtime_error>(
                 "Invalid " SECTION_TX_REDUCE_RELAY
                 ", num_peers must be greater or equal to 20"

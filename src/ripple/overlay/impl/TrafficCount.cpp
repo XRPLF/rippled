@@ -161,7 +161,7 @@ TrafficCount::categorize(
         return TrafficCount::category::have_transactions;
 
     if (type == protocol::mtTRANSACTIONS)
-        return TrafficCount::category::transactions;
+        return TrafficCount::category::requested_transactions;
 
     return TrafficCount::category::unknown;
 }

@@ -447,6 +447,6 @@ message TMReplayDeltaResponse
 
 message TMHaveTransactions
 {
-    repeated bytes hash = 1;
+    repeated bytes hashes = 1;
 }
 

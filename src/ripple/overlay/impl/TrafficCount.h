@@ -155,7 +155,7 @@ public:
         have_transactions,
 
         // TMTransactions
-        transactions,
+        requested_transactions,
 
         unknown  // must be last
     };
@@ -247,7 +247,7 @@ protected:
         {"replay_delta_request"},   // category::replay_delta_request
         {"replay_delta_response"},  // category::replay_delta_response
         {"have_transactions"},                   // category::have_transactions
-        {"transactions"},                        // category::transactions
+        {"requested_transactions"},              // category::transactions
         {"unknown"}                              // category::unknown
     }};
 };

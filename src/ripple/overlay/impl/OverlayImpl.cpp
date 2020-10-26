@@ -1151,23 +1151,27 @@ OverlayImpl::getActivePeers() const
     return ret;
 }
 
-std::pair<Overlay::PeerSequence, std::uint16_t>
+std::tuple<Overlay::PeerSequence, std::uint16_t, std::uint16_t>
 OverlayImpl::getActivePeers(std::set<Peer::id_t> const& toSkip) const
 {
-    auto ret = std::make_pair<OverlayImpl::PeerSequence, std::uint16_t>({}, 0);
+    auto ret = std::make_tuple<OverlayImpl::PeerSequence, std::uint16_t, std::uint16_t>({}, 0, 0);
     std::lock_guard lock(mutex_);
-    ret.first.reserve(ids_.size() - toSkip.size());
+    std::get<0>(ret).reserve(ids_.size() - toSkip.size());
 
     for (auto& [id, w] : ids_)
     {
-        if (toSkip.find(id) == toSkip.end())
+        if (auto p = w.lock())
         {
-            if (auto p = w.lock())
+            if (toSkip.find(id) == toSkip.end())
             {
+                // tx rr feature disabled and not in toSkip
                 if (!p->txReduceRelayEnabled())
-                    ret.second++;
-                ret.first.emplace_back(std::move(p));
+                    std::get<1>(ret)++;
+                std::get<0>(ret).emplace_back(std::move(p));
             }
+            else if (!p->txReduceRelayEnabled())
+                // tx rr feature disabled and in toSkip
+                std::get<2>(ret)++;
         }
     }
 
@@ -1300,39 +1304,38 @@ OverlayImpl::relay(
 
     if (app_.config().TX_REDUCE_RELAY_ENABLE)
     {
-        // returns active peers, which are not in toSkip, and
-        // a number of peers with not enabled tx reduce-relay
-        // feature and which are not in toSkip.
-        auto [peers, notEnabled] = getActivePeers(toSkip);
+        // get active peers seq excluding toSkip and a number of peers
+        // with the tx reduce-relay feature disabled, which are not in
+        // toSkip and are in toSkip
+        auto [peers, disabledNotInSkip, disabledInSkip] = getActivePeers(toSkip);
+        auto const disabled = disabledNotInSkip + disabledInSkip;
 
-        // select a fraction of active peers for relaying
-        auto toSelect = static_cast<uint32_t>(
-            app_.config().TX_RELAY_TO_PEERS * peers.size() / 100);
+        // select a fraction of all active peers with the feature enabled
+        auto toRelay = static_cast<uint32_t>(
+            app_.config().TX_RELAY_TO_PEERS * (size() - disabled) / 100);
 
-        txMetrics_.addMetrics(toSelect, toSkip.size(), notEnabled);
+        txMetrics_.addMetrics(toRelay, toSkip.size(), disabled);
 
-        // exclude from peers, which should be randomly selected for relaying,
-        // peers in toSkip and peers with not enabled tx reduce-relay feature
-        auto const exclude = toSkip.size() + notEnabled;
-        toSelect = (toSelect > exclude) ? (toSelect - exclude) : 0;
-        if (toSelect > 0)
+        // exclude peers which have the feature enabled and are in toSkip
+        auto const exclude = toSkip.size() - disabledInSkip;
+        toRelay = (toRelay > exclude) ? (toRelay - exclude) : 0;
+        if (toRelay > 0)
             std::shuffle(peers.begin(), peers.end(), default_prng());
 
         JLOG(journal_.debug())
             << "relaying tx, active peers " << peers.size() << " selected "
-            << toSelect << " skip " << toSkip.size() << " not enabled "
-            << notEnabled;
+            << toRelay << " skip " << toSkip.size() << " not enabled "
+            << disabled;
 
         std::uint16_t selected = 0;
         for (auto it = peers.begin(); it != peers.end(); ++it)
         {
-            // always relay to a peer with the tx reduce-relay feature
-            // not enabled
+            // always relay to a peer with the disabled feature
             if (!(*it)->txReduceRelayEnabled())
             {
                 (*it)->send(sm);
             }
-            else if (selected < toSelect)
+            else if (selected < toRelay)
             {
                 selected++;
                 (*it)->send(sm);
