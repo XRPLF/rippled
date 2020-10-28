@@ -362,6 +362,7 @@ AmendmentTableImpl::AmendmentTableImpl(
         }
     }
 
+    hash_set<uint256> detect_conflict;
     // Parse enabled amendments from config
     for (auto const& a : parseSection(enabled))
     {
@@ -373,6 +374,7 @@ AmendmentTableImpl::AmendmentTableImpl(
         }
         else
         {  // Otherwise transfer config data into the table
+            detect_conflict.insert(a.first);
             persistVote(a.first, a.second, false);  // un-veto
         }
     }
@@ -389,7 +391,17 @@ AmendmentTableImpl::AmendmentTableImpl(
         }
         else
         {  // Otherwise transfer config data into the table
-            persistVote(a.first, a.second, true);  // veto
+            if (detect_conflict.count(a.first) == 0)
+            {
+                persistVote(a.first, a.second, true);  // veto
+            }
+            else
+            {
+                JLOG(j_.warn())
+                    << "[veto_amendments] section in config has ammendment "
+                    << a.first
+                    << " both [veto_amendments] and [amendments].";
+            }
         }
     }
 
@@ -429,8 +441,7 @@ AmendmentTableImpl::AmendmentTableImpl(
                     << "Amendment " << amend_hash << " is enabled.";
                 if (!amendment_name->empty())
                     s->name = *amendment_name;
-                s->supported = true;
-                s->enabled = true;
+                s->vetoed = false;
             }
         }
     }
