@@ -36,7 +36,8 @@ static constexpr std::chrono::seconds MAX_UNSQUELCH_EXPIRE =
 // Peer's squelch is:
 // max(MAX_UNSQUELCH_EXPIRE, SQUELCH_PER_PEER * number_of_peers)
 // but we don't expect it to be greater than OVERAL_MAX_UNSQUELCH_EXPIRE.
-static constexpr std::chrono::seconds SQUELCH_PER_PEER = std::chrono::seconds(10);
+static constexpr std::chrono::seconds SQUELCH_PER_PEER =
+    std::chrono::seconds(10);
 static constexpr std::chrono::seconds MAX_UNSQUELCH_EXPIRE_PEERS =
     std::chrono::seconds{3600};
 // No message received threshold before identifying a peer as idled

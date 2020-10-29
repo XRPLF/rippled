@@ -2885,8 +2885,9 @@ bool
 PeerImp::reduceRelayReady()
 {
     if (!reduceRelayReady_)
-        reduceRelayReady_ = reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
-                reduce_relay::WAIT_ON_BOOTUP;
+        reduceRelayReady_ =
+            reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
+            reduce_relay::WAIT_ON_BOOTUP;
     return vpReduceRelayEnabled_ && reduceRelayReady_;
 }
 
