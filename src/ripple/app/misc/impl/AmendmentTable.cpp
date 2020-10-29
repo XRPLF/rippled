@@ -398,9 +398,9 @@ AmendmentTableImpl::AmendmentTableImpl(
             else
             {
                 JLOG(j_.warn())
-                    << "[veto_amendments] section in config has ammendment "
-                    << a.first
-                    << " both [veto_amendments] and [amendments].";
+                    << "[veto_amendments] section in config has amendment "
+                    << '(' << a.first << ", " << a.second
+                    << ") both [veto_amendments] and [amendments].";
             }
         }
     }
