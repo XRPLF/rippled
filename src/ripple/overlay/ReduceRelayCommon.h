@@ -27,19 +27,20 @@ namespace ripple {
 
 namespace reduce_relay {
 
-using namespace std::chrono;
-
 // Peer's squelch is limited in time to
 // rand{MIN_UNSQUELCH_EXPIRE, MAX_UNSQUELCH_EXPIRE}
-static constexpr seconds MIN_UNSQUELCH_EXPIRE = seconds{300};
-static constexpr seconds MAX_UNSQUELCH_EXPIRE = seconds{600};
+static constexpr std::chrono::seconds MIN_UNSQUELCH_EXPIRE =
+    std::chrono::seconds{300};
+static constexpr std::chrono::seconds MAX_UNSQUELCH_EXPIRE =
+    std::chrono::seconds{600};
 // Peer's squelch is:
 // max(MAX_UNSQUELCH_EXPIRE, UNSQUELCH_EXPIRE_MULTIPLIER * number_of_peers)
 // but we don't expect it to be greater than OVERAL_MAX_UNSQUELCH_EXPIRE.
 static constexpr std::size_t UNSQUELCH_EXPIRE_MULTIPLIER = 10;
-static constexpr seconds OVERALL_MAX_UNSQUELCH_EXPIRE = seconds{3600};
+static constexpr std::chrono::seconds OVERALL_MAX_UNSQUELCH_EXPIRE =
+    std::chrono::seconds{3600};
 // No message received threshold before identifying a peer as idled
-static constexpr seconds IDLED = seconds{8};
+static constexpr std::chrono::seconds IDLED = std::chrono::seconds{8};
 // Message count threshold to start selecting peers as the source
 // of messages from the validator. We add peers who reach
 // MIN_MESSAGE_THRESHOLD to considered pool once MAX_SELECTED_PEERS
@@ -50,7 +51,7 @@ static constexpr uint16_t MAX_MESSAGE_THRESHOLD = 10;
 static constexpr uint16_t MAX_SELECTED_PEERS = 3;
 // Wait before reduce-relay feature is enabled on boot up to let
 // the server establish peer connections
-static constexpr minutes WAIT_ON_BOOTUP = minutes{10};
+static constexpr std::chrono::minutes WAIT_ON_BOOTUP = std::chrono::minutes{10};
 
 // Reduce-relay feature values used in the HTTP handshake.
 enum class ReduceRelayEnabled : std::uint8_t {

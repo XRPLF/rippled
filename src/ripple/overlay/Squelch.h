@@ -77,7 +77,7 @@ Squelch<clock_type>::squelch(
 {
     if (squelch)
     {
-        auto duration = seconds(squelchDuration);
+        auto duration = std::chrono::seconds(squelchDuration);
         if (duration >= MIN_UNSQUELCH_EXPIRE &&
             duration <= OVERALL_MAX_UNSQUELCH_EXPIRE)
         {

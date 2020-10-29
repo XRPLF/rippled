@@ -61,7 +61,7 @@ template <typename Unit, typename TP>
 Unit
 epoch(TP const& t)
 {
-    return duration_cast<Unit>(t.time_since_epoch());
+    return std::chrono::duration_cast<Unit>(t.time_since_epoch());
 }
 
 /** Abstract class. Declares squelch and unsquelch handlers.
@@ -201,7 +201,7 @@ private:
      * max(MAX_UNSQUELCH_EXPIRE, UNSQUELCH_EXPIRE_MULTIPLIER * npeers)
      * @param npeers number of peers that can be squelched in the Slot
      * MAX_UNSQUELCH_EXPIRE */
-    seconds
+    std::chrono::seconds
     getSquelchDuration(std::size_t npeers);
 
 private:
@@ -238,6 +238,7 @@ template <typename clock_type>
 void
 Slot<clock_type>::deleteIdlePeer(PublicKey const& validator)
 {
+    using namespace std::chrono;
     auto now = clock_type::now();
     for (auto it = peers_.begin(); it != peers_.end();)
     {
@@ -263,6 +264,7 @@ Slot<clock_type>::update(
     id_t id,
     protocol::MessageType type)
 {
+    using namespace std::chrono;
     auto now = clock_type::now();
     auto it = peers_.find(id);
     // First message from this peer
@@ -389,7 +391,7 @@ Slot<clock_type>::update(
 }
 
 template <typename clock_type>
-seconds
+std::chrono::seconds
 Slot<clock_type>::getSquelchDuration(std::size_t npeers)
 {
     long const maxExpire = UNSQUELCH_EXPIRE_MULTIPLIER * npeers;
@@ -400,7 +402,8 @@ Slot<clock_type>::getSquelchDuration(std::size_t npeers)
         JLOG(journal_.warn())
             << "getSquelchDuration: unexpected squelch duration " << npeers;
     }
-    auto d = seconds(ripple::rand_int(MIN_UNSQUELCH_EXPIRE.count(), m));
+    auto d =
+        std::chrono::seconds(ripple::rand_int(MIN_UNSQUELCH_EXPIRE.count(), m));
     return d;
 }
 
@@ -508,6 +511,7 @@ std::unordered_map<
     std::tuple<PeerState, uint16_t, uint32_t, uint32_t>>
 Slot<clock_type>::getPeers() const
 {
+    using namespace std::chrono;
     auto init = std::unordered_map<
         id_t,
         std::tuple<PeerState, std::uint16_t, std::uint32_t, std::uint32_t>>();
