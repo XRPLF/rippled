@@ -1547,12 +1547,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     {
         // Count unique messages (Slots has it's own 'HashRouter'), which a peer
         // receives within IDLED seconds since the message has been relayed.
-        // Wait WAIT_ON_BOOTUP time to let the server establish connections to
-        // peers.
-        if (vpReduceRelayEnabled_ && relayed &&
-            (stopwatch().now() - *relayed) < reduce_relay::IDLED &&
-            reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
-                reduce_relay::WAIT_ON_BOOTUP)
+        if (reduceRelayReady() && relayed &&
+            (stopwatch().now() - *relayed) < reduce_relay::IDLED)
             overlay_.updateSlotAndSquelch(
                 suppression, publicKey, id_, protocol::mtPROPOSE_LEDGER);
         JLOG(p_journal_.trace()) << "Proposal: duplicate";
@@ -2025,10 +2021,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             // peer receives within IDLED seconds since the message has been
             // relayed. Wait WAIT_ON_BOOTUP time to let the server establish
             // connections to peers.
-            if (vpReduceRelayEnabled_ && (bool)relayed &&
-                (stopwatch().now() - *relayed) < reduce_relay::IDLED &&
-                reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
-                    reduce_relay::WAIT_ON_BOOTUP)
+            if (reduceRelayReady() && (bool)relayed &&
+                (stopwatch().now() - *relayed) < reduce_relay::IDLED)
                 overlay_.updateSlotAndSquelch(
                     key, val->getSignerPublic(), id_, protocol::mtVALIDATION);
             JLOG(p_journal_.trace()) << "Validation: duplicate";
@@ -2408,9 +2402,7 @@ PeerImp::checkPropose(
         // as part of the squelch logic.
         auto haveMessage = app_.overlay().relay(
             *packet, peerPos.suppressionID(), peerPos.publicKey());
-        if (vpReduceRelayEnabled_ && !haveMessage.empty() &&
-            reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
-                reduce_relay::WAIT_ON_BOOTUP)
+        if (reduceRelayReady() && !haveMessage.empty())
             overlay_.updateSlotAndSquelch(
                 peerPos.suppressionID(),
                 peerPos.publicKey(),
@@ -2445,9 +2437,7 @@ PeerImp::checkValidation(
             // as part of the squelch logic.
             auto haveMessage =
                 overlay_.relay(*packet, suppression, val->getSignerPublic());
-            if (vpReduceRelayEnabled_ && !haveMessage.empty() &&
-                reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
-                    reduce_relay::WAIT_ON_BOOTUP)
+            if (reduceRelayReady() && !haveMessage.empty())
             {
                 overlay_.updateSlotAndSquelch(
                     suppression,
@@ -2889,6 +2879,15 @@ PeerImp::isHighLatency() const
 {
     std::lock_guard sl(recentLock_);
     return latency_ >= peerHighLatency;
+}
+
+bool
+PeerImp::reduceRelayReady()
+{
+    if (!reduceRelayReady_)
+        reduceRelayReady_ = reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
+                reduce_relay::WAIT_ON_BOOTUP;
+    return vpReduceRelayEnabled_ && reduceRelayReady_;
 }
 
 void

@@ -1440,7 +1440,7 @@ vp_squelched=1
                 handler.maxDuration_ >= MIN_UNSQUELCH_EXPIRE.count() &&
                 handler.maxDuration_ <= MAX_UNSQUELCH_EXPIRE.count());
             // expect max duration greater than MIN_UNSQUELCH_EXPIRE and less
-            // than OVERALL_MAX_UNSQUELCH_EXPIRE with peers greater than 60
+            // than MAX_UNSQUELCH_EXPIRE_PEERS with peers greater than 60
             // and less than 360
             run(350);
             // can't make this condition stronger. squelch
@@ -1448,7 +1448,7 @@ vp_squelched=1
             // log when the value is low
             BEAST_EXPECT(
                 handler.maxDuration_ >= MIN_UNSQUELCH_EXPIRE.count() &&
-                handler.maxDuration_ <= OVERALL_MAX_UNSQUELCH_EXPIRE.count());
+                handler.maxDuration_ <= MAX_UNSQUELCH_EXPIRE_PEERS.count());
             using namespace beast::unit_test::detail;
             if (handler.maxDuration_ <= MAX_UNSQUELCH_EXPIRE.count())
                 log << make_reason(
@@ -1457,11 +1457,11 @@ vp_squelched=1
                            __LINE__)
                     << std::endl
                     << std::flush;
-            // more than 400 is still less than OVERALL_MAX_UNSQUELCH_EXPIRE
+            // more than 400 is still less than MAX_UNSQUELCH_EXPIRE_PEERS
             run(400);
             BEAST_EXPECT(
                 handler.maxDuration_ >= MIN_UNSQUELCH_EXPIRE.count() &&
-                handler.maxDuration_ <= OVERALL_MAX_UNSQUELCH_EXPIRE.count());
+                handler.maxDuration_ <= MAX_UNSQUELCH_EXPIRE_PEERS.count());
             if (handler.maxDuration_ <= MAX_UNSQUELCH_EXPIRE.count())
                 log << make_reason(
                            "warning: squelch duration is low",

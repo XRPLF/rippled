@@ -198,7 +198,7 @@ private:
     deleteIdlePeer(PublicKey const& validator);
 
     /** Get random squelch duration between MIN_UNSQUELCH_EXPIRE and
-     * max(MAX_UNSQUELCH_EXPIRE, UNSQUELCH_EXPIRE_MULTIPLIER * npeers)
+     * max(MAX_UNSQUELCH_EXPIRE, SQUELCH_PER_PEER * npeers)
      * @param npeers number of peers that can be squelched in the Slot
      * MAX_UNSQUELCH_EXPIRE */
     std::chrono::seconds
@@ -375,7 +375,7 @@ Slot<clock_type>::update(
                 if (journal_.debug())
                     str << k << " ";
                 v.state = PeerState::Squelched;
-                seconds duration =
+                auto duration =
                     getSquelchDuration(peers_.size() - MAX_SELECTED_PEERS);
                 v.expire = now + duration;
                 handler_.squelch(
@@ -394,17 +394,15 @@ template <typename clock_type>
 std::chrono::seconds
 Slot<clock_type>::getSquelchDuration(std::size_t npeers)
 {
-    long const maxExpire = UNSQUELCH_EXPIRE_MULTIPLIER * npeers;
-    auto m = std::max(MAX_UNSQUELCH_EXPIRE.count(), maxExpire);
-    if (m > OVERALL_MAX_UNSQUELCH_EXPIRE.count())
+    using namespace std::chrono;
+    auto m = std::max(MAX_UNSQUELCH_EXPIRE, seconds{SQUELCH_PER_PEER * npeers});
+    if (m > MAX_UNSQUELCH_EXPIRE_PEERS)
     {
-        m = OVERALL_MAX_UNSQUELCH_EXPIRE.count();
+        m = MAX_UNSQUELCH_EXPIRE_PEERS;
         JLOG(journal_.warn())
             << "getSquelchDuration: unexpected squelch duration " << npeers;
     }
-    auto d =
-        std::chrono::seconds(ripple::rand_int(MIN_UNSQUELCH_EXPIRE.count(), m));
-    return d;
+    return seconds{ripple::rand_int(MIN_UNSQUELCH_EXPIRE/1s, m/1s)};
 }
 
 template <typename clock_type>

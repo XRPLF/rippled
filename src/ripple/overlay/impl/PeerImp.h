@@ -117,6 +117,7 @@ private:
     clock_type::time_point const creationTime_;
 
     reduce_relay::Squelch<UptimeClock> squelch_;
+    inline static std::atomic_bool reduceRelayReady_{false};
 
     // Notes on thread locking:
     //
@@ -460,6 +461,11 @@ private:
     // Called when protocol messages bytes are sent
     void
     onWriteMessage(error_code ec, std::size_t bytes_transferred);
+
+    // Check if reduce-relay feature is enabled and
+    // reduce_relay::WAIT_ON_BOOTUP time passed since the start
+    bool
+    reduceRelayReady();
 
 public:
     //--------------------------------------------------------------------------
