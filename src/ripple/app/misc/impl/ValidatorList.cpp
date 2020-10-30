@@ -441,9 +441,7 @@ splitMessageParts(
         if (blob.has_manifest())
             smallMsg.set_manifest(blob.manifest());
 
-        assert(
-            Message::totalSize(smallMsg) <= maxSize ||
-            maxSize < maximiumMessageSize);
+        assert(Message::totalSize(smallMsg) <= maximiumMessageSize);
 
         messages.emplace_back(
             std::make_shared<Message>(smallMsg, protocol::mtVALIDATORLIST),
@@ -502,7 +500,7 @@ buildValidatorListMessage(
     // Override the version
     msg.set_version(version);
 
-    assert(Message::totalSize(msg) <= maxSize || maxSize < maximiumMessageSize);
+    assert(Message::totalSize(msg) <= maximiumMessageSize);
     messages.emplace_back(
         std::make_shared<Message>(msg, protocol::mtVALIDATORLIST),
         sha512Half(msg),
