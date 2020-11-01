@@ -1476,35 +1476,40 @@ vp_squelched=1
     testHandshake(bool log)
     {
         doTest("Handshake", log, [&](bool log) {
-            Config c;
-            auto handshake = [&](int reqRREnable, int respRREnable) {
+            auto setEnv = [&](bool enable) {
+                Config c;
                 std::stringstream str;
                 str << "[reduce_relay]\n"
-                    << "vp_enable=" << reqRREnable << "\n"
-                    << "vp_squelch=" << reqRREnable << "\n";
+                    << "vp_enable=" << enable << "\n"
+                    << "vp_squelch=" << enable << "\n"
+                    << "[compression]\n"
+                    << "1\n";
                 c.loadFromString(str.str());
-                env_.app().config().VP_REDUCE_RELAY_ENABLE = respRREnable;
-
+                env_.app().config().VP_REDUCE_RELAY_ENABLE =
+                    c.VP_REDUCE_RELAY_ENABLE;
+                env_.app().config().VP_REDUCE_RELAY_SQUELCH =
+                    c.VP_REDUCE_RELAY_SQUELCH;
+                env_.app().config().COMPRESSION = c.COMPRESSION;
+            };
+            auto handshake = [&](int outboundEnable, int inboundEnable) {
                 beast::IP::Address addr =
                     boost::asio::ip::address::from_string("172.1.1.100");
-                auto request = ripple::makeRequest(true, c);
+
+                setEnv(outboundEnable);
+                auto request = ripple::makeRequest(true, env_.app().config());
                 http_request_type http_request;
                 http_request.version(request.version());
                 http_request.base() = request.base();
-                auto on = [](auto header) {
-                    auto field = header.find("X-Offer-Reduce-Relay");
-                    return field != header.end() &&
-                        field->value().to_string() == "1";
-                };
-                auto off = [](auto header) {
-                    auto field = header.find("X-Offer-Reduce-Relay");
-                    return field == header.end() ||
-                        field->value().to_string() == "0" ||
-                        field->value().empty();
-                };
-                BEAST_EXPECT(
-                    (reqRREnable && on(http_request)) ||
-                    (!reqRREnable && off(http_request)));
+                // feature enabled on the peer's connection only if both sides
+                // are enabled
+                auto const peerEnabled = inboundEnable && outboundEnable;
+                // inbound is enabled if the request's header has the feature
+                // enabled and the peer's configuration is enabled
+                auto const inboundEnabled = peerFeatureEnabled(
+                    http_request, FEATURE_VPRR, inboundEnable);
+                BEAST_EXPECT(!(peerEnabled ^ inboundEnabled));
+
+                setEnv(inboundEnable);
                 auto http_resp = ripple::makeResponse(
                     true,
                     http_request,
@@ -1514,9 +1519,11 @@ vp_squelched=1
                     1,
                     {1, 0},
                     env_.app());
-                BEAST_EXPECT(
-                    (reqRREnable && respRREnable && on(http_resp)) ||
-                    ((!reqRREnable || !respRREnable) && off(http_resp)));
+                // outbound is enabled if the response's header has the feature
+                // enabled and the peer's configuration is enabled
+                auto const outboundEnabled =
+                    peerFeatureEnabled(http_resp, FEATURE_VPRR, outboundEnable);
+                BEAST_EXPECT(!(peerEnabled ^ outboundEnabled));
             };
             handshake(1, 1);
             handshake(1, 0);

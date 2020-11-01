@@ -23,17 +23,77 @@
 #include <ripple/basics/safe_cast.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/rfc2616.h>
-#include <ripple/overlay/ReduceRelayCommon.h>
 #include <ripple/overlay/impl/Handshake.h>
 #include <ripple/protocol/digest.h>
-#include <boost/regex.hpp>
 #include <algorithm>
 #include <chrono>
+#include <regex>
 
 // VFALCO Shouldn't we have to include the OpenSSL
 // headers or something for SSL_get_finished?
 
 namespace ripple {
+
+std::pair<std::string, bool>
+getFeatureValue(
+    boost::beast::http::fields const& headers,
+    std::string const& feature)
+{
+    auto const header = headers.find("X-Protocol-Ctl");
+    if (header == headers.end())
+        return {"", false};
+    std::smatch match;
+    std::regex rx(feature + "=([^;\\s]+)");
+    auto const value = header->value().to_string();
+    if (std::regex_search(value, match, rx))
+        return {match[1], true};
+    return {"", false};
+}
+
+bool
+isFeatureValue(
+    boost::beast::http::fields const& headers,
+    std::string const& feature,
+    std::string const& value)
+{
+    auto const [fvalue, present] = getFeatureValue(headers, feature);
+    if (!present)
+        return false;
+    std::regex rx(value);
+    return std::regex_search(fvalue, rx);
+}
+
+bool
+featureEnabled(
+    boost::beast::http::fields const& headers,
+    std::string const& feature)
+{
+    return isFeatureValue(headers, feature, "1");
+}
+
+std::string
+makeFeaturesRequestHeader(Config const& config)
+{
+    std::stringstream str;
+    if (config.COMPRESSION)
+        str << FEATURE_COMPR << "=lz4" << DELIM_FEATURE;
+    if (config.VP_REDUCE_RELAY_ENABLE)
+        str << FEATURE_VPRR << "=1";
+    return str.str();
+}
+
+std::string
+makeFeaturesResponseHeader(
+    http_request_type const& headers,
+    Config const& config)
+{
+    std::stringstream str;
+    if (config.COMPRESSION && isFeatureValue(headers, FEATURE_COMPR, "lz4"))
+        str << FEATURE_COMPR << "=lz4" << DELIM_FEATURE;
+    if (config.VP_REDUCE_RELAY_ENABLE && featureEnabled(headers, FEATURE_VPRR))
+        str << FEATURE_VPRR << "=1";
+    return str.str();
+}
 
 /** Hashes the latest finished message from an SSL stream.
 
@@ -304,12 +364,7 @@ makeRequest(bool crawl, Config const& config) -> request_type
     m.insert("Connection", "Upgrade");
     m.insert("Connect-As", "Peer");
     m.insert("Crawl", crawl ? "public" : "private");
-    if (config.COMPRESSION)
-        m.insert("X-Offer-Compression", "lz4");
-    if (auto reduceRelay =
-            reduce_relay::makeHeaderValue(config.VP_REDUCE_RELAY_ENABLE);
-        reduceRelay != "0")
-        m.insert("X-Offer-Reduce-Relay", reduceRelay);
+    m.insert("X-Protocol-Ctl", makeFeaturesRequestHeader(config));
     return m;
 }
 
@@ -332,13 +387,8 @@ makeResponse(
     resp.insert("Connect-As", "Peer");
     resp.insert("Server", BuildInfo::getFullVersionString());
     resp.insert("Crawl", crawl ? "public" : "private");
-    if (req["X-Offer-Compression"] == "lz4" && app.config().COMPRESSION)
-        resp.insert("X-Offer-Compression", "lz4");
-    if (auto reduceRelay = reduce_relay::makeHeaderValue(
-            req["X-Offer-Reduce-Relay"].to_string(),
-            app.config().VP_REDUCE_RELAY_ENABLE);
-        reduceRelay != "0")
-        resp.insert("X-Offer-Reduce-Relay", reduceRelay);
+    resp.insert(
+        "X-Protocol-Ctl", makeFeaturesResponseHeader(req, app.config()));
 
     buildHandshake(resp, sharedValue, networkID, public_ip, remote_ip, app);
 

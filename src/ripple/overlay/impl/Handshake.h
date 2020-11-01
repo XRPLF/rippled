@@ -123,6 +123,102 @@ makeResponse(
     ProtocolVersion version,
     Application& app);
 
+// Protocol features negotiated via HTTP handshake.
+// The format is:
+// X-Protocol-Ctl: feature1=value1[,value2]*[\s*;\s*feature2=value1[,value2]*]*
+// value: \S+
+static constexpr char FEATURE_COMPR[] = "compr";  // compression
+static constexpr char FEATURE_VPRR[] =
+    "vprr";  // validation/proposal reduce-relay
+static constexpr char DELIM_FEATURE[] = ";";
+static constexpr char DELIM_VALUE[] = ",";
+
+/** Get feature's header value
+   @param headers request/response header
+   @param feature name
+   @return pair of feature's value and true if the feature is found in the
+   header, blank and false if the feature is not found
+ */
+std::pair<std::string, bool>
+getFeatureValue(
+    boost::beast::http::fields const& headers,
+    std::string const& feature);
+
+/** Check if a feature's value is equal to the specified value
+   @param headers request/response header
+   @param feature to check
+   @param value of the feature to check
+   @return true if the feature's value matches the specified value, false if
+   doesn't match or the feature is not found in the header
+ */
+bool
+isFeatureValue(
+    boost::beast::http::fields const& headers,
+    std::string const& feature,
+    std::string const& value);
+
+/** Check if a feature is enabled
+   @param headers request/response header
+   @param feature to check
+   @return true if enabled
+ */
+bool
+featureEnabled(
+    boost::beast::http::fields const& headers,
+    std::string const& feature);
+
+/** Check if a feature should be enabled for a peer. The feature
+    is enabled if its configured value is true and the http header
+    has the specified feature value.
+   @tparam headers request (inbound) or response (outbound) header
+   @param request http headers
+   @param feature to check
+   @param config feature's configuration value
+   @param value feature's value to check in the headers
+   @return true if the feature is enabled
+ */
+template <typename headers>
+bool
+peerFeatureEnabled(
+    headers const& request,
+    std::string const& feature,
+    std::string value,
+    bool config)
+{
+    return config && isFeatureValue(request, feature, value);
+}
+
+/** Wrapper for enable(1)/disable type(0) of feature */
+template <typename headers>
+bool
+peerFeatureEnabled(
+    headers const& request,
+    std::string const& feature,
+    bool config)
+{
+    return config && peerFeatureEnabled(request, feature, "1", config);
+}
+
+/** Make request header X-Protocol-Ctl value with supported features
+   @param config server's configuration
+   @return X-Protocol-Ctl header value
+ */
+std::string
+makeFeaturesRequestHeader(Config const& config);
+
+/** Make response header X-Protocol-Ctl value with supported features.
+    If the request has a feature that we support enabled
+    and the feature's configuration is enabled then enable this feature in
+    the response header.
+   @param header request's header
+   @param config server's configuration
+   @return X-Protocol-Ctl header value
+ */
+std::string
+makeFeaturesResponseHeader(
+    http_request_type const& headers,
+    Config const& config);
+
 }  // namespace ripple
 
 #endif

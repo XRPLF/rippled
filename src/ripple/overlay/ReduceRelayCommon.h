@@ -54,55 +54,6 @@ static constexpr uint16_t MAX_SELECTED_PEERS = 3;
 // the server establish peer connections
 static constexpr std::chrono::minutes WAIT_ON_BOOTUP = std::chrono::minutes{10};
 
-// Reduce-relay feature values used in the HTTP handshake.
-enum class ReduceRelayEnabled : std::uint8_t {
-    ValidationProposal = 0x01,
-};
-
-/** Checks if the header has the specified feature enabled
-   @param header value of X-Offer-Reduce-Relay header
-   @param enabled feature to check
-   @return true if the feature is enabled
- */
-inline bool
-reduceRelayEnabled(std::string const& header, ReduceRelayEnabled enabled)
-{
-    auto i = beast::lexicalCast<int>(header, 0);
-    return (i & static_cast<int>(enabled)) == static_cast<int>(enabled);
-}
-
-/** Make HTTP header value depending on the current value and reduce-relay
-   features configuration values. Used in making the handshake response.
-   @param header value of the request's X-Offer-Reduce-Relay header
-   @param vpEnabled configuration value of the validation/proposal
-       reduce-relay feature
-   @return X-Offer-Reduce-Relay header value
- */
-inline std::string
-makeHeaderValue(std::string const& header, bool vpEnabled)
-{
-    int value = 0;
-    if (reduceRelayEnabled(header, ReduceRelayEnabled::ValidationProposal) &&
-        vpEnabled)
-        value |= static_cast<int>(ReduceRelayEnabled::ValidationProposal);
-    return std::to_string(value);
-}
-
-/** Make HTTP header value depending on reduce-relay features configuration
-   values. Used in making the handshake request.
-   @param vpEnabled configuration value of the validation/proposal
-       reduce-relay feature
-   @return X-Offer-Reduce-Relay header value
- */
-inline std::string
-makeHeaderValue(bool vpEnabled)
-{
-    int value = 0;
-    if (vpEnabled)
-        value |= static_cast<int>(ReduceRelayEnabled::ValidationProposal);
-    return std::to_string(value);
-}
-
 }  // namespace reduce_relay
 
 }  // namespace ripple

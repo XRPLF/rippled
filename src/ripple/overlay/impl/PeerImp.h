@@ -560,8 +560,8 @@ private:
     compression::Compressed
     enableCompression()
     {
-        return (headers_["X-Offer-Compression"] == "lz4" &&
-                app_.config().COMPRESSION)
+        return peerFeatureEnabled(
+                   headers_, FEATURE_COMPR, "lz4", app_.config().COMPRESSION)
             ? Compressed::On
             : Compressed::Off;
     }
@@ -569,10 +569,8 @@ private:
     bool
     enableVPReduceRelay()
     {
-        return reduce_relay::reduceRelayEnabled(
-                   headers_["X-Offer-Reduce-Relay"].to_string(),
-                   reduce_relay::ReduceRelayEnabled::ValidationProposal) &&
-            app_.config().VP_REDUCE_RELAY_ENABLE;
+        return peerFeatureEnabled(
+            headers_, FEATURE_VPRR, app_.config().VP_REDUCE_RELAY_ENABLE);
     }
 };
 
