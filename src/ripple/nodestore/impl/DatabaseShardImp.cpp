@@ -1579,7 +1579,7 @@ DatabaseShardImp::shardBoundaryIndex() const
     auto const validIndex = app_.getLedgerMaster().getValidLedgerIndex();
 
     if (validIndex < earliestLedgerSeq())
-        return validIndex;
+        return 0;
 
     // Shards with an index earlier than the recent shard boundary index
     // are considered historical. The three shards at or later than
