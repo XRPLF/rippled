@@ -28,14 +28,14 @@ namespace ripple {
 namespace reduce_relay {
 
 // Peer's squelch is limited in time to
-// rand{MIN_UNSQUELCH_EXPIRE, MAX_UNSQUELCH_EXPIRE}
+// rand{MIN_UNSQUELCH_EXPIRE, max_squelch},
+// where max_squelch is
+// min(max(MAX_UNSQUELCH_EXPIRE_DEFAULT, SQUELCH_PER_PEER * number_of_peers),
+//     MAX_UNSQUELCH_EXPIRE_PEERS)
 static constexpr std::chrono::seconds MIN_UNSQUELCH_EXPIRE =
     std::chrono::seconds{300};
-static constexpr std::chrono::seconds MAX_UNSQUELCH_EXPIRE =
+static constexpr std::chrono::seconds MAX_UNSQUELCH_EXPIRE_DEFAULT =
     std::chrono::seconds{600};
-// Peer's squelch is:
-// max(MAX_UNSQUELCH_EXPIRE, SQUELCH_PER_PEER * number_of_peers)
-// but we don't expect it to be greater than OVERAL_MAX_UNSQUELCH_EXPIRE.
 static constexpr std::chrono::seconds SQUELCH_PER_PEER =
     std::chrono::seconds(10);
 static constexpr std::chrono::seconds MAX_UNSQUELCH_EXPIRE_PEERS =

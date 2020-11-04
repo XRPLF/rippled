@@ -25,6 +25,7 @@
 #include <ripple/beast/rfc2616.h>
 #include <ripple/overlay/impl/Handshake.h>
 #include <ripple/protocol/digest.h>
+#include <boost/regex.hpp>
 #include <algorithm>
 #include <chrono>
 #include <regex>
@@ -34,20 +35,20 @@
 
 namespace ripple {
 
-std::pair<std::string, bool>
+std::optional<std::string>
 getFeatureValue(
     boost::beast::http::fields const& headers,
     std::string const& feature)
 {
     auto const header = headers.find("X-Protocol-Ctl");
     if (header == headers.end())
-        return {"", false};
-    std::smatch match;
-    std::regex rx(feature + "=([^;\\s]+)");
+        return {};
+    boost::smatch match;
+    boost::regex rx(feature + "=([^;\\s]+)");
     auto const value = header->value().to_string();
-    if (std::regex_search(value, match, rx))
-        return {match[1], true};
-    return {"", false};
+    if (boost::regex_search(value, match, rx))
+        return {match[1]};
+    return {};
 }
 
 bool
@@ -56,11 +57,11 @@ isFeatureValue(
     std::string const& feature,
     std::string const& value)
 {
-    auto const [fvalue, present] = getFeatureValue(headers, feature);
-    if (!present)
+    auto const fvalue = getFeatureValue(headers, feature);
+    if (!fvalue)
         return false;
-    std::regex rx(value);
-    return std::regex_search(fvalue, rx);
+    boost::regex rx(value);
+    return boost::regex_search(fvalue.value(), rx);
 }
 
 bool
@@ -353,7 +354,7 @@ verifyHandshake(
 }
 
 auto
-makeRequest(bool crawl, Config const& config) -> request_type
+makeRequest(bool crawlPublic, Config const& config) -> request_type
 {
     request_type m;
     m.method(boost::beast::http::verb::get);
@@ -363,14 +364,14 @@ makeRequest(bool crawl, Config const& config) -> request_type
     m.insert("Upgrade", supportedProtocolVersions());
     m.insert("Connection", "Upgrade");
     m.insert("Connect-As", "Peer");
-    m.insert("Crawl", crawl ? "public" : "private");
+    m.insert("Crawl", crawlPublic ? "public" : "private");
     m.insert("X-Protocol-Ctl", makeFeaturesRequestHeader(config));
     return m;
 }
 
 http_response_type
 makeResponse(
-    bool crawl,
+    bool crawlPublic,
     http_request_type const& req,
     beast::IP::Address public_ip,
     beast::IP::Address remote_ip,
@@ -386,7 +387,7 @@ makeResponse(
     resp.insert("Upgrade", to_string(protocol));
     resp.insert("Connect-As", "Peer");
     resp.insert("Server", BuildInfo::getFullVersionString());
-    resp.insert("Crawl", crawl ? "public" : "private");
+    resp.insert("Crawl", crawlPublic ? "public" : "private");
     resp.insert(
         "X-Protocol-Ctl", makeFeaturesResponseHeader(req, app.config()));
 

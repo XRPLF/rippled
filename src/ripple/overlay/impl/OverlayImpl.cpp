@@ -1384,8 +1384,7 @@ OverlayImpl::unsquelch(PublicKey const& validator, Peer::id_t id) const
     {
         // optimize - multiple message with different
         // validator might be sent to the same peer
-        auto m = makeSquelchMessage(validator, false, 0);
-        peer->send(m);
+        peer->send(makeSquelchMessage(validator, false, 0));
     }
 }
 
@@ -1398,8 +1397,7 @@ OverlayImpl::squelch(
     if (auto peer = findPeerByShortID(id);
         peer && app_.config().VP_REDUCE_RELAY_SQUELCH)
     {
-        auto m = makeSquelchMessage(validator, true, squelchDuration);
-        peer->send(m);
+        peer->send(makeSquelchMessage(validator, true, squelchDuration));
     }
 }
 

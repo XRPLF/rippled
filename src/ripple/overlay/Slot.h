@@ -124,10 +124,10 @@ private:
     /** Update peer info. If the message is from a new
      * peer or from a previously expired squelched peer then switch
      * the peer's and slot's state to Counting. If time of last
-     * selection round is > 2 * MAX_UNSQUELCH_EXPIRE then switch the slot's
-     * state to Counting. If the number of messages for the peer
-     * is > MIN_MESSAGE_THRESHOLD then add peer to considered peers pool.
-     * If the number of considered peers who reached MAX_MESSAGE_THRESHOLD is
+     * selection round is > 2 * MAX_UNSQUELCH_EXPIRE_DEFAULT then switch the
+     * slot's state to Counting. If the number of messages for the peer is >
+     * MIN_MESSAGE_THRESHOLD then add peer to considered peers pool. If the
+     * number of considered peers who reached MAX_MESSAGE_THRESHOLD is
      * MAX_SELECTED_PEERS then randomly select MAX_SELECTED_PEERS from
      * considered peers, and call squelch handler for each peer, which is not
      * selected and not already in Squelched state. Set the state for those
@@ -198,9 +198,10 @@ private:
     deleteIdlePeer(PublicKey const& validator);
 
     /** Get random squelch duration between MIN_UNSQUELCH_EXPIRE and
-     * max(MAX_UNSQUELCH_EXPIRE, SQUELCH_PER_PEER * npeers)
+     * min(max(MAX_UNSQUELCH_EXPIRE_DEFAULT, SQUELCH_PER_PEER * npeers),
+     *     MAX_UNSQUELCH_EXPIRE_PEERS)
      * @param npeers number of peers that can be squelched in the Slot
-     * MAX_UNSQUELCH_EXPIRE */
+     */
     std::chrono::seconds
     getSquelchDuration(std::size_t npeers);
 
@@ -308,7 +309,7 @@ Slot<clock_type>::update(
     if (peer.count == (MAX_MESSAGE_THRESHOLD + 1))
         ++reachedThreshold_;
 
-    if (now - lastSelected_ > 2 * MAX_UNSQUELCH_EXPIRE)
+    if (now - lastSelected_ > 2 * MAX_UNSQUELCH_EXPIRE_DEFAULT)
     {
         JLOG(journal_.debug())
             << "update: resetting due to inactivity " << Slice(validator) << " "
@@ -361,6 +362,8 @@ Slot<clock_type>::update(
             << consideredPoolSize << " selected " << *s << " "
             << *std::next(s, 1) << " " << *std::next(s, 2);
 
+        assert(peers_.size() >= MAX_SELECTED_PEERS);
+
         // squelch peers which are not selected and
         // not already squelched
         std::stringstream str;
@@ -395,7 +398,8 @@ std::chrono::seconds
 Slot<clock_type>::getSquelchDuration(std::size_t npeers)
 {
     using namespace std::chrono;
-    auto m = std::max(MAX_UNSQUELCH_EXPIRE, seconds{SQUELCH_PER_PEER * npeers});
+    auto m = std::max(
+        MAX_UNSQUELCH_EXPIRE_DEFAULT, seconds{SQUELCH_PER_PEER * npeers});
     if (m > MAX_UNSQUELCH_EXPIRE_PEERS)
     {
         m = MAX_UNSQUELCH_EXPIRE_PEERS;
@@ -739,7 +743,7 @@ Slots<clock_type>::deleteIdlePeers()
     for (auto it = slots_.begin(); it != slots_.end();)
     {
         it->second.deleteIdlePeer(it->first);
-        if (now - it->second.getLastSelected() > MAX_UNSQUELCH_EXPIRE)
+        if (now - it->second.getLastSelected() > MAX_UNSQUELCH_EXPIRE_DEFAULT)
         {
             JLOG(journal_.debug())
                 << "deleteIdlePeers: deleting idle slot " << Slice(it->first);

@@ -100,8 +100,18 @@ PeerImp::PeerImp(
     , slot_(slot)
     , request_(std::move(request))
     , headers_(request_)
-    , compressionEnabled_(enableCompression())
-    , vpReduceRelayEnabled_(enableVPReduceRelay())
+    , compressionEnabled_(
+          peerFeatureEnabled(
+              headers_,
+              FEATURE_COMPR,
+              "lz4",
+              app_.config().COMPRESSION)
+              ? Compressed::On
+              : Compressed::Off)
+    , vpReduceRelayEnabled_(peerFeatureEnabled(
+          headers_,
+          FEATURE_VPRR,
+          app_.config().VP_REDUCE_RELAY_ENABLE))
 {
     JLOG(journal_.debug()) << " compression enabled "
                            << (compressionEnabled_ == Compressed::On)
@@ -231,7 +241,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
         return;
 
     auto validator = m->getValidatorKey();
-    if (validator && squelch_.isSquelched(*validator))
+    if (validator && !squelch_.expireSquelch(*validator))
         return;
 
     overlay_.reportTraffic(
@@ -952,13 +962,17 @@ void
 PeerImp::onMessageBegin(
     std::uint16_t type,
     std::shared_ptr<::google::protobuf::Message> const& m,
-    std::size_t size)
+    std::size_t size,
+    std::size_t uncompressed_size,
+    bool isCompressed)
 {
     load_event_ =
         app_.getJobQueue().makeLoadEvent(jtPEER, protocolMessageName(type));
     fee_ = Resource::feeLightPeer;
     overlay_.reportTraffic(
         TrafficCount::categorize(*m, type, true), true, static_cast<int>(size));
+    JLOG(journal_.debug()) << "onMessageBegin: " << type << " " << size << " "
+                           << uncompressed_size << " " << isCompressed;
 }
 
 void
@@ -2021,7 +2035,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             // peer receives within IDLED seconds since the message has been
             // relayed. Wait WAIT_ON_BOOTUP time to let the server establish
             // connections to peers.
-            if (reduceRelayReady() && (bool)relayed &&
+            if (reduceRelayReady() && relayed &&
                 (stopwatch().now() - *relayed) < reduce_relay::IDLED)
                 overlay_.updateSlotAndSquelch(
                     key, val->getSignerPublic(), id_, protocol::mtVALIDATION);
@@ -2204,6 +2218,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
 {
+    using on_message_fn =
+        void (PeerImp::*)(std::shared_ptr<protocol::TMSquelch> const&);
+    if (!strand_.running_in_this_thread())
+        return post(
+            strand_,
+            std::bind(
+                (on_message_fn)&PeerImp::onMessage, shared_from_this(), m));
+
     if (!m->has_validatorpubkey())
     {
         charge(Resource::feeBadData);
@@ -2217,9 +2239,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
         return;
     }
     PublicKey key(slice);
-    auto squelch = m->squelch();
-    auto duration = m->has_squelchduration() ? m->squelchduration() : 0;
-    auto sp = shared_from_this();
 
     // Ignore the squelch for validator's own messages.
     if (key == app_.getValidationPublicKey())
@@ -2229,16 +2248,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
         return;
     }
 
-    if (!strand_.running_in_this_thread())
-        return post(strand_, [sp, key, squelch, duration]() {
-            sp->squelch_.squelch(key, squelch, duration);
-        });
+    std::uint32_t duration =
+        m->has_squelchduration() ? m->squelchduration() : 0;
+    if (!m->squelch())
+        squelch_.removeSquelch(key);
+    else if (!squelch_.addSquelch(key, std::chrono::seconds{duration}))
+        charge(Resource::feeBadData);
 
     JLOG(p_journal_.debug())
         << "onMessage: TMSquelch " << slice << " " << id() << " " << duration;
-
-    if (!squelch_.squelch(key, squelch, duration))
-        charge(Resource::feeBadData);
 }
 
 //--------------------------------------------------------------------------

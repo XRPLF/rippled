@@ -252,7 +252,13 @@ invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
     else if (!m->ParseFromZeroCopyStream(&stream))
         return false;
 
-    handler.onMessageBegin(header.message_type, m, header.payload_wire_size);
+    using namespace ripple::compression;
+    handler.onMessageBegin(
+        header.message_type,
+        m,
+        header.payload_wire_size,
+        header.uncompressed_size,
+        header.algorithm != Algorithm::None);
     handler.onMessage(m);
     handler.onMessageEnd(header.message_type, m);
 

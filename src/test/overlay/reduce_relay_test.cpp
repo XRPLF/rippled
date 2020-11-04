@@ -464,7 +464,7 @@ public:
     {
         auto validator = m->getValidatorKey();
         assert(validator);
-        if (squelch_.isSquelched(*validator))
+        if (!squelch_.expireSquelch(*validator))
             return;
 
         overlay_.updateSlotAndSquelch({}, *validator, id(), f);
@@ -476,7 +476,11 @@ public:
     {
         auto validator = squelch.validatorpubkey();
         PublicKey key(Slice(validator.data(), validator.size()));
-        squelch_.squelch(key, squelch.squelch(), squelch.squelchduration());
+        if (squelch.squelch())
+            squelch_.addSquelch(
+                key, std::chrono::seconds{squelch.squelchduration()});
+        else
+            squelch_.removeSquelch(key);
     }
 
 private:
@@ -1429,16 +1433,16 @@ vp_squelched=1
             };
 
             using namespace reduce_relay;
-            // expect max duration less than MAX_UNSQUELCH_EXPIRE with
+            // expect max duration less than MAX_UNSQUELCH_EXPIRE_DEFAULT with
             // less than or equal to 60 peers
             run(20);
             BEAST_EXPECT(
                 handler.maxDuration_ >= MIN_UNSQUELCH_EXPIRE.count() &&
-                handler.maxDuration_ <= MAX_UNSQUELCH_EXPIRE.count());
+                handler.maxDuration_ <= MAX_UNSQUELCH_EXPIRE_DEFAULT.count());
             run(60);
             BEAST_EXPECT(
                 handler.maxDuration_ >= MIN_UNSQUELCH_EXPIRE.count() &&
-                handler.maxDuration_ <= MAX_UNSQUELCH_EXPIRE.count());
+                handler.maxDuration_ <= MAX_UNSQUELCH_EXPIRE_DEFAULT.count());
             // expect max duration greater than MIN_UNSQUELCH_EXPIRE and less
             // than MAX_UNSQUELCH_EXPIRE_PEERS with peers greater than 60
             // and less than 360
@@ -1450,7 +1454,7 @@ vp_squelched=1
                 handler.maxDuration_ >= MIN_UNSQUELCH_EXPIRE.count() &&
                 handler.maxDuration_ <= MAX_UNSQUELCH_EXPIRE_PEERS.count());
             using namespace beast::unit_test::detail;
-            if (handler.maxDuration_ <= MAX_UNSQUELCH_EXPIRE.count())
+            if (handler.maxDuration_ <= MAX_UNSQUELCH_EXPIRE_DEFAULT.count())
                 log << make_reason(
                            "warning: squelch duration is low",
                            __FILE__,
@@ -1462,7 +1466,7 @@ vp_squelched=1
             BEAST_EXPECT(
                 handler.maxDuration_ >= MIN_UNSQUELCH_EXPIRE.count() &&
                 handler.maxDuration_ <= MAX_UNSQUELCH_EXPIRE_PEERS.count());
-            if (handler.maxDuration_ <= MAX_UNSQUELCH_EXPIRE.count())
+            if (handler.maxDuration_ <= MAX_UNSQUELCH_EXPIRE_DEFAULT.count())
                 log << make_reason(
                            "warning: squelch duration is low",
                            __FILE__,

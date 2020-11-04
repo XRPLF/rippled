@@ -40,26 +40,33 @@ class Squelch
     using time_point = typename clock_type::time_point;
 
 public:
-    Squelch(beast::Journal journal) : journal_(journal)
+    explicit Squelch(beast::Journal journal) : journal_(journal)
     {
     }
     virtual ~Squelch() = default;
 
-    /** Squelch/Unsquelch relaying for the validator
+    /** Squelch validation/proposal relaying for the validator
      * @param validator The validator's public key
-     * @param squelch Squelch/unsquelch flag
-     * @param squelchDuration Squelch duration in seconds if squelch is true
+     * @param squelchDuration Squelch duration in seconds
      * @return false if invalid squelch duration
      */
     bool
-    squelch(PublicKey const& validator, bool squelch, uint32_t squelchDuration);
+    addSquelch(
+        PublicKey const& validator,
+        std::chrono::seconds const& squelchDuration);
 
-    /** Are the messages to this validator squelched
+    /** Remove the squelch
+     * @param validator The validator's public key
+     */
+    void
+    removeSquelch(PublicKey const& validator);
+
+    /** Remove expired squelch
      * @param validator Validator's public key
-     * @return true if squelched
+     * @return true if removed or doesn't exist, false if still active
      */
     bool
-    isSquelched(PublicKey const& validator);
+    expireSquelch(PublicKey const& validator);
 
 private:
     /** Maintains the list of squelched relaying to downstream peers.
@@ -70,46 +77,49 @@ private:
 
 template <typename clock_type>
 bool
-Squelch<clock_type>::squelch(
+Squelch<clock_type>::addSquelch(
     PublicKey const& validator,
-    bool squelch,
-    uint32_t squelchDuration)
+    std::chrono::seconds const& squelchDuration)
 {
-    if (squelch)
+    if (squelchDuration >= MIN_UNSQUELCH_EXPIRE &&
+        squelchDuration <= MAX_UNSQUELCH_EXPIRE_PEERS)
     {
-        auto duration = std::chrono::seconds(squelchDuration);
-        if (duration >= MIN_UNSQUELCH_EXPIRE &&
-            duration <= MAX_UNSQUELCH_EXPIRE_PEERS)
-        {
-            squelched_[validator] = clock_type::now() + duration;
-            return true;
-        }
-        JLOG(journal_.error())
-            << "squelch: invalid squelch duration " << squelchDuration;
-        return false;
+        squelched_[validator] = clock_type::now() + squelchDuration;
+        return true;
     }
 
-    // unsquelch if not squelch or invalid duration
-    squelched_.erase(validator);
+    JLOG(journal_.error()) << "squelch: invalid squelch duration "
+                           << squelchDuration.count();
 
-    return true;
+    // unsquelch if invalid duration
+    removeSquelch(validator);
+
+    return false;
+}
+
+template <typename clock_type>
+void
+Squelch<clock_type>::removeSquelch(PublicKey const& validator)
+{
+    squelched_.erase(validator);
 }
 
 template <typename clock_type>
 bool
-Squelch<clock_type>::isSquelched(PublicKey const& validator)
+Squelch<clock_type>::expireSquelch(PublicKey const& validator)
 {
     auto now = clock_type::now();
 
     auto const& it = squelched_.find(validator);
     if (it == squelched_.end())
-        return false;
-    else if (it->second > now)
         return true;
+    else if (it->second > now)
+        return false;
 
+    // squelch expired
     squelched_.erase(it);
 
-    return false;
+    return true;
 }
 
 }  // namespace reduce_relay

@@ -93,16 +93,16 @@ verifyHandshake(
 
 /** Make outbound http request
 
-   @param crawl if true then server's IP/Port are included in crawl
+   @param crawlPublic if true then server's IP/Port are included in crawl
    @param config server's configuration
    @return http request with empty body
  */
 request_type
-makeRequest(bool crawl, Config const& config);
+makeRequest(bool crawlPublic, Config const& config);
 
 /** Make http response
 
-   @param crawl if true then server's IP/Port are included in crawl
+   @param crawlPublic if true then server's IP/Port are included in crawl
    @param req incoming http request
    @param public_ip server's public IP
    @param remote_ip peer's IP
@@ -114,7 +114,7 @@ makeRequest(bool crawl, Config const& config);
  */
 http_response_type
 makeResponse(
-    bool crawl,
+    bool crawlPublic,
     http_request_type const& req,
     beast::IP::Address public_ip,
     beast::IP::Address remote_ip,
@@ -136,10 +136,10 @@ static constexpr char DELIM_VALUE[] = ",";
 /** Get feature's header value
    @param headers request/response header
    @param feature name
-   @return pair of feature's value and true if the feature is found in the
-   header, blank and false if the feature is not found
+   @return seated optional with feature's value if the feature
+      is found in the header, unseated optional otherwise
  */
-std::pair<std::string, bool>
+std::optional<std::string>
 getFeatureValue(
     boost::beast::http::fields const& headers,
     std::string const& feature);
@@ -147,7 +147,8 @@ getFeatureValue(
 /** Check if a feature's value is equal to the specified value
    @param headers request/response header
    @param feature to check
-   @param value of the feature to check
+   @param value of the feature to check, must be a single value; i.e. not
+        value1,value2...
    @return true if the feature's value matches the specified value, false if
    doesn't match or the feature is not found in the header
  */

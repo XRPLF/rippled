@@ -481,7 +481,9 @@ public:
     onMessageBegin(
         std::uint16_t type,
         std::shared_ptr<::google::protobuf::Message> const& m,
-        std::size_t size);
+        std::size_t size,
+        std::size_t uncompressed_size,
+        bool isCompressed);
 
     void
     onMessageEnd(
@@ -556,22 +558,6 @@ private:
 
     void
     getLedger(std::shared_ptr<protocol::TMGetLedger> const& packet);
-
-    compression::Compressed
-    enableCompression()
-    {
-        return peerFeatureEnabled(
-                   headers_, FEATURE_COMPR, "lz4", app_.config().COMPRESSION)
-            ? Compressed::On
-            : Compressed::Off;
-    }
-
-    bool
-    enableVPReduceRelay()
-    {
-        return peerFeatureEnabled(
-            headers_, FEATURE_VPRR, app_.config().VP_REDUCE_RELAY_ENABLE);
-    }
 };
 
 //------------------------------------------------------------------------------
@@ -615,8 +601,18 @@ PeerImp::PeerImp(
     , slot_(std::move(slot))
     , response_(std::move(response))
     , headers_(response_)
-    , compressionEnabled_(enableCompression())
-    , vpReduceRelayEnabled_(enableVPReduceRelay())
+    , compressionEnabled_(
+          peerFeatureEnabled(
+              headers_,
+              FEATURE_COMPR,
+              "lz4",
+              app_.config().COMPRESSION)
+              ? Compressed::On
+              : Compressed::Off)
+    , vpReduceRelayEnabled_(peerFeatureEnabled(
+          headers_,
+          FEATURE_VPRR,
+          app_.config().VP_REDUCE_RELAY_ENABLE))
 {
     read_buffer_.commit(boost::asio::buffer_copy(
         read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
