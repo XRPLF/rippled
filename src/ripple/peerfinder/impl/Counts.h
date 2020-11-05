@@ -134,28 +134,9 @@ public:
     void
     onConfig(Config const& config)
     {
-        if (config.legacyConfig)
-        {
-            // Calculate the number of outbound peers we want. If we dont want
-            // or can't accept incoming, this will simply be equal to maxPeers.
-            if (config.wantIncoming)
-                m_out_max = config.outPeers;
-            else
-                m_out_max = config.maxPeers;
-
-            // Calculate the largest number of inbound connections we could
-            // take.
-            if (config.maxPeers >= m_out_max)
-                m_in_max = config.maxPeers - m_out_max;
-            else
-                m_in_max = 0;
-        }
-        else
-        {
-            m_out_max = config.outPeers;
-            if (config.wantIncoming)
-                m_in_max = config.inPeers;
-        }
+        m_out_max = config.outPeers;
+        if (config.wantIncoming)
+            m_in_max = config.inPeers;
     }
 
     /** Returns the number of accepted connections that haven't handshaked. */

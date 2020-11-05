@@ -25,7 +25,6 @@ namespace PeerFinder {
 
 Config::Config()
     : maxPeers(Tuning::defaultMaxPeers)
-    , legacyConfig(false)
     , outPeers(calcOutPeers())
     , inPeers(0)
     , wantIncoming(true)
@@ -45,19 +44,6 @@ Config::calcOutPeers() const
 void
 Config::applyTuning()
 {
-    if (legacyConfig)
-    {
-        if (maxPeers < Tuning::minOutCount)
-            maxPeers = Tuning::minOutCount;
-        outPeers = calcOutPeers();
-
-        inPeers = maxPeers - outPeers;
-    }
-    else
-    {
-        maxPeers = 0;
-    }
-
     if (ipLimit == 0)
     {
         // Unless a limit is explicitly set, we allow between
@@ -96,24 +82,40 @@ Config::makeConfig(
 {
     PeerFinder::Config config;
 
-    config.legacyConfig = cfg.legacyPeersMax_;
-    if (config.legacyConfig)
+    config.peerPrivate = cfg.PEER_PRIVATE;
+
+    // Servers with peer privacy don't want to allow incoming connections
+    config.wantIncoming = (!config.peerPrivate) && (port != 0);
+
+    if (!cfg.PEERS_OUT_MAX && !cfg.PEERS_IN_MAX)
     {
         if (cfg.PEERS_MAX != 0)
             config.maxPeers = cfg.PEERS_MAX;
 
+        if (config.maxPeers < Tuning::minOutCount)
+            config.maxPeers = Tuning::minOutCount;
         config.outPeers = config.calcOutPeers();
+
+        config.inPeers = config.maxPeers - config.outPeers;
+
+        // Calculate the number of outbound peers we want. If we dont want
+        // or can't accept incoming, this will simply be equal to maxPeers.
+        if (!config.wantIncoming)
+            config.outPeers = config.maxPeers;
+
+        // Calculate the largest number of inbound connections we could
+        // take.
+        if (config.maxPeers >= config.outPeers)
+            config.inPeers = config.maxPeers - config.outPeers;
+        else
+            config.inPeers = 0;
     }
     else
     {
         config.outPeers = cfg.PEERS_OUT_MAX;
         config.inPeers = cfg.PEERS_IN_MAX;
+        config.maxPeers = 0;
     }
-
-    config.peerPrivate = cfg.PEER_PRIVATE;
-
-    // Servers with peer privacy don't want to allow incoming connections
-    config.wantIncoming = (!config.peerPrivate) && (port != 0);
 
     // This will cause servers configured as validators to request that
     // peers they connect to never report their IP address. We set this

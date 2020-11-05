@@ -180,8 +180,8 @@ public:
             {
                 max = maxPeers.value();
                 toLoad += "[peers_max]\n" + std::to_string(max) + "\n" +
-                    "[peers_in_max]\n" + std::to_string(*maxIn) + "\n" +
-                    "[peers_out_max]\n" + std::to_string(*maxOut) + "\n";
+                    "[peers_in_max]\n" + std::to_string(maxIn.value_or(0)) + "\n" +
+                    "[peers_out_max]\n" + std::to_string(maxOut.value_or(0)) + "\n";
             }
             else if (maxIn && maxOut)
             {
@@ -191,9 +191,9 @@ public:
 
             c.loadFromString(toLoad);
             BEAST_EXPECT(
-                (c.legacyPeersMax_ && c.PEERS_MAX == max &&
+                (c.PEERS_MAX == max &&
                  c.PEERS_IN_MAX == 0 && c.PEERS_OUT_MAX == 0) ||
-                (!c.legacyPeersMax_ && c.PEERS_IN_MAX == *maxIn &&
+                (c.PEERS_IN_MAX == *maxIn &&
                  c.PEERS_OUT_MAX == *maxOut));
 
             Config config = Config::makeConfig(c, port, false, 0);
@@ -221,7 +221,7 @@ public:
         run("legacy max_peers 5", 5, 100, 10, 4000, 10, 0, 1);
         run("legacy max_peers 20", 20, 100, 10, 4000, 10, 10, 2);
         run("legacy max_peers 100", 100, 100, 10, 4000, 15, 85, 6);
-        run("legacy max_peers 20, private", 20, 100, 10, 0, 20, 0, 2);
+        run("legacy max_peers 20, private", 20, 100, 10, 0, 20, 0, 1);
 
         // test with max_in_peers and max_out_peers
         run("new in 100/out 10", {}, 100, 10, 4000, 10, 100, 6);
@@ -248,10 +248,6 @@ public:
         };
         run(R"rippleConfig(
 [peers_in_max]
-100
-)rippleConfig");
-        run(R"rippleConfig(
-[peers_out_max]
 100
 )rippleConfig");
         run(R"rippleConfig(

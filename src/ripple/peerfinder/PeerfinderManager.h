@@ -46,9 +46,6 @@ struct Config
     */
     int maxPeers;
 
-    /** Legacy config if peers_max is set. */
-    bool legacyConfig;
-
     /** The number of automatic outbound connections to maintain.
         Outbound connections are only maintained if autoConnect
         is `true`.

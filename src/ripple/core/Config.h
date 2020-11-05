@@ -148,8 +148,6 @@ public:
     // the new configuration. if peers_max is configured then peers_in_max and
     // peers_out_max are ignored.
     std::size_t PEERS_MAX = 0;
-    // is true if peers_max is configured
-    bool legacyPeersMax_ = false;
     std::size_t PEERS_OUT_MAX = 0;
     std::size_t PEERS_IN_MAX = 0;
 

@@ -364,7 +364,6 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_PEERS_MAX, strTemp, j_))
     {
         PEERS_MAX = beast::lexicalCastThrow<std::size_t>(strTemp);
-        legacyPeersMax_ = true;
     }
     else
     {
@@ -395,12 +394,8 @@ Config::loadFromString(std::string const& fileContents)
                                       "]"
                                       "and [" SECTION_PEERS_OUT_MAX
                                       "] must be configured");
-        // if none is configured then we assume the legacy path
-        if (!peers_in_max && !peers_out_max)
-        {
-            legacyPeersMax_ = true;
-        }
-        else
+
+        if (peers_in_max && peers_out_max)
         {
             PEERS_IN_MAX = *peers_in_max;
             PEERS_OUT_MAX = *peers_out_max;
