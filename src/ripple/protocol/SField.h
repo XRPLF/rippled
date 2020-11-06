@@ -314,17 +314,17 @@ operator~(TypedField<T> const& f)
 
 //------------------------------------------------------------------------------
 
-using SF_U8 = TypedField<STInteger<std::uint8_t>>;
-using SF_U16 = TypedField<STInteger<std::uint16_t>>;
-using SF_U32 = TypedField<STInteger<std::uint32_t>>;
-using SF_U64 = TypedField<STInteger<std::uint64_t>>;
-using SF_U128 = TypedField<STBitString<128>>;
-using SF_U160 = TypedField<STBitString<160>>;
-using SF_U256 = TypedField<STBitString<256>>;
-using SF_Account = TypedField<STAccount>;
-using SF_Amount = TypedField<STAmount>;
-using SF_Blob = TypedField<STBlob>;
-using SF_Vec256 = TypedField<STVector256>;
+using SF_UINT8 = TypedField<STInteger<std::uint8_t>>;
+using SF_UINT16 = TypedField<STInteger<std::uint16_t>>;
+using SF_UINT32 = TypedField<STInteger<std::uint32_t>>;
+using SF_UINT64 = TypedField<STInteger<std::uint64_t>>;
+using SF_HASH128 = TypedField<STBitString<128>>;
+using SF_HASH160 = TypedField<STBitString<160>>;
+using SF_HASH256 = TypedField<STBitString<256>>;
+using SF_ACCOUNT = TypedField<STAccount>;
+using SF_AMOUNT = TypedField<STAmount>;
+using SF_VL = TypedField<STBlob>;
+using SF_VECTOR256 = TypedField<STVector256>;
 
 //------------------------------------------------------------------------------
 
@@ -336,164 +336,164 @@ extern SField const sfValidation;
 extern SField const sfMetadata;
 
 // 8-bit integers
-extern SF_U8 const sfCloseResolution;
-extern SF_U8 const sfMethod;
-extern SF_U8 const sfTransactionResult;
-extern SF_U8 const sfTickSize;
-extern SF_U8 const sfUNLModifyDisabling;
+extern SF_UINT8 const sfCloseResolution;
+extern SF_UINT8 const sfMethod;
+extern SF_UINT8 const sfTransactionResult;
+extern SF_UINT8 const sfTickSize;
+extern SF_UINT8 const sfUNLModifyDisabling;
 
 // 16-bit integers
-extern SF_U16 const sfLedgerEntryType;
-extern SF_U16 const sfTransactionType;
-extern SF_U16 const sfSignerWeight;
+extern SF_UINT16 const sfLedgerEntryType;
+extern SF_UINT16 const sfTransactionType;
+extern SF_UINT16 const sfSignerWeight;
 
 // 16-bit integers (uncommon)
-extern SF_U16 const sfVersion;
+extern SF_UINT16 const sfVersion;
 
 // 32-bit integers (common)
-extern SF_U32 const sfFlags;
-extern SF_U32 const sfSourceTag;
-extern SF_U32 const sfSequence;
-extern SF_U32 const sfPreviousTxnLgrSeq;
-extern SF_U32 const sfLedgerSequence;
-extern SF_U32 const sfCloseTime;
-extern SF_U32 const sfParentCloseTime;
-extern SF_U32 const sfSigningTime;
-extern SF_U32 const sfExpiration;
-extern SF_U32 const sfTransferRate;
-extern SF_U32 const sfWalletSize;
-extern SF_U32 const sfOwnerCount;
-extern SF_U32 const sfDestinationTag;
+extern SF_UINT32 const sfFlags;
+extern SF_UINT32 const sfSourceTag;
+extern SF_UINT32 const sfSequence;
+extern SF_UINT32 const sfPreviousTxnLgrSeq;
+extern SF_UINT32 const sfLedgerSequence;
+extern SF_UINT32 const sfCloseTime;
+extern SF_UINT32 const sfParentCloseTime;
+extern SF_UINT32 const sfSigningTime;
+extern SF_UINT32 const sfExpiration;
+extern SF_UINT32 const sfTransferRate;
+extern SF_UINT32 const sfWalletSize;
+extern SF_UINT32 const sfOwnerCount;
+extern SF_UINT32 const sfDestinationTag;
 
 // 32-bit integers (uncommon)
-extern SF_U32 const sfHighQualityIn;
-extern SF_U32 const sfHighQualityOut;
-extern SF_U32 const sfLowQualityIn;
-extern SF_U32 const sfLowQualityOut;
-extern SF_U32 const sfQualityIn;
-extern SF_U32 const sfQualityOut;
-extern SF_U32 const sfStampEscrow;
-extern SF_U32 const sfBondAmount;
-extern SF_U32 const sfLoadFee;
-extern SF_U32 const sfOfferSequence;
-extern SF_U32 const sfFirstLedgerSequence;
-extern SF_U32 const sfLastLedgerSequence;
-extern SF_U32 const sfTransactionIndex;
-extern SF_U32 const sfOperationLimit;
-extern SF_U32 const sfReferenceFeeUnits;
-extern SF_U32 const sfReserveBase;
-extern SF_U32 const sfReserveIncrement;
-extern SF_U32 const sfSetFlag;
-extern SF_U32 const sfClearFlag;
-extern SF_U32 const sfSignerQuorum;
-extern SF_U32 const sfCancelAfter;
-extern SF_U32 const sfFinishAfter;
-extern SF_U32 const sfSignerListID;
-extern SF_U32 const sfSettleDelay;
-extern SF_U32 const sfTicketCount;
-extern SF_U32 const sfTicketSequence;
+extern SF_UINT32 const sfHighQualityIn;
+extern SF_UINT32 const sfHighQualityOut;
+extern SF_UINT32 const sfLowQualityIn;
+extern SF_UINT32 const sfLowQualityOut;
+extern SF_UINT32 const sfQualityIn;
+extern SF_UINT32 const sfQualityOut;
+extern SF_UINT32 const sfStampEscrow;
+extern SF_UINT32 const sfBondAmount;
+extern SF_UINT32 const sfLoadFee;
+extern SF_UINT32 const sfOfferSequence;
+extern SF_UINT32 const sfFirstLedgerSequence;
+extern SF_UINT32 const sfLastLedgerSequence;
+extern SF_UINT32 const sfTransactionIndex;
+extern SF_UINT32 const sfOperationLimit;
+extern SF_UINT32 const sfReferenceFeeUnits;
+extern SF_UINT32 const sfReserveBase;
+extern SF_UINT32 const sfReserveIncrement;
+extern SF_UINT32 const sfSetFlag;
+extern SF_UINT32 const sfClearFlag;
+extern SF_UINT32 const sfSignerQuorum;
+extern SF_UINT32 const sfCancelAfter;
+extern SF_UINT32 const sfFinishAfter;
+extern SF_UINT32 const sfSignerListID;
+extern SF_UINT32 const sfSettleDelay;
+extern SF_UINT32 const sfTicketCount;
+extern SF_UINT32 const sfTicketSequence;
 
 // 64-bit integers
-extern SF_U64 const sfIndexNext;
-extern SF_U64 const sfIndexPrevious;
-extern SF_U64 const sfBookNode;
-extern SF_U64 const sfOwnerNode;
-extern SF_U64 const sfBaseFee;
-extern SF_U64 const sfExchangeRate;
-extern SF_U64 const sfLowNode;
-extern SF_U64 const sfHighNode;
-extern SF_U64 const sfDestinationNode;
-extern SF_U64 const sfCookie;
-extern SF_U64 const sfServerVersion;
+extern SF_UINT64 const sfIndexNext;
+extern SF_UINT64 const sfIndexPrevious;
+extern SF_UINT64 const sfBookNode;
+extern SF_UINT64 const sfOwnerNode;
+extern SF_UINT64 const sfBaseFee;
+extern SF_UINT64 const sfExchangeRate;
+extern SF_UINT64 const sfLowNode;
+extern SF_UINT64 const sfHighNode;
+extern SF_UINT64 const sfDestinationNode;
+extern SF_UINT64 const sfCookie;
+extern SF_UINT64 const sfServerVersion;
 
 // 128-bit
-extern SF_U128 const sfEmailHash;
+extern SF_HASH128 const sfEmailHash;
 
 // 160-bit (common)
-extern SF_U160 const sfTakerPaysCurrency;
-extern SF_U160 const sfTakerPaysIssuer;
-extern SF_U160 const sfTakerGetsCurrency;
-extern SF_U160 const sfTakerGetsIssuer;
+extern SF_HASH160 const sfTakerPaysCurrency;
+extern SF_HASH160 const sfTakerPaysIssuer;
+extern SF_HASH160 const sfTakerGetsCurrency;
+extern SF_HASH160 const sfTakerGetsIssuer;
 
 // 256-bit (common)
-extern SF_U256 const sfLedgerHash;
-extern SF_U256 const sfParentHash;
-extern SF_U256 const sfTransactionHash;
-extern SF_U256 const sfAccountHash;
-extern SF_U256 const sfPreviousTxnID;
-extern SF_U256 const sfLedgerIndex;
-extern SF_U256 const sfWalletLocator;
-extern SF_U256 const sfRootIndex;
-extern SF_U256 const sfAccountTxnID;
+extern SF_HASH256 const sfLedgerHash;
+extern SF_HASH256 const sfParentHash;
+extern SF_HASH256 const sfTransactionHash;
+extern SF_HASH256 const sfAccountHash;
+extern SF_HASH256 const sfPreviousTxnID;
+extern SF_HASH256 const sfLedgerIndex;
+extern SF_HASH256 const sfWalletLocator;
+extern SF_HASH256 const sfRootIndex;
+extern SF_HASH256 const sfAccountTxnID;
 
 // 256-bit (uncommon)
-extern SF_U256 const sfBookDirectory;
-extern SF_U256 const sfInvoiceID;
-extern SF_U256 const sfNickname;
-extern SF_U256 const sfAmendment;
-extern SF_U256 const sfDigest;
-extern SF_U256 const sfPayChannel;
-extern SF_U256 const sfConsensusHash;
-extern SF_U256 const sfCheckID;
-extern SF_U256 const sfValidatedHash;
+extern SF_HASH256 const sfBookDirectory;
+extern SF_HASH256 const sfInvoiceID;
+extern SF_HASH256 const sfNickname;
+extern SF_HASH256 const sfAmendment;
+extern SF_HASH256 const sfDigest;
+extern SF_HASH256 const sfChannel;
+extern SF_HASH256 const sfConsensusHash;
+extern SF_HASH256 const sfCheckID;
+extern SF_HASH256 const sfValidatedHash;
 
 // currency amount (common)
-extern SF_Amount const sfAmount;
-extern SF_Amount const sfBalance;
-extern SF_Amount const sfLimitAmount;
-extern SF_Amount const sfTakerPays;
-extern SF_Amount const sfTakerGets;
-extern SF_Amount const sfLowLimit;
-extern SF_Amount const sfHighLimit;
-extern SF_Amount const sfFee;
-extern SF_Amount const sfSendMax;
-extern SF_Amount const sfDeliverMin;
+extern SF_AMOUNT const sfAmount;
+extern SF_AMOUNT const sfBalance;
+extern SF_AMOUNT const sfLimitAmount;
+extern SF_AMOUNT const sfTakerPays;
+extern SF_AMOUNT const sfTakerGets;
+extern SF_AMOUNT const sfLowLimit;
+extern SF_AMOUNT const sfHighLimit;
+extern SF_AMOUNT const sfFee;
+extern SF_AMOUNT const sfSendMax;
+extern SF_AMOUNT const sfDeliverMin;
 
 // currency amount (uncommon)
-extern SF_Amount const sfMinimumOffer;
-extern SF_Amount const sfRippleEscrow;
-extern SF_Amount const sfDeliveredAmount;
+extern SF_AMOUNT const sfMinimumOffer;
+extern SF_AMOUNT const sfRippleEscrow;
+extern SF_AMOUNT const sfDeliveredAmount;
 
 // variable length (common)
-extern SF_Blob const sfPublicKey;
-extern SF_Blob const sfMessageKey;
-extern SF_Blob const sfSigningPubKey;
-extern SF_Blob const sfTxnSignature;
-extern SF_Blob const sfSignature;
-extern SF_Blob const sfDomain;
-extern SF_Blob const sfFundCode;
-extern SF_Blob const sfRemoveCode;
-extern SF_Blob const sfExpireCode;
-extern SF_Blob const sfCreateCode;
-extern SF_Blob const sfMemoType;
-extern SF_Blob const sfMemoData;
-extern SF_Blob const sfMemoFormat;
+extern SF_VL const sfPublicKey;
+extern SF_VL const sfMessageKey;
+extern SF_VL const sfSigningPubKey;
+extern SF_VL const sfTxnSignature;
+extern SF_VL const sfSignature;
+extern SF_VL const sfDomain;
+extern SF_VL const sfFundCode;
+extern SF_VL const sfRemoveCode;
+extern SF_VL const sfExpireCode;
+extern SF_VL const sfCreateCode;
+extern SF_VL const sfMemoType;
+extern SF_VL const sfMemoData;
+extern SF_VL const sfMemoFormat;
 
 // variable length (uncommon)
-extern SF_Blob const sfFulfillment;
-extern SF_Blob const sfCondition;
-extern SF_Blob const sfMasterSignature;
-extern SF_Blob const sfUNLModifyValidator;
-extern SF_Blob const sfValidatorToDisable;
-extern SF_Blob const sfValidatorToReEnable;
+extern SF_VL const sfFulfillment;
+extern SF_VL const sfCondition;
+extern SF_VL const sfMasterSignature;
+extern SF_VL const sfUNLModifyValidator;
+extern SF_VL const sfValidatorToDisable;
+extern SF_VL const sfValidatorToReEnable;
 
 // account
-extern SF_Account const sfAccount;
-extern SF_Account const sfOwner;
-extern SF_Account const sfDestination;
-extern SF_Account const sfIssuer;
-extern SF_Account const sfAuthorize;
-extern SF_Account const sfUnauthorize;
-extern SF_Account const sfTarget;
-extern SF_Account const sfRegularKey;
+extern SF_ACCOUNT const sfAccount;
+extern SF_ACCOUNT const sfOwner;
+extern SF_ACCOUNT const sfDestination;
+extern SF_ACCOUNT const sfIssuer;
+extern SF_ACCOUNT const sfAuthorize;
+extern SF_ACCOUNT const sfUnauthorize;
+extern SF_ACCOUNT const sfTarget;
+extern SF_ACCOUNT const sfRegularKey;
 
 // path set
 extern SField const sfPaths;
 
 // vector of 256-bit
-extern SF_Vec256 const sfIndexes;
-extern SF_Vec256 const sfHashes;
-extern SF_Vec256 const sfAmendments;
+extern SF_VECTOR256 const sfIndexes;
+extern SF_VECTOR256 const sfHashes;
+extern SF_VECTOR256 const sfAmendments;
 
 // inner object
 // OBJECT/1 is reserved for end of object

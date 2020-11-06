@@ -326,7 +326,7 @@ PayChanFund::preflight(PreflightContext const& ctx)
 TER
 PayChanFund::doApply()
 {
-    Keylet const k(ltPAYCHAN, ctx_.tx[sfPayChannel]);
+    Keylet const k(ltPAYCHAN, ctx_.tx[sfChannel]);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
         return tecNO_ENTRY;
@@ -441,7 +441,7 @@ PayChanClaim::preflight(PreflightContext const& ctx)
         if (reqBalance > authAmt)
             return temBAD_AMOUNT;
 
-        Keylet const k(ltPAYCHAN, ctx.tx[sfPayChannel]);
+        Keylet const k(ltPAYCHAN, ctx.tx[sfChannel]);
         if (!publicKeyType(ctx.tx[sfPublicKey]))
             return temMALFORMED;
 
@@ -458,7 +458,7 @@ PayChanClaim::preflight(PreflightContext const& ctx)
 TER
 PayChanClaim::doApply()
 {
-    Keylet const k(ltPAYCHAN, ctx_.tx[sfPayChannel]);
+    Keylet const k(ltPAYCHAN, ctx_.tx[sfChannel]);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
         return tecNO_TARGET;

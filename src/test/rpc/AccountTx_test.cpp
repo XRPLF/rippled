@@ -368,7 +368,7 @@ class AccountTx_test : public beast::unit_test::suite
                 payChanFund[jss::TransactionType] = jss::PaymentChannelFund;
                 payChanFund[jss::Flags] = tfUniversal;
                 payChanFund[jss::Account] = alice.human();
-                payChanFund[sfPayChannel.jsonName] = payChanIndex;
+                payChanFund[sfChannel.jsonName] = payChanIndex;
                 payChanFund[jss::Amount] =
                     XRP(200).value().getJson(JsonOptions::none);
                 env(payChanFund, sig(alie));
@@ -379,7 +379,7 @@ class AccountTx_test : public beast::unit_test::suite
                 payChanClaim[jss::TransactionType] = jss::PaymentChannelClaim;
                 payChanClaim[jss::Flags] = tfClose;
                 payChanClaim[jss::Account] = gw.human();
-                payChanClaim[sfPayChannel.jsonName] = payChanIndex;
+                payChanClaim[sfChannel.jsonName] = payChanIndex;
                 payChanClaim[sfPublicKey.jsonName] = strHex(alice.pk().slice());
                 env(payChanClaim);
                 env.close();
