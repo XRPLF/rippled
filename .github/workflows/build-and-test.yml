@@ -37,14 +37,20 @@ jobs:
         run: env
 #       - name: cache stats before
 #         run: ccache -s
-      - name: build
+      - name: Configure
         #run: bin/ci/ubuntu/build-in-docker.sh
         run: |
           mkdir build
           cd build
-          cmake -DBoost_NO_BOOST_CMAKE=ON ..
-          cmake --build . --target rippled --config ${{ env.BUILD_TYPE }} -j $( nproc )
-      - name: test
-        run: build/rippled --unittest --unittest-jobs=$( nproc )
+          cmake -DBoost_NO_BOOST_CMAKE=ON ${{ env.CMAKE_EXTRA_ARGS }} ..
+      - name: Build rippled ${{ env.BUILD_TYPE }}
+        #run: bin/ci/ubuntu/build-in-docker.sh
+        run: |
+          echo Building with $( nproc ) jobs
+          cmake --build build --target rippled --config ${{ env.BUILD_TYPE }} -j $( nproc )
+      - name: Run tests
+        run: |
+          echo Running $( nproc ) parallel tests
+          build/rippled --unittest --unittest-jobs=$( nproc )
 #       - name: cache stats before
 #         run: ccache -s
