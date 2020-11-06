@@ -251,6 +251,10 @@ public:
 100
 )rippleConfig");
         run(R"rippleConfig(
+[peers_out_max]
+100
+)rippleConfig");
+        run(R"rippleConfig(
 [peers_in_max]
 100
 [peers_out_max]
