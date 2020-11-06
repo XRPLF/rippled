@@ -20,6 +20,7 @@
 #include <ripple/protocol/SField.h>
 #include <cassert>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace ripple {
@@ -40,255 +41,250 @@ static SField::private_access_tag_t access;
 // Construct all compile-time SFields, and register them in the knownCodeToField
 // database:
 
+// Use macros for most SField construction to enforce naming conventions.
+#pragma push_macro("CONSTRUCT_UNTYPED_SFIELD")
+#undef CONSTRUCT_UNTYPED_SFIELD
+
+// It would be possible to design the macros so that sfName and txtName would
+// be constructed from a single macro parameter.  We chose not to take that
+// path because then you cannot grep for the exact SField name and find
+// where it is constructed.  These macros allow that grep to succeed.
+#define CONSTRUCT_UNTYPED_SFIELD(sfName, txtName, stiSuffix, fieldValue, ...) \
+    SField const sfName(                                                      \
+        access, STI_##stiSuffix, fieldValue, txtName, ##__VA_ARGS__);         \
+    static_assert(                                                            \
+        std::string_view(#sfName) == "sf" txtName,                            \
+        "Declaration of SField does not match its text name")
+
+#pragma push_macro("CONSTRUCT_TYPED_SFIELD")
+#undef CONSTRUCT_TYPED_SFIELD
+
+#define CONSTRUCT_TYPED_SFIELD(sfName, txtName, stiSuffix, fieldValue, ...) \
+    SF_##stiSuffix const sfName(                                            \
+        access, STI_##stiSuffix, fieldValue, txtName, ##__VA_ARGS__);       \
+    static_assert(                                                          \
+        std::string_view(#sfName) == "sf" txtName,                          \
+        "Declaration of SField does not match its text name")
+
+// clang-format off
+
+// SFields which, for historical reasons, do not follow naming conventions.
 SField const sfInvalid(access, -1);
 SField const sfGeneric(access, 0);
-SField const sfLedgerEntry(access, STI_LEDGERENTRY, 257, "LedgerEntry");
-SField const sfTransaction(access, STI_TRANSACTION, 257, "Transaction");
-SField const sfValidation(access, STI_VALIDATION, 257, "Validation");
-SField const sfMetadata(access, STI_METADATA, 257, "Metadata");
 SField const sfHash(access, STI_HASH256, 257, "hash");
 SField const sfIndex(access, STI_HASH256, 258, "index");
 
+// Untyped SFields
+CONSTRUCT_UNTYPED_SFIELD(sfLedgerEntry,         "LedgerEntry",          LEDGERENTRY, 257);
+CONSTRUCT_UNTYPED_SFIELD(sfTransaction,         "Transaction",          TRANSACTION, 257);
+CONSTRUCT_UNTYPED_SFIELD(sfValidation,          "Validation",           VALIDATION,  257);
+CONSTRUCT_UNTYPED_SFIELD(sfMetadata,            "Metadata",             METADATA,    257);
+
 // 8-bit integers
-SF_U8 const sfCloseResolution(access, STI_UINT8, 1, "CloseResolution");
-SF_U8 const sfMethod(access, STI_UINT8, 2, "Method");
-SF_U8 const sfTransactionResult(access, STI_UINT8, 3, "TransactionResult");
+CONSTRUCT_TYPED_SFIELD(sfCloseResolution,       "CloseResolution",      UINT8,      1);
+CONSTRUCT_TYPED_SFIELD(sfMethod,                "Method",               UINT8,      2);
+CONSTRUCT_TYPED_SFIELD(sfTransactionResult,     "TransactionResult",    UINT8,      3);
 
 // 8-bit integers (uncommon)
-SF_U8 const sfTickSize(access, STI_UINT8, 16, "TickSize");
-SF_U8 const sfUNLModifyDisabling(access, STI_UINT8, 17, "UNLModifyDisabling");
+CONSTRUCT_TYPED_SFIELD(sfTickSize,              "TickSize",             UINT8,     16);
+CONSTRUCT_TYPED_SFIELD(sfUNLModifyDisabling,    "UNLModifyDisabling",   UINT8,     17);
 
 // 16-bit integers
-SF_U16 const sfLedgerEntryType(
-    access,
-    STI_UINT16,
-    1,
-    "LedgerEntryType",
-    SField::sMD_Never);
-SF_U16 const sfTransactionType(access, STI_UINT16, 2, "TransactionType");
-SF_U16 const sfSignerWeight(access, STI_UINT16, 3, "SignerWeight");
+CONSTRUCT_TYPED_SFIELD(sfLedgerEntryType,       "LedgerEntryType",      UINT16,     1, SField::sMD_Never);
+CONSTRUCT_TYPED_SFIELD(sfTransactionType,       "TransactionType",      UINT16,     2);
+CONSTRUCT_TYPED_SFIELD(sfSignerWeight,          "SignerWeight",         UINT16,     3);
 
 // 16-bit integers (uncommon)
-SF_U16 const sfVersion(access, STI_UINT16, 16, "Version");
+CONSTRUCT_TYPED_SFIELD(sfVersion,               "Version",              UINT16,    16);
 
 // 32-bit integers (common)
-SF_U32 const sfFlags(access, STI_UINT32, 2, "Flags");
-SF_U32 const sfSourceTag(access, STI_UINT32, 3, "SourceTag");
-SF_U32 const sfSequence(access, STI_UINT32, 4, "Sequence");
-SF_U32 const sfPreviousTxnLgrSeq(
-    access,
-    STI_UINT32,
-    5,
-    "PreviousTxnLgrSeq",
-    SField::sMD_DeleteFinal);
-SF_U32 const sfLedgerSequence(access, STI_UINT32, 6, "LedgerSequence");
-SF_U32 const sfCloseTime(access, STI_UINT32, 7, "CloseTime");
-SF_U32 const sfParentCloseTime(access, STI_UINT32, 8, "ParentCloseTime");
-SF_U32 const sfSigningTime(access, STI_UINT32, 9, "SigningTime");
-SF_U32 const sfExpiration(access, STI_UINT32, 10, "Expiration");
-SF_U32 const sfTransferRate(access, STI_UINT32, 11, "TransferRate");
-SF_U32 const sfWalletSize(access, STI_UINT32, 12, "WalletSize");
-SF_U32 const sfOwnerCount(access, STI_UINT32, 13, "OwnerCount");
-SF_U32 const sfDestinationTag(access, STI_UINT32, 14, "DestinationTag");
+CONSTRUCT_TYPED_SFIELD(sfFlags,                 "Flags",                UINT32,     2);
+CONSTRUCT_TYPED_SFIELD(sfSourceTag,             "SourceTag",            UINT32,     3);
+CONSTRUCT_TYPED_SFIELD(sfSequence,              "Sequence",             UINT32,     4);
+CONSTRUCT_TYPED_SFIELD(sfPreviousTxnLgrSeq,     "PreviousTxnLgrSeq",    UINT32,     5, SField::sMD_DeleteFinal);
+CONSTRUCT_TYPED_SFIELD(sfLedgerSequence,        "LedgerSequence",       UINT32,     6);
+CONSTRUCT_TYPED_SFIELD(sfCloseTime,             "CloseTime",            UINT32,     7);
+CONSTRUCT_TYPED_SFIELD(sfParentCloseTime,       "ParentCloseTime",      UINT32,     8);
+CONSTRUCT_TYPED_SFIELD(sfSigningTime,           "SigningTime",          UINT32,     9);
+CONSTRUCT_TYPED_SFIELD(sfExpiration,            "Expiration",           UINT32,    10);
+CONSTRUCT_TYPED_SFIELD(sfTransferRate,          "TransferRate",         UINT32,    11);
+CONSTRUCT_TYPED_SFIELD(sfWalletSize,            "WalletSize",           UINT32,    12);
+CONSTRUCT_TYPED_SFIELD(sfOwnerCount,            "OwnerCount",           UINT32,    13);
+CONSTRUCT_TYPED_SFIELD(sfDestinationTag,        "DestinationTag",       UINT32,    14);
 
 // 32-bit integers (uncommon)
-SF_U32 const sfHighQualityIn(access, STI_UINT32, 16, "HighQualityIn");
-SF_U32 const sfHighQualityOut(access, STI_UINT32, 17, "HighQualityOut");
-SF_U32 const sfLowQualityIn(access, STI_UINT32, 18, "LowQualityIn");
-SF_U32 const sfLowQualityOut(access, STI_UINT32, 19, "LowQualityOut");
-SF_U32 const sfQualityIn(access, STI_UINT32, 20, "QualityIn");
-SF_U32 const sfQualityOut(access, STI_UINT32, 21, "QualityOut");
-SF_U32 const sfStampEscrow(access, STI_UINT32, 22, "StampEscrow");
-SF_U32 const sfBondAmount(access, STI_UINT32, 23, "BondAmount");
-SF_U32 const sfLoadFee(access, STI_UINT32, 24, "LoadFee");
-SF_U32 const sfOfferSequence(access, STI_UINT32, 25, "OfferSequence");
-SF_U32 const
-    sfFirstLedgerSequence(access, STI_UINT32, 26, "FirstLedgerSequence");
-SF_U32 const sfLastLedgerSequence(access, STI_UINT32, 27, "LastLedgerSequence");
-SF_U32 const sfTransactionIndex(access, STI_UINT32, 28, "TransactionIndex");
-SF_U32 const sfOperationLimit(access, STI_UINT32, 29, "OperationLimit");
-SF_U32 const sfReferenceFeeUnits(access, STI_UINT32, 30, "ReferenceFeeUnits");
-SF_U32 const sfReserveBase(access, STI_UINT32, 31, "ReserveBase");
-SF_U32 const sfReserveIncrement(access, STI_UINT32, 32, "ReserveIncrement");
-SF_U32 const sfSetFlag(access, STI_UINT32, 33, "SetFlag");
-SF_U32 const sfClearFlag(access, STI_UINT32, 34, "ClearFlag");
-SF_U32 const sfSignerQuorum(access, STI_UINT32, 35, "SignerQuorum");
-SF_U32 const sfCancelAfter(access, STI_UINT32, 36, "CancelAfter");
-SF_U32 const sfFinishAfter(access, STI_UINT32, 37, "FinishAfter");
-SF_U32 const sfSignerListID(access, STI_UINT32, 38, "SignerListID");
-SF_U32 const sfSettleDelay(access, STI_UINT32, 39, "SettleDelay");
-SF_U32 const sfTicketCount(access, STI_UINT32, 40, "TicketCount");
-SF_U32 const sfTicketSequence(access, STI_UINT32, 41, "TicketSequence");
+CONSTRUCT_TYPED_SFIELD(sfHighQualityIn,         "HighQualityIn",        UINT32,    16);
+CONSTRUCT_TYPED_SFIELD(sfHighQualityOut,        "HighQualityOut",       UINT32,    17);
+CONSTRUCT_TYPED_SFIELD(sfLowQualityIn,          "LowQualityIn",         UINT32,    18);
+CONSTRUCT_TYPED_SFIELD(sfLowQualityOut,         "LowQualityOut",        UINT32,    19);
+CONSTRUCT_TYPED_SFIELD(sfQualityIn,             "QualityIn",            UINT32,    20);
+CONSTRUCT_TYPED_SFIELD(sfQualityOut,            "QualityOut",           UINT32,    21);
+CONSTRUCT_TYPED_SFIELD(sfStampEscrow,           "StampEscrow",          UINT32,    22);
+CONSTRUCT_TYPED_SFIELD(sfBondAmount,            "BondAmount",           UINT32,    23);
+CONSTRUCT_TYPED_SFIELD(sfLoadFee,               "LoadFee",              UINT32,    24);
+CONSTRUCT_TYPED_SFIELD(sfOfferSequence,         "OfferSequence",        UINT32,    25);
+CONSTRUCT_TYPED_SFIELD(sfFirstLedgerSequence,   "FirstLedgerSequence",  UINT32,    26);
+CONSTRUCT_TYPED_SFIELD(sfLastLedgerSequence,    "LastLedgerSequence",   UINT32,    27);
+CONSTRUCT_TYPED_SFIELD(sfTransactionIndex,      "TransactionIndex",     UINT32,    28);
+CONSTRUCT_TYPED_SFIELD(sfOperationLimit,        "OperationLimit",       UINT32,    29);
+CONSTRUCT_TYPED_SFIELD(sfReferenceFeeUnits,     "ReferenceFeeUnits",    UINT32,    30);
+CONSTRUCT_TYPED_SFIELD(sfReserveBase,           "ReserveBase",          UINT32,    31);
+CONSTRUCT_TYPED_SFIELD(sfReserveIncrement,      "ReserveIncrement",     UINT32,    32);
+CONSTRUCT_TYPED_SFIELD(sfSetFlag,               "SetFlag",              UINT32,    33);
+CONSTRUCT_TYPED_SFIELD(sfClearFlag,             "ClearFlag",            UINT32,    34);
+CONSTRUCT_TYPED_SFIELD(sfSignerQuorum,          "SignerQuorum",         UINT32,    35);
+CONSTRUCT_TYPED_SFIELD(sfCancelAfter,           "CancelAfter",          UINT32,    36);
+CONSTRUCT_TYPED_SFIELD(sfFinishAfter,           "FinishAfter",          UINT32,    37);
+CONSTRUCT_TYPED_SFIELD(sfSignerListID,          "SignerListID",         UINT32,    38);
+CONSTRUCT_TYPED_SFIELD(sfSettleDelay,           "SettleDelay",          UINT32,    39);
+CONSTRUCT_TYPED_SFIELD(sfTicketCount,           "TicketCount",          UINT32,    40);
+CONSTRUCT_TYPED_SFIELD(sfTicketSequence,        "TicketSequence",       UINT32,    41);
 
 // 64-bit integers
-SF_U64 const sfIndexNext(access, STI_UINT64, 1, "IndexNext");
-SF_U64 const sfIndexPrevious(access, STI_UINT64, 2, "IndexPrevious");
-SF_U64 const sfBookNode(access, STI_UINT64, 3, "BookNode");
-SF_U64 const sfOwnerNode(access, STI_UINT64, 4, "OwnerNode");
-SF_U64 const sfBaseFee(access, STI_UINT64, 5, "BaseFee");
-SF_U64 const sfExchangeRate(access, STI_UINT64, 6, "ExchangeRate");
-SF_U64 const sfLowNode(access, STI_UINT64, 7, "LowNode");
-SF_U64 const sfHighNode(access, STI_UINT64, 8, "HighNode");
-SF_U64 const sfDestinationNode(access, STI_UINT64, 9, "DestinationNode");
-SF_U64 const sfCookie(access, STI_UINT64, 10, "Cookie");
-SF_U64 const sfServerVersion(access, STI_UINT64, 11, "ServerVersion");
+CONSTRUCT_TYPED_SFIELD(sfIndexNext,             "IndexNext",            UINT64,     1);
+CONSTRUCT_TYPED_SFIELD(sfIndexPrevious,         "IndexPrevious",        UINT64,     2);
+CONSTRUCT_TYPED_SFIELD(sfBookNode,              "BookNode",             UINT64,     3);
+CONSTRUCT_TYPED_SFIELD(sfOwnerNode,             "OwnerNode",            UINT64,     4);
+CONSTRUCT_TYPED_SFIELD(sfBaseFee,               "BaseFee",              UINT64,     5);
+CONSTRUCT_TYPED_SFIELD(sfExchangeRate,          "ExchangeRate",         UINT64,     6);
+CONSTRUCT_TYPED_SFIELD(sfLowNode,               "LowNode",              UINT64,     7);
+CONSTRUCT_TYPED_SFIELD(sfHighNode,              "HighNode",             UINT64,     8);
+CONSTRUCT_TYPED_SFIELD(sfDestinationNode,       "DestinationNode",      UINT64,     9);
+CONSTRUCT_TYPED_SFIELD(sfCookie,                "Cookie",               UINT64,    10);
+CONSTRUCT_TYPED_SFIELD(sfServerVersion,         "ServerVersion",        UINT64,    11);
 
 // 128-bit
-SF_U128 const sfEmailHash(access, STI_HASH128, 1, "EmailHash");
+CONSTRUCT_TYPED_SFIELD(sfEmailHash,             "EmailHash",            HASH128,    1);
 
 // 160-bit (common)
-SF_U160 const sfTakerPaysCurrency(access, STI_HASH160, 1, "TakerPaysCurrency");
-SF_U160 const sfTakerPaysIssuer(access, STI_HASH160, 2, "TakerPaysIssuer");
-SF_U160 const sfTakerGetsCurrency(access, STI_HASH160, 3, "TakerGetsCurrency");
-SF_U160 const sfTakerGetsIssuer(access, STI_HASH160, 4, "TakerGetsIssuer");
+CONSTRUCT_TYPED_SFIELD(sfTakerPaysCurrency,     "TakerPaysCurrency",    HASH160,    1);
+CONSTRUCT_TYPED_SFIELD(sfTakerPaysIssuer,       "TakerPaysIssuer",      HASH160,    2);
+CONSTRUCT_TYPED_SFIELD(sfTakerGetsCurrency,     "TakerGetsCurrency",    HASH160,    3);
+CONSTRUCT_TYPED_SFIELD(sfTakerGetsIssuer,       "TakerGetsIssuer",      HASH160,    4);
 
 // 256-bit (common)
-SF_U256 const sfLedgerHash(access, STI_HASH256, 1, "LedgerHash");
-SF_U256 const sfParentHash(access, STI_HASH256, 2, "ParentHash");
-SF_U256 const sfTransactionHash(access, STI_HASH256, 3, "TransactionHash");
-SF_U256 const sfAccountHash(access, STI_HASH256, 4, "AccountHash");
-SF_U256 const sfPreviousTxnID(
-    access,
-    STI_HASH256,
-    5,
-    "PreviousTxnID",
-    SField::sMD_DeleteFinal);
-SF_U256 const sfLedgerIndex(access, STI_HASH256, 6, "LedgerIndex");
-SF_U256 const sfWalletLocator(access, STI_HASH256, 7, "WalletLocator");
-SF_U256 const
-    sfRootIndex(access, STI_HASH256, 8, "RootIndex", SField::sMD_Always);
-SF_U256 const sfAccountTxnID(access, STI_HASH256, 9, "AccountTxnID");
+CONSTRUCT_TYPED_SFIELD(sfLedgerHash,            "LedgerHash",           HASH256,    1);
+CONSTRUCT_TYPED_SFIELD(sfParentHash,            "ParentHash",           HASH256,    2);
+CONSTRUCT_TYPED_SFIELD(sfTransactionHash,       "TransactionHash",      HASH256,    3);
+CONSTRUCT_TYPED_SFIELD(sfAccountHash,           "AccountHash",          HASH256,    4);
+CONSTRUCT_TYPED_SFIELD(sfPreviousTxnID,         "PreviousTxnID",        HASH256,    5, SField::sMD_DeleteFinal);
+CONSTRUCT_TYPED_SFIELD(sfLedgerIndex,           "LedgerIndex",          HASH256,    6);
+CONSTRUCT_TYPED_SFIELD(sfWalletLocator,         "WalletLocator",        HASH256,    7);
+CONSTRUCT_TYPED_SFIELD(sfRootIndex,             "RootIndex",            HASH256,    8, SField::sMD_Always);
+CONSTRUCT_TYPED_SFIELD(sfAccountTxnID,          "AccountTxnID",         HASH256,    9);
 
 // 256-bit (uncommon)
-SF_U256 const sfBookDirectory(access, STI_HASH256, 16, "BookDirectory");
-SF_U256 const sfInvoiceID(access, STI_HASH256, 17, "InvoiceID");
-SF_U256 const sfNickname(access, STI_HASH256, 18, "Nickname");
-SF_U256 const sfAmendment(access, STI_HASH256, 19, "Amendment");
-//                                                  20 is currently unused
-SF_U256 const sfDigest(access, STI_HASH256, 21, "Digest");
-SF_U256 const sfPayChannel(access, STI_HASH256, 22, "Channel");
-SF_U256 const sfConsensusHash(access, STI_HASH256, 23, "ConsensusHash");
-SF_U256 const sfCheckID(access, STI_HASH256, 24, "CheckID");
-SF_U256 const sfValidatedHash(access, STI_HASH256, 25, "ValidatedHash");
+CONSTRUCT_TYPED_SFIELD(sfBookDirectory,         "BookDirectory",        HASH256,   16);
+CONSTRUCT_TYPED_SFIELD(sfInvoiceID,             "InvoiceID",            HASH256,   17);
+CONSTRUCT_TYPED_SFIELD(sfNickname,              "Nickname",             HASH256,   18);
+CONSTRUCT_TYPED_SFIELD(sfAmendment,             "Amendment",            HASH256,   19);
+//                                                                                 20 is currently unused
+CONSTRUCT_TYPED_SFIELD(sfDigest,                "Digest",               HASH256,   21);
+CONSTRUCT_TYPED_SFIELD(sfChannel,               "Channel",              HASH256,   22);
+CONSTRUCT_TYPED_SFIELD(sfConsensusHash,         "ConsensusHash",        HASH256,   23);
+CONSTRUCT_TYPED_SFIELD(sfCheckID,               "CheckID",              HASH256,   24);
+CONSTRUCT_TYPED_SFIELD(sfValidatedHash,         "ValidatedHash",        HASH256,   25);
 
 // currency amount (common)
-SF_Amount const sfAmount(access, STI_AMOUNT, 1, "Amount");
-SF_Amount const sfBalance(access, STI_AMOUNT, 2, "Balance");
-SF_Amount const sfLimitAmount(access, STI_AMOUNT, 3, "LimitAmount");
-SF_Amount const sfTakerPays(access, STI_AMOUNT, 4, "TakerPays");
-SF_Amount const sfTakerGets(access, STI_AMOUNT, 5, "TakerGets");
-SF_Amount const sfLowLimit(access, STI_AMOUNT, 6, "LowLimit");
-SF_Amount const sfHighLimit(access, STI_AMOUNT, 7, "HighLimit");
-SF_Amount const sfFee(access, STI_AMOUNT, 8, "Fee");
-SF_Amount const sfSendMax(access, STI_AMOUNT, 9, "SendMax");
-SF_Amount const sfDeliverMin(access, STI_AMOUNT, 10, "DeliverMin");
+CONSTRUCT_TYPED_SFIELD(sfAmount,                "Amount",               AMOUNT,     1);
+CONSTRUCT_TYPED_SFIELD(sfBalance,               "Balance",              AMOUNT,     2);
+CONSTRUCT_TYPED_SFIELD(sfLimitAmount,           "LimitAmount",          AMOUNT,     3);
+CONSTRUCT_TYPED_SFIELD(sfTakerPays,             "TakerPays",            AMOUNT,     4);
+CONSTRUCT_TYPED_SFIELD(sfTakerGets,             "TakerGets",            AMOUNT,     5);
+CONSTRUCT_TYPED_SFIELD(sfLowLimit,              "LowLimit",             AMOUNT,     6);
+CONSTRUCT_TYPED_SFIELD(sfHighLimit,             "HighLimit",            AMOUNT,     7);
+CONSTRUCT_TYPED_SFIELD(sfFee,                   "Fee",                  AMOUNT,     8);
+CONSTRUCT_TYPED_SFIELD(sfSendMax,               "SendMax",              AMOUNT,     9);
+CONSTRUCT_TYPED_SFIELD(sfDeliverMin,            "DeliverMin",           AMOUNT,    10);
 
 // currency amount (uncommon)
-SF_Amount const sfMinimumOffer(access, STI_AMOUNT, 16, "MinimumOffer");
-SF_Amount const sfRippleEscrow(access, STI_AMOUNT, 17, "RippleEscrow");
-SF_Amount const sfDeliveredAmount(access, STI_AMOUNT, 18, "DeliveredAmount");
+CONSTRUCT_TYPED_SFIELD(sfMinimumOffer,          "MinimumOffer",         AMOUNT,    16);
+CONSTRUCT_TYPED_SFIELD(sfRippleEscrow,          "RippleEscrow",         AMOUNT,    17);
+CONSTRUCT_TYPED_SFIELD(sfDeliveredAmount,       "DeliveredAmount",      AMOUNT,    18);
 
 // variable length (common)
-SF_Blob const sfPublicKey(access, STI_VL, 1, "PublicKey");
-SF_Blob const sfMessageKey(access, STI_VL, 2, "MessageKey");
-SF_Blob const sfSigningPubKey(access, STI_VL, 3, "SigningPubKey");
-SF_Blob const sfTxnSignature(
-    access,
-    STI_VL,
-    4,
-    "TxnSignature",
-    SField::sMD_Default,
-    SField::notSigning);
-SF_Blob const sfSignature(
-    access,
-    STI_VL,
-    6,
-    "Signature",
-    SField::sMD_Default,
-    SField::notSigning);
-SF_Blob const sfDomain(access, STI_VL, 7, "Domain");
-SF_Blob const sfFundCode(access, STI_VL, 8, "FundCode");
-SF_Blob const sfRemoveCode(access, STI_VL, 9, "RemoveCode");
-SF_Blob const sfExpireCode(access, STI_VL, 10, "ExpireCode");
-SF_Blob const sfCreateCode(access, STI_VL, 11, "CreateCode");
-SF_Blob const sfMemoType(access, STI_VL, 12, "MemoType");
-SF_Blob const sfMemoData(access, STI_VL, 13, "MemoData");
-SF_Blob const sfMemoFormat(access, STI_VL, 14, "MemoFormat");
+CONSTRUCT_TYPED_SFIELD(sfPublicKey,             "PublicKey",            VL,         1);
+CONSTRUCT_TYPED_SFIELD(sfMessageKey,            "MessageKey",           VL,         2);
+CONSTRUCT_TYPED_SFIELD(sfSigningPubKey,         "SigningPubKey",        VL,         3);
+CONSTRUCT_TYPED_SFIELD(sfTxnSignature,          "TxnSignature",         VL,         4, SField::sMD_Default, SField::notSigning);
+//                                                                              Was 5 used and then obsoleted?
+CONSTRUCT_TYPED_SFIELD(sfSignature,             "Signature",            VL,         6, SField::sMD_Default, SField::notSigning);
+CONSTRUCT_TYPED_SFIELD(sfDomain,                "Domain",               VL,         7);
+CONSTRUCT_TYPED_SFIELD(sfFundCode,              "FundCode",             VL,         8);
+CONSTRUCT_TYPED_SFIELD(sfRemoveCode,            "RemoveCode",           VL,         9);
+CONSTRUCT_TYPED_SFIELD(sfExpireCode,            "ExpireCode",           VL,        10);
+CONSTRUCT_TYPED_SFIELD(sfCreateCode,            "CreateCode",           VL,        11);
+CONSTRUCT_TYPED_SFIELD(sfMemoType,              "MemoType",             VL,        12);
+CONSTRUCT_TYPED_SFIELD(sfMemoData,              "MemoData",             VL,        13);
+CONSTRUCT_TYPED_SFIELD(sfMemoFormat,            "MemoFormat",           VL,        14);
 
 // variable length (uncommon)
-SF_Blob const sfFulfillment(access, STI_VL, 16, "Fulfillment");
-SF_Blob const sfCondition(access, STI_VL, 17, "Condition");
-SF_Blob const sfMasterSignature(
-    access,
-    STI_VL,
-    18,
-    "MasterSignature",
-    SField::sMD_Default,
-    SField::notSigning);
-SF_Blob const sfUNLModifyValidator(access, STI_VL, 19, "UNLModifyValidator");
-SF_Blob const sfValidatorToDisable(access, STI_VL, 20, "ValidatorToDisable");
-SF_Blob const sfValidatorToReEnable(access, STI_VL, 21, "ValidatorToReEnable");
+CONSTRUCT_TYPED_SFIELD(sfFulfillment,           "Fulfillment",          VL,        16);
+CONSTRUCT_TYPED_SFIELD(sfCondition,             "Condition",            VL,        17);
+CONSTRUCT_TYPED_SFIELD(sfMasterSignature,       "MasterSignature",      VL,        18, SField::sMD_Default, SField::notSigning);
+CONSTRUCT_TYPED_SFIELD(sfUNLModifyValidator,    "UNLModifyValidator",   VL,        19);
+CONSTRUCT_TYPED_SFIELD(sfValidatorToDisable,    "ValidatorToDisable",   VL,        20);
+CONSTRUCT_TYPED_SFIELD(sfValidatorToReEnable,   "ValidatorToReEnable",  VL,        21);
 
 // account
-SF_Account const sfAccount(access, STI_ACCOUNT, 1, "Account");
-SF_Account const sfOwner(access, STI_ACCOUNT, 2, "Owner");
-SF_Account const sfDestination(access, STI_ACCOUNT, 3, "Destination");
-SF_Account const sfIssuer(access, STI_ACCOUNT, 4, "Issuer");
-SF_Account const sfAuthorize(access, STI_ACCOUNT, 5, "Authorize");
-SF_Account const sfUnauthorize(access, STI_ACCOUNT, 6, "Unauthorize");
-//                                                   7 is currently unused
-SF_Account const sfRegularKey(access, STI_ACCOUNT, 8, "RegularKey");
-
-// path set
-SField const sfPaths(access, STI_PATHSET, 1, "Paths");
+CONSTRUCT_TYPED_SFIELD(sfAccount,               "Account",              ACCOUNT,    1);
+CONSTRUCT_TYPED_SFIELD(sfOwner,                 "Owner",                ACCOUNT,    2);
+CONSTRUCT_TYPED_SFIELD(sfDestination,           "Destination",          ACCOUNT,    3);
+CONSTRUCT_TYPED_SFIELD(sfIssuer,                "Issuer",               ACCOUNT,    4);
+CONSTRUCT_TYPED_SFIELD(sfAuthorize,             "Authorize",            ACCOUNT,    5);
+CONSTRUCT_TYPED_SFIELD(sfUnauthorize,           "Unauthorize",          ACCOUNT,    6);
+//                                                                                  7 is currently unused
+CONSTRUCT_TYPED_SFIELD(sfRegularKey,            "RegularKey",           ACCOUNT,    8);
 
 // vector of 256-bit
-SF_Vec256 const
-    sfIndexes(access, STI_VECTOR256, 1, "Indexes", SField::sMD_Never);
-SF_Vec256 const sfHashes(access, STI_VECTOR256, 2, "Hashes");
-SF_Vec256 const sfAmendments(access, STI_VECTOR256, 3, "Amendments");
+CONSTRUCT_TYPED_SFIELD(sfIndexes,               "Indexes",              VECTOR256,  1, SField::sMD_Never);
+CONSTRUCT_TYPED_SFIELD(sfHashes,                "Hashes",               VECTOR256,  2);
+CONSTRUCT_TYPED_SFIELD(sfAmendments,            "Amendments",           VECTOR256,  3);
+
+// path set
+CONSTRUCT_UNTYPED_SFIELD(sfPaths,               "Paths",                PATHSET,    1);
 
 // inner object
 // OBJECT/1 is reserved for end of object
-SField const
-    sfTransactionMetaData(access, STI_OBJECT, 2, "TransactionMetaData");
-SField const sfCreatedNode(access, STI_OBJECT, 3, "CreatedNode");
-SField const sfDeletedNode(access, STI_OBJECT, 4, "DeletedNode");
-SField const sfModifiedNode(access, STI_OBJECT, 5, "ModifiedNode");
-SField const sfPreviousFields(access, STI_OBJECT, 6, "PreviousFields");
-SField const sfFinalFields(access, STI_OBJECT, 7, "FinalFields");
-SField const sfNewFields(access, STI_OBJECT, 8, "NewFields");
-SField const sfTemplateEntry(access, STI_OBJECT, 9, "TemplateEntry");
-SField const sfMemo(access, STI_OBJECT, 10, "Memo");
-SField const sfSignerEntry(access, STI_OBJECT, 11, "SignerEntry");
+CONSTRUCT_UNTYPED_SFIELD(sfTransactionMetaData, "TransactionMetaData",  OBJECT,     2);
+CONSTRUCT_UNTYPED_SFIELD(sfCreatedNode,         "CreatedNode",          OBJECT,     3);
+CONSTRUCT_UNTYPED_SFIELD(sfDeletedNode,         "DeletedNode",          OBJECT,     4);
+CONSTRUCT_UNTYPED_SFIELD(sfModifiedNode,        "ModifiedNode",         OBJECT,     5);
+CONSTRUCT_UNTYPED_SFIELD(sfPreviousFields,      "PreviousFields",       OBJECT,     6);
+CONSTRUCT_UNTYPED_SFIELD(sfFinalFields,         "FinalFields",          OBJECT,     7);
+CONSTRUCT_UNTYPED_SFIELD(sfNewFields,           "NewFields",            OBJECT,     8);
+CONSTRUCT_UNTYPED_SFIELD(sfTemplateEntry,       "TemplateEntry",        OBJECT,     9);
+CONSTRUCT_UNTYPED_SFIELD(sfMemo,                "Memo",                 OBJECT,    10);
+CONSTRUCT_UNTYPED_SFIELD(sfSignerEntry,         "SignerEntry",          OBJECT,    11);
 
 // inner object (uncommon)
-SField const sfSigner(access, STI_OBJECT, 16, "Signer");
-//                                                                                 17 has not been used yet...
-SField const sfMajority(access, STI_OBJECT, 18, "Majority");
-SField const sfDisabledValidator(access, STI_OBJECT, 19, "DisabledValidator");
+CONSTRUCT_UNTYPED_SFIELD(sfSigner,              "Signer",               OBJECT,    16);
+//                                                                                 17 has not been used yet
+CONSTRUCT_UNTYPED_SFIELD(sfMajority,            "Majority",             OBJECT,    18);
+CONSTRUCT_UNTYPED_SFIELD(sfDisabledValidator,   "DisabledValidator",    OBJECT,    19);
 
 // array of objects
-// ARRAY/1 is reserved for end of array
-// SField const sfSigningAccounts (access, STI_ARRAY, 2, "SigningAccounts"); //
-// Never been used.
-SField const sfSigners(
-    access,
-    STI_ARRAY,
-    3,
-    "Signers",
-    SField::sMD_Default,
-    SField::notSigning);
-SField const sfSignerEntries(access, STI_ARRAY, 4, "SignerEntries");
-SField const sfTemplate(access, STI_ARRAY, 5, "Template");
-SField const sfNecessary(access, STI_ARRAY, 6, "Necessary");
-SField const sfSufficient(access, STI_ARRAY, 7, "Sufficient");
-SField const sfAffectedNodes(access, STI_ARRAY, 8, "AffectedNodes");
-SField const sfMemos(access, STI_ARRAY, 9, "Memos");
+//                                                                            ARRAY/1 is reserved for end of array
+//                                                                                  2 has never been used
+CONSTRUCT_UNTYPED_SFIELD(sfSigners,             "Signers",              ARRAY,      3, SField::sMD_Default, SField::notSigning);
+CONSTRUCT_UNTYPED_SFIELD(sfSignerEntries,       "SignerEntries",        ARRAY,      4);
+CONSTRUCT_UNTYPED_SFIELD(sfTemplate,            "Template",             ARRAY,      5);
+CONSTRUCT_UNTYPED_SFIELD(sfNecessary,           "Necessary",            ARRAY,      6);
+CONSTRUCT_UNTYPED_SFIELD(sfSufficient,          "Sufficient",           ARRAY,      7);
+CONSTRUCT_UNTYPED_SFIELD(sfAffectedNodes,       "AffectedNodes",        ARRAY,      8);
+CONSTRUCT_UNTYPED_SFIELD(sfMemos,               "Memos",                ARRAY,      9);
 
 // array of objects (uncommon)
-SField const sfMajorities(access, STI_ARRAY, 16, "Majorities");
-SField const sfDisabledValidators(access, STI_ARRAY, 17, "DisabledValidators");
+CONSTRUCT_UNTYPED_SFIELD(sfMajorities,          "Majorities",           ARRAY,     16);
+CONSTRUCT_UNTYPED_SFIELD(sfDisabledValidators,  "DisabledValidators",   ARRAY,     17);
+
+// clang-format on
+
+#undef CONSTRUCT_TYPED_SFIELD
+#undef CONSTRUCT_UNTYPED_SFIELD
+
+#pragma pop_macro("CONSTRUCT_TYPED_SFIELD")
+#pragma pop_macro("CONSTRUCT_UNTYPED_SFIELD")
 
 SField::SField(
     private_access_tag_t,

@@ -205,7 +205,7 @@ TxFormats::TxFormats()
     add(jss::PaymentChannelFund,
         ttPAYCHAN_FUND,
         {
-            {sfPayChannel, soeREQUIRED},
+            {sfChannel, soeREQUIRED},
             {sfAmount, soeREQUIRED},
             {sfExpiration, soeOPTIONAL},
             {sfTicketSequence, soeOPTIONAL},
@@ -215,7 +215,7 @@ TxFormats::TxFormats()
     add(jss::PaymentChannelClaim,
         ttPAYCHAN_CLAIM,
         {
-            {sfPayChannel, soeREQUIRED},
+            {sfChannel, soeREQUIRED},
             {sfAmount, soeOPTIONAL},
             {sfBalance, soeOPTIONAL},
             {sfSignature, soeOPTIONAL},
