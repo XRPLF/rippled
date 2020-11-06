@@ -1,0 +1,475 @@
+name: "Windows build, general"
+on: [push, pull_request]
+
+env:
+  CMAKE_EXTRA_ARGS: "-Dwerr=ON -Dwextra=ON"
+  NINJA_BUILD: true
+  CACHE_DIR: ${{ github.workspace }}\_cache
+  NIH_CACHE_ROOT: ${{ github.workspace }}\_cache\nih_c
+  PARALLEL_TESTS: true
+  BOOST_TOOLSET: msvc-14.1
+  BOOST_URL: 'https://dl.bintray.com/boostorg/release/1.75.0/source/boost_1_75_0.tar.bz2'
+  # Alternate dowload location
+  BOOST_URL2: 'https://downloads.sourceforge.net/project/boost/boost/1.75.0/boost_1_75_0.tar.bz2?r=&amp;ts=1594393912&amp;use_mirror=newcontinuum'
+  BOOST_ROOT: ${{ github.workspace }}\_cache\boost_1_75_0
+  CMAKE_BOOST: |
+    -DCMAKE_PREFIX_PATH=${BOOST_ROOT}\\_INSTALLED_
+    -DBOOST_ROOT=${BOOST_ROOT}\\_INSTALLED_
+    -DBoost_ROOT=${BOOST_ROOT}\\_INSTALLED_
+    -DBoost_DIR=${BOOST_ROOT}\\_INSTALLED_\\lib\\cmake\\Boost-1.75.0
+    -DBoost_COMPILER=vc141
+    -DCMAKE_VERBOSE_MAKEFILE=ON
+    -DCMAKE_TOOLCHAIN_FILE=${VCPKG_DIR}\\scripts\\buildsystems\\vcpkg.cmake
+    -DVCPKG_TARGET_TRIPLET=x64-windows-static
+  VCPKG_DIR: '/c/vcpkg'
+  VCPKG_CACHE_DIR: ${{ github.workspace }}\_cache\vcpkg
+  VCPKG_DEFAULT_TRIPLET: "x64-windows-static"
+  CC: cl.exe
+  CXX: cl.exe
+  srcdir: ${{ github.workspace }}\rippled
+  builddir: ${{ github.workspace }}\rippled\build\ms
+  # 2017 compiler is version 14.16
+  # 2019 compiler is version 14.28
+  vcvarsparams: "-vcvars_ver=14.16"
+  verbose: ${{ contains(github.event.head_commit.message, 'ci_verbose') }}
+
+jobs:
+  windows_cache:
+    name: Seed windows cache
+    runs-on: windows-latest
+    timeout-minutes: 720
+    if: ${{ !contains(github.event.head_commit.message, 'ci_run_') || contains(github.event.head_commit.message, 'ci_run_win') }}
+    outputs:
+      cmakeconfig: ${{ steps.cachekeys.outputs.cmakeconfig }}
+      headers: ${{ steps.cachekeys.outputs.headers }}
+      source: ${{ steps.cachekeys.outputs.source }}
+      instructions: ${{ steps.cachekeys.outputs.instructions }}
+      NUM_PROCESSORS: ${{ steps.cachekeys.outputs.NUM_PROCESSORS }}
+    steps:
+      - name: Cancel Previous Runs
+        if: ${{ !contains(github.event.head_commit.message, 'ci_no_cancel') }}
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: rippled
+
+      - name: Build parameters
+        id: cachekeys
+        shell: bash
+        run: |
+          echo "::set-output name=cmakeconfig::${{ hashfiles(
+            'rippled/CMakeFiles.txt', 'rippled/Builds/CMake/**',
+            'rippled/.github/**/cache-invalidate.txt') }}"
+          echo "::set-output name=headers::${{ hashfiles('rippled/src/**/*.h',
+            'rippled/src/**/*.hpp', 'rippled/src/**/*.ipp') }}"
+          echo "::set-output name=source::${{ hashfiles('rippled/src/**',
+            '!rippled/src/**/*.md', '!rippled/src/**/*.uml',
+            '!rippled/src/**/*.png', '!rippled/src/**/*.php') }}"
+          echo "::set-output name=instructions::${{ hashfiles(
+            'rippled/**/windows.yml') }}"
+          export NUM_PROCESSORS=${NUM_PROCESSORS:-$(nproc)}
+          echo "NUM PROC is ${NUM_PROCESSORS}"
+          echo "::set-output name=NUM_PROCESSORS::${NUM_PROCESSORS}"
+
+          boost_file=$( cygpath --unix "${CACHE_DIR}\boost.tar.bz2" )
+          download_boost_file=$( [[ -f ${BOOST_FILE} ]] && echo false || echo true )
+          echo "boost_file is \"${boost_file}\""
+          echo "download_boost_file is \"${download_boost_file}\""
+          echo "::set-output name=boost_file::${boost_file}"
+          echo "::set-output name=download_boost_file::${download_boost_file}"
+
+      - name: Cache
+        id: cache
+        continue-on-error: true
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.CACHE_DIR }}
+          key: ${{ runner.os }}-nih-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ steps.cachekeys.outputs.instructions }}
+          restore-keys: ${{ runner.os }}-nih-${{ steps.cachekeys.outputs.cmakeconfig }}-
+
+      - name: Dump environment
+        shell: bash
+        run: |
+          env
+          set | grep =
+
+      - name: Setup cache folders
+        if: ${{ ! steps.cache.outputs.cache-hit || !contains(github.event.head_commit.message, 'ci_fast') }}
+        shell: bash
+        env:
+          NUM_PROCESSORS: ${{ steps.cachekeys.outputs.NUM_PROCESSORS }}
+        run: |
+            mkdir -pv ${CACHE_DIR} ${NIH_CACHE_ROOT}
+
+      - name: Download Boost
+        # Do this step early so that if the download fails, the job fails fast
+        if: ${{ steps.cachekeys.outputs.download_boost_file == 'true' }}
+        # Powershell
+        shell: pwsh
+        run: |
+            $Client = New-Object System.Net.WebClient
+            $Dest = "$env:CACHE_DIR\boost.tar.bz2"
+            try {
+                $Url = "$env:BOOST_URL"
+                "Attempting to download $Url to $Dest"
+                $Client.DownloadFile($Url, $Dest)
+                ls "$Dest"
+            }
+            catch {
+                $Url = "$env:BOOST_URL2"
+                "Attempting to download $Url to $Dest"
+                $Client.DownloadFile($Url, $Dest)
+                ls "$Dest"
+            }
+      - name: Initialize vcpkg cache
+        if: ${{ ! steps.cache.outputs.cache-hit || !contains(github.event.head_commit.message, 'ci_fast') }}
+        shell: bash
+        env:
+          NUM_PROCESSORS: ${{ steps.cachekeys.outputs.NUM_PROCESSORS }}
+        run: |
+            [[ "${verbose}" == "true" ]] && set -x || true
+
+            find ${VCPKG_DIR} -maxdepth 1 -type d -exec du -sh {} \; || true
+
+            if [[ -d ${VCPKG_CACHE_DIR} ]]
+            then
+              if pushd ${VCPKG_CACHE_DIR}
+              then
+                  cp -au . ${VCPKG_DIR} || true
+                  popd
+              fi
+              rm -rf ${VCPKG_CACHE_DIR}
+            fi
+
+            cd ${srcdir}
+            . ./bin/sh/setup-msvc.sh ${vcvarsparams}
+            if [[ "${verbose}" == "true" ]] ; then
+              type -a ninja || true
+              type -a cl.exe || true
+              type -a vcpkg
+              ls -l ${VCPKG_DIR}
+              du -sh ${VCPKG_DIR}
+              vcpkg help || true
+            fi
+            mkdir -pv ${VCPKG_DIR}/installed
+
+            # Force vcpkg to build with VS2017
+            ls -l ${VCPKG_DIR}/triplets
+            tripletfile=${VCPKG_DIR}/triplets/${VCPKG_DEFAULT_TRIPLET}.cmake
+            if [[ -e ${tripletfile} ]] && ! grep -q "v141" ${tripletfile}
+            then
+              # https://otland.net/threads/problem-cxxframehandler4-gshandlercheck_eh4-on-compiling-tfs-1-3.267884/
+              # https://github.com/Microsoft/vcpkg/issues/766
+              cat ${tripletfile}
+              echo 'set(VCPKG_PLATFORM_TOOLSET "v141")' | \
+                tee -a ${tripletfile}
+            fi
+
+            df -h
+            bin/sh/install-vcpkg.sh openssl
+            bin/sh/install-vcpkg.sh libarchive[lz4]
+            bin/sh/install-vcpkg.sh grpc
+
+            # TBD consider rocksdb via vcpkg if/when we can build with the
+            # vcpkg version
+            # bin/sh/install-vcpkg.sh rocksdb[snappy,lz4,zlib]
+
+            mkdir -pv ${VCPKG_CACHE_DIR}
+            cp -a ${VCPKG_DIR}/{buildtrees,installed,packages} \
+                ${VCPKG_CACHE_DIR}
+
+      - name: Install Boost
+        if: ${{ ! steps.cache.outputs.cache-hit || !contains(github.event.head_commit.message, 'ci_fast') }}
+        shell: bash
+        env:
+          NUM_PROCESSORS: ${{ steps.cachekeys.outputs.NUM_PROCESSORS }}
+          BOOST_FILE: ${{ steps.cachekeys.outputs.boost_file }}
+        run: |
+            [[ "${verbose}" == "true" ]] && set -x || true
+
+            if [[ "${verbose}" == "true" ]] ; then
+              ls -l "${BOOST_FILE}" || true
+              ls -l "${CACHE_DIR}" || true
+            fi
+
+            cd ${srcdir}
+
+            ./Builds/containers/shared/install_boost.sh ${vcvarsparams}
+
+      - name: Initialize cmake cache
+        if: ${{ ! steps.cache.outputs.cache-hit || !contains(github.event.head_commit.message, 'ci_fast') }}
+        shell: bash
+        env:
+          NUM_PROCESSORS: ${{ steps.cachekeys.outputs.NUM_PROCESSORS }}
+        run: |
+            if [[ "${verbose}" == "true" ]] ; then
+              set -x
+              choco list | wc
+            fi
+            . ${srcdir}/bin/sh/setup-msvc.sh ${vcvarsparams}
+            [[ "${verbose}" == "true" ]] && type -a ninja || true
+
+            # Download the NIH items
+            mkdir -p $builddir && cd $builddir
+            if [ "${CMAKE_BOOST}" != "" ] ; then
+                export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} $( eval echo ${CMAKE_BOOST} )"
+            fi
+            if [ "${CMAKE_ADD}" != "" ] ; then
+                export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} $( eval echo ${CMAKE_ADD} )"
+            fi
+            # TODO: Loop over all the build types
+            cmake -G Ninja ${CMAKE_EXTRA_ARGS} ${srcdir}
+
+            if [[ "${verbose}" == "true" ]] ; then
+              ls -l || true
+              grep vcpkg CMakeCache.txt || true
+              grep _cache CMakeCache.txt || true
+            fi
+
+      - name: Cache sizes
+        shell: bash
+        run: |
+            du -sh ${VCPKG_DIR} || true
+            du -sh ${CACHE_DIR} || true
+            cd ${CACHE_DIR}
+            du -sh * || true
+            find ${NIH_CACHE_ROOT} -maxdepth 1 -type d -exec du -sh {} \;
+
+      - name: Debug output
+        # if: ${{ ! steps.cache.outputs.cache-hit || failure() }}
+        if: ${{ always() }}
+        shell: bash
+        continue-on-error: true
+        run: |
+          time df -h
+          if [ -e build ] ; then find build \( -name CMakeOutput.log -o -name CMakeError.log \) -ls -exec cat {} \; ; fi
+          [ -e /C/ProgramData/chocolatey/logs/chocolatey.log ] && cat /C/ProgramData/chocolatey/logs/chocolatey.log || true
+
+      - name: Debug output artifacts
+        # if: ${{ ! steps.cache.outputs.cache-hit || failure() }}
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v2
+        continue-on-error: true
+        with:
+          name: debug-output NIH ${{ matrix.ninja_ccs }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            build/**/CMakeOutput.log
+            build/**/CMakeError.log
+            /C/ProgramData/chocolatey/logs/chocolatey.log
+
+  windows_everything_else:
+    name: Windows
+    needs: windows_cache
+    runs-on: windows-latest
+    timeout-minutes: 720
+    strategy:
+      fail-fast: false
+      matrix:
+        # 2017 compiler is version 14.16
+        # 2019 compiler is version 14.28
+        vcvarsparams: [ '-vcvars_ver=14.16', '-vcvars_ver=14.28' ]
+        BUILD_TYPE: [ Debug, Release ]
+        CMAKE_GENERATOR: [ 'Ninja' ]
+        name: [ '' ]
+        CMAKE_ADD: [ '-DCMAKE_BUILD_TYPE=${BUILD_TYPE}' ]
+
+        include:
+          - # The VS2017 Debug tests with two threads are flaky on
+            # Github runners. Limit to one thread.
+            name: ''
+            vcvarsparams: '-vcvars_ver=14.16'
+            BUILD_TYPE: Debug
+            test_jobs: 1
+
+          - name: 'visual studio debug'
+            BUILD_TYPE: Debug
+            CMAKE_GENERATOR: 'Visual Studio 16 2019'
+            CMAKE_ADD: '-DCMAKE_GENERATOR_TOOLSET=v141,host=x64 -Ax64'
+            DESTDIR: '_installed_'
+            RUNDIR: '_installed_/Program Files/rippled/bin'
+            BUILD_ARGS: '--config ${BUILD_TYPE} --target install'
+            vcvarsparams: '-vcvars_ver=14.16'
+
+
+    # VS 2019 debug builds have a bug handling constexpr char*
+    # that causes tests to fail. Skip them unless the windows
+    # tests are explicitly requested.
+    continue-on-error: ${{ matrix.BUILD_TYPE == 'Debug' && matrix.vcvarsparams == '-vcvars_ver=14.28' }}
+    env:
+      BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
+      NUM_PROCESSORS: ${{ needs.windows_cache.outputs.NUM_PROCESSORS }}
+      vcvarsparams: ${{ matrix.vcvarsparams }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.srcdir }}
+
+      - name: Cache
+        continue-on-error: true
+        uses: actions/cache@v2
+        # The cache key is built on the following in order
+        # 1) OS.
+        # 2) The hash of all the CMake config files.
+        # 3) The vsvars version
+        # 4) The build type
+        # 5) The build custom name
+        # 6) The hash of all the header files under the source dir.
+        # 7) The hash of all the code files under the source dir.
+        # 8) The hash of the files controlling this job
+        # When restoring, if the matching cache is not found, search for a
+        # usable cache by chopping pieces off the end of the cache key
+        # until a match is found, with a special case for the NIH built in
+        # the previous job.
+        with:
+          path: ${{ env.CACHE_DIR }}
+          key: ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.vcvarsparams }}-${{ matrix.BUILD_TYPE }}-${{ matrix.name }}-${{ needs.windows_cache.outputs.headers }}-${{ needs.windows_cache.outputs.source }}-${{ needs.windows_cache.outputs.instructions}}
+          restore-keys: |
+            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.vcvarsparams }}-${{ matrix.BUILD_TYPE }}-${{ matrix.name }}-${{ needs.windows_cache.outputs.headers }}-${{ needs.windows_cache.outputs.source }}
+            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.vcvarsparams }}-${{ matrix.BUILD_TYPE }}-${{ matrix.name }}-${{ needs.windows_cache.outputs.headers }}
+            ${{ runner.os }}-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ matrix.vcvarsparams }}-${{ matrix.BUILD_TYPE }}-${{ matrix.name }}
+            ${{ runner.os }}-nih-${{ needs.windows_cache.outputs.cmakeconfig }}-${{ needs.windows_cache.outputs.instructions}}
+            ${{ runner.os }}-nih-${{ needs.windows_cache.outputs.cmakeconfig }}-
+
+      - name: Dump environment
+        shell: bash
+        run: |
+          env
+          set | grep =
+
+      - name: Disk space before
+        shell: bash
+        run: |
+          df -h
+          find ${CACHE_DIR} -maxdepth 2 -type d -exec du -sh {} \; || true
+
+      - name: Get vcpkg libs from cache
+        shell: bash
+        run: |
+            [[ "${verbose}" == "true" ]] && set -x || true
+
+            if [[ -d ${VCPKG_CACHE_DIR} ]]
+            then
+              pushd ${VCPKG_CACHE_DIR}
+              mv -u * ${VCPKG_DIR}/
+              popd
+            fi
+
+            . ${srcdir}/bin/sh/setup-msvc.sh ${vcvarsparams}
+            if [[ "${verbose}" == "true" ]] ; then
+              type -a cl.exe || true
+              type -a vcpkg
+              ls -l ${VCPKG_DIR}
+            fi
+
+            mkdir -pv ${VCPKG_DIR}/installed
+
+            df -h
+            # Don't install dependencies. If they're not in the cache,
+            #  the build should fail
+            # Make sure we can see the installed packages
+            ${srcdir}/bin/sh/install-vcpkg.sh
+
+      - name: Build
+        shell: bash
+        run: |
+            [[ "${verbose}" == "true" ]] && set -x || true
+            df -h
+            . ${srcdir}/bin/sh/setup-msvc.sh ${vcvarsparams}
+            [[ "${verbose}" == "true" ]] && type -a ninja || true
+            mkdir -p $builddir && cd $builddir
+            if [ "${CMAKE_BOOST}" != "" ] ; then
+                export CMAKE_EXTRA_ARGS+=" $( eval echo ${CMAKE_BOOST} )"
+            fi
+            if [ "${{ matrix.CMAKE_ADD }}" != "" ] ; then
+                export CMAKE_EXTRA_ARGS+=" $( eval echo ${{ matrix.CMAKE_ADD }} )"
+            fi
+            if [ "${{ matrix.DESTDIR }}" != "" ] ; then
+                export DESTDIR+="${builddir}/${{ matrix.DESTDIR }}"
+            fi
+            if [ "${{ matrix.BUILD_ARGS }}" != "" ] ; then
+              export BUILD_ARGS="$( eval echo ${{ matrix.BUILD_ARGS }} )"
+            fi
+            cmake -G "${{ matrix.CMAKE_GENERATOR }}" ${CMAKE_EXTRA_ARGS} ${srcdir}
+            cmake --build . --parallel --verbose ${BUILD_ARGS}
+
+      - name: Test
+        # VS 2019 debug builds have a bug handling constexpr char*
+        # that causes tests to fail. Skip them unless the windows
+        # tests are explicitly requested.
+        if: ${{ matrix.BUILD_TYPE != 'Debug' || matrix.vcvarsparams != '-vcvars_ver=14.28' || contains(github.event.head_commit.message, 'ci_run_win') }}
+        shell: bash
+        run: |
+            runparams="--quiet"
+            if [[ "${verbose}" == "true" ]]
+            then
+              set -x
+              runparams=""
+            fi
+            export RUNDIR="${builddir}"
+            if [ "${{ matrix.RUNDIR }}" != "" ] ; then
+              export RUNDIR+="/${{ matrix.RUNDIR }}"
+            fi
+            # override num procs to force fewer unit test jobs
+            if [[ "${{ matrix.test_jobs }}" != "" ]]
+            then
+              export NUM_PROCESSORS="${{ matrix.test_jobs }}"
+              echo Override NUM_PROCESSORS to ${NUM_PROCESSORS}
+            fi
+            "${RUNDIR}/rippled.exe" --version
+            "${RUNDIR}/rippled.exe" --unittest --unittest-log \
+              --unittest-jobs ${NUM_PROCESSORS} ${runparams}
+
+      - name: Disk space after
+        shell: bash
+        if: always()
+        run: |
+          df -h
+          find ${CACHE_DIR} -maxdepth 2 -type d -exec du -sh {} \; || true
+
+      - name: Debug output artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v2
+        continue-on-error: true
+        with:
+          name: debug-output ${{ matrix.name }} ${{ matrix.BUILD_TYPE }} ${{ matrix.vcvarsparams }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            rippled/build/**/CMakeOutput.log
+            rippled/build/**/CMakeError.log
+            /C/ProgramData/chocolatey/logs/chocolatey.log
+
+      - name: rippled executable artifact
+        uses: actions/upload-artifact@v2
+        if: ${{ always() }}
+        continue-on-error: true
+        with:
+          name: rippled ${{ matrix.name }} ${{ matrix.BUILD_TYPE }} ${{ matrix.vcvarsparams }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            rippled/build/**/rippled.exe
+            rippled/build/**/core*
+            !rippled/build/**/rippled.dir*
+            !**/_INSTALLED_/**
+            !**/_installed_/**
+
+      - name: Put the VCPKG libs back into the cache
+        shell: bash
+        run: |
+            [[ "${verbose}" == "true" ]] && set -x || true
+
+            du -shc ${VCPKG_DIR}/{buildtrees,installed,packages}
+            df -h
+            rm -rf "${builddir}"
+            df -h
+            mkdir -pv ${VCPKG_CACHE_DIR}
+            cp -a ${VCPKG_DIR}/{buildtrees,installed,packages} \
+                ${VCPKG_CACHE_DIR}

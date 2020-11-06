@@ -1,0 +1,12 @@
+This file is used to generate part of the cache key used in the
+CI-related workflows.
+The contents of this file are ABSOLUTELY MEANINGLESS.
+What matters is that any time the caches need to be forced
+to invalidate, changing this file will be sufficient.
+For convenience, a number is provided at the bottom of the file,
+which can be incremented to make things simple.
+If there is ever a merge conflict, simply choose the larger number.
+However, to reduce the risk of conflicts, avoid including changes
+to this file in any Pull Requests, unless necessary
+
+1

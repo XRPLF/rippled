@@ -1,0 +1,411 @@
+name: "MacOS build, general"
+on: [push, pull_request]
+
+env:
+  NINJA_BUILD: true
+  CACHE_DIR: ${{ github.workspace }}/_cache
+  NIH_CACHE_ROOT: ${{ github.workspace }}/_cache/nih_c
+  # put NIH in non-cache location since it seems to
+  # cause failures when homebrew updates
+  # NIH_CACHE_ROOT: ${{ github.workspace }}/nih_c
+  PARALLEL_TESTS: true
+  USE_CCACHE: true
+  CCACHE_BASEDIR: ${{ github.workspace }}
+  CCACHE_NOHASHDIR: true
+  CCACHE_DIR: ${{ github.workspace }}/_cache/ccache
+  BOOST_URL: 'https://dl.bintray.com/boostorg/release/1.75.0/source/boost_1_75_0.tar.bz2'
+  # Alternate dowload location
+  BOOST_URL2: 'https://downloads.sourceforge.net/project/boost/boost/1.75.0/boost_1_75_0.tar.bz2?r=&amp;ts=1594393912&amp;use_mirror=newcontinuum'
+  BOOST_ROOT: ${{ github.workspace }}/boost_1_75_0
+  # Travis downloader doesn't seem to have updated certs. Using this option
+  # introduces obvious security risks, but they're Travis's risks.
+  # Note that this option is only used if the "normal" build fails.
+  #BOOST_WGET_OPTIONS: '--no-check-certificate'
+  CMAKE_ARGS: "-G Ninja -Dwerr=ON -Dwextra=ON -DBoost_ARCHITECTURE=-x64 -DBoost_NO_SYSTEM_PATHS=ON -DCMAKE_VERBOSE_MAKEFILE=ON"
+  homebrew_packages: 'protobuf grpc pkg-config bash ninja cmake wget zstd libarchive openssl@1.1 ccache'
+  srcdir: ${{ github.workspace }}/rippled
+  builddir: ${{ github.workspace }}/rippled/build/macos
+  # This can't be used in the if: clauses
+  verbose: ${{ contains(github.event.head_commit.message, 'ci_verbose') }}
+
+jobs:
+  macos_cache:
+    name: Seed MacOS cache
+    runs-on: "macos-latest"
+    timeout-minutes: 720
+    if: ${{ !contains(github.event.head_commit.message, 'ci_run_') || contains(github.event.head_commit.message, 'ci_run_mac') }}
+    outputs:
+      cmakeconfig: ${{ steps.cachekeys.outputs.cmakeconfig }}
+      headers: ${{ steps.cachekeys.outputs.headers }}
+      source: ${{ steps.cachekeys.outputs.source }}
+      instructions: ${{ steps.cachekeys.outputs.instructions }}
+      brewinfo: ${{ steps.brew.outputs.brewinfo }}
+      CC: ${{ steps.pre.outputs.CC }}
+      CXX: ${{ steps.pre.outputs.CXX }}
+      NUM_PROCESSORS: ${{ steps.pre.outputs.NUM_PROCESSORS }}
+    steps:
+      - name: Cancel Previous Runs
+        if: ${{ !contains(github.event.head_commit.message, 'ci_no_cancel') }}
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: rippled
+
+      - name: Build cache keys
+        id: cachekeys
+        shell: bash
+        run: |
+          echo "::set-output name=cmakeconfig::${{ hashfiles(
+            'rippled/CMakeFiles.txt', 'rippled/Builds/CMake/**',
+            'rippled/.github/**/cache-invalidate.txt') }}"
+          echo "::set-output name=headers::${{ hashfiles('rippled/src/**/*.h',
+            'rippled/src/**/*.hpp', 'rippled/src/**/*.ipp') }}"
+          echo "::set-output name=source::${{ hashfiles('rippled/src/**',
+            '!rippled/src/**/*.md', '!rippled/src/**/*.uml',
+            '!rippled/src/**/*.png', '!rippled/src/**/*.php') }}"
+          echo "::set-output name=instructions::${{ hashfiles(
+            'rippled/**/macos.yml') }}"
+
+      - name: Install Homebrew packages
+        run: |
+          echo Upgrade all brew packages
+          brew upgrade
+          for pkg in ${homebrew_packages}
+          do
+            [[ "${verbose}" == "true" ]] && echo INSTALLING ${pkg} || true
+            brew install ${pkg}
+          done
+          [[ "${verbose}" == "true" ]] && set -x || true
+          echo Currently installed brews:
+          brew list
+          brew info --all --json > brew.info
+
+      - name: Hash Homebrew info
+        id: brew
+        run: |
+          echo "::set-output name=brewinfo::${{ hashfiles('brew.info') }}"
+
+      - name: Boost cache
+        continue-on-error: true
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.BOOST_ROOT }}
+          key: ${{ runner.os }}-boost-${{ env.BOOST_ROOT }}
+
+      - name: Build cache
+        id: nihcache
+        continue-on-error: true
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.CACHE_DIR }}
+          key: ${{ runner.os }}-nih-${{ steps.brew.outputs.brewinfo }}-${{ steps.cachekeys.outputs.cmakeconfig }}-${{ steps.cachekeys.outputs.instructions }}
+
+      - name: Dump environment
+        run: |
+          env
+          set | grep =
+
+      - name: Disk space before
+        shell: bash
+        run: |
+          df -h
+          find ${CACHE_DIR} -maxdepth 2 \( -iname src -prune -o \
+            -type d -exec du -sh {} \; \) || true
+
+      - name: Pre-install
+        id: pre
+        shell: bash
+        run: |
+          export NUM_PROCESSORS=${NUM_PROCESSORS:-$(nproc || sysctl -n hw.logicalcpu || echo 3)}
+          echo "NUM PROC is ${NUM_PROCESSORS}"
+          mkdir -pv "${CACHE_DIR}"
+          echo "::set-output name=NUM_PROCESSORS::${NUM_PROCESSORS}"
+          echo "::set-output name=CC::$(brew --prefix llvm)/bin/clang"
+          echo "::set-output name=CXX::$(brew --prefix llvm)/bin/clang++"
+
+      - name: Build boost
+        shell: bash
+        env:
+          CC: ${{ steps.pre.outputs.CC }}
+          CXX: ${{ steps.pre.outputs.CXX }}
+          NUM_PROCESSORS: ${{ steps.pre.outputs.NUM_PROCESSORS }}
+        run: |
+          [[ "${verbose}" == "true" ]] && set -x || true
+          $CC --version
+          $CXX --version
+          export OPENSSL_ROOT=$(brew --prefix openssl@1.1)
+          cd rippled
+          ./Builds/containers/shared/install_boost.sh
+          # brew uninstall --ignore-dependencies boost
+
+      - name: Initialize CMake cache
+        if: ${{ ! steps.nihcache.outputs.cache-hit }}
+        shell: bash
+        env:
+          CC: ${{ steps.pre.outputs.CC }}
+          CXX: ${{ steps.pre.outputs.CXX }}
+          NUM_PROCESSORS: ${{ steps.pre.outputs.NUM_PROCESSORS }}
+          BLD_CONFIGS: "Debug Release"
+        run: |
+            if [[ -e "${NIH_CACHE_ROOT}" ]]
+            then
+                echo Cache is already set up.
+                exit
+            fi
+
+            cmake --version
+            ${CC} --version
+            ${CXX} --version
+
+            [[ "${verbose}" == "true" ]] && set -x || true
+
+            for BLD_CONFIG in ${BLD_CONFIGS}
+            do
+                export BLD_CONFIG
+                dir="${builddir}.${BLD_CONFIG}"
+                mkdir -pv "${dir}"
+                pushd "${dir}"
+                cmake -DCMAKE_BUILD_TYPE=${BLD_CONFIG} ${CMAKE_ARGS} ${srcdir}
+                popd
+            done
+
+            du -sh ${CACHE_DIR}
+            find ${NIH_CACHE_ROOT} -maxdepth 2 \( -iname src -prune -o -type d -exec du -sh {} \; \)
+
+      - name: Disk space after
+        shell: bash
+        if: always()
+        run: |
+          df -h
+          find ${CACHE_DIR} -maxdepth 2 \( -iname src -prune -o \
+            -type d -exec du -sh {} \; \) || true
+
+      - name: Debug output
+        if: ${{ ! steps.cache.outputs.cache-hit || failure() }}
+        shell: bash
+        continue-on-error: true
+        run: |
+          time df -h
+          dir=rippled/build
+          if [ -e ${dir} ] ; then find ${dir} \( -name CMakeOutput.log -o \
+            -name CMakeError.log \) -ls -exec cat {} \; ; fi
+
+      - name: Debug output artifacts
+        if: ${{ ! steps.cache.outputs.cache-hit || failure() }}
+        uses: actions/upload-artifact@v2
+        continue-on-error: true
+        with:
+          name: debug-output NIH
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            rippled/build/**/CMakeOutput.log
+            rippled/build/**/CMakeError.log
+
+  macos:
+    # These two matrix jobs could be split into separate jobs (debug
+    # and release), so the test runner job only needs to depend on
+    # the debug, but it doesn't seem worth the duplication at this
+    # time, since it's only one extra job (as opposed to a dozen),
+    # and the jobs appear to be pretty reliable so far.
+    name: MacOS
+    needs: macos_cache
+    runs-on: "macos-latest"
+    timeout-minutes: 720
+    strategy:
+      fail-fast: false
+      matrix:
+        BLD_CONFIG: [ "Debug", "Release" ]
+
+        include:
+            # Special cases which add to the cases in the
+            # matrix.
+            #
+            - # Build Release with asserts
+              BLD_CONFIG: "Release"
+              CMAKE_ADD: "-Dassert=ON"
+    env:
+      BLD_CONFIG: ${{ matrix.BLD_CONFIG }}
+      TEST_EXTRA_ARGS: ${{ matrix.TEST_EXTRA_ARGS }}
+      CC: ${{ needs.macos_cache.outputs.CC }}
+      CXX: ${{ needs.macos_cache.outputs.CXX }}
+      NUM_PROCESSORS: ${{ needs.macos_cache.outputs.NUM_PROCESSORS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: rippled
+
+      - name: Install Homebrew packages
+        run: |
+          [[ "${verbose}" == "true" ]] && set -x || true
+          echo Upgrade all brew packages
+          brew upgrade
+          for pkg in ${homebrew_packages}
+          do
+            [[ "${verbose}" == "true" ]] && echo INSTALLING ${pkg} || true
+            brew install ${pkg}
+          done
+
+      - name: Boost cache
+        continue-on-error: true
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.BOOST_ROOT }}
+          key: ${{ runner.os }}-boost-${{ env.BOOST_ROOT }}
+
+      - name: Build cache
+        id: nihcache
+        continue-on-error: true
+        uses: actions/cache@v2
+        # The cache key is built on the following in order
+        # 1) OS.
+        # 2) The hash of all the CMake config files.
+        # 3) The build type
+        # 4) The hash of all the header files under the source dir.
+        # 5) The hash of all the code files under the source dir.
+        # 6) The hash of the files controlling this job
+        # When restoring, if the matching cache is not found, search for a usable
+        # cache by chopping pieces off the end of the cache key until a match is
+        # found, with a special case for the NIH built in the previous job
+        with:
+          path: ${{ env.CACHE_DIR }}
+          key: ${{ runner.os }}-${{ needs.macos_cache.outputs.cmakeconfig }}-${{ matrix.BLD_CONFIG }}-${{ needs.macos_cache.outputs.headers }}-${{ needs.macos_cache.outputs.source }}-${{ needs.macos_cache.outputs.instructions }}
+          restore-keys: |
+            ${{ runner.os }}-${{ needs.macos_cache.outputs.cmakeconfig }}-${{ matrix.BLD_CONFIG }}-${{ needs.macos_cache.outputs.headers }}-${{ needs.macos_cache.outputs.source }}
+            ${{ runner.os }}-${{ needs.macos_cache.outputs.cmakeconfig }}-${{ matrix.BLD_CONFIG }}-${{ needs.macos_cache.outputs.headers }}
+            ${{ runner.os }}-${{ needs.macos_cache.outputs.cmakeconfig }}-${{ matrix.BLD_CONFIG }}
+            ${{ runner.os }}-nih-${{ needs.macos_cache.outputs.brewinfo }}-${{ needs.macos_cache.outputs.cmakeconfig }}
+
+      - name: Dump environment
+        run: |
+          env
+          set | grep =
+
+      - name: Reset ccache stats
+        shell: bash
+        run: |
+            ccache -s
+            # Reset the stats so only this build counts
+            ccache -z
+
+      - name: Disk space before
+        shell: bash
+        run: |
+          df -h
+          find ${CACHE_DIR} -maxdepth 2 \( -iname src -prune -o \
+            -type d -exec du -sh {} \; \) || true
+
+      - name: Build
+        shell: bash
+        run: |
+          [[ "${verbose}" == "true" ]] && set -x || true
+          $CC --version
+          $CXX --version
+          if [ "${CMAKE_ADD}" != "" ] ; then export CMAKE_ARGS+=" ${CMAKE_ADD}"; fi
+          if [[ ${USE_CCACHE:-} == true ]] && type -a ccache; then
+              echo "using ccache with basedir [${CCACHE_BASEDIR:-}]"
+              CMAKE_ARGS+=" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+          fi
+          echo ${CMAKE_ARGS}
+          mkdir -p $builddir && cd $builddir
+          cmake ${CMAKE_ARGS} -DCMAKE_BUILD_TYPE=${BLD_CONFIG} ${srcdir}
+          cmake --build . --parallel --verbose
+
+      - name: Test
+        shell: bash
+        run: |
+          [[ "${verbose}" == "true" ]] && set -x || true
+          ${builddir}/rippled --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS}
+
+      - name: Disk space after
+        shell: bash
+        if: always()
+        run: |
+          df -h
+          find ${CACHE_DIR} -maxdepth 2 \( -iname src -prune -o \
+            -type d -exec du -sh {} \; \) || true
+
+      - name: Post-run ccache stats
+        shell: bash
+        run: ccache -s
+
+      - name: Debug output artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        continue-on-error: true
+        with:
+          name: debug-output ${{ matrix.BLD_CONFIG }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            rippled/build/**/CMakeOutput.log
+            rippled/build/**/CMakeError.log
+
+      - name: rippled executable artifact
+        if: always()
+        uses: actions/upload-artifact@v2
+        continue-on-error: true
+        with:
+          name: rippled ${{ matrix.BLD_CONFIG }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            rippled/build/**/rippled
+            !rippled/build/**/_INSTALLED_/**
+
+  macos_runner:
+    name: MacOS
+    needs: [ macos_cache, macos ]
+    runs-on: "macos-latest"
+    timeout-minutes: 720
+    strategy:
+      fail-fast: false
+      matrix:
+        name: [ "IPv6 tests" ]
+        BLD_CONFIG: [ "Debug" ]
+        TEST_EXTRA_ARGS: [ "--unittest-ipv6" ]
+    env:
+      BLD_CONFIG: ${{ matrix.BLD_CONFIG }}
+      TEST_EXTRA_ARGS: ${{ matrix.TEST_EXTRA_ARGS }}
+      NUM_PROCESSORS: ${{ needs.macos_cache.outputs.NUM_PROCESSORS }}
+    steps:
+      - name: Download rippled artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: rippled ${{ matrix.BLD_CONFIG }}
+
+      - name: Install Homebrew packages
+        run: |
+          [[ "${verbose}" == "true" ]] && set -x || true
+          echo Upgrade all brew packages
+          brew upgrade
+          for pkg in ${homebrew_packages}
+          do
+            [[ "${verbose}" == "true" ]] && echo INSTALLING ${pkg} || true
+            brew install ${pkg}
+          done
+          echo Currently installed brews:
+          brew list
+          brew info --all --json > brew.info
+
+      - name: Run IPv6 tests
+        shell: bash
+        run: |
+            [[ "${verbose}" == "true" ]] && set -x || true
+
+            : ${APP_ARGS:=}
+            APP_ARGS+=" --unittest --quiet --unittest-log --unittest-jobs ${NUM_PROCESSORS} ${TEST_EXTRA_ARGS}"
+
+            find . -name rippled -ls
+            # There can be only one
+            [[ $( find . -name rippled | wc -l ) -eq 1 ]]
+            APP_PATH="$( find . -name rippled )"
+            chmod a+rx "${APP_PATH}"
+            # Verbose or not, it's good to see the right params are being used
+            echo Run: "${APP_PATH}" ${APP_ARGS}
+            "${APP_PATH}" ${APP_ARGS}

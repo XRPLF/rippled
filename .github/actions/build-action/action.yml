@@ -1,0 +1,162 @@
+name: 'Build and Test'
+description: 'Build and Test rippled or an alternate target'
+# Pre-condition: The environment has all the necessary base
+# build variables set
+# Post-condition: The cache will not be reused to build with
+# a different compiler
+inputs:
+  image:
+    description: 'Name of docker image the job is running under'
+    required: true
+  PARALLEL_TESTS:
+    description: 'Boolean: Run tests in parallel'
+    required: false
+  TARGET:
+    description: 'CMake target to build and run'
+    required: false
+  SKIP_TESTS:
+    description: 'Boolean: Skip tests after building'
+    required: false
+  MANUAL_TESTS:
+    description: 'Boolean: Run selected manual tests only'
+    required: false
+  ASAN_OPTIONS:
+    description: 'Options to use in asan builds'
+    required: false
+  UBSAN_OPTIONS:
+    description: 'Options to use in ubsan builds'
+    required: false
+  TSAN_OPTIONS:
+    description: 'Options to use in tsan builds'
+    required: false
+  NINJA_BUILD:
+    description: 'Boolean: Build with Ninja'
+    required: false
+  CMAKE_EXE:
+    description: 'Use a specific instance of CMake'
+    required: false
+outputs:
+  random-number:
+    description: "Random number"
+    value: ${{ steps.random-number-generator.outputs.random-id }}
+runs:
+  using: "composite"
+  steps:
+    - name: Dump-environment
+      shell: bash
+      run: |
+        env
+        set | grep =
+
+    - name: Install ccache
+      shell: bash
+      run: |
+        if ! type -a ccache
+        then
+          apt install ccache
+        fi
+
+    - name: Reset ccache stats
+      shell: bash
+      run: |
+          ccache -s
+          # Reset the stats so only this build counts
+          ccache -z
+
+    - name: Disk space
+      shell: bash
+      run: |
+        df -h
+        if [[ -d "${CACHE_DIR}" ]]
+        then
+            du -sh ${CACHE_DIR}
+        fi
+        if [[ -d "${CCACHE_DIR}" ]]
+        then
+            du -sh ${CCACHE_DIR}
+        fi
+        if [[ -d "${NIH_CACHE_ROOT}" ]]
+        then
+            find ${NIH_CACHE_ROOT} -maxdepth 3 \( -iname src -prune -o \
+              -type d -exec du -sh {} \; \)
+            # Post-condition: The cache will not be reused to build with a
+            # different compiler
+            if [[ "${CC}" =~ "gcc" ]]
+            then
+              echo Erasing NIH cache for clang
+              rm -rf "${NIH_CACHE_ROOT}"/*/Clang_*/ || true
+            elif [[ "${CC}" =~ "clang" ]]
+            then
+              echo Erasing NIH cache for gcc
+              rm -rf "${NIH_CACHE_ROOT}"/*/GNU_*/ || true
+            fi
+            # Free up space if the cache is being reused with a different
+            # generator from prior builds (ninja vs. makefiles).
+            # Post condition: Cache will not be reused with a different
+            # generator.
+            if [[ "${NINJA_BUILD}" == "true" && -d "${NIH_CACHE_ROOT}"/unix_makefiles && \
+              $( du -sm "${NIH_CACHE_ROOT}"/unix_makefiles | cut -f1 ) -gt 1000  ]]
+            then
+              echo Erasing NIH cache for makefiles
+              rm -rf "${NIH_CACHE_ROOT}"/unix_makefiles || true
+            elif [[ "${NINJA_BUILD}" == "false" && -d "${NIH_CACHE_ROOT}"/ninja && \
+              $( du -sm "${NIH_CACHE_ROOT}"/ninja | cut -f1 ) -gt 1000  ]]
+            then
+              echo Erasing NIH cache for ninja
+              rm -rf "${NIH_CACHE_ROOT}"/ninja || true
+            fi
+        fi
+
+    - name: Build and test
+      shell: bash
+      run: |
+          export CXX=${CC/gcc/g++}
+          export CXX=${CXX/clang/clang++}
+          export NUM_PROCESSORS=${NUM_PROCESSORS:-$( nproc )}
+          echo NUM_PROCESSORS is ${NUM_PROCESSORS}
+          if [ "${{ inputs.image }}" == "rippled-ci-builder:2944b78d22db" ]
+          then
+              export CMAKE_EXTRA_ARGS+=" -DBoost_NO_BOOST_CMAKE=ON"
+          fi
+          if [ "${BUILD_TYPE}" == "Release" ]
+          then
+              export CMAKE_EXTRA_ARGS+=" -Dassert=ON"
+          fi
+
+          # Override environment variables that don't work smoothly
+          # using env:
+          if [[ "${{ inputs.PARALLEL_TESTS }}" != "" ]]; then export PARALLEL_TESTS="${{ inputs.PARALLEL_TESTS }}" ; fi
+          if [[ "${{ inputs.TARGET }}" != "" ]]; then export TARGET="${{ inputs.TARGET }}" ; fi
+          if [[ "${{ inputs.SKIP_TESTS }}" != "" ]]; then export SKIP_TESTS="${{ inputs.SKIP_TESTS }}" ; fi
+          if [[ "${{ inputs.MANUAL_TESTS }}" != "" ]]; then export MANUAL_TESTS="${{ inputs.MANUAL_TESTS }}" ; fi
+          if [[ "${{ inputs.ASAN_OPTIONS }}" != "" ]]; then export ASAN_OPTIONS="${{ inputs.ASAN_OPTIONS }}" ; fi
+          if [[ "${{ inputs.UBSAN_OPTIONS }}" != "" ]]; then export UBSAN_OPTIONS="${{ inputs.UBSAN_OPTIONS }}" ; fi
+          if [[ "${{ inputs.TSAN_OPTIONS }}" != "" ]]; then export TSAN_OPTIONS="${{ inputs.TSAN_OPTIONS }}" ; fi
+          if [[ "${{ inputs.NINJA_BUILD }}" != "" ]]; then export NINJA_BUILD="${{ inputs.NINJA_BUILD }}" ; fi
+          if [[ "${{ inputs.CMAKE_EXE }}" != "" ]]; then export CMAKE_EXE="${{ inputs.CMAKE_EXE }}" ; fi
+          if [ "${CMAKE_ADD}" != "" ] ; then export CMAKE_EXTRA_ARGS+=" ${CMAKE_ADD}"; fi
+          # Do the build
+          bin/ci/ubuntu/build-and-test.sh
+
+    - name: Debug output
+      shell: bash
+      run: |
+        if [ -e build ] ; then find build \( -name CMakeOutput.log -o -name CMakeError.log \) -ls -exec cat {} \; ; fi
+        df -h
+        if [[ -d "${CACHE_DIR}" ]]
+        then
+            du -sh ${CACHE_DIR}
+        fi
+        if [[ -d "${CCACHE_DIR}" ]]
+        then
+            du -sh ${CCACHE_DIR}
+        fi
+        if [[ -d "${NIH_CACHE_ROOT}" ]]
+        then
+            find ${NIH_CACHE_ROOT} -maxdepth 3 \( -iname src -prune -o \
+              -type d -exec du -sh {} \; \)
+        fi
+
+    - name: Post-run ccache stats
+      shell: bash
+      run: ccache -s
