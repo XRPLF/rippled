@@ -12,8 +12,8 @@ env:
 #   CCACHE_NOHASHDIR: true
 #   CCACHE_DIR: ${{ env.CACHE_DIR }}/ccache
   # The scripts refer to some TRAVIS specific vars. Define them here
-  TRAVIS_BUILD_DIR: $GITHUB_WORKSPACE
-  TRAVIS_HOME: $HOME
+  TRAVIS_BUILD_DIR: $workspace
+  TRAVIS_HOME: $home
 
 jobs:
   job:
