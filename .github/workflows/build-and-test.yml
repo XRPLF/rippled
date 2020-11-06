@@ -1,7 +1,7 @@
 name: Build and test rippled
 on: [push, pull_request]
 
-# env:
+env:
 #   CMAKE_EXTRA_ARGS: "-Dwerr=ON -Dwextra=ON"
 #   NINJA_BUILD: true
 #   CACHE_DIR: ${env.GITHUB_WORKSPACE}/_cache
@@ -11,6 +11,9 @@ on: [push, pull_request]
 #   CCACHE_BASEDIR: ${env.GITHUB_WORKSPACE}
 #   CCACHE_NOHASHDIR: true
 #   CCACHE_DIR: ${env.CACHE_DIR}/ccache
+  # The scripts refer to some TRAVIS specific vars. Define them here
+  TRAVIS_BUILD_DIR: ${env.GITHUB_WORKSPACE}
+  TRAVIS_HOME: ${env.HOME}
 
 jobs:
   job:
@@ -33,6 +36,8 @@ jobs:
 #         with:
 #           path: ${env.CACHE_DIR}
 #           key:  ${{ runner.os }}-build-${{ env.cache-name }}
+      - name: dump-environment
+        run: env
 #       - name: cache stats before
 #         run: ccache -s
       - name: build-and-test
