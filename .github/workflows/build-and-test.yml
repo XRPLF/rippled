@@ -1,8 +1,8 @@
 name: Build and test rippled
 on: [push, pull_request]
 
-# env:
-#   CMAKE_EXTRA_ARGS: "-Dwerr=ON -Dwextra=ON"
+env:
+  CMAKE_EXTRA_ARGS: "-Dwerr=ON -Dwextra=ON"
 #   NINJA_BUILD: true
 #   CACHE_DIR: ${{ env.GITHUB_WORKSPACE }}/_cache
 #   NIH_CACHE_ROOT: ${{ env.CACHE_DIR }}/nih_c
@@ -23,9 +23,6 @@ jobs:
       CC: gcc-8
       CXX: g++-8
       BUILD_TYPE: Debug
-      # The scripts refer to some TRAVIS specific vars. Define them here
-      TRAVIS_BUILD_DIR: ${{ env.GITHUB_WORKSPACE }}
-      TRAVIS_HOME: ${{ env.HOME }}
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -40,7 +37,14 @@ jobs:
         run: env
 #       - name: cache stats before
 #         run: ccache -s
-      - name: build-and-test
-        run: bin/ci/ubuntu/build-in-docker.sh
+      - name: build
+        #run: bin/ci/ubuntu/build-in-docker.sh
+        run: |
+          mkdir build
+          cd build
+          cmake -DBoost_NO_BOOST_CMAKE=ON ..
+          cmake --build . --target rippled --config ${{ env.BUILD_TYPE }} -j $( nproc )
+      - name: test
+        run: build/rippled --unittest --unittest-jobs=$( nproc )
 #       - name: cache stats before
 #         run: ccache -s
