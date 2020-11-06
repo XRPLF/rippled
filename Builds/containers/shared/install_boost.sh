@@ -8,34 +8,44 @@
 # folder name internal to boost's .tar.gz
 # When testing you can force a boost build by clearing travis caches:
 # https://travis-ci.org/ripple/rippled/caches
+#
+# Will pass any command line params through to setup-msvc.sh
 set -exu
 
 odir=$(pwd)
-: ${BOOST_TOOLSET:=msvc-14.1}
+: ${MSVC_VER:=14.16}
+: ${BOOST_TOOLSET:=msvc-${MSVC_VER}}
+: ${BOOST_WGET_OPTIONS:=}
 
 if [[ -d "$BOOST_ROOT/lib" || -d "${BOOST_ROOT}/stage/lib" ]] ; then
     echo "Using cached boost at $BOOST_ROOT"
     exit
 fi
 
-#fetch/unpack:
-fn=$(basename -- "$BOOST_URL")
-ext="${fn##*.}"
-wopt="--quiet"
-wget ${wopt} $BOOST_URL -O /tmp/boost.tar.${ext} || \
-  ( [ -n "${BOOST_URL2}" ] && \
-    wget ${wopt} $BOOST_URL2 -O /tmp/boost.tar.${ext} ) || \
-  ( [ -n "${BOOST_WGET_OPTIONS}" ] &&
-    ( wget ${wopt} ${BOOST_WGET_OPTIONS} $BOOST_URL -O /tmp/boost.tar.${ext} || \
+if [[ ! -v BOOST_FILE ]]
+then
+    #fetch/unpack:
+    fn=$(basename -- "$BOOST_URL")
+    ext="${fn##*.}"
+    BOOST_FILE=/tmp/boost.tar.${ext}
+    wopt="--quiet"
+    wget ${wopt} $BOOST_URL -O "${BOOST_FILE}" || \
       ( [ -n "${BOOST_URL2}" ] && \
-        wget ${wopt} ${BOOST_WGET_OPTIONS} $BOOST_URL2 -O /tmp/boost.tar.${ext} )
-    )
-  )
+        wget ${wopt} $BOOST_URL2 -O "${BOOST_FILE}" ) || \
+      ( [ -n "${BOOST_WGET_OPTIONS}" ] &&
+        ( wget ${wopt} ${BOOST_WGET_OPTIONS} $BOOST_URL -O "${BOOST_FILE}" || \
+          ( [ -n "${BOOST_URL2}" ] && \
+            wget ${wopt} ${BOOST_WGET_OPTIONS} $BOOST_URL2 -O "${BOOST_FILE}" )
+        )
+      )
+fi
 cd $(dirname $BOOST_ROOT)
 rm -fr ${BOOST_ROOT}
-mkdir ${BOOST_ROOT}
-tar xf /tmp/boost.tar.${ext} -C ${BOOST_ROOT} --strip-components 1
-cd $BOOST_ROOT
+mkdir -pv ${BOOST_ROOT}
+cd ${BOOST_ROOT}
+pwd
+tar xf ${BOOST_FILE} --strip-components 1
+ls -l
 
 BLDARGS=()
 if [[ ${BOOST_BUILD_ALL:-false} == "true" ]]; then
@@ -79,6 +89,25 @@ else
     BLDARGS+=(link=static)
     BLDARGS+=(threading=multi)
     cmd /E:ON /D /S /C"bootstrap.bat"
+
+    cat project-config.jam
+    for file in \
+      /c/Program\ Files\ \(x86\)/Microsoft\ Visual\ Studio/*/*/VC/Tools/MSVC/*/bin/Hostx86/x86/cl.exe
+    do
+      if [[ ! -e "${file}" ]]
+      then
+        continue
+      fi
+      winfile=$( cygpath --windows "${file}" )
+      grep -v "using msvc" project-config.jam > project-config.tmp
+      echo "using msvc : ${MSVC_VER} : \"${winfile}\" ;" >> project-config.tmp
+      diff project-config.jam project-config.tmp || true
+      mv -fv project-config.tmp project-config.jam
+      break
+    done
+
+    . "${odir}/bin/sh/setup-msvc.sh" "${@}"
+
     ./b2.exe "${BLDARGS[@]}" stage
     ./b2.exe "${BLDARGS[@]}" install
 fi

@@ -21,7 +21,8 @@ echo "BUILD TYPE: ${BUILD_TYPE}"
 echo "BUILD TARGET: ${TARGET}"
 
 JOBS=${NUM_PROCESSORS:-2}
-if [[ ${TRAVIS:-false} != "true" ]]; then
+if [[ ${TRAVIS:-false} != "true" && ${GITHUB_ACTIONS:-false} != "true" ]]
+then
     JOBS=$((JOBS+1))
 fi
 
@@ -112,15 +113,21 @@ done
 
 # generate
 ${time} cmake ../.. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${CMAKE_EXTRA_ARGS}
-# Display the cmake output, to help with debugging if something fails
-for file in CMakeOutput.log CMakeError.log
-do
-  if [ -f CMakeFiles/${file} ]
-  then
-    ls -l CMakeFiles/${file}
-    cat CMakeFiles/${file}
-  fi
-done
+
+# Display the cmake output, to help with debugging if something fails,
+# unless this is running under a Github action. They have another
+# mechanism to dump the logs.
+if [[ ! -v GITHUB_ACTIONS || "${GITHUB_ACTIONS}" != "true" ]]
+then
+    for file in CMakeOutput.log CMakeError.log
+    do
+      if [ -f CMakeFiles/${file} ]
+      then
+        ls -l CMakeFiles/${file}
+        cat CMakeFiles/${file}
+      fi
+    done
+fi
 # build
 export DESTDIR=$(pwd)/_INSTALLED_
 
@@ -193,6 +200,17 @@ if [[ ${look_core} == true ]]; then
     before=$(ls -A1 ${coredir})
 fi
 
+if [[ -v MINTESTAVAIL && \
+  $( df  . --output=avail | tail -1 ) -lt ${MINTESTAVAIL} ]]
+then
+  echo Removing install dir for space: ${DESTDIR}
+  rm -rf ${DESTDIR}
+fi
+df -h
+du -sh ${CACHE_DIR}
+du -sh ${CCACHE_DIR} || true
+find ${NIH_CACHE_ROOT} -maxdepth 2 \( -iname src -prune -o -type d -exec du -sh {} \; \)
+find build -maxdepth 3 \( -iname src -prune -o -type d -exec du -sh {} \; \)
 set +e
 echo "Running tests for ${APP_PATH}"
 if [[ ${MANUAL_TESTS:-} == true && ${PARALLEL_TESTS:-} != true ]]; then
