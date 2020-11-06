@@ -33,9 +33,9 @@ jobs:
         with:
           path: ${env.CACHE_DIR}
           key:  ${{ runner.os }}-build-${{ env.cache-name }}
+      - name: cache stats before
+        run: ccache -s
       - name: build-and-test
-        run: |
-          sudo chmod -R a+rw ${env.CACHE_DIR}
-          ccache -s
-          bin/ci/ubuntu/build-in-docker.sh
-          ccache -s
+        run: bin/ci/ubuntu/build-in-docker.sh
+      - name: cache stats before
+        run: ccache -s
