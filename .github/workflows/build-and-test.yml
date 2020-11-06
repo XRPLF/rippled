@@ -11,9 +11,6 @@ env:
 #   CCACHE_BASEDIR: ${{ env.GITHUB_WORKSPACE }}
 #   CCACHE_NOHASHDIR: true
 #   CCACHE_DIR: ${{ env.CACHE_DIR }}/ccache
-  # The scripts refer to some TRAVIS specific vars. Define them here
-  TRAVIS_BUILD_DIR: $workspace
-  TRAVIS_HOME: $home
 
 jobs:
   job:
@@ -26,6 +23,9 @@ jobs:
       CC: gcc-8
       CXX: g++-8
       BUILD_TYPE: Debug
+      # The scripts refer to some TRAVIS specific vars. Define them here
+      TRAVIS_BUILD_DIR: ${{ env.GITHUB_WORKSPACE }}
+      TRAVIS_HOME: ${{ env.HOME }}
     steps:
       - name: checkout
         uses: actions/checkout@v2
