@@ -180,8 +180,9 @@ public:
             {
                 max = maxPeers.value();
                 toLoad += "[peers_max]\n" + std::to_string(max) + "\n" +
-                    "[peers_in_max]\n" + std::to_string(maxIn.value_or(0)) + "\n" +
-                    "[peers_out_max]\n" + std::to_string(maxOut.value_or(0)) + "\n";
+                    "[peers_in_max]\n" + std::to_string(maxIn.value_or(0)) +
+                    "\n" + "[peers_out_max]\n" +
+                    std::to_string(maxOut.value_or(0)) + "\n";
             }
             else if (maxIn && maxOut)
             {
@@ -191,10 +192,9 @@ public:
 
             c.loadFromString(toLoad);
             BEAST_EXPECT(
-                (c.PEERS_MAX == max &&
-                 c.PEERS_IN_MAX == 0 && c.PEERS_OUT_MAX == 0) ||
-                (c.PEERS_IN_MAX == *maxIn &&
-                 c.PEERS_OUT_MAX == *maxOut));
+                (c.PEERS_MAX == max && c.PEERS_IN_MAX == 0 &&
+                 c.PEERS_OUT_MAX == 0) ||
+                (c.PEERS_IN_MAX == *maxIn && c.PEERS_OUT_MAX == *maxOut));
 
             Config config = Config::makeConfig(c, port, false, 0);
 
