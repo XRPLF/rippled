@@ -27,7 +27,7 @@ sign(
     HashPrefix const& prefix,
     KeyType type,
     SecretKey const& sk,
-    SF_Blob const& sigField)
+    SF_VL const& sigField)
 {
     Serializer ss;
     ss.add32(prefix);
@@ -40,7 +40,7 @@ verify(
     STObject const& st,
     HashPrefix const& prefix,
     PublicKey const& pk,
-    SF_Blob const& sigField)
+    SF_VL const& sigField)
 {
     auto const sig = get(st, sigField);
     if (!sig)

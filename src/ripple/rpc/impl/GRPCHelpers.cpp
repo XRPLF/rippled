@@ -56,7 +56,7 @@ void
 populateProtoVLasString(
     T const& getProto,
     STObject const& from,
-    SF_Blob const& field)
+    SF_VL const& field)
 {
     if (from.isFieldPresent(field))
     {
@@ -71,7 +71,7 @@ void
 populateProtoVec256(
     T const& getProto,
     STObject const& from,
-    SF_Vec256 const& field)
+    SF_VECTOR256 const& field)
 {
     if (from.isFieldPresent(field))
     {
@@ -89,7 +89,7 @@ void
 populateProtoAccount(
     T const& getProto,
     STObject const& from,
-    SF_Account const& field)
+    SF_ACCOUNT const& field)
 {
     if (from.isFieldPresent(field))
     {
@@ -103,7 +103,7 @@ void
 populateProtoAmount(
     T const& getProto,
     STObject const& from,
-    SF_Amount const& field)
+    SF_AMOUNT const& field)
 {
     if (from.isFieldPresent(field))
     {
@@ -117,7 +117,7 @@ void
 populateProtoCurrency(
     T const& getProto,
     STObject const& from,
-    SF_U160 const& field)
+    SF_HASH160 const& field)
 {
     if (from.isFieldPresent(field))
     {
@@ -364,7 +364,7 @@ void
 populateChannel(T& to, STObject const& from)
 {
     populateProtoPrimitive(
-        [&to]() { return to.mutable_channel(); }, from, sfPayChannel);
+        [&to]() { return to.mutable_channel(); }, from, sfChannel);
 }
 
 template <class T>

@@ -411,7 +411,7 @@ public:
             jv[jss::TransactionType] = jss::PaymentChannelClaim;
             jv[jss::Flags] = tfClose;
             jv[jss::Account] = account.human();
-            jv[sfPayChannel.jsonName] = to_string(payChanKeylet.key);
+            jv[sfChannel.jsonName] = to_string(payChanKeylet.key);
             jv[sfPublicKey.jsonName] = strHex(pk.slice());
             return jv;
         };
@@ -512,7 +512,7 @@ public:
             jv[jss::TransactionType] = jss::PaymentChannelClaim;
             jv[jss::Flags] = tfUniversal;
             jv[jss::Account] = alice.human();
-            jv[sfPayChannel.jsonName] = to_string(payChanKey.key);
+            jv[sfChannel.jsonName] = to_string(payChanKey.key);
             jv[sfBalance.jsonName] =
                 payChanXRP.value().getJson(JsonOptions::none);
             return jv;

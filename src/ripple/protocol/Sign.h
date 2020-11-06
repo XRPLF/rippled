@@ -45,7 +45,7 @@ sign(
     HashPrefix const& prefix,
     KeyType type,
     SecretKey const& sk,
-    SF_Blob const& sigField = sfSignature);
+    SF_VL const& sigField = sfSignature);
 
 /** Returns `true` if STObject contains valid signature
 
@@ -60,7 +60,7 @@ verify(
     STObject const& st,
     HashPrefix const& prefix,
     PublicKey const& pk,
-    SF_Blob const& sigField = sfSignature);
+    SF_VL const& sigField = sfSignature);
 
 /** Return a Serializer suitable for computing a multisigning TxnSignature. */
 Serializer
