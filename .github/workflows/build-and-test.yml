@@ -1,7 +1,7 @@
 name: Build and test rippled
 on: [push, pull_request]
 
-env:
+# env:
 #   CMAKE_EXTRA_ARGS: "-Dwerr=ON -Dwextra=ON"
 #   NINJA_BUILD: true
 #   CACHE_DIR: ${{ env.GITHUB_WORKSPACE }}/_cache
