@@ -313,33 +313,28 @@ public:
         test::jtx::Env env{*this, makeConfig()};
         std::unique_ptr<AmendmentTable> table = makeTable(env, weeks(2));
 
-        // Note which entries are pre-enabled.
+        // Note which entries are enabled.
         std::set<uint256> allEnabled;
-        for (std::string const& a : enabled_)
-            allEnabled.insert(amendmentId(a));
 
-        // Subset of amendments to late-enable
-        std::set<uint256> lateEnabled;
-        lateEnabled.insert(amendmentId(supported_[0]));
-        lateEnabled.insert(amendmentId(enabled_[0]));
-        lateEnabled.insert(amendmentId(vetoed_[0]));
+        // Subset of amendments to enable
+        allEnabled.insert(amendmentId(supported_[0]));
+        allEnabled.insert(amendmentId(enabled_[0]));
+        allEnabled.insert(amendmentId(vetoed_[0]));
 
-        // Do the late enabling.
-        for (uint256 const& a : lateEnabled)
+        for (uint256 const& a : allEnabled)
             table->enable(a);
 
         // So far all enabled amendments are supported.
         BEAST_EXPECT(!table->hasUnsupportedEnabled());
 
-        // Verify all pre- and late-enables are enabled and nothing else.
-        //         allEnabled.insert(lateEnabled.begin(), lateEnabled.end());
-        //         for (std::string const& a : supported_)
-        //         {
-        //             uint256 const supportedID = amendmentId(a);
-        //             BEAST_EXPECT(
-        //                 table->isEnabled(supportedID) ==
-        //                 (allEnabled.find(supportedID) != allEnabled.end()));
-        //         }
+        // Verify all enables are enabled and nothing else.
+        for (std::string const& a : supported_)
+        {
+            uint256 const supportedID = amendmentId(a);
+            BEAST_EXPECT(
+                table->isEnabled(supportedID) ==
+                (allEnabled.find(supportedID) != allEnabled.end()));
+        }
 
         // All supported and unVetoed amendments should be returned as desired.
         {
