@@ -111,8 +111,10 @@ private:
     mutable bool full_ = false;  // Map is believed complete in database
 
 public:
-    /** Each non-leaf node has 16 children (the 'radix tree' part of the map) */
-    static inline constexpr unsigned int branchFactor = 16;
+    /** Number of children each non-leaf node has (the 'radix tree' part of the
+     * map) */
+    static inline constexpr unsigned int branchFactor =
+        SHAMapInnerNode::branchFactor;
 
     /** The depth of the hash map: data is only present in the leaves */
     static inline constexpr unsigned int leafDepth = 64;

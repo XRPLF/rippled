@@ -25,6 +25,7 @@
 #include <ripple/shamap/SHAMapItem.h>
 #include <ripple/shamap/SHAMapNodeID.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
+#include <ripple/shamap/impl/TaggedPointer.h>
 
 #include <bitset>
 #include <cstdint>
@@ -38,15 +39,75 @@ namespace ripple {
 class SHAMapInnerNode final : public SHAMapTreeNode,
                               public CountedObject<SHAMapInnerNode>
 {
-    std::array<SHAMapHash, 16> mHashes;
-    std::shared_ptr<SHAMapTreeNode> mChildren[16];
-    int mIsBranch = 0;
-    std::uint32_t mFullBelowGen = 0;
+public:
+    /** Each inner node has 16 children (the 'radix tree' part of the map) */
+    static inline constexpr unsigned int branchFactor = 16;
+
+private:
+    /** Opaque type that contains the `hashes` array (array of type
+       `SHAMapHash`) and the `children` array (array of type
+       `std::shared_ptr<SHAMapInnerNode>`).
+     */
+    TaggedPointer hashesAndChildren_;
+
+    std::uint32_t fullBelowGen_ = 0;
+    std::uint16_t isBranch_ = 0;
 
     static std::mutex childLock;
 
+    /** Convert arrays stored in `hashesAndChildren_` so they can store the
+        requested number of children.
+
+        @param toAllocate allocate space for at least this number of children
+        (must be <= branchFactor)
+
+        @note the arrays may allocate more than the requested value in
+        `toAllocate`. This is due to the implementation of TagPointer, which
+        only supports allocating arrays of 4 different sizes.
+     */
+    void
+    resizeChildArrays(std::uint8_t toAllocate);
+
+    /** Get the child's index inside the `hashes` or `children` array (stored in
+        `hashesAndChildren_`.
+
+        These arrays may or may not be sparse). The optional will be empty is an
+        empty branch is requested and the arrays are sparse.
+
+        @param i index of the requested child
+     */
+    std::optional<int>
+    getChildIndex(int i) const;
+
+    /** Call the `f` callback for all 16 (branchFactor) branches - even if
+        the branch is empty.
+
+        @param f a one parameter callback function. The parameter is the
+        child's hash.
+    */
+    template <class F>
+    void
+    iterChildren(F&& f) const;
+
+    /** Call the `f` callback for all non-empty branches.
+
+        @param f a two parameter callback function. The first parameter is
+        the branch number, the second parameter is the index into the array.
+        For dense formats these are the same, for sparse they may be
+        different.
+    */
+    template <class F>
+    void
+    iterNonEmptyChildIndexes(F&& f) const;
+
 public:
-    SHAMapInnerNode(std::uint32_t cowid);
+    explicit SHAMapInnerNode(
+        std::uint32_t cowid,
+        std::uint8_t numAllocatedChildren = branchFactor);
+
+    SHAMapInnerNode(SHAMapInnerNode const&) = delete;
+    SHAMapInnerNode&
+    operator=(SHAMapInnerNode const&) = delete;
 
     std::shared_ptr<SHAMapTreeNode>
     clone(std::uint32_t cowid) const override;
@@ -71,27 +132,35 @@ public:
 
     bool
     isEmpty() const;
+
     bool
     isEmptyBranch(int m) const;
+
     int
     getBranchCount() const;
+
     SHAMapHash const&
     getChildHash(int m) const;
 
     void
     setChild(int m, std::shared_ptr<SHAMapTreeNode> const& child);
+
     void
     shareChild(int m, std::shared_ptr<SHAMapTreeNode> const& child);
+
     SHAMapTreeNode*
     getChildPointer(int branch);
+
     std::shared_ptr<SHAMapTreeNode>
     getChild(int branch);
+
     virtual std::shared_ptr<SHAMapTreeNode>
     canonicalizeChild(int branch, std::shared_ptr<SHAMapTreeNode> node);
 
     // sync functions
     bool
     isFullBelow(std::uint32_t generation) const;
+
     void
     setFullBelowGen(std::uint32_t gen);
 
@@ -121,34 +190,22 @@ public:
     makeCompressedInner(Slice data);
 };
 
-inline SHAMapInnerNode::SHAMapInnerNode(std::uint32_t cowid)
-    : SHAMapTreeNode(cowid)
-{
-}
-
 inline bool
 SHAMapInnerNode::isEmptyBranch(int m) const
 {
-    return (mIsBranch & (1 << m)) == 0;
-}
-
-inline SHAMapHash const&
-SHAMapInnerNode::getChildHash(int m) const
-{
-    assert(m >= 0 && m < 16);
-    return mHashes[m];
+    return (isBranch_ & (1 << m)) == 0;
 }
 
 inline bool
 SHAMapInnerNode::isFullBelow(std::uint32_t generation) const
 {
-    return mFullBelowGen == generation;
+    return fullBelowGen_ == generation;
 }
 
 inline void
 SHAMapInnerNode::setFullBelowGen(std::uint32_t gen)
 {
-    mFullBelowGen = gen;
+    fullBelowGen_ = gen;
 }
 
 }  // namespace ripple
