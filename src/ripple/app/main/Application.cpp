@@ -940,6 +940,8 @@ public:
             std::unique_ptr<NodeStore::Database> source =
                 NodeStore::Manager::instance().make_Database(
                     "NodeStore.import",
+                    megabytes(config_->getValueFor(
+                        SizedItem::burstSize, boost::none)),
                     dummyScheduler,
                     0,
                     dummyRoot,

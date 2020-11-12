@@ -259,6 +259,8 @@ SHAMapStoreImp::makeNodeStore(std::string const& name, std::int32_t readThreads)
     {
         db = NodeStore::Manager::instance().make_Database(
             name,
+            megabytes(
+                app_.config().getValueFor(SizedItem::burstSize, boost::none)),
             scheduler_,
             readThreads,
             app_.getJobQueue(),
@@ -562,7 +564,10 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     section.set("path", newPath.string());
 
     auto backend{NodeStore::Manager::instance().make_Backend(
-        section, scheduler_, app_.logs().journal(nodeStoreName_))};
+        section,
+        megabytes(app_.config().getValueFor(SizedItem::burstSize, boost::none)),
+        scheduler_,
+        app_.logs().journal(nodeStoreName_))};
     backend->open();
     return backend;
 }
