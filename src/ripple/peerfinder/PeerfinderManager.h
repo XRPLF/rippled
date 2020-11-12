@@ -44,19 +44,19 @@ struct Config
         This includes both inbound and outbound, but does not include
         fixed peers.
     */
-    int maxPeers;
+    std::size_t maxPeers;
 
     /** The number of automatic outbound connections to maintain.
         Outbound connections are only maintained if autoConnect
         is `true`.
     */
-    int outPeers;
+    std::size_t outPeers;
 
     /** The number of automatic inbound connections to maintain.
         Inbound connections are only maintained if wantIncoming
         is `true`.
     */
-    int inPeers;
+    std::size_t inPeers;
 
     /** `true` if we want our IP address kept private. */
     bool peerPrivate = true;

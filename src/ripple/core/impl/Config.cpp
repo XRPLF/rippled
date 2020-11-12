@@ -367,7 +367,7 @@ Config::loadFromString(std::string const& fileContents)
     }
     else
     {
-        std::optional<int> peers_in_max{};
+        std::optional<std::size_t> peers_in_max{};
         if (getSingleSection(secConfig, SECTION_PEERS_IN_MAX, strTemp, j_))
         {
             peers_in_max = beast::lexicalCastThrow<std::size_t>(strTemp);
@@ -377,7 +377,7 @@ Config::loadFromString(std::string const& fileContents)
                     "] section; the value must be less or equal than 1000");
         }
 
-        std::optional<int> peers_out_max{};
+        std::optional<std::size_t> peers_out_max{};
         if (getSingleSection(secConfig, SECTION_PEERS_OUT_MAX, strTemp, j_))
         {
             peers_out_max = beast::lexicalCastThrow<std::size_t>(strTemp);

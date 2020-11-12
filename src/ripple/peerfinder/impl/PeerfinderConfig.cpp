@@ -37,8 +37,9 @@ Config::Config()
 std::size_t
 Config::calcOutPeers() const
 {
-    return std::round(std::max(
-        maxPeers * Tuning::outPercent * 0.01, double(Tuning::minOutCount)));
+    return std::max(
+        (maxPeers * Tuning::outPercent + 50) / 100,
+        std::size_t(Tuning::minOutCount));
 }
 
 void
@@ -95,8 +96,6 @@ Config::makeConfig(
         if (config.maxPeers < Tuning::minOutCount)
             config.maxPeers = Tuning::minOutCount;
         config.outPeers = config.calcOutPeers();
-
-        config.inPeers = config.maxPeers - config.outPeers;
 
         // Calculate the number of outbound peers we want. If we dont want
         // or can't accept incoming, this will simply be equal to maxPeers.
