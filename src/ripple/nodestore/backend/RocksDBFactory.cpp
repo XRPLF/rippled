@@ -450,6 +450,7 @@ public:
     createInstance(
         size_t keyBytes,
         Section const& keyValues,
+        std::size_t,
         Scheduler& scheduler,
         beast::Journal journal) override
     {

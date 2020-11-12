@@ -136,7 +136,12 @@ public:
     }
 
     std::unique_ptr<Backend>
-    createInstance(size_t, Section const&, Scheduler&, beast::Journal) override
+    createInstance(
+        size_t,
+        Section const&,
+        std::size_t,
+        Scheduler&,
+        beast::Journal) override
     {
         return std::make_unique<NullBackend>();
     }

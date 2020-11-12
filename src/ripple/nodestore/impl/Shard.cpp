@@ -115,7 +115,12 @@ Shard::init(Scheduler& scheduler, nudb::context& context)
         return false;
     }
     backend_ = factory->createInstance(
-        NodeObject::keyBytes, section, scheduler, context, j_);
+        NodeObject::keyBytes,
+        section,
+        megabytes(app_.config().getValueFor(SizedItem::burstSize, boost::none)),
+        scheduler,
+        context,
+        j_);
 
     return open(lock);
 }

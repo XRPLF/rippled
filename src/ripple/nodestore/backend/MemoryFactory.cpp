@@ -55,6 +55,7 @@ public:
     createInstance(
         size_t keyBytes,
         Section const& keyValues,
+        std::size_t burstSize,
         Scheduler& scheduler,
         beast::Journal journal) override;
 
@@ -227,6 +228,7 @@ std::unique_ptr<Backend>
 MemoryFactory::createInstance(
     size_t keyBytes,
     Section const& keyValues,
+    std::size_t,
     Scheduler& scheduler,
     beast::Journal journal)
 {

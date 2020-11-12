@@ -42,6 +42,7 @@ public:
 
     beast::Journal const j_;
     size_t const keyBytes_;
+    std::size_t const burstSize_;
     std::string const name_;
     nudb::store db_;
     std::atomic<bool> deletePath_;
@@ -50,10 +51,12 @@ public:
     NuDBBackend(
         size_t keyBytes,
         Section const& keyValues,
+        std::size_t burstSize,
         Scheduler& scheduler,
         beast::Journal journal)
         : j_(journal)
         , keyBytes_(keyBytes)
+        , burstSize_(burstSize)
         , name_(get<std::string>(keyValues, "path"))
         , deletePath_(false)
         , scheduler_(scheduler)
@@ -66,11 +69,13 @@ public:
     NuDBBackend(
         size_t keyBytes,
         Section const& keyValues,
+        std::size_t burstSize,
         Scheduler& scheduler,
         nudb::context& context,
         beast::Journal journal)
         : j_(journal)
         , keyBytes_(keyBytes)
+        , burstSize_(burstSize)
         , name_(get<std::string>(keyValues, "path"))
         , db_(context)
         , deletePath_(false)
@@ -130,6 +135,7 @@ public:
             Throw<nudb::system_error>(ec);
         if (db_.appnum() != currentType)
             Throw<std::runtime_error>("nodestore: unknown appnum");
+        db_.set_burst(burstSize_);
     }
 
     bool
@@ -333,23 +339,25 @@ public:
     createInstance(
         size_t keyBytes,
         Section const& keyValues,
+        std::size_t burstSize,
         Scheduler& scheduler,
         beast::Journal journal) override
     {
         return std::make_unique<NuDBBackend>(
-            keyBytes, keyValues, scheduler, journal);
+            keyBytes, keyValues, burstSize, scheduler, journal);
     }
 
     std::unique_ptr<Backend>
     createInstance(
         size_t keyBytes,
         Section const& keyValues,
+        std::size_t burstSize,
         Scheduler& scheduler,
         nudb::context& context,
         beast::Journal journal) override
     {
         return std::make_unique<NuDBBackend>(
-            keyBytes, keyValues, scheduler, context, journal);
+            keyBytes, keyValues, burstSize, scheduler, context, journal);
     }
 };
 

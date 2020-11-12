@@ -261,7 +261,7 @@ public:
         beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, scheduler, journal);
+        auto backend = make_Backend(config, megabytes(4), scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
@@ -318,7 +318,7 @@ public:
         beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, scheduler, journal);
+        auto backend = make_Backend(config, megabytes(4), scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
@@ -389,7 +389,7 @@ public:
         beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, scheduler, journal);
+        auto backend = make_Backend(config, megabytes(4), scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
@@ -462,7 +462,7 @@ public:
         beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, scheduler, journal);
+        auto backend = make_Backend(config, megabytes(4), scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->open();
 
@@ -551,7 +551,7 @@ public:
     do_work(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
-        auto backend = make_Backend(config, scheduler, journal);
+        auto backend = make_Backend(config, megabytes(4), scheduler, journal);
         BEAST_EXPECT(backend != nullptr);
         backend->setDeletePath();
         backend->open();

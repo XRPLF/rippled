@@ -57,7 +57,8 @@ enum class SizedItem : std::size_t {
     hashNodeDBCache,
     txnDBCache,
     lgrDBCache,
-    openFinalLimit
+    openFinalLimit,
+    burstSize
 };
 
 //  This entire derived class is deprecated.

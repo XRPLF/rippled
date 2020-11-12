@@ -43,6 +43,7 @@ ManagerImp::missing_backend()
 std::unique_ptr<Backend>
 ManagerImp::make_Backend(
     Section const& parameters,
+    std::size_t burstSize,
     Scheduler& scheduler,
     beast::Journal journal)
 {
@@ -55,19 +56,20 @@ ManagerImp::make_Backend(
         missing_backend();
 
     return factory->createInstance(
-        NodeObject::keyBytes, parameters, scheduler, journal);
+        NodeObject::keyBytes, parameters, burstSize, scheduler, journal);
 }
 
 std::unique_ptr<Database>
 ManagerImp::make_Database(
     std::string const& name,
+    std::size_t burstSize,
     Scheduler& scheduler,
     int readThreads,
     Stoppable& parent,
     Section const& config,
     beast::Journal journal)
 {
-    auto backend{make_Backend(config, scheduler, journal)};
+    auto backend{make_Backend(config, burstSize, scheduler, journal)};
     backend->open();
     return std::make_unique<DatabaseNodeImp>(
         name,
@@ -124,10 +126,12 @@ Manager::instance()
 std::unique_ptr<Backend>
 make_Backend(
     Section const& config,
+    std::size_t burstSize,
     Scheduler& scheduler,
     beast::Journal journal)
 {
-    return Manager::instance().make_Backend(config, scheduler, journal);
+    return Manager::instance().make_Backend(
+        config, burstSize, scheduler, journal);
 }
 
 }  // namespace NodeStore
