@@ -26,7 +26,7 @@
 
 namespace ripple {
 
-static boost::optional<Seed>
+static std::optional<Seed>
 validationSeed(Json::Value const& params)
 {
     if (!params.isMember(jss::secret))

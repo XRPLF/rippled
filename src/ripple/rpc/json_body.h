@@ -62,6 +62,8 @@ struct json_body
         {
         }
 
+        // get() must return a boost::optional (not a std::optional) to meet
+        // requirements of a boost::beast::BodyReader.
         boost::optional<std::pair<const_buffers_type, bool>>
         get(boost::beast::error_code& ec)
         {
@@ -95,6 +97,8 @@ struct json_body
             ec.assign(0, ec.category());
         }
 
+        // get() must return a boost::optional (not a std::optional) to meet
+        // requirements of a boost::beast::BodyWriter.
         boost::optional<std::pair<const_buffers_type, bool>>
         get(boost::beast::error_code& ec)
         {

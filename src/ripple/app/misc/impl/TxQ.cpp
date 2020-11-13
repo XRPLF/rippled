@@ -63,11 +63,11 @@ getFeeLevelPaid(ReadView const& view, STTx const& tx)
     return FeeLevel64(std::numeric_limits<std::uint64_t>::max());
 }
 
-static boost::optional<LedgerIndex>
+static std::optional<LedgerIndex>
 getLastLedgerSequence(STTx const& tx)
 {
     if (!tx.isFieldPresent(sfLastLedgerSequence))
-        return boost::none;
+        return std::nullopt;
     return tx.getFieldU32(sfLastLedgerSequence);
 }
 
@@ -348,7 +348,7 @@ TxQ::TxQAccount::remove(SeqProxy seqProx)
 //////////////////////////////////////////////////////////////////////////
 
 TxQ::TxQ(Setup const& setup, beast::Journal j)
-    : setup_(setup), j_(j), feeMetrics_(setup, j), maxSize_(boost::none)
+    : setup_(setup), j_(j), feeMetrics_(setup, j), maxSize_(std::nullopt)
 {
 }
 
@@ -373,7 +373,7 @@ TxQ::canBeHeld(
     OpenView const& view,
     std::shared_ptr<SLE const> const& sleAccount,
     AccountMap::iterator const& accountIter,
-    boost::optional<TxQAccount::TxMap::iterator> const& replacementIter,
+    std::optional<TxQAccount::TxMap::iterator> const& replacementIter,
     std::lock_guard<std::mutex> const& lock)
 {
     // PreviousTxnID is deprecated and should never be used.
@@ -801,10 +801,10 @@ TxQ::apply(
         TxQAccount::TxMap::iterator end;
     };
 
-    boost::optional<TxIter> const txIter =
+    std::optional<TxIter> const txIter =
         [accountIter,
          accountIsInQueue,
-         acctSeqProx]() -> boost::optional<TxIter> {
+         acctSeqProx]() -> std::optional<TxIter> {
         if (!accountIsInQueue)
             return {};
 
@@ -853,7 +853,7 @@ TxQ::apply(
     // If the transaction is intending to replace a transaction in the queue
     // identify the one that might be replaced.
     auto replacedTxIter = [accountIsInQueue, &accountIter, txSeqProx]()
-        -> boost::optional<TxQAccount::TxMap::iterator> {
+        -> std::optional<TxQAccount::TxMap::iterator> {
         if (accountIsInQueue)
         {
             TxQAccount& txQAcct = accountIter->second;
@@ -936,7 +936,7 @@ TxQ::apply(
         }
     };
 
-    boost::optional<MultiTxn> multiTxn;
+    std::optional<MultiTxn> multiTxn;
 
     if (acctTxCount == 0)
     {
@@ -1178,7 +1178,7 @@ TxQ::apply(
             conditions change, but don't waste the effort to clear).
     */
     if (!(flags & tapPREFER_QUEUE) && txSeqProx.isSeq() && txIter &&
-        multiTxn.is_initialized() &&
+        multiTxn.has_value() &&
         txIter->first->second.retriesRemaining == MaybeTx::retriesAllowed &&
         feeLevelPaid > requiredFeeLevel && requiredFeeLevel > baseLevel)
     {
@@ -1693,9 +1693,9 @@ TxQ::tryDirectApply(
     return {};
 }
 
-boost::optional<TxQ::TxQAccount::TxMap::iterator>
+std::optional<TxQ::TxQAccount::TxMap::iterator>
 TxQ::removeFromByFee(
-    boost::optional<TxQAccount::TxMap::iterator> const& replacedTxIter,
+    std::optional<TxQAccount::TxMap::iterator> const& replacedTxIter,
     std::shared_ptr<STTx const> const& tx)
 {
     if (replacedTxIter && tx)
@@ -1710,7 +1710,7 @@ TxQ::removeFromByFee(
 
         erase(deleteIter);
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 TxQ::Metrics

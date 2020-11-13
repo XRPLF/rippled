@@ -53,6 +53,7 @@ SHAMapStoreImp::SavedStateDB::init(
 
     std::int64_t count = 0;
     {
+        // SOCI requires boost::optional (not std::optional) as the parameter.
         boost::optional<std::int64_t> countO;
         session_ << "SELECT COUNT(Key) FROM DbState WHERE Key = 1;",
             soci::into(countO);
@@ -68,6 +69,7 @@ SHAMapStoreImp::SavedStateDB::init(
     }
 
     {
+        // SOCI requires boost::optional (not std::optional) as the parameter.
         boost::optional<std::int64_t> countO;
         session_ << "SELECT COUNT(Key) FROM CanDelete WHERE Key = 1;",
             soci::into(countO);
@@ -275,7 +277,7 @@ SHAMapStoreImp::makeNodeStore(std::string const& name, std::int32_t readThreads)
         db = NodeStore::Manager::instance().make_Database(
             name,
             megabytes(
-                app_.config().getValueFor(SizedItem::burstSize, boost::none)),
+                app_.config().getValueFor(SizedItem::burstSize, std::nullopt)),
             scheduler_,
             readThreads,
             app_.getJobQueue(),
@@ -584,7 +586,8 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
 
     auto backend{NodeStore::Manager::instance().make_Backend(
         section,
-        megabytes(app_.config().getValueFor(SizedItem::burstSize, boost::none)),
+        megabytes(
+            app_.config().getValueFor(SizedItem::burstSize, std::nullopt)),
         scheduler_,
         app_.logs().journal(nodeStoreName_))};
     backend->open();
@@ -602,6 +605,7 @@ SHAMapStoreImp::clearSql(
     LedgerIndex min = std::numeric_limits<LedgerIndex>::max();
 
     {
+        // SOCI requires boost::optional (not std::optional) as the parameter.
         boost::optional<std::uint64_t> m;
         JLOG(journal_.trace())
             << "Begin: Look up lowest value of: " << minQuery;
@@ -781,7 +785,7 @@ SHAMapStoreImp::onStop()
     }
 }
 
-boost::optional<LedgerIndex>
+std::optional<LedgerIndex>
 SHAMapStoreImp::minimumOnline() const
 {
     // minimumOnline_ with 0 value is equivalent to unknown/not set.

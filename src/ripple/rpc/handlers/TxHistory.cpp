@@ -176,6 +176,7 @@ doTxHistory(RPC::JsonContext& context)
     {
         auto db = context.app.getTxnDB().checkoutDb();
 
+        // SOCI requires boost::optional (not std::optional) as parameters.
         boost::optional<std::uint64_t> ledgerSeq;
         boost::optional<std::string> status;
         soci::blob sociRawTxnBlob(*db);

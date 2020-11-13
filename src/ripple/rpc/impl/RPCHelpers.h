@@ -29,7 +29,7 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/Status.h>
 #include <ripple/rpc/impl/Tuning.h>
-#include <boost/optional.hpp>
+#include <optional>
 #include <org/xrpl/rpc/v1/xrp_ledger.pb.h>
 
 namespace Json {
@@ -46,7 +46,7 @@ namespace RPC {
 struct JsonContext;
 
 /** Get an AccountID from an account ID or public key. */
-boost::optional<AccountID>
+std::optional<AccountID>
 accountFromStringStrict(std::string const&);
 
 // --> strIdent: public key, account ID, or regular seed.
@@ -84,7 +84,7 @@ bool
 getAccountObjects(
     ReadView const& ledger,
     AccountID const& account,
-    boost::optional<std::vector<LedgerEntryType>> const& typeFilter,
+    std::optional<std::vector<LedgerEntryType>> const& typeFilter,
     uint256 dirIndex,
     uint256 const& entryIndex,
     std::uint32_t const limit,
@@ -174,16 +174,16 @@ injectSLE(Json::Value& jv, SLE const& sle);
 
     If there is an error, return it as JSON.
 */
-boost::optional<Json::Value>
+std::optional<Json::Value>
 readLimitField(
     unsigned int& limit,
     Tuning::LimitRange const&,
     JsonContext const&);
 
-boost::optional<Seed>
+std::optional<Seed>
 getSeedFromRPC(Json::Value const& params, Json::Value& error);
 
-boost::optional<Seed>
+std::optional<Seed>
 parseRippleLibSeed(Json::Value const& params);
 
 std::pair<PublicKey, SecretKey>

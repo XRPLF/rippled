@@ -113,7 +113,7 @@ operator!=(SecretKey const& lhs, SecretKey const& rhs)
 
 /** Parse a secret key */
 template <>
-boost::optional<SecretKey>
+std::optional<SecretKey>
 parseBase58(TokenType type, std::string const& s);
 
 inline std::string

@@ -69,14 +69,14 @@ public:
         {
         }
 
-        boost::optional<Blob>
+        std::optional<Blob>
         getNode(SHAMapHash const& nodeHash) const override
         {
             Map::iterator it = mMap.find(nodeHash);
             if (it == mMap.end())
             {
                 JLOG(mJournal.fatal()) << "Test filter missing node";
-                return boost::none;
+                return std::nullopt;
             }
             return it->second;
         }

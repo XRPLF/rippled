@@ -792,7 +792,7 @@ class Ticket_test : public beast::unit_test::suite
                                  uint256 const& txID,
                                  std::uint32_t ledgerSeq,
                                  std::uint32_t txSeq,
-                                 boost::optional<std::uint32_t> ticketSeq,
+                                 std::optional<std::uint32_t> ticketSeq,
                                  TxType txType) {
             error_code_i txErrCode{rpcSUCCESS};
 

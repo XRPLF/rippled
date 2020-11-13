@@ -21,8 +21,8 @@
 #define RIPPLE_OVERLAY_PROTOCOLVERSION_H_INCLUDED
 
 #include <boost/beast/core/string.hpp>
-#include <boost/optional.hpp>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -62,11 +62,11 @@ std::vector<ProtocolVersion>
 parseProtocolVersions(boost::beast::string_view const& s);
 
 /** Given a list of supported protocol versions, choose the one we prefer. */
-boost::optional<ProtocolVersion>
+std::optional<ProtocolVersion>
 negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions);
 
 /** Given a list of supported protocol versions, choose the one we prefer. */
-boost::optional<ProtocolVersion>
+std::optional<ProtocolVersion>
 negotiateProtocolVersion(boost::beast::string_view const& versions);
 
 /** The list of all the protocol versions we support. */

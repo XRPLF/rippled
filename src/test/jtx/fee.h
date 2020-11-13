@@ -22,9 +22,10 @@
 
 #include <ripple/basics/contract.h>
 #include <ripple/protocol/STAmount.h>
-#include <boost/optional.hpp>
 #include <test/jtx/Env.h>
 #include <test/jtx/tags.h>
+
+#include <optional>
 
 namespace ripple {
 namespace test {
@@ -35,7 +36,7 @@ class fee
 {
 private:
     bool manual_ = true;
-    boost::optional<STAmount> amount_;
+    std::optional<STAmount> amount_;
 
 public:
     explicit fee(autofill_t) : manual_(false)

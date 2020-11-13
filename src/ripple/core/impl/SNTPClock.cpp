@@ -22,12 +22,12 @@
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/impl/SNTPClock.h>
 #include <boost/asio.hpp>
-#include <boost/optional.hpp>
 #include <cmath>
 #include <deque>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <thread>
 
 namespace ripple {
@@ -90,7 +90,7 @@ private:
     std::mutex mutable mutex_;
     std::thread thread_;
     boost::asio::io_service io_service_;
-    boost::optional<boost::asio::io_service::work> work_;
+    std::optional<boost::asio::io_service::work> work_;
 
     std::map<boost::asio::ip::udp::endpoint, Query> queries_;
     boost::asio::ip::udp::socket socket_;
@@ -125,7 +125,7 @@ public:
             error_code ec;
             timer_.cancel(ec);
             socket_.cancel(ec);
-            work_ = boost::none;
+            work_ = std::nullopt;
             thread_.join();
         }
     }

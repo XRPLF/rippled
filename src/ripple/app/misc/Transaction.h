@@ -30,6 +30,8 @@
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
 
+#include <optional>
+
 namespace ripple {
 
 //
@@ -69,6 +71,8 @@ public:
         std::string&,
         Application&) noexcept;
 
+    // The two boost::optional parameters are because SOCI requires
+    // boost::optional (not std::optional) parameters.
     static Transaction::pointer
     transactionFromSQL(
         boost::optional<std::uint64_t> const& ledgerSeq,
@@ -76,6 +80,8 @@ public:
         Blob const& rawTxn,
         Application& app);
 
+    // The boost::optional parameter is because SOCI requires
+    // boost::optional (not std::optional) parameters.
     static TransStatus
     sqlTransactionStatus(boost::optional<std::string> const& status);
 
@@ -276,7 +282,7 @@ public:
      * @brief getCurrentLedgerState Get current ledger state of transaction
      * @return Current ledger state
      */
-    boost::optional<CurrentLedgerState>
+    std::optional<CurrentLedgerState>
     getCurrentLedgerState() const
     {
         return currentLedgerState_;
@@ -376,7 +382,7 @@ private:
     load(
         uint256 const& id,
         Application& app,
-        boost::optional<ClosedInterval<uint32_t>> const& range,
+        std::optional<ClosedInterval<uint32_t>> const& range,
         error_code_i& ec);
 
     uint256 mTransactionID;
@@ -389,7 +395,7 @@ private:
     /** different ways for transaction to be accepted */
     SubmitResult submitResult_;
 
-    boost::optional<CurrentLedgerState> currentLedgerState_;
+    std::optional<CurrentLedgerState> currentLedgerState_;
 
     std::shared_ptr<STTx const> mTransaction;
     Application& mApp;

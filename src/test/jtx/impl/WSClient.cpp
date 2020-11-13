@@ -88,7 +88,7 @@ class WSClientImpl : public WSClient
     }
 
     boost::asio::io_service ios_;
-    boost::optional<boost::asio::io_service::work> work_;
+    std::optional<boost::asio::io_service::work> work_;
     boost::asio::io_service::strand strand_;
     std::thread thread_;
     boost::asio::ip::tcp::socket stream_;
@@ -120,7 +120,7 @@ class WSClientImpl : public WSClient
                 }));
             }
         }));
-        work_ = boost::none;
+        work_ = std::nullopt;
         thread_.join();
     }
 
@@ -212,21 +212,21 @@ public:
         return {};
     }
 
-    boost::optional<Json::Value>
+    std::optional<Json::Value>
     getMsg(std::chrono::milliseconds const& timeout) override
     {
         std::shared_ptr<msg> m;
         {
             std::unique_lock<std::mutex> lock(m_);
             if (!cv_.wait_for(lock, timeout, [&] { return !msgs_.empty(); }))
-                return boost::none;
+                return std::nullopt;
             m = std::move(msgs_.back());
             msgs_.pop_back();
         }
         return std::move(m->jv);
     }
 
-    boost::optional<Json::Value>
+    std::optional<Json::Value>
     findMsg(
         std::chrono::milliseconds const& timeout,
         std::function<bool(Json::Value const&)> pred) override
@@ -247,7 +247,7 @@ public:
                     return false;
                 }))
             {
-                return boost::none;
+                return std::nullopt;
             }
         }
         return std::move(m->jv);

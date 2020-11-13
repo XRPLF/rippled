@@ -98,7 +98,7 @@ public:
 
             // Check stream update
             auto jvo = wsc->getMsg(10ms);
-            BEAST_EXPECTS(!jvo, "getMsg: " + to_string(jvo.get()));
+            BEAST_EXPECTS(!jvo, "getMsg: " + to_string(jvo.value()));
         }
     }
 

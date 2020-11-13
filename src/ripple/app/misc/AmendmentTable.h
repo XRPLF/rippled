@@ -25,6 +25,8 @@
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STValidation.h>
 
+#include <optional>
+
 namespace ripple {
 
 /** The amendment table stores the list of enabled and potential amendments.
@@ -61,7 +63,7 @@ public:
     virtual bool
     hasUnsupportedEnabled() const = 0;
 
-    virtual boost::optional<NetClock::time_point>
+    virtual std::optional<NetClock::time_point>
     firstUnsupportedExpected() const = 0;
 
     virtual Json::Value

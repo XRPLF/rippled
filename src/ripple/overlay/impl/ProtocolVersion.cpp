@@ -134,10 +134,10 @@ parseProtocolVersions(boost::beast::string_view const& value)
     return result;
 }
 
-boost::optional<ProtocolVersion>
+std::optional<ProtocolVersion>
 negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
 {
-    boost::optional<ProtocolVersion> result;
+    std::optional<ProtocolVersion> result;
 
     // The protocol version we want to negotiate is the largest item in the
     // intersection of the versions supported by us and the peer. Since the
@@ -157,7 +157,7 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
     return result;
 }
 
-boost::optional<ProtocolVersion>
+std::optional<ProtocolVersion>
 negotiateProtocolVersion(boost::beast::string_view const& versions)
 {
     auto const them = parseProtocolVersions(versions);

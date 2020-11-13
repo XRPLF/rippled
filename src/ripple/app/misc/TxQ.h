@@ -28,6 +28,7 @@
 #include <ripple/protocol/TER.h>
 #include <boost/circular_buffer.hpp>
 #include <boost/intrusive/set.hpp>
+#include <optional>
 
 namespace ripple {
 
@@ -112,7 +113,7 @@ public:
             @todo eahennis. This setting seems to go against our goals and
                 values. Can it be removed?
         */
-        boost::optional<std::uint32_t> maximumTxnInLedger;
+        std::optional<std::uint32_t> maximumTxnInLedger;
         /** When the ledger has more transactions than "expected", and
             performance is humming along nicely, the expected ledger size
             is updated to the previous ledger size plus this percentage.
@@ -164,7 +165,7 @@ public:
         /// Number of transactions in the queue
         std::size_t txCount;
         /// Max transactions currently allowed in queue
-        boost::optional<std::size_t> txQMaxSize;
+        std::optional<std::size_t> txQMaxSize;
         /// Number of transactions currently in the open ledger
         std::size_t txInLedger;
         /// Number of transactions expected per ledger
@@ -191,14 +192,14 @@ public:
         /// Full initialization
         TxDetails(
             FeeLevel64 feeLevel_,
-            boost::optional<LedgerIndex> const& lastValid_,
+            std::optional<LedgerIndex> const& lastValid_,
             TxConsequences const& consequences_,
             AccountID const& account_,
             SeqProxy seqProxy_,
             std::shared_ptr<STTx const> const& txn_,
             int retriesRemaining_,
             TER preflightResult_,
-            boost::optional<TER> lastResult_)
+            std::optional<TER> lastResult_)
             : feeLevel(feeLevel_)
             , lastValid(lastValid_)
             , consequences(consequences_)
@@ -214,7 +215,7 @@ public:
         /// Fee level of the queued transaction
         FeeLevel64 feeLevel;
         /// LastValidLedger field of the queued transaction, if any
-        boost::optional<LedgerIndex> lastValid;
+        std::optional<LedgerIndex> lastValid;
         /** Potential @ref TxConsequences of applying the queued transaction
             to the open ledger.
         */
@@ -247,7 +248,7 @@ public:
             `tem`, or `tesSUCCESS`, because those results cause the
             transaction to be removed from the queue.
         */
-        boost::optional<TER> lastResult;
+        std::optional<TER> lastResult;
     };
 
     /// Constructor
@@ -378,7 +379,7 @@ private:
         /// towards".
         std::size_t const targetTxnCount_;
         /// Maximum value of txnsExpected
-        boost::optional<std::size_t> const maximumTxnCount_;
+        std::optional<std::size_t> const maximumTxnCount_;
         /// Number of transactions expected per ledger.
         /// One more than this value will be accepted
         /// before escalation kicks in.
@@ -407,7 +408,7 @@ private:
                       ? *setup.maximumTxnInLedger < targetTxnCount_
                           ? targetTxnCount_
                           : *setup.maximumTxnInLedger
-                      : boost::optional<std::size_t>(boost::none))
+                      : std::optional<std::size_t>(std::nullopt))
             , txnsExpected_(minimumTxnCount_)
             , recentTxnCounts_(setup.ledgersInQueue)
             , escalationMultiplier_(setup.minimumEscalationMultiplier)
@@ -524,7 +525,7 @@ private:
         AccountID const account;
         /// Expiration ledger for the transaction
         /// (`sfLastLedgerSequence` field).
-        boost::optional<LedgerIndex> const lastValid;
+        std::optional<LedgerIndex> const lastValid;
         /// Transaction SeqProxy number
         /// (`sfSequence` or `sfTicketSequence` field).
         SeqProxy const seqProxy;
@@ -547,16 +548,16 @@ private:
             `tem`, or `tesSUCCESS`, because those results cause the
             transaction to be removed from the queue.
         */
-        boost::optional<TER> lastResult;
+        std::optional<TER> lastResult;
         /** Cached result of the `preflight` operation. Because
             `preflight` is expensive, minimize the number of times
             it needs to be done.
             @invariant `pfresult` is never allowed to be empty. The
-                `boost::optional` is leveraged to allow `emplace`d
+                `std::optional` is leveraged to allow `emplace`d
                 construction and replacement without a copy
                 assignment operation.
         */
-        boost::optional<PreflightResult const> pfresult;
+        std::optional<PreflightResult const> pfresult;
 
         /** Starting retry count for newly queued transactions.
 
@@ -710,9 +711,9 @@ private:
         beast::Journal j);
 
     // Helper function that removes a replaced entry in _byFee.
-    boost::optional<TxQAccount::TxMap::iterator>
+    std::optional<TxQAccount::TxMap::iterator>
     removeFromByFee(
-        boost::optional<TxQAccount::TxMap::iterator> const& replacedTxIter,
+        std::optional<TxQAccount::TxMap::iterator> const& replacedTxIter,
         std::shared_ptr<STTx const> const& tx);
 
     using FeeHook = boost::intrusive::member_hook<
@@ -754,7 +755,7 @@ private:
         @note This member must always and only be accessed under
         locked mutex_
     */
-    boost::optional<size_t> maxSize_;
+    std::optional<size_t> maxSize_;
 
     /** Most queue operations are done under the master lock,
         but use this mutex for the RPC "fee" command, which isn't.
@@ -777,7 +778,7 @@ private:
         OpenView const&,
         std::shared_ptr<SLE const> const& sleAccount,
         AccountMap::iterator const&,
-        boost::optional<TxQAccount::TxMap::iterator> const&,
+        std::optional<TxQAccount::TxMap::iterator> const&,
         std::lock_guard<std::mutex> const& lock);
 
     /// Erase and return the next entry in byFee_ (lower fee level)

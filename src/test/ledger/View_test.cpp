@@ -70,7 +70,7 @@ class View_test : public beast::unit_test::suite
     {
         openLedger.modify([](OpenView& view, beast::Journal) {
             // HACK!
-            boost::optional<uint256> next;
+            std::optional<uint256> next;
             next.emplace(0);
             for (;;)
             {
@@ -88,7 +88,7 @@ class View_test : public beast::unit_test::suite
     wipe(Ledger& ledger)
     {
         // HACK!
-        boost::optional<uint256> next;
+        std::optional<uint256> next;
         next.emplace(0);
         for (;;)
         {
@@ -105,7 +105,7 @@ class View_test : public beast::unit_test::suite
     succ(
         ReadView const& v,
         std::uint32_t id,
-        boost::optional<std::uint32_t> answer)
+        std::optional<std::uint32_t> answer)
     {
         auto const next = v.succ(k(id).key);
         if (answer)
@@ -142,12 +142,12 @@ class View_test : public beast::unit_test::suite
             *genesis, env.app().timeKeeper().closeTime());
         wipe(*ledger);
         ReadView& v = *ledger;
-        succ(v, 0, boost::none);
+        succ(v, 0, std::nullopt);
         ledger->rawInsert(sle(1, 1));
         BEAST_EXPECT(v.exists(k(1)));
         BEAST_EXPECT(seq(v.read(k(1))) == 1);
         succ(v, 0, 1);
-        succ(v, 1, boost::none);
+        succ(v, 1, std::nullopt);
         ledger->rawInsert(sle(2, 2));
         BEAST_EXPECT(seq(v.read(k(2))) == 2);
         ledger->rawInsert(sle(3, 3));
@@ -170,13 +170,13 @@ class View_test : public beast::unit_test::suite
         wipe(env.app().openLedger());
         auto const open = env.current();
         ApplyViewImpl v(&*open, tapNONE);
-        succ(v, 0, boost::none);
+        succ(v, 0, std::nullopt);
         v.insert(sle(1));
         BEAST_EXPECT(v.exists(k(1)));
         BEAST_EXPECT(seq(v.read(k(1))) == 1);
         BEAST_EXPECT(seq(v.peek(k(1))) == 1);
         succ(v, 0, 1);
-        succ(v, 1, boost::none);
+        succ(v, 1, std::nullopt);
         v.insert(sle(2, 2));
         BEAST_EXPECT(seq(v.read(k(2))) == 2);
         v.insert(sle(3, 3));
@@ -221,7 +221,7 @@ class View_test : public beast::unit_test::suite
             succ(v0, 4, 7);
             succ(v0, 5, 7);
             succ(v0, 6, 7);
-            succ(v0, 7, boost::none);
+            succ(v0, 7, std::nullopt);
 
             succ(v1, 0, 1);
             succ(v1, 1, 2);
@@ -230,7 +230,7 @@ class View_test : public beast::unit_test::suite
             succ(v1, 4, 5);
             succ(v1, 5, 6);
             succ(v1, 6, 7);
-            succ(v1, 7, boost::none);
+            succ(v1, 7, std::nullopt);
 
             v1.erase(v1.peek(k(4)));
             succ(v1, 3, 5);
@@ -254,7 +254,7 @@ class View_test : public beast::unit_test::suite
         succ(v0, 4, 5);
         succ(v0, 5, 7);
         succ(v0, 6, 7);
-        succ(v0, 7, boost::none);
+        succ(v0, 7, std::nullopt);
     }
 
     void

@@ -30,6 +30,7 @@
 #include <ripple/consensus/LedgerTiming.h>
 #include <ripple/json/json_writer.h>
 #include <boost/logic/tribool.hpp>
+#include <optional>
 #include <sstream>
 
 namespace ripple {
@@ -214,10 +215,10 @@ checkConsensus(
       //-----------------------------------------------------------------------
       //
       // Attempt to acquire a specific ledger.
-      boost::optional<Ledger> acquireLedger(Ledger::ID const & ledgerID);
+      std::optional<Ledger> acquireLedger(Ledger::ID const & ledgerID);
 
       // Acquire the transaction set associated with a proposed position.
-      boost::optional<TxSet> acquireTxSet(TxSet::ID const & setID);
+      std::optional<TxSet> acquireTxSet(TxSet::ID const & setID);
 
       // Whether any transactions are in the open ledger
       bool hasOpenTransactions() const;
@@ -398,7 +399,7 @@ public:
     void
     simulate(
         NetClock::time_point const& now,
-        boost::optional<std::chrono::milliseconds> consensusDelay);
+        std::optional<std::chrono::milliseconds> consensusDelay);
 
     /** Get the previous ledger ID.
 
@@ -577,7 +578,7 @@ private:
     // Transaction Sets, indexed by hash of transaction tree
     hash_map<typename TxSet_t::ID, const TxSet_t> acquired_;
 
-    boost::optional<Result> result_;
+    std::optional<Result> result_;
     ConsensusCloseTimes rawCloseTimes_;
 
     //-------------------------------------------------------------------------
@@ -792,7 +793,7 @@ Consensus<Adaptor>::peerProposalInternal(
         if (ait == acquired_.end())
         {
             // acquireTxSet will return the set if it is available, or
-            // spawn a request for it and return none/nullptr.  It will call
+            // spawn a request for it and return nullopt/nullptr.  It will call
             // gotTxSet once it arrives
             if (auto set = adaptor_.acquireTxSet(newPeerProp.position()))
                 gotTxSet(now_, *set);
@@ -881,7 +882,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::simulate(
     NetClock::time_point const& now,
-    boost::optional<std::chrono::milliseconds> consensusDelay)
+    std::optional<std::chrono::milliseconds> consensusDelay)
 {
     using namespace std::chrono_literals;
     JLOG(j_.info()) << "Simulating consensus";
@@ -1388,11 +1389,11 @@ Consensus<Adaptor>::updateOurPositions()
     }
 
     // This will stay unseated unless there are any changes
-    boost::optional<TxSet_t> ourNewSet;
+    std::optional<TxSet_t> ourNewSet;
 
     // Update votes on disputed transactions
     {
-        boost::optional<typename TxSet_t::MutableTxSet> mutableSet;
+        std::optional<typename TxSet_t::MutableTxSet> mutableSet;
         for (auto& [txId, dispute] : result_->disputes)
         {
             // Because the threshold for inclusion increases,

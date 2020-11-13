@@ -27,9 +27,9 @@
 
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/operators.hpp>
-#include <boost/optional.hpp>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <type_traits>
 
@@ -178,7 +178,7 @@ public:
     decimalXRP() const;
 
     template <class Dest>
-    boost::optional<Dest>
+    std::optional<Dest>
     dropsAs() const
     {
         if ((drops_ > std::numeric_limits<Dest>::max()) ||
@@ -186,7 +186,7 @@ public:
             (std::numeric_limits<Dest>::is_signed &&
              drops_ < std::numeric_limits<Dest>::lowest()))
         {
-            return boost::none;
+            return std::nullopt;
         }
         return static_cast<Dest>(drops_);
     }

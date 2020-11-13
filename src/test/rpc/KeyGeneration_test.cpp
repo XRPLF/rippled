@@ -97,7 +97,7 @@ class WalletPropose_test : public ripple::TestSuite
 {
 public:
     void
-    testRandomWallet(boost::optional<std::string> const& keyType)
+    testRandomWallet(std::optional<std::string> const& keyType)
     {
         Json::Value params;
         if (keyType)
@@ -146,7 +146,7 @@ public:
 
     void
     testSeed(
-        boost::optional<std::string> const& keyType,
+        std::optional<std::string> const& keyType,
         key_strings const& strings)
     {
         testcase("seed");
@@ -162,7 +162,7 @@ public:
 
     void
     testSeedHex(
-        boost::optional<std::string> const& keyType,
+        std::optional<std::string> const& keyType,
         key_strings const& strings)
     {
         testcase("seed_hex");
@@ -179,7 +179,7 @@ public:
     void
     testLegacyPassphrase(
         char const* value,
-        boost::optional<std::string> const& keyType,
+        std::optional<std::string> const& keyType,
         key_strings const& strings)
     {
         Json::Value params;
@@ -196,7 +196,7 @@ public:
 
     void
     testLegacyPassphrase(
-        boost::optional<std::string> const& keyType,
+        std::optional<std::string> const& keyType,
         key_strings const& strings)
     {
         testcase("passphrase");
@@ -209,7 +209,7 @@ public:
 
     void
     testKeyType(
-        boost::optional<std::string> const& keyType,
+        std::optional<std::string> const& keyType,
         key_strings const& strings)
     {
         testcase(keyType ? *keyType : "no key_type");
@@ -318,7 +318,7 @@ public:
 
     void
     testKeypairForSignature(
-        boost::optional<std::string> keyType,
+        std::optional<std::string> keyType,
         key_strings const& strings)
     {
         testcase(
@@ -852,13 +852,13 @@ public:
     void
     run() override
     {
-        testKeyType(boost::none, secp256k1_strings);
+        testKeyType(std::nullopt, secp256k1_strings);
         testKeyType(std::string("secp256k1"), secp256k1_strings);
         testKeyType(std::string("ed25519"), ed25519_strings);
         testKeyType(std::string("secp256k1"), strong_brain_strings);
         testBadInput();
 
-        testKeypairForSignature(boost::none, secp256k1_strings);
+        testKeypairForSignature(std::nullopt, secp256k1_strings);
         testKeypairForSignature(std::string("secp256k1"), secp256k1_strings);
         testKeypairForSignature(std::string("ed25519"), ed25519_strings);
         testKeypairForSignature(std::string("secp256k1"), strong_brain_strings);

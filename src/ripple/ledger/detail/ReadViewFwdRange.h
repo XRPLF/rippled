@@ -20,10 +20,10 @@
 #ifndef RIPPLE_LEDGER_READVIEWFWDRANGE_H_INCLUDED
 #define RIPPLE_LEDGER_READVIEWFWDRANGE_H_INCLUDED
 
-#include <boost/optional.hpp>
 #include <cstddef>
 #include <iterator>
 #include <memory>
+#include <optional>
 
 namespace ripple {
 

@@ -20,8 +20,9 @@
 #ifndef RIPPLE_TEST_JTX_SIG_H_INCLUDED
 #define RIPPLE_TEST_JTX_SIG_H_INCLUDED
 
-#include <boost/optional.hpp>
 #include <test/jtx/Env.h>
+
+#include <optional>
 
 namespace ripple {
 namespace test {
@@ -34,7 +35,7 @@ class sig
 {
 private:
     bool manual_ = true;
-    boost::optional<Account> account_;
+    std::optional<Account> account_;
 
 public:
     explicit sig(autofill_t) : manual_(false)

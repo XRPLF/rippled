@@ -20,8 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_TOKENS_H_INCLUDED
 #define RIPPLE_PROTOCOL_TOKENS_H_INCLUDED
 
-#include <boost/optional.hpp>
 #include <cstdint>
+#include <optional>
 #include <string>
 
 namespace ripple {
@@ -38,11 +38,11 @@ enum class TokenType : std::uint8_t {
 };
 
 template <class T>
-boost::optional<T>
+std::optional<T>
 parseBase58(std::string const& s);
 
 template <class T>
-boost::optional<T>
+std::optional<T>
 parseBase58(TokenType type, std::string const& s);
 
 /** Encode data in Base58Check format using XRPL alphabet

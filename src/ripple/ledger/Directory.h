@@ -103,7 +103,7 @@ private:
     Keylet root_;
     Keylet page_;
     uint256 index_;
-    boost::optional<value_type> mutable cache_;
+    std::optional<value_type> mutable cache_;
     std::shared_ptr<SLE const> sle_;
     STVector256 const* indexes_ = nullptr;
     std::vector<uint256>::const_iterator it_;

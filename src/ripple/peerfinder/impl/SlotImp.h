@@ -24,8 +24,8 @@
 #include <ripple/beast/container/aged_unordered_map.h>
 #include <ripple/peerfinder/PeerfinderManager.h>
 #include <ripple/peerfinder/Slot.h>
-#include <boost/optional.hpp>
 #include <atomic>
+#include <optional>
 
 namespace ripple {
 namespace PeerFinder {
@@ -81,24 +81,24 @@ public:
         return m_remote_endpoint;
     }
 
-    boost::optional<beast::IP::Endpoint> const&
+    std::optional<beast::IP::Endpoint> const&
     local_endpoint() const override
     {
         return m_local_endpoint;
     }
 
-    boost::optional<PublicKey> const&
+    std::optional<PublicKey> const&
     public_key() const override
     {
         return m_public_key;
     }
 
-    boost::optional<std::uint16_t>
+    std::optional<std::uint16_t>
     listening_port() const override
     {
         std::uint32_t const value = m_listening_port;
         if (value == unknownPort)
-            return boost::none;
+            return std::nullopt;
         return value;
     }
 
@@ -181,8 +181,8 @@ private:
     bool m_reserved;
     State m_state;
     beast::IP::Endpoint m_remote_endpoint;
-    boost::optional<beast::IP::Endpoint> m_local_endpoint;
-    boost::optional<PublicKey> m_public_key;
+    std::optional<beast::IP::Endpoint> m_local_endpoint;
+    std::optional<PublicKey> m_public_key;
 
     static std::int32_t constexpr unknownPort = -1;
     std::atomic<std::int32_t> m_listening_port;

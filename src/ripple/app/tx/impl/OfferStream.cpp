@@ -144,7 +144,7 @@ TOfferStreamBase<TIn, TOut>::step()
 
     for (;;)
     {
-        ownerFunds_ = boost::none;
+        ownerFunds_ = std::nullopt;
         // BookTip::step deletes the current offer from the view before
         // advancing to the next (unless the ledger entry is missing).
         if (!tip_.step(j_))

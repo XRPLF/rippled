@@ -156,7 +156,7 @@ static bool
 shouldAcquire(
     std::uint32_t const currentLedger,
     std::uint32_t const ledgerHistory,
-    boost::optional<LedgerIndex> const minimumOnline,
+    std::optional<LedgerIndex> const minimumOnline,
     std::uint32_t const candidateLedger,
     beast::Journal j)
 {
@@ -328,7 +328,7 @@ void
 LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
 {
     std::vector<NetClock::time_point> times;
-    boost::optional<uint256> consensusHash;
+    std::optional<uint256> consensusHash;
 
     if (!standalone_)
     {
@@ -609,13 +609,13 @@ LedgerMaster::getFullValidatedRange(
     if (!maxVal)
         return false;
 
-    boost::optional<std::uint32_t> maybeMin;
+    std::optional<std::uint32_t> maybeMin;
     {
         std::lock_guard sl(mCompleteLock);
         maybeMin = prevMissing(mCompleteLedgers, maxVal);
     }
 
-    if (maybeMin == boost::none)
+    if (maybeMin == std::nullopt)
         minVal = maxVal;
     else
         minVal = 1 + *maybeMin;
@@ -854,7 +854,7 @@ void
 LedgerMaster::fixMismatch(ReadView const& ledger)
 {
     int invalidate = 0;
-    boost::optional<uint256> hash;
+    std::optional<uint256> hash;
 
     for (std::uint32_t lSeq = ledger.info().seq - 1; lSeq > 0; --lSeq)
     {
@@ -1293,13 +1293,13 @@ LedgerMaster::advanceThread()
     JLOG(m_journal.trace()) << "advanceThread>";
 }
 
-boost::optional<LedgerHash>
+std::optional<LedgerHash>
 LedgerMaster::getLedgerHashForHistory(
     LedgerIndex index,
     InboundLedger::Reason reason)
 {
     // Try to get the hash of a ledger we need to fetch for history
-    boost::optional<LedgerHash> ret;
+    std::optional<LedgerHash> ret;
     auto const& l{
         reason == InboundLedger::Reason::SHARD ? mShardLedger : mHistLedger};
 
@@ -1672,15 +1672,15 @@ LedgerMaster::getCompleteLedgers()
     return to_string(mCompleteLedgers);
 }
 
-boost::optional<NetClock::time_point>
+std::optional<NetClock::time_point>
 LedgerMaster::getCloseTimeBySeq(LedgerIndex ledgerIndex)
 {
     uint256 hash = getHashBySeq(ledgerIndex);
     return hash.isNonZero() ? getCloseTimeByHash(hash, ledgerIndex)
-                            : boost::none;
+                            : std::nullopt;
 }
 
-boost::optional<NetClock::time_point>
+std::optional<NetClock::time_point>
 LedgerMaster::getCloseTimeByHash(
     LedgerHash const& ledgerHash,
     std::uint32_t index)
@@ -1699,7 +1699,7 @@ LedgerMaster::getCloseTimeByHash(
         }
     }
 
-    return boost::none;
+    return std::nullopt;
 }
 
 uint256
@@ -1713,10 +1713,10 @@ LedgerMaster::getHashBySeq(std::uint32_t index)
     return getHashByIndex(index, app_);
 }
 
-boost::optional<LedgerHash>
+std::optional<LedgerHash>
 LedgerMaster::walkHashBySeq(std::uint32_t index, InboundLedger::Reason reason)
 {
-    boost::optional<LedgerHash> ledgerHash;
+    std::optional<LedgerHash> ledgerHash;
 
     if (auto referenceLedger = mValidLedger.get())
         ledgerHash = walkHashBySeq(index, referenceLedger, reason);
@@ -1724,7 +1724,7 @@ LedgerMaster::walkHashBySeq(std::uint32_t index, InboundLedger::Reason reason)
     return ledgerHash;
 }
 
-boost::optional<LedgerHash>
+std::optional<LedgerHash>
 LedgerMaster::walkHashBySeq(
     std::uint32_t index,
     std::shared_ptr<ReadView const> const& referenceLedger,
@@ -1733,7 +1733,7 @@ LedgerMaster::walkHashBySeq(
     if (!referenceLedger || (referenceLedger->info().seq < index))
     {
         // Nothing we can do. No validated ledger.
-        return boost::none;
+        return std::nullopt;
     }
 
     // See if the hash for the ledger we need is in the reference ledger
@@ -2033,7 +2033,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
             {
                 // We are in sync, so can acquire
                 InboundLedger::Reason reason = InboundLedger::Reason::HISTORY;
-                boost::optional<std::uint32_t> missing;
+                std::optional<std::uint32_t> missing;
                 {
                     std::lock_guard sll(mCompleteLock);
                     missing = prevMissing(
@@ -2057,7 +2057,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
                             << "advanceThread should acquire";
                     }
                     else
-                        missing = boost::none;
+                        missing = std::nullopt;
                 }
                 if (!missing && mFillInProgress == 0)
                 {
@@ -2121,7 +2121,7 @@ LedgerMaster::addFetchPack(uint256 const& hash, std::shared_ptr<Blob> data)
     fetch_packs_.canonicalize_replace_client(hash, data);
 }
 
-boost::optional<Blob>
+std::optional<Blob>
 LedgerMaster::getFetchPack(uint256 const& hash)
 {
     Blob data;
@@ -2131,7 +2131,7 @@ LedgerMaster::getFetchPack(uint256 const& hash)
         if (hash == sha512Half(makeSlice(data)))
             return data;
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 void
@@ -2341,15 +2341,17 @@ LedgerMaster::getFetchPackCacheSize() const
 }
 
 // Returns the minimum ledger sequence in SQL database, if any.
-boost::optional<LedgerIndex>
+std::optional<LedgerIndex>
 LedgerMaster::minSqlSeq()
 {
     if (!app_.config().reporting())
     {
+        // SOCI requires boost::optional (not std::optional) as the parameter.
         boost::optional<LedgerIndex> seq;
         auto db = app_.getLedgerDB().checkoutDb();
         *db << "SELECT MIN(LedgerSeq) FROM Ledgers", soci::into(seq);
-        return seq;
+        if (seq)
+            return *seq;
     }
 #ifdef RIPPLED_REPORTING
     {

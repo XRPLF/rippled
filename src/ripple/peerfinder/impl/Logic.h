@@ -852,7 +852,7 @@ public:
             slots_.erase(iter);
         }
         // Remove the key if present
-        if (slot->public_key() != boost::none)
+        if (slot->public_key() != std::nullopt)
         {
             auto const iter = keys_.find(*slot->public_key());
             // Key must exist
@@ -1109,7 +1109,7 @@ public:
         {
             beast::PropertyStream::Map item(set);
             SlotImp const& slot(*entry.second);
-            if (slot.local_endpoint() != boost::none)
+            if (slot.local_endpoint() != std::nullopt)
                 item["local_address"] = to_string(*slot.local_endpoint());
             item["remote_address"] = to_string(slot.remote_endpoint());
             if (slot.inbound())

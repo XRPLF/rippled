@@ -55,7 +55,7 @@ class Validations_test : public beast::unit_test::suite
         PeerID nodeID_;
         bool trusted_ = true;
         std::size_t signIdx_{1};
-        boost::optional<std::uint32_t> loadFee_;
+        std::optional<std::uint32_t> loadFee_;
 
     public:
         Node(PeerID nodeID, clock_type const& c) : c_(c), nodeID_(nodeID)
@@ -200,7 +200,7 @@ class Validations_test : public beast::unit_test::suite
             return toNetClock(c_);
         }
 
-        boost::optional<Ledger>
+        std::optional<Ledger>
         acquire(Ledger::ID const& id)
         {
             return oracle_.lookup(id);
@@ -444,7 +444,7 @@ class Validations_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 harness.vals().getNodesAfter(ledgerA, ledgerA.id()) == 0);
             BEAST_EXPECT(
-                harness.vals().getPreferred(genesisLedger) == boost::none);
+                harness.vals().getPreferred(genesisLedger) == std::nullopt);
         }
     }
 
@@ -781,7 +781,7 @@ class Validations_test : public beast::unit_test::suite
         };
 
         // Empty (no ledgers)
-        BEAST_EXPECT(harness.vals().getPreferred(ledgerA) == boost::none);
+        BEAST_EXPECT(harness.vals().getPreferred(ledgerA) == std::nullopt);
 
         // Single ledger
         BEAST_EXPECT(ValStatus::current == harness.add(a.validate(ledgerB)));
@@ -1015,7 +1015,7 @@ class Validations_test : public beast::unit_test::suite
                 trustedVals.size());
             if (trustedVals.empty())
                 BEAST_EXPECT(
-                    vals.getPreferred(this->genesisLedger) == boost::none);
+                    vals.getPreferred(this->genesisLedger) == std::nullopt);
             else
                 BEAST_EXPECT(
                     vals.getPreferred(this->genesisLedger)->second == testID);
@@ -1084,7 +1084,7 @@ class Validations_test : public beast::unit_test::suite
             // make acquiring ledger available
             h["ab"];
             BEAST_EXPECT(vals.currentTrusted() == trustedVals);
-            BEAST_EXPECT(vals.getPreferred(genesisLedger) == boost::none);
+            BEAST_EXPECT(vals.getPreferred(genesisLedger) == std::nullopt);
             BEAST_EXPECT(
                 vals.getNodesAfter(genesisLedger, genesisLedger.id()) == 0);
         }

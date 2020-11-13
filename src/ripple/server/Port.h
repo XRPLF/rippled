@@ -27,6 +27,7 @@
 #include <boost/beast/websocket/option.hpp>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 
@@ -105,10 +106,10 @@ struct ParsedPort
     int limit = 0;
     std::uint16_t ws_queue_limit;
 
-    boost::optional<boost::asio::ip::address> ip;
-    boost::optional<std::uint16_t> port;
-    boost::optional<std::vector<beast::IP::Address>> admin_ip;
-    boost::optional<std::vector<beast::IP::Address>> secure_gateway_ip;
+    std::optional<boost::asio::ip::address> ip;
+    std::optional<std::uint16_t> port;
+    std::optional<std::vector<beast::IP::Address>> admin_ip;
+    std::optional<std::vector<beast::IP::Address>> secure_gateway_ip;
 };
 
 void

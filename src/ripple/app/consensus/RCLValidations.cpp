@@ -123,7 +123,7 @@ RCLValidationsAdaptor::now() const
     return app_.timeKeeper().closeTime();
 }
 
-boost::optional<RCLValidatedLedger>
+std::optional<RCLValidatedLedger>
 RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 {
     auto ledger = app_.getLedgerMaster().getLedgerByHash(hash);
@@ -139,7 +139,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
                 pApp->getInboundLedgers().acquire(
                     hash, 0, InboundLedger::Reason::CONSENSUS);
             });
-        return boost::none;
+        return std::nullopt;
     }
 
     assert(!ledger->open() && ledger->isImmutable());

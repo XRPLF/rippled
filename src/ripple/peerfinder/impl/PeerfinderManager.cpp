@@ -24,9 +24,9 @@
 #include <ripple/peerfinder/impl/SourceStrings.h>
 #include <ripple/peerfinder/impl/StoreSqdb.h>
 #include <boost/asio/io_service.hpp>
-#include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <memory>
+#include <optional>
 #include <thread>
 
 namespace ripple {
@@ -36,7 +36,7 @@ class ManagerImp : public Manager
 {
 public:
     boost::asio::io_service& io_service_;
-    boost::optional<boost::asio::io_service::work> work_;
+    std::optional<boost::asio::io_service::work> work_;
     clock_type& m_clock;
     beast::Journal m_journal;
     StoreSqdb m_store;
@@ -55,7 +55,7 @@ public:
         beast::insight::Collector::ptr const& collector)
         : Manager(stoppable)
         , io_service_(io_service)
-        , work_(boost::in_place(std::ref(io_service_)))
+        , work_(std::in_place, std::ref(io_service_))
         , m_clock(clock)
         , m_journal(journal)
         , m_store(journal)
@@ -76,7 +76,7 @@ public:
     {
         if (work_)
         {
-            work_ = boost::none;
+            work_.reset();
             checker_.stop();
             m_logic.stop();
         }

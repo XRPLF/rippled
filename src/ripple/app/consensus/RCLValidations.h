@@ -120,7 +120,7 @@ public:
     }
 
     /// Get the load fee of the validation if it exists
-    boost::optional<std::uint32_t>
+    std::optional<std::uint32_t>
     loadFee() const
     {
         return ~(*val_)[~sfLoadFee];
@@ -218,7 +218,7 @@ public:
     now() const;
 
     /** Attempt to acquire the ledger with given id from the network */
-    boost::optional<RCLValidatedLedger>
+    std::optional<RCLValidatedLedger>
     acquire(LedgerHash const& id);
 
     beast::Journal

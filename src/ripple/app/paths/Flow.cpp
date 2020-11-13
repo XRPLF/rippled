@@ -65,8 +65,8 @@ flow(
     bool partialPayment,
     bool ownerPaysTransferFee,
     bool offerCrossing,
-    boost::optional<Quality> const& limitQuality,
-    boost::optional<STAmount> const& sendMax,
+    std::optional<Quality> const& limitQuality,
+    std::optional<STAmount> const& sendMax,
     beast::Journal j,
     path::detail::FlowDebugInfo* flowDebugInfo)
 {
@@ -80,7 +80,7 @@ flow(
 
     Issue const dstIssue = deliver.issue();
 
-    boost::optional<Issue> sendMaxIssue;
+    std::optional<Issue> sendMaxIssue;
     if (sendMax)
         sendMaxIssue = sendMax->issue();
 

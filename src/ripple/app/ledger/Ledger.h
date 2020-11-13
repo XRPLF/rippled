@@ -31,7 +31,6 @@
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/shamap/SHAMap.h>
-#include <boost/optional.hpp>
 #include <mutex>
 
 namespace ripple {
@@ -175,8 +174,8 @@ public:
     bool
     exists(uint256 const& key) const;
 
-    boost::optional<uint256>
-    succ(uint256 const& key, boost::optional<uint256> const& last = boost::none)
+    std::optional<uint256>
+    succ(uint256 const& key, std::optional<uint256> const& last = std::nullopt)
         const override;
 
     std::shared_ptr<SLE const>
@@ -207,7 +206,7 @@ public:
     // DigestAwareReadView
     //
 
-    boost::optional<digest_type>
+    std::optional<digest_type>
     digest(key_type const& key) const override;
 
     //
@@ -361,7 +360,7 @@ public:
      *
      * @return the public key if any
      */
-    boost::optional<PublicKey>
+    std::optional<PublicKey>
     validatorToDisable() const;
 
     /**
@@ -369,7 +368,7 @@ public:
      *
      * @return the public key if any
      */
-    boost::optional<PublicKey>
+    std::optional<PublicKey>
     validatorToReEnable() const;
 
     /**

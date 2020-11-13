@@ -73,7 +73,7 @@ doAccountObjects(RPC::JsonContext& context)
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
-    boost::optional<std::vector<LedgerEntryType>> typeFilter;
+    std::optional<std::vector<LedgerEntryType>> typeFilter;
 
     if (params.isMember(jss::deletion_blockers_only) &&
         params[jss::deletion_blockers_only].asBool())

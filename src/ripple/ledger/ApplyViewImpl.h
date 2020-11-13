@@ -24,7 +24,6 @@
 #include <ripple/ledger/detail/ApplyViewBase.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/TER.h>
-#include <boost/optional.hpp>
 
 namespace ripple {
 
@@ -86,7 +85,7 @@ public:
             std::shared_ptr<SLE const> const& after)> const& func);
 
 private:
-    boost::optional<STAmount> deliver_;
+    std::optional<STAmount> deliver_;
 };
 
 }  // namespace ripple

@@ -159,9 +159,9 @@ Pathfinder::Pathfinder(
     AccountID const& uSrcAccount,
     AccountID const& uDstAccount,
     Currency const& uSrcCurrency,
-    boost::optional<AccountID> const& uSrcIssuer,
+    std::optional<AccountID> const& uSrcIssuer,
     STAmount const& saDstAmount,
-    boost::optional<STAmount> const& srcAmount,
+    std::optional<STAmount> const& srcAmount,
     Application& app)
     : mSrcAccount(uSrcAccount)
     , mDstAccount(uDstAccount)
@@ -184,7 +184,7 @@ Pathfinder::Pathfinder(
     , app_(app)
     , j_(app.journal("Pathfinder"))
 {
-    assert(!uSrcIssuer || isXRP(uSrcCurrency) == isXRP(uSrcIssuer.get()));
+    assert(!uSrcIssuer || isXRP(uSrcCurrency) == isXRP(uSrcIssuer.value()));
 }
 
 bool

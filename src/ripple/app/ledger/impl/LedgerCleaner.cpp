@@ -260,11 +260,11 @@ private:
         stopped();
     }
 
-    // VFALCO TODO This should return boost::optional<uint256>
+    // VFALCO TODO This should return std::optional<uint256>
     LedgerHash
     getLedgerHash(std::shared_ptr<ReadView const>& ledger, LedgerIndex index)
     {
-        boost::optional<LedgerHash> hash;
+        std::optional<LedgerHash> hash;
         try
         {
             hash = hashOfSeq(*ledger, index, j_);

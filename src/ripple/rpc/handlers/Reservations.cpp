@@ -25,8 +25,7 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/handlers/Handlers.h>
 
-#include <boost/optional.hpp>
-
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -71,7 +70,7 @@ doPeerReservationsAdd(RPC::JsonContext& context)
 
     // channel_verify takes a key in both base58 and hex.
     // @nikb prefers that we take only base58.
-    boost::optional<PublicKey> optPk = parseBase58<PublicKey>(
+    std::optional<PublicKey> optPk = parseBase58<PublicKey>(
         TokenType::NodePublic, params[jss::public_key].asString());
     if (!optPk)
         return rpcError(rpcPUBLIC_MALFORMED);
@@ -102,7 +101,7 @@ doPeerReservationsDel(RPC::JsonContext& context)
     if (!params[jss::public_key].isString())
         return RPC::expected_field_error(jss::public_key, "a string");
 
-    boost::optional<PublicKey> optPk = parseBase58<PublicKey>(
+    std::optional<PublicKey> optPk = parseBase58<PublicKey>(
         TokenType::NodePublic, params[jss::public_key].asString());
     if (!optPk)
         return rpcError(rpcPUBLIC_MALFORMED);

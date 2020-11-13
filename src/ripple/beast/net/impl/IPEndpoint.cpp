@@ -31,7 +31,7 @@ Endpoint::Endpoint(Address const& addr, Port port) : m_addr(addr), m_port(port)
 {
 }
 
-boost::optional<Endpoint>
+std::optional<Endpoint>
 Endpoint::from_string_checked(std::string const& s)
 {
     std::stringstream is(boost::trim_copy(s));
@@ -45,7 +45,7 @@ Endpoint::from_string_checked(std::string const& s)
 Endpoint
 Endpoint::from_string(std::string const& s)
 {
-    if (boost::optional<Endpoint> const result = from_string_checked(s))
+    if (std::optional<Endpoint> const result = from_string_checked(s))
         return *result;
     return Endpoint{};
 }

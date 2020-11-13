@@ -115,7 +115,7 @@ RCLConsensus::Adaptor::Adaptor(
     }
 }
 
-boost::optional<RCLCxLedger>
+std::optional<RCLCxLedger>
 RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
 {
     // we need to switch the ledger we're working from
@@ -138,7 +138,7 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
                         id, 0, InboundLedger::Reason::CONSENSUS);
                 });
         }
-        return boost::none;
+        return std::nullopt;
     }
 
     assert(!built->open() && built->isImmutable());
@@ -244,14 +244,14 @@ RCLConsensus::Adaptor::share(RCLTxSet const& txns)
     inboundTransactions_.giveSet(txns.id(), txns.map_, false);
 }
 
-boost::optional<RCLTxSet>
+std::optional<RCLTxSet>
 RCLConsensus::Adaptor::acquireTxSet(RCLTxSet::ID const& setId)
 {
     if (auto txns = inboundTransactions_.getSet(setId, true))
     {
         return RCLTxSet{std::move(txns)};
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 bool
@@ -634,7 +634,7 @@ RCLConsensus::Adaptor::doAccept(
         std::lock(lock, sl);
 
         auto const lastVal = ledgerMaster_.getValidatedLedger();
-        boost::optional<Rules> rules;
+        std::optional<Rules> rules;
         if (lastVal)
             rules.emplace(*lastVal, app_.config().features);
         else
@@ -939,7 +939,7 @@ RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
 void
 RCLConsensus::simulate(
     NetClock::time_point const& now,
-    boost::optional<std::chrono::milliseconds> consensusDelay)
+    std::optional<std::chrono::milliseconds> consensusDelay)
 {
     std::lock_guard _{mutex_};
     consensus_.simulate(now, consensusDelay);

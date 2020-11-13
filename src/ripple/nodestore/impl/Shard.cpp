@@ -118,7 +118,8 @@ Shard::init(Scheduler& scheduler, nudb::context& context)
     backend_ = factory->createInstance(
         NodeObject::keyBytes,
         section,
-        megabytes(app_.config().getValueFor(SizedItem::burstSize, boost::none)),
+        megabytes(
+            app_.config().getValueFor(SizedItem::burstSize, std::nullopt)),
         scheduler,
         context,
         j_);
@@ -183,14 +184,14 @@ Shard::tryClose()
     return true;
 }
 
-boost::optional<std::uint32_t>
+std::optional<std::uint32_t>
 Shard::prepare()
 {
     if (state_ != acquire)
     {
         JLOG(j_.warn()) << "shard " << index_
                         << " prepare called when not acquiring";
-        return boost::none;
+        return std::nullopt;
     }
 
     std::lock_guard lock(mutex_);
@@ -198,7 +199,7 @@ Shard::prepare()
     {
         JLOG(j_.error()) << "shard " << index_
                          << " missing acquire SQLite database";
-        return boost::none;
+        return std::nullopt;
     }
 
     if (acquireInfo_->storedSeqs.empty())
@@ -559,7 +560,7 @@ Shard::isLegacy() const
 }
 
 bool
-Shard::finalize(bool writeSQLite, boost::optional<uint256> const& referenceHash)
+Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
 {
     auto const scopedCount{makeBackendCount()};
     if (!scopedCount)
@@ -616,6 +617,8 @@ Shard::finalize(bool writeSQLite, boost::optional<uint256> const& referenceHash)
             if (!acquireInfo_)
                 return fail("missing acquire SQLite database");
 
+            // index and sHash must be boost::optional (not std) because that's
+            // what SOCI expects in its interface.
             auto session{acquireInfo_->SQLiteDB->checkoutDb()};
             boost::optional<std::uint32_t> index;
             boost::optional<std::string> sHash;
@@ -897,6 +900,8 @@ Shard::open(std::lock_guard<std::mutex> const& lock)
             // A shard being acquired, backend is likely incomplete
             createAcquireInfo();
 
+            // index and must be boost::optional (not std) because that's
+            // what SOCI expects in its interface.
             auto& session{acquireInfo_->SQLiteDB->getSession()};
             boost::optional<std::uint32_t> index;
             soci::blob sociBlob(session);
@@ -1003,14 +1008,14 @@ Shard::initSQLite(std::lock_guard<std::mutex> const&)
             lgrSQLiteDB_->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(
-                    config.getValueFor(SizedItem::lgrDBCache, boost::none)));
+                    config.getValueFor(SizedItem::lgrDBCache, std::nullopt)));
 
             txSQLiteDB_ = std::make_unique<DatabaseCon>(
                 setup, TxDBName, FinalShardDBPragma, TxDBInit);
             txSQLiteDB_->getSession() << boost::str(
                 boost::format("PRAGMA cache_size=-%d;") %
                 kilobytes(
-                    config.getValueFor(SizedItem::txnDBCache, boost::none)));
+                    config.getValueFor(SizedItem::txnDBCache, std::nullopt)));
         }
         else
         {

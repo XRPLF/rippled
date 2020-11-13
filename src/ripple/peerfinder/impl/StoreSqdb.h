@@ -140,6 +140,7 @@ public:
         // get version
         int version(0);
         {
+            // SOCI requires a boost::optional (not std::optional) parameter.
             boost::optional<int> vO;
             m_session << "SELECT "
                          "  version "

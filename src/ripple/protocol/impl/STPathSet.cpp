@@ -23,7 +23,6 @@
 #include <ripple/basics/strHex.h>
 #include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/jss.h>
-#include <cstddef>
 
 namespace ripple {
 

@@ -25,9 +25,8 @@
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/Types.h>
 
-#include <boost/optional.hpp>
-
 #include <memory>
+#include <optional>
 
 namespace ripple {
 namespace NodeStore {
@@ -68,14 +67,15 @@ public:
 
         @param validLedgerSeq The sequence of the maximum valid ledgers
         @return If a ledger should be fetched and stored, then returns the
-        ledger sequence of the ledger to request. Otherwise returns boost::none.
-                Some reasons this may return boost::none are: all shards are
+        ledger sequence of the ledger to request. Otherwise returns
+        std::nullopt.
+                Some reasons this may return std::nullopt are: all shards are
                 stored and full, max allowed disk space would be exceeded, or a
                 ledger was recently requested and not enough time has passed
                 between requests.
         @implNote adds a new writable shard if necessary
     */
-    virtual boost::optional<std::uint32_t>
+    virtual std::optional<std::uint32_t>
     prepareLedger(std::uint32_t validLedgerSeq) = 0;
 
     /** Prepare one or more shard indexes to be imported into the database

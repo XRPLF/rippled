@@ -32,12 +32,12 @@ toBase58(AccountID const& v)
 }
 
 template <>
-boost::optional<AccountID>
+std::optional<AccountID>
 parseBase58(std::string const& s)
 {
     auto const result = decodeBase58Token(s, TokenType::AccountID);
     if (result.size() != AccountID::bytes)
-        return boost::none;
+        return std::nullopt;
     return AccountID{result};
 }
 

@@ -485,8 +485,8 @@ public:
         BEAST_EXPECT(cache.getMasterKey(kp1.first) == pk);
         BEAST_EXPECT(cache.getMasterKey(kp0.first) == kp0.first);
 
-        // getSigningKey should return boost::none for a revoked master public
-        // key getMasterKey should return boost::none for an ephemeral public
+        // getSigningKey should return std::nullopt for a revoked master public
+        // key getMasterKey should return std::nullopt for an ephemeral public
         // key from a revoked master public key
         BEAST_EXPECT(
             ManifestDisposition::accepted ==
@@ -644,7 +644,7 @@ public:
 
                 auto buildManifestObject =
                     [&](std::uint32_t seq,
-                        boost::optional<std::string> domain,
+                        std::optional<std::string> domain,
                         bool noSigningPublic = false,
                         bool noSignature = false) {
                         STObject st(sfGeneric);
@@ -677,7 +677,7 @@ public:
 
                     {  // valid manifest without domain
                         auto const st =
-                            buildManifestObject(++sequence, boost::none);
+                            buildManifestObject(++sequence, std::nullopt);
 
                         auto const m = toString(st);
                         auto const manifest = deserializeManifest(m);
@@ -831,7 +831,7 @@ public:
                     {
                         auto const st = buildManifestObject(
                             std::numeric_limits<std::uint32_t>::max(),
-                            boost::none,
+                            std::nullopt,
                             true,
                             true);
 
@@ -850,7 +850,7 @@ public:
                     {  // can't specify an ephemeral signing key
                         auto const st = buildManifestObject(
                             std::numeric_limits<std::uint32_t>::max(),
-                            boost::none,
+                            std::nullopt,
                             true,
                             false);
 
@@ -859,7 +859,7 @@ public:
                     {  // can't specify an ephemeral signature
                         auto const st = buildManifestObject(
                             std::numeric_limits<std::uint32_t>::max(),
-                            boost::none,
+                            std::nullopt,
                             false,
                             true);
 
@@ -868,7 +868,7 @@ public:
                     {  // can't specify an ephemeral key & signature
                         auto const st = buildManifestObject(
                             std::numeric_limits<std::uint32_t>::max(),
-                            boost::none,
+                            std::nullopt,
                             false,
                             false);
 

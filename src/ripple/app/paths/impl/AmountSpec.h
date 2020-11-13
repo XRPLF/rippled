@@ -24,6 +24,8 @@
 #include <ripple/basics/XRPAmount.h>
 #include <ripple/protocol/STAmount.h>
 
+#include <optional>
+
 namespace ripple {
 
 struct AmountSpec
@@ -36,8 +38,8 @@ struct AmountSpec
         XRPAmount xrp;
         IOUAmount iou;
     };
-    boost::optional<AccountID> issuer;
-    boost::optional<Currency> currency;
+    std::optional<AccountID> issuer;
+    std::optional<Currency> currency;
 
     friend std::ostream&
     operator<<(std::ostream& stream, AmountSpec const& amt)
@@ -192,7 +194,7 @@ toEitherAmount(STAmount const& amt)
 }
 
 inline AmountSpec
-toAmountSpec(EitherAmount const& ea, boost::optional<Currency> const& c)
+toAmountSpec(EitherAmount const& ea, std::optional<Currency> const& c)
 {
     AmountSpec r;
     r.native = (!c || isXRP(*c));

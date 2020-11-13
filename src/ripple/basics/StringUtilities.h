@@ -24,8 +24,8 @@
 #include <ripple/basics/strHex.h>
 
 #include <boost/format.hpp>
-#include <boost/optional.hpp>
 #include <boost/utility/string_view.hpp>
+#include <optional>
 #include <sstream>
 #include <string>
 
@@ -45,7 +45,7 @@ std::string
 sqlBlobLiteral(Blob const& blob);
 
 template <class Iterator>
-boost::optional<Blob>
+std::optional<Blob>
 strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 {
     Blob out;
@@ -85,13 +85,13 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
     return {std::move(out)};
 }
 
-inline boost::optional<Blob>
+inline std::optional<Blob>
 strUnHex(std::string const& strSrc)
 {
     return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
 }
 
-inline boost::optional<Blob>
+inline std::optional<Blob>
 strViewUnHex(boost::string_view const& strSrc)
 {
     return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
@@ -105,7 +105,7 @@ struct parsedURL
     std::string username;
     std::string password;
     std::string domain;
-    boost::optional<std::uint16_t> port;
+    std::optional<std::uint16_t> port;
     std::string path;
 
     bool
@@ -122,7 +122,7 @@ parseUrl(parsedURL& pUrl, std::string const& strUrl);
 std::string
 trim_whitespace(std::string str);
 
-boost::optional<std::uint64_t>
+std::optional<std::uint64_t>
 to_uint64(std::string const& s);
 
 /** Determines if the given string looks like a TOML-file hosting domain.

@@ -37,7 +37,7 @@ BasicApp::BasicApp(std::size_t numberOfThreads)
 
 BasicApp::~BasicApp()
 {
-    work_ = boost::none;
+    work_.reset();
 
     for (auto& t : threads_)
         t.join();

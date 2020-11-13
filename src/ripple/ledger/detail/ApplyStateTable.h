@@ -69,17 +69,17 @@ public:
         OpenView& to,
         STTx const& tx,
         TER ter,
-        boost::optional<STAmount> const& deliver,
+        std::optional<STAmount> const& deliver,
         beast::Journal j);
 
     bool
     exists(ReadView const& base, Keylet const& k) const;
 
-    boost::optional<key_type>
+    std::optional<key_type>
     succ(
         ReadView const& base,
         key_type const& key,
-        boost::optional<key_type> const& last) const;
+        std::optional<key_type> const& last) const;
 
     std::shared_ptr<SLE const>
     read(ReadView const& base, Keylet const& k) const;

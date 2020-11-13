@@ -417,14 +417,14 @@ Ledger::exists(uint256 const& key) const
     return stateMap_->hasItem(key);
 }
 
-boost::optional<uint256>
-Ledger::succ(uint256 const& key, boost::optional<uint256> const& last) const
+std::optional<uint256>
+Ledger::succ(uint256 const& key, std::optional<uint256> const& last) const
 {
     auto item = stateMap_->upper_bound(key);
     if (item == stateMap_->end())
-        return boost::none;
+        return std::nullopt;
     if (last && item->key() >= last)
-        return boost::none;
+        return std::nullopt;
     return item->key();
 }
 
@@ -500,13 +500,13 @@ Ledger::txRead(key_type const& key) const -> tx_type
 }
 
 auto
-Ledger::digest(key_type const& key) const -> boost::optional<digest_type>
+Ledger::digest(key_type const& key) const -> std::optional<digest_type>
 {
     SHAMapHash digest;
     // VFALCO Unfortunately this loads the item
     //        from the NodeStore needlessly.
     if (!stateMap_->peekItem(key, digest))
-        return boost::none;
+        return std::nullopt;
     return digest.as_uint256();
 }
 
@@ -678,7 +678,7 @@ Ledger::negativeUNL() const
     return negUnl;
 }
 
-boost::optional<PublicKey>
+std::optional<PublicKey>
 Ledger::validatorToDisable() const
 {
     if (auto sle = read(keylet::negativeUNL());
@@ -690,10 +690,10 @@ Ledger::validatorToDisable() const
             return PublicKey(s);
     }
 
-    return boost::none;
+    return std::nullopt;
 }
 
-boost::optional<PublicKey>
+std::optional<PublicKey>
 Ledger::validatorToReEnable() const
 {
     if (auto sle = read(keylet::negativeUNL());
@@ -705,7 +705,7 @@ Ledger::validatorToReEnable() const
             return PublicKey(s);
     }
 
-    return boost::none;
+    return std::nullopt;
 }
 
 void
@@ -1203,6 +1203,7 @@ loadLedgerHelper(std::string const& sqlSuffix, Application& app, bool acquire)
 
     auto db = app.getLedgerDB().checkoutDb();
 
+    // SOCI requires boost::optional (not std::optional) as parameters.
     boost::optional<std::string> sLedgerHash, sPrevHash, sAccountHash,
         sTransHash;
     boost::optional<std::uint64_t> totDrops, closingTime, prevClosingTime,
@@ -1615,6 +1616,7 @@ getHashByIndex(std::uint32_t ledgerIndex, Application& app)
     {
         auto db = app.getLedgerDB().checkoutDb();
 
+        // SOCI requires boost::optional (not std::optional) as the parameter.
         boost::optional<std::string> lh;
         *db << sql, soci::into(lh);
 
@@ -1642,6 +1644,7 @@ getHashesByIndex(
             ledgerIndex, ledgerHash, parentHash, app);
     auto db = app.getLedgerDB().checkoutDb();
 
+    // SOCI requires boost::optional (not std::optional) as parameters.
     boost::optional<std::string> lhO, phO;
 
     *db << "SELECT LedgerHash,PrevHash FROM Ledgers "
@@ -1676,6 +1679,8 @@ getHashesByIndex(std::uint32_t minSeq, std::uint32_t maxSeq, Application& app)
 
     std::uint64_t ls;
     std::string lh;
+
+    // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<std::string> ph;
     soci::statement st =
         (db->prepare << sql, soci::into(ls), soci::into(lh), soci::into(ph));

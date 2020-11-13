@@ -186,7 +186,7 @@ public:
                     "Internal InnerObjectFormatsParsedJSON error.  Bad JSON.");
             }
             STParsedJSONObject parsed("request", req);
-            bool const noObj = parsed.object == boost::none;
+            bool const noObj = !parsed.object.has_value();
             if (noObj == test.expectFail)
             {
                 pass();

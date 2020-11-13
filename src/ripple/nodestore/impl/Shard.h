@@ -106,7 +106,7 @@ public:
         stop_ = true;
     }
 
-    [[nodiscard]] boost::optional<std::uint32_t>
+    [[nodiscard]] std::optional<std::uint32_t>
     prepare();
 
     [[nodiscard]] bool
@@ -186,7 +186,7 @@ public:
         of the last ledger in the shard.
     */
     [[nodiscard]] bool
-    finalize(bool writeSQLite, boost::optional<uint256> const& referenceHash);
+    finalize(bool writeSQLite, std::optional<uint256> const& referenceHash);
 
     /** Enables removal of the shard directory on destruction.
      */
