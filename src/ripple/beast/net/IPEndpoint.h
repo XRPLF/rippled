@@ -24,10 +24,9 @@
 #include <ripple/beast/hash/uhash.h>
 #include <ripple/beast/net/IPAddress.h>
 
-#include <boost/optional.hpp>
-
 #include <cstdint>
 #include <ios>
+#include <optional>
 #include <string>
 
 namespace beast {
@@ -47,9 +46,9 @@ public:
 
     /** Create an Endpoint from a string.
         If the port is omitted, the endpoint will have a zero port.
-        @return An optional endpoint; will be `boost::none` on failure
+        @return An optional endpoint; will be `std::nullopt` on failure
     */
-    static boost::optional<Endpoint>
+    static std::optional<Endpoint>
     from_string_checked(std::string const& s);
     static Endpoint
     from_string(std::string const& s);

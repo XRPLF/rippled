@@ -41,7 +41,7 @@ public:
 
         for (std::uint32_t i = 1; i < 100; ++i)
         {
-            boost::optional<std::uint32_t> expected;
+            std::optional<std::uint32_t> expected;
             // no prev missing in domain for i <= 6
             if (i > 6)
             {

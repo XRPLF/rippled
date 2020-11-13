@@ -144,12 +144,12 @@ struct Peer
             return p_.now();
         }
 
-        boost::optional<Ledger>
+        std::optional<Ledger>
         acquire(Ledger::ID const& lId)
         {
             if (Ledger const* ledger = p_.acquireLedger(lId))
                 return *ledger;
-            return boost::none;
+            return std::nullopt;
         }
     };
 

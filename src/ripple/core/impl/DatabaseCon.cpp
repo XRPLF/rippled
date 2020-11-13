@@ -103,7 +103,7 @@ DatabaseCon::~DatabaseCon()
 }
 
 DatabaseCon::Setup
-setup_DatabaseCon(Config const& c, boost::optional<beast::Journal> j)
+setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
 {
     DatabaseCon::Setup setup;
 

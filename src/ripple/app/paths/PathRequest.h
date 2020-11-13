@@ -26,9 +26,9 @@
 #include <ripple/json/json_value.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/protocol/UintTypes.h>
-#include <boost/optional.hpp>
 #include <map>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <utility>
 
@@ -139,10 +139,10 @@ private:
     Json::Value jvStatus;  // Last result
 
     // Client request parameters
-    boost::optional<AccountID> raSrcAccount;
-    boost::optional<AccountID> raDstAccount;
+    std::optional<AccountID> raSrcAccount;
+    std::optional<AccountID> raDstAccount;
     STAmount saDstAmount;
-    boost::optional<STAmount> saSendMax;
+    std::optional<STAmount> saSendMax;
 
     std::set<Issue> sciSourceCurrencies;
     std::map<Issue, STPathSet> mContext;

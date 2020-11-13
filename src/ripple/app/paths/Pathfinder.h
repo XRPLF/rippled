@@ -43,9 +43,9 @@ public:
         AccountID const& srcAccount,
         AccountID const& dstAccount,
         Currency const& uSrcCurrency,
-        boost::optional<AccountID> const& uSrcIssuer,
+        std::optional<AccountID> const& uSrcIssuer,
         STAmount const& dstAmount,
-        boost::optional<STAmount> const& srcAmount,
+        std::optional<STAmount> const& srcAmount,
         Application& app);
     Pathfinder(Pathfinder const&) = delete;
     Pathfinder&
@@ -185,7 +185,7 @@ private:
     AccountID mEffectiveDst;  // The account the paths need to end at
     STAmount mDstAmount;
     Currency mSrcCurrency;
-    boost::optional<AccountID> mSrcIssuer;
+    std::optional<AccountID> mSrcIssuer;
     STAmount mSrcAmount;
     /** The amount remaining from mSrcAccount after the default liquidity has
         been removed. */

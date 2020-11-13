@@ -264,14 +264,14 @@ randomKeyPair(KeyType type)
 }
 
 template <>
-boost::optional<SecretKey>
+std::optional<SecretKey>
 parseBase58(TokenType type, std::string const& s)
 {
     auto const result = decodeBase58Token(s, type);
     if (result.empty())
-        return boost::none;
+        return std::nullopt;
     if (result.size() != 32)
-        return boost::none;
+        return std::nullopt;
     return SecretKey(makeSlice(result));
 }
 

@@ -92,15 +92,15 @@ struct PayChan_test : public beast::unit_test::suite
         return (*slep)[sfAmount];
     }
 
-    static boost::optional<std::int64_t>
+    static std::optional<std::int64_t>
     channelExpiration(ReadView const& view, uint256 const& chan)
     {
         auto const slep = view.read({ltPAYCHAN, chan});
         if (!slep)
-            return boost::none;
+            return std::nullopt;
         if (auto const r = (*slep)[~sfExpiration])
             return r.value();
-        return boost::none;
+        return std::nullopt;
     }
 
     static Json::Value
@@ -110,8 +110,8 @@ struct PayChan_test : public beast::unit_test::suite
         STAmount const& amount,
         NetClock::duration const& settleDelay,
         PublicKey const& pk,
-        boost::optional<NetClock::time_point> const& cancelAfter = boost::none,
-        boost::optional<std::uint32_t> const& dstTag = boost::none)
+        std::optional<NetClock::time_point> const& cancelAfter = std::nullopt,
+        std::optional<std::uint32_t> const& dstTag = std::nullopt)
     {
         using namespace jtx;
         Json::Value jv;
@@ -134,7 +134,7 @@ struct PayChan_test : public beast::unit_test::suite
         jtx::Account const& account,
         uint256 const& channel,
         STAmount const& amount,
-        boost::optional<NetClock::time_point> const& expiration = boost::none)
+        std::optional<NetClock::time_point> const& expiration = std::nullopt)
     {
         using namespace jtx;
         Json::Value jv;
@@ -152,10 +152,10 @@ struct PayChan_test : public beast::unit_test::suite
     claim(
         jtx::Account const& account,
         uint256 const& channel,
-        boost::optional<STAmount> const& balance = boost::none,
-        boost::optional<STAmount> const& amount = boost::none,
-        boost::optional<Slice> const& signature = boost::none,
-        boost::optional<PublicKey> const& pk = boost::none)
+        std::optional<STAmount> const& balance = std::nullopt,
+        std::optional<STAmount> const& amount = std::nullopt,
+        std::optional<Slice> const& signature = std::nullopt,
+        std::optional<PublicKey> const& pk = std::nullopt)
     {
         using namespace jtx;
         Json::Value jv;
@@ -604,7 +604,7 @@ struct PayChan_test : public beast::unit_test::suite
             assert(reqBal <= chanAmt);
             auto const sig =
                 signClaimAuth(alice.pk(), alice.sk(), chan, reqBal);
-            env(claim(bob, chan, reqBal, boost::none, Slice(sig), alice.pk()));
+            env(claim(bob, chan, reqBal, std::nullopt, Slice(sig), alice.pk()));
             BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
             auto const feeDrops = env.current()->fees().base;
             BEAST_EXPECT(env.balance(bob) == preBob + delta - feeDrops);
@@ -621,7 +621,7 @@ struct PayChan_test : public beast::unit_test::suite
             assert(reqBal <= chanAmt);
             auto const sig =
                 signClaimAuth(alice.pk(), alice.sk(), chan, reqBal);
-            env(claim(bob, chan, reqBal, boost::none, Slice(sig), alice.pk()));
+            env(claim(bob, chan, reqBal, std::nullopt, Slice(sig), alice.pk()));
             BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
             auto const feeDrops = env.current()->fees().base;
             BEAST_EXPECT(env.balance(bob) == preBob + delta - feeDrops);
@@ -714,7 +714,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             auto const chan = channel(alice, bob, env.seq(alice));
             env(create(
-                alice, bob, channelFunds, settleDelay, pk, boost::none, 1));
+                alice, bob, channelFunds, settleDelay, pk, std::nullopt, 1));
             BEAST_EXPECT(channelExists(*env.current(), chan));
         }
     }
@@ -961,10 +961,10 @@ struct PayChan_test : public beast::unit_test::suite
 
         auto testLimit = [](test::jtx::Env& env,
                             test::jtx::Account const& src,
-                            boost::optional<int> limit = boost::none,
+                            std::optional<int> limit = std::nullopt,
                             Json::Value const& marker = Json::nullValue,
-                            boost::optional<test::jtx::Account> const& dst =
-                                boost::none) {
+                            std::optional<test::jtx::Account> const& dst =
+                                std::nullopt) {
             Json::Value jvc;
             jvc[jss::account] = src.human();
             if (dst)
@@ -1431,7 +1431,7 @@ struct PayChan_test : public beast::unit_test::suite
         auto const settleDelay = 3600s;
         auto const channelFunds = XRP(1000);
 
-        boost::optional<NetClock::time_point> cancelAfter;
+        std::optional<NetClock::time_point> cancelAfter;
 
         {
             auto const chan = to_string(channel(alice, bob, env.seq(alice)));

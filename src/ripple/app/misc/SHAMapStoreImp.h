@@ -115,7 +115,7 @@ private:
     /// for this time and check again so the node can
     /// recover.
     /// See also: "recovery_wait_seconds" in rippled-example.cfg
-    boost::optional<std::chrono::seconds> recoveryWaitTime_;
+    std::optional<std::chrono::seconds> recoveryWaitTime_;
 
     // these do not exist upon SHAMapStore creation, but do exist
     // as of run() or before
@@ -189,7 +189,7 @@ public:
     int
     fdRequired() const override;
 
-    boost::optional<LedgerIndex>
+    std::optional<LedgerIndex>
     minimumOnline() const override;
 
 private:

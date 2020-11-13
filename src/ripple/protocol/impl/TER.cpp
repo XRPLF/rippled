@@ -210,7 +210,7 @@ transHuman(TER code)
     return transResultInfo(code, token, text) ? text : "-";
 }
 
-boost::optional<TER>
+std::optional<TER>
 transCode(std::string const& token)
 {
     static auto const results = [] {
@@ -227,7 +227,7 @@ transCode(std::string const& token)
     auto const r = results.find(token);
 
     if (r == results.end())
-        return boost::none;
+        return std::nullopt;
 
     return TER::fromInt(r->second);
 }

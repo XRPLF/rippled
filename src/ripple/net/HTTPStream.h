@@ -28,6 +28,8 @@
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 
+#include <optional>
+
 namespace ripple {
 
 class HTTPStream
@@ -111,7 +113,7 @@ public:
 
 private:
     HTTPClientSSLContext ssl_ctx_;
-    boost::optional<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>
+    std::optional<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>
         stream_;
     boost::asio::io_service::strand& strand_;
 };
@@ -154,7 +156,7 @@ public:
         boost::system::error_code& ec) override;
 
 private:
-    boost::optional<boost::asio::ip::tcp::socket> stream_;
+    std::optional<boost::asio::ip::tcp::socket> stream_;
     boost::asio::io_service::strand& strand_;
 };
 

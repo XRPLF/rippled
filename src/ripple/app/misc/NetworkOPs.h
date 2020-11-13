@@ -27,12 +27,11 @@
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/protocol/STValidation.h>
+#include <ripple/protocol/messages.h>
 #include <boost/asio.hpp>
 #include <deque>
 #include <memory>
 #include <tuple>
-
-#include <ripple/protocol/messages.h>
 
 namespace ripple {
 
@@ -238,8 +237,8 @@ public:
     */
     virtual std::uint32_t
     acceptLedger(
-        boost::optional<std::chrono::milliseconds> consensusDelay =
-            boost::none) = 0;
+        std::optional<std::chrono::milliseconds> consensusDelay =
+            std::nullopt) = 0;
 
     virtual uint256
     getConsensusLCL() = 0;

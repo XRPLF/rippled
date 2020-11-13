@@ -36,13 +36,13 @@ operator<<(std::ostream& os, PublicKey const& pk)
 }
 
 template <>
-boost::optional<PublicKey>
+std::optional<PublicKey>
 parseBase58(TokenType type, std::string const& s)
 {
     auto const result = decodeBase58Token(s, type);
     auto const pks = makeSlice(result);
     if (!publicKeyType(pks))
-        return boost::none;
+        return std::nullopt;
     return PublicKey(pks);
 }
 
@@ -50,28 +50,28 @@ parseBase58(TokenType type, std::string const& s)
 
 // Parse a length-prefixed number
 //  Format: 0x02 <length-byte> <number>
-static boost::optional<Slice>
+static std::optional<Slice>
 sigPart(Slice& buf)
 {
     if (buf.size() < 3 || buf[0] != 0x02)
-        return boost::none;
+        return std::nullopt;
     auto const len = buf[1];
     buf += 2;
     if (len > buf.size() || len < 1 || len > 33)
-        return boost::none;
+        return std::nullopt;
     // Can't be negative
     if ((buf[0] & 0x80) != 0)
-        return boost::none;
+        return std::nullopt;
     if (buf[0] == 0)
     {
         // Can't be zero
         if (len == 1)
-            return boost::none;
+            return std::nullopt;
         // Can't be padded
         if ((buf[1] & 0x80) == 0)
-            return boost::none;
+            return std::nullopt;
     }
-    boost::optional<Slice> number = Slice(buf.data(), len);
+    std::optional<Slice> number = Slice(buf.data(), len);
     buf += len;
     return number;
 }
@@ -110,7 +110,7 @@ sliceToHex(Slice const& slice)
     https://bitcointalk.org/index.php?topic=8392.msg127623#msg127623
     https://github.com/sipa/bitcoin/commit/58bc86e37fda1aec270bccb3df6c20fbd2a6591c
 */
-boost::optional<ECDSACanonicality>
+std::optional<ECDSACanonicality>
 ecdsaCanonicality(Slice const& sig)
 {
     using uint264 =
@@ -127,22 +127,22 @@ ecdsaCanonicality(Slice const& sig)
     // The format of a signature should be:
     // <30> <len> [ <02> <lenR> <R> ] [ <02> <lenS> <S> ]
     if ((sig.size() < 8) || (sig.size() > 72))
-        return boost::none;
+        return std::nullopt;
     if ((sig[0] != 0x30) || (sig[1] != (sig.size() - 2)))
-        return boost::none;
+        return std::nullopt;
     Slice p = sig + 2;
     auto r = sigPart(p);
     auto s = sigPart(p);
     if (!r || !s || !p.empty())
-        return boost::none;
+        return std::nullopt;
 
     uint264 R(sliceToHex(*r));
     if (R >= G)
-        return boost::none;
+        return std::nullopt;
 
     uint264 S(sliceToHex(*s));
     if (S >= G)
-        return boost::none;
+        return std::nullopt;
 
     // (R,S) and (R,G-S) are canonical,
     // but is fully canonical when S <= G-S
@@ -199,7 +199,7 @@ PublicKey::operator=(PublicKey const& other)
 
 //------------------------------------------------------------------------------
 
-boost::optional<KeyType>
+std::optional<KeyType>
 publicKeyType(Slice const& slice)
 {
     if (slice.size() == 33)
@@ -211,7 +211,7 @@ publicKeyType(Slice const& slice)
             return KeyType::secp256k1;
     }
 
-    return boost::none;
+    return std::nullopt;
 }
 
 bool

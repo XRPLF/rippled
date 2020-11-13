@@ -23,10 +23,10 @@
 #include <ripple/basics/contract.h>
 #include <boost/beast/core/string.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/optional.hpp>
 #include <algorithm>
 #include <beast/unit_test/detail/const_container.hpp>
 #include <map>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -139,12 +139,12 @@ public:
     find(std::string const& name) const;
 
     template <class T>
-    boost::optional<T>
+    std::optional<T>
     get(std::string const& name) const
     {
         auto const iter = cont().find(name);
         if (iter == cont().end())
-            return boost::none;
+            return std::nullopt;
         return boost::lexical_cast<T>(iter->second);
     }
 
@@ -154,7 +154,7 @@ public:
     value_or(std::string const& name, T const& other) const
     {
         auto const v = get<T>(name);
-        return v.is_initialized() ? *v : other;
+        return v.has_value() ? *v : other;
     }
 
     // indicates if trailing comments were seen
@@ -279,7 +279,7 @@ set(T& target, std::string const& name, Section const& section)
     try
     {
         auto const val = section.get<T>(name);
-        if ((found_and_valid = val.is_initialized()))
+        if ((found_and_valid = val.has_value()))
             target = *val;
     }
     catch (boost::bad_lexical_cast&)
@@ -333,7 +333,7 @@ get(Section const& section, std::string const& name, const char* defaultValue)
     try
     {
         auto const val = section.get<std::string>(name);
-        if (val.is_initialized())
+        if (val.has_value())
             return *val;
     }
     catch (boost::bad_lexical_cast&)

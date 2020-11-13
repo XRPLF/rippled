@@ -60,6 +60,7 @@ DatabaseBody::value_type::open(
 
     auto db = conn_->checkoutDb();
 
+    // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<std::string> pathFromDb;
 
     *db << "SELECT Path FROM Download WHERE Part=0;", soci::into(pathFromDb);
@@ -78,6 +79,7 @@ DatabaseBody::value_type::open(
         // Continuing a file download.
         else
         {
+            // SOCI requires boost::optional (not std::optional) parameter.
             boost::optional<std::uint64_t> size;
 
             *db << "SELECT SUM(LENGTH(Data)) FROM Download;", soci::into(size);

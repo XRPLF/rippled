@@ -30,6 +30,7 @@
 #include <ripple/protocol/st.h>
 #include <boost/algorithm/string.hpp>
 #include <cassert>
+#include <optional>
 
 namespace ripple {
 
@@ -173,14 +174,14 @@ accountFunds(
 // Prevent ownerCount from wrapping under error conditions.
 //
 // adjustment allows the ownerCount to be adjusted up or down in multiple steps.
-// If id != boost.none, then do error reporting.
+// If id != std::nullopt, then do error reporting.
 //
 // Returns adjusted owner count.
 static std::uint32_t
 confineOwnerCount(
     std::uint32_t current,
     std::int32_t adjustment,
-    boost::optional<AccountID> const& id = boost::none,
+    std::optional<AccountID> const& id = std::nullopt,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
 {
     std::uint32_t adjusted{current + adjustment};
@@ -572,7 +573,7 @@ getMajorityAmendments(ReadView const& view)
     return ret;
 }
 
-boost::optional<uint256>
+std::optional<uint256>
 hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 {
     // Easy cases...
@@ -580,7 +581,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     {
         JLOG(journal.warn())
             << "Can't get seq " << seq << " from " << ledger.seq() << " future";
-        return boost::none;
+        return std::nullopt;
     }
     if (seq == ledger.seq())
         return ledger.info().hash;
@@ -615,7 +616,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     {
         JLOG(journal.debug())
             << "Can't get seq " << seq << " from " << ledger.seq() << " past";
-        return boost::none;
+        return std::nullopt;
     }
 
     // in skiplist
@@ -632,7 +633,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     }
     JLOG(journal.warn()) << "Can't get seq " << seq << " from " << ledger.seq()
                          << " error";
-    return boost::none;
+    return std::nullopt;
 }
 
 //------------------------------------------------------------------------------
@@ -720,7 +721,7 @@ describeOwnerDir(AccountID const& account)
     };
 }
 
-boost::optional<std::uint64_t>
+std::optional<std::uint64_t>
 dirAdd(
     ApplyView& view,
     Keylet const& dir,

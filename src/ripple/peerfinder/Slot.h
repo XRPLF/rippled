@@ -22,8 +22,8 @@
 
 #include <ripple/beast/net/IPEndpoint.h>
 #include <ripple/protocol/PublicKey.h>
-#include <boost/optional.hpp>
 #include <memory>
+#include <optional>
 
 namespace ripple {
 namespace PeerFinder {
@@ -65,16 +65,16 @@ public:
     remote_endpoint() const = 0;
 
     /** The local endpoint of the socket, when known. */
-    virtual boost::optional<beast::IP::Endpoint> const&
+    virtual std::optional<beast::IP::Endpoint> const&
     local_endpoint() const = 0;
 
-    virtual boost::optional<std::uint16_t>
+    virtual std::optional<std::uint16_t>
     listening_port() const = 0;
 
     /** The peer's public key, when known.
         The public key is established when the handshake is complete.
     */
-    virtual boost::optional<PublicKey> const&
+    virtual std::optional<PublicKey> const&
     public_key() const = 0;
 };
 

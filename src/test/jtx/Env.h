@@ -333,8 +333,7 @@ public:
     bool
     close(
         NetClock::time_point closeTime,
-        boost::optional<std::chrono::milliseconds> consensusDelay =
-            boost::none);
+        std::optional<std::chrono::milliseconds> consensusDelay = std::nullopt);
 
     /** Close and advance the ledger.
 

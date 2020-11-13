@@ -25,10 +25,10 @@
 #include <ripple/protocol/STExchange.h>
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/tokens.h>
-#include <boost/optional.hpp>
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <optional>
 #include <ostream>
 #include <utility>
 
@@ -73,7 +73,7 @@ public:
     /** Create a public key.
 
         Preconditions:
-            publicKeyType(slice) != boost::none
+            publicKeyType(slice) != std::nullopt
     */
     explicit PublicKey(Slice const& slice);
 
@@ -168,7 +168,7 @@ struct STExchange<STBlob, PublicKey>
     using value_type = PublicKey;
 
     static void
-    get(boost::optional<value_type>& t, STBlob const& u)
+    get(std::optional<value_type>& t, STBlob const& u)
     {
         t.emplace(Slice(u.data(), u.size()));
     }
@@ -189,7 +189,7 @@ toBase58(TokenType type, PublicKey const& pk)
 }
 
 template <>
-boost::optional<PublicKey>
+std::optional<PublicKey>
 parseBase58(TokenType type, std::string const& s);
 
 enum class ECDSACanonicality { canonical, fullyCanonical };
@@ -209,29 +209,29 @@ enum class ECDSACanonicality { canonical, fullyCanonical };
 
     where G is the curve order.
 
-    This routine returns boost::none if the format
+    This routine returns std::nullopt if the format
     of the signature is invalid (for example, the
     points are encoded incorrectly).
 
-    @return boost::none if the signature fails
+    @return std::nullopt if the signature fails
             validity checks.
 
     @note Only the format of the signature is checked,
           no verification cryptography is performed.
 */
-boost::optional<ECDSACanonicality>
+std::optional<ECDSACanonicality>
 ecdsaCanonicality(Slice const& sig);
 
 /** Returns the type of public key.
 
-    @return boost::none If the public key does not
+    @return std::nullopt If the public key does not
             represent a known type.
 */
 /** @{ */
-boost::optional<KeyType>
+std::optional<KeyType>
 publicKeyType(Slice const& slice);
 
-inline boost::optional<KeyType>
+inline std::optional<KeyType>
 publicKeyType(PublicKey const& publicKey)
 {
     return publicKeyType(publicKey.slice());

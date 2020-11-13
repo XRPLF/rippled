@@ -33,7 +33,7 @@ AccountStateSF::gotNode(
         hotACCOUNT_NODE, std::move(nodeData), nodeHash.as_uint256(), ledgerSeq);
 }
 
-boost::optional<Blob>
+std::optional<Blob>
 AccountStateSF::getNode(SHAMapHash const& nodeHash) const
 {
     return fp_.getFetchPack(nodeHash.as_uint256());

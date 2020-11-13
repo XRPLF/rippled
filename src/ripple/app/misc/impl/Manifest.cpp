@@ -34,11 +34,11 @@
 
 namespace ripple {
 
-boost::optional<Manifest>
+std::optional<Manifest>
 deserializeManifest(Slice s)
 {
     if (s.empty())
-        return boost::none;
+        return std::nullopt;
 
     static SOTemplate const manifestFormat{
         // A manifest must include:
@@ -74,12 +74,12 @@ deserializeManifest(Slice s)
 
         // We only understand "version 0" manifests at this time:
         if (st.isFieldPresent(sfVersion) && st.getFieldU16(sfVersion) != 0)
-            return boost::none;
+            return std::nullopt;
 
         auto const pk = st.getFieldVL(sfPublicKey);
 
         if (!publicKeyType(makeSlice(pk)))
-            return boost::none;
+            return std::nullopt;
 
         Manifest m;
         m.serialized.assign(reinterpret_cast<char const*>(s.data()), s.size());
@@ -93,7 +93,7 @@ deserializeManifest(Slice s)
             m.domain.assign(reinterpret_cast<char const*>(d.data()), d.size());
 
             if (!isProperlyFormedTomlDomain(m.domain))
-                return boost::none;
+                return std::nullopt;
         }
 
         bool const hasEphemeralKey = st.isFieldPresent(sfSigningPubKey);
@@ -104,25 +104,25 @@ deserializeManifest(Slice s)
             // Revocation manifests should not specify a new signing key
             // or a signing key signature.
             if (hasEphemeralKey)
-                return boost::none;
+                return std::nullopt;
 
             if (hasEphemeralSig)
-                return boost::none;
+                return std::nullopt;
         }
         else
         {
             // Regular manifests should contain a signing key and an
             // associated signature.
             if (!hasEphemeralKey)
-                return boost::none;
+                return std::nullopt;
 
             if (!hasEphemeralSig)
-                return boost::none;
+                return std::nullopt;
 
             auto const spk = st.getFieldVL(sfSigningPubKey);
 
             if (!publicKeyType(makeSlice(spk)))
-                return boost::none;
+                return std::nullopt;
 
             m.signingKey = PublicKey(makeSlice(spk));
         }
@@ -131,7 +131,7 @@ deserializeManifest(Slice s)
     }
     catch (std::exception const&)
     {
-        return boost::none;
+        return std::nullopt;
     }
 }
 
@@ -199,14 +199,14 @@ Manifest::revoked() const
     return sequence == std::numeric_limits<std::uint32_t>::max();
 }
 
-boost::optional<Blob>
+std::optional<Blob>
 Manifest::getSignature() const
 {
     STObject st(sfGeneric);
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
     if (!get(st, sfSignature))
-        return boost::none;
+        return std::nullopt;
     return st.getFieldVL(sfSignature);
 }
 
@@ -219,7 +219,7 @@ Manifest::getMasterSignature() const
     return st.getFieldVL(sfMasterSignature);
 }
 
-boost::optional<ValidatorToken>
+std::optional<ValidatorToken>
 loadValidatorToken(std::vector<std::string> const& blob)
 {
     try
@@ -256,11 +256,11 @@ loadValidatorToken(std::vector<std::string> const& blob)
             }
         }
 
-        return boost::none;
+        return std::nullopt;
     }
     catch (std::exception const&)
     {
-        return boost::none;
+        return std::nullopt;
     }
 }
 
@@ -288,7 +288,7 @@ ManifestCache::getMasterKey(PublicKey const& pk) const
     return pk;
 }
 
-boost::optional<std::uint32_t>
+std::optional<std::uint32_t>
 ManifestCache::getSequence(PublicKey const& pk) const
 {
     std::lock_guard lock{read_mutex_};
@@ -297,10 +297,10 @@ ManifestCache::getSequence(PublicKey const& pk) const
     if (iter != map_.end() && !iter->second.revoked())
         return iter->second.sequence;
 
-    return boost::none;
+    return std::nullopt;
 }
 
-boost::optional<std::string>
+std::optional<std::string>
 ManifestCache::getDomain(PublicKey const& pk) const
 {
     std::lock_guard lock{read_mutex_};
@@ -309,10 +309,10 @@ ManifestCache::getDomain(PublicKey const& pk) const
     if (iter != map_.end() && !iter->second.revoked())
         return iter->second.domain;
 
-    return boost::none;
+    return std::nullopt;
 }
 
-boost::optional<std::string>
+std::optional<std::string>
 ManifestCache::getManifest(PublicKey const& pk) const
 {
     std::lock_guard lock{read_mutex_};
@@ -321,7 +321,7 @@ ManifestCache::getManifest(PublicKey const& pk) const
     if (iter != map_.end() && !iter->second.revoked())
         return iter->second.serialized;
 
-    return boost::none;
+    return std::nullopt;
 }
 
 bool

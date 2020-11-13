@@ -105,7 +105,7 @@ public:
         stop_ = true;
     }
 
-    [[nodiscard]] boost::optional<std::uint32_t>
+    [[nodiscard]] std::optional<std::uint32_t>
     prepare();
 
     [[nodiscard]] bool
@@ -186,7 +186,7 @@ public:
     [[nodiscard]] bool
     finalize(
         bool const writeSQLite,
-        boost::optional<uint256> const& referenceHash);
+        std::optional<uint256> const& referenceHash);
 
     /** Enables removal of the shard directory on destruction.
      */

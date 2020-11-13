@@ -28,7 +28,6 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/handlers/WalletPropose.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
-#include <boost/optional.hpp>
 #include <cmath>
 #include <ed25519-donna/ed25519.h>
 #include <map>
@@ -73,8 +72,8 @@ doWalletPropose(RPC::JsonContext& context)
 Json::Value
 walletPropose(Json::Value const& params)
 {
-    boost::optional<KeyType> keyType;
-    boost::optional<Seed> seed;
+    std::optional<KeyType> keyType;
+    std::optional<Seed> seed;
     bool rippleLibSeed = false;
 
     if (params.isMember(jss::key_type))

@@ -30,7 +30,7 @@
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/Tuning.h>
 
-#include <boost/optional.hpp>
+#include <optional>
 
 namespace ripple {
 
@@ -63,10 +63,9 @@ doChannelAuthorize(RPC::JsonContext& context)
     if (!channelId.parseHex(params[jss::channel_id].asString()))
         return rpcError(rpcCHANNEL_MALFORMED);
 
-    boost::optional<std::uint64_t> const optDrops =
-        params[jss::amount].isString()
+    std::optional<std::uint64_t> const optDrops = params[jss::amount].isString()
         ? to_uint64(params[jss::amount].asString())
-        : boost::none;
+        : std::nullopt;
 
     if (!optDrops)
         return rpcError(rpcCHANNEL_AMT_MALFORMED);
@@ -104,7 +103,7 @@ doChannelVerify(RPC::JsonContext& context)
         if (!params.isMember(p))
             return RPC::missing_field_error(p);
 
-    boost::optional<PublicKey> pk;
+    std::optional<PublicKey> pk;
     {
         std::string const strPk = params[jss::public_key].asString();
         pk = parseBase58<PublicKey>(TokenType::AccountPublic, strPk);
@@ -125,10 +124,9 @@ doChannelVerify(RPC::JsonContext& context)
     if (!channelId.parseHex(params[jss::channel_id].asString()))
         return rpcError(rpcCHANNEL_MALFORMED);
 
-    boost::optional<std::uint64_t> const optDrops =
-        params[jss::amount].isString()
+    std::optional<std::uint64_t> const optDrops = params[jss::amount].isString()
         ? to_uint64(params[jss::amount].asString())
-        : boost::none;
+        : std::nullopt;
 
     if (!optDrops)
         return rpcError(rpcCHANNEL_AMT_MALFORMED);

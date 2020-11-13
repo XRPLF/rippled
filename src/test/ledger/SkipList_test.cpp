@@ -55,15 +55,14 @@ class SkipList_test : public beast::unit_test::suite
             auto l = *(std::next(std::begin(history)));
             BEAST_EXPECT((*std::begin(history))->info().seq < l->info().seq);
             BEAST_EXPECT(
-                hashOfSeq(*l, l->info().seq + 1, env.journal) == boost::none);
+                !hashOfSeq(*l, l->info().seq + 1, env.journal).has_value());
             BEAST_EXPECT(
                 hashOfSeq(*l, l->info().seq, env.journal) == l->info().hash);
             BEAST_EXPECT(
                 hashOfSeq(*l, l->info().seq - 1, env.journal) ==
                 l->info().parentHash);
-            BEAST_EXPECT(
-                hashOfSeq(*history.back(), l->info().seq, env.journal) ==
-                boost::none);
+            BEAST_EXPECT(!hashOfSeq(*history.back(), l->info().seq, env.journal)
+                              .has_value());
         }
 
         // ledger skip lists store up to the previous 256 hashes
@@ -79,9 +78,8 @@ class SkipList_test : public beast::unit_test::suite
             }
 
             // edge case accessing beyond 256
-            BEAST_EXPECT(
-                hashOfSeq(**i, (*i)->info().seq - 258, env.journal) ==
-                boost::none);
+            BEAST_EXPECT(!hashOfSeq(**i, (*i)->info().seq - 258, env.journal)
+                              .has_value());
         }
 
         // every 256th hash beyond the first 256 is stored

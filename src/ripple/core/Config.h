@@ -29,11 +29,11 @@
 #include <boost/beast/core/string.hpp>
 #include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
 #include <boost/lexical_cast.hpp>
-#include <boost/optional.hpp>
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <map>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <unordered_set>
@@ -165,7 +165,7 @@ public:
     int PATH_SEARCH_MAX = 10;
 
     // Validation
-    boost::optional<std::size_t>
+    std::optional<std::size_t>
         VALIDATION_QUORUM;  // validations to consider ledger authoritative
 
     XRPAmount FEE_DEFAULT{10};
@@ -214,7 +214,7 @@ public:
     bool VP_REDUCE_RELAY_SQUELCH = false;
 
     // These override the command line client settings
-    boost::optional<beast::IP::Endpoint> rpc_ip;
+    std::optional<beast::IP::Endpoint> rpc_ip;
 
     std::unordered_set<uint256, beast::uhash<>> features;
 
@@ -314,7 +314,7 @@ public:
               defaults in the code for every case.
     */
     int
-    getValueFor(SizedItem item, boost::optional<std::size_t> node = boost::none)
+    getValueFor(SizedItem item, std::optional<std::size_t> node = std::nullopt)
         const;
 };
 

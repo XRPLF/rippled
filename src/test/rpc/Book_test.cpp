@@ -1157,7 +1157,7 @@ public:
             t[jss::TakerPays] != takerPays.value().getJson(JsonOptions::none))
             return false;
         // Make sure no other message is waiting
-        return wsc->getMsg(timeout) == boost::none;
+        return wsc->getMsg(timeout) == std::nullopt;
     }
 
     void

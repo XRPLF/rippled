@@ -74,6 +74,8 @@ PeerReservationTable::load(DatabaseCon& connection)
     connection_ = &connection;
     auto db = connection_->checkoutDb();
 
+    // These values must be boost::optionals (not std) because SOCI expects
+    // boost::optionals.
     boost::optional<std::string> valPubKey, valDesc;
     // We should really abstract the table and column names into constants,
     // but no one else does. Because it is too tedious? It would be easy if we
@@ -104,11 +106,10 @@ PeerReservationTable::load(DatabaseCon& connection)
     return true;
 }
 
-auto
+std::optional<PeerReservation>
 PeerReservationTable::insert_or_assign(PeerReservation const& reservation)
-    -> boost::optional<PeerReservation>
 {
-    boost::optional<PeerReservation> previous;
+    std::optional<PeerReservation> previous;
 
     std::lock_guard lock(mutex_);
 
@@ -144,11 +145,10 @@ PeerReservationTable::insert_or_assign(PeerReservation const& reservation)
     return previous;
 }
 
-auto
+std::optional<PeerReservation>
 PeerReservationTable::erase(PublicKey const& nodeId)
-    -> boost::optional<PeerReservation>
 {
-    boost::optional<PeerReservation> previous;
+    std::optional<PeerReservation> previous;
 
     std::lock_guard lock(mutex_);
 

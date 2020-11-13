@@ -42,7 +42,6 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/beast/core/string.hpp>
-#include <boost/optional.hpp>
 #include <boost/regex.hpp>
 
 #include <array>

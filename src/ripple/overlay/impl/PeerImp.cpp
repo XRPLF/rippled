@@ -154,18 +154,18 @@ PeerImp::run()
         return post(strand_, std::bind(&PeerImp::run, shared_from_this()));
 
     auto parseLedgerHash =
-        [](std::string const& value) -> boost::optional<uint256> {
+        [](std::string const& value) -> std::optional<uint256> {
         if (uint256 ret; ret.parseHex(value))
             return ret;
 
         if (auto const s = base64_decode(value); s.size() == uint256::size())
             return uint256{s};
 
-        return boost::none;
+        return std::nullopt;
     };
 
-    boost::optional<uint256> closed;
-    boost::optional<uint256> previous;
+    std::optional<uint256> closed;
+    std::optional<uint256> previous;
 
     if (auto const iter = headers_.find("Closed-Ledger");
         iter != headers_.end())
@@ -575,23 +575,23 @@ PeerImp::fail(std::string const& name, error_code ec)
     close();
 }
 
-boost::optional<RangeSet<std::uint32_t>>
+std::optional<RangeSet<std::uint32_t>>
 PeerImp::getShardIndexes() const
 {
     std::lock_guard l{shardInfoMutex_};
     auto it{shardInfo_.find(publicKey_)};
     if (it != shardInfo_.end())
         return it->second.shardIndexes;
-    return boost::none;
+    return std::nullopt;
 }
 
-boost::optional<hash_map<PublicKey, PeerImp::ShardInfo>>
+std::optional<hash_map<PublicKey, PeerImp::ShardInfo>>
 PeerImp::getPeerShardInfo() const
 {
     std::lock_guard l{shardInfoMutex_};
     if (!shardInfo_.empty())
         return shardInfo_;
-    return boost::none;
+    return std::nullopt;
 }
 
 void
@@ -1262,7 +1262,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMPeerShardInfo> const& m)
             return badData("Invalid shard indexes");
 
         std::uint32_t earliestShard;
-        boost::optional<std::uint32_t> latestShard;
+        std::optional<std::uint32_t> latestShard;
         {
             auto const curLedgerSeq{
                 app_.getLedgerMaster().getCurrentLedgerIndex()};
@@ -3127,7 +3127,7 @@ PeerImp::getScore(bool haveItem) const
     if (haveItem)
         score += spHaveItem;
 
-    boost::optional<std::chrono::milliseconds> latency;
+    std::optional<std::chrono::milliseconds> latency;
     {
         std::lock_guard sl(recentLock_);
         latency = latency_;

@@ -25,7 +25,8 @@
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/container/aged_unordered_map.h>
-#include <boost/optional.hpp>
+
+#include <optional>
 
 namespace ripple {
 

@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <ripple/ledger/ReadView.h>
-#include <boost/optional.hpp>
 
 namespace ripple {
 
@@ -26,7 +25,7 @@ class Rules::Impl
 {
 private:
     std::unordered_set<uint256, hardened_hash<>> set_;
-    boost::optional<uint256> digest_;
+    std::optional<uint256> digest_;
     std::unordered_set<uint256, beast::uhash<>> const& presets_;
 
 public:

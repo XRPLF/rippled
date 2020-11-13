@@ -273,7 +273,7 @@ doSubscribe(RPC::JsonContext& context)
                 return rpcError(rpcBAD_MARKET);
             }
 
-            boost::optional<AccountID> takerID;
+            std::optional<AccountID> takerID;
 
             if (j.isMember(jss::taker))
             {

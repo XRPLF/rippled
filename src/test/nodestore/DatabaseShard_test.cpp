@@ -495,7 +495,7 @@ class DatabaseShard_test : public TestBase
         {
             auto const ledgerSeq{
                 db.prepareLedger((maxShardNumber + 1) * ledgersPerShard)};
-            if (!BEAST_EXPECT(ledgerSeq != boost::none))
+            if (!BEAST_EXPECT(ledgerSeq != std::nullopt))
                 return {};
 
             shardIndex = db.seqToShardIndex(*ledgerSeq);
@@ -707,7 +707,7 @@ class DatabaseShard_test : public TestBase
         // try to create another shard
         BEAST_EXPECT(
             db->prepareLedger((nTestShards + 1) * ledgersPerShard) ==
-            boost::none);
+            std::nullopt);
     }
 
     void
@@ -847,7 +847,7 @@ class DatabaseShard_test : public TestBase
                 {
                     auto const ledgerSeq{
                         db->prepareLedger(2 * ledgersPerShard)};
-                    if (!BEAST_EXPECT(ledgerSeq != boost::none))
+                    if (!BEAST_EXPECT(ledgerSeq != std::nullopt))
                         return;
 
                     shardIndex = db->seqToShardIndex(*ledgerSeq);
@@ -1285,7 +1285,7 @@ class DatabaseShard_test : public TestBase
 
         // Create one shard more than the open final limit
         auto const openFinalLimit{env.app().config().getValueFor(
-            SizedItem::openFinalLimit, boost::none)};
+            SizedItem::openFinalLimit, std::nullopt)};
         auto const numShards{openFinalLimit + 1};
 
         TestData data(seedValue, 2, numShards);

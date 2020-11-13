@@ -49,7 +49,7 @@ public:
 
     // Get the adjustments for the balance between main and other.
     // Returns the debits, credits and the original balance
-    boost::optional<Adjustment>
+    std::optional<Adjustment>
     adjustments(
         AccountID const& main,
         AccountID const& other,
@@ -68,7 +68,7 @@ public:
     // Get the adjusted owner count. Since DeferredCredits is meant to be used
     // in payments, and payments only decrease owner counts, return the max
     // remembered owner count.
-    boost::optional<std::uint32_t>
+    std::optional<std::uint32_t>
     ownerCount(AccountID const& id) const;
 
     void

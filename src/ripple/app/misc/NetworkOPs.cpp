@@ -211,7 +211,7 @@ class NetworkOPsImp final : public NetworkOPs
         std::uint32_t loadFactorServer = 256;
         std::uint32_t loadBaseServer = 256;
         XRPAmount baseFee{10};
-        boost::optional<TxQ::Metrics> em = boost::none;
+        std::optional<TxQ::Metrics> em = std::nullopt;
     };
 
 public:
@@ -440,7 +440,7 @@ public:
     getLedgerFetchInfo() override;
     std::uint32_t
     acceptLedger(
-        boost::optional<std::chrono::milliseconds> consensusDelay) override;
+        std::optional<std::chrono::milliseconds> consensusDelay) override;
     uint256
     getConsensusLCL() override;
     void
@@ -1302,7 +1302,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
         if (changed)
             reportFeeChange();
 
-        boost::optional<LedgerIndex> validatedLedgerIndex;
+        std::optional<LedgerIndex> validatedLedgerIndex;
         if (auto const l = m_ledgerMaster.getValidatedLedger())
             validatedLedgerIndex = l->info().seq;
 
@@ -1714,7 +1714,7 @@ NetworkOPsImp::switchLastClosedLedger(
 
         auto retries = m_localTX->getTxSet();
         auto const lastVal = app_.getLedgerMaster().getValidatedLedger();
-        boost::optional<Rules> rules;
+        std::optional<Rules> rules;
         if (lastVal)
             rules.emplace(*lastVal, app_.config().features);
         else
@@ -1959,7 +1959,7 @@ NetworkOPsImp::ServerFeeSummary::operator!=(
 {
     if (loadFactorServer != b.loadFactorServer ||
         loadBaseServer != b.loadBaseServer || baseFee != b.baseFee ||
-        em.is_initialized() != b.em.is_initialized())
+        em.has_value() != b.em.has_value())
         return true;
 
     if (em && b.em)
@@ -2311,6 +2311,7 @@ NetworkOPsImp::getAccountTxs(
     {
         auto db = app_.getTxnDB().checkoutDb();
 
+        // SOCI requires boost::optional (not std::optional) as parameters.
         boost::optional<std::uint64_t> ledgerSeq;
         boost::optional<std::string> status;
         soci::blob sociTxnBlob(*db), sociTxnMetaBlob(*db);
@@ -2391,6 +2392,7 @@ NetworkOPsImp::getAccountTxsB(
     {
         auto db = app_.getTxnDB().checkoutDb();
 
+        // SOCI requires boost::optional (not std::optional) as parameters.
         boost::optional<std::uint64_t> ledgerSeq;
         boost::optional<std::string> status;
         soci::blob sociTxnBlob(*db), sociTxnMetaBlob(*db);
@@ -3455,7 +3457,7 @@ NetworkOPsImp::unsubBook(std::uint64_t uSeq, Book const& book)
 
 std::uint32_t
 NetworkOPsImp::acceptLedger(
-    boost::optional<std::chrono::milliseconds> consensusDelay)
+    std::optional<std::chrono::milliseconds> consensusDelay)
 {
     // This code-path is exclusively used when the server is in standalone
     // mode via `ledger_accept`

@@ -75,22 +75,22 @@ generateSeed(std::string const& passPhrase)
 }
 
 template <>
-boost::optional<Seed>
+std::optional<Seed>
 parseBase58(std::string const& s)
 {
     auto const result = decodeBase58Token(s, TokenType::FamilySeed);
     if (result.empty())
-        return boost::none;
+        return std::nullopt;
     if (result.size() != 16)
-        return boost::none;
+        return std::nullopt;
     return Seed(makeSlice(result));
 }
 
-boost::optional<Seed>
+std::optional<Seed>
 parseGenericSeed(std::string const& str)
 {
     if (str.empty())
-        return boost::none;
+        return std::nullopt;
 
     if (parseBase58<AccountID>(str) ||
         parseBase58<PublicKey>(TokenType::NodePublic, str) ||
@@ -98,7 +98,7 @@ parseGenericSeed(std::string const& str)
         parseBase58<SecretKey>(TokenType::NodePrivate, str) ||
         parseBase58<SecretKey>(TokenType::AccountSecret, str))
     {
-        return boost::none;
+        return std::nullopt;
     }
 
     {

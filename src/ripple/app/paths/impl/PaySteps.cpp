@@ -137,8 +137,8 @@ toStrand(
     AccountID const& src,
     AccountID const& dst,
     Issue const& deliver,
-    boost::optional<Quality> const& limitQuality,
-    boost::optional<Issue> const& sendMaxIssue,
+    std::optional<Quality> const& limitQuality,
+    std::optional<Issue> const& sendMaxIssue,
     STPath const& path,
     bool ownerPaysTransferFee,
     bool offerCrossing,
@@ -209,7 +209,7 @@ toStrand(
              path[0].getAccountID() != sendMaxIssue->account))
         {
             normPath.emplace_back(
-                sendMaxIssue->account, boost::none, boost::none);
+                sendMaxIssue->account, std::nullopt, std::nullopt);
         }
 
         for (auto const& i : path)
@@ -225,7 +225,7 @@ toStrand(
                  lastCurrency.getIssuerID() != deliver.account))
             {
                 normPath.emplace_back(
-                    boost::none, deliver.currency, deliver.account);
+                    std::nullopt, deliver.currency, deliver.account);
             }
         }
 
@@ -233,13 +233,13 @@ toStrand(
                normPath.back().getAccountID() == deliver.account) ||
               (dst == deliver.account)))
         {
-            normPath.emplace_back(deliver.account, boost::none, boost::none);
+            normPath.emplace_back(deliver.account, std::nullopt, std::nullopt);
         }
 
         if (!normPath.back().isAccount() ||
             normPath.back().getAccountID() != dst)
         {
-            normPath.emplace_back(dst, boost::none, boost::none);
+            normPath.emplace_back(dst, std::nullopt, std::nullopt);
         }
     }
 
@@ -290,7 +290,7 @@ toStrand(
            account then no step is created, as a step has already been created
            for that offer.
         */
-        boost::optional<STPathElement> impliedPE;
+        std::optional<STPathElement> impliedPE;
         auto cur = &normPath[i];
         auto const next = &normPath[i + 1];
 
@@ -468,8 +468,8 @@ toStrands(
     AccountID const& src,
     AccountID const& dst,
     Issue const& deliver,
-    boost::optional<Quality> const& limitQuality,
-    boost::optional<Issue> const& sendMax,
+    std::optional<Quality> const& limitQuality,
+    std::optional<Issue> const& sendMax,
     STPathSet const& paths,
     bool addDefaultPath,
     bool ownerPaysTransferFee,
@@ -580,7 +580,7 @@ StrandContext::StrandContext(
     AccountID const& strandSrc_,
     AccountID const& strandDst_,
     Issue const& strandDeliver_,
-    boost::optional<Quality> const& limitQuality_,
+    std::optional<Quality> const& limitQuality_,
     bool isLast_,
     bool ownerPaysTransferFee_,
     bool offerCrossing_,

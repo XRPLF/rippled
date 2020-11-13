@@ -102,7 +102,7 @@ private:
     std::shared_ptr<SLE const> sle_;
     unsigned int entry_ = 0;
     uint256 index_;
-    boost::optional<value_type> mutable cache_;
+    std::optional<value_type> mutable cache_;
 
     static beast::Journal j_;
 };

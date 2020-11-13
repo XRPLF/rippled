@@ -34,7 +34,7 @@
 
 #include <ripple/rpc/impl/Tuning.h>
 #include <boost/algorithm/clamp.hpp>
-#include <boost/optional.hpp>
+#include <optional>
 
 #include <tuple>
 
@@ -474,7 +474,7 @@ PathRequest::getPathFinder(
         *raSrcAccount,
         *raDstAccount,
         currency,
-        boost::none,
+        std::nullopt,
         dst_amount,
         saSendMax,
         app_);

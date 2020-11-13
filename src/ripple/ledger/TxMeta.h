@@ -25,7 +25,7 @@
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/TER.h>
 #include <boost/container/flat_set.hpp>
-#include <boost/optional.hpp>
+#include <optional>
 
 namespace ripple {
 
@@ -105,7 +105,7 @@ public:
     void
     setDeliveredAmount(STAmount const& delivered)
     {
-        mDelivered.reset(delivered);
+        mDelivered = delivered;
     }
 
     STAmount
@@ -127,7 +127,7 @@ private:
     std::uint32_t mIndex;
     int mResult;
 
-    boost::optional<STAmount> mDelivered;
+    std::optional<STAmount> mDelivered;
 
     STArray mNodes;
 };

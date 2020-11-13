@@ -245,7 +245,7 @@ public:
             return true;
         return false;
     }
-    boost::optional<std::size_t>
+    std::optional<std::size_t>
     publisherListSequence(PublicKey const&) const override
     {
         return {};

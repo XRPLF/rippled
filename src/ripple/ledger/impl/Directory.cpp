@@ -108,7 +108,7 @@ const_iterator::operator++()
         }
     }
 
-    cache_ = boost::none;
+    cache_ = std::nullopt;
     return *this;
 }
 

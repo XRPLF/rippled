@@ -546,7 +546,7 @@ private:
         socket_type sock(std::move(s));
         flat_buffer sb;
         error_code ec;
-        boost::optional<ssl_stream<ip::tcp::socket&>> ssl_stream;
+        std::optional<ssl_stream<ip::tcp::socket&>> ssl_stream;
 
         if (ssl)
         {

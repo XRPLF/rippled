@@ -26,10 +26,10 @@
 #include <ripple/server/impl/Door.h>
 #include <ripple/server/impl/io_list.h>
 #include <boost/asio.hpp>
-#include <boost/optional.hpp>
 #include <array>
 #include <chrono>
 #include <mutex>
+#include <optional>
 
 namespace ripple {
 
@@ -84,7 +84,7 @@ private:
     beast::Journal const j_;
     boost::asio::io_service& io_service_;
     boost::asio::io_service::strand strand_;
-    boost::optional<boost::asio::io_service::work> work_;
+    std::optional<boost::asio::io_service::work> work_;
 
     std::mutex m_;
     std::vector<Port> ports_;
@@ -151,7 +151,7 @@ template <class Handler>
 ServerImpl<Handler>::~ServerImpl()
 {
     // Handler::onStopped will not be called
-    work_ = boost::none;
+    work_ = std::nullopt;
     ios_.close();
     ios_.join();
 }
@@ -184,7 +184,7 @@ void
 ServerImpl<Handler>::close()
 {
     ios_.close([&] {
-        work_ = boost::none;
+        work_ = std::nullopt;
         handler_.onStopped(*this);
     });
 }

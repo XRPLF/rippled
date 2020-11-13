@@ -114,7 +114,7 @@ ApplyStateTable::apply(
     OpenView& to,
     STTx const& tx,
     TER ter,
-    boost::optional<STAmount> const& deliver,
+    std::optional<STAmount> const& deliver,
     beast::Journal j)
 {
     // Build metadata and insert
@@ -290,9 +290,9 @@ auto
 ApplyStateTable::succ(
     ReadView const& base,
     key_type const& key,
-    boost::optional<key_type> const& last) const -> boost::optional<key_type>
+    std::optional<key_type> const& last) const -> std::optional<key_type>
 {
-    boost::optional<key_type> next = key;
+    std::optional<key_type> next = key;
     items_t::const_iterator iter;
     // Find base successor that is
     // not also deleted in our list
@@ -317,7 +317,7 @@ ApplyStateTable::succ(
     // Nothing in our list, return
     // what we got from the parent.
     if (last && next >= last)
-        return boost::none;
+        return std::nullopt;
     return next;
 }
 

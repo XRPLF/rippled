@@ -200,7 +200,7 @@ class RCLConsensus
             @param hash The ID/hash of the ledger acquire
             @return Optional ledger, will be seated if we locally had the ledger
         */
-        boost::optional<RCLCxLedger>
+        std::optional<RCLCxLedger>
         acquireLedger(LedgerHash const& hash);
 
         /** Share the given proposal with all peers
@@ -227,7 +227,7 @@ class RCLConsensus
             @param setId The transaction set ID associated with the proposal
             @return Optional set of transactions, seated if available.
        */
-        boost::optional<RCLTxSet>
+        std::optional<RCLTxSet>
         acquireTxSet(RCLTxSet::ID const& setId);
 
         /** Whether the open ledger has any transactions
@@ -507,7 +507,7 @@ public:
     void
     simulate(
         NetClock::time_point const& now,
-        boost::optional<std::chrono::milliseconds> consensusDelay);
+        std::optional<std::chrono::milliseconds> consensusDelay);
 
     //! @see Consensus::proposal
     bool

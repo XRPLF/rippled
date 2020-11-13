@@ -23,7 +23,7 @@
 #include <ripple/basics/safe_cast.h>
 #include <ripple/json/json_value.h>
 
-#include <boost/optional.hpp>
+#include <optional>
 #include <ostream>
 #include <string>
 
@@ -598,7 +598,7 @@ transToken(TER code);
 std::string
 transHuman(TER code);
 
-boost::optional<TER>
+std::optional<TER>
 transCode(std::string const& token);
 
 }  // namespace ripple

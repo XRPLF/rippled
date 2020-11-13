@@ -74,7 +74,7 @@ ConsensusTransSetSF::gotNode(
     }
 }
 
-boost::optional<Blob>
+std::optional<Blob>
 ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
 {
     Blob nodeData;
@@ -96,7 +96,7 @@ ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
         return nodeData;
     }
 
-    return boost::none;
+    return std::nullopt;
 }
 
 }  // namespace ripple

@@ -48,12 +48,13 @@ loadNodeIdentity(Application& app)
     }
 
     // Try to load a node identity from the database:
-    boost::optional<PublicKey> publicKey;
-    boost::optional<SecretKey> secretKey;
+    std::optional<PublicKey> publicKey;
+    std::optional<SecretKey> secretKey;
 
     auto db = app.getWalletDB().checkoutDb();
 
     {
+        // SOCI requires boost::optional (not std::optional) as the parameter.
         boost::optional<std::string> pubKO, priKO;
         soci::statement st =
             (db->prepare << "SELECT PublicKey, PrivateKey FROM NodeIdentity;",

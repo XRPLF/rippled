@@ -24,7 +24,7 @@
 
 namespace ripple {
 
-boost::optional<std::uint64_t>
+std::optional<std::uint64_t>
 ApplyView::dirAdd(
     bool preserveOrder,
     Keylet const& directory,
@@ -93,7 +93,7 @@ ApplyView::dirAdd(
 
     // Check whether we're out of pages.
     if (++page >= dirNodeMaxPages)
-        return boost::none;
+        return std::nullopt;
 
     // We are about to create a new node; we'll link it to
     // the chain first:

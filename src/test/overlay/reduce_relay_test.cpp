@@ -26,7 +26,6 @@
 #include <ripple.pb.h>
 #include <test/jtx/Env.h>
 
-#include <boost/optional.hpp>
 #include <boost/thread.hpp>
 
 #include <numeric>
@@ -117,7 +116,7 @@ public:
     {
         return false;
     }
-    boost::optional<std::size_t>
+    std::optional<std::size_t>
     publisherListSequence(PublicKey const&) const override
     {
         return {};

@@ -37,9 +37,9 @@
 
 #include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
-#include <boost/optional.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <cstdint>
+#include <optional>
 #include <queue>
 
 namespace ripple {
@@ -114,8 +114,8 @@ private:
     boost::circular_buffer<uint256> recentLedgers_{128};
     boost::circular_buffer<uint256> recentTxSets_{128};
 
-    boost::optional<std::chrono::milliseconds> latency_;
-    boost::optional<std::uint32_t> lastPingSeq_;
+    std::optional<std::chrono::milliseconds> latency_;
+    std::optional<std::uint32_t> lastPingSeq_;
     clock_type::time_point lastPingTime_;
     clock_type::time_point const creationTime_;
 
@@ -339,7 +339,7 @@ public:
     bool
     supportsFeature(ProtocolFeature f) const override;
 
-    boost::optional<std::size_t>
+    std::optional<std::size_t>
     publisherListSequence(PublicKey const& pubKey) const override
     {
         std::lock_guard<std::mutex> sl(recentLock_);
@@ -398,11 +398,11 @@ public:
     fail(std::string const& reason);
 
     /** Return a range set of known shard indexes from this peer. */
-    boost::optional<RangeSet<std::uint32_t>>
+    std::optional<RangeSet<std::uint32_t>>
     getShardIndexes() const;
 
     /** Return any known shard info from this peer and its sub peers. */
-    boost::optional<hash_map<PublicKey, ShardInfo>>
+    std::optional<hash_map<PublicKey, ShardInfo>>
     getPeerShardInfo() const;
 
     bool
