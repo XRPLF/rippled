@@ -69,7 +69,7 @@ public:
     std::shared_ptr<STTx const>
     fetch(
         std::shared_ptr<SHAMapItem> const& item,
-        SHAMapTreeNode::TNType type,
+        SHAMapNodeType type,
         std::uint32_t uCommitLedger);
 
     // return value: true = we had the transaction already

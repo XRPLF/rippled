@@ -17,14 +17,14 @@ or account state can be used to navigate the trie.
 A `SHAMap` is a trie with two node types:
 
 1.  SHAMapInnerNode
-2.  SHAMapTreeNode
+2.  SHAMapLeafNode
 
-Both of these nodes directly inherit from SHAMapAbstractNode which holds data
+Both of these nodes directly inherit from SHAMapTreeNode which holds data
 common to both of the node types.
 
 All non-leaf nodes have type SHAMapInnerNode.
 
-All leaf nodes have type SHAMapTreeNode.
+All leaf nodes have type SHAMapLeafNode.
 
 The root node is always a SHAMapInnerNode.
 
@@ -193,7 +193,7 @@ continues, unless the path indicates a child that does not exist.  And in this
 case, `nullptr` is returned to indicate no leaf node along the given path
 exists.  Otherwise a leaf node is found and a (non-owning) pointer to it is
 returned.  At each step, if a stack is requested, a
-`pair<shared_ptr<SHAMapAbstractNode>, SHAMapNodeID>` is pushed onto the stack.
+`pair<shared_ptr<SHAMapTreeNode>, SHAMapNodeID>` is pushed onto the stack.
 
 When a child node is found by `selectBranch`, the traversal to that node
 consists of two steps:
@@ -220,11 +220,11 @@ is this case stands for 'No Throw'.
 
 The `fetchNodeNT()` method goes through three phases:
 
- 1. By calling `getCache()` we attempt to locate the missing node in the
+ 1. By calling `cacheLookup()` we attempt to locate the missing node in the
     TreeNodeCache.  The TreeNodeCache is a cache of immutable SHAMapTreeNodes
     that are shared across all `SHAMap`s.
 
-    Any SHAMapTreeNode that is immutable has a sequence number of zero
+    Any SHAMapLeafNode that is immutable has a sequence number of zero
     (sharable). When a mutable `SHAMap` is created then its SHAMapTreeNodes are
     given non-zero sequence numbers (unsharable).  But all nodes in the
     TreeNodeCache are immutable, so if one is found here, its sequence number
@@ -250,17 +250,17 @@ the `SHAMap`, node `TreeNodeCache` or database, then we don't create duplicates
 by favoring the copy already in the `TreeNodeCache`.
 
 By using `canonicalize()` we manage a thread race condition where two different
-threads might both recognize the lack of a SHAMapTreeNode at the same time
+threads might both recognize the lack of a SHAMapLeafNode at the same time
 (during a fetch).  If they both attempt to insert the node into the `SHAMap`, then
 `canonicalize` makes sure that the first node in wins and the slower thread
 receives back a pointer to the node inserted by the faster thread.  Recall
 that these two `SHAMap`s will share the same `TreeNodeCache`.
 
-## TreeNodeCache ##
+## `TreeNodeCache` ##
 
 The `TreeNodeCache` is a `std::unordered_map` keyed on the hash of the
-`SHAMap` node.  The stored type consists of `shared_ptr<SHAMapAbstractNode>`,
-`weak_ptr<SHAMapAbstractNode>`, and a time point indicating the most recent
+`SHAMap` node.  The stored type consists of `shared_ptr<SHAMapTreeNode>`,
+`weak_ptr<SHAMapTreeNode>`, and a time point indicating the most recent
 access of this node in the cache.  The time point is based on
 `std::chrono::steady_clock`.
 
@@ -271,7 +271,7 @@ and logging, and a target age for the contained nodes.  When the target age
 for a node is exceeded, and there are no more references to the node, the
 node is removed from the `TreeNodeCache`.
 
-## FullBelowCache ##
+## `FullBelowCache` ##
 
 This cache remembers which trie keys have all of their children resident in a
 `SHAMap`.  This optimizes the process of acquiring a complete trie.  This is used
@@ -284,37 +284,50 @@ nodes, and thus that subtree does not need to be walked.  These nodes are stored
 in the FullBelowCache.  Subsequent walks check the FullBelowCache first when
 encountering a node, and ignore that subtree if found.
 
-## SHAMapAbstractNode ##
+## `SHAMapTreeNode` ##
 
-This is a base class for the two concrete node types.  It holds the following
-common data:
+This is an abstract base class for the concrete node types.  It holds the
+following common data:
 
-1.  A node type, one of:
-    a.  error
-    b.  inner
-    c.  transaction with no metadata
-    d.  transaction with metadata
-    e.  account state
-2.  A hash
-3.  A sequence number
+1.  A hash
+2.  An identifier used to perform copy-on-write operations
 
 
-## SHAMapInnerNode ##
+### `SHAMapInnerNode` ###
 
-SHAMapInnerNode publicly inherits directly from SHAMapAbstractNode.  It holds
+`SHAMapInnerNode` publicly inherits directly from `SHAMapTreeNode`.  It holds
 the following data:
 
 1.  Up to 16 child nodes, each held with a shared_ptr.
 2.  A hash for each child.
-3.  A 16-bit bitset with a 1 bit set for each child that exists.
-4.  Flag to aid online delete and consistency with data on disk.
+3.  A bitset to indicate which of the 16 children exist.
+4.  An identifier used to determine whether the map below this node is
+    fully populated
 
-## SHAMapTreeNode ##
+### `SHAMapLeafNode` ###
 
-SHAMapTreeNode publicly inherits directly from SHAMapAbstractNode.  It holds the
+`SHAMapLeafNode` is an abstract class which publicly inherits directly from
+`SHAMapTreeNode`.  It isIt holds the
 following data:
 
 1.  A shared_ptr to a const SHAMapItem.
+
+#### `SHAMapAccountStateLeafNode` ####
+
+`SHAMapAccountStateLeafNode` is a class which publicly inherits directly from
+`SHAMapLeafNode`. It is used to represent entries (i.e. account objects, escrow
+objects, trust lines, etc.) in a state map.
+
+#### `SHAMapTxLeafNode` ####
+
+`SHAMapTxLeafNode` is a class which publicly inherits directly from
+`SHAMapLeafNode`. It is used to represent transactions in a state map.
+
+#### `SHAMapTxPlusMetaLeafNode` ####
+
+`SHAMapTxPlusMetaLeafNode` is a class which publicly inherits directly from
+`SHAMapLeafNode`. It is used to represent transactions along with metadata
+associated with this transaction in a state map.
 
 ## SHAMapItem ##
 
@@ -323,27 +336,4 @@ This holds the following data:
 1.  uint256.  The hash of the data.
 2.  vector<unsigned char>.  The data (transactions, account info).
 
-## SHAMap Improvements ##
-
-Here's a simple one: the SHAMapTreeNode::mAccessSeq member is currently not used
-and could be removed.
-
-Here's a more important change.  The trie structure is currently embedded in the
-SHAMapTreeNodes themselves.  It doesn't have to be that way, and that should be
-fixed.
-
-When we navigate the trie (say, like `SHAMap::walkTo()`) we currently ask each
-node for information that we could determine locally.  We know the depth because
-we know how many nodes we have traversed.  We know the ID that we need because
-that's how we're steering.  So we don't need to store the ID in the node.  The
-next refactor should remove all calls to `SHAMapTreeNode::GetID()`.
-
-Then we can remove the NodeID member from SHAMapTreeNode.
-
-Then we can change the `SHAMap::mTNBtID`  member to be `mTNByHash`.
-
-An additional possible refactor would be to have a base type, SHAMapTreeNode,
-and derive from that InnerNode and LeafNode types.  That would remove some
-storage (the array of 16 hashes) from the LeafNodes.  That refactor would also
-have the effect of simplifying methods like `isLeaf()` and `hasItem()`.
 

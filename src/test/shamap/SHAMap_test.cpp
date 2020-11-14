@@ -64,12 +64,12 @@ static_assert(std::is_copy_assignable<SHAMapHash>{}, "");
 static_assert(std::is_move_constructible<SHAMapHash>{}, "");
 static_assert(std::is_move_assignable<SHAMapHash>{}, "");
 
-static_assert(!std::is_nothrow_destructible<SHAMapAbstractNode>{}, "");
-static_assert(!std::is_default_constructible<SHAMapAbstractNode>{}, "");
-static_assert(!std::is_copy_constructible<SHAMapAbstractNode>{}, "");
-static_assert(!std::is_copy_assignable<SHAMapAbstractNode>{}, "");
-static_assert(!std::is_move_constructible<SHAMapAbstractNode>{}, "");
-static_assert(!std::is_move_assignable<SHAMapAbstractNode>{}, "");
+static_assert(std::is_nothrow_destructible<SHAMapTreeNode>{}, "");
+static_assert(!std::is_default_constructible<SHAMapTreeNode>{}, "");
+static_assert(!std::is_copy_constructible<SHAMapTreeNode>{}, "");
+static_assert(!std::is_copy_assignable<SHAMapTreeNode>{}, "");
+static_assert(!std::is_move_constructible<SHAMapTreeNode>{}, "");
+static_assert(!std::is_move_assignable<SHAMapTreeNode>{}, "");
 
 static_assert(std::is_nothrow_destructible<SHAMapInnerNode>{}, "");
 static_assert(!std::is_default_constructible<SHAMapInnerNode>{}, "");
@@ -78,12 +78,12 @@ static_assert(!std::is_copy_assignable<SHAMapInnerNode>{}, "");
 static_assert(!std::is_move_constructible<SHAMapInnerNode>{}, "");
 static_assert(!std::is_move_assignable<SHAMapInnerNode>{}, "");
 
-static_assert(std::is_nothrow_destructible<SHAMapTreeNode>{}, "");
-static_assert(!std::is_default_constructible<SHAMapTreeNode>{}, "");
-static_assert(!std::is_copy_constructible<SHAMapTreeNode>{}, "");
-static_assert(!std::is_copy_assignable<SHAMapTreeNode>{}, "");
-static_assert(!std::is_move_constructible<SHAMapTreeNode>{}, "");
-static_assert(!std::is_move_assignable<SHAMapTreeNode>{}, "");
+static_assert(std::is_nothrow_destructible<SHAMapLeafNode>{}, "");
+static_assert(!std::is_default_constructible<SHAMapLeafNode>{}, "");
+static_assert(!std::is_copy_constructible<SHAMapLeafNode>{}, "");
+static_assert(!std::is_copy_assignable<SHAMapLeafNode>{}, "");
+static_assert(!std::is_move_constructible<SHAMapLeafNode>{}, "");
+static_assert(!std::is_move_assignable<SHAMapLeafNode>{}, "");
 #endif
 
 inline bool
@@ -161,9 +161,13 @@ public:
 
         SHAMapItem i1(h1, IntToVUC(1)), i2(h2, IntToVUC(2)),
             i3(h3, IntToVUC(3)), i4(h4, IntToVUC(4)), i5(h5, IntToVUC(5));
-        unexpected(!sMap.addItem(SHAMapItem{i2}, true, false), "no add");
+        unexpected(
+            !sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, SHAMapItem{i2}),
+            "no add");
         sMap.invariants();
-        unexpected(!sMap.addItem(SHAMapItem{i1}, true, false), "no add");
+        unexpected(
+            !sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, SHAMapItem{i1}),
+            "no add");
         sMap.invariants();
 
         auto i = sMap.begin();
@@ -173,11 +177,11 @@ public:
         unexpected(i == e || (*i != i2), "bad traverse");
         ++i;
         unexpected(i != e, "bad traverse");
-        sMap.addItem(SHAMapItem{i4}, true, false);
+        sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, SHAMapItem{i4});
         sMap.invariants();
         sMap.delItem(i2.key());
         sMap.invariants();
-        sMap.addItem(SHAMapItem{i3}, true, false);
+        sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, SHAMapItem{i3});
         sMap.invariants();
         i = sMap.begin();
         e = sMap.end();
@@ -282,7 +286,8 @@ public:
             for (int k = 0; k < keys.size(); ++k)
             {
                 SHAMapItem item(keys[k], IntToVUC(k));
-                BEAST_EXPECT(map.addItem(std::move(item), true, false));
+                BEAST_EXPECT(map.addItem(
+                    SHAMapNodeType::tnTRANSACTION_NM, std::move(item)));
                 BEAST_EXPECT(map.getHash().as_uint256() == hashes[k]);
                 map.invariants();
             }
@@ -333,7 +338,9 @@ public:
                 map.setUnbacked();
             for (auto const& k : keys)
             {
-                map.addItem(SHAMapItem{k, IntToVUC(0)}, true, false);
+                map.addItem(
+                    SHAMapNodeType::tnTRANSACTION_NM,
+                    SHAMapItem{k, IntToVUC(0)});
                 map.invariants();
             }
 

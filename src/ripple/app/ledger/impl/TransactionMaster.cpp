@@ -108,7 +108,7 @@ TransactionMaster::fetch(
 std::shared_ptr<STTx const>
 TransactionMaster::fetch(
     std::shared_ptr<SHAMapItem> const& item,
-    SHAMapTreeNode::TNType type,
+    SHAMapNodeType type,
     std::uint32_t uCommitLedger)
 {
     std::shared_ptr<STTx const> txn;
@@ -116,12 +116,12 @@ TransactionMaster::fetch(
 
     if (!iTx)
     {
-        if (type == SHAMapTreeNode::tnTRANSACTION_NM)
+        if (type == SHAMapNodeType::tnTRANSACTION_NM)
         {
             SerialIter sit(item->slice());
             txn = std::make_shared<STTx const>(std::ref(sit));
         }
-        else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
+        else if (type == SHAMapNodeType::tnTRANSACTION_MD)
         {
             auto blob = SerialIter{item->data(), item->size()}.getVL();
             txn = std::make_shared<STTx const>(

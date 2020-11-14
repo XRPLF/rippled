@@ -1906,8 +1906,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
             }
         }
 
-        loadLedger->stateMap().flushDirty(
-            hotACCOUNT_NODE, loadLedger->info().seq);
+        loadLedger->stateMap().flushDirty(hotACCOUNT_NODE);
 
         loadLedger->setAccepted(
             closeTime, closeTimeResolution, !closeTimeEstimated, *config_);

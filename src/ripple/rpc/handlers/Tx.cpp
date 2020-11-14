@@ -49,24 +49,6 @@ isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, uint256 const& hash)
     return ledgerMaster.getHashBySeq(seq) == hash;
 }
 
-bool
-getMetaHex(Ledger const& ledger, uint256 const& transID, std::string& hex)
-{
-    SHAMapTreeNode::TNType type;
-    auto const item = ledger.txMap().peekItem(transID, type);
-
-    if (!item)
-        return false;
-
-    if (type != SHAMapTreeNode::tnTRANSACTION_MD)
-        return false;
-
-    SerialIter it(item->slice());
-    it.getVL();  // skip transaction
-    hex = strHex(makeSlice(it.getVL()));
-    return true;
-}
-
 struct TxResult
 {
     Transaction::pointer txn;

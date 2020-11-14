@@ -41,7 +41,8 @@ public:
     SHAMapNodeID(SHAMapNodeID const& other) = default;
     SHAMapNodeID(unsigned int depth, uint256 const& hash);
 
-    SHAMapNodeID& operator=(SHAMapNodeID const& other) = default;
+    SHAMapNodeID&
+    operator=(SHAMapNodeID const& other) = default;
 
     bool
     isRoot() const
