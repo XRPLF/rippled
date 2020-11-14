@@ -315,9 +315,8 @@ RCLConsensus::Adaptor::onClose(
         Serializer s(2048);
         tx.first->add(s);
         initialSet->addItem(
-            SHAMapItem(tx.first->getTransactionID(), std::move(s)),
-            true,
-            false);
+            SHAMapNodeType::tnTRANSACTION_NM,
+            SHAMapItem(tx.first->getTransactionID(), std::move(s)));
     }
 
     // Add pseudo-transactions to the set

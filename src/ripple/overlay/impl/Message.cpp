@@ -177,6 +177,12 @@ Message::setHeader(
     }
 }
 
+std::size_t
+Message::getBufferSize()
+{
+    return buffer_.size();
+}
+
 std::vector<uint8_t> const&
 Message::getBuffer(Compressed tryCompressed)
 {

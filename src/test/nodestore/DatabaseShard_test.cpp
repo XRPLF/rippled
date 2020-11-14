@@ -283,15 +283,14 @@ class DatabaseShard_test : public TestBase
         }
 
         // Store the state map
-        auto visitAcc = [&](SHAMapAbstractNode& node) {
+        auto visitAcc = [&](SHAMapTreeNode const& node) {
             Serializer s;
             node.serializeWithPrefix(s);
             db.store(
-                node.getType() == SHAMapAbstractNode::TNType::tnINNER
-                    ? hotUNKNOWN
-                    : hotACCOUNT_NODE,
+                node.getType() == SHAMapNodeType::tnINNER ? hotUNKNOWN
+                                                          : hotACCOUNT_NODE,
                 std::move(s.modData()),
-                node.getNodeHash().as_uint256(),
+                node.getHash().as_uint256(),
                 ledger.info().seq);
             return true;
         };
@@ -311,15 +310,14 @@ class DatabaseShard_test : public TestBase
         }
 
         // Store the transaction map
-        auto visitTx = [&](SHAMapAbstractNode& node) {
+        auto visitTx = [&](SHAMapTreeNode& node) {
             Serializer s;
             node.serializeWithPrefix(s);
             db.store(
-                node.getType() == SHAMapAbstractNode::TNType::tnINNER
-                    ? hotUNKNOWN
-                    : hotTRANSACTION_NODE,
+                node.getType() == SHAMapNodeType::tnINNER ? hotUNKNOWN
+                                                          : hotTRANSACTION_NODE,
                 std::move(s.modData()),
-                node.getNodeHash().as_uint256(),
+                node.getHash().as_uint256(),
                 ledger.info().seq);
             return true;
         };
@@ -357,20 +355,19 @@ class DatabaseShard_test : public TestBase
                 LedgerFill{*fetched, LedgerFill::full | LedgerFill::binary}));
 
         // walk shamap and validate each node
-        auto fcompAcc = [&](SHAMapAbstractNode& node) -> bool {
+        auto fcompAcc = [&](SHAMapTreeNode& node) -> bool {
             Serializer s;
             node.serializeWithPrefix(s);
             auto nSrc{NodeObject::createObject(
-                node.getType() == SHAMapAbstractNode::TNType::tnINNER
-                    ? hotUNKNOWN
-                    : hotACCOUNT_NODE,
+                node.getType() == SHAMapNodeType::tnINNER ? hotUNKNOWN
+                                                          : hotACCOUNT_NODE,
                 std::move(s.modData()),
-                node.getNodeHash().as_uint256())};
+                node.getHash().as_uint256())};
             if (!BEAST_EXPECT(nSrc))
                 return false;
 
             auto nDst = db.fetchNodeObject(
-                node.getNodeHash().as_uint256(), ledger.info().seq);
+                node.getHash().as_uint256(), ledger.info().seq);
             if (!BEAST_EXPECT(nDst))
                 return false;
 
@@ -381,20 +378,19 @@ class DatabaseShard_test : public TestBase
         if (ledger.stateMap().getHash().isNonZero())
             ledger.stateMap().snapShot(false)->visitNodes(fcompAcc);
 
-        auto fcompTx = [&](SHAMapAbstractNode& node) -> bool {
+        auto fcompTx = [&](SHAMapTreeNode& node) -> bool {
             Serializer s;
             node.serializeWithPrefix(s);
             auto nSrc{NodeObject::createObject(
-                node.getType() == SHAMapAbstractNode::TNType::tnINNER
-                    ? hotUNKNOWN
-                    : hotTRANSACTION_NODE,
+                node.getType() == SHAMapNodeType::tnINNER ? hotUNKNOWN
+                                                          : hotTRANSACTION_NODE,
                 std::move(s.modData()),
-                node.getNodeHash().as_uint256())};
+                node.getHash().as_uint256())};
             if (!BEAST_EXPECT(nSrc))
                 return false;
 
             auto nDst = db.fetchNodeObject(
-                node.getNodeHash().as_uint256(), ledger.info().seq);
+                node.getHash().as_uint256(), ledger.info().seq);
             if (!BEAST_EXPECT(nDst))
                 return false;
 

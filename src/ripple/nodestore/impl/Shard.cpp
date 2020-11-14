@@ -400,11 +400,11 @@ Shard::storeLedger(
     }
 
     bool error = false;
-    auto visit = [&](SHAMapAbstractNode& node) {
+    auto visit = [&](SHAMapTreeNode const& node) {
         if (!stop_)
         {
             if (auto nodeObject = srcDB.fetchNodeObject(
-                    node.getNodeHash().as_uint256(), srcLedger->info().seq))
+                    node.getHash().as_uint256(), srcLedger->info().seq))
             {
                 batch.emplace_back(std::move(nodeObject));
                 if (batch.size() < batchWritePreallocationSize || storeBatch())
@@ -1283,10 +1283,10 @@ Shard::verifyLedger(
         return fail("Invalid ledger account hash");
 
     bool error{false};
-    auto visit = [this, &error](SHAMapAbstractNode& node) {
+    auto visit = [this, &error](SHAMapTreeNode const& node) {
         if (stop_)
             return false;
-        if (!verifyFetch(node.getNodeHash().as_uint256()))
+        if (!verifyFetch(node.getHash().as_uint256()))
             error = true;
         return !error;
     };

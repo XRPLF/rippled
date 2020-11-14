@@ -194,7 +194,7 @@ public:
 private:
     // callback for visitNodes
     bool
-    copyNode(std::uint64_t& nodeCount, SHAMapAbstractNode const& node);
+    copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node);
     void
     run();
     void

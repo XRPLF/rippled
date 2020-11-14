@@ -64,6 +64,10 @@ public:
         int type,
         boost::optional<PublicKey> const& validator = {});
 
+    /** Retrieve the size of the packed but uncompressed message data. */
+    std::size_t
+    getBufferSize();
+
     /** Retrieve the packed message data. If compressed message is requested but
      * the message is not compressible then the uncompressed buffer is returned.
      * @param compressed Request compressed (Compress::On) or

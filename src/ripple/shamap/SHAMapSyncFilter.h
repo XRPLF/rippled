@@ -43,7 +43,7 @@ public:
         SHAMapHash const& nodeHash,
         std::uint32_t ledgerSeq,
         Blob&& nodeData,
-        SHAMapTreeNode::TNType type) const = 0;
+        SHAMapNodeType type) const = 0;
 
     virtual boost::optional<Blob>
     getNode(SHAMapHash const& nodeHash) const = 0;

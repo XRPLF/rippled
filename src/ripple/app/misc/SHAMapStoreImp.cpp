@@ -297,13 +297,12 @@ SHAMapStoreImp::fdRequired() const
 }
 
 bool
-SHAMapStoreImp::copyNode(
-    std::uint64_t& nodeCount,
-    SHAMapAbstractNode const& node)
+SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
     // Copy a single record from node to dbRotating_
-    dbRotating_->fetchNodeObject(
-        node.getNodeHash().as_uint256(), node.getSeq());
+    // FIXME: node.cowid() is the wrong thing to pass: fetchNodeObject expects
+    //        a ledger sequence, not a copy-on-write identifier.
+    dbRotating_->fetchNodeObject(node.getHash().as_uint256(), node.cowid());
     if (!(++nodeCount % checkHealthInterval_))
     {
         if (health())

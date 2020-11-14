@@ -33,8 +33,17 @@
 
 namespace ripple {
 
+// These are wire-protocol identifiers used during serialization to encode the
+// type of a node. They should not be arbitrarily be changed.
+static constexpr unsigned char const wireTypeTransaction = 0;
+static constexpr unsigned char const wireTypeAccountState = 1;
+static constexpr unsigned char const wireTypeInner = 2;
+static constexpr unsigned char const wireTypeCompressedInner = 3;
+static constexpr unsigned char const wireTypeTransactionWithMeta = 4;
+
 // A SHAMapHash is the hash of a node in a SHAMap, and also the
 // type of the hash of the entire SHAMap.
+
 class SHAMapHash
 {
     uint256 hash_;
@@ -114,48 +123,119 @@ operator!=(SHAMapHash const& x, SHAMapHash const& y)
     return !(x == y);
 }
 
-class SHAMapAbstractNode
+enum class SHAMapNodeType {
+    tnINNER = 1,
+    tnTRANSACTION_NM = 2,  // transaction, no metadata
+    tnTRANSACTION_MD = 3,  // transaction, with metadata
+    tnACCOUNT_STATE = 4
+};
+
+class SHAMapTreeNode
 {
-public:
-    enum TNType {
-        tnINNER = 1,
-        tnTRANSACTION_NM = 2,  // transaction, no metadata
-        tnTRANSACTION_MD = 3,  // transaction, with metadata
-        tnACCOUNT_STATE = 4
-    };
+protected:
+    SHAMapHash hash_;
+
+    /** Determines the owning SHAMap, if any. Used for copy-on-write semantics.
+
+        If this value is 0, the node is not dirty and does not need to be
+        flushed. It is eligible for sharing and may be included multiple
+        SHAMap instances.
+     */
+    std::uint32_t cowid_;
 
 protected:
-    TNType mType;
-    SHAMapHash mHash;
-    std::uint32_t mSeq;
+    SHAMapTreeNode(SHAMapTreeNode const&) = delete;
+    SHAMapTreeNode&
+    operator=(SHAMapTreeNode const&) = delete;
 
-protected:
-    virtual ~SHAMapAbstractNode() = 0;
-    SHAMapAbstractNode(SHAMapAbstractNode const&) = delete;
-    SHAMapAbstractNode&
-    operator=(SHAMapAbstractNode const&) = delete;
+    /** Construct a node
 
-    SHAMapAbstractNode(TNType type, std::uint32_t seq);
-    SHAMapAbstractNode(TNType type, std::uint32_t seq, SHAMapHash const& hash);
+        @param cowid The identifier of a SHAMap. For more, see #cowid_
+        @param hash The hash associated with this node, if any.
+     */
+    /** @{ */
+    explicit SHAMapTreeNode(std::uint32_t cowid) noexcept : cowid_(cowid)
+    {
+    }
+
+    explicit SHAMapTreeNode(
+        std::uint32_t cowid,
+        SHAMapHash const& hash) noexcept
+        : hash_(hash), cowid_(cowid)
+    {
+    }
+    /** @} */
 
 public:
+    virtual ~SHAMapTreeNode() noexcept = default;
+
+    /** \defgroup SHAMap Copy-on-Write Support
+
+        By nature, a node may appear in multiple SHAMap instances. Rather than
+        actually duplicating these nodes, SHAMap opts to be memory efficient
+        and uses copy-on-write semantics for nodes.
+
+        Only nodes that are not modified and don't need to be flushed back can
+        be shared. Once a node needs to be changed, it must first be copied and
+        the copy must marked as not shareable.
+
+        Note that just because a node may not be *owned* by a given SHAMap
+        instance does not mean that the node is NOT a part of any SHAMap. It
+        only means that the node is not owned exclusively by any one SHAMap.
+
+        For more on copy-on-write, check out:
+            https://en.wikipedia.org/wiki/Copy-on-write
+     */
+    /** @{ */
+    /** Returns the SHAMap that owns this node.
+
+        @return the ID of the SHAMap that owns this node, or 0 if the node
+                is not owned by any SHAMap and is a candidate for sharing.
+     */
     std::uint32_t
-    getSeq() const;
-    void
-    setSeq(std::uint32_t s);
-    SHAMapHash const&
-    getNodeHash() const;
-    TNType
-    getType() const;
-    bool
-    isLeaf() const;
-    bool
-    isInner() const;
-    bool
-    isInBounds(SHAMapNodeID const& id) const;
+    cowid() const
+    {
+        return cowid_;
+    }
 
-    virtual bool
+    /** Mark this node as shareable.
+
+        Only nodes that are not modified and do not need to be flushed back
+        should be marked as shareable.
+     */
+    void
+    share()
+    {
+        cowid_ = 0;
+    }
+
+    /** Make a copy of this node, setting the owner. */
+    virtual std::shared_ptr<SHAMapTreeNode>
+    clone(std::uint32_t cowid) const = 0;
+    /** @} */
+
+    /** Recalculate the hash of this node. */
+    virtual void
     updateHash() = 0;
+
+    /** Return the hash of this node. */
+    SHAMapHash const&
+    getHash() const
+    {
+        return hash_;
+    }
+
+    /** Determines the type of node. */
+    virtual SHAMapNodeType
+    getType() const = 0;
+
+    /** Determines if this is a leaf node. */
+    virtual bool
+    isLeaf() const = 0;
+
+    /** Determines if this is an inner node. */
+    virtual bool
+    isInner() const = 0;
 
     /** Serialize the node in a format appropriate for sending over the wire */
     virtual void
@@ -167,267 +247,26 @@ public:
 
     virtual std::string
     getString(SHAMapNodeID const&) const;
-    virtual std::shared_ptr<SHAMapAbstractNode>
-    clone(std::uint32_t seq) const = 0;
-    virtual uint256 const&
-    key() const = 0;
+
     virtual void
     invariants(bool is_root = false) const = 0;
 
-    static std::shared_ptr<SHAMapAbstractNode>
+    static std::shared_ptr<SHAMapTreeNode>
     makeFromPrefix(Slice rawNode, SHAMapHash const& hash);
 
-    static std::shared_ptr<SHAMapAbstractNode>
+    static std::shared_ptr<SHAMapTreeNode>
     makeFromWire(Slice rawNode);
 
 private:
-    static std::shared_ptr<SHAMapAbstractNode>
-    makeTransaction(
-        Slice data,
-        std::uint32_t seq,
-        SHAMapHash const& hash,
-        bool hashValid);
+    static std::shared_ptr<SHAMapTreeNode>
+    makeTransaction(Slice data, SHAMapHash const& hash, bool hashValid);
 
-    static std::shared_ptr<SHAMapAbstractNode>
-    makeAccountState(
-        Slice data,
-        std::uint32_t seq,
-        SHAMapHash const& hash,
-        bool hashValid);
+    static std::shared_ptr<SHAMapTreeNode>
+    makeAccountState(Slice data, SHAMapHash const& hash, bool hashValid);
 
-    static std::shared_ptr<SHAMapAbstractNode>
-    makeTransactionWithMeta(
-        Slice data,
-        std::uint32_t seq,
-        SHAMapHash const& hash,
-        bool hashValid);
+    static std::shared_ptr<SHAMapTreeNode>
+    makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool hashValid);
 };
-
-class SHAMapInnerNode : public SHAMapAbstractNode,
-                        public CountedObject<SHAMapInnerNode>
-{
-    std::array<SHAMapHash, 16> mHashes;
-    std::shared_ptr<SHAMapAbstractNode> mChildren[16];
-    int mIsBranch = 0;
-    std::uint32_t mFullBelowGen = 0;
-
-    static std::mutex childLock;
-
-public:
-    SHAMapInnerNode(std::uint32_t seq);
-    std::shared_ptr<SHAMapAbstractNode>
-    clone(std::uint32_t seq) const override;
-
-    bool
-    isEmpty() const;
-    bool
-    isEmptyBranch(int m) const;
-    int
-    getBranchCount() const;
-    SHAMapHash const&
-    getChildHash(int m) const;
-
-    void
-    setChild(int m, std::shared_ptr<SHAMapAbstractNode> const& child);
-    void
-    shareChild(int m, std::shared_ptr<SHAMapAbstractNode> const& child);
-    SHAMapAbstractNode*
-    getChildPointer(int branch);
-    std::shared_ptr<SHAMapAbstractNode>
-    getChild(int branch);
-    virtual std::shared_ptr<SHAMapAbstractNode>
-    canonicalizeChild(int branch, std::shared_ptr<SHAMapAbstractNode> node);
-
-    // sync functions
-    bool
-    isFullBelow(std::uint32_t generation) const;
-    void
-    setFullBelowGen(std::uint32_t gen);
-
-    bool
-    updateHash() override;
-    void
-    updateHashDeep();
-
-    void
-    serializeForWire(Serializer&) const override;
-
-    void
-    serializeWithPrefix(Serializer&) const override;
-
-    std::string
-    getString(SHAMapNodeID const&) const override;
-    uint256 const&
-    key() const override;
-    void
-    invariants(bool is_root = false) const override;
-
-    static std::shared_ptr<SHAMapAbstractNode>
-    makeFullInner(
-        Slice data,
-        std::uint32_t seq,
-        SHAMapHash const& hash,
-        bool hashValid);
-
-    static std::shared_ptr<SHAMapAbstractNode>
-    makeCompressedInner(Slice data, std::uint32_t seq);
-};
-
-// SHAMapTreeNode represents a leaf, and may eventually be renamed to reflect
-// that.
-class SHAMapTreeNode : public SHAMapAbstractNode,
-                       public CountedObject<SHAMapTreeNode>
-{
-private:
-    std::shared_ptr<SHAMapItem const> mItem;
-
-public:
-    SHAMapTreeNode(const SHAMapTreeNode&) = delete;
-    SHAMapTreeNode&
-    operator=(const SHAMapTreeNode&) = delete;
-
-    SHAMapTreeNode(
-        std::shared_ptr<SHAMapItem const> item,
-        TNType type,
-        std::uint32_t seq);
-    SHAMapTreeNode(
-        std::shared_ptr<SHAMapItem const> item,
-        TNType type,
-        std::uint32_t seq,
-        SHAMapHash const& hash);
-    std::shared_ptr<SHAMapAbstractNode>
-    clone(std::uint32_t seq) const override;
-
-    void
-    serializeForWire(Serializer&) const override;
-
-    void
-    serializeWithPrefix(Serializer&) const override;
-
-    uint256 const&
-    key() const override;
-    void
-    invariants(bool is_root = false) const override;
-
-public:  // public only to SHAMap
-    // item node function
-    bool
-    hasItem() const;
-    std::shared_ptr<SHAMapItem const> const&
-    peekItem() const;
-    bool
-    setItem(std::shared_ptr<SHAMapItem const> i, TNType type);
-
-    std::string
-    getString(SHAMapNodeID const&) const override;
-    bool
-    updateHash() override;
-};
-
-// SHAMapAbstractNode
-
-inline SHAMapAbstractNode::SHAMapAbstractNode(TNType type, std::uint32_t seq)
-    : mType(type), mSeq(seq)
-{
-}
-
-inline SHAMapAbstractNode::SHAMapAbstractNode(
-    TNType type,
-    std::uint32_t seq,
-    SHAMapHash const& hash)
-    : mType(type), mHash(hash), mSeq(seq)
-{
-}
-
-inline std::uint32_t
-SHAMapAbstractNode::getSeq() const
-{
-    return mSeq;
-}
-
-inline void
-SHAMapAbstractNode::setSeq(std::uint32_t s)
-{
-    mSeq = s;
-}
-
-inline SHAMapHash const&
-SHAMapAbstractNode::getNodeHash() const
-{
-    return mHash;
-}
-
-inline SHAMapAbstractNode::TNType
-SHAMapAbstractNode::getType() const
-{
-    return mType;
-}
-
-inline bool
-SHAMapAbstractNode::isLeaf() const
-{
-    return (mType == tnTRANSACTION_NM) || (mType == tnTRANSACTION_MD) ||
-        (mType == tnACCOUNT_STATE);
-}
-
-inline bool
-SHAMapAbstractNode::isInner() const
-{
-    return mType == tnINNER;
-}
-
-inline bool
-SHAMapAbstractNode::isInBounds(SHAMapNodeID const& id) const
-{
-    // Nodes at depth 64 must be leaves
-    return (!isInner() || (id.getDepth() < 64));
-}
-
-// SHAMapInnerNode
-
-inline SHAMapInnerNode::SHAMapInnerNode(std::uint32_t seq)
-    : SHAMapAbstractNode(tnINNER, seq)
-{
-}
-
-inline bool
-SHAMapInnerNode::isEmptyBranch(int m) const
-{
-    return (mIsBranch & (1 << m)) == 0;
-}
-
-inline SHAMapHash const&
-SHAMapInnerNode::getChildHash(int m) const
-{
-    assert((m >= 0) && (m < 16) && (getType() == tnINNER));
-    return mHashes[m];
-}
-
-inline bool
-SHAMapInnerNode::isFullBelow(std::uint32_t generation) const
-{
-    return mFullBelowGen == generation;
-}
-
-inline void
-SHAMapInnerNode::setFullBelowGen(std::uint32_t gen)
-{
-    mFullBelowGen = gen;
-}
-
-// SHAMapTreeNode
-
-inline bool
-SHAMapTreeNode::hasItem() const
-{
-    return bool(mItem);
-}
-
-inline std::shared_ptr<SHAMapItem const> const&
-SHAMapTreeNode::peekItem() const
-{
-    return mItem;
-}
 
 }  // namespace ripple
 
