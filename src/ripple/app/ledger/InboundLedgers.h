@@ -36,7 +36,7 @@ class InboundLedgers
 public:
     using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
 
-    virtual ~InboundLedgers() = 0;
+    virtual ~InboundLedgers() = default;
 
     // VFALCO TODO Should this be called findOrAdd ?
     //
