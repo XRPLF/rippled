@@ -244,9 +244,9 @@ FeeVoteImpl::doVoting(
         Serializer s;
         feeTx.add(s);
 
-        auto tItem = std::make_shared<SHAMapItem>(txID, s.peekData());
-
-        if (!initialPosition->addGiveItem(std::move(tItem), true, false))
+        if (!initialPosition->addGiveItem(
+                SHAMapNodeType::tnTRANSACTION_NM,
+                std::make_shared<SHAMapItem>(txID, s.peekData())))
         {
             JLOG(journal_.warn()) << "Ledger already had fee change";
         }

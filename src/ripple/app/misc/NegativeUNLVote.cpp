@@ -119,7 +119,8 @@ NegativeUNLVote::addTx(
     Serializer s;
     negUnlTx.add(s);
     if (!initialSet->addGiveItem(
-            std::make_shared<SHAMapItem>(txID, s.peekData()), true, false))
+            SHAMapNodeType::tnTRANSACTION_NM,
+            std::make_shared<SHAMapItem>(txID, s.peekData())))
     {
         JLOG(j_.warn()) << "N-UNL: ledger seq=" << seq
                         << ", add ttUNL_MODIFY tx failed";

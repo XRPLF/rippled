@@ -72,8 +72,8 @@ public:
         res->updateSkipList();
 
         {
-            res->stateMap().flushDirty(hotACCOUNT_NODE, res->info().seq);
-            res->txMap().flushDirty(hotTRANSACTION_NODE, res->info().seq);
+            res->stateMap().flushDirty(hotACCOUNT_NODE);
+            res->txMap().flushDirty(hotTRANSACTION_NODE);
         }
         res->unshare();
 

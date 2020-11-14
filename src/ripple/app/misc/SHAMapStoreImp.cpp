@@ -299,12 +299,10 @@ SHAMapStoreImp::fdRequired() const
 }
 
 bool
-SHAMapStoreImp::copyNode(
-    std::uint64_t& nodeCount,
-    SHAMapAbstractNode const& node)
+SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
     // Copy a single record from node to dbRotating_
-    dbRotating_->fetchNodeObject(node.getNodeHash().as_uint256());
+    dbRotating_->fetchNodeObject(node.getHash().as_uint256());
     if (!(++nodeCount % checkHealthInterval_))
     {
         if (health())

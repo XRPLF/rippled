@@ -41,14 +41,14 @@ ConsensusTransSetSF::gotNode(
     SHAMapHash const& nodeHash,
     std::uint32_t,
     Blob&& nodeData,
-    SHAMapTreeNode::TNType type) const
+    SHAMapNodeType type) const
 {
     if (fromFilter)
         return;
 
     m_nodeCache.insert(nodeHash, nodeData);
 
-    if ((type == SHAMapTreeNode::tnTRANSACTION_NM) && (nodeData.size() > 16))
+    if ((type == SHAMapNodeType::tnTRANSACTION_NM) && (nodeData.size() > 16))
     {
         // this is a transaction, and we didn't have it
         JLOG(j_.debug())

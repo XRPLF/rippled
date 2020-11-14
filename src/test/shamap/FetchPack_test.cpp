@@ -65,7 +65,7 @@ public:
             SHAMapHash const& nodeHash,
             std::uint32_t ledgerSeq,
             Blob&& nodeData,
-            SHAMapTreeNode::TNType type) const override
+            SHAMapNodeType type) const override
         {
         }
 
@@ -100,7 +100,8 @@ public:
         while (n--)
         {
             std::shared_ptr<SHAMapItem> item(make_random_item(r));
-            auto const result(t.addItem(std::move(*item), false, false));
+            auto const result(
+                t.addItem(SHAMapNodeType::tnACCOUNT_STATE, std::move(*item)));
             assert(result);
             (void)result;
         }

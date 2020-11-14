@@ -24,69 +24,21 @@
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/digest.h>
+#include <ripple/shamap/SHAMapAccountStateLeafNode.h>
+#include <ripple/shamap/SHAMapInnerNode.h>
+#include <ripple/shamap/SHAMapLeafNode.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
+#include <ripple/shamap/SHAMapTxLeafNode.h>
+#include <ripple/shamap/SHAMapTxPlusMetaLeafNode.h>
 #include <mutex>
 
 #include <openssl/sha.h>
 
 namespace ripple {
 
-// These are wire-protocol identifiers used during serialization to encode the
-// type of a node. They should not be arbitrarily be changed.
-static constexpr unsigned char const wireTypeTransaction = 0;
-static constexpr unsigned char const wireTypeAccountState = 1;
-static constexpr unsigned char const wireTypeInner = 2;
-static constexpr unsigned char const wireTypeCompressedInner = 3;
-static constexpr unsigned char const wireTypeTransactionWithMeta = 4;
-
-std::mutex SHAMapInnerNode::childLock;
-
-SHAMapAbstractNode::~SHAMapAbstractNode() = default;
-
-std::shared_ptr<SHAMapAbstractNode>
-SHAMapInnerNode::clone(std::uint32_t seq) const
-{
-    auto p = std::make_shared<SHAMapInnerNode>(seq);
-    p->mHash = mHash;
-    p->mIsBranch = mIsBranch;
-    p->mFullBelowGen = mFullBelowGen;
-    p->mHashes = mHashes;
-    std::lock_guard lock(childLock);
-    for (int i = 0; i < 16; ++i)
-        p->mChildren[i] = mChildren[i];
-    return p;
-}
-
-std::shared_ptr<SHAMapAbstractNode>
-SHAMapTreeNode::clone(std::uint32_t seq) const
-{
-    return std::make_shared<SHAMapTreeNode>(mItem, mType, seq, mHash);
-}
-
-SHAMapTreeNode::SHAMapTreeNode(
-    std::shared_ptr<SHAMapItem const> item,
-    TNType type,
-    std::uint32_t seq)
-    : SHAMapAbstractNode(type, seq), mItem(std::move(item))
-{
-    assert(mItem->peekData().size() >= 12);
-    updateHash();
-}
-
-SHAMapTreeNode::SHAMapTreeNode(
-    std::shared_ptr<SHAMapItem const> item,
-    TNType type,
-    std::uint32_t seq,
-    SHAMapHash const& hash)
-    : SHAMapAbstractNode(type, seq, hash), mItem(std::move(item))
-{
-    assert(mItem->peekData().size() >= 12);
-}
-
-std::shared_ptr<SHAMapAbstractNode>
-SHAMapAbstractNode::makeTransaction(
+std::shared_ptr<SHAMapTreeNode>
+SHAMapTreeNode::makeTransaction(
     Slice data,
-    std::uint32_t seq,
     SHAMapHash const& hash,
     bool hashValid)
 {
@@ -97,17 +49,14 @@ SHAMapAbstractNode::makeTransaction(
         sha512Half(HashPrefix::transactionID, data), s);
 
     if (hashValid)
-        return std::make_shared<SHAMapTreeNode>(
-            std::move(item), tnTRANSACTION_NM, seq, hash);
+        return std::make_shared<SHAMapTxLeafNode>(std::move(item), 0, hash);
 
-    return std::make_shared<SHAMapTreeNode>(
-        std::move(item), tnTRANSACTION_NM, seq);
+    return std::make_shared<SHAMapTxLeafNode>(std::move(item), 0);
 }
 
-std::shared_ptr<SHAMapAbstractNode>
-SHAMapAbstractNode::makeTransactionWithMeta(
+std::shared_ptr<SHAMapTreeNode>
+SHAMapTreeNode::makeTransactionWithMeta(
     Slice data,
-    std::uint32_t seq,
     SHAMapHash const& hash,
     bool hashValid)
 {
@@ -128,17 +77,15 @@ SHAMapAbstractNode::makeTransactionWithMeta(
     auto item = std::make_shared<SHAMapItem const>(tag, s.peekData());
 
     if (hashValid)
-        return std::make_shared<SHAMapTreeNode>(
-            std::move(item), tnTRANSACTION_MD, seq, hash);
+        return std::make_shared<SHAMapTxPlusMetaLeafNode>(
+            std::move(item), 0, hash);
 
-    return std::make_shared<SHAMapTreeNode>(
-        std::move(item), tnTRANSACTION_MD, seq);
+    return std::make_shared<SHAMapTxPlusMetaLeafNode>(std::move(item), 0);
 }
 
-std::shared_ptr<SHAMapAbstractNode>
-SHAMapAbstractNode::makeAccountState(
+std::shared_ptr<SHAMapTreeNode>
+SHAMapTreeNode::makeAccountState(
     Slice data,
-    std::uint32_t seq,
     SHAMapHash const& hash,
     bool hashValid)
 {
@@ -162,74 +109,14 @@ SHAMapAbstractNode::makeAccountState(
     auto item = std::make_shared<SHAMapItem const>(tag, s.peekData());
 
     if (hashValid)
-        return std::make_shared<SHAMapTreeNode>(
-            std::move(item), tnACCOUNT_STATE, seq, hash);
+        return std::make_shared<SHAMapAccountStateLeafNode>(
+            std::move(item), 0, hash);
 
-    return std::make_shared<SHAMapTreeNode>(
-        std::move(item), tnACCOUNT_STATE, seq);
+    return std::make_shared<SHAMapAccountStateLeafNode>(std::move(item), 0);
 }
 
-std::shared_ptr<SHAMapAbstractNode>
-SHAMapInnerNode::makeFullInner(
-    Slice data,
-    std::uint32_t seq,
-    SHAMapHash const& hash,
-    bool hashValid)
-{
-    if (data.size() != 512)
-        Throw<std::runtime_error>("Invalid FI node");
-
-    auto ret = std::make_shared<SHAMapInnerNode>(seq);
-
-    Serializer s(data.data(), data.size());
-
-    for (int i = 0; i < 16; ++i)
-    {
-        s.getBitString(ret->mHashes[i].as_uint256(), i * 32);
-
-        if (ret->mHashes[i].isNonZero())
-            ret->mIsBranch |= (1 << i);
-    }
-
-    if (hashValid)
-        ret->mHash = hash;
-    else
-        ret->updateHash();
-    return ret;
-}
-
-std::shared_ptr<SHAMapAbstractNode>
-SHAMapInnerNode::makeCompressedInner(Slice data, std::uint32_t seq)
-{
-    Serializer s(data.data(), data.size());
-
-    int len = s.getLength();
-
-    auto ret = std::make_shared<SHAMapInnerNode>(seq);
-
-    for (int i = 0; i < (len / 33); ++i)
-    {
-        int pos;
-
-        if (!s.get8(pos, 32 + (i * 33)))
-            Throw<std::runtime_error>("short CI node");
-
-        if ((pos < 0) || (pos >= 16))
-            Throw<std::runtime_error>("invalid CI node");
-
-        s.getBitString(ret->mHashes[pos].as_uint256(), i * 33);
-
-        if (ret->mHashes[pos].isNonZero())
-            ret->mIsBranch |= (1 << pos);
-    }
-
-    ret->updateHash();
-
-    return ret;
-}
-
-std::shared_ptr<SHAMapAbstractNode>
-SHAMapAbstractNode::makeFromWire(Slice rawNode)
+std::shared_ptr<SHAMapTreeNode>
+SHAMapTreeNode::makeFromWire(Slice rawNode)
 {
     if (rawNode.empty())
         return {};
@@ -241,29 +128,27 @@ SHAMapAbstractNode::makeFromWire(Slice rawNode)
     bool const hashValid = false;
     SHAMapHash const hash;
 
-    std::uint32_t const seq = 0;
-
     if (type == wireTypeTransaction)
-        return makeTransaction(rawNode, seq, hash, hashValid);
+        return makeTransaction(rawNode, hash, hashValid);
 
     if (type == wireTypeAccountState)
-        return makeAccountState(rawNode, seq, hash, hashValid);
+        return makeAccountState(rawNode, hash, hashValid);
 
     if (type == wireTypeInner)
-        return SHAMapInnerNode::makeFullInner(rawNode, seq, hash, hashValid);
+        return SHAMapInnerNode::makeFullInner(rawNode, hash, hashValid);
 
     if (type == wireTypeCompressedInner)
-        return SHAMapInnerNode::makeCompressedInner(rawNode, seq);
+        return SHAMapInnerNode::makeCompressedInner(rawNode);
 
     if (type == wireTypeTransactionWithMeta)
-        return makeTransactionWithMeta(rawNode, seq, hash, hashValid);
+        return makeTransactionWithMeta(rawNode, hash, hashValid);
 
     Throw<std::runtime_error>(
         "wire: Unknown type (" + std::to_string(type) + ")");
 }
 
-std::shared_ptr<SHAMapAbstractNode>
-SHAMapAbstractNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
+std::shared_ptr<SHAMapTreeNode>
+SHAMapTreeNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
 {
     if (rawNode.size() < 4)
         Throw<std::runtime_error>("prefix: short node");
@@ -279,19 +164,18 @@ SHAMapAbstractNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
     rawNode.remove_prefix(4);
 
     bool const hashValid = true;
-    std::uint32_t const seq = 0;
 
     if (type == HashPrefix::transactionID)
-        return makeTransaction(rawNode, seq, hash, hashValid);
+        return makeTransaction(rawNode, hash, hashValid);
 
     if (type == HashPrefix::leafNode)
-        return makeAccountState(rawNode, seq, hash, hashValid);
+        return makeAccountState(rawNode, hash, hashValid);
 
     if (type == HashPrefix::innerNode)
-        return SHAMapInnerNode::makeFullInner(rawNode, seq, hash, hashValid);
+        return SHAMapInnerNode::makeFullInner(rawNode, hash, hashValid);
 
     if (type == HashPrefix::txNode)
-        return makeTransactionWithMeta(rawNode, seq, hash, hashValid);
+        return makeTransactionWithMeta(rawNode, hash, hashValid);
 
     Throw<std::runtime_error>(
         "prefix: unknown type (" +
@@ -299,349 +183,10 @@ SHAMapAbstractNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
         ")");
 }
 
-bool
-SHAMapInnerNode::updateHash()
-{
-    uint256 nh;
-    if (mIsBranch != 0)
-    {
-        sha512_half_hasher h;
-        using beast::hash_append;
-        hash_append(h, HashPrefix::innerNode);
-        for (auto const& hh : mHashes)
-            hash_append(h, hh);
-        nh = static_cast<typename sha512_half_hasher::result_type>(h);
-    }
-    if (nh == mHash.as_uint256())
-        return false;
-    mHash = SHAMapHash{nh};
-    return true;
-}
-
-void
-SHAMapInnerNode::updateHashDeep()
-{
-    for (auto pos = 0; pos < 16; ++pos)
-    {
-        if (mChildren[pos] != nullptr)
-            mHashes[pos] = mChildren[pos]->getNodeHash();
-    }
-    updateHash();
-}
-
-bool
-SHAMapTreeNode::updateHash()
-{
-    uint256 nh;
-    if (mType == tnTRANSACTION_NM)
-    {
-        nh =
-            sha512Half(HashPrefix::transactionID, makeSlice(mItem->peekData()));
-    }
-    else if (mType == tnACCOUNT_STATE)
-    {
-        nh = sha512Half(
-            HashPrefix::leafNode, makeSlice(mItem->peekData()), mItem->key());
-    }
-    else if (mType == tnTRANSACTION_MD)
-    {
-        nh = sha512Half(
-            HashPrefix::txNode, makeSlice(mItem->peekData()), mItem->key());
-    }
-    else
-        assert(false);
-
-    if (nh == mHash.as_uint256())
-        return false;
-
-    mHash = SHAMapHash{nh};
-    return true;
-}
-
-void
-SHAMapInnerNode::serializeForWire(Serializer& s) const
-{
-    assert(mType == tnINNER);
-    assert(!isEmpty());
-
-    // If the node is sparse, then only send non-empty branches:
-    if (getBranchCount() < 12)
-    {
-        // compressed node
-        for (int i = 0; i < mHashes.size(); ++i)
-        {
-            if (!isEmptyBranch(i))
-            {
-                s.addBitString(mHashes[i].as_uint256());
-                s.add8(i);
-            }
-        }
-
-        s.add8(wireTypeCompressedInner);
-    }
-    else
-    {
-        for (auto const& hh : mHashes)
-            s.addBitString(hh.as_uint256());
-
-        s.add8(wireTypeInner);
-    }
-}
-
-void
-SHAMapInnerNode::serializeWithPrefix(Serializer& s) const
-{
-    assert(mType == tnINNER);
-    assert(!isEmpty());
-
-    s.add32(HashPrefix::innerNode);
-    for (auto const& hh : mHashes)
-        s.addBitString(hh.as_uint256());
-}
-
-void
-SHAMapTreeNode::serializeForWire(Serializer& s) const
-{
-    if (mType == tnACCOUNT_STATE)
-    {
-        s.addRaw(mItem->peekData());
-        s.addBitString(mItem->key());
-        s.add8(wireTypeAccountState);
-    }
-    else if (mType == tnTRANSACTION_NM)
-    {
-        s.addRaw(mItem->peekData());
-        s.add8(wireTypeTransaction);
-    }
-    else if (mType == tnTRANSACTION_MD)
-    {
-        s.addRaw(mItem->peekData());
-        s.addBitString(mItem->key());
-        s.add8(wireTypeTransactionWithMeta);
-    }
-}
-
-void
-SHAMapTreeNode::serializeWithPrefix(Serializer& s) const
-{
-    if (mType == tnACCOUNT_STATE)
-    {
-        s.add32(HashPrefix::leafNode);
-        s.addRaw(mItem->peekData());
-        s.addBitString(mItem->key());
-    }
-    else if (mType == tnTRANSACTION_NM)
-    {
-        s.add32(HashPrefix::transactionID);
-        s.addRaw(mItem->peekData());
-    }
-    else if (mType == tnTRANSACTION_MD)
-    {
-        s.add32(HashPrefix::txNode);
-        s.addRaw(mItem->peekData());
-        s.addBitString(mItem->key());
-    }
-}
-
-bool
-SHAMapTreeNode::setItem(std::shared_ptr<SHAMapItem const> i, TNType type)
-{
-    mType = type;
-    mItem = std::move(i);
-    assert(isLeaf());
-    assert(mSeq != 0);
-    return updateHash();
-}
-
-bool
-SHAMapInnerNode::isEmpty() const
-{
-    return mIsBranch == 0;
-}
-
-int
-SHAMapInnerNode::getBranchCount() const
-{
-    assert(isInner());
-    int count = 0;
-
-    for (int i = 0; i < 16; ++i)
-        if (!isEmptyBranch(i))
-            ++count;
-
-    return count;
-}
-
-std::string
-SHAMapAbstractNode::getString(const SHAMapNodeID& id) const
-{
-    return to_string(id);
-}
-
-std::string
-SHAMapInnerNode::getString(const SHAMapNodeID& id) const
-{
-    std::string ret = SHAMapAbstractNode::getString(id);
-    for (int i = 0; i < mHashes.size(); ++i)
-    {
-        if (!isEmptyBranch(i))
-        {
-            ret += "\n";
-            ret += std::to_string(i);
-            ret += " = ";
-            ret += to_string(mHashes[i]);
-        }
-    }
-    return ret;
-}
-
 std::string
 SHAMapTreeNode::getString(const SHAMapNodeID& id) const
 {
-    std::string ret = SHAMapAbstractNode::getString(id);
-    if (mType == tnTRANSACTION_NM)
-        ret += ",txn\n";
-    else if (mType == tnTRANSACTION_MD)
-        ret += ",txn+md\n";
-    else if (mType == tnACCOUNT_STATE)
-        ret += ",as\n";
-    else
-        ret += ",leaf\n";
-
-    ret += "  Tag=";
-    ret += to_string(peekItem()->key());
-    ret += "\n  Hash=";
-    ret += to_string(mHash);
-    ret += "/";
-    ret += std::to_string(mItem->size());
-    return ret;
-}
-
-// We are modifying an inner node
-void
-SHAMapInnerNode::setChild(
-    int m,
-    std::shared_ptr<SHAMapAbstractNode> const& child)
-{
-    assert((m >= 0) && (m < 16));
-    assert(mType == tnINNER);
-    assert(mSeq != 0);
-    assert(child.get() != this);
-    mHashes[m].zero();
-    mHash.zero();
-    if (child)
-        mIsBranch |= (1 << m);
-    else
-        mIsBranch &= ~(1 << m);
-    mChildren[m] = child;
-}
-
-// finished modifying, now make shareable
-void
-SHAMapInnerNode::shareChild(
-    int m,
-    std::shared_ptr<SHAMapAbstractNode> const& child)
-{
-    assert((m >= 0) && (m < 16));
-    assert(mType == tnINNER);
-    assert(mSeq != 0);
-    assert(child);
-    assert(child.get() != this);
-
-    mChildren[m] = child;
-}
-
-SHAMapAbstractNode*
-SHAMapInnerNode::getChildPointer(int branch)
-{
-    assert(branch >= 0 && branch < 16);
-    assert(isInner());
-
-    std::lock_guard lock(childLock);
-    return mChildren[branch].get();
-}
-
-std::shared_ptr<SHAMapAbstractNode>
-SHAMapInnerNode::getChild(int branch)
-{
-    assert(branch >= 0 && branch < 16);
-    assert(isInner());
-
-    std::lock_guard lock(childLock);
-    return mChildren[branch];
-}
-
-std::shared_ptr<SHAMapAbstractNode>
-SHAMapInnerNode::canonicalizeChild(
-    int branch,
-    std::shared_ptr<SHAMapAbstractNode> node)
-{
-    assert(branch >= 0 && branch < 16);
-    assert(isInner());
-    assert(node);
-    assert(node->getNodeHash() == mHashes[branch]);
-
-    std::lock_guard lock(childLock);
-    if (mChildren[branch])
-    {
-        // There is already a node hooked up, return it
-        node = mChildren[branch];
-    }
-    else
-    {
-        // Hook this node up
-        mChildren[branch] = node;
-    }
-    return node;
-}
-
-uint256 const&
-SHAMapInnerNode::key() const
-{
-    Throw<std::logic_error>("SHAMapInnerNode::key() should never be called");
-    static uint256 x;
-    return x;
-}
-
-uint256 const&
-SHAMapTreeNode::key() const
-{
-    return mItem->key();
-}
-
-void
-SHAMapInnerNode::invariants(bool is_root) const
-{
-    assert(mType == tnINNER);
-    unsigned count = 0;
-    for (int i = 0; i < 16; ++i)
-    {
-        if (mHashes[i].isNonZero())
-        {
-            assert((mIsBranch & (1 << i)) != 0);
-            if (mChildren[i] != nullptr)
-                mChildren[i]->invariants();
-            ++count;
-        }
-        else
-        {
-            assert((mIsBranch & (1 << i)) == 0);
-        }
-    }
-    if (!is_root)
-    {
-        assert(mHash.isNonZero());
-        assert(count >= 1);
-    }
-    assert((count == 0) ? mHash.isZero() : mHash.isNonZero());
-}
-
-void
-SHAMapTreeNode::invariants(bool) const
-{
-    assert(mType >= tnTRANSACTION_NM);
-    assert(mHash.isNonZero());
-    assert(mItem != nullptr);
+    return to_string(id);
 }
 
 }  // namespace ripple
