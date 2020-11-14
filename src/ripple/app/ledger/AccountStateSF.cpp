@@ -27,7 +27,7 @@ AccountStateSF::gotNode(
     SHAMapHash const& nodeHash,
     std::uint32_t ledgerSeq,
     Blob&& nodeData,
-    SHAMapTreeNode::TNType) const
+    SHAMapNodeType) const
 {
     db_.store(
         hotACCOUNT_NODE, std::move(nodeData), nodeHash.as_uint256(), ledgerSeq);

@@ -2033,6 +2033,64 @@ LedgerMaster::gotFetchPack(bool progress, std::uint32_t seq)
     }
 }
 
+/** Populate a fetch pack with data from the map the recipient wants.
+
+    A recipient may or may not have the map that they are asking for. If
+    they do, we can optimize the transfer by not including parts of the
+    map that they are already have.
+
+    @param have The map that the recipient already has (if any).
+    @param cnt The maximum number of nodes to return.
+    @param into The protocol object into which we add information.
+    @param seq The sequence number of the ledger the map is a part of.
+    @param withLeaves True if leaf nodes should be included.
+
+    @note: The withLeaves parameter is configurable even though the
+           code, so far, only ever sets the parameter to true.
+
+           The rationale is that for transaction trees, it may make
+           sense to not include the leaves if the fetch pack is being
+           constructed for someone attempting to get a recent ledger
+           for which they already have the transactions.
+
+           However, for historical ledgers, which is the only use we
+           have for fetch packs right now, it makes sense to include
+           the transactions because the caller is unlikely to have
+           them.
+ */
+static void
+populateFetchPack(
+    SHAMap const& want,
+    SHAMap const* have,
+    std::uint32_t cnt,
+    protocol::TMGetObjectByHash* into,
+    std::uint32_t seq,
+    bool withLeaves = true)
+{
+    assert(cnt != 0);
+
+    Serializer s(1024);
+
+    want.visitDifferences(
+        have,
+        [&s, withLeaves, &cnt, into, seq](SHAMapTreeNode const& n) -> bool {
+            if (!withLeaves && n.isLeaf())
+                return true;
+
+            s.erase();
+            n.serializeWithPrefix(s);
+
+            auto const& hash = n.getHash().as_uint256();
+
+            protocol::TMIndexedObject* obj = into->add_objects();
+            obj->set_ledgerseq(seq);
+            obj->set_hash(hash.data(), hash.size());
+            obj->set_data(s.getDataPtr(), s.getLength());
+
+            return --cnt != 0;
+        });
+}
+
 void
 LedgerMaster::makeFetchPack(
     std::weak_ptr<Peer> const& wPeer,
@@ -2058,55 +2116,46 @@ LedgerMaster::makeFetchPack(
     if (!peer)
         return;
 
-    auto haveLedger = getLedgerByHash(haveLedgerHash);
+    auto have = getLedgerByHash(haveLedgerHash);
 
-    if (!haveLedger)
+    if (!have)
     {
         JLOG(m_journal.info())
-            << "Peer requests fetch pack for ledger we don't have: "
-            << haveLedger;
+            << "Peer requests fetch pack for ledger we don't have: " << have;
         peer->charge(Resource::feeRequestNoReply);
         return;
     }
 
-    if (haveLedger->open())
+    if (have->open())
     {
         JLOG(m_journal.warn())
-            << "Peer requests fetch pack from open ledger: " << haveLedger;
+            << "Peer requests fetch pack from open ledger: " << have;
         peer->charge(Resource::feeInvalidRequest);
         return;
     }
 
-    if (haveLedger->info().seq < getEarliestFetch())
+    if (have->info().seq < getEarliestFetch())
     {
         JLOG(m_journal.debug()) << "Peer requests fetch pack that is too early";
         peer->charge(Resource::feeInvalidRequest);
         return;
     }
 
-    auto wantLedger = getLedgerByHash(haveLedger->info().parentHash);
+    auto want = getLedgerByHash(have->info().parentHash);
 
-    if (!wantLedger)
+    if (!want)
     {
         JLOG(m_journal.info())
             << "Peer requests fetch pack for ledger whose predecessor we "
-            << "don't have: " << haveLedger;
+            << "don't have: " << have;
         peer->charge(Resource::feeRequestNoReply);
         return;
     }
 
-    auto fpAppender = [](protocol::TMGetObjectByHash* reply,
-                         std::uint32_t ledgerSeq,
-                         SHAMapHash const& hash,
-                         const Blob& blob) {
-        protocol::TMIndexedObject& newObj = *(reply->add_objects());
-        newObj.set_ledgerseq(ledgerSeq);
-        newObj.set_hash(hash.as_uint256().begin(), 256 / 8);
-        newObj.set_data(&blob[0], blob.size());
-    };
-
     try
     {
+        Serializer hdr(128);
+
         protocol::TMGetObjectByHash reply;
         reply.set_query(false);
 
@@ -2121,56 +2170,49 @@ LedgerMaster::makeFetchPack(
         //  2. Add the nodes for the AccountStateMap of that ledger.
         //  3. If there are transactions, add the nodes for the
         //     transactions of the ledger.
-        //  4. If the FetchPack now contains greater than or equal to
-        //     256 entries then stop.
+        //  4. If the FetchPack now contains at least 512 entries then stop.
         //  5. If not very much time has elapsed, then loop back and repeat
         //     the same process adding the previous ledger to the FetchPack.
         do
         {
-            std::uint32_t lSeq = wantLedger->info().seq;
+            std::uint32_t lSeq = want->info().seq;
 
-            protocol::TMIndexedObject& newObj = *reply.add_objects();
-            newObj.set_hash(wantLedger->info().hash.data(), 256 / 8);
-            Serializer s(256);
-            s.add32(HashPrefix::ledgerMaster);
-            addRaw(wantLedger->info(), s);
-            newObj.set_data(s.getDataPtr(), s.getLength());
-            newObj.set_ledgerseq(lSeq);
+            {
+                // Serialize the ledger header:
+                hdr.erase();
 
-            wantLedger->stateMap().getFetchPack(
-                &haveLedger->stateMap(),
-                true,
-                16384,
-                std::bind(
-                    fpAppender,
-                    &reply,
-                    lSeq,
-                    std::placeholders::_1,
-                    std::placeholders::_2));
+                hdr.add32(HashPrefix::ledgerMaster);
+                addRaw(want->info(), hdr);
 
-            if (wantLedger->info().txHash.isNonZero())
-                wantLedger->txMap().getFetchPack(
-                    nullptr,
-                    true,
-                    512,
-                    std::bind(
-                        fpAppender,
-                        &reply,
-                        lSeq,
-                        std::placeholders::_1,
-                        std::placeholders::_2));
+                // Add the data
+                protocol::TMIndexedObject* obj = reply.add_objects();
+                obj->set_hash(
+                    want->info().hash.data(), want->info().hash.size());
+                obj->set_data(hdr.getDataPtr(), hdr.getLength());
+                obj->set_ledgerseq(lSeq);
+            }
+
+            populateFetchPack(
+                want->stateMap(), &have->stateMap(), 16384, &reply, lSeq);
+
+            // We use nullptr here because transaction maps are per ledger
+            // and so the requestor is unlikely to already have it.
+            if (want->info().txHash.isNonZero())
+                populateFetchPack(want->txMap(), nullptr, 512, &reply, lSeq);
 
             if (reply.objects().size() >= 512)
                 break;
 
-            // move may save a ref/unref
-            haveLedger = std::move(wantLedger);
-            wantLedger = getLedgerByHash(haveLedger->info().parentHash);
-        } while (wantLedger && UptimeClock::now() <= uptime + 1s);
+            have = std::move(want);
+            want = getLedgerByHash(have->info().parentHash);
+        } while (want && UptimeClock::now() <= uptime + 1s);
+
+        auto msg = std::make_shared<Message>(reply, protocol::mtGET_OBJECTS);
 
         JLOG(m_journal.info())
-            << "Built fetch pack with " << reply.objects().size() << " nodes";
-        auto msg = std::make_shared<Message>(reply, protocol::mtGET_OBJECTS);
+            << "Built fetch pack with " << reply.objects().size() << " nodes ("
+            << msg->getBufferSize() << " bytes)";
+
         peer->send(msg);
     }
     catch (std::exception const&)

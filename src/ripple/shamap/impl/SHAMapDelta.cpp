@@ -32,7 +32,7 @@ namespace ripple {
 
 bool
 SHAMap::walkBranch(
-    SHAMapAbstractNode* node,
+    SHAMapTreeNode* node,
     std::shared_ptr<SHAMapItem const> const& otherMapItem,
     bool isFirstMap,
     Delta& differences,
@@ -40,7 +40,7 @@ SHAMap::walkBranch(
 {
     // Walk a branch of a SHAMap that's matched by an empty branch or single
     // item in the other map
-    std::stack<SHAMapAbstractNode*, std::vector<SHAMapAbstractNode*>> nodeStack;
+    std::stack<SHAMapTreeNode*, std::vector<SHAMapTreeNode*>> nodeStack;
     nodeStack.push(node);
 
     bool emptyBranch = !otherMapItem;
@@ -61,7 +61,7 @@ SHAMap::walkBranch(
         else
         {
             // This is a leaf node, process its item
-            auto item = static_cast<SHAMapTreeNode*>(node)->peekItem();
+            auto item = static_cast<SHAMapLeafNode*>(node)->peekItem();
 
             if (emptyBranch || (item->key() != otherMapItem->key()))
             {
@@ -133,7 +133,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
     if (getHash() == otherMap.getHash())
         return true;
 
-    using StackEntry = std::pair<SHAMapAbstractNode*, SHAMapAbstractNode*>;
+    using StackEntry = std::pair<SHAMapTreeNode*, SHAMapTreeNode*>;
     std::stack<StackEntry, std::vector<StackEntry>>
         nodeStack;  // track nodes we've pushed
 
@@ -152,8 +152,8 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
         if (ourNode->isLeaf() && otherNode->isLeaf())
         {
             // two leaves
-            auto ours = static_cast<SHAMapTreeNode*>(ourNode);
-            auto other = static_cast<SHAMapTreeNode*>(otherNode);
+            auto ours = static_cast<SHAMapLeafNode*>(ourNode);
+            auto other = static_cast<SHAMapLeafNode*>(otherNode);
             if (ours->peekItem()->key() == other->peekItem()->key())
             {
                 if (ours->peekItem()->peekData() !=
@@ -188,14 +188,14 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
         else if (ourNode->isInner() && otherNode->isLeaf())
         {
             auto ours = static_cast<SHAMapInnerNode*>(ourNode);
-            auto other = static_cast<SHAMapTreeNode*>(otherNode);
+            auto other = static_cast<SHAMapLeafNode*>(otherNode);
             if (!walkBranch(
                     ours, other->peekItem(), true, differences, maxCount))
                 return false;
         }
         else if (ourNode->isLeaf() && otherNode->isInner())
         {
-            auto ours = static_cast<SHAMapTreeNode*>(ourNode);
+            auto ours = static_cast<SHAMapLeafNode*>(ourNode);
             auto other = static_cast<SHAMapInnerNode*>(otherNode);
             if (!otherMap.walkBranch(
                     other, ours->peekItem(), false, differences, maxCount))
@@ -211,7 +211,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
                     if (other->isEmptyBranch(i))
                     {
                         // We have a branch, the other tree does not
-                        SHAMapAbstractNode* iNode = descendThrow(ours, i);
+                        SHAMapTreeNode* iNode = descendThrow(ours, i);
                         if (!walkBranch(
                                 iNode,
                                 std::shared_ptr<SHAMapItem const>(),
@@ -223,8 +223,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
                     else if (ours->isEmptyBranch(i))
                     {
                         // The other tree has a branch, we do not
-                        SHAMapAbstractNode* iNode =
-                            otherMap.descendThrow(other, i);
+                        SHAMapTreeNode* iNode = otherMap.descendThrow(other, i);
                         if (!otherMap.walkBranch(
                                 iNode,
                                 std::shared_ptr<SHAMapItem const>(),
@@ -267,7 +266,7 @@ SHAMap::walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing)
         {
             if (!node->isEmptyBranch(i))
             {
-                std::shared_ptr<SHAMapAbstractNode> nextNode =
+                std::shared_ptr<SHAMapTreeNode> nextNode =
                     descendNoStore(node, i);
 
                 if (nextNode)

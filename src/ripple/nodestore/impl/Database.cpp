@@ -244,11 +244,11 @@ Database::storeLedger(
     }
 
     bool error = false;
-    auto visit = [&](SHAMapAbstractNode& node) {
+    auto visit = [&](SHAMapTreeNode& node) {
         if (!isStopping())
         {
             if (auto nodeObject = srcDB.fetchNodeObject(
-                    node.getNodeHash().as_uint256(), srcLedger.info().seq))
+                    node.getHash().as_uint256(), srcLedger.info().seq))
             {
                 batch.emplace_back(std::move(nodeObject));
                 if (batch.size() < batchWritePreallocationSize || storeBatch())

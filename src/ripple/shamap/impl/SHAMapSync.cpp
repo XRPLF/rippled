@@ -28,16 +28,15 @@ SHAMap::visitLeaves(
     std::function<void(std::shared_ptr<SHAMapItem const> const& item)> const&
         leafFunction) const
 {
-    visitNodes([&leafFunction](SHAMapAbstractNode& node) {
+    visitNodes([&leafFunction](SHAMapTreeNode& node) {
         if (!node.isInner())
-            leafFunction(static_cast<SHAMapTreeNode&>(node).peekItem());
+            leafFunction(static_cast<SHAMapLeafNode&>(node).peekItem());
         return true;
     });
 }
 
 void
-SHAMap::visitNodes(
-    std::function<bool(SHAMapAbstractNode&)> const& function) const
+SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
 {
     if (!root_)
         return;
@@ -60,7 +59,7 @@ SHAMap::visitNodes(
             uint256 childHash;
             if (!node->isEmptyBranch(pos))
             {
-                std::shared_ptr<SHAMapAbstractNode> child =
+                std::shared_ptr<SHAMapTreeNode> child =
                     descendNoStore(node, pos);
                 if (!function(*child))
                     return;
@@ -101,24 +100,24 @@ SHAMap::visitNodes(
 void
 SHAMap::visitDifferences(
     SHAMap const* have,
-    std::function<bool(SHAMapAbstractNode&)> function) const
+    std::function<bool(SHAMapTreeNode const&)> function) const
 {
     // Visit every node in this SHAMap that is not present
     // in the specified SHAMap
     if (!root_)
         return;
 
-    if (root_->getNodeHash().isZero())
+    if (root_->getHash().isZero())
         return;
 
-    if (have && (root_->getNodeHash() == have->root_->getNodeHash()))
+    if (have && (root_->getHash() == have->root_->getHash()))
         return;
 
     if (root_->isLeaf())
     {
-        auto leaf = std::static_pointer_cast<SHAMapTreeNode>(root_);
+        auto leaf = std::static_pointer_cast<SHAMapLeafNode>(root_);
         if (!have ||
-            !have->hasLeafNode(leaf->peekItem()->key(), leaf->getNodeHash()))
+            !have->hasLeafNode(leaf->peekItem()->key(), leaf->getHash()))
             function(*root_);
         return;
     }
@@ -155,7 +154,7 @@ SHAMap::visitDifferences(
                 else if (
                     !have ||
                     !have->hasLeafNode(
-                        static_cast<SHAMapTreeNode*>(next)->peekItem()->key(),
+                        static_cast<SHAMapLeafNode*>(next)->peekItem()->key(),
                         childHash))
                 {
                     if (!function(*next))
@@ -242,7 +241,7 @@ SHAMap::gmn_ProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
         if (backed_)
         {
             f_.getFullBelowCache(ledgerSeq_)
-                ->insert(node->getNodeHash().as_uint256());
+                ->insert(node->getHash().as_uint256());
         }
     }
 
@@ -315,7 +314,7 @@ SHAMap::gmn_ProcessDeferredReads(MissingNodes& mn)
 std::vector<std::pair<SHAMapNodeID, uint256>>
 SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
 {
-    assert(root_->getNodeHash().isNonZero());
+    assert(root_->getHash().isNonZero());
     assert(max > 0);
 
     MissingNodes mn(
@@ -423,23 +422,9 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
     return std::move(mn.missingNodes_);
 }
 
-std::vector<uint256>
-SHAMap::getNeededHashes(int max, SHAMapSyncFilter* filter)
-{
-    auto ret = getMissingNodes(max, filter);
-
-    std::vector<uint256> hashes;
-    hashes.reserve(ret.size());
-
-    for (auto const& n : ret)
-        hashes.push_back(n.second);
-
-    return hashes;
-}
-
 bool
 SHAMap::getNodeFat(
-    SHAMapNodeID wanted,
+    SHAMapNodeID const& wanted,
     std::vector<SHAMapNodeID>& nodeIDs,
     std::vector<Blob>& rawNodes,
     bool fatLeaves,
@@ -476,7 +461,7 @@ SHAMap::getNodeFat(
         return false;
     }
 
-    std::stack<std::tuple<SHAMapAbstractNode*, SHAMapNodeID, int>> stack;
+    std::stack<std::tuple<SHAMapTreeNode*, SHAMapNodeID, int>> stack;
     stack.emplace(node, nodeID, depth);
 
     while (!stack.empty())
@@ -547,16 +532,16 @@ SHAMap::addRootNode(
     SHAMapSyncFilter* filter)
 {
     // we already have a root_ node
-    if (root_->getNodeHash().isNonZero())
+    if (root_->getHash().isNonZero())
     {
         JLOG(journal_.trace()) << "got root node, already have one";
-        assert(root_->getNodeHash() == hash);
+        assert(root_->getHash() == hash);
         return SHAMapAddNode::duplicate();
     }
 
-    assert(seq_ >= 1);
-    auto node = SHAMapAbstractNode::makeFromWire(rootNode);
-    if (!node || node->getNodeHash() != hash)
+    assert(cowid_ >= 1);
+    auto node = SHAMapTreeNode::makeFromWire(rootNode);
+    if (!node || node->getHash() != hash)
         return SHAMapAddNode::invalid();
 
     if (backed_)
@@ -573,7 +558,7 @@ SHAMap::addRootNode(
         root_->serializeWithPrefix(s);
         filter->gotNode(
             false,
-            root_->getNodeHash(),
+            root_->getHash(),
             ledgerSeq_,
             std::move(s.modData()),
             root_->getType());
@@ -597,7 +582,7 @@ SHAMap::addKnownNode(
     }
 
     auto const generation = f_.getFullBelowCache(ledgerSeq_)->getGeneration();
-    auto newNode = SHAMapAbstractNode::makeFromWire(rawNode);
+    auto newNode = SHAMapTreeNode::makeFromWire(rawNode);
     SHAMapNodeID iNodeID;
     auto iNode = root_.get();
 
@@ -626,13 +611,17 @@ SHAMap::addKnownNode(
 
         if (iNode == nullptr)
         {
-            if (!newNode || childHash != newNode->getNodeHash())
+            if (!newNode || childHash != newNode->getHash())
             {
                 JLOG(journal_.warn()) << "Corrupt node received";
                 return SHAMapAddNode::invalid();
             }
 
-            if (!newNode->isInBounds(iNodeID))
+            // Inner nodes must be at a level strictly less than 64
+            // but leaf nodes (while notionally at level 64) can be
+            // at any depth up to and including 64:
+            if ((iNodeID.getDepth() > leafDepth) ||
+                (newNode->isInner() && iNodeID.getDepth() == leafDepth))
             {
                 // Map is provably invalid
                 state_ = SHAMapState::Invalid;
@@ -678,7 +667,7 @@ bool
 SHAMap::deepCompare(SHAMap& other) const
 {
     // Intended for debug/test only
-    std::stack<std::pair<SHAMapAbstractNode*, SHAMapAbstractNode*>> stack;
+    std::stack<std::pair<SHAMapTreeNode*, SHAMapTreeNode*>> stack;
 
     stack.push({root_.get(), other.root_.get()});
 
@@ -692,7 +681,7 @@ SHAMap::deepCompare(SHAMap& other) const
             JLOG(journal_.info()) << "unable to fetch node";
             return false;
         }
-        else if (otherNode->getNodeHash() != node->getNodeHash())
+        else if (otherNode->getHash() != node->getHash())
         {
             JLOG(journal_.warn()) << "node hash mismatch";
             return false;
@@ -702,9 +691,9 @@ SHAMap::deepCompare(SHAMap& other) const
         {
             if (!otherNode->isLeaf())
                 return false;
-            auto& nodePeek = static_cast<SHAMapTreeNode*>(node)->peekItem();
+            auto& nodePeek = static_cast<SHAMapLeafNode*>(node)->peekItem();
             auto& otherNodePeek =
-                static_cast<SHAMapTreeNode*>(otherNode)->peekItem();
+                static_cast<SHAMapLeafNode*>(otherNode)->peekItem();
             if (nodePeek->key() != otherNodePeek->key())
                 return false;
             if (nodePeek->peekData() != otherNodePeek->peekData())
@@ -765,7 +754,7 @@ SHAMap::hasInnerNode(
         nodeID = nodeID.getChildNodeID(branch);
     }
 
-    return (node->isInner()) && (node->getNodeHash() == targetNodeHash);
+    return (node->isInner()) && (node->getHash() == targetNodeHash);
 }
 
 /** Does this map have this leaf node?
@@ -777,7 +766,7 @@ SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const
     SHAMapNodeID nodeID;
 
     if (!node->isInner())  // only one leaf node in the tree
-        return node->getNodeHash() == targetNodeHash;
+        return node->getHash() == targetNodeHash;
 
     do
     {
@@ -796,37 +785,6 @@ SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const
 
     return false;  // If this was a matching leaf, we would have caught it
                    // already
-}
-
-/**
-@param have A pointer to the map that the recipient already has (if any).
-@param includeLeaves True if leaf nodes should be included.
-@param max The maximum number of nodes to return.
-@param func The functor to call for each node added to the FetchPack.
-
-Note: a caller should set includeLeaves to false for transaction trees.
-There's no point in including the leaves of transaction trees.
-*/
-void
-SHAMap::getFetchPack(
-    SHAMap const* have,
-    bool includeLeaves,
-    int max,
-    std::function<void(SHAMapHash const&, const Blob&)> func) const
-{
-    visitDifferences(
-        have, [includeLeaves, &max, &func](SHAMapAbstractNode& smn) -> bool {
-            if (includeLeaves || smn.isInner())
-            {
-                Serializer s;
-                smn.serializeWithPrefix(s);
-                func(smn.getNodeHash(), s.peekData());
-
-                if (--max <= 0)
-                    return false;
-            }
-            return true;
-        });
 }
 
 }  // namespace ripple

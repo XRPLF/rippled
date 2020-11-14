@@ -235,36 +235,42 @@ InboundLedger::~InboundLedger()
     }
 }
 
-std::vector<uint256>
-InboundLedger::neededTxHashes(int max, SHAMapSyncFilter* filter) const
+static std::vector<uint256>
+neededHashes(
+    uint256 const& root,
+    SHAMap& map,
+    int max,
+    SHAMapSyncFilter* filter)
 {
     std::vector<uint256> ret;
 
-    if (mLedger->info().txHash.isNonZero())
+    if (!root.isZero())
     {
-        if (mLedger->txMap().getHash().isZero())
-            ret.push_back(mLedger->info().txHash);
+        if (map.getHash().isZero())
+            ret.push_back(root);
         else
-            ret = mLedger->txMap().getNeededHashes(max, filter);
+        {
+            auto mn = map.getMissingNodes(max, filter);
+            ret.reserve(mn.size());
+            for (auto const& n : mn)
+                ret.push_back(n.second);
+        }
     }
 
     return ret;
 }
 
 std::vector<uint256>
+InboundLedger::neededTxHashes(int max, SHAMapSyncFilter* filter) const
+{
+    return neededHashes(mLedger->info().txHash, mLedger->txMap(), max, filter);
+}
+
+std::vector<uint256>
 InboundLedger::neededStateHashes(int max, SHAMapSyncFilter* filter) const
 {
-    std::vector<uint256> ret;
-
-    if (mLedger->info().accountHash.isNonZero())
-    {
-        if (mLedger->stateMap().getHash().isZero())
-            ret.push_back(mLedger->info().accountHash);
-        else
-            ret = mLedger->stateMap().getNeededHashes(max, filter);
-    }
-
-    return ret;
+    return neededHashes(
+        mLedger->info().accountHash, mLedger->stateMap(), max, filter);
 }
 
 LedgerInfo
