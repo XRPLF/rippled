@@ -33,9 +33,6 @@
 #include <ripple/shamap/SHAMapSyncFilter.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
 #include <ripple/shamap/TreeNodeCache.h>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/shared_lock_guard.hpp>
-#include <boost/thread/shared_mutex.hpp>
 #include <cassert>
 #include <stack>
 #include <vector>

@@ -29,6 +29,7 @@
 #include <ripple/protocol/PublicKey.h>
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/range/adaptors.hpp>
+#include <boost/thread/shared_mutex.hpp>
 #include <mutex>
 #include <numeric>
 #include <shared_mutex>
@@ -139,7 +140,7 @@ class ValidatorList
     TimeKeeper& timeKeeper_;
     boost::filesystem::path const dataPath_;
     beast::Journal const j_;
-    std::shared_timed_mutex mutable mutex_;
+    boost::shared_mutex mutable mutex_;
 
     std::atomic<std::size_t> quorum_;
     boost::optional<std::size_t> minimumQuorum_;
@@ -505,7 +506,7 @@ public:
     QuorumKeys
     getQuorumKeys() const
     {
-        std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
+        std::shared_lock read_lock{mutex_};
         return {quorum_, trustedSigningKeys_};
     }
 
