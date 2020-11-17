@@ -106,13 +106,18 @@ Database::stopReadThreads()
         e.join();
 }
 
-void
-Database::asyncFetch(uint256 const& hash, std::uint32_t ledgerSeq)
+bool
+Database::asyncFetch(
+    uint256 const& hash,
+    std::uint32_t ledgerSeq,
+    std::shared_ptr<NodeObject>&,
+    std::function<void(std::shared_ptr<NodeObject>&)>&& cb)
 {
     // Post a read
     std::lock_guard lock(readLock_);
-    if (read_.emplace(hash, ledgerSeq).second)
-        readCondVar_.notify_one();
+    read_[hash].emplace_back(ledgerSeq, std::move (cb));
+    readCondVar_.notify_one();
+    return false;
 }
 
 void
@@ -296,7 +301,9 @@ Database::threadEntry()
     while (true)
     {
         uint256 lastHash;
-        std::uint32_t lastSeq;
+        std::vector< std::pair <std::uint32_t,
+            std::function<void(std::shared_ptr<NodeObject>&)>>> entry;
+
         {
             std::unique_lock<std::mutex> lock(readLock_);
             while (!readShut_ && read_.empty())
@@ -318,13 +325,16 @@ Database::threadEntry()
                 readGenCondVar_.notify_all();
             }
             lastHash = it->first;
-            lastSeq = it->second;
+            entry = std::move(it->second);
             read_.erase(it);
             readLastHash_ = lastHash;
         }
 
-        // Perform the read
-        fetchNodeObject(lastHash, lastSeq, FetchType::async);
+        for (auto const& req : entry)
+        {
+            auto obj = fetchNodeObject(lastHash, req.first, FetchType::async);
+            req.second (obj);
+        }
     }
 }
 

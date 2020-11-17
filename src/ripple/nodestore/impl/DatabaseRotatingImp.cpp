@@ -128,16 +128,18 @@ bool
 DatabaseRotatingImp::asyncFetch(
     uint256 const& hash,
     std::uint32_t ledgerSeq,
-    std::shared_ptr<NodeObject>& nodeObject)
+    std::shared_ptr<NodeObject>& nodeObject,
+    std::function<void(std::shared_ptr<NodeObject>&)>&& callback)
 {
     // See if the object is in cache
     nodeObject = pCache_->fetch(hash);
     if (nodeObject || nCache_->touch_if_exists(hash))
         return true;
 
-    // Otherwise post a read
-    Database::asyncFetch(hash, ledgerSeq);
-    return false;
+    // Otherwise maybe post a read
+    return
+        Database::asyncFetch(hash, ledgerSeq, nodeObject,
+            std::move (callback));
 }
 
 void
