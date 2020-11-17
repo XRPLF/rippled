@@ -196,25 +196,37 @@ SHAMap::gmn_ProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
             !f_.getFullBelowCache(ledgerSeq_)
                  ->touch_if_exists(childHash.as_uint256()))
         {
-            SHAMapNodeID childID = nodeID.getChildNodeID(branch);
             bool pending = false;
-            auto d = descendAsync(node, branch, mn.filter_, pending);
+            auto d = descendAsync(
+                node,
+                branch,
+                mn.filter_,
+                pending,
+                [node, nodeID, branch, &mn](
+                    std::shared_ptr<SHAMapTreeNode> found, SHAMapHash const&) {
+                    // a read completed asynchronously
+                    std::unique_lock<std::mutex> lock{mn.deferLock_};
+                    mn.finishedReads_.emplace_back(
+                        node, nodeID, branch, std::move(found));
+                    mn.deferCondVar_.notify_one();
+                });
 
-            if (!d)
+            if (pending)
             {
+                fullBelow = false;
+                ++mn.deferred_;
+            }
+            else if (!d)
+            {
+                // node is not in database
+
                 fullBelow = false;  // for now, not known full below
+                mn.missingHashes_.insert(childHash);
+                mn.missingNodes_.emplace_back(
+                    nodeID.getChildNodeID(branch), childHash.as_uint256());
 
-                if (!pending)
-                {  // node is not in the database
-                    mn.missingHashes_.insert(childHash);
-                    mn.missingNodes_.emplace_back(
-                        childID, childHash.as_uint256());
-
-                    if (--mn.max_ <= 0)
-                        return;
-                }
-                else
-                    mn.deferredReads_.emplace_back(node, nodeID, branch);
+                if (--mn.max_ <= 0)
+                    return;
             }
             else if (
                 d->isInner() &&
@@ -224,7 +236,7 @@ SHAMap::gmn_ProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
 
                 // Switch to processing the child node
                 node = static_cast<SHAMapInnerNode*>(d);
-                nodeID = childID;
+                nodeID = nodeID.getChildNodeID(branch);
                 firstChild = rand_int(255);
                 currentChild = 0;
                 fullBelow = true;
@@ -253,30 +265,32 @@ SHAMap::gmn_ProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
 void
 SHAMap::gmn_ProcessDeferredReads(MissingNodes& mn)
 {
-    // Wait for our deferred reads to finish
-    auto const before = std::chrono::steady_clock::now();
-    f_.db().waitReads();
-    auto const after = std::chrono::steady_clock::now();
-
-    auto const elapsed =
-        std::chrono::duration_cast<std::chrono::milliseconds>(after - before);
-    auto const count = mn.deferredReads_.size();
-
     // Process all deferred reads
-    int hits = 0;
-    for (auto const& deferredNode : mn.deferredReads_)
+    int complete = 0;
+    while (complete != mn.deferred_)
     {
+        std::tuple<
+            SHAMapInnerNode*,
+            SHAMapNodeID,
+            int,
+            std::shared_ptr<SHAMapTreeNode>>
+            deferredNode;
+        {
+            std::unique_lock<std::mutex> lock{mn.deferLock_};
+
+            while (mn.finishedReads_.size() <= complete)
+                mn.deferCondVar_.wait(lock);
+            deferredNode = std::move(mn.finishedReads_[complete++]);
+        }
+
         auto parent = std::get<0>(deferredNode);
         auto const& parentID = std::get<1>(deferredNode);
         auto branch = std::get<2>(deferredNode);
+        auto nodePtr = std::get<3>(deferredNode);
         auto const& nodeHash = parent->getChildHash(branch);
 
-        auto nodePtr = fetchNodeNT(nodeHash, mn.filter_);
         if (nodePtr)
         {  // Got the node
-            ++hits;
-            if (backed_)
-                canonicalize(nodeHash, nodePtr);
             nodePtr = parent->canonicalizeChild(branch, std::move(nodePtr));
 
             // When we finish this stack, we need to restart
@@ -287,24 +301,12 @@ SHAMap::gmn_ProcessDeferredReads(MissingNodes& mn)
         {
             mn.missingNodes_.emplace_back(
                 parentID.getChildNodeID(branch), nodeHash.as_uint256());
-
             --mn.max_;
         }
     }
-    mn.deferredReads_.clear();
 
-    auto const process_time =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - after);
-
-    using namespace std::chrono_literals;
-    if ((count > 50) || (elapsed > 50ms))
-    {
-        JLOG(journal_.debug())
-            << "getMissingNodes reads " << count << " nodes (" << hits
-            << " hits) in " << elapsed.count() << " + " << process_time.count()
-            << " ms";
-    }
+    mn.finishedReads_.clear();
+    mn.deferred_ = 0;
 }
 
 /** Get a list of node IDs and hashes for nodes that are part of this SHAMap
@@ -320,7 +322,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
     MissingNodes mn(
         max,
         filter,
-        f_.db().getDesiredAsyncReadCount(ledgerSeq_),
+        4096,  // number of async reads per pass
         f_.getFullBelowCache(ledgerSeq_)->getGeneration());
 
     if (!root_->isInner() ||
@@ -350,12 +352,12 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
     // Traverse the map without blocking
     do
     {
-        while ((node != nullptr) && (mn.deferredReads_.size() <= mn.maxDefer_))
+        while ((node != nullptr) && (mn.deferred_ <= mn.maxDefer_))
         {
             gmn_ProcessNodes(mn, pos);
 
             if (mn.max_ <= 0)
-                return std::move(mn.missingNodes_);
+                break;
 
             if ((node == nullptr) && !mn.stack_.empty())
             {
@@ -380,8 +382,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
 
         // We have either emptied the stack or
         // posted as many deferred reads as we can
-
-        if (!mn.deferredReads_.empty())
+        if (mn.deferred_)
             gmn_ProcessDeferredReads(mn);
 
         if (mn.max_ <= 0)

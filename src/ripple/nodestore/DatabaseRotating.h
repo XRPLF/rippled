@@ -44,9 +44,6 @@ public:
     {
     }
 
-    virtual TaggedCache<uint256, NodeObject> const&
-    getPositiveCache() = 0;
-
     /** Rotates the backends.
 
         @param f A function executed before the rotation and under the same lock

@@ -99,7 +99,6 @@ getCountsJson(Application& app, int minObjectCount)
     ret[jss::historical_perminute] =
         static_cast<int>(app.getInboundLedgers().fetchRate());
     ret[jss::SLE_hit_rate] = app.cachedSLEs().rate();
-    ret[jss::node_hit_rate] = app.getNodeStore().getCacheHitRate();
     ret[jss::ledger_hit_rate] = app.getLedgerMaster().getCacheHitRate();
     ret[jss::AL_hit_rate] = app.getAcceptedLedgerCache().getHitRate();
 
@@ -137,7 +136,6 @@ getCountsJson(Application& app, int minObjectCount)
         jv[jss::treenode_cache_size] = cacheSz;
         jv[jss::treenode_track_size] = trackSz;
         ret[jss::write_load] = shardStore->getWriteLoad();
-        ret[jss::node_hit_rate] = shardStore->getCacheHitRate();
         jv[jss::node_writes] = std::to_string(shardStore->getStoreCount());
         jv[jss::node_reads_total] = shardStore->getFetchTotalCount();
         jv[jss::node_reads_hit] = shardStore->getFetchHitCount();

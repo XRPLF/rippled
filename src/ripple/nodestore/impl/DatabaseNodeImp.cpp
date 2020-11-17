@@ -32,42 +32,14 @@ DatabaseNodeImp::store(
     std::uint32_t)
 {
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
-    pCache_->canonicalize_replace_cache(hash, nObj);
     backend_->store(nObj);
-    nCache_->erase(hash);
     storeStats(1, nObj->getData().size());
-}
-
-bool
-DatabaseNodeImp::asyncFetch(
-    uint256 const& hash,
-    std::uint32_t ledgerSeq,
-    std::shared_ptr<NodeObject>& nodeObject)
-{
-    // See if the object is in cache
-    nodeObject = pCache_->fetch(hash);
-    if (nodeObject || nCache_->touch_if_exists(hash))
-        return true;
-
-    // Otherwise post a read
-    Database::asyncFetch(hash, ledgerSeq);
-    return false;
-}
-
-void
-DatabaseNodeImp::tune(int size, std::chrono::seconds age)
-{
-    pCache_->setTargetSize(size);
-    pCache_->setTargetAge(age);
-    nCache_->setTargetSize(size);
-    nCache_->setTargetAge(age);
 }
 
 void
 DatabaseNodeImp::sweep()
 {
-    pCache_->sweep();
-    nCache_->sweep();
+    // nothing to do
 }
 
 std::shared_ptr<NodeObject>
@@ -76,60 +48,38 @@ DatabaseNodeImp::fetchNodeObject(
     std::uint32_t,
     FetchReport& fetchReport)
 {
-    // See if the node object exists in the cache
-    auto nodeObject{pCache_->fetch(hash)};
-    if (!nodeObject && !nCache_->touch_if_exists(hash))
+    std::shared_ptr<NodeObject> nodeObject;
+    Status status;
+
+    try
     {
-        // Try the backend
-        fetchReport.wentToDisk = true;
-
-        Status status;
-        try
-        {
-            status = backend_->fetch(hash.data(), &nodeObject);
-        }
-        catch (std::exception const& e)
-        {
-            JLOG(j_.fatal()) << "Exception, " << e.what();
-            Rethrow();
-        }
-
-        switch (status)
-        {
-            case ok:
-                ++fetchHitCount_;
-                if (nodeObject)
-                    fetchSz_ += nodeObject->getData().size();
-                break;
-            case notFound:
-                break;
-            case dataCorrupt:
-                JLOG(j_.fatal()) << "Corrupt NodeObject #" << hash;
-                break;
-            default:
-                JLOG(j_.warn()) << "Unknown status=" << status;
-                break;
-        }
-
-        if (!nodeObject)
-        {
-            // Just in case a write occurred
-            nodeObject = pCache_->fetch(hash);
-            if (!nodeObject)
-                // We give up
-                nCache_->insert(hash);
-        }
-        else
-        {
-            fetchReport.wasFound = true;
-
-            // Ensure all threads get the same object
-            pCache_->canonicalize_replace_client(hash, nodeObject);
-
-            // Since this was a 'hard' fetch, we will log it
-            JLOG(j_.trace()) << "HOS: " << hash << " fetch: in shard db";
-        }
+        status = backend_->fetch(hash.data(), &nodeObject);
     }
+    catch (std::exception const& e)
+    {
+        JLOG(j_.fatal()) << "Exception, " << e.what();
+        Rethrow();
+    }
+
+    switch (status)
+    {
+        case ok:
+            ++fetchHitCount_;
+            if (nodeObject)
+                fetchSz_ += nodeObject->getData().size();
+            break;
+        case notFound:
+            break;
+        case dataCorrupt:
+            JLOG(j_.fatal()) << "Corrupt NodeObject #" << hash;
+            break;
+        default:
+            JLOG(j_.warn()) << "Unknown status=" << status;
+            break;
+    }
+
+    if (nodeObject)
+        fetchReport.wasFound = true;
 
     return nodeObject;
 }
