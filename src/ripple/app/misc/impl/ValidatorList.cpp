@@ -96,7 +96,7 @@ ValidatorList::load(
         ")?"                 // end optional comment block
     );
 
-    std::unique_lock<std::shared_timed_mutex> read_lock{mutex_};
+    std::unique_lock lock{mutex_};
 
     JLOG(j_.debug())
         << "Loading configured trusted validator list publisher keys";
@@ -306,7 +306,7 @@ ValidatorList::applyList(
     if (version != requiredListVersion)
         return PublisherListStats{ListDisposition::unsupported_version};
 
-    std::unique_lock<std::shared_timed_mutex> lock{mutex_};
+    std::unique_lock lock{mutex_};
 
     Json::Value list;
     PublicKey pubKey;
@@ -441,7 +441,7 @@ ValidatorList::loadLists()
     using namespace boost::filesystem;
     using namespace boost::system::errc;
 
-    std::unique_lock<std::shared_timed_mutex> lock{mutex_};
+    std::unique_lock lock{mutex_};
 
     std::vector<std::string> sites;
     sites.reserve(publisherLists_.size());
@@ -551,7 +551,7 @@ ValidatorList::verify(
 bool
 ValidatorList::listed(PublicKey const& identity) const
 {
-    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
+    std::shared_lock read_lock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey(identity);
     return keyListings_.find(pubKey) != keyListings_.end();
@@ -560,7 +560,7 @@ ValidatorList::listed(PublicKey const& identity) const
 bool
 ValidatorList::trusted(PublicKey const& identity) const
 {
-    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
+    std::shared_lock read_lock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey(identity);
     return trustedMasterKeys_.find(pubKey) != trustedMasterKeys_.end();
@@ -569,7 +569,7 @@ ValidatorList::trusted(PublicKey const& identity) const
 boost::optional<PublicKey>
 ValidatorList::getListedKey(PublicKey const& identity) const
 {
-    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
+    std::shared_lock read_lock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey(identity);
     if (keyListings_.find(pubKey) != keyListings_.end())
@@ -580,7 +580,7 @@ ValidatorList::getListedKey(PublicKey const& identity) const
 boost::optional<PublicKey>
 ValidatorList::getTrustedKey(PublicKey const& identity) const
 {
-    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
+    std::shared_lock read_lock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey(identity);
     if (trustedMasterKeys_.find(pubKey) != trustedMasterKeys_.end())
@@ -591,14 +591,14 @@ ValidatorList::getTrustedKey(PublicKey const& identity) const
 bool
 ValidatorList::trustedPublisher(PublicKey const& identity) const
 {
-    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
+    std::shared_lock read_lock{mutex_};
     return identity.size() && publisherLists_.count(identity);
 }
 
 PublicKey
 ValidatorList::localPublicKey() const
 {
-    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
+    std::shared_lock read_lock{mutex_};
     return localPubKey_;
 }
 
@@ -633,14 +633,14 @@ ValidatorList::removePublisherList(PublicKey const& publisherKey)
 std::size_t
 ValidatorList::count() const
 {
-    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
+    std::shared_lock read_lock{mutex_};
     return publisherLists_.size();
 }
 
 boost::optional<TimeKeeper::time_point>
 ValidatorList::expires() const
 {
-    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
+    std::shared_lock read_lock{mutex_};
     boost::optional<TimeKeeper::time_point> res{boost::none};
     for (auto const& p : publisherLists_)
     {
@@ -660,7 +660,7 @@ ValidatorList::getJson() const
 {
     Json::Value res(Json::objectValue);
 
-    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
+    std::shared_lock read_lock{mutex_};
 
     res[jss::validation_quorum] = static_cast<Json::UInt>(quorum());
 
@@ -764,7 +764,7 @@ void
 ValidatorList::for_each_listed(
     std::function<void(PublicKey const&, bool)> func) const
 {
-    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
+    std::shared_lock read_lock{mutex_};
 
     for (auto const& v : keyListings_)
         func(v.first, trusted(v.first));
@@ -780,7 +780,7 @@ ValidatorList::for_each_available(std::function<void(
                                       std::size_t sequence,
                                       uint256 const& hash)> func) const
 {
-    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
+    std::shared_lock read_lock{mutex_};
 
     for (auto const& [key, pl] : publisherLists_)
     {
@@ -800,7 +800,7 @@ ValidatorList::for_each_available(std::function<void(
 boost::optional<Json::Value>
 ValidatorList::getAvailable(boost::beast::string_view const& pubKey)
 {
-    std::shared_lock<std::shared_timed_mutex> read_lock{mutex_};
+    std::shared_lock read_lock{mutex_};
 
     auto const keyBlob = strViewUnHex(pubKey);
 
@@ -896,7 +896,7 @@ ValidatorList::calculateQuorum(
 TrustChanges
 ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
 {
-    std::unique_lock<std::shared_timed_mutex> lock{mutex_};
+    std::unique_lock lock{mutex_};
 
     // Remove any expired published lists
     for (auto const& list : publisherLists_)
@@ -983,14 +983,14 @@ ValidatorList::updateTrusted(hash_set<NodeID> const& seenValidators)
 hash_set<PublicKey>
 ValidatorList::getTrustedMasterKeys() const
 {
-    std::shared_lock lock{mutex_};
+    std::shared_lock read_lock{mutex_};
     return trustedMasterKeys_;
 }
 
 hash_set<PublicKey>
 ValidatorList::getNegativeUNL() const
 {
-    std::shared_lock lock{mutex_};
+    std::shared_lock read_lock{mutex_};
     return negativeUNL_;
 }
 
@@ -1008,7 +1008,7 @@ ValidatorList::negativeUNLFilter(
     // Remove validations that are from validators on the negative UNL.
     auto ret = std::move(validations);
 
-    std::shared_lock lock{mutex_};
+    std::shared_lock read_lock{mutex_};
     if (!negativeUNL_.empty())
     {
         ret.erase(
