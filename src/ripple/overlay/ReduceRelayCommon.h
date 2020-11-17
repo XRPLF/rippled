@@ -48,6 +48,11 @@ static constexpr uint16_t MAX_SELECTED_PEERS = 5;
 // Wait before reduce-relay feature is enabled on boot up to let
 // the server establish peer connections
 static constexpr auto WAIT_ON_BOOTUP = std::chrono::minutes{10};
+// Maximum size of the aggregated transaction hashes per peer.
+// Once we get to high tps throughput, this cap will prevent
+// TMTransactions from exceeding the current protocol message
+// size limit of 64MB.
+static constexpr std::size_t MAX_TX_QUEUE_SIZE = 10000;
 
 }  // namespace reduce_relay
 

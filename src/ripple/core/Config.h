@@ -224,7 +224,7 @@ public:
     std::uint32_t TX_REDUCE_RELAY_MIN_PEERS = 20;
     // Percentage of peers with the tx reduce-relay feature enabled
     // to relay to out of total active peers
-    std::uint32_t TX_RELAY_TO_PEERS = 25;
+    std::uint32_t TX_RELAY_PERCENTAGE = 25;
 
     // These override the command line client settings
     std::optional<beast::IP::Endpoint> rpc_ip;

@@ -187,7 +187,8 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
         msg.set_status(protocol::tsNEW);
         msg.set_receivetimestamp(
             app_.timeKeeper().now().time_since_epoch().count());
-        app_.overlay().relay(tx.id(), msg, {});
+        static std::set<Peer::id_t> skip{};
+        app_.overlay().relay(tx.id(), msg, skip);
     }
     else
     {

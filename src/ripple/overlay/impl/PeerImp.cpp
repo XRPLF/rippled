@@ -316,6 +316,12 @@ PeerImp::addTxQueue(uint256 const& hash)
         return post(
             strand_, std::bind(&PeerImp::addTxQueue, shared_from_this(), hash));
 
+    if (txQueue_.size() == reduce_relay::MAX_TX_QUEUE_SIZE)
+    {
+        JLOG(p_journal_.warn()) << "addTxQueue exceeds the cap";
+        sendTxQueue();
+    }
+
     txQueue_.insert(hash);
     JLOG(p_journal_.debug()) << "addTxQueue " << txQueue_.size();
 }
@@ -2817,6 +2823,13 @@ PeerImp::doTransactions(
 
     JLOG(p_journal_.debug()) << "received TMGetObjectByHash requesting tx "
                              << packet->objects_size();
+
+    if (packet->objects_size() > reduce_relay::MAX_TX_QUEUE_SIZE)
+    {
+        JLOG(p_journal_.error()) << "doTransactions, invalid number of hashes";
+        fee_ = Resource::feeInvalidRequest;
+        return;
+    }
 
     for (std::uint32_t i = 0; i < packet->objects_size(); ++i)
     {

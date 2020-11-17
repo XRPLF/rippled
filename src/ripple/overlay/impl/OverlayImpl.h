@@ -203,13 +203,17 @@ public:
 
     /** Get active peers excluding peers in toSkip.
        @param toSkip peers to skip
-       @return active peers less peers in toSkip,
-            a number of peers with tx reduce-relay feature disabled
-            less peers in toSkip, and a number of peers with
-            tx reduce-relay feature disabled and in toSkip.
+       @param disabled a number of peers with tx reduce-relay
+           feature disabled
+       @param disabledInSkip a number of peers with tx reduce-relay
+           feature disabled and in toSkip
+       @return active peers less peers in toSkip
      */
-    std::tuple<PeerSequence, std::uint16_t, std::uint16_t>
-    getActivePeers(std::set<Peer::id_t> const& toSkip) const;
+    PeerSequence
+    getActivePeers(
+        std::set<Peer::id_t> const& toSkip,
+        std::size_t& disabled,
+        std::size_t& disabledInSkip) const;
 
     void checkTracking(std::uint32_t) override;
 
