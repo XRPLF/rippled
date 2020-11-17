@@ -161,11 +161,6 @@ public:
     virtual bool
     storeLedger(std::shared_ptr<Ledger const> const& srcLedger) = 0;
 
-    /** Wait for all currently pending async reads to complete.
-     */
-    void
-    waitReads();
-
     /** Get the maximum number of async reads the node store prefers.
 
         @param ledgerSeq A ledger sequence specifying a shard to query.
@@ -288,7 +283,6 @@ private:
 
     std::mutex readLock_;
     std::condition_variable readCondVar_;
-    std::condition_variable readGenCondVar_;
 
     // reads to do
     std::map<uint256, std::vector< std::pair <std::uint32_t,
@@ -299,9 +293,6 @@ private:
 
     std::vector<std::thread> readThreads_;
     bool readShut_{false};
-
-    // current read generation
-    uint64_t readGen_{0};
 
     // The default is 32570 to match the XRP ledger network's earliest
     // allowed sequence. Alternate networks may set this value.

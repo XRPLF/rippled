@@ -58,24 +58,6 @@ Database::~Database()
 }
 
 void
-Database::waitReads()
-{
-    std::unique_lock<std::mutex> lock(readLock_);
-    // Wake in two generations.
-    // Each generation is a full pass over the space.
-    // If we're in generation N and you issue a request,
-    // that request will only be done during generation N
-    // if it happens to land after where the pass currently is.
-    // But, if not, it will definitely be done during generation
-    // N+1 since the request was in the table before that pass
-    // even started. So when you reach generation N+2,
-    // you know the request is done.
-    std::uint64_t const wakeGen = readGen_ + 2;
-    while (!readShut_ && !read_.empty() && (readGen_ < wakeGen))
-        readGenCondVar_.wait(lock);
-}
-
-void
 Database::onStop()
 {
     // After stop time we can no longer use the JobQueue for background
@@ -99,7 +81,6 @@ Database::stopReadThreads()
 
         readShut_ = true;
         readCondVar_.notify_all();
-        readGenCondVar_.notify_all();
     }
 
     for (auto& e : readThreads_)
@@ -309,7 +290,6 @@ Database::threadEntry()
             while (!readShut_ && read_.empty())
             {
                 // All work is done
-                readGenCondVar_.notify_all();
                 readCondVar_.wait(lock);
             }
             if (readShut_)
@@ -319,10 +299,8 @@ Database::threadEntry()
             auto it = read_.lower_bound(readLastHash_);
             if (it == read_.end())
             {
+                // start over from the beginning
                 it = read_.begin();
-                // A generation has completed
-                ++readGen_;
-                readGenCondVar_.notify_all();
             }
             lastHash = it->first;
             entry = std::move(it->second);
