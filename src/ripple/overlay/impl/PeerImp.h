@@ -37,9 +37,9 @@
 #include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/optional.hpp>
+#include <boost/thread/shared_mutex.hpp>
 #include <cstdint>
 #include <queue>
-#include <shared_mutex>
 
 namespace ripple {
 
@@ -126,7 +126,7 @@ private:
     // Node public key of peer.
     PublicKey const publicKey_;
     std::string name_;
-    std::shared_timed_mutex mutable nameMutex_;
+    boost::shared_mutex mutable nameMutex_;
 
     // The indices of the smallest and largest ledgers this peer has available
     //
@@ -220,7 +220,7 @@ private:
         total_bytes() const;
 
     private:
-        std::shared_mutex mutable mutex_;
+        boost::shared_mutex mutable mutex_;
         boost::circular_buffer<std::uint64_t> rollingAvg_{30, 0ull};
         clock_type::time_point intervalStart_{clock_type::now()};
         std::uint64_t totalBytes_{0};

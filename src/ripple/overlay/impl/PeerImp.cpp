@@ -47,6 +47,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <mutex>
 #include <numeric>
 #include <sstream>
 
@@ -748,7 +749,7 @@ PeerImp::doAccept()
     if (auto member = app_.cluster().member(publicKey_))
     {
         {
-            std::unique_lock<std::shared_timed_mutex> lock{nameMutex_};
+            std::unique_lock lock{nameMutex_};
             name_ = *member;
         }
         JLOG(journal_.info()) << "Cluster name: " << *member;
@@ -828,7 +829,7 @@ PeerImp::onWriteResponse(error_code ec, std::size_t bytes_transferred)
 std::string
 PeerImp::name() const
 {
-    std::shared_lock<std::shared_timed_mutex> read_lock{nameMutex_};
+    std::shared_lock read_lock{nameMutex_};
     return name_;
 }
 
