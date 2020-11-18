@@ -44,6 +44,7 @@ if [[ ${BOOST_BUILD_ALL:-false} == "true" ]]; then
     BLDARGS+=(--without-python)
 else
     BLDARGS+=(--with-chrono)
+    BLDARGS+=(--with-container)
     BLDARGS+=(--with-context)
     BLDARGS+=(--with-coroutine)
     BLDARGS+=(--with-date_time)
