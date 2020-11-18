@@ -169,9 +169,7 @@ Database::fetchNodeObject(
 bool
 Database::storeLedger(
     Ledger const& srcLedger,
-    std::shared_ptr<Backend> dstBackend,
-    std::shared_ptr<TaggedCache<uint256, NodeObject>> dstPCache,
-    std::shared_ptr<KeyCache<uint256>> dstNCache)
+    std::shared_ptr<Backend> dstBackend)
 {
     auto fail = [&](std::string const& msg) {
         JLOG(j_.error()) << "Source ledger sequence " << srcLedger.info().seq
@@ -179,8 +177,6 @@ Database::storeLedger(
         return false;
     };
 
-    if (!dstPCache || !dstNCache)
-        return fail("Invalid destination cache");
     if (srcLedger.info().hash.isZero())
         return fail("Invalid hash");
     if (srcLedger.info().accountHash.isZero())
@@ -195,12 +191,7 @@ Database::storeLedger(
     auto storeBatch = [&]() {
         std::uint64_t sz{0};
         for (auto const& nodeObject : batch)
-        {
-            dstPCache->canonicalize_replace_cache(
-                nodeObject->getHash(), nodeObject);
-            dstNCache->erase(nodeObject->getHash());
             sz += nodeObject->getData().size();
-        }
 
         try
         {

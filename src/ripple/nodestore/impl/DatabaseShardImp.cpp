@@ -1032,9 +1032,6 @@ DatabaseShardImp::asyncFetch(
         shard = it->second;
     }
 
-    if (shard->fetchNodeObjectFromCache(hash, nodeObject))
-        return true;
-
     // Otherwise post a read
     return
         Database::asyncFetch(hash, ledgerSeq, nodeObject, std::move (callback));
@@ -1073,41 +1070,6 @@ DatabaseShardImp::storeLedger(std::shared_ptr<Ledger const> const& srcLedger)
         return false;
 
     return setStoredInShard(shard, srcLedger);
-}
-
-int
-DatabaseShardImp::getDesiredAsyncReadCount(std::uint32_t ledgerSeq)
-{
-    auto const shardIndex{seqToShardIndex(ledgerSeq)};
-    std::shared_ptr<Shard> shard;
-    {
-        std::lock_guard lock(mutex_);
-        assert(init_);
-
-        auto const it{shards_.find(shardIndex)};
-        if (it == shards_.end())
-            return 0;
-        shard = it->second;
-    }
-
-    return shard->getDesiredAsyncReadCount();
-}
-
-float
-DatabaseShardImp::getCacheHitRate()
-{
-    std::shared_ptr<Shard> shard;
-    {
-        std::lock_guard lock(mutex_);
-        assert(init_);
-
-        auto const it{shards_.find(acquireIndex_)};
-        if (it == shards_.end())
-            return 0;
-        shard = it->second;
-    }
-
-    return shard->getCacheHitRate();
 }
 
 void

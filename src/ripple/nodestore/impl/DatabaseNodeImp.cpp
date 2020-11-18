@@ -32,9 +32,7 @@ DatabaseNodeImp::store(
     std::uint32_t)
 {
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
-    pCache_->canonicalize_replace_cache(hash, nObj);
     backend_->store(nObj);
-    nCache_->erase(hash);
     storeStats(1, nObj->getData().size());
 }
 
@@ -45,31 +43,15 @@ DatabaseNodeImp::asyncFetch(
     std::shared_ptr<NodeObject>& nodeObject,
     std::function<void(std::shared_ptr<NodeObject>&)>&& callback)
 {
-    // See if the object is in cache
-    nodeObject = pCache_->fetch(hash);
-    if (nodeObject || nCache_->touch_if_exists(hash))
-        return true;
-
-    // Otherwise post a read
     return
         Database::asyncFetch(hash, ledgerSeq, nodeObject,
             std::move(callback));
 }
 
 void
-DatabaseNodeImp::tune(int size, std::chrono::seconds age)
-{
-    pCache_->setTargetSize(size);
-    pCache_->setTargetAge(age);
-    nCache_->setTargetSize(size);
-    nCache_->setTargetAge(age);
-}
-
-void
 DatabaseNodeImp::sweep()
 {
-    pCache_->sweep();
-    nCache_->sweep();
+    // nothing to do
 }
 
 std::shared_ptr<NodeObject>
@@ -79,8 +61,8 @@ DatabaseNodeImp::fetchNodeObject(
     FetchReport& fetchReport)
 {
     // See if the node object exists in the cache
-    auto nodeObject{pCache_->fetch(hash)};
-    if (!nodeObject && !nCache_->touch_if_exists(hash))
+    std::shared_ptr<NodeObject> nodeObject;
+    if (1)
     {
         // Try the backend
         fetchReport.wentToDisk = true;
@@ -113,24 +95,8 @@ DatabaseNodeImp::fetchNodeObject(
                 break;
         }
 
-        if (!nodeObject)
-        {
-            // Just in case a write occurred
-            nodeObject = pCache_->fetch(hash);
-            if (!nodeObject)
-                // We give up
-                nCache_->insert(hash);
-        }
-        else
-        {
+        if (nodeObject)
             fetchReport.wasFound = true;
-
-            // Ensure all threads get the same object
-            pCache_->canonicalize_replace_client(hash, nodeObject);
-
-            // Since this was a 'hard' fetch, we will log it
-            JLOG(j_.trace()) << "HOS: " << hash << " fetch: in shard db";
-        }
     }
 
     return nodeObject;

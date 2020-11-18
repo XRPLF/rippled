@@ -157,15 +157,6 @@ public:
     bool
     storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override;
 
-    int
-    getDesiredAsyncReadCount(std::uint32_t ledgerSeq) override;
-
-    float
-    getCacheHitRate() override;
-
-    void
-    tune(int size, std::chrono::seconds age) override{};
-
     void
     sweep() override;
 

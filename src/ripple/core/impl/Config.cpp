@@ -41,7 +41,7 @@
 namespace ripple {
 
 // The configurable node sizes are "tiny", "small", "medium", "large", "huge"
-inline constexpr std::array<std::pair<SizedItem, std::array<int, 5>>, 13>
+inline constexpr std::array<std::pair<SizedItem, std::array<int, 5>>, 11>
     sizedItems{{
         // FIXME: We should document each of these items, explaining exactly
         // what
@@ -53,8 +53,6 @@ inline constexpr std::array<std::pair<SizedItem, std::array<int, 5>>, 13>
         {SizedItem::ledgerSize, {{32, 128, 256, 384, 768}}},
         {SizedItem::ledgerAge, {{30, 90, 180, 240, 900}}},
         {SizedItem::ledgerFetch, {{2, 3, 4, 5, 8}}},
-        {SizedItem::nodeCacheSize, {{16384, 32768, 131072, 262144, 524288}}},
-        {SizedItem::nodeCacheAge, {{60, 90, 120, 900, 1800}}},
         {SizedItem::hashNodeDBCache, {{4, 12, 24, 64, 128}}},
         {SizedItem::txnDBCache, {{4, 12, 24, 64, 128}}},
         {SizedItem::lgrDBCache, {{4, 8, 16, 32, 128}}},

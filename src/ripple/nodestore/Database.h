@@ -161,27 +161,6 @@ public:
     virtual bool
     storeLedger(std::shared_ptr<Ledger const> const& srcLedger) = 0;
 
-    /** Get the maximum number of async reads the node store prefers.
-
-        @param ledgerSeq A ledger sequence specifying a shard to query.
-        @return The number of async reads preferred.
-        @note The sequence is only used with the shard store.
-    */
-    virtual int
-    getDesiredAsyncReadCount(std::uint32_t ledgerSeq) = 0;
-
-    /** Get the positive cache hits to total attempts ratio. */
-    virtual float
-    getCacheHitRate() = 0;
-
-    /** Set the maximum number of entries and maximum cache age for both caches.
-
-        @param size Number of cache entries (0 = ignore)
-        @param age Maximum cache age in seconds
-    */
-    virtual void
-    tune(int size, std::chrono::seconds age) = 0;
-
     /** Remove expired entries from the positive and negative caches. */
     virtual void
     sweep() = 0;
@@ -272,9 +251,7 @@ protected:
     bool
     storeLedger(
         Ledger const& srcLedger,
-        std::shared_ptr<Backend> dstBackend,
-        std::shared_ptr<TaggedCache<uint256, NodeObject>> dstPCache,
-        std::shared_ptr<KeyCache<uint256>> dstNCache);
+        std::shared_ptr<Backend> dstBackend);
 
 private:
     std::atomic<std::uint64_t> storeCount_{0};
