@@ -133,17 +133,15 @@ PeerImp::run()
     if (!strand_.running_in_this_thread())
         return post(strand_, std::bind(&PeerImp::run, shared_from_this()));
 
-    // We need to decipher
     auto parseLedgerHash =
         [](std::string const& value) -> boost::optional<uint256> {
-        uint256 ret;
-        if (ret.SetHexExact(value))
-            return {ret};
+        if (uint256 ret; ret.SetHexExact(value))
+            return ret;
 
-        auto const s = base64_decode(value);
-        if (s.size() != uint256::size())
-            return boost::none;
-        return uint256{s};
+        if (auto const s = base64_decode(value); s.size() == uint256::size())
+            return uint256{s};
+
+        return boost::none;
     };
 
     boost::optional<uint256> closed;
@@ -710,7 +708,6 @@ PeerImp::onShutdown(error_code ec)
 }
 
 //------------------------------------------------------------------------------
-
 void
 PeerImp::doAccept()
 {
@@ -724,14 +721,6 @@ PeerImp::doAccept()
     // the shared value successfully in OverlayImpl
     if (!sharedValue)
         return fail("makeSharedValue: Unexpected failure");
-
-    // TODO Apply headers to connection state.
-
-    boost::beast::ostream(write_buffer_) << makeResponse(
-        !overlay_.peerFinder().config().peerPrivate,
-        request_,
-        remote_address_.address(),
-        *sharedValue);
 
     JLOG(journal_.info()) << "Protocol: " << to_string(protocol_);
     JLOG(journal_.info()) << "Public Key: "
@@ -752,69 +741,54 @@ PeerImp::doAccept()
     // XXX Set timer: connection idle (idle may vary depending on connection
     // type.)
 
-    onWriteResponse(error_code(), 0);
-}
+    auto write_buffer = [this, sharedValue]() {
+        auto buf = std::make_shared<boost::beast::multi_buffer>();
 
-http_response_type
-PeerImp::makeResponse(
-    bool crawl,
-    http_request_type const& req,
-    beast::IP::Address remote_ip,
-    uint256 const& sharedValue)
-{
-    http_response_type resp;
-    resp.result(boost::beast::http::status::switching_protocols);
-    resp.version(req.version());
-    resp.insert("Connection", "Upgrade");
-    resp.insert("Upgrade", to_string(protocol_));
-    resp.insert("Connect-As", "Peer");
-    resp.insert("Server", BuildInfo::getFullVersionString());
-    resp.insert("Crawl", crawl ? "public" : "private");
-    if (req["X-Offer-Compression"] == "lz4" && app_.config().COMPRESSION)
-        resp.insert("X-Offer-Compression", "lz4");
+        http_response_type resp;
+        resp.result(boost::beast::http::status::switching_protocols);
+        resp.version(request_.version());
+        resp.insert("Connection", "Upgrade");
+        resp.insert("Upgrade", to_string(protocol_));
+        resp.insert("Connect-As", "Peer");
+        resp.insert("Server", BuildInfo::getFullVersionString());
+        resp.insert(
+            "Crawl",
+            overlay_.peerFinder().config().peerPrivate ? "private" : "public");
 
-    buildHandshake(
-        resp,
-        sharedValue,
-        overlay_.setup().networkID,
-        overlay_.setup().public_ip,
-        remote_ip,
-        app_);
+        if (request_["X-Offer-Compression"] == "lz4" &&
+            app_.config().COMPRESSION)
+            resp.insert("X-Offer-Compression", "lz4");
 
-    return resp;
-}
+        buildHandshake(
+            resp,
+            *sharedValue,
+            overlay_.setup().networkID,
+            overlay_.setup().public_ip,
+            remote_address_.address(),
+            app_);
 
-// Called repeatedly to send the bytes in the response
-void
-PeerImp::onWriteResponse(error_code ec, std::size_t bytes_transferred)
-{
-    if (!socket_.is_open())
-        return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-    if (ec)
-        return fail("onWriteResponse", ec);
-    if (auto stream = journal_.trace())
-    {
-        if (bytes_transferred > 0)
-            stream << "onWriteResponse: " << bytes_transferred << " bytes";
-        else
-            stream << "onWriteResponse";
-    }
+        boost::beast::ostream(*buf) << resp;
 
-    write_buffer_.consume(bytes_transferred);
-    if (write_buffer_.size() == 0)
-        return doProtocolStart();
+        return buf;
+    }();
 
-    stream_.async_write_some(
-        write_buffer_.data(),
-        bind_executor(
-            strand_,
-            std::bind(
-                &PeerImp::onWriteResponse,
-                shared_from_this(),
-                std::placeholders::_1,
-                std::placeholders::_2)));
+    // Write the whole buffer and only start protocol when that's done.
+    boost::asio::async_write(
+        stream_,
+        write_buffer->data(),
+        boost::asio::transfer_all(),
+        [this, write_buffer, self = shared_from_this()](
+            error_code ec, std::size_t bytes_transferred) {
+            if (!socket_.is_open())
+                return;
+            if (ec == boost::asio::error::operation_aborted)
+                return;
+            if (ec)
+                return fail("onWriteResponse", ec);
+            if (write_buffer->size() == bytes_transferred)
+                return doProtocolStart();
+            return fail("Failed to write header");
+        });
 }
 
 std::string
@@ -860,30 +834,15 @@ PeerImp::doProtocolStart()
                 << "Sending validator list for " << strHex(pubKey)
                 << " with sequence " << sequence << " to "
                 << remote_address_.to_string() << " (" << id_ << ")";
-            auto m = std::make_shared<Message>(vl, protocol::mtVALIDATORLIST);
-            send(m);
+            send(std::make_shared<Message>(vl, protocol::mtVALIDATORLIST));
             // Don't send it next time.
             app_.getHashRouter().addSuppressionPeer(hash, id_);
             setPublisherListSequence(pubKey, sequence);
         });
     }
 
-    protocol::TMManifests tm;
-
-    app_.validatorManifests().for_each_manifest(
-        [&tm](std::size_t s) { tm.mutable_list()->Reserve(s); },
-        [&tm, &hr = app_.getHashRouter()](Manifest const& manifest) {
-            auto const& s = manifest.serialized;
-            auto& tm_e = *tm.add_list();
-            tm_e.set_stobject(s.data(), s.size());
-            hr.addSuppression(manifest.hash());
-        });
-
-    if (tm.list_size() > 0)
-    {
-        auto m = std::make_shared<Message>(tm, protocol::mtMANIFESTS);
+    if (auto m = overlay_.getManifestsMessage())
         send(m);
-    }
 }
 
 // Called repeatedly with protocol message data
@@ -913,11 +872,13 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 
     read_buffer_.commit(bytes_transferred);
 
+    auto hint = Tuning::readBufferBytes;
+
     while (read_buffer_.size() > 0)
     {
         std::size_t bytes_consumed;
         std::tie(bytes_consumed, ec) =
-            invokeProtocolMessage(read_buffer_.data(), *this);
+            invokeProtocolMessage(read_buffer_.data(), *this, hint);
         if (ec)
             return fail("onReadMessage", ec);
         if (!socket_.is_open())
@@ -928,9 +889,10 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
             break;
         read_buffer_.consume(bytes_consumed);
     }
+
     // Timeout on writes only
     stream_.async_read_some(
-        read_buffer_.prepare(Tuning::readBufferBytes),
+        read_buffer_.prepare(std::max(Tuning::readBufferBytes, hint)),
         bind_executor(
             strand_,
             std::bind(

@@ -57,8 +57,6 @@ public:
         RangeSet<std::uint32_t> shardIndexes;
     };
 
-    using ptr = std::shared_ptr<PeerImp>;
-
 private:
     using clock_type = std::chrono::steady_clock;
     using error_code = boost::system::error_code;
@@ -156,7 +154,6 @@ private:
     http_request_type request_;
     http_response_type response_;
     boost::beast::http::fields const& headers_;
-    boost::beast::multi_buffer write_buffer_;
     std::queue<std::shared_ptr<Message>> send_queue_;
     bool gracefulClose_ = false;
     int large_sendq_ = 0;
@@ -434,16 +431,6 @@ private:
 
     void
     doAccept();
-
-    http_response_type
-    makeResponse(
-        bool crawl,
-        http_request_type const& req,
-        beast::IP::Address remote_ip,
-        uint256 const& sharedValue);
-
-    void
-    onWriteResponse(error_code ec, std::size_t bytes_transferred);
 
     std::string
     name() const;

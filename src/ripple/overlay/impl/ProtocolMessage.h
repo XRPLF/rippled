@@ -258,11 +258,19 @@ invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
     If there is insufficient data to produce a complete protocol
     message, zero is returned for the number of bytes consumed.
 
+    @param buffers The buffer that contains the data we've received
+    @param handler The handler that will be used to process the message
+    @param hint If possible, a hint as to the amount of data to read next. The
+                returned value MAY be zero, which means "no hint"
+
     @return The number of bytes consumed, or the error code if any.
 */
 template <class Buffers, class Handler>
 std::pair<std::size_t, boost::system::error_code>
-invokeProtocolMessage(Buffers const& buffers, Handler& handler)
+invokeProtocolMessage(
+    Buffers const& buffers,
+    Handler& handler,
+    std::size_t& hint)
 {
     std::pair<std::size_t, boost::system::error_code> result = {0, {}};
 
@@ -303,7 +311,10 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler)
     // We don't have the whole message yet. This isn't an error but we have
     // nothing to do.
     if (header->total_wire_size > size)
+    {
+        hint = header->total_wire_size - size;
         return result;
+    }
 
     bool success;
 
