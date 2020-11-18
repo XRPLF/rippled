@@ -431,6 +431,9 @@ ManifestCache::applyManifest(Manifest m)
         iter->second = std::move(m);
     }
 
+    // Something has changed. Keep track of it.
+    seq_++;
+
     return ManifestDisposition::accepted;
 }
 

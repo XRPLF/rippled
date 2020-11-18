@@ -27,9 +27,6 @@ namespace ripple {
 namespace Tuning {
 
 enum {
-    /** Size of buffer used to read from the socket. */
-    readBufferBytes = 4096,
-
     /** How many ledgers off a server can be and we will
         still consider it converged */
     convergedLedgerLimit = 24,
@@ -58,6 +55,9 @@ enum {
     /** How often we check for idle peers (seconds) */
     checkIdlePeers = 4,
 };
+
+/** Size of buffer used to read from the socket. */
+std::size_t constexpr readBufferBytes = 16384;
 
 }  // namespace Tuning
 
