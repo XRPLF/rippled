@@ -219,11 +219,19 @@ private:
     /** Master public keys stored by current ephemeral public key. */
     hash_map<PublicKey, PublicKey> signingToMasterKeys_;
 
+    std::atomic<std::uint32_t> seq_{0};
+
 public:
     explicit ManifestCache(
         beast::Journal j = beast::Journal(beast::Journal::getNullSink()))
         : j_(j)
     {
+    }
+
+    /** A monotonically increasing number used to detect new manifests. */
+    std::uint32_t sequence() const
+    {
+        return seq_.load();
     }
 
     /** Returns master key's current signing key.

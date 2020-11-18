@@ -79,8 +79,6 @@ public:
         RangeSet<std::uint32_t> shardIndexes;
     };
 
-    using ptr = std::shared_ptr<PeerImp>;
-
 private:
     using clock_type = std::chrono::steady_clock;
     using error_code = boost::system::error_code;
@@ -105,8 +103,6 @@ private:
     boost::asio::strand<boost::asio::executor> strand_;
     waitable_timer timer_;
 
-    // Type type_ = Type::legacy;
-
     // Updated at each stage of the connection process to reflect
     // the current conditions as closely as possible.
     beast::IP::Endpoint const remote_address_;
@@ -114,7 +110,7 @@ private:
     // These are up here to prevent warnings about order of initializations
     //
     OverlayImpl& overlay_;
-    bool const m_inbound;
+    bool const inbound_;
 
     // Protocol version to use for this link
     ProtocolVersion protocol_;
@@ -184,7 +180,6 @@ private:
     http_request_type request_;
     http_response_type response_;
     boost::beast::http::fields const& headers_;
-    boost::beast::multi_buffer write_buffer_;
     std::queue<std::shared_ptr<Message>> send_queue_;
     bool gracefulClose_ = false;
     int large_sendq_ = 0;
@@ -467,16 +462,6 @@ private:
     void
     doAccept();
 
-    http_response_type
-    makeResponse(
-        bool crawl,
-        http_request_type const& req,
-        beast::IP::Address remote_ip,
-        uint256 const& sharedValue);
-
-    void
-    onWriteResponse(error_code ec, std::size_t bytes_transferred);
-
     std::string
     name() const;
 
@@ -633,7 +618,7 @@ PeerImp::PeerImp(
     , timer_(waitable_timer{socket_.get_executor()})
     , remote_address_(slot->remote_endpoint())
     , overlay_(overlay)
-    , m_inbound(false)
+    , inbound_(false)
     , protocol_(protocol)
     , state_(State::active)
     , sanity_(Sanity::unknown)

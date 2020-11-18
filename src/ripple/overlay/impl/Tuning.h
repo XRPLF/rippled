@@ -27,9 +27,6 @@ namespace ripple {
 namespace Tuning {
 
 enum {
-    /** Size of buffer used to read from the socket. */
-    readBufferBytes = 4096,
-
     /** How long a server can remain insane before we
         disconnected it (if outbound) */
     maxInsaneTime = 60,
@@ -78,6 +75,9 @@ enum {
 
 /** The threshold above which we treat a peer connection as high latency */
 std::chrono::milliseconds constexpr peerHighLatency{300};
+
+/** Size of buffer used to read from the socket. */
+std::size_t constexpr readBufferBytes = 16384;
 
 }  // namespace Tuning
 
