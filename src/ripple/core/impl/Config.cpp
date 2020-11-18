@@ -645,15 +645,16 @@ Config::loadFromString(std::string const& fileContents)
         REDUCE_RELAY_SQUELCH = sec.value_or("vp_squelch", false);
         TX_REDUCE_RELAY_MIN_PEERS = sec.value_or("tx_min_peers", 20);
         TX_RELAY_PERCENTAGE = sec.value_or("tx_relay_percentage", 25);
-        if (TX_RELAY_PERCENTAGE > 100 || TX_REDUCE_RELAY_MIN_PEERS < 20 ||
+        if (TX_RELAY_PERCENTAGE == 0 || TX_RELAY_PERCENTAGE > 100 ||
+            TX_REDUCE_RELAY_MIN_PEERS < 20 ||
             static_cast<std::uint16_t>(
-                100 * TX_REDUCE_RELAY_MIN_PEERS / TX_RELAY_PERCENTAGE) < 5)
+                TX_RELAY_PERCENTAGE * TX_REDUCE_RELAY_MIN_PEERS / 100) < 5)
             Throw<std::runtime_error>(
                 "Invalid " SECTION_TX_REDUCE_RELAY
                 ", num_peers must be greater or equal to 20"
                 ", relay_to_peers must be less or equal to 100, and "
-                "(100 * num_peers / relay_to_peers) must be greater or equal "
-                "to 5");
+                "(tx_relay_percentage * tx_min_peers / 100) must be greater "
+                " or equal to 5");
     }
 
     if (getSingleSection(secConfig, SECTION_MAX_TRANSACTIONS, strTemp, j_))
