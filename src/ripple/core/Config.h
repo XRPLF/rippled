@@ -219,6 +219,13 @@ public:
     bool VP_REDUCE_RELAY_SQUELCH = false;
     // Transaction reduce-relay feature
     bool TX_REDUCE_RELAY_ENABLE = false;
+    // If tx reduce-relay feature is disabled
+    // and this flag is enabled then some
+    // tx-related metrics is collected. It
+    // is ignored if tx reduce-relay features is
+    // enabled. It is used in debugging to compare
+    // metrics with the feature disabled/enabled.
+    bool TX_REDUCE_RELAY_METRICS = false;
     // Minimum peers a server should have before
     // selecting random peers
     std::uint32_t TX_REDUCE_RELAY_MIN_PEERS = 20;

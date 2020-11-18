@@ -1034,7 +1034,7 @@ PeerImp::onMessageBegin(
          // LEDGER_DATA
          category == TrafficCount::category::gl_tsc_share ||
          category == TrafficCount::category::gl_tsc_get) &&
-        txReduceRelayEnabled())
+        (txReduceRelayEnabled() || app_.config().TX_REDUCE_RELAY_METRICS))
     {
         overlay_.addTxMetrics(
             static_cast<MessageType>(type), static_cast<std::uint64_t>(size));

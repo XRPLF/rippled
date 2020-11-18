@@ -1306,13 +1306,16 @@ OverlayImpl::relay(
     auto const sm = std::make_shared<Message>(m, protocol::mtTRANSACTION);
 
     std::size_t active = 0;
-    if (app_.config().TX_REDUCE_RELAY_ENABLE)
+    if (app_.config().TX_REDUCE_RELAY_ENABLE ||
+        app_.config().TX_REDUCE_RELAY_METRICS)
         active = size();
 
     if (!app_.config().TX_REDUCE_RELAY_ENABLE ||
         active < app_.config().TX_REDUCE_RELAY_MIN_PEERS)
     {
         foreach(send_if_not(sm, peer_in_set(toSkip)));
+        if (app_.config().TX_REDUCE_RELAY_METRICS)
+            txMetrics_.addMetrics(active, toSkip.size(), 0);
         return;
     }
 

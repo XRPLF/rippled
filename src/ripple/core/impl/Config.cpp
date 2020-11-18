@@ -641,12 +641,13 @@ Config::loadFromString(std::string const& fileContents)
         auto sec = section(SECTION_REDUCE_RELAY);
         VP_REDUCE_RELAY_ENABLE = sec.value_or("vp_enable", false);
         TX_REDUCE_RELAY_ENABLE = sec.value_or("tx_enable", false);
+        TX_REDUCE_RELAY_METRICS = sec.value_or("tx_metrics", false);
         REDUCE_RELAY_SQUELCH = sec.value_or("vp_squelch", false);
         TX_REDUCE_RELAY_MIN_PEERS = sec.value_or("tx_num_peers", 20);
         TX_RELAY_PERCENTAGE = sec.value_or("tx_relay_to_peers", 25);
-        if (TX_RELAY_PERCENTAGE > 100 || TX_REDUCE_RELAY_MIN_PEERS < 20 ||
+        if (TX_RELAY_PERCENTAGE > 100 || TX_REDUCE_RELAY_MIN_PEERS < 10 ||
             static_cast<std::uint16_t>(
-                100 * TX_REDUCE_RELAY_MIN_PEERS / TX_RELAY_PERCENTAGE) < 5)
+                100 * TX_REDUCE_RELAY_MIN_PEERS / TX_RELAY_PERCENTAGE) < 3)
             Throw<std::runtime_error>(
                 "Invalid " SECTION_TX_REDUCE_RELAY
                 ", num_peers must be greater or equal to 20"
