@@ -1263,6 +1263,36 @@ OverlayImpl::relay(
     return {};
 }
 
+std::shared_ptr<Message>
+OverlayImpl::getManifestsMessage()
+{
+    std::lock_guard g(manifestLock_);
+
+    if (auto seq = app_.validatorManifests().sequence();
+        seq != manifestListSeq_)
+    {
+        protocol::TMManifests tm;
+
+        app_.validatorManifests().for_each_manifest(
+            [&tm](std::size_t s) { tm.mutable_list()->Reserve(s); },
+            [&tm, &hr = app_.getHashRouter()](Manifest const& manifest) {
+                tm.add_list()->set_stobject(
+                    manifest.serialized.data(), manifest.serialized.size());
+                hr.addSuppression(manifest.hash());
+            });
+
+        manifestMessage_.reset();
+
+        if (tm.list_size() != 0)
+            manifestMessage_ =
+                std::make_shared<Message>(tm, protocol::mtMANIFESTS);
+
+        manifestListSeq_ = seq;
+    }
+
+    return manifestMessage_;
+}
+
 //------------------------------------------------------------------------------
 
 void
